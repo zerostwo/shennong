@@ -5,3 +5,5 @@
 ^Meta$
 ^LICENSE\.md$
 ^README\.Rmd$
+^\.github$
+^codecov\.yml$
