@@ -1,0 +1,81 @@
+---
+title: "Comprehensive guide to Seurat analysis with `sn_run` functions"
+author: 
+- name: Songqi Duan
+  email: songqi.duan@outlook.com
+  affiliation: College of Food Science, Sichuan Agricultural University, Yaan, China
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+  pdf_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Comprehensive guide to Seurat analysis with sn_run functions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6
+)
+```
+
+This document serves as a comprehensive guide for conducting Seurat analysis in single-cell RNA sequencing data using `sn_run` functions. It covers the standard workflow and the SCtransform workflow, illustrating each step with practical examples.
+
+```{r setup}
+library(Shennong)
+library(Seurat)
+```
+
+## Load data and create Seurat object
+```{r load data}
+data_dir <- "/datapool/datasets/scrna-seq/pbmc3k/filtered_gene_bc_matrices/hg19"
+counts <- Read10X(data.dir = data_dir)
+seurat_obj <- CreateSeuratObject(
+  counts = counts,
+  project = "pbmc3k",
+  min.cells = 3,
+  min.features = 200
+)
+seurat_obj <- PercentageFeatureSet(seurat_obj,
+  pattern = "^MT-",
+  col.name = "percent.mt"
+)
+seurat_obj <- subset(
+  seurat_obj,
+  subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5
+)
+```
+
+## Standard `Seurat` workflow
+
+```{r standard}
+seurat_obj <- sn_run_seurat(
+  object = seurat_obj,
+  workflow = "standard",
+  nfeatures = 2000,
+  dims = 1:10
+)
+
+DimPlot(object = seurat_obj, label = TRUE)
+```
+
+## SCtransform workflow
+```{r sctransform}
+seurat_obj <- sn_run_seurat(
+  object = seurat_obj,
+  workflow = "sctransform",
+  vars_to_regress = "percent.mt"
+)
+
+DimPlot(object = seurat_obj, label = TRUE)
+```
