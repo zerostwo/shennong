@@ -1,0 +1,25 @@
+Package: Shennong
+Type: Package
+Title: Toolkit for Interpreting Omics Data
+Version: 0.1.0
+Authors@R: c(
+    person("Songqi", "Duan", , "duan@songqi.org", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-0822-5883"))
+  )
+Maintainer: Songqi Duan <duan@songqi.org>
+Description: The Shennong package provides a comprehensive toolkit for interpreting omics data, offering advanced analysis and visualization tools tailored for genomic, transcriptomic, proteomic, and metabolomic data. It integrates various bioinformatics approaches to facilitate the understanding of complex biological mechanisms and interactions. Designed for researchers and data scientists in the field of bioinformatics, Shennong aims to streamline the process of omics data analysis with a focus on usability and reproducibility.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    dplyr,
+    ggplot2,
+    glue,
+    logger,
+    methods,
+    rlang,
+    stats,
+    tictoc
+RoxygenNote: 7.3.2
+Depends: 
+    R (>= 3.5)
