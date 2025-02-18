@@ -31,7 +31,8 @@ sn_quick_cluster <- function(object,
                              resolution = 0.8,
                              dims = 1:30,
                              return_cluster = FALSE,
-                             verbose = TRUE) {
+                             verbose = TRUE,
+                             species = NULL) {
   pipeline <- match.arg(pipeline, c("standard", "sctransform", "sct"))
 
   if (verbose) logger::log_info(glue::glue("[sn_quick_cluster] Pipeline = {pipeline}"))
@@ -100,7 +101,7 @@ sn_quick_cluster <- function(object,
 #'
 #' @examples
 #' \dontrun{
-#' seurat_obj <- sn_quick_integration(
+#' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
 #'   batch = "sample_id",
 #'   nfeatures = 3000,
@@ -109,29 +110,33 @@ sn_quick_cluster <- function(object,
 #' )
 #' }
 #' @export
-sn_quick_integration <- function(object,
-                                 batch,
-                                 nfeatures = 3000,
-                                 vars_to_regress = NULL,
-                                 resolution = 0.5,
-                                 block_genes = c("ribo", "mito", "heatshock", "noncoding", "pseudogenes"),
-                                 theta = 2,
-                                 npcs = 50,
-                                 dims_use = 1:20,
-                                 verbose = TRUE) {
+sn_run_cluster <- function(object,
+                           batch = NULL,
+                           nfeatures = 3000,
+                           vars_to_regress = NULL,
+                           resolution = 0.8,
+                           block_genes = c("ribo", "mito", "tcr", "immunoglobulins", "noncoding", "pseudogenes"),
+                           theta = 2,
+                           npcs = 50,
+                           dims_use = 1:20,
+                           species = NULL,
+                           return_cluster = FALSE,
+                           verbose = TRUE) {
   rlang::check_installed("Seurat")
   rlang::check_installed("HGNChelper")
   rlang::check_installed("harmony")
-  rlang::check_installed("SignatuR", reason = "if you want to use predefined gene sets in block_genes", version = NULL)
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
-  if (!batch %in% colnames(object@meta.data)) {
-    stop(glue::glue("Batch variable '{batch}' not found in metadata."))
+
+  if (!is.null(x = batch)) {
+    if (!(batch %in% colnames(object@meta.data))) {
+      stop(glue::glue("Batch variable '{batch}' not found in metadata."))
+    }
+    if (verbose) logger::log_info(glue::glue("[sn_quick_integration] Starting integration for batch='{batch}'..."))
   }
 
-  if (verbose) logger::log_info(glue::glue("[sn_quick_integration] Starting integration for batch='{batch}'..."))
 
   predefined_genesets <- c(
     "tcr", "immunoglobulins", "ribo", "mito",
@@ -139,15 +144,16 @@ sn_quick_integration <- function(object,
   )
 
   if (!is.null(block_genes)) {
+    species <- sn_get_species(object = object, species = species)
     if (verbose) logger::log_info("Processing block genes...")
 
     if (is.character(block_genes) && all(block_genes %in% predefined_genesets)) {
-      block_genes <- g_block_genes(genesets = block_genes)
+      block_genes <- sn_get_signatures(species = species, category = block_genes)
       if (verbose) {
         logger::log_info(glue::glue("  Loaded {length(block_genes)} blocked genes from built-in sets."))
       }
     } else {
-      checked <- HGNChelper::checkGeneSymbols(block_genes, species = "human")
+      checked <- HGNChelper::checkGeneSymbols(block_genes, species = species)
       valid_genes <- checked$Suggested.Symbol[!is.na(checked$Suggested.Symbol)]
       invalid <- setdiff(block_genes, valid_genes)
 
@@ -160,42 +166,26 @@ sn_quick_integration <- function(object,
       if (verbose) logger::log_info(glue::glue("  Using {length(block_genes)} custom block genes."))
     }
   }
+  object <- Seurat::NormalizeData(object = object, verbose = verbose)
 
-  if (verbose) logger::log_info("[1/8] Cell cycle scoring...")
-  tryCatch(
-    {
-      s_genes <- cc.genes.updated.2019$s.genes
-      g2m_genes <- cc.genes.updated.2019$g2m.genes
-
-      # Check each set with HGNChelper
-      s_checked <- HGNChelper::checkGeneSymbols(s_genes, species = "human")
-      g2m_checked <- HGNChelper::checkGeneSymbols(g2m_genes, species = "human")
-
-      s_valid <- s_checked$Suggested.Symbol[!is.na(s_checked$Suggested.Symbol)]
-      g2m_valid <- g2m_checked$Suggested.Symbol[!is.na(g2m_checked$Suggested.Symbol)]
-
-      object <- Seurat::CellCycleScoring(
-        object       = object,
-        s.features   = s_valid,
-        g2m.features = g2m_valid,
-        set.ident    = FALSE
-      )
-    },
-    error = function(e) {
-      logger::log_warn(glue::glue("Cell cycle scoring failed: {e$message}"))
-    }
-  )
-
+  if (!is.null(species)) {
+    if (verbose) logger::log_info("[1/8] Cell cycle scoring...")
+    object <- sn_score_cell_cycle(object = object, species = species)
+  }
   #-- （Seurat v5）Split by batch & Join
-  if (verbose) logger::log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
-  object[["RNA"]] <- split(object[["RNA"]], f = object[[batch, drop = TRUE]])
-
+  if (!is.null(x = batch)) {
+    if (verbose) logger::log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
+    object[["RNA"]] <- split(object[["RNA"]], f = object[[batch, drop = TRUE]])
+  }
   if (verbose) logger::log_info("[3/8] Selecting highly variable features...")
-  object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures)
+  object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
 
-  hvg <- Seurat::SelectIntegrationFeatures5(object, nfeatures = nfeatures + 1000)
-
-  object <- SeuratObject::JoinLayers(object)
+  if (is.null(x = batch)) {
+    hvg <- Seurat::VariableFeatures(object = object)
+  } else {
+    hvg <- Seurat::SelectIntegrationFeatures5(object, nfeatures = nfeatures + 1000, verbose = verbose)
+    object <- SeuratObject::JoinLayers(object)
+  }
 
   if (!is.null(block_genes)) {
     n_before <- length(hvg)
@@ -216,6 +206,7 @@ sn_quick_integration <- function(object,
     }
     hvg <- head(hvg, nfeatures)
   }
+  Seurat::VariableFeatures(object = object) <- hvg
 
   #-- Scaling
   if (verbose) logger::log_info("[4/8] Scaling data...")
@@ -235,34 +226,35 @@ sn_quick_integration <- function(object,
     verbose  = verbose
   )
 
-  #-- Harmony
-  if (verbose) logger::log_info("[6/8] Running Harmony integration...")
-  object <- harmony::RunHarmony(
-    object        = object,
-    group.by.vars = batch,
-    theta         = theta,
-    reduction.use = "pca",
-    verbose       = verbose
-  )
+  if (is.null(x = batch)) {
+    reduction <- "pca"
+  } else {
+    #-- Harmony
+    if (verbose) logger::log_info("[6/8] Running Harmony integration...")
+    object <- harmony::RunHarmony(
+      object        = object,
+      group.by.vars = batch,
+      theta         = theta,
+      reduction.use = "pca",
+      verbose       = verbose
+    )
+    reduction <- "harmony"
+  }
 
   if (verbose) logger::log_info("[7/8] Clustering with integrated embeddings...")
-  object <- Seurat::FindNeighbors(object, reduction = "harmony", dims = dims_use, verbose = verbose)
+  object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims_use, verbose = verbose)
   object <- Seurat::FindClusters(object, resolution = resolution, verbose = verbose)
 
-  #-- UMAP
-  if (verbose) logger::log_info("[8/8] Running UMAP...")
-  object <- Seurat::RunUMAP(object, reduction = "harmony", dims = dims_use, verbose = verbose)
-
-  object@misc$integration_params <- list(
-    batch = batch,
-    nfeatures = nfeatures,
-    resolution = resolution,
-    theta = theta,
-    date = Sys.Date()
-  )
-
-  if (verbose) logger::log_info("Integration completed successfully!")
-  return(object)
+  if (return_cluster) {
+    if (verbose) logger::log_info("Integration completed successfully!")
+    return(object@meta.data[, "seurat_clusters"])
+  } else {
+    #-- UMAP
+    if (verbose) logger::log_info("[8/8] Running UMAP...")
+    object <- Seurat::RunUMAP(object, reduction = reduction, dims = dims_use, verbose = verbose)
+    if (verbose) logger::log_info("Integration completed successfully!")
+    return(object)
+  }
 }
 
 

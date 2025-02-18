@@ -4,7 +4,7 @@
 \alias{sn_standardize_gene_symbols}
 \title{Standardize gene symbols in a count matrix or Seurat object}
 \usage{
-sn_standardize_gene_symbols(x, species = "human", is_gene_id = FALSE)
+sn_standardize_gene_symbols(x, species = NULL, is_gene_id = FALSE)
 }
 \arguments{
 \item{x}{A count matrix or a \code{Seurat} object.}

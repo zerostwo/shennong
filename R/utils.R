@@ -11,28 +11,47 @@
 #'
 #' @examples
 #' \dontrun{
-#' block_genes <- g_block_genes(c("ribo", "mito"))
+#' block_genes <- sn_get_signatures(c("mito", "ribo", "tcr", "immunoglobulins", "pseudogenes", "noncoding"))
 #' }
-g_block_genes <- function(
-    genesets = c(
-      "tcr", "immunoglobulins", "ribo", "mito",
-      "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
-    )) {
+#' @export
+sn_get_signatures <- function(
+    species = "human",
+    category = NULL) {
+  # TODO: Add simplify arg
   rlang::check_installed(c("SignatuR", "HGNChelper"))
+  rlang::arg_match(arg = species, values = c("human", "mouse"))
+  # rlang::arg_match(arg = category, values = c(
+  #   "tcr", "immunoglobulins", "ribo", "mito",
+  #   "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
+  # ))
 
-  gene_list <- list(
-    g1s = SignatuR::SignatuR$Hs$Programs$cellCycle.G1S,
-    g2m = SignatuR::SignatuR$SignatuR$Hs$Programs$cellCycle.G2M,
-    pseudogenes = SignatuR::SignatuR$Hs$Blocklists$Pseudogenes,
-    noncoding = SignatuR::SignatuR$Hs$Blocklists$`Non-coding`,
-    tcr = SignatuR::SignatuR$Hs$Compartments$TCR,
-    immunoglobulins = SignatuR::SignatuR$Hs$Compartments$Immunoglobulins,
-    ribo = SignatuR::SignatuR$Hs$Compartments$Ribo,
-    mito = SignatuR::SignatuR$Hs$Compartments$Mito,
-    heatshock = SignatuR::SignatuR$Hs$Programs$HeatShock
-  )
+  if (species == "human") {
+    gene_list <- list(
+      g1s = SignatuR::SignatuR$Hs$Programs$cellCycle.G1S,
+      g2m = SignatuR::SignatuR$Hs$Programs$cellCycle.G2M,
+      pseudogenes = SignatuR::SignatuR$Hs$Blocklists$Pseudogenes,
+      noncoding = SignatuR::SignatuR$Hs$Blocklists$`Non-coding`,
+      tcr = SignatuR::SignatuR$Hs$Compartments$TCR,
+      immunoglobulins = SignatuR::SignatuR$Hs$Compartments$Immunoglobulins,
+      ribo = SignatuR::SignatuR$Hs$Compartments$Ribo,
+      mito = SignatuR::SignatuR$Hs$Compartments$Mito,
+      heatshock = SignatuR::SignatuR$Hs$Programs$HeatShock
+    )
+  } else if (species == "mouse") {
+    gene_list <- list(
+      g1s = SignatuR::SignatuR$Mm$Programs$cellCycle.G1S,
+      g2m = SignatuR::SignatuR$Mm$Programs$cellCycle.G2M,
+      pseudogenes = SignatuR::SignatuR$Mm$Blocklists$Pseudogenes,
+      noncoding = SignatuR::SignatuR$Mm$Blocklists$`Non-coding`,
+      tcr = SignatuR::SignatuR$Mm$Compartments$TCR,
+      immunoglobulins = SignatuR::SignatuR$Mm$Compartments$Immunoglobulins,
+      ribo = SignatuR::SignatuR$Mm$Compartments$Ribo,
+      mito = SignatuR::SignatuR$Mm$Compartments$Mito,
+      heatshock = SignatuR::SignatuR$Mm$Programs$HeatShock
+    )
+  }
 
-  genes <- unlist(lapply(genesets, function(x) {
+  genes <- unlist(lapply(category, function(x) {
     if (!x %in% names(gene_list)) {
       warning("[g_block_genes] Unknown gene set: ", x)
       return(NULL)
@@ -40,7 +59,7 @@ g_block_genes <- function(
     SignatuR::GetSignature(gene_list[[x]]) |> unlist()
   }))
 
-  checked <- HGNChelper::checkGeneSymbols(genes, species = "human")
+  checked <- HGNChelper::checkGeneSymbols(genes, species = species)
   valid_genes <- checked$Suggested.Symbol[!is.na(checked$Suggested.Symbol)]
 
   if (length(valid_genes) < length(genes)) {
@@ -91,7 +110,7 @@ sn_check_file <- function(x, stop = TRUE) {
 
 #' @export
 sn_set_path <- function(path) {
-  path <- glue(path)
+  path <- glue::glue(path)
   if (!file.exists(path)) {
     dir.create(path, recursive = TRUE)
   }

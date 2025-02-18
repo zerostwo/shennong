@@ -5,33 +5,35 @@
 \title{Initialize a Seurat object with optional QC metrics}
 \usage{
 sn_initialize_seurat_object(
-  counts,
+  x,
   metadata = NULL,
   names_field = 1L,
   names_delim = "_",
+  project = "Shennong",
   min_cells = 0,
   min_features = 0,
-  project = "SeuratProject",
-  species = "human",
-  qc = TRUE
+  species = NULL,
+  standardize_gene_symbols = FALSE,
+  is_gene_id = FALSE,
+  ...
 )
 }
 \arguments{
-\item{counts}{A matrix, data.frame, or sparse matrix of counts.}
-
 \item{metadata}{Optional metadata (data.frame or similar) to add to the Seurat object.}
 
 \item{names_field}{Passed to \code{SeuratObject::CreateSeuratObject}, indicating how to parse cell names.}
 
 \item{names_delim}{Passed to \code{SeuratObject::CreateSeuratObject}, indicating the delimiter for cell names.}
 
+\item{project}{A project name for the Seurat object.}
+
 \item{min_cells}{Filter out genes expressed in fewer than \code{min_cells} cells.}
 
 \item{min_features}{Filter out cells with fewer than \code{min_features} genes.}
 
-\item{project}{A project name for the Seurat object.}
-
 \item{species}{Either "human" or "mouse" (case-sensitive). Affects QC metric patterns.}
+
+\item{counts}{A matrix, data.frame, or sparse matrix of counts.}
 
 \item{qc}{Whether to calculate mitochondrial, ribosomal, and hemoglobin gene percentages.}
 }
@@ -47,6 +49,6 @@ for these gene sets.
 \examples{
 \dontrun{
 # Minimal example:
-seurat_obj <- sn_initialize_seurat_object(counts = my_counts, project = "ExampleProject")
+seurat_obj <- sn_initialize_seurat_object(x = my_counts, project = "ExampleProject")
 }
 }

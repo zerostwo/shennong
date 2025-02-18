@@ -7,7 +7,7 @@
 sn_find_doublets(
   object,
   clusters = NULL,
-  donor = NULL,
+  group_by = NULL,
   dbr_sd = NULL,
   ncores = 8
 )
@@ -17,11 +17,11 @@ sn_find_doublets(
 
 \item{clusters}{Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.}
 
-\item{donor}{An optional vector of donor IDs (for multi-sample data).}
-
 \item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.}
 
 \item{ncores}{Number of cores to use (for parallel processing).}
+
+\item{donor}{An optional vector of donor IDs (for multi-sample data).}
 }
 \value{
 The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
@@ -32,6 +32,6 @@ it to a SingleCellExperiment and using the \code{scDblFinder} package.
 }
 \examples{
 \dontrun{
-seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, donor = NULL, dbr_sd = NULL, ncores = 4)
+seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, group_by = NULL, dbr_sd = NULL, ncores = 4)
 }
 }

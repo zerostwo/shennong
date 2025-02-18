@@ -1,0 +1,14 @@
+url: https://songqi.org/shennong
+
+authors:
+  Songqi Duan:
+    href: https://songqi.org
+
+destination: docs
+
+template:
+  bootstrap: 5
+  includes:
+    in_header:
+      <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
+

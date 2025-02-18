@@ -1,3 +1,20 @@
+#' @export
+sn_load_pbmc <- function(save_dir = "~/.shennong/data") {
+  if (!dir.exists(paths = save_dir)) {
+    dir.create(path = save_dir, recursive = TRUE)
+  }
+  save_file <- file.path(save_dir, "pbmc3k.qs")
+  if (!file.exists(save_file)) {
+    url <- "https://zenodo.org/records/14868137/files/filtered_feature_bc_matrix.h5"
+    counts <- sn_read(url)
+    seurat_obj <- sn_initialize_seurat_object(counts, species = "human")
+    qs::qsave(seurat_obj, save_file)
+  } else {
+    seurat_obj <- sn_read(save_file)
+  }
+  return(seurat_obj)
+}
+
 #' Pan-Immune CellTypist Metadata
 #'
 #' This dataset contains hierarchical immune cell type metadata from the Pan-Immune CellTypist atlas.

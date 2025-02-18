@@ -1,3 +1,35 @@
+#' Score Cell Cycle Phases
+#'
+#' This function scores the cell cycle phase of single-cell RNA-seq data using S and G2M phase marker genes.
+#'
+#' @param object A Seurat object containing single-cell RNA-seq data.
+#' @param species (Optional) A character string indicating the species (e.g., "human" or "mouse").
+#'                If NULL, the function will attempt to retrieve species information from `Seurat::Misc(object)`.
+#'
+#' @return A Seurat object with cell cycle scores added, including:
+#'         - `S.Score`: Score for the S phase
+#'         - `G2M.Score`: Score for the G2M phase
+#'         - `Phase`: Assigned cell cycle phase
+#'         - `CC.Difference`: Difference between S and G2M scores
+#'
+#' @export
+sn_score_cell_cycle <- function(object, species = NULL) {
+  # Attempt to retrieve species if not provided
+  species <- sn_get_species(object = object, species = species)
+
+  # Retrieve S-phase and G2M-phase markers
+  s_features <- sn_get_signatures(species = species, category = "g1s")
+  g2m_features <- sn_get_signatures(species = species, category = "g2m")
+
+  # Perform cell cycle scoring
+  object <- Seurat::CellCycleScoring(object, s.features = s_features, g2m.features = g2m_features)
+
+  # Compute cell cycle difference
+  object$CC.Difference <- object$S.Score - object$G2M.Score
+
+  return(object)
+}
+
 #' Initialize a Seurat object with optional QC metrics
 #'
 #' This function creates a Seurat object from counts (and optional metadata),
@@ -19,21 +51,28 @@
 #' @examples
 #' \dontrun{
 #' # Minimal example:
-#' seurat_obj <- sn_initialize_seurat_object(counts = my_counts, project = "ExampleProject")
+#' seurat_obj <- sn_initialize_seurat_object(x = my_counts, project = "ExampleProject")
 #' }
 #' @export
 sn_initialize_seurat_object <- function(
-    counts,
+    x,
     metadata = NULL,
     names_field = 1L,
     names_delim = "_",
+    project = "Shennong",
     min_cells = 0,
     min_features = 0,
-    project = "SeuratProject",
-    species = "human",
-    qc = TRUE) {
+    species = NULL,
+    standardize_gene_symbols = FALSE,
+    is_gene_id = FALSE, ...) {
   # -- Logging
   logger::log_info(glue::glue("Initializing Seurat object for project: {project}"))
+
+  if (inherits(x, what = c("Matrix", "data.frame"))) {
+    counts <- x
+  } else {
+    counts <- sn_read(path = x)
+  }
 
   # -- Create Seurat Object
   seurat_obj <- SeuratObject::CreateSeuratObject(
@@ -43,31 +82,40 @@ sn_initialize_seurat_object <- function(
     names.field  = names_field,
     names.delim  = names_delim,
     min.cells    = min_cells,
-    min.features = min_features
+    min.features = min_features,
+    ...
   )
+  # -- Add metadata fields
+  seurat_obj$study <- project
 
   # -- Calculate QC metrics if required
-  if (qc) {
-    logger::log_info(glue::glue("Running QC metrics for {species} ..."))
+  if (!is.null(species)) {
+    Seurat::Misc(object = seurat_obj, slot = "species") <- species
 
+    if (standardize_gene_symbols) {
+      seurat_obj <- seurat_obj |>
+        sn_standardize_gene_symbols(species = species, is_gene_id = is_gene_id)
+    }
+
+    logger::log_info(glue::glue("Running QC metrics for {species} ..."))
+    mt_featuers <- sn_get_signatures(species = species, category = "mito")
+    mt_featuers <- mt_featuers[mt_featuers %in% rownames(x = seurat_obj)]
+    ribo_features <- sn_get_signatures(species = species, category = "ribo")
+    ribo_features <- ribo_features[ribo_features %in% rownames(x = seurat_obj)]
     if (species == "human") {
       seurat_obj <- seurat_obj |>
-        Seurat::PercentageFeatureSet(pattern = "^MT-", col.name = "percent.mt") |>
-        Seurat::PercentageFeatureSet(pattern = "^RPS|^RPL", col.name = "percent.ribo") |>
+        Seurat::PercentageFeatureSet(features = mt_featuers, col.name = "percent.mt") |>
+        Seurat::PercentageFeatureSet(features = ribo_features, col.name = "percent.ribo") |>
         Seurat::PercentageFeatureSet(pattern = "^HB[^(P)]", col.name = "percent.hb")
     } else if (species == "mouse") {
       seurat_obj <- seurat_obj |>
-        Seurat::PercentageFeatureSet(pattern = "^mt-", col.name = "percent.mt") |>
-        Seurat::PercentageFeatureSet(pattern = "^Rps|^Rpl", col.name = "percent.ribo") |>
+        Seurat::PercentageFeatureSet(features = mt_featuers, col.name = "percent.mt") |>
+        Seurat::PercentageFeatureSet(features = ribo_features, col.name = "percent.ribo") |>
         Seurat::PercentageFeatureSet(pattern = "^Hb[^(p)]", col.name = "percent.hb")
     } else {
       logger::log_warn("Unsupported species for QC metrics. Skipping QC calculation.")
     }
   }
-
-  # -- Add metadata fields
-  seurat_obj$study <- project
-  seurat_obj@misc$species <- species
 
   logger::log_info("Seurat object initialization complete.")
   return(seurat_obj)
@@ -161,7 +209,7 @@ sn_normalize_data <- function(
 #' @export
 sn_standardize_gene_symbols <- function(
     x,
-    species = "human",
+    species = NULL,
     is_gene_id = FALSE) {
   # -- Check required packages
   rlang::check_installed("HGNChelper", reason = "to check or correct gene symbols.")
@@ -173,6 +221,7 @@ sn_standardize_gene_symbols <- function(
   # -- Extract counts
   if (inherits(x, "Seurat")) {
     logger::log_info("Detected Seurat object. Extracting counts from RNA assay...")
+    species <- sn_get_species(object = x, species = species)
     counts <- SeuratObject::LayerData(object = x, layer = "counts")
   } else {
     counts <- x

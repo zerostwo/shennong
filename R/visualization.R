@@ -1,14 +1,18 @@
-# Cell compostition: Barplot, boxplot
 #' @export
-sn_plot_barplot <- function(x, group_by, variable) {
-  metadata <- x@meta.data
-  adata <- table(metadata[[group_by]], metadata[[variable]]) |>
-    prop.table(margin = 1) |>
-    as.data.frame() |>
-    mutate(Freq = Freq * 100)
-  colnames(x = adata) <- c(group_by, variable, "percentage")
+sn_plot_boxplot <- function(data, x, y, sort = FALSE) {
+  ggplot(data = data, mapping = aes(x = {{ x }}, y = {{ y }})) +
+    geom_boxplot(
+      outlier.shape = NA,
+      staplewidth = 0.2,
+      fatten = 1
+    )
+}
 
-  adata |>
-    ggplot(mapping = aes(x = .data[[group_by]], y = percentage, fill = .data[[variable]])) +
+#' @export
+sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
+  ggplot(
+    data = data,
+    mapping = aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
+  ) +
     geom_col()
 }

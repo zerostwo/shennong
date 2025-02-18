@@ -29,7 +29,7 @@ sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
   counts <- SeuratObject::LayerData(object = x, layer = "counts")
 
   # Compute the number of cells expressing each gene
-  gene_counts <- rowSums(x = counts > 0)
+  gene_counts <- Matrix::rowSums(x = counts > 0)
 
   # Compute the distribution of gene expression across cells
   gene_distribution <- table(factor(x = gene_counts, levels = 0:max(gene_counts)))
@@ -158,7 +158,7 @@ sn_filter_cells <- function(
 }
 
 # Internal helper function
-.sn_filter_cells_one <- function(x, feature, group_by, method, n) {
+.sn_filter_cells_one <- function(x, feature, group_by = NULL, method = "mad", n = 5) {
   # Input checks
   if (!feature %in% colnames(x[[]])) {
     stop("Feature ", feature, " not found in metadata")
@@ -170,12 +170,17 @@ sn_filter_cells <- function(
   }
 
   # Calculate QC thresholds
-  if (is.null(group_by)) {
+  if (is.null(x = group_by)) {
     m <- median(feature_data)
     e <- mad(feature_data)
     l <- max(m - n * e, 0)
     u <- m + n * e
     qc_df <- data.frame(median = m, mad = e, l = l, u = u)
+    meta <- x[[]]
+    x[[paste0(feature, "_qc")]] <- ifelse(
+      meta[[feature]] >= l & meta[[feature]] < u,
+      "Passed", "Failed"
+    )
   } else {
     if (!group_by %in% colnames(x[[]])) {
       stop("Grouping variable ", group_by, " not found in metadata")
@@ -198,7 +203,7 @@ sn_filter_cells <- function(
       tibble::column_to_rownames("barcode")
 
     x[[paste0(feature, "_qc")]] <- ifelse(
-      meta[[feature]] > meta$l & meta[[feature]] < meta$u,
+      meta[[feature]] >= meta$l & meta[[feature]] < meta$u,
       "Passed", "Failed"
     )
   }
@@ -232,8 +237,11 @@ sn_filter_cells <- function(
     base_plot <- base_plot +
       ggplot2::geom_errorbar(
         data = qc_info,
-        ggplot2::aes(ymin = l, ymax = u),
-        color = "red", width = 0.1
+        ggplot2::aes(
+          x = "All",
+          y = median, ymin = l, ymax = u
+        ),
+        color = "red", width = 0.1, inherit.aes = FALSE
       )
   }
 
@@ -258,13 +266,13 @@ sn_filter_cells <- function(
 #' @return The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
 #' @examples
 #' \dontrun{
-#' seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, donor = NULL, dbr_sd = NULL, ncores = 4)
+#' seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, group_by = NULL, dbr_sd = NULL, ncores = 4)
 #' }
 #' @export
 sn_find_doublets <- function(
     object,
     clusters = NULL,
-    donor = NULL,
+    group_by = NULL,
     dbr_sd = NULL,
     ncores = 8) {
   rlang::check_installed("scDblFinder", reason = "to run doublet detection.")
@@ -272,7 +280,7 @@ sn_find_doublets <- function(
   logger::log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
   sce <- Seurat::as.SingleCellExperiment(x = object)
 
-  if (is.null(donor)) {
+  if (is.null(group_by)) {
     logger::log_info("Running scDblFinder without donor grouping...")
     sce <- scDblFinder::scDblFinder(
       sce       = sce,
@@ -285,7 +293,7 @@ sn_find_doublets <- function(
     ))
     sce <- scDblFinder::scDblFinder(
       sce      = sce,
-      samples  = donor,
+      samples  = group_by,
       dbr.sd   = dbr_sd,
       BPPARAM  = BiocParallel::MulticoreParam(ncores)
     )
@@ -299,55 +307,59 @@ sn_find_doublets <- function(
   return(object)
 }
 
-sn_remove_ambient_contamination <- function(x, method = "", plot = TRUE, filter = TRUE) {
-
-}
-
+#' @export
 sn_remove_ambient_contamination <- function(
-    x, method = "", raw_counts, filtered_counts,
+    x, raw_path, method = "SoupX",
     force_accept = FALSE,
     contamination_range = c(0.01, 0.8)) {
-  # tod <- Seurat::Read10X(data.dir = raw_counts)
-  # toc <- Seurat::Read10X(data.dir = filtered_counts)
-  tod <- raw_counts
-  toc <- filtered_counts
-  # Generate SoupChannel Object for SoupX
-  sc <- SoupX::SoupChannel(
-    tod = tod,
-    toc = toc,
-    calcSoupProfile = FALSE
-  )
-
-  # Add extra meta data to the SoupChannel object
-  soupProf <- data.frame(
-    row.names = rownames(x = toc),
-    est = rowSums(x = toc) / sum(toc),
-    counts = rowSums(x = toc)
-  )
-  sc <- SoupX::setSoupProfile(sc, soupProf)
-  # Set cluster information in SoupChannel
-  soupx_groups <- toc |>
-    sn_initialize_seurat_object() |>
-    sn_quick_cluster(
-      return_cluster = TRUE,
-      pipeline = "sct",
-      resolution = 2
+  if (method == "SoupX") {
+    # tod <- Seurat::Read10X(data.dir = raw_counts)
+    # toc <- Seurat::Read10X(data.dir = filtered_counts)
+    # Generate SoupChannel Object for SoupX
+    tod <- sn_read(path = raw_path)
+    if (inherits(x, what = c("Matrix", "data.frame"))) {
+      toc <- x
+    } else if (inherits(x, what = c("Seurat"))) {
+      toc <- LayerData(object = x, layer = "counts")
+    } else if (is.character(x)) {
+      toc <- sn_read(path = x)
+    }
+    sc <- SoupX::SoupChannel(
+      tod = tod,
+      toc = toc,
+      calcSoupProfile = FALSE
     )
-  sc <- SoupX::setClusters(sc, soupx_groups)
 
-  # Estimate contamination fraction
-  sc <- SoupX::autoEstCont(
-    sc,
-    doPlot = FALSE,
-    forceAccept = force_accept,
-    contaminationRange = contamination_range
-  )
-  # Infer corrected table of counts and rount to integer
-  out <- SoupX::adjustCounts(sc, roundToInt = TRUE)
-  # Print information
-  tod_sum <- sum(rowSums(x = tod))
-  toc_sum <- sum(rowSums(x = toc))
-  out_sum <- sum(rowSums(x = out))
-  print(c(tod_sum, toc_sum, out_sum))
+    # Add extra meta data to the SoupChannel object
+    soupProf <- data.frame(
+      row.names = rownames(x = toc),
+      est = Matrix::rowSums(x = toc) / sum(toc),
+      counts = Matrix::rowSums(x = toc)
+    )
+    sc <- SoupX::setSoupProfile(sc, soupProf)
+    # Set cluster information in SoupChannel
+    soupx_groups <- toc |>
+      sn_initialize_seurat_object() |>
+      sn_run_cluster(
+        return_cluster = TRUE,
+        resolution = 2, verbose = FALSE, block_genes = NULL
+      )
+    sc <- SoupX::setClusters(sc, soupx_groups)
+
+    # Estimate contamination fraction
+    sc <- SoupX::autoEstCont(
+      sc,
+      doPlot = FALSE,
+      forceAccept = force_accept,
+      contaminationRange = contamination_range
+    )
+    # Infer corrected table of counts and rount to integer
+    out <- SoupX::adjustCounts(sc, roundToInt = TRUE)
+    # Print information
+    tod_sum <- sum(Matrix::rowSums(x = tod))
+    toc_sum <- sum(Matrix::rowSums(x = toc))
+    out_sum <- sum(Matrix::rowSums(x = out))
+    print(c(tod_sum, toc_sum, out_sum))
+  }
   return(out)
 }

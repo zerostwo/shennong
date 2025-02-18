@@ -12,7 +12,8 @@ sn_quick_cluster(
   resolution = 0.8,
   dims = 1:30,
   return_cluster = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  species = NULL
 )
 }
 \arguments{
