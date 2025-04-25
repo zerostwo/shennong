@@ -119,13 +119,13 @@ sn_enrich <- function(
 
   # Save the results as an RDS file
   if (!is.null(x = outdir)) {
-    outdir <- muf_set_path(path = outdir)
+    outdir <- sn_set_path(path = outdir)
     if (!is.null(x = prefix)) {
       prefix <- paste0(prefix, ".")
     }
     file <- glue("{outdir}/{prefix}enrichment.{database}.rds")
     saveRDS(object = results, file = file)
-    # muf_write_xlsx(
+    # sn_write_xlsx(
     #   x = results@compareClusterResult,
     #   filename = glue("{outdir}/{prefix}enrichment.{database}.xlsx"),
     #   sheet_names = databases

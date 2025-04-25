@@ -23,7 +23,6 @@
 #' \dontrun{
 #' seurat_obj <- sn_quick_cluster(seurat_obj, pipeline = "standard", resolution = 0.8)
 #' }
-#' @export
 sn_quick_cluster <- function(object,
                              pipeline = "standard",
                              nfeatures = 3000,
@@ -115,8 +114,9 @@ sn_run_cluster <- function(object,
                            nfeatures = 3000,
                            vars_to_regress = NULL,
                            resolution = 0.8,
-                           block_genes = c("ribo", "mito", "tcr", "immunoglobulins", "noncoding", "pseudogenes"),
+                           block_genes = c("heatshock","ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
+                           group_by_vars = NULL,
                            npcs = 50,
                            dims_use = 1:20,
                            species = NULL,
@@ -231,9 +231,10 @@ sn_run_cluster <- function(object,
   } else {
     #-- Harmony
     if (verbose) logger::log_info("[6/8] Running Harmony integration...")
+    group_by_vars <- group_by_vars %||% batch
     object <- harmony::RunHarmony(
       object        = object,
-      group.by.vars = batch,
+      group.by.vars = group_by_vars,
       theta         = theta,
       reduction.use = "pca",
       verbose       = verbose

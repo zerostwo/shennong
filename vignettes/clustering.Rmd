@@ -1,5 +1,8 @@
 ---
 title: "clustering"
+author: 
+- name: Songqi Duan
+  email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{clustering}
@@ -10,7 +13,11 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6
 )
 ```
 
@@ -25,7 +32,7 @@ counts <- sn_read("https://zenodo.org/records/14868137/files/filtered_feature_bc
 
 ```{r}
 ambient_counts <- sn_remove_ambient_contamination(
-  x = counts, 
+  x = counts,
   raw_path = "https://zenodo.org/records/14868137/files/raw_feature_bc_matrix.h5"
 )
 ```
@@ -35,7 +42,7 @@ seurat_obj <- sn_initialize_seurat_object(x = ambient_counts, species = "human")
 ```
 
 ```{r}
-seurat_obj <- sn_filter_cells(seurat_obj, features =c("nFeature_RNA","nCount_RNA","percent.mt"))
+seurat_obj <- sn_filter_cells(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"))
 ```
 
 ```{r}
@@ -48,12 +55,4 @@ seurat_obj <- sn_run_cluster(object = seurat_obj, resolution = 1)
 
 ```{r}
 DimPlot(seurat_obj, group.by = "seurat_clusters", label = TRUE) + NoLegend()
-```
-
-```{r}
-seurat_obj <- sn_run_celltypist(seurat_obj, mode="prob_match",over_clustering = "seurat_clusters",model = "Immune_All_Low.pkl")
-```
-
-```{r}
-DimPlot(seurat_obj, group.by = "Immune_All_Low_majority_voting", label = TRUE) + NoLegend()
 ```

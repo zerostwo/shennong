@@ -84,16 +84,17 @@ sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
 }
 
 #' @export
-sn_add_data_from_anndata <- function(object, umap_path = NULL, metadata_path = NULL) {
+sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = NULL, key = "umap") {
   if (!is_null(x = umap_path)) {
     umap <- read.csv(file = umap_path, row.names = 1) |>
       Matrix::as.matrix()
     object <- object[, rownames(umap)]
-    object[["umap"]] <- Seurat::CreateDimReducObject(umap, key = "umap")
+    object[[key]] <- Seurat::CreateDimReducObject(umap, key = key)
   }
   if (!is_null(x = metadata_path)) {
     metadata <- read.csv(file = metadata_path, row.names = 1)
-    object@meta.data <- metadata
+    # object@meta.data <- metadata
+    object <- Seurat::AddMetaData(object = object, metadata = metadata)
   }
   object
 }

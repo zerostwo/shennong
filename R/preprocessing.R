@@ -68,7 +68,7 @@ sn_initialize_seurat_object <- function(
   # -- Logging
   logger::log_info(glue::glue("Initializing Seurat object for project: {project}"))
 
-  if (inherits(x, what = c("Matrix", "data.frame"))) {
+  if (inherits(x, what = c("Matrix", "data.frame", "MatrixDir"))) {
     counts <- x
   } else {
     counts <- sn_read(path = x)
