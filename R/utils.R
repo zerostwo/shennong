@@ -18,9 +18,10 @@ sn_get_signatures <- function(
     species = "human",
     category = NULL) {
   # TODO: Add simplify arg
-  rlang::check_installed(c("SignatuR", "HGNChelper"))
-  rlang::arg_match(arg = species, values = c("human", "mouse"))
-  # rlang::arg_match(arg = category, values = c(
+  check_installed(pkg = "HGNChelper")
+  check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
+  arg_match(arg = species, values = c("human", "mouse"))
+  # arg_match(arg = category, values = c(
   #   "tcr", "immunoglobulins", "ribo", "mito",
   #   "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
   # ))
@@ -110,9 +111,14 @@ sn_check_file <- function(x, stop = TRUE) {
 
 #' @export
 sn_set_path <- function(path) {
-  path <- glue::glue(path)
+  path <- glue(path)
   if (!file.exists(path)) {
     dir.create(path, recursive = TRUE)
   }
   return(path)
+}
+
+check_installed_github <- function(pkg, repo) {
+  check_installed(pkg = "pak")
+  check_installed(pkg, action = function(pkg, ...) pak::pak(github_repo))
 }

@@ -1,4 +1,3 @@
-#' @importFrom logger log_info
 #' @export
 sn_enrich <- function(
     x,

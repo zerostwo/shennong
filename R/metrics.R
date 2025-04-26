@@ -12,15 +12,14 @@
 #'
 #' @examples
 #' # Calculate Lisi score for a Seurat object
-#' sn_calculate_lisi(x = seurat_obj)
 #'
 #' @export
 sn_calculate_lisi <-
   function(x,
            reduction = "pca",
            label = "sample") {
-    rlang::check_installed("lisi", action = \(pkg, ...) pak::pak("immunogenomics/lisi"))
-    rlang::check_installed("SeuratObject")
+    check_installed_github(pkg = "lisi", repo = "immunogenomics/lisi")
+    check_installed("SeuratObject")
     lisi_score <- lisi::compute_lisi(
       X = SeuratObject::Embeddings(object = x, reduction = reduction),
       meta_data = x@meta.data,
@@ -44,8 +43,7 @@ sn_calculate_rogue <- function(x,
   cluster = NULL,
   sample = NULL,
   span = 0.9) {
-rlang::check_installed("ROGUE", action = \(pkg, ...) pak::pak("PaulingLiu/ROGUE"))
-
+check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
 if (!inherits(x, "Seurat")) {
 stop("Input x must be a Seurat object.")
 }

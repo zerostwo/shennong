@@ -27,8 +27,6 @@
 #' @param seed The seed to use for PySCENIC analysis (default is 717)
 #' @return A Seurat object with PySCENIC output
 #' @importFrom stringr str_split_fixed
-#' @importFrom tictoc tic toc
-#' @importFrom logger log_info
 #' @importFrom dplyr mutate select rename left_join count
 #' @export
 sn_run_pyscenic <-

@@ -34,20 +34,20 @@ sn_quick_cluster <- function(object,
                              species = NULL) {
   pipeline <- match.arg(pipeline, c("standard", "sctransform", "sct"))
 
-  if (verbose) logger::log_info(glue::glue("[sn_quick_cluster] Pipeline = {pipeline}"))
+  if (verbose) log_info(glue("[sn_quick_cluster] Pipeline = {pipeline}"))
 
   #-- Standard pipeline
   if (pipeline == "standard") {
-    if (verbose) logger::log_info("Running standard normalization + variable feature selection + scaling...")
+    if (verbose) log_info("Running standard normalization + variable feature selection + scaling...")
     object <- object |>
       Seurat::NormalizeData(verbose = verbose) |>
       Seurat::FindVariableFeatures(nfeatures = nfeatures, verbose = verbose) |>
       Seurat::ScaleData(vars.to.regress = vars_to_regress, verbose = verbose)
   } else {
     # sctransform pipeline
-    rlang::check_installed("glmGamPoi", reason = "for SCTransform workflow (suggested in Seurat).")
+    check_installed("glmGamPoi", reason = "for SCTransform workflow (suggested in Seurat).")
 
-    if (verbose) logger::log_info("Running SCTransform pipeline...")
+    if (verbose) log_info("Running SCTransform pipeline...")
     object <- Seurat::SCTransform(
       object              = object,
       variable.features.n = nfeatures,
@@ -58,7 +58,7 @@ sn_quick_cluster <- function(object,
   }
 
   #-- PCA / Neighbors / Clusters
-  if (verbose) logger::log_info("Running PCA, FindNeighbors, and FindClusters...")
+  if (verbose) log_info("Running PCA, FindNeighbors, and FindClusters...")
   object <- object |>
     Seurat::RunPCA(seed.use = 717, verbose = verbose) |>
     Seurat::FindNeighbors(dims = dims, verbose = verbose) |>
@@ -67,7 +67,7 @@ sn_quick_cluster <- function(object,
   if (return_cluster) {
     return(object@meta.data[, "seurat_clusters"])
   } else {
-    if (verbose) logger::log_info("Running UMAP for visualization...")
+    if (verbose) log_info("Running UMAP for visualization...")
     object <- object |>
       Seurat::RunUMAP(dims = dims, seed.use = 717, verbose = verbose)
 
@@ -122,9 +122,9 @@ sn_run_cluster <- function(object,
                            species = NULL,
                            return_cluster = FALSE,
                            verbose = TRUE) {
-  rlang::check_installed("Seurat")
-  rlang::check_installed("HGNChelper")
-  rlang::check_installed("harmony")
+  check_installed("Seurat")
+  check_installed("HGNChelper")
+  check_installed("harmony")
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
@@ -132,9 +132,9 @@ sn_run_cluster <- function(object,
 
   if (!is.null(x = batch)) {
     if (!(batch %in% colnames(object@meta.data))) {
-      stop(glue::glue("Batch variable '{batch}' not found in metadata."))
+      stop(glue("Batch variable '{batch}' not found in metadata."))
     }
-    if (verbose) logger::log_info(glue::glue("[sn_quick_integration] Starting integration for batch='{batch}'..."))
+    if (verbose) log_info(glue("[sn_quick_integration] Starting integration for batch='{batch}'..."))
   }
 
 
@@ -145,12 +145,12 @@ sn_run_cluster <- function(object,
 
   if (!is.null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
-    if (verbose) logger::log_info("Processing block genes...")
+    if (verbose) log_info("Processing block genes...")
 
     if (is.character(block_genes) && all(block_genes %in% predefined_genesets)) {
       block_genes <- sn_get_signatures(species = species, category = block_genes)
       if (verbose) {
-        logger::log_info(glue::glue("  Loaded {length(block_genes)} blocked genes from built-in sets."))
+        log_info(glue("  Loaded {length(block_genes)} blocked genes from built-in sets."))
       }
     } else {
       checked <- HGNChelper::checkGeneSymbols(block_genes, species = species)
@@ -158,26 +158,26 @@ sn_run_cluster <- function(object,
       invalid <- setdiff(block_genes, valid_genes)
 
       if (length(invalid) > 0) {
-        logger::log_warn(glue::glue(
+        log_warn(glue(
           "Removed {length(invalid)} invalid genes from block list (e.g. {paste(head(invalid, 3), collapse=', ')})."
         ))
       }
       block_genes <- unique(valid_genes)
-      if (verbose) logger::log_info(glue::glue("  Using {length(block_genes)} custom block genes."))
+      if (verbose) log_info(glue("  Using {length(block_genes)} custom block genes."))
     }
   }
   object <- Seurat::NormalizeData(object = object, verbose = verbose)
 
   if (!is.null(species)) {
-    if (verbose) logger::log_info("[1/8] Cell cycle scoring...")
+    if (verbose) log_info("[1/8] Cell cycle scoring...")
     object <- sn_score_cell_cycle(object = object, species = species)
   }
   #-- （Seurat v5）Split by batch & Join
   if (!is.null(x = batch)) {
-    if (verbose) logger::log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
+    if (verbose) log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
     object[["RNA"]] <- split(object[["RNA"]], f = object[[batch, drop = TRUE]])
   }
-  if (verbose) logger::log_info("[3/8] Selecting highly variable features...")
+  if (verbose) log_info("[3/8] Selecting highly variable features...")
   object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
 
   if (is.null(x = batch)) {
@@ -193,13 +193,13 @@ sn_run_cluster <- function(object,
     n_removed <- n_before - length(hvg)
 
     if (verbose) {
-      logger::log_info(glue::glue(
+      log_info(glue(
         "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
       ))
     }
 
     if (length(hvg) < nfeatures) {
-      logger::log_warn(glue::glue(
+      log_warn(glue(
         "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
         "Consider adjusting 'nfeatures' or 'block_genes'."
       ))
@@ -209,7 +209,7 @@ sn_run_cluster <- function(object,
   Seurat::VariableFeatures(object = object) <- hvg
 
   #-- Scaling
-  if (verbose) logger::log_info("[4/8] Scaling data...")
+  if (verbose) log_info("[4/8] Scaling data...")
   object <- Seurat::ScaleData(
     object          = object,
     vars.to.regress = vars_to_regress,
@@ -218,7 +218,7 @@ sn_run_cluster <- function(object,
   )
 
   #-- PCA
-  if (verbose) logger::log_info("[5/8] Running PCA...")
+  if (verbose) log_info("[5/8] Running PCA...")
   object <- Seurat::RunPCA(
     object,
     npcs     = npcs,
@@ -230,7 +230,7 @@ sn_run_cluster <- function(object,
     reduction <- "pca"
   } else {
     #-- Harmony
-    if (verbose) logger::log_info("[6/8] Running Harmony integration...")
+    if (verbose) log_info("[6/8] Running Harmony integration...")
     group_by_vars <- group_by_vars %||% batch
     object <- harmony::RunHarmony(
       object        = object,
@@ -242,18 +242,18 @@ sn_run_cluster <- function(object,
     reduction <- "harmony"
   }
 
-  if (verbose) logger::log_info("[7/8] Clustering with integrated embeddings...")
+  if (verbose) log_info("[7/8] Clustering with integrated embeddings...")
   object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims_use, verbose = verbose)
   object <- Seurat::FindClusters(object, resolution = resolution, verbose = verbose)
 
   if (return_cluster) {
-    if (verbose) logger::log_info("Integration completed successfully!")
+    if (verbose) log_info("Integration completed successfully!")
     return(object@meta.data[, "seurat_clusters"])
   } else {
     #-- UMAP
-    if (verbose) logger::log_info("[8/8] Running UMAP...")
+    if (verbose) log_info("[8/8] Running UMAP...")
     object <- Seurat::RunUMAP(object, reduction = reduction, dims = dims_use, verbose = verbose)
-    if (verbose) logger::log_info("Integration completed successfully!")
+    if (verbose) log_info("Integration completed successfully!")
     return(object)
   }
 }
@@ -296,7 +296,7 @@ sn_run_celltypist <- function(x,
                               xlsx = FALSE,
                               plot_results = FALSE,
                               quiet = FALSE) {
-  rlang::check_installed(c("Seurat", "data.table", "logger", "glue"),
+  check_installed(c("Seurat", "data.table", "logger", "glue"),
     reason = "to run CellTypist analysis."
   )
 
@@ -304,36 +304,36 @@ sn_run_celltypist <- function(x,
   celltypist <- celltypist %||% default_celltypist_path
   sn_check_file(celltypist)
 
-  logger::log_info("Starting CellTypist analysis with model: {model}")
+  log_info("Starting CellTypist analysis with model: {model}")
   tictoc::tic("Total CellTypist runtime")
 
   if (is.null(outdir)) {
     outdir <- tempfile("celltypist_")
     dir.create(outdir, recursive = TRUE)
-    logger::log_info("Using temporary output directory: {outdir}")
+    log_info("Using temporary output directory: {outdir}")
   } else {
     outdir <- sn_set_path(outdir)
-    logger::log_info("Using user-specified output directory: {outdir}")
+    log_info("Using user-specified output directory: {outdir}")
   }
 
   on.exit(
     {
       if (dir.exists(outdir) && grepl("^celltypist_", basename(outdir))) {
         unlink(outdir, recursive = TRUE)
-        logger::log_debug("Cleaned temporary directory: {outdir}")
+        log_debug("Cleaned temporary directory: {outdir}")
       }
     },
     add = TRUE
   )
 
   if (inherits(x, "Seurat")) {
-    logger::log_info("Converting Seurat object to CellTypist input format")
+    log_info("Converting Seurat object to CellTypist input format")
     input_data <- file.path(outdir, "counts.csv")
 
     counts <- tryCatch(
       SeuratObject::LayerData(object = x, layer = "counts"),
       error = function(e) {
-        logger::log_error("Failed to extract counts layer: {e$message}")
+        log_error("Failed to extract counts layer: {e$message}")
         stop("Counts layer extraction failed")
       }
     )
@@ -345,28 +345,28 @@ sn_run_celltypist <- function(x,
       row.names = TRUE,
       showProgress = FALSE
     )
-    logger::log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
+    log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
   } else {
     input_data <- x
-    logger::log_info("Using precomputed input matrix: {input_data}")
+    log_info("Using precomputed input matrix: {input_data}")
   }
 
   over_clustering_path <- NULL
 
   if (over_clustering != "auto" && over_clustering %in% colnames(x@meta.data)) {
-    logger::log_info("Using existing clustering column: {over_clustering}")
+    log_info("Using existing clustering column: {over_clustering}")
     over_clustering_path <- file.path(outdir, "over_clustering.txt")
     writeLines(
       as.character(x[[over_clustering, drop = TRUE]]),
       over_clustering_path
     )
   } else if (over_clustering == "auto") {
-    logger::log_warn("Automatic over-clustering not yet implemented")
+    log_warn("Automatic over-clustering not yet implemented")
   }
 
   model_name <- tools::file_path_sans_ext(basename(model))
-  prefix <- prefix %||% glue::glue("{model_name}.")
-  predicted_labels_path <- file.path(outdir, glue::glue("{prefix}predicted_labels.csv"))
+  prefix <- prefix %||% glue("{model_name}.")
+  predicted_labels_path <- file.path(outdir, glue("{prefix}predicted_labels.csv"))
 
   cmd_args <- c(
     "--indata", shQuote(input_data),
@@ -391,7 +391,7 @@ sn_run_celltypist <- function(x,
   if (plot_results) cmd_args <- c(cmd_args, "--plot-results")
   if (quiet) cmd_args <- c(cmd_args, "--quiet")
   if (majority_voting) cmd_args <- c(cmd_args, "--majority-voting")
-  logger::log_info("Executing CellTypist with command:\n{celltypist} {paste(cmd_args, collapse=' ')}")
+  log_info("Executing CellTypist with command:\n{celltypist} {paste(cmd_args, collapse=' ')}")
 
   exit_code <- system2(
     command = celltypist,
@@ -401,13 +401,13 @@ sn_run_celltypist <- function(x,
   )
 
   if (exit_code != 0) {
-    logger::log_error("CellTypist failed with exit code {exit_code}")
+    log_error("CellTypist failed with exit code {exit_code}")
     stop("CellTypist execution failed. Check logs for details.")
   }
-  logger::log_debug("CellTypist output written to {outdir}")
+  log_debug("CellTypist output written to {outdir}")
 
   if (!file.exists(predicted_labels_path)) {
-    logger::log_error("Prediction output missing: {predicted_labels_path}")
+    log_error("Prediction output missing: {predicted_labels_path}")
     stop("CellTypist did not generate expected output files")
   }
 
@@ -424,11 +424,11 @@ sn_run_celltypist <- function(x,
     )
   }
 
-  logger::log_info("Adding {ncol(predicted_labels)} metadata columns to Seurat object")
+  log_info("Adding {ncol(predicted_labels)} metadata columns to Seurat object")
   x <- SeuratObject::AddMetaData(x, metadata = predicted_labels)
 
   tictoc::toc()
-  logger::log_info("CellTypist analysis completed successfully")
+  log_info("CellTypist analysis completed successfully")
 
   return(x)
 }

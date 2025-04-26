@@ -41,7 +41,7 @@ sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
     path <- temp_file
   }
 
-  rlang::arg_match(arg = to, values = c(
+  arg_match(arg = to, values = c(
     "data.frame", "tbl_df", "tbl", "tibble", "arrow", "arrow_table", "data.table",
     "Seurat", "SeuratObject", "SingleCellExperiment", "sce", "InMemoryAnnData", "anndata", "BPCells"
   ))
@@ -49,7 +49,7 @@ sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
   if (input == "") {
     files <- list.files(path = path)
     if (all(any(grepl("matrix.mtx.gz$", files)) && any(grepl("barcodes.tsv.gz$", files)) && any(grepl("features.tsv.gz$", files)))) {
-      logger::log_info("Detected 10x format, reading with `Seurat::Read10X()`")
+      log_info("Detected 10x format, reading with `Seurat::Read10X()`")
       x <- Seurat::Read10X(data.dir = path)
     } else if (all(any(grepl("matrix.mtx$", files)) && any(grepl("barcodes.tsv$", files)) && any(grepl("features.tsv$", files)))) {
       x <- Seurat::ReadSTARsolo(data.dir = path, ...)
@@ -112,5 +112,5 @@ sn_write_h5ad <- function(object, path, mode = "w") {
 
   anndataR::write_h5ad(object = object, path = path, mode = mode)
 
-  rlang::inform(paste("Successfully wrote h5ad file to:", path))
+  inform(paste("Successfully wrote h5ad file to:", path))
 }

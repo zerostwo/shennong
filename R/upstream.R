@@ -45,7 +45,7 @@ run_fastp <- function(
     json_file <- file.path(outdir_fastp, paste0(sample_id, ".fastp.json"))
     html_file <- file.path(outdir_fastp, paste0(sample_id, ".fastp.html"))
 
-    cmd <- glue::glue(
+    cmd <- glue(
       "{fastp_path} ",
       "--in1 {reads[1]} ",
       "--in2 {reads[2]} ",
@@ -63,7 +63,7 @@ run_fastp <- function(
     json_file <- file.path(outdir_fastp, paste0(sample_id, ".fastp.json"))
     html_file <- file.path(outdir_fastp, paste0(sample_id, ".fastp.html"))
 
-    cmd <- glue::glue(
+    cmd <- glue(
       "{fastp_path} ",
       "--in1 {reads[1]} ",
       "--out1 {output} ",
@@ -132,16 +132,16 @@ filter_rRNA <- function(
     dir.create(outdir, recursive = TRUE)
   }
 
-  summary_file <- file.path(outdir, glue::glue("{sample_id}_rRNA_summary.txt"))
+  summary_file <- file.path(outdir, glue("{sample_id}_rRNA_summary.txt"))
 
   if (is_paired) {
-    out1 <- file.path(outdir, glue::glue("{sample_id}_1.fastq{suffix}"))
-    out2 <- file.path(outdir, glue::glue("{sample_id}_2.fastq{suffix}"))
-    out_bam <- file.path(outdir, glue::glue("{sample_id}_rRNA_sort.bam"))
+    out1 <- file.path(outdir, glue("{sample_id}_1.fastq{suffix}"))
+    out2 <- file.path(outdir, glue("{sample_id}_2.fastq{suffix}"))
+    out_bam <- file.path(outdir, glue("{sample_id}_rRNA_sort.bam"))
 
-    tmp_prefix <- file.path(outdir, glue::glue("{sample_id}_fastq"))
+    tmp_prefix <- file.path(outdir, glue("{sample_id}_fastq"))
 
-    cmd <- glue::glue(
+    cmd <- glue(
       "{hisat2_path} ",
       "--summary-file {summary_file} ",
       "--no-spliced-alignment --no-softclip --norc --no-unal ",
@@ -156,10 +156,10 @@ filter_rRNA <- function(
 
     out_files <- c(out1, out2, summary_file, out_bam)
   } else {
-    out <- file.path(outdir, glue::glue("{sample_id}.fastq{suffix}"))
-    out_bam <- file.path(outdir, glue::glue("{sample_id}_rRNA_sort.bam"))
+    out <- file.path(outdir, glue("{sample_id}.fastq{suffix}"))
+    out_bam <- file.path(outdir, glue("{sample_id}_rRNA_sort.bam"))
 
-    cmd <- glue::glue(
+    cmd <- glue(
       "{hisat2_path} ",
       "--summary-file {summary_file} ",
       "--no-spliced-alignment --no-softclip --norc --no-unal ",
@@ -229,11 +229,11 @@ hisat2_align <- function(
     dir.create(outdir, recursive = TRUE)
   }
 
-  bam_file <- file.path(outdir, glue::glue("{sample_id}.hisat2.bam"))
-  summary_file <- file.path(outdir, glue::glue("{sample_id}.hisat2.summary.txt"))
+  bam_file <- file.path(outdir, glue("{sample_id}.hisat2.bam"))
+  summary_file <- file.path(outdir, glue("{sample_id}.hisat2.summary.txt"))
 
   if (is_paired) {
-    cmd <- glue::glue(
+    cmd <- glue(
       "{hisat2_path} ",
       "--summary-file {summary_file} ",
       "-p {ncores} --dta {extra_args} ",
@@ -242,7 +242,7 @@ hisat2_align <- function(
       "{samtools_path} view -@ {ncores} -hbS - > {bam_file}"
     )
   } else {
-    cmd <- glue::glue(
+    cmd <- glue(
       "{hisat2_path} ",
       "--summary-file {summary_file} ",
       "-p {ncores} --dta {extra_args} ",

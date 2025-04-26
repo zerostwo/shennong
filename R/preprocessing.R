@@ -66,7 +66,7 @@ sn_initialize_seurat_object <- function(
     standardize_gene_symbols = FALSE,
     is_gene_id = FALSE, ...) {
   # -- Logging
-  logger::log_info(glue::glue("Initializing Seurat object for project: {project}"))
+  log_info(glue("Initializing Seurat object for project: {project}"))
 
   if (inherits(x, what = c("Matrix", "data.frame", "MatrixDir"))) {
     counts <- x
@@ -97,7 +97,7 @@ sn_initialize_seurat_object <- function(
         sn_standardize_gene_symbols(species = species, is_gene_id = is_gene_id)
     }
 
-    logger::log_info(glue::glue("Running QC metrics for {species} ..."))
+    log_info(glue("Running QC metrics for {species} ..."))
     mt_featuers <- sn_get_signatures(species = species, category = "mito")
     mt_featuers <- mt_featuers[mt_featuers %in% rownames(x = seurat_obj)]
     ribo_features <- sn_get_signatures(species = species, category = "ribo")
@@ -113,11 +113,11 @@ sn_initialize_seurat_object <- function(
         Seurat::PercentageFeatureSet(features = ribo_features, col.name = "percent.ribo") |>
         Seurat::PercentageFeatureSet(pattern = "^Hb[^(p)]", col.name = "percent.hb")
     } else {
-      logger::log_warn("Unsupported species for QC metrics. Skipping QC calculation.")
+      log_warn("Unsupported species for QC metrics. Skipping QC calculation.")
     }
   }
 
-  logger::log_info("Seurat object initialization complete.")
+  log_info("Seurat object initialization complete.")
   return(seurat_obj)
 }
 
@@ -141,14 +141,14 @@ sn_normalize_data <- function(
     method = "scran",
     clusters = NULL) {
   if (method == "scran") {
-    rlang::check_installed("scran", reason = "to perform scran normalization.")
-    rlang::check_installed("SingleCellExperiment")
+    check_installed("scran", reason = "to perform scran normalization.")
+    check_installed("SingleCellExperiment")
 
-    logger::log_info("Converting Seurat object to SingleCellExperiment for scran normalization...")
+    log_info("Converting Seurat object to SingleCellExperiment for scran normalization...")
     sce <- Seurat::as.SingleCellExperiment(x = object)
 
-    if (rlang::is_null(clusters)) {
-      logger::log_info("Using scran::quickCluster to assign clusters.")
+    if (is_null(clusters)) {
+      log_info("Using scran::quickCluster to assign clusters.")
       clusters <- scran::quickCluster(
         x         = sce,
         use.ranks = FALSE,
@@ -156,16 +156,16 @@ sn_normalize_data <- function(
       )
     }
 
-    logger::log_info("Computing size factors via scran::computeSumFactors...")
+    log_info("Computing size factors via scran::computeSumFactors...")
     sce <- scran::computeSumFactors(sce, clusters = clusters, min.mean = 0.1)
     size_factors <- SingleCellExperiment::sizeFactors(object = sce)
 
-    # logger::log_info(glue::glue("Size factor summary: {summary(size_factors)}"))
-    logger::log_info(glue::glue("Size factor summary: {paste(round(summary(size_factors), 3), collapse = ', ')}"))
+    # log_info(glue("Size factor summary: {summary(size_factors)}"))
+    log_info(glue("Size factor summary: {paste(round(summary(size_factors), 3), collapse = ', ')}"))
     object$size.factor <- size_factors
 
     # -- Apply normalization
-    logger::log_info("Applying log-normalization...")
+    log_info("Applying log-normalization...")
     counts <- SeuratObject::LayerData(object = object, layer = "counts")
     normalized_counts <- sweep(counts, 2, size_factors, "/")
     object$total_counts_normalized <- Matrix::colSums(x = normalized_counts)
@@ -176,7 +176,7 @@ sn_normalize_data <- function(
       layer  = "data"
     ) <- as(log(normalized_counts + 1), "CsparseMatrix")
 
-    logger::log_info("scran normalization complete.")
+    log_info("scran normalization complete.")
     return(object)
   } else {
     stop("Currently only 'scran' method is supported in sn_normalize_data().")
@@ -212,15 +212,15 @@ sn_standardize_gene_symbols <- function(
     species = NULL,
     is_gene_id = FALSE) {
   # -- Check required packages
-  rlang::check_installed("HGNChelper", reason = "to check or correct gene symbols.")
-  rlang::check_installed("dplyr")
-  rlang::check_installed("readr")
+  check_installed("HGNChelper", reason = "to check or correct gene symbols.")
+  check_installed("dplyr")
+  check_installed("readr")
 
-  logger::log_info("Starting standardization of gene symbols...")
+  log_info("Starting standardization of gene symbols...")
 
   # -- Extract counts
   if (inherits(x, "Seurat")) {
-    logger::log_info("Detected Seurat object. Extracting counts from RNA assay...")
+    log_info("Detected Seurat object. Extracting counts from RNA assay...")
     species <- sn_get_species(object = x, species = species)
     counts <- SeuratObject::LayerData(object = x, layer = "counts")
   } else {
@@ -235,7 +235,7 @@ sn_standardize_gene_symbols <- function(
   # -- Convert gene IDs to symbols if requested
   if (is_gene_id) {
     gene_ids <- rownames(counts)
-    logger::log_info("Converting gene IDs to symbols...")
+    log_info("Converting gene IDs to symbols...")
 
     genes <- readr::read_csv("/mnt/reference_genomes/gencode/human/47/genes.csv")
     df <- dplyr::tibble(gene_id = gene_ids) |>
@@ -243,7 +243,7 @@ sn_standardize_gene_symbols <- function(
 
     keep_genes <- !is.na(df$gene_name)
     if (sum(keep_genes) < length(keep_genes)) {
-      logger::log_warn("Some gene IDs did not match. They will be removed.")
+      log_warn("Some gene IDs did not match. They will be removed.")
     }
 
     counts <- counts[keep_genes, , drop = FALSE]
@@ -252,7 +252,7 @@ sn_standardize_gene_symbols <- function(
   }
 
   # -- Check and correct gene symbols
-  logger::log_info(glue::glue("Using HGNChelper to check gene symbols for species: {species}"))
+  log_info(glue("Using HGNChelper to check gene symbols for species: {species}"))
   check_gene_symbols <- HGNChelper::checkGeneSymbols(
     x       = rownames(counts),
     species = species
@@ -275,7 +275,7 @@ sn_standardize_gene_symbols <- function(
   # -- Aggregate duplicates
   duplicated_genes <- rownames(counts)[duplicated(rownames(counts)) | duplicated(rownames(counts), fromLast = TRUE)]
   if (length(duplicated_genes) > 0) {
-    logger::log_info(glue::glue("Found {length(unique(duplicated_genes))} duplicated gene symbol(s). Aggregating..."))
+    log_info(glue("Found {length(unique(duplicated_genes))} duplicated gene symbol(s). Aggregating..."))
 
     duplicate_rows <- counts[duplicated_genes, , drop = FALSE]
     counts <- counts[!(rownames(counts) %in% duplicated_genes), , drop = FALSE]
@@ -290,7 +290,7 @@ sn_standardize_gene_symbols <- function(
     counts <- rbind(counts, aggregated_rows)
   }
 
-  logger::log_info("Gene symbol standardization complete.")
+  log_info("Gene symbol standardization complete.")
 
   # -- Return updated Seurat or matrix
   if (inherits(x, "Seurat")) {

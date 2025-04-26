@@ -275,20 +275,20 @@ sn_find_doublets <- function(
     group_by = NULL,
     dbr_sd = NULL,
     ncores = 8) {
-  rlang::check_installed("scDblFinder", reason = "to run doublet detection.")
+  check_installed("scDblFinder", reason = "to run doublet detection.")
 
-  logger::log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
+  log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
   sce <- Seurat::as.SingleCellExperiment(x = object)
 
   if (is.null(group_by)) {
-    logger::log_info("Running scDblFinder without donor grouping...")
+    log_info("Running scDblFinder without donor grouping...")
     sce <- scDblFinder::scDblFinder(
       sce       = sce,
       clusters  = clusters,
       dbr.sd    = dbr_sd
     )
   } else {
-    logger::log_info(glue::glue(
+    log_info(glue(
       "Running scDblFinder with donor grouping (parallel with {ncores} cores) ..."
     ))
     sce <- scDblFinder::scDblFinder(
@@ -303,7 +303,7 @@ sn_find_doublets <- function(
   object$scDblFinder.class <- sce$scDblFinder.class
   object$scDblFinder.score <- sce$scDblFinder.score
 
-  logger::log_info("Doublet detection complete.")
+  log_info("Doublet detection complete.")
   return(object)
 }
 
@@ -313,6 +313,7 @@ sn_remove_ambient_contamination <- function(
     force_accept = FALSE,
     contamination_range = c(0.01, 0.8)) {
   if (method == "SoupX") {
+    check_installed(pkg = "SoupX")
     # tod <- Seurat::Read10X(data.dir = raw_counts)
     # toc <- Seurat::Read10X(data.dir = filtered_counts)
     # Generate SoupChannel Object for SoupX

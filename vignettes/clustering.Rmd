@@ -24,6 +24,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(Shennong)
 library(tidyverse)
+library(Seurat)
 ```
 
 ```{r}
@@ -55,4 +56,8 @@ seurat_obj <- sn_run_cluster(object = seurat_obj, resolution = 1)
 
 ```{r}
 DimPlot(seurat_obj, group.by = "seurat_clusters", label = TRUE) + NoLegend()
+```
+
+```{r}
+sessioninfo::session_info()
 ```
