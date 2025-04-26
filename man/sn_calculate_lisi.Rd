@@ -21,6 +21,5 @@ This function calculates the Local Intrinsic Dimensionality-based Outlier score 
 }
 \examples{
 # Calculate Lisi score for a Seurat object
-sn_calculate_lisi(x = seurat_obj)
 
 }

@@ -12,15 +12,14 @@
 #' @return If `execute = TRUE`, returns (invisibly) the output file paths; otherwise, the command string.
 #' @export
 run_fastp <- function(
-  sample_id = NULL,
-  reads,
-  outdir = "./results",
-  ncores = 4,
-  execute = FALSE,
-  fastp_path = "/opt/fastp/0.24.0/bin/fastp",
-  overwrite = FALSE,
-  extra_args = ""
-) {
+    sample_id = NULL,
+    reads,
+    outdir = "./results",
+    ncores = 4,
+    execute = FALSE,
+    fastp_path = "/opt/fastp/0.24.0/bin/fastp",
+    overwrite = FALSE,
+    extra_args = "") {
   stopifnot(length(reads) %in% c(1, 2))
 
   is_paired <- length(reads) == 2
@@ -28,7 +27,7 @@ run_fastp <- function(
   suffix <- if (is_gzipped) ".gz" else ""
 
   # Auto sample_id if not provided
-  if (is.null(sample_id) || sample_id == "") {
+  if (is_null(sample_id) || sample_id == "") {
     sample_id <- sub("(_R[12])?(_[12])?\\.(fq|fastq)(\\.gz)?$", "", basename(reads[1]))
   }
 
@@ -108,23 +107,22 @@ run_fastp <- function(
 #' @return Filtered fastq files and summary file (or command string).
 #' @export
 filter_rRNA <- function(
-  sample_id = NULL,
-  reads,
-  rRNA_index = "/mnt/reference_genomes/gencode/mouse/M36/index/hisat2/rRNA/genome",
-  outdir = "./results/alignment/rRNA_dup",
-  ncores = 4,
-  hisat2_path = "/opt/hisat2/2.2.1/bin/hisat2",
-  samtools_path = "/opt/samtools/1.21/bin/samtools",
-  execute = FALSE,
-  overwrite = FALSE
-) {
+    sample_id = NULL,
+    reads,
+    rRNA_index = "/mnt/reference_genomes/gencode/mouse/M36/index/hisat2/rRNA/genome",
+    outdir = "./results/alignment/rRNA_dup",
+    ncores = 4,
+    hisat2_path = "/opt/hisat2/2.2.1/bin/hisat2",
+    samtools_path = "/opt/samtools/1.21/bin/samtools",
+    execute = FALSE,
+    overwrite = FALSE) {
   stopifnot(length(reads) %in% c(1, 2))
   is_paired <- length(reads) == 2
   is_gz <- grepl("\\.gz$", reads[1])
   suffix <- if (is_gz) ".gz" else ""
 
   # 自动推断 sample_id
-  if (is.null(sample_id) || sample_id == "") {
+  if (is_null(sample_id) || sample_id == "") {
     sample_id <- sub("(_R[12])?(_[12])?\\.(fq|fastq)(\\.gz)?$", "", basename(reads[1]))
   }
 
@@ -206,22 +204,21 @@ filter_rRNA <- function(
 #' @return BAM file and summary file path (or command string).
 #' @export
 hisat2_align <- function(
-  sample_id = NULL,
-  reads,
-  index_base = "/mnt/reference_genomes/gencode/mouse/M36/index/hisat2/GRCm39.MeRIP-seq/genome",
-  outdir = "./results/alignment/hisat2",
-  ncores = 8,
-  execute = FALSE,
-  overwrite = FALSE,
-  hisat2_path = "/opt/hisat2/2.2.1/bin/hisat2",
-  samtools_path = "/opt/samtools/1.21/bin/samtools",
-  extra_args = ""
-) {
+    sample_id = NULL,
+    reads,
+    index_base = "/mnt/reference_genomes/gencode/mouse/M36/index/hisat2/GRCm39.MeRIP-seq/genome",
+    outdir = "./results/alignment/hisat2",
+    ncores = 8,
+    execute = FALSE,
+    overwrite = FALSE,
+    hisat2_path = "/opt/hisat2/2.2.1/bin/hisat2",
+    samtools_path = "/opt/samtools/1.21/bin/samtools",
+    extra_args = "") {
   stopifnot(length(reads) %in% c(1, 2))
   is_paired <- length(reads) == 2
   is_gzipped <- grepl("\\.gz$", reads[1])
 
-  if (is.null(sample_id) || sample_id == "") {
+  if (is_null(sample_id) || sample_id == "") {
     sample_id <- sub("(_R[12])?(_[12])?\\.(fq|fastq)(\\.gz)?$", "", basename(reads[1]))
   }
 
@@ -269,4 +266,3 @@ hisat2_align <- function(
     return(as.character(cmd))
   }
 }
-

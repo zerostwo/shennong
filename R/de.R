@@ -13,11 +13,11 @@ sn_find_de <- function(
     de_logfc = 0.25,
     verbose = TRUE,
     ...) {
-  if (all(is.null(c(treatment, control, group_by)))) {
+  if (all(is_null(c(treatment, control, group_by)))) {
     stop("At least one of treatment, control, group_by must be provided.")
   }
 
-  if (is.null(treatment) && is.null(control) && !is.null(group_by)) {
+  if (is_null(treatment) && is_null(control) && !is_null(group_by)) {
     only_pos <- only_pos %||% TRUE
     adata <- Seurat::FindAllMarkers(
       object = object, assay = assay, features = features,
@@ -26,7 +26,7 @@ sn_find_de <- function(
     )
     return(adata)
   }
-  if (!(is.null(treatment) || is.null(control))) {
+  if (!(is_null(treatment) || is_null(control))) {
     only_pos <- only_pos %||% FALSE
     deg <- FindMarkers(
       object = seurat_obj,

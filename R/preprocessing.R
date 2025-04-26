@@ -89,7 +89,7 @@ sn_initialize_seurat_object <- function(
   seurat_obj$study <- project
 
   # -- Calculate QC metrics if required
-  if (!is.null(species)) {
+  if (!is_null(species)) {
     Seurat::Misc(object = seurat_obj, slot = "species") <- species
 
     if (standardize_gene_symbols) {
@@ -241,7 +241,7 @@ sn_standardize_gene_symbols <- function(
     df <- dplyr::tibble(gene_id = gene_ids) |>
       dplyr::left_join(genes, by = "gene_id")
 
-    keep_genes <- !is.na(df$gene_name)
+    keep_genes <- !is_na(df$gene_name)
     if (sum(keep_genes) < length(keep_genes)) {
       log_warn("Some gene IDs did not match. They will be removed.")
     }
@@ -267,7 +267,7 @@ sn_standardize_gene_symbols <- function(
     ))
 
   # -- Filter out NA suggested symbols
-  valid_idx <- !is.na(check_gene_symbols$Suggested.Symbol)
+  valid_idx <- !is_na(check_gene_symbols$Suggested.Symbol)
   counts <- counts[valid_idx, , drop = FALSE]
   genes <- check_gene_symbols$Suggested.Symbol[valid_idx]
   rownames(counts) <- genes

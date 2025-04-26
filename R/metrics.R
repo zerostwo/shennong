@@ -39,51 +39,52 @@ sn_calculate_lisi <-
 #'
 #' @return A data.frame of ROGUE score per cluster/sample or per cluster.
 #' @export
-sn_calculate_rogue <- function(x,
-  cluster = NULL,
-  sample = NULL,
-  span = 0.9) {
-check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
-if (!inherits(x, "Seurat")) {
-stop("Input x must be a Seurat object.")
-}
+sn_calculate_rogue <- function(
+    x,
+    cluster = NULL,
+    sample = NULL,
+    span = 0.9) {
+  check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
+  if (!inherits(x, "Seurat")) {
+    stop("Input x must be a Seurat object.")
+  }
 
-if (!"counts" %in% SeuratObject::LayerNames(x)) {
-stop("The 'counts' layer is not found in the Seurat object.")
-}
+  if (!"counts" %in% SeuratObject::LayerNames(x)) {
+    stop("The 'counts' layer is not found in the Seurat object.")
+  }
 
-counts <- SeuratObject::LayerData(x, layer = "counts")
-counts <- Matrix::as.matrix(counts)
-metadata <- x@meta.data
+  counts <- SeuratObject::LayerData(x, layer = "counts")
+  counts <- Matrix::as.matrix(counts)
+  metadata <- x@meta.data
 
-counts <- ROGUE::matr.filter(counts, min.cells = 10, min.genes = 10)
+  counts <- ROGUE::matr.filter(counts, min.cells = 10, min.genes = 10)
 
-message("Calculating entropy...")
-entropy <- ROGUE::SE_fun(counts)
+  message("Calculating entropy...")
+  entropy <- ROGUE::SE_fun(counts)
 
-message("Calculating ROGUE score...")
-rogue_result <- ROGUE::CalculateRogue(entropy, platform = "UMI")
+  message("Calculating ROGUE score...")
+  rogue_result <- ROGUE::CalculateRogue(entropy, platform = "UMI")
 
-if (!is.null(cluster) && !is.null(sample)) {
-if (!cluster %in% colnames(metadata)) {
-stop("Specified cluster column not found in metadata.")
-}
-if (!sample %in% colnames(metadata)) {
-stop("Specified sample column not found in metadata.")
-}
+  if (!is_null(cluster) && !is_null(sample)) {
+    if (!cluster %in% colnames(metadata)) {
+      stop("Specified cluster column not found in metadata.")
+    }
+    if (!sample %in% colnames(metadata)) {
+      stop("Specified sample column not found in metadata.")
+    }
 
-rogue_result <- ROGUE::rogue(
-counts,
-labels = as.character(metadata[[cluster]]),
-samples = as.character(metadata[[sample]]),
-platform = "UMI",
-span = span
-)
+    rogue_result <- ROGUE::rogue(
+      counts,
+      labels = as.character(metadata[[cluster]]),
+      samples = as.character(metadata[[sample]]),
+      platform = "UMI",
+      span = span
+    )
 
-rogue_result <- as.data.frame(rogue_result)
-rogue_result$cluster <- rownames(rogue_result)
-rownames(rogue_result) <- NULL
-}
+    rogue_result <- as.data.frame(rogue_result)
+    rogue_result$cluster <- rownames(rogue_result)
+    rownames(rogue_result) <- NULL
+  }
 
-return(rogue_result)
+  return(rogue_result)
 }

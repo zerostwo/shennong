@@ -170,7 +170,7 @@ sn_filter_cells <- function(
   }
 
   # Calculate QC thresholds
-  if (is.null(x = group_by)) {
+  if (is_null(x = group_by)) {
     m <- median(feature_data)
     e <- mad(feature_data)
     l <- max(m - n * e, 0)
@@ -219,14 +219,14 @@ sn_filter_cells <- function(
 # Plotting helper
 .create_qc_plot <- function(metadata, qc_info, feature, group_by) {
   base_plot <- ggplot2::ggplot(metadata, ggplot2::aes(
-    x = if (!is.null(group_by)) .data[[group_by]] else "All",
+    x = if (!is_null(group_by)) .data[[group_by]] else "All",
     y = .data[[feature]]
   )) +
     ggplot2::geom_violin(scale = "width", trim = TRUE) +
     ggplot2::theme_minimal() +
     ggplot2::labs(x = NULL, title = feature)
 
-  if (!is.null(group_by)) {
+  if (!is_null(group_by)) {
     base_plot <- base_plot +
       ggplot2::geom_errorbar(
         data = qc_info,
@@ -280,7 +280,7 @@ sn_find_doublets <- function(
   log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
   sce <- Seurat::as.SingleCellExperiment(x = object)
 
-  if (is.null(group_by)) {
+  if (is_null(group_by)) {
     log_info("Running scDblFinder without donor grouping...")
     sce <- scDblFinder::scDblFinder(
       sce       = sce,
@@ -322,7 +322,7 @@ sn_remove_ambient_contamination <- function(
       toc <- x
     } else if (inherits(x, what = c("Seurat"))) {
       toc <- LayerData(object = x, layer = "counts")
-    } else if (is.character(x)) {
+    } else if (is_character(x)) {
       toc <- sn_read(path = x)
     }
     sc <- SoupX::SoupChannel(

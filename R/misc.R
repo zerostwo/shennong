@@ -9,12 +9,12 @@
 #' @return A character string indicating the species.
 #' @export
 sn_get_species <- function(object, species = NULL) {
-  if (!is.null(species)) {
+  if (!is_null(species)) {
     return(species)
   }
 
   species <- Seurat::Misc(object, slot = "species")
-  if (is.null(species)) {
+  if (is_null(species)) {
     stop("Species information is required but not found in the Seurat object. Please provide a valid species name.")
   }
 

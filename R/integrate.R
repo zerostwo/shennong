@@ -114,7 +114,7 @@ sn_run_cluster <- function(object,
                            nfeatures = 3000,
                            vars_to_regress = NULL,
                            resolution = 0.8,
-                           block_genes = c("heatshock","ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
+                           block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
                            group_by_vars = NULL,
                            npcs = 50,
@@ -130,7 +130,7 @@ sn_run_cluster <- function(object,
     stop("Input must be a Seurat object.")
   }
 
-  if (!is.null(x = batch)) {
+  if (!is_null(x = batch)) {
     if (!(batch %in% colnames(object@meta.data))) {
       stop(glue("Batch variable '{batch}' not found in metadata."))
     }
@@ -143,18 +143,18 @@ sn_run_cluster <- function(object,
     "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
   )
 
-  if (!is.null(block_genes)) {
+  if (!is_null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
     if (verbose) log_info("Processing block genes...")
 
-    if (is.character(block_genes) && all(block_genes %in% predefined_genesets)) {
+    if (is_character(block_genes) && all(block_genes %in% predefined_genesets)) {
       block_genes <- sn_get_signatures(species = species, category = block_genes)
       if (verbose) {
         log_info(glue("  Loaded {length(block_genes)} blocked genes from built-in sets."))
       }
     } else {
       checked <- HGNChelper::checkGeneSymbols(block_genes, species = species)
-      valid_genes <- checked$Suggested.Symbol[!is.na(checked$Suggested.Symbol)]
+      valid_genes <- checked$Suggested.Symbol[!is_na(checked$Suggested.Symbol)]
       invalid <- setdiff(block_genes, valid_genes)
 
       if (length(invalid) > 0) {
@@ -168,26 +168,26 @@ sn_run_cluster <- function(object,
   }
   object <- Seurat::NormalizeData(object = object, verbose = verbose)
 
-  if (!is.null(species)) {
+  if (!is_null(species)) {
     if (verbose) log_info("[1/8] Cell cycle scoring...")
     object <- sn_score_cell_cycle(object = object, species = species)
   }
   #-- （Seurat v5）Split by batch & Join
-  if (!is.null(x = batch)) {
+  if (!is_null(x = batch)) {
     if (verbose) log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
     object[["RNA"]] <- split(object[["RNA"]], f = object[[batch, drop = TRUE]])
   }
   if (verbose) log_info("[3/8] Selecting highly variable features...")
   object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
 
-  if (is.null(x = batch)) {
+  if (is_null(x = batch)) {
     hvg <- Seurat::VariableFeatures(object = object)
   } else {
     hvg <- Seurat::SelectIntegrationFeatures5(object, nfeatures = nfeatures + 1000, verbose = verbose)
     object <- SeuratObject::JoinLayers(object)
   }
 
-  if (!is.null(block_genes)) {
+  if (!is_null(block_genes)) {
     n_before <- length(hvg)
     hvg <- setdiff(hvg, block_genes)
     n_removed <- n_before - length(hvg)
@@ -226,7 +226,7 @@ sn_run_cluster <- function(object,
     verbose  = verbose
   )
 
-  if (is.null(x = batch)) {
+  if (is_null(x = batch)) {
     reduction <- "pca"
   } else {
     #-- Harmony
@@ -307,7 +307,7 @@ sn_run_celltypist <- function(x,
   log_info("Starting CellTypist analysis with model: {model}")
   tictoc::tic("Total CellTypist runtime")
 
-  if (is.null(outdir)) {
+  if (is_null(outdir)) {
     outdir <- tempfile("celltypist_")
     dir.create(outdir, recursive = TRUE)
     log_info("Using temporary output directory: {outdir}")
@@ -377,13 +377,13 @@ sn_run_celltypist <- function(x,
   )
 
   add_arg <- function(args, flag, value, condition = TRUE) {
-    if (condition && !is.null(value)) c(args, flag, shQuote(value)) else args
+    if (condition && !is_null(value)) c(args, flag, shQuote(value)) else args
   }
 
-  cmd_args <- add_arg(cmd_args, "--gene-file", gene_file, !is.null(gene_file))
-  cmd_args <- add_arg(cmd_args, "--cell-file", cell_file, !is.null(cell_file))
+  cmd_args <- add_arg(cmd_args, "--gene-file", gene_file, !is_null(gene_file))
+  cmd_args <- add_arg(cmd_args, "--cell-file", cell_file, !is_null(cell_file))
   cmd_args <- add_arg(cmd_args, "--p-thres", p_thres, mode == "prob_match")
-  cmd_args <- add_arg(cmd_args, "--over-clustering", over_clustering_path, !is.null(over_clustering_path))
+  cmd_args <- add_arg(cmd_args, "--over-clustering", over_clustering_path, !is_null(over_clustering_path))
   cmd_args <- add_arg(cmd_args, "--min-prop", min_prop, majority_voting)
 
   if (transpose_input) cmd_args <- c(cmd_args, "--transpose-input")

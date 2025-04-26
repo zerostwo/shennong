@@ -44,7 +44,7 @@ sn_run_pyscenic <-
            ncores = 10,
            seed = 717) {
     check_installed("data.table")
-    if (is.null(pyscenic)) {
+    if (is_null(pyscenic)) {
       pyscenic <- default_pyscenic_path
       sn_check_file(pyscenic)
     }
@@ -79,7 +79,7 @@ sn_run_pyscenic <-
     tfs_target_fname <- file.path(outdir, "tfs_targer.tsv")
     auc_g_mtx_fname <- file.path(outdir, "auc_g_mtx.csv")
     # pre-processing
-    if (!is.null(features)) {
+    if (!is_null(features)) {
       # x <- x[features,]
       tfs <- read.table(tfs_fname)[, 1]
       filtered_tfs <- intersect(tfs, features)

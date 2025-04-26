@@ -21,10 +21,6 @@ sn_get_signatures <- function(
   check_installed(pkg = "HGNChelper")
   check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
   arg_match(arg = species, values = c("human", "mouse"))
-  # arg_match(arg = category, values = c(
-  #   "tcr", "immunoglobulins", "ribo", "mito",
-  #   "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
-  # ))
 
   if (species == "human") {
     gene_list <- list(
@@ -61,10 +57,10 @@ sn_get_signatures <- function(
   }))
 
   checked <- HGNChelper::checkGeneSymbols(genes, species = species)
-  valid_genes <- checked$Suggested.Symbol[!is.na(checked$Suggested.Symbol)]
+  valid_genes <- checked$Suggested.Symbol[!is_na(checked$Suggested.Symbol)]
 
   if (length(valid_genes) < length(genes)) {
-    invalid <- genes[is.na(checked$Suggested.Symbol)]
+    invalid <- genes[is_na(checked$Suggested.Symbol)]
     message(
       "[g_block_genes] Removed ", length(invalid),
       " invalid symbols (e.g. ", paste(head(invalid, 3), collapse = ", "), ")"

@@ -69,103 +69,103 @@ sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
 #' @importFrom RColorBrewer brewer.pal
 #' @export
 sn_plot_dim <- function(
-  object,
-  dims = c(1, 2),
-  cells = NULL,
-  cols = NULL,
-  pt_size = 2,
-  reduction = NULL,
-  group_by = NULL,
-  split_by = NULL,
-  shape_by = NULL,
-  order = NULL,
-  shuffle = FALSE,
-  seed = 717,
-  label = FALSE,
-  label_size = 8 * 0.36,
-  label_color = "black",
-  label_box = FALSE,
-  repel = FALSE,
-  cells_highlight = NULL,
-  cols_highlight = "#DE2D26",
-  sizes_highlight = 1,
-  na_value = "grey50",
-  ncol = NULL,
-  combine = TRUE,
-  raster = TRUE,
-  raster_dpi = c(512, 512),
-  show_legend = TRUE,
-  show_axis = TRUE,
-  show_border = TRUE,
-  title = NULL,
-  palette = "Paired",
-  ...) {
-p <- Seurat::DimPlot(
-  object = object,
-  dims = dims,
-  cells = cells,
-  cols = cols,
-  pt.size = pt_size,
-  reduction = reduction,
-  group.by = group_by,
-  split.by = split_by,
-  shape.by = shape_by,
-  order = order,
-  shuffle = shuffle,
-  seed = seed,
-  label = label,
-  label.size = label_size,
-  label.color = label_color,
-  label.box = label_box,
-  repel = repel,
-  cells.highlight = cells_highlight,
-  cols.highlight = cols_highlight,
-  sizes.highlight = sizes_highlight,
-  na.value = na_value,
-  ncol = ncol,
-  combine = combine,
-  raster = raster,
-  raster.dpi = raster_dpi,
-  ...
-)
-if (!show_legend) {
-  p <- p + Seurat::NoLegend()
-}
-reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
-object[["ident"]] <- Seurat::Idents(object = object)
-group_by <- group_by %||% "ident"
-n <- length(table(object[[group_by]]))
-x <- ifelse(reduction == "tsne", "tSNE 1",
-          paste0(stringr::str_to_upper(reduction), " 1")
-)
-y <- ifelse(reduction == "tsne", "tSNE 2",
-          paste0(stringr::str_to_upper(reduction), " 2")
-)
-p <- p +
-  catplot::theme_cat(aspect_ratio = 1) +
-  theme(legend.margin = margin(l = -8)) +
-  labs(
+    object,
+    dims = c(1, 2),
+    cells = NULL,
+    cols = NULL,
+    pt_size = 2,
+    reduction = NULL,
+    group_by = NULL,
+    split_by = NULL,
+    shape_by = NULL,
+    order = NULL,
+    shuffle = FALSE,
+    seed = 717,
+    label = FALSE,
+    label_size = 8 * 0.36,
+    label_color = "black",
+    label_box = FALSE,
+    repel = FALSE,
+    cells_highlight = NULL,
+    cols_highlight = "#DE2D26",
+    sizes_highlight = 1,
+    na_value = "grey50",
+    ncol = NULL,
+    combine = TRUE,
+    raster = TRUE,
+    raster_dpi = c(512, 512),
+    show_legend = TRUE,
+    show_axis = TRUE,
+    show_border = TRUE,
+    title = NULL,
+    palette = "Paired",
+    ...) {
+  p <- Seurat::DimPlot(
+    object = object,
+    dims = dims,
+    cells = cells,
+    cols = cols,
+    pt.size = pt_size,
+    reduction = reduction,
+    group.by = group_by,
+    split.by = split_by,
+    shape.by = shape_by,
+    order = order,
+    shuffle = shuffle,
+    seed = seed,
+    label = label,
+    label.size = label_size,
+    label.color = label_color,
+    label.box = label_box,
+    repel = repel,
+    cells.highlight = cells_highlight,
+    cols.highlight = cols_highlight,
+    sizes.highlight = sizes_highlight,
+    na.value = na_value,
+    ncol = ncol,
+    combine = combine,
+    raster = raster,
+    raster.dpi = raster_dpi,
+    ...
+  )
+  if (!show_legend) {
+    p <- p + Seurat::NoLegend()
+  }
+  reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
+  object[["ident"]] <- Seurat::Idents(object = object)
+  group_by <- group_by %||% "ident"
+  n <- length(table(object[[group_by]]))
+  x <- ifelse(reduction == "tsne", "tSNE 1",
+    paste0(stringr::str_to_upper(reduction), " 1")
+  )
+  y <- ifelse(reduction == "tsne", "tSNE 2",
+    paste0(stringr::str_to_upper(reduction), " 2")
+  )
+  p <- p +
+    catplot::theme_cat(aspect_ratio = 1) +
+    theme(legend.margin = margin(l = -8)) +
+    labs(
       x = x,
       y = y,
       title = title
-  )
+    )
 
-p <- add_palette(p = p, palette = palette, n = n)
+  p <- add_palette(p = p, palette = palette, n = n)
 
 
-if (!show_axis) {
-  p <- p + theme(
+  if (!show_axis) {
+    p <- p + theme(
       axis.text = element_blank(),
       axis.ticks = element_blank()
-  )
-}
-if (!show_border) {
-  p <- p + theme(
+    )
+  }
+  if (!show_border) {
+    p <- p + theme(
       panel.border = element_blank(),
       axis.line = element_blank()
-  )
-}
-return(p)
+    )
+  }
+  return(p)
 }
 
 #' Plot a violin plot with categorical groups
@@ -195,43 +195,43 @@ return(p)
 #'
 #' @export
 sn_plot_violin <- function(object,
-                  features,
-                  pt_size = 0,
-                  sort = FALSE,
-                  group_by = NULL,
-                  split_by = NULL,
-                  show_legend = FALSE,
-                  angle_x = 0,
-                  palette = "Paired",
-                  aspect_ratio = 0.5) {
-p <- Seurat::VlnPlot(
-  object = object,
-  features = features,
-  pt.size = pt_size,
-  sort = sort,
-  group.by = group_by,
-  split.by = split_by
-)
-if (!show_legend) {
-  p <- p + Seurat::NoLegend()
-}
-object[["ident"]] <- Seurat::Idents(object = object)
-group_by <- group_by %||% "ident"
-n <- length(table(object[[group_by]]))
-if (n > 12) {
-  values <- colorRampPalette(brewer.pal(12, palette))(n)
-} else {
-  values <- brewer.pal(n, palette)
-}
-p <- p + catplot::theme_cat(aspect_ratio = aspect_ratio) +
-  theme(
+                           features,
+                           pt_size = 0,
+                           sort = FALSE,
+                           group_by = NULL,
+                           split_by = NULL,
+                           show_legend = FALSE,
+                           angle_x = 0,
+                           palette = "Paired",
+                           aspect_ratio = 0.5) {
+  p <- Seurat::VlnPlot(
+    object = object,
+    features = features,
+    pt.size = pt_size,
+    sort = sort,
+    group.by = group_by,
+    split.by = split_by
+  )
+  if (!show_legend) {
+    p <- p + Seurat::NoLegend()
+  }
+  object[["ident"]] <- Seurat::Idents(object = object)
+  group_by <- group_by %||% "ident"
+  n <- length(table(object[[group_by]]))
+  if (n > 12) {
+    values <- colorRampPalette(brewer.pal(12, palette))(n)
+  } else {
+    values <- brewer.pal(n, palette)
+  }
+  p <- p + catplot::theme_cat(aspect_ratio = aspect_ratio) +
+    theme(
       axis.title.x = element_blank(),
       legend.margin = margin(l = -8)
-  ) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-  guides(x = guide_axis(angle = angle_x)) +
-  scale_fill_manual(values = values)
-return(p)
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+    guides(x = guide_axis(angle = angle_x)) +
+    scale_fill_manual(values = values)
+  return(p)
 }
 
 #' Plot a dot plot with categorical groups
@@ -265,23 +265,23 @@ return(p)
 #'
 #' @export
 sn_plot_dot <- function(x,
-                  assay = NULL,
-                  features,
-                  col_min = -2.5,
-                  col_max = 2.5,
-                  dot_min = 0,
-                  dot_scale = 4,
-                  idents = NULL,
-                  group_by = NULL,
-                  split_by = NULL,
-                  cluster_idents = FALSE,
-                  scale = TRUE,
-                  scale_by = "radius",
-                  scale_min = NA,
-                  scale_max = NA,
-                  palette = "RdBu") {
-p <-
-  Seurat::DotPlot(
+                        assay = NULL,
+                        features,
+                        col_min = -2.5,
+                        col_max = 2.5,
+                        dot_min = 0,
+                        dot_scale = 4,
+                        idents = NULL,
+                        group_by = NULL,
+                        split_by = NULL,
+                        cluster_idents = FALSE,
+                        scale = TRUE,
+                        scale_by = "radius",
+                        scale_min = NA,
+                        scale_max = NA,
+                        palette = "RdBu") {
+  p <-
+    Seurat::DotPlot(
       object = x,
       assay = assay,
       features = features,
@@ -297,31 +297,31 @@ p <-
       scale.by = scale_by,
       scale.min = scale_min,
       scale.max = scale_max
-  ) + coord_fixed() +
-  guides(
+    ) + coord_fixed() +
+    guides(
       x = guide_axis(angle = 90),
       size = guide_legend(title = "Percent (%)"),
       color = guide_colorbar(
-          title = "Z score",
-          frame.colour = "black",
-          frame.linewidth = 0.2,
-          ticks.colour = "black",
-          ticks.linewidth = 0.2
+        title = "Z score",
+        frame.colour = "black",
+        frame.linewidth = 0.2,
+        ticks.colour = "black",
+        ticks.linewidth = 0.2
       )
-  ) +
-  catplot::theme_cat(show_title = "none") +
-  theme(
+    ) +
+    catplot::theme_cat(show_title = "none") +
+    theme(
       axis.text.x = element_text(face = "italic"),
       axis.title = element_blank(),
       legend.margin = margin(l = -8),
       panel.grid = element_line(
-          colour = "lightgrey",
-          linewidth = 0.2 / 1.07
+        colour = "lightgrey",
+        linewidth = 0.2 / 1.07
       )
-  ) +
-  scale_color_distiller(palette = palette) +
-  scale_y_discrete(limits = rev)
-return(p)
+    ) +
+    scale_color_distiller(palette = palette) +
+    scale_y_discrete(limits = rev)
+  return(p)
 }
 
 #' Plot feature expression in reduced dimensions
@@ -360,26 +360,26 @@ return(p)
 #'
 #' @export
 sn_plot_feature <-
-function(object,
-       features,
-       reduction = NULL,
-       label = label,
-       split_by = NULL,
-       label_size = 8 * 0.36,
-       pt_size = 1,
-       slot = "data",
-       max_cutoff = NA,
-       raster = TRUE,
-       seed = 717,
-       title = NULL,
-       legend_title = NULL,
-       show_legend = TRUE,
-       show_axis = TRUE,
-       show_border = TRUE,
-       palette = "YlOrRd",
-       direction = 1,
-       ...) {
-  p <- Seurat::FeaturePlot(
+  function(object,
+           features,
+           reduction = NULL,
+           label = label,
+           split_by = NULL,
+           label_size = 8 * 0.36,
+           pt_size = 1,
+           slot = "data",
+           max_cutoff = NA,
+           raster = TRUE,
+           seed = 717,
+           title = NULL,
+           legend_title = NULL,
+           show_legend = TRUE,
+           show_axis = TRUE,
+           show_border = TRUE,
+           palette = "YlOrRd",
+           direction = 1,
+           ...) {
+    p <- Seurat::FeaturePlot(
       object = object,
       features = features,
       reduction = reduction,
@@ -391,64 +391,64 @@ function(object,
       order = TRUE,
       max.cutoff = max_cutoff,
       ...
-  )
-  if (!show_legend) {
+    )
+    if (!show_legend) {
       p <- p + Seurat::NoLegend()
-  }
-  reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
-  object[["ident"]] <- Seurat::Idents(object = object)
-  title <- title %||% features
-  p <- p +
+    }
+    reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
+    object[["ident"]] <- Seurat::Idents(object = object)
+    title <- title %||% features
+    p <- p +
       catplot::theme_cat(aspect_ratio = 1) +
       theme(legend.margin = margin(l = -8)) +
       labs(
-          x = paste0(stringr::str_to_upper(reduction), " 1"),
-          y = paste0(stringr::str_to_upper(reduction), " 2"),
-          title = title
+        x = paste0(stringr::str_to_upper(reduction), " 1"),
+        y = paste0(stringr::str_to_upper(reduction), " 2"),
+        title = title
       )
 
-  if (!is.null(palette)) {
+    if (!is_null(palette)) {
       p <-
-          p + scale_color_distiller(palette = palette, direction = direction)
-  }
-  if (!is.null(legend_title)) {
+        p + scale_color_distiller(palette = palette, direction = direction)
+    }
+    if (!is_null(legend_title)) {
       p <- p + guides(color = guide_colorbar(title = legend_title))
-  }
-  if (!show_axis) {
+    }
+    if (!show_axis) {
       p <- p + theme(
-          axis.text = element_blank(),
-          axis.ticks = element_blank()
+        axis.text = element_blank(),
+        axis.ticks = element_blank()
       )
-  }
-  if (!show_border) {
+    }
+    if (!show_border) {
       p <- p + theme(
-          panel.border = element_blank(),
-          axis.line = element_blank()
+        panel.border = element_blank(),
+        axis.line = element_blank()
       )
+    }
+    return(p)
   }
-  return(p)
-}
 
 
 add_palette <- function(p, palette, n) {
   if (length(palette) > 1) {
-      values <- palette
-  } else  if (length(palette) == 1 &&
-              palette %in% names(palette_db)) {
-      values <- palette_db[[palette]]
+    values <- palette
   } else if (length(palette) == 1 &&
-             palette %in% row.names(RColorBrewer::brewer.pal.info)) {
-      values <- brewer.pal(12, palette)
+    palette %in% names(palette_db)) {
+    values <- palette_db[[palette]]
+  } else if (length(palette) == 1 &&
+    palette %in% row.names(RColorBrewer::brewer.pal.info)) {
+    values <- brewer.pal(12, palette)
   } else {
-      stop(
-          "Palette not found, Please check the name of the palette use `show_all_palettes()` to see all available palettes"
-      )
+    stop(
+      "Palette not found, Please check the name of the palette use `show_all_palettes()` to see all available palettes"
+    )
   }
 
   if (n > length(values)) {
-      values <- colorRampPalette(values)(n)
+    values <- colorRampPalette(values)(n)
   } else {
-      values <- values[1:n]
+    values <- values[1:n]
   }
   p <- p + scale_color_manual(values = values)
 }
@@ -457,28 +457,28 @@ add_palette <- function(p, palette, n) {
 palette_db <- vector("list")
 
 palette_db$ZhangJian2024 <- c(
-    "#efcec9", "#ff8c72", "#23676e",
-    "#fd70a9", "#aa96c0", "#4194d0",
-    "#83c066", "#ffba64", "#3fa177",
-    "#a6846a", "#49548f", "#34405c",
-    "#f73a41", "#3284b8", "#8dd3c9",
-    "#3aa08e", "#726f83"
+  "#efcec9", "#ff8c72", "#23676e",
+  "#fd70a9", "#aa96c0", "#4194d0",
+  "#83c066", "#ffba64", "#3fa177",
+  "#a6846a", "#49548f", "#34405c",
+  "#f73a41", "#3284b8", "#8dd3c9",
+  "#3aa08e", "#726f83"
 )
 
 palette_db$XuPan2024 <- c(
-  "#c4b1a7","#867790","#af8e87","#ecb772",
-  "#af8e87","#8ca287","#f1be94","#bc966d","#a5beba","#de9590","#a3b8c5"
+  "#c4b1a7", "#867790", "#af8e87", "#ecb772",
+  "#af8e87", "#8ca287", "#f1be94", "#bc966d", "#a5beba", "#de9590", "#a3b8c5"
 )
 
 
 #' @export
 show_all_palettes <- function() {
-    # Collection from paper
-    cat("Collection from paper\n")
-    print(names(palette_db))
-    # RColorBrewer
-    cat("RColorBrewer\n")
-    print(row.names(RColorBrewer::brewer.pal.info))
+  # Collection from paper
+  cat("Collection from paper\n")
+  print(names(palette_db))
+  # RColorBrewer
+  cat("RColorBrewer\n")
+  print(row.names(RColorBrewer::brewer.pal.info))
 }
 
 .all_palettes <- c(names(palette_db), row.names(RColorBrewer::brewer.pal.info))

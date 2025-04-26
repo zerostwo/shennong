@@ -19,7 +19,7 @@
 #' @export
 sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
   f <- rio:::find_compress(f = path)
-  if (!is.na(f$compress)) {
+  if (!is_na(f$compress)) {
     file <- f$file
   } else {
     file <- path
@@ -59,7 +59,7 @@ sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
       x <- Seurat::Load10X_Spatial(data.dir = path, ...)
     }
   } else {
-    if (is.na(format)) {
+    if (is_na(format)) {
       if (input == "h5") {
         x <- Seurat::Read10X_h5(filename = path, ...)
       } else if (input == "h5ad") {
@@ -75,7 +75,7 @@ sn_read <- function(path, from = NULL, to = NULL, row_names = NULL, ...) {
     }
   }
 
-  if (!is.null(x = row_names) && inherits(x = x, what = "data.frame")) {
+  if (!is_null(x = row_names) && inherits(x = x, what = "data.frame")) {
     rownames(x = x) <- x[, row_names]
     x <- x[, -row_names]
   }

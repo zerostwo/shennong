@@ -40,7 +40,7 @@ sn_enrich <- function(
       "GOCC" = "CC"
     )
     # If gene_clusters is NULL, perform enrichment analysis using enrichGO
-    if (is.null(x = gene_clusters)) {
+    if (is_null(x = gene_clusters)) {
       results <- clusterProfiler::enrichGO(
         gene = x,
         ont = ont,
@@ -66,7 +66,7 @@ sn_enrich <- function(
   # Perform gene enrichment analysis for KEGG pathways
   if (database == "KEGG") {
     # If gene_clusters is NULL, perform enrichment analysis using enrichKEGG
-    if (is.null(x = gene_clusters)) {
+    if (is_null(x = gene_clusters)) {
       gid <-
         clusterProfiler::bitr(
           geneID = x,
@@ -117,9 +117,9 @@ sn_enrich <- function(
   }
 
   # Save the results as an RDS file
-  if (!is.null(x = outdir)) {
+  if (!is_null(x = outdir)) {
     outdir <- sn_set_path(path = outdir)
-    if (!is.null(x = prefix)) {
+    if (!is_null(x = prefix)) {
       prefix <- paste0(prefix, ".")
     }
     file <- glue("{outdir}/{prefix}enrichment.{database}.rds")
