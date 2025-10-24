@@ -40,10 +40,11 @@ sn_calculate_lisi <-
 #' @return A data.frame of ROGUE score per cluster/sample or per cluster.
 #' @export
 sn_calculate_rogue <- function(
-    x,
-    cluster = NULL,
-    sample = NULL,
-    span = 0.9) {
+  x,
+  cluster = NULL,
+  sample = NULL,
+  span = 0.9
+) {
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")

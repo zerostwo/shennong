@@ -1,12 +1,13 @@
 #' @export
 sn_enrich <- function(
-    x,
-    gene_clusters = NULL,
-    species = "human",
-    database = "GOBP",
-    pvalue_cutoff = 0.05,
-    prefix = NULL,
-    outdir = NULL) {
+  x,
+  gene_clusters = NULL,
+  species = "human",
+  database = "GOBP",
+  pvalue_cutoff = 0.05,
+  prefix = NULL,
+  outdir = NULL
+) {
   # Check if required packages are installed
   if (species == "human") {
     check_installed(pkg = c("clusterProfiler", "org.Hs.eg.db"))

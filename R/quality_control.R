@@ -95,13 +95,14 @@ sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
 #'
 #' @export
 sn_filter_cells <- function(
-    x,
-    features,
-    group_by = NULL,
-    method = "mad",
-    n = 5,
-    plot = TRUE,
-    filter = TRUE) {
+  x,
+  features,
+  group_by = NULL,
+  method = "mad",
+  n = 5,
+  plot = TRUE,
+  filter = TRUE
+) {
   # Input validation
   if (!inherits(x, "Seurat")) stop("Input must be a Seurat object")
   if (!all(features %in% colnames(x[[]]))) {
@@ -270,11 +271,12 @@ sn_filter_cells <- function(
 #' }
 #' @export
 sn_find_doublets <- function(
-    object,
-    clusters = NULL,
-    group_by = NULL,
-    dbr_sd = NULL,
-    ncores = 8) {
+  object,
+  clusters = NULL,
+  group_by = NULL,
+  dbr_sd = NULL,
+  ncores = 1
+) {
   check_installed("scDblFinder", reason = "to run doublet detection.")
 
   log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
@@ -299,7 +301,7 @@ sn_find_doublets <- function(
     )
   }
 
-  # -- Copy results back to Seurat object
+  # Copy results back to Seurat object
   object$scDblFinder.class <- sce$scDblFinder.class
   object$scDblFinder.score <- sce$scDblFinder.score
 
@@ -309,9 +311,10 @@ sn_find_doublets <- function(
 
 #' @export
 sn_remove_ambient_contamination <- function(
-    x, raw_path, method = "SoupX",
-    force_accept = FALSE,
-    contamination_range = c(0.01, 0.8)) {
+  x, raw_path, method = "SoupX",
+  force_accept = FALSE,
+  contamination_range = c(0.01, 0.8)
+) {
   if (method == "SoupX") {
     check_installed(pkg = "SoupX")
     # tod <- Seurat::Read10X(data.dir = raw_counts)
@@ -325,6 +328,17 @@ sn_remove_ambient_contamination <- function(
     } else if (is_character(x)) {
       toc <- sn_read(path = x)
     }
+    # Overlap genes between tod and toc
+    common_genes <- intersect(rownames(tod), rownames(toc))
+    tod <- tod[common_genes, ]
+    toc <- toc[common_genes, ]
+    # beautiful print message if overlap genes
+    message(glue::glue(
+      "Number of genes in raw data: {nrow(tod)}\n",
+      "Number of genes in filtered data: {nrow(toc)}\n",
+      "Number of common genes: {length(common_genes)}"
+    ))
+
     sc <- SoupX::SoupChannel(
       tod = tod,
       toc = toc,

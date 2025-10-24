@@ -55,16 +55,17 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' }
 #' @export
 sn_initialize_seurat_object <- function(
-    x,
-    metadata = NULL,
-    names_field = 1L,
-    names_delim = "_",
-    project = "Shennong",
-    min_cells = 0,
-    min_features = 0,
-    species = NULL,
-    standardize_gene_symbols = FALSE,
-    is_gene_id = FALSE, ...) {
+  x,
+  metadata = NULL,
+  names_field = 1L,
+  names_delim = "_",
+  project = "Shennong",
+  min_cells = 0,
+  min_features = 0,
+  species = NULL,
+  standardize_gene_symbols = FALSE,
+  is_gene_id = FALSE, ...
+) {
   # -- Logging
   log_info(glue("Initializing Seurat object for project: {project}"))
 
@@ -137,9 +138,10 @@ sn_initialize_seurat_object <- function(
 #' }
 #' @export
 sn_normalize_data <- function(
-    object,
-    method = "scran",
-    clusters = NULL) {
+  object,
+  method = "scran",
+  clusters = NULL
+) {
   if (method == "scran") {
     check_installed("scran", reason = "to perform scran normalization.")
     check_installed("SingleCellExperiment")
@@ -208,16 +210,16 @@ sn_normalize_data <- function(
 #' }
 #' @export
 sn_standardize_gene_symbols <- function(
-    x,
-    species = NULL,
-    is_gene_id = FALSE) {
+  x,
+  species = NULL,
+  is_gene_id = FALSE
+) {
   # -- Check required packages
   check_installed("HGNChelper", reason = "to check or correct gene symbols.")
   check_installed("dplyr")
   check_installed("readr")
 
   log_info("Starting standardization of gene symbols...")
-
   # -- Extract counts
   if (inherits(x, "Seurat")) {
     log_info("Detected Seurat object. Extracting counts from RNA assay...")

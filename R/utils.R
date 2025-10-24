@@ -5,7 +5,7 @@
 #' those symbols via \code{HGNChelper} to remove invalid or outdated entries.
 #'
 #' @param genesets A character vector of predefined gene sets. Must be keys in
-#'   \code{SignatuR::SignatuR$Hs$...}.
+#'   \code{SignatuR$Hs$...}.
 #'
 #' @return A unique character vector of valid gene symbols.
 #'
@@ -15,36 +15,37 @@
 #' }
 #' @export
 sn_get_signatures <- function(
-    species = "human",
-    category = NULL) {
+  species = "human",
+  category = NULL
+) {
   # TODO: Add simplify arg
   check_installed(pkg = "HGNChelper")
   check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
   arg_match(arg = species, values = c("human", "mouse"))
-
+  data("SignatuR")
   if (species == "human") {
     gene_list <- list(
-      g1s = SignatuR::SignatuR$Hs$Programs$cellCycle.G1S,
-      g2m = SignatuR::SignatuR$Hs$Programs$cellCycle.G2M,
-      pseudogenes = SignatuR::SignatuR$Hs$Blocklists$Pseudogenes,
-      noncoding = SignatuR::SignatuR$Hs$Blocklists$`Non-coding`,
-      tcr = SignatuR::SignatuR$Hs$Compartments$TCR,
-      immunoglobulins = SignatuR::SignatuR$Hs$Compartments$Immunoglobulins,
-      ribo = SignatuR::SignatuR$Hs$Compartments$Ribo,
-      mito = SignatuR::SignatuR$Hs$Compartments$Mito,
-      heatshock = SignatuR::SignatuR$Hs$Programs$HeatShock
+      g1s = SignatuR$Hs$Programs$cellCycle.G1S,
+      g2m = SignatuR$Hs$Programs$cellCycle.G2M,
+      pseudogenes = SignatuR$Hs$Blocklists$Pseudogenes,
+      noncoding = SignatuR$Hs$Blocklists$`Non-coding`,
+      tcr = SignatuR$Hs$Compartments$TCR,
+      immunoglobulins = SignatuR$Hs$Compartments$Immunoglobulins,
+      ribo = SignatuR$Hs$Compartments$Ribo,
+      mito = SignatuR$Hs$Compartments$Mito,
+      heatshock = SignatuR$Hs$Programs$HeatShock
     )
   } else if (species == "mouse") {
     gene_list <- list(
-      g1s = SignatuR::SignatuR$Mm$Programs$cellCycle.G1S,
-      g2m = SignatuR::SignatuR$Mm$Programs$cellCycle.G2M,
-      pseudogenes = SignatuR::SignatuR$Mm$Blocklists$Pseudogenes,
-      noncoding = SignatuR::SignatuR$Mm$Blocklists$`Non-coding`,
-      tcr = SignatuR::SignatuR$Mm$Compartments$TCR,
-      immunoglobulins = SignatuR::SignatuR$Mm$Compartments$Immunoglobulins,
-      ribo = SignatuR::SignatuR$Mm$Compartments$Ribo,
-      mito = SignatuR::SignatuR$Mm$Compartments$Mito,
-      heatshock = SignatuR::SignatuR$Mm$Programs$HeatShock
+      g1s = SignatuR$Mm$Programs$cellCycle.G1S,
+      g2m = SignatuR$Mm$Programs$cellCycle.G2M,
+      pseudogenes = SignatuR$Mm$Blocklists$Pseudogenes,
+      noncoding = SignatuR$Mm$Blocklists$`Non-coding`,
+      tcr = SignatuR$Mm$Compartments$TCR,
+      immunoglobulins = SignatuR$Mm$Compartments$Immunoglobulins,
+      ribo = SignatuR$Mm$Compartments$Ribo,
+      mito = SignatuR$Mm$Compartments$Mito,
+      heatshock = SignatuR$Mm$Programs$HeatShock
     )
   }
 
@@ -53,7 +54,7 @@ sn_get_signatures <- function(
       warning("[g_block_genes] Unknown gene set: ", x)
       return(NULL)
     }
-    SignatuR::GetSignature(gene_list[[x]]) |> unlist()
+    GetSignature(gene_list[[x]]) |> unlist()
   }))
 
   checked <- HGNChelper::checkGeneSymbols(genes, species = species)
@@ -114,7 +115,8 @@ sn_set_path <- function(path) {
   return(path)
 }
 
+
 check_installed_github <- function(pkg, repo) {
   check_installed(pkg = "pak")
-  check_installed(pkg, action = function(pkg, ...) pak::pak(github_repo))
+  check_installed(pkg, action = function(pkg, ...) pak::pak(repo))
 }

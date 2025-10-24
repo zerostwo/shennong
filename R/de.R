@@ -1,18 +1,19 @@
 sn_find_de <- function(
-    object,
-    treatment = NULL,
-    control = NULL,
-    group_by = NULL,
-    assay = NULL,
-    features = NULL,
-    method = "wilcox",
-    only_pos = NULL,
-    logfc_threshold = 0.1,
-    min_pct = 0.25,
-    de_p_val = 0.05,
-    de_logfc = 0.25,
-    verbose = TRUE,
-    ...) {
+  object,
+  treatment = NULL,
+  control = NULL,
+  group_by = NULL,
+  assay = NULL,
+  features = NULL,
+  method = "wilcox",
+  only_pos = NULL,
+  logfc_threshold = 0.1,
+  min_pct = 0.25,
+  de_p_val = 0.05,
+  de_logfc = 0.25,
+  verbose = TRUE,
+  ...
+) {
   if (all(is_null(c(treatment, control, group_by)))) {
     stop("At least one of treatment, control, group_by must be provided.")
   }
