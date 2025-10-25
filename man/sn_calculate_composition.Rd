@@ -50,18 +50,18 @@ and optionally adding other metadata columns to the results.
 }
 \examples{
 \dontrun{
+# Example 1: Using a Seurat object
 # Assuming 'seu' is a Seurat object with metadata columns
 # 'sample_id', 'cell_type', and 'treatment'
-
-# Calculate cell type composition per sample
 composition_df <- sn_calculate_composition(
   x = seu,
   group_by = "sample_id",
   variable = "cell_type",
   min_cells = 10
 )
+print(composition_df)
 
-# Calculate cell type composition per sample, adding the 'treatment' column
+# Example 2: Adding additional metadata columns
 composition_with_treatment <- sn_calculate_composition(
   x = seu,
   group_by = "sample_id",
@@ -69,15 +69,15 @@ composition_with_treatment <- sn_calculate_composition(
   min_cells = 10,
   additional_cols = "treatment"
 )
+print(composition_with_treatment)
 
-# Using a plain data frame
+# Example 3: Using a plain data frame
 meta_df <- data.frame(
- sample = rep(c("A", "B", "C"), each = 50),
- ctype = sample(c("Tcell", "Bcell", "Myeloid"), 150, replace = TRUE),
- condition = rep(c("Control", "Treated", "Control"), each = 50),
- stringsAsFactors = FALSE
+  sample = rep(c("A", "B", "C"), each = 50),
+  ctype = sample(c("Tcell", "Bcell", "Myeloid"), 150, replace = TRUE),
+  condition = rep(c("Control", "Treated", "Control"), each = 50),
+  stringsAsFactors = FALSE
 )
-
 composition_from_df <- sn_calculate_composition(
   x = meta_df,
   group_by = "sample",
@@ -86,5 +86,19 @@ composition_from_df <- sn_calculate_composition(
   additional_cols = "condition"
 )
 print(composition_from_df)
+
+# Example 4: Handling groups with fewer cells than `min_cells`
+small_meta_df <- data.frame(
+  sample = c("A", "A", "B"),
+  ctype = c("Tcell", "Bcell", "Tcell"),
+  stringsAsFactors = FALSE
+)
+composition_small <- sn_calculate_composition(
+  x = small_meta_df,
+  group_by = "sample",
+  variable = "ctype",
+  min_cells = 2
+)
+print(composition_small)
 }
 }

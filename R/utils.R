@@ -22,8 +22,8 @@ sn_get_signatures <- function(
   check_installed(pkg = "HGNChelper")
   check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
   arg_match(arg = species, values = c("human", "mouse"))
-  # TODO: how to import SignatuR data properly?
-  data("SignatuR")
+  SignatuR <- get("SignatuR", envir = asNamespace("SignatuR"))
+
   if (species == "human") {
     gene_list <- list(
       g1s = SignatuR$Hs$Programs$cellCycle.G1S,
@@ -55,7 +55,7 @@ sn_get_signatures <- function(
       warning("[g_block_genes] Unknown gene set: ", x)
       return(NULL)
     }
-    GetSignature(gene_list[[x]]) |> unlist()
+      SignatuR::GetSignature(gene_list[[x]]) |> unlist()
   }))
 
   checked <- HGNChelper::checkGeneSymbols(genes, species = species)

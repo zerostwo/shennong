@@ -8,7 +8,7 @@ sn_get_signatures(species = "human", category = NULL)
 }
 \arguments{
 \item{genesets}{A character vector of predefined gene sets. Must be keys in
-\code{SignatuR::SignatuR$Hs$...}.}
+\code{SignatuR$Hs$...}.}
 }
 \value{
 A unique character vector of valid gene symbols.

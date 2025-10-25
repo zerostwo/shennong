@@ -9,7 +9,7 @@ sn_find_doublets(
   clusters = NULL,
   group_by = NULL,
   dbr_sd = NULL,
-  ncores = 8
+  ncores = 1
 )
 }
 \arguments{
