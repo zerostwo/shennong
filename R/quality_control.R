@@ -313,7 +313,8 @@ sn_find_doublets <- function(
 sn_remove_ambient_contamination <- function(
   x, raw_path, method = "SoupX",
   force_accept = FALSE,
-  contamination_range = c(0.01, 0.8)
+  contamination_range = c(0.01, 0.8),
+  return_object = TRUE
 ) {
   if (method == "SoupX") {
     check_installed(pkg = "SoupX")
@@ -376,5 +377,11 @@ sn_remove_ambient_contamination <- function(
     out_sum <- sum(Matrix::rowSums(x = out))
     print(c(tod_sum, toc_sum, out_sum))
   }
+
+    if (return_object) {
+        LayerData(object = x, layer = "counts") <- out
+        return(x)
+    }
+
   return(out)
 }

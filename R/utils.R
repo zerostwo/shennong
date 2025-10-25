@@ -22,6 +22,7 @@ sn_get_signatures <- function(
   check_installed(pkg = "HGNChelper")
   check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
   arg_match(arg = species, values = c("human", "mouse"))
+  # TODO: how to import SignatuR data properly?
   data("SignatuR")
   if (species == "human") {
     gene_list <- list(
