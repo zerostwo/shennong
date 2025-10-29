@@ -47,7 +47,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   check_installed(
     pkg,
     action = function(pkg, ...) {
-        remotes::install_github(repo = repo)
+      remotes::install_github(repo = repo)
     },
     reason = reason
   )

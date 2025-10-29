@@ -263,8 +263,9 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   }
 
   if (!is.data.frame(x) && !format %in% c(
-      "xlsx", "html", "rdata", "rds", "json", "qs", "qs2", "fods", "ods",
-      "bpcells", "h5ad")) {
+    "xlsx", "html", "rdata", "rds", "json", "qs", "qs2", "fods", "ods",
+    "bpcells", "h5ad", "h5"
+  )) {
     stop("'x' is not a data.frame or matrix", call. = FALSE)
   }
   if (format == "gz") {
@@ -287,17 +288,21 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
 
 #' @export
 .export.rio_bpcells <- function(file, x, overwrite = FALSE, ...) {
-  check_installed_github(pkg = "BPCells",
-                         repo = "bnprks/BPCells/r",
-                         reason = "to write BPCells format files.")
+  check_installed_github(
+    pkg = "BPCells",
+    repo = "bnprks/BPCells/r",
+    reason = "to write BPCells format files."
+  )
   BPCells::write_matrix_dir(mat = x, dir = file, overwrite = overwrite, ...)
 }
 
 #' @export
 .export.rio_h5ad <- function(file, x, mode = "w", ...) {
-  check_installed_github(pkg = "anndataR", repo = "scverse/anndataR",
-                         reason = "to write h5ad files.")
-  check_installed(pkg = c("SingleCellExperiment","rhdf5"), reason = "to write h5ad files.")
+  check_installed_github(
+    pkg = "anndataR", repo = "scverse/anndataR",
+    reason = "to write h5ad files."
+  )
+  check_installed(pkg = c("SingleCellExperiment", "rhdf5"), reason = "to write h5ad files.")
   if (!inherits(x = x, what = "SingleCellExperiment")) {
     sce <- Seurat::as.SingleCellExperiment(x = x)
   }
@@ -306,26 +311,28 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
 
 #' @export
 .export.rio_h5 <- function(file, x, ...) {
-    check_installed_github(pkg = "BPCells",
-                           repo = "bnprks/BPCells/r",
-                           reason = "to write 10x h5 files.")
-    BPCells::write_matrix_10x_hdf5(
-        mat = x, path = file, ...
-    )
+  check_installed_github(
+    pkg = "BPCells",
+    repo = "bnprks/BPCells/r",
+    reason = "to write 10x h5 files."
+  )
+  BPCells::write_matrix_10x_hdf5(
+    mat = x, path = file, ...
+  )
 }
 
 #' @export
 sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = NULL, key = "umap") {
-    if (!is_null(x = umap_path)) {
-        umap <- sn_read(path = umap_path, row_names = 1) |>
-            Matrix::as.matrix()
-        object <- object[, rownames(umap)]
-        object[[key]] <- Seurat::CreateDimReducObject(umap, key = key)
-    }
-    if (!is_null(x = metadata_path)) {
-        metadata <- sn_read(path = metadata_path, row_names = 1)
-        # object@meta.data <- metadata
-        object <- Seurat::AddMetaData(object = object, metadata = metadata)
-    }
-    object
+  if (!is_null(x = umap_path)) {
+    umap <- sn_read(path = umap_path, row_names = 1) |>
+      Matrix::as.matrix()
+    object <- object[, rownames(umap)]
+    object[[key]] <- Seurat::CreateDimReducObject(umap, key = key)
+  }
+  if (!is_null(x = metadata_path)) {
+    metadata <- sn_read(path = metadata_path, row_names = 1)
+    # object@meta.data <- metadata
+    object <- Seurat::AddMetaData(object = object, metadata = metadata)
+  }
+  object
 }

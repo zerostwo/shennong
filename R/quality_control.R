@@ -311,21 +311,27 @@ sn_find_doublets <- function(
 
 #' @export
 sn_remove_ambient_contamination <- function(
-  x, raw_path, method = "SoupX",
+  x, raw, method = "SoupX",
   force_accept = FALSE,
   contamination_range = c(0.01, 0.8),
   return_object = TRUE
 ) {
+  check_installed(pkg = "SeuratObject", reason = "to handle Seurat objects.")
   if (method == "SoupX") {
-    check_installed(pkg = "SoupX")
-    # tod <- Seurat::Read10X(data.dir = raw_counts)
-    # toc <- Seurat::Read10X(data.dir = filtered_counts)
+    check_installed(pkg = "SoupX", reason = "to remove ambient RNA contamination.")
     # Generate SoupChannel Object for SoupX
-    tod <- sn_read(path = raw_path)
+    if (is_character(raw)) {
+      tod <- sn_read(path = raw)
+    } else if (inherits(raw, what = c("Matrix", "data.frame"))) {
+      tod <- raw
+    } else if (inherits(raw, what = c("Seurat"))) {
+      tod <- SeuratObject::LayerDa(object = raw, layer = "counts")
+    }
+
     if (inherits(x, what = c("Matrix", "data.frame"))) {
       toc <- x
     } else if (inherits(x, what = c("Seurat"))) {
-      toc <- LayerData(object = x, layer = "counts")
+      toc <- SeuratObject::LayerData(object = x, layer = "counts")
     } else if (is_character(x)) {
       toc <- sn_read(path = x)
     }
@@ -333,12 +339,10 @@ sn_remove_ambient_contamination <- function(
     common_genes <- intersect(rownames(tod), rownames(toc))
     tod <- tod[common_genes, ]
     toc <- toc[common_genes, ]
-    # beautiful print message if overlap genes
-    message(glue::glue(
-      "Number of genes in raw data: {nrow(tod)}\n",
-      "Number of genes in filtered data: {nrow(toc)}\n",
-      "Number of common genes: {length(common_genes)}"
-    ))
+    cli::cli_h3("Gene statistics")
+    cli::cli_alert_info("Raw data:      {nrow(tod)} genes")
+    cli::cli_alert_info("Filtered data: {nrow(toc)} genes")
+    cli::cli_alert_success("Common genes:  {length(common_genes)} genes")
 
     sc <- SoupX::SoupChannel(
       tod = tod,
@@ -375,13 +379,17 @@ sn_remove_ambient_contamination <- function(
     tod_sum <- sum(Matrix::rowSums(x = tod))
     toc_sum <- sum(Matrix::rowSums(x = toc))
     out_sum <- sum(Matrix::rowSums(x = out))
-    print(c(tod_sum, toc_sum, out_sum))
+    cli::cli_h3("Count summary")
+    cli::cli_text("{.field Raw counts (tod)}: {format(tod_sum, big.mark = ',')}")
+    cli::cli_text("{.field Filtered counts (toc)}: {format(toc_sum, big.mark = ',')}")
+    cli::cli_text("{.field Output counts (out)}: {format(out_sum, big.mark = ',')}")
+
   }
 
-    if (return_object) {
-        LayerData(object = x, layer = "counts") <- out
-        return(x)
-    }
+  if (return_object) {
+      SeuratObject::LayerData(object = x, layer = "counts") <- out
+    return(x)
+  }
 
   return(out)
 }
