@@ -1,14 +1,17 @@
+#' Signature genes
+"SignatuR"
+
 #' @export
-sn_load_pbmc <- function(save_dir = "~/.shennong/data") {
-  if (!dir.exists(paths = save_dir)) {
-    dir.create(path = save_dir, recursive = TRUE)
-  }
-  save_file <- file.path(save_dir, "pbmc3k.qs")
+sn_load_pbmc <- function(dataset = "pbmc3k",
+                         save_dir = "~/.shennong/data") {
+  zenodo_record <- "14884845"
+  save_dir <- sn_set_path(save_dir)
+  save_file <- glue("{save_dir}/{dataset}.qs")
   if (!file.exists(save_file)) {
-    url <- "https://zenodo.org/records/14868137/files/filtered_feature_bc_matrix.h5"
-    counts <- sn_read(url)
+    filtered_url <- glue("https://zenodo.org/records/{zenodo_record}/files/{dataset}_filtered_feature_bc_matrix.h5")
+    counts <- sn_read(filtered_url)
     seurat_obj <- sn_initialize_seurat_object(counts, species = "human")
-    qs::qsave(seurat_obj, save_file)
+    sn_write(seurat_obj, save_file)
   } else {
     seurat_obj <- sn_read(save_file)
   }
