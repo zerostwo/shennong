@@ -55,7 +55,7 @@ sn_get_signatures <- function(
       warning("[g_block_genes] Unknown gene set: ", x)
       return(NULL)
     }
-      SignatuR::GetSignature(gene_list[[x]]) |> unlist()
+    SignatuR::GetSignature(gene_list[[x]]) |> unlist()
   }))
 
   checked <- HGNChelper::checkGeneSymbols(genes, species = species)
@@ -117,7 +117,13 @@ sn_set_path <- function(path) {
 }
 
 
-check_installed_github <- function(pkg, repo) {
-  check_installed(pkg = "pak")
-  check_installed(pkg, action = function(pkg, ...) pak::pak(repo))
+check_installed_github <- function(pkg, repo, reason = NULL) {
+  check_installed(pkg = "remotes", reason = "to install packages from GitHub")
+  check_installed(
+    pkg,
+    action = function(pkg, ...) {
+        remotes::install_github(repo = repo)
+    },
+    reason = reason
+  )
 }
