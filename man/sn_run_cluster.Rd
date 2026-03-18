@@ -18,6 +18,8 @@ sn_run_cluster(
   dims = NULL,
   dims_use = NULL,
   species = NULL,
+  assay = "RNA",
+  layer = "counts",
   return_cluster = FALSE,
   verbose = TRUE
 )
@@ -56,6 +58,10 @@ clustering, and UMAP.}
 
 \item{species}{Optional species label. Used when block genes must be resolved
 from built-in signatures.}
+
+\item{assay}{Assay used for clustering. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 
 \item{return_cluster}{If \code{TRUE}, return only the cluster assignments.}
 

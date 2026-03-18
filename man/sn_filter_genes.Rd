@@ -4,7 +4,14 @@
 \alias{sn_filter_genes}
 \title{Filter genes based on the number of expressing cells}
 \usage{
-sn_filter_genes(x, min_cells = 3, plot = TRUE, filter = TRUE)
+sn_filter_genes(
+  x,
+  min_cells = 3,
+  plot = TRUE,
+  filter = TRUE,
+  assay = "RNA",
+  layer = "counts"
+)
 }
 \arguments{
 \item{x}{A Seurat object.}
@@ -14,6 +21,10 @@ sn_filter_genes(x, min_cells = 3, plot = TRUE, filter = TRUE)
 \item{plot}{Logical; if TRUE, a bar plot is generated showing the number of remaining genes at different filtering thresholds. Default is TRUE.}
 
 \item{filter}{Logical; if TRUE, returns the filtered Seurat object. If FALSE, returns the original object. Default is TRUE.}
+
+\item{assay}{Assay used when extracting expression values. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used for gene filtering. Defaults to \code{"counts"}.}
 }
 \value{
 A filtered Seurat object if `filter = TRUE`, otherwise the original object.

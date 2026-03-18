@@ -155,7 +155,7 @@ Validation commands:
 
 ## Milestone 5: Modernize public functions incrementally
 
-Status: Pending
+Status: In progress
 
 Scope:
 - Update exported functions in small slices, starting with the safest and most testable surfaces.
@@ -174,6 +174,42 @@ Acceptance criteria:
 Validation commands:
 - `Rscript -e 'testthat::test_local(filter = "<target>", stop_on_failure = TRUE)'`
 - `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+
+## Milestone 5A: Make Seurat analysis workflows layer-aware
+
+Status: Completed
+
+Scope:
+- Add explicit `assay`/`layer` controls to Seurat workflows that currently assume `RNA/counts`.
+- Preserve object state when alternate layers are used for analysis.
+- Fix CI dependency resolution for GitHub-only optional packages so Actions can solve dependencies again.
+
+Files affected:
+- `R/integrate.R`
+- `R/preprocessing.R`
+- `R/quality_control.R`
+- `R/metrics.R`
+- `R/utils.R`
+- `DESCRIPTION`
+- `NAMESPACE`
+- `man/`
+- `tests/testthat/`
+- `docs/codex/Status.md`
+- `docs/codex/Decisions.md`
+
+Acceptance criteria:
+- `sn_run_cluster()` and `sn_find_doublets()` can analyze a non-default Seurat layer without clobbering the original `counts` layer.
+- Other relevant Seurat analysis helpers accept explicit `assay`/`layer` inputs where touched.
+- `pak::lockfile_create()` succeeds locally against the package root, matching the failing GitHub Actions dependency-solve phase.
+- Full tests and package checks pass after the namespace and metadata updates.
+
+Validation commands:
+- `Rscript -e 'devtools::document()'`
+- `Rscript -e 'testthat::test_local(filter = "clustering|preprocessing", stop_on_failure = TRUE)'`
+- `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+- `Rscript -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::lockfile_create(".", lockfile = tempfile("pkg-", fileext = ".lock"), upgrade = TRUE)'`
+- `R CMD build .`
+- `R CMD check --no-manual Shennong_*.tar.gz`
 
 ## Milestone 6: Clean documentation, examples, and vignettes
 

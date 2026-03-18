@@ -64,5 +64,11 @@ Suggests:
     SummarizedExperiment,
     SoupX,
     testthat (>= 3.0.0)
+Remotes:
+    github::bnprks/BPCells/r,
+    github::catplot/catplot,
+    github::immunogenomics/lisi,
+    github::PaulingLiu/ROGUE,
+    github::carmonalab/SignatuR
 VignetteBuilder: knitr
 Config/testthat/edition: 3

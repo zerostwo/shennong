@@ -55,6 +55,56 @@ test_that("sn_filter_genes drops genes below the minimum cell threshold", {
   expect_equal(rownames(filtered), c("gene1", "gene4"))
 })
 
+test_that("sn_filter_genes can use a non-default layer", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(
+    matrix(
+      c(
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0
+      ),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", 1:4)
+  colnames(counts) <- paste0("cell", 1:4)
+
+  alt_counts <- Matrix::Matrix(
+    matrix(
+      c(
+        1, 1, 1, 1,
+        1, 0, 0, 0,
+        0, 0, 0, 1,
+        2, 2, 2, 2
+      ),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(alt_counts) <- rownames(counts)
+  colnames(alt_counts) <- colnames(counts)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "genes-layer")
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- alt_counts
+
+  filtered <- sn_filter_genes(
+    object,
+    min_cells = 2,
+    plot = FALSE,
+    filter = TRUE,
+    assay = "RNA",
+    layer = "decontaminated_counts"
+  )
+
+  expect_equal(rownames(filtered), c("gene1", "gene4"))
+})
+
 test_that("sn_filter_cells adds qc flags and can subset outliers", {
   skip_if_not_installed("Seurat")
 
@@ -98,5 +148,37 @@ test_that("Seurat-returning helpers record commands in the object history", {
   object <- sn_initialize_seurat_object(x = counts, project = "commands")
   object <- sn_filter_genes(object, min_cells = 1, plot = FALSE, filter = FALSE)
 
-  expect_true(all(c("sn_initialize_seurat_object", "sn_filter_genes") %in% names(object@commands)))
+  command_names <- names(object@commands)
+  expect_true(any(grepl("^sn_initialize_seurat_object", command_names)))
+  expect_true(any(grepl("^sn_filter_genes", command_names)))
+})
+
+test_that("sn_normalize_data can normalize from a non-default layer", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("scran")
+  skip_if_not_installed("SingleCellExperiment")
+
+  counts <- Matrix::Matrix(0, nrow = 50, ncol = 60, sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:50)
+  colnames(counts) <- paste0("cell", 1:60)
+
+  alt_counts <- Matrix::Matrix(matrix(rpois(50 * 60, lambda = 3), nrow = 50), sparse = TRUE)
+  rownames(alt_counts) <- rownames(counts)
+  colnames(alt_counts) <- colnames(counts)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "normalize-layer")
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- alt_counts
+
+  normalized <- sn_normalize_data(
+    object = object,
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    clusters = rep(c("a", "b"), each = 30)
+  )
+
+  expect_gt(sum(SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")), 0)
+  expect_equal(
+    as.matrix(SeuratObject::LayerData(normalized, assay = "RNA", layer = "counts")),
+    as.matrix(counts)
+  )
 })

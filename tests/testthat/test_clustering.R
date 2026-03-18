@@ -14,6 +14,16 @@ make_test_object <- function(seed, prefix, n_genes = 200, n_cells = 40) {
   )
 }
 
+make_zero_layer <- function(object) {
+  Matrix::Matrix(
+    0,
+    nrow = nrow(object),
+    ncol = ncol(object),
+    sparse = TRUE,
+    dimnames = dimnames(SeuratObject::LayerData(object, layer = "counts"))
+  )
+}
+
 test_that("sn_run_cluster clusters a single dataset with the standard workflow", {
   skip_if_not_installed("Seurat")
 
@@ -78,6 +88,35 @@ test_that("sn_run_cluster integrates batches with harmony", {
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
 })
 
+test_that("sn_run_cluster can use a non-default layer without overwriting counts", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 11, prefix = "layered")
+  original_counts <- SeuratObject::LayerData(object, layer = "counts")
+  zero_counts <- make_zero_layer(object)
+
+  SeuratObject::LayerData(object, layer = "counts") <- zero_counts
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- original_counts
+
+  clustered <- sn_run_cluster(
+    object = object,
+    pipeline = "standard",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_equal(
+    as.matrix(SeuratObject::LayerData(clustered, layer = "counts")),
+    as.matrix(zero_counts)
+  )
+})
+
 test_that("sn_remove_ambient_contamination requires raw counts for SoupX", {
   counts <- matrix(rpois(100 * 20, lambda = 3), nrow = 100, ncol = 20)
   rownames(counts) <- paste0("gene", seq_len(100))
@@ -139,4 +178,32 @@ test_that("sn_remove_ambient_contamination defaults to decontX and writes a new 
   corrected <- SeuratObject::LayerData(updated, layer = "decontaminated_counts")
   expect_equal(dim(corrected), dim(SeuratObject::LayerData(object, layer = "counts")))
   expect_true(all(corrected == round(corrected)))
+})
+
+test_that("sn_find_doublets can analyze a non-default layer", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("scDblFinder")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 12, prefix = "doublets", n_genes = 250, n_cells = 40)
+  original_counts <- SeuratObject::LayerData(object, layer = "counts")
+  zero_counts <- make_zero_layer(object)
+
+  object$precluster <- rep(c("a", "b"), each = 20)
+  SeuratObject::LayerData(object, layer = "counts") <- zero_counts
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- original_counts
+
+  updated <- sn_find_doublets(
+    object = object,
+    clusters = "precluster",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    ncores = 1
+  )
+
+  expect_true(all(c("scDblFinder.class", "scDblFinder.score") %in% colnames(updated[[]])))
+  expect_equal(
+    as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
+    as.matrix(zero_counts)
+  )
 })

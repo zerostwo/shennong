@@ -36,6 +36,8 @@ sn_calculate_lisi <-
 #' @param cluster Column name in metadata specifying cluster labels.
 #' @param sample Column name in metadata specifying sample labels.
 #' @param span The span parameter for rogue estimation.
+#' @param assay Assay used for ROGUE calculation. Defaults to \code{"RNA"}.
+#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #'
 #' @return A data.frame of ROGUE score per cluster/sample or per cluster.
 #' @export
@@ -43,18 +45,16 @@ sn_calculate_rogue <- function(
   x,
   cluster = NULL,
   sample = NULL,
-  span = 0.9
+  span = 0.9,
+  assay = "RNA",
+  layer = "counts"
 ) {
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")
   }
 
-  if (!"counts" %in% SeuratObject::Layers(x)) {
-    stop("The 'counts' layer is not found in the Seurat object.")
-  }
-
-  counts <- SeuratObject::LayerData(x, layer = "counts")
+  counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
   counts <- Matrix::as.matrix(counts)
   metadata <- x@meta.data
 

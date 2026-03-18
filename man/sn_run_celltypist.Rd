@@ -18,6 +18,8 @@ sn_run_celltypist(
   transpose_input = TRUE,
   gene_file = NULL,
   cell_file = NULL,
+  assay = "RNA",
+  layer = "counts",
   xlsx = FALSE,
   plot_results = FALSE,
   quiet = FALSE
@@ -49,6 +51,10 @@ sn_run_celltypist(
 \item{gene_file}{If the provided input is in the `mtx` format, path to the file storing gene information. Otherwise ignored.}
 
 \item{cell_file}{If the provided input is in the `mtx` format, path to the file storing cell information. Otherwise ignored.}
+
+\item{assay}{Assay used when exporting Seurat counts to CellTypist. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 
 \item{xlsx}{Logical. If `TRUE`, merge output tables into a single Excel (.xlsx). Defaults to `FALSE`.}
 

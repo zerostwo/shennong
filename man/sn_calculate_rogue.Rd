@@ -4,7 +4,14 @@
 \alias{sn_calculate_rogue}
 \title{Calculate ROGUE score for Seurat Object}
 \usage{
-sn_calculate_rogue(x, cluster = NULL, sample = NULL, span = 0.9)
+sn_calculate_rogue(
+  x,
+  cluster = NULL,
+  sample = NULL,
+  span = 0.9,
+  assay = "RNA",
+  layer = "counts"
+)
 }
 \arguments{
 \item{x}{A Seurat object.}
@@ -14,6 +21,10 @@ sn_calculate_rogue(x, cluster = NULL, sample = NULL, span = 0.9)
 \item{sample}{Column name in metadata specifying sample labels.}
 
 \item{span}{The span parameter for rogue estimation.}
+
+\item{assay}{Assay used for ROGUE calculation. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 }
 \value{
 A data.frame of ROGUE score per cluster/sample or per cluster.

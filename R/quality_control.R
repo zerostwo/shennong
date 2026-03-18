@@ -7,6 +7,8 @@
 #' @param min_cells An integer specifying the minimum number of cells in which a gene must be expressed to be retained. Default is 3.
 #' @param plot Logical; if TRUE, a bar plot is generated showing the number of remaining genes at different filtering thresholds. Default is TRUE.
 #' @param filter Logical; if TRUE, returns the filtered Seurat object. If FALSE, returns the original object. Default is TRUE.
+#' @param assay Assay used when extracting expression values. Defaults to \code{"RNA"}.
+#' @param layer Layer used for gene filtering. Defaults to \code{"counts"}.
 #'
 #' @return A filtered Seurat object if `filter = TRUE`, otherwise the original object.
 #'
@@ -21,12 +23,17 @@
 #' pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
 #'
 #' @export
-sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
+sn_filter_genes <- function(x,
+                            min_cells = 3,
+                            plot = TRUE,
+                            filter = TRUE,
+                            assay = "RNA",
+                            layer = "counts") {
   if (!inherits(x, "Seurat")) {
     stop("The input object x is not a Seurat object.")
   }
 
-  counts <- SeuratObject::LayerData(object = x, layer = "counts")
+  counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
 
   # Compute the number of cells expressing each gene
   gene_counts <- Matrix::rowSums(x = counts > 0)
@@ -63,7 +70,7 @@ sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
   }
 
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
+  slot(cmd, "assay.used") <- assay
   x[[slot(cmd, "name")]] <- cmd
   return(x)
 }
@@ -271,6 +278,8 @@ sn_filter_cells <- function(
 #' @param group_by An optional metadata column used as the donor or sample grouping.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
 #' @param ncores Number of cores to use (for parallel processing).
+#' @param assay Assay used for doublet detection. Defaults to \code{"RNA"}.
+#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #'
 #' @return The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
 #' @examples
@@ -283,12 +292,29 @@ sn_find_doublets <- function(
   clusters = NULL,
   group_by = NULL,
   dbr_sd = NULL,
-  ncores = 1
+  ncores = 1,
+  assay = "RNA",
+  layer = "counts"
 ) {
   check_installed("scDblFinder", reason = "to run doublet detection.")
+  check_installed("SingleCellExperiment")
+
+  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  metadata <- object[[]]
 
   log_info("Converting Seurat object to SingleCellExperiment for doublet detection...")
-  sce <- Seurat::as.SingleCellExperiment(x = object)
+  sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(counts = counts),
+    colData = metadata
+  )
+
+  if (is.character(clusters) && length(clusters) == 1 && clusters %in% colnames(object[[]])) {
+    clusters <- object[[clusters]][, 1]
+  }
+
+  if (!is_null(group_by) && !group_by %in% colnames(object[[]])) {
+    stop(glue("Grouping column '{group_by}' was not found in object metadata."))
+  }
 
   if (is_null(group_by)) {
     log_info("Running scDblFinder without donor grouping...")
@@ -315,7 +341,7 @@ sn_find_doublets <- function(
 
   log_info("Doublet detection complete.")
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+  slot(cmd, "assay.used") <- assay
   object[[slot(cmd, "name")]] <- cmd
   return(object)
 }

@@ -67,3 +67,114 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
     reason = reason
   )
 }
+
+.sn_validate_seurat_assay_layer <- function(object, assay = "RNA", layer = "counts") {
+  if (!inherits(object, "Seurat")) {
+    stop("Input must be a Seurat object.")
+  }
+
+  if (!assay %in% names(object@assays)) {
+    stop(glue("Assay '{assay}' was not found in the Seurat object."))
+  }
+
+  matched_layers <- .sn_match_seurat_layers(object = object, assay = assay, layer = layer)
+  if (length(matched_layers) == 0) {
+    stop(glue("Layer '{layer}' was not found in assay '{assay}'."))
+  }
+
+  invisible(TRUE)
+}
+
+.sn_match_seurat_layers <- function(object, assay = "RNA", layer = "counts") {
+  assay_layers <- SeuratObject::Layers(object[[assay]])
+  if (layer %in% assay_layers) {
+    return(layer)
+  }
+
+  grep(pattern = paste0("^", layer, "(\\.|$)"), x = assay_layers, value = TRUE)
+}
+
+.sn_combine_seurat_layers <- function(object, assay = "RNA", layers) {
+  mats <- lapply(layers, function(current_layer) {
+    SeuratObject::LayerData(object = object, assay = assay, layer = current_layer)
+  })
+
+  feature_names <- rownames(mats[[1]])
+  combined <- Matrix::Matrix(
+    0,
+    nrow = length(feature_names),
+    ncol = ncol(object),
+    sparse = TRUE,
+    dimnames = list(feature_names, colnames(object))
+  )
+
+  for (mat in mats) {
+    combined[rownames(mat), colnames(mat)] <- mat
+  }
+
+  combined
+}
+
+.sn_get_seurat_layer_data <- function(object, assay = "RNA", layer = "counts") {
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = layer)
+  matched_layers <- .sn_match_seurat_layers(object = object, assay = assay, layer = layer)
+
+  if (length(matched_layers) == 1) {
+    return(SeuratObject::LayerData(object = object, assay = assay, layer = matched_layers))
+  }
+
+  .sn_combine_seurat_layers(object = object, assay = assay, layers = matched_layers)
+}
+
+.sn_prepare_seurat_analysis_input <- function(object, assay = "RNA", layer = "counts") {
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = layer)
+
+  original_assay <- SeuratObject::DefaultAssay(object)
+  original_counts <- NULL
+  assay_layers <- SeuratObject::Layers(object[[assay]])
+  has_exact_counts <- "counts" %in% assay_layers
+  analysis_counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  needs_temp_counts <- !identical(layer, "counts") || !has_exact_counts || length(.sn_match_seurat_layers(object, assay, layer)) > 1
+
+  if (has_exact_counts) {
+    original_counts <- SeuratObject::LayerData(object = object, assay = assay, layer = "counts")
+  }
+
+  if (needs_temp_counts) {
+    SeuratObject::LayerData(object = object, assay = assay, layer = "counts") <- analysis_counts
+  }
+
+  SeuratObject::DefaultAssay(object) <- assay
+
+  list(
+    object = object,
+    context = list(
+      original_assay = original_assay,
+      analysis_assay = assay,
+      original_counts = original_counts,
+      had_exact_counts = has_exact_counts,
+      needs_temp_counts = needs_temp_counts
+    )
+  )
+}
+
+.sn_restore_seurat_analysis_input <- function(object, context) {
+  if (isTRUE(context$needs_temp_counts)) {
+    if (isTRUE(context$had_exact_counts)) {
+      SeuratObject::LayerData(
+        object = object,
+        assay = context$analysis_assay,
+        layer = "counts"
+      ) <- context$original_counts
+    } else {
+      SeuratObject::LayerData(
+        object = object,
+        assay = context$analysis_assay,
+        layer = "counts"
+      ) <- NULL
+    }
+  }
+
+  SeuratObject::DefaultAssay(object) <- context$original_assay
+  object
+}

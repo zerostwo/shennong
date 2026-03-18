@@ -138,6 +138,8 @@ sn_initialize_seurat_object <- function(
 #' @param object A \code{Seurat} object.
 #' @param method Currently only "scran" is supported.
 #' @param clusters Optional cluster assignments for \code{scran::quickCluster}.
+#' @param assay Assay used for normalization. Defaults to \code{"RNA"}.
+#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #'
 #' @return A \code{Seurat} object with normalized data in the \code{"data"} layer.
 #' @examples
@@ -148,14 +150,20 @@ sn_initialize_seurat_object <- function(
 sn_normalize_data <- function(
   object,
   method = "scran",
-  clusters = NULL
+  clusters = NULL,
+  assay = "RNA",
+  layer = "counts"
 ) {
   if (method == "scran") {
     check_installed("scran", reason = "to perform scran normalization.")
     check_installed("SingleCellExperiment")
+    counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
 
     log_info("Converting Seurat object to SingleCellExperiment for scran normalization...")
-    sce <- Seurat::as.SingleCellExperiment(x = object)
+    sce <- SingleCellExperiment::SingleCellExperiment(
+      assays = list(counts = counts),
+      colData = object[[]]
+    )
 
     if (is_null(clusters)) {
       log_info("Using scran::quickCluster to assign clusters.")
@@ -176,19 +184,19 @@ sn_normalize_data <- function(
 
     # -- Apply normalization
     log_info("Applying log-normalization...")
-    counts <- SeuratObject::LayerData(object = object, layer = "counts")
     normalized_counts <- sweep(counts, 2, size_factors, "/")
     object$total_counts_normalized <- Matrix::colSums(x = normalized_counts)
 
     # -- Store normalized data
     SeuratObject::LayerData(
       object = object,
+      assay  = assay,
       layer  = "data"
     ) <- methods::as(log(normalized_counts + 1), "CsparseMatrix")
 
     log_info("scran normalization complete.")
     cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+    slot(cmd, "assay.used") <- assay
     object[[slot(cmd, "name")]] <- cmd
     return(object)
   } else {

@@ -1,13 +1,14 @@
 # Shennong Modernization Status
 
 Last updated: 2026-03-18
-Current milestone: Wrap-up after metadata, docs, and package-check modernization
+Current milestone: Layer-aware Seurat workflows and CI dependency hardening
 
 ## Snapshot
 
 - Repository audit completed.
 - Codex memory files and repository guidance are in place and now trackable in git.
 - The task-specific API consolidation around `sn_load_data()`, `sn_remove_ambient_contamination()`, and `sn_run_cluster()` is now implemented and validated.
+- Seurat analysis helpers that operate on count-like layers now accept explicit `assay`/`layer` inputs where that behavior matters operationally.
 - Exported functions now have generated help coverage through roxygen-managed `.Rd` files.
 - The package now has a generated `README.md`, guarded vignette execution, repository-local CI workflows, and a passing `R CMD check --no-manual`.
 - The local test surface now covers composition, data loading, clustering, IO/visualization helpers, preprocessing, and utility helpers.
@@ -68,6 +69,11 @@ Current milestone: Wrap-up after metadata, docs, and package-check modernization
 - Passed: `R CMD build .`
 - Passed: `Rscript -e 'rmarkdown::render("README.Rmd", output_format = "github_document", quiet = TRUE)'`
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz`
+- Passed: `Rscript -e 'testthat::test_local(filter = "clustering|preprocessing", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after `assay`/`layer` support
+- Passed: `Rscript -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::lockfile_create(".", lockfile = tempfile("pkg-", fileext = ".lock"), upgrade = TRUE)'`
+- Passed: `R CMD build .` after `methods::slot` namespace cleanup
+- Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK`
 
 ## Completed In This Iteration
 
@@ -87,9 +93,15 @@ Current milestone: Wrap-up after metadata, docs, and package-check modernization
 - Added `CONTRIBUTING.md`, a pkgdown GitHub Actions workflow, and Conventional Commit guidance in `AGENTS.md`.
 - Reworked `sn_read()`/`sn_write()` away from `rio:::` internals onto public `rio` APIs plus explicit custom-format dispatch.
 - Fixed multiple stale roxygen mismatches and example failures so package documentation now survives `R CMD check --no-manual`.
+- Added internal helpers for validating, reading, combining, and temporarily activating Seurat assay layers, including split-layer support on merged Seurat v5 objects.
+- Updated `sn_run_cluster()`, `sn_find_doublets()`, `sn_filter_genes()`, `sn_normalize_data()`, `sn_run_celltypist()`, and `sn_calculate_rogue()` to accept explicit `assay`/`layer` parameters.
+- Added regression coverage proving non-default layers can drive clustering, doublet detection, gene filtering, and normalization without overwriting the original `counts` layer.
+- Declared GitHub remotes for `BPCells`, `catplot`, `lisi`, `ROGUE`, and `SignatuR`, then locally reproduced a passing `pak::lockfile_create()` to match the failing Actions dependency-resolution step.
+- Imported `methods::slot` and `slot<-` explicitly so `R CMD check` no longer reports namespace notes for command logging.
 
 ## Remaining High-Priority Work
 
 - Review the remaining stale worktree deletions and doc/export mismatches outside this task, especially removed `grn` and legacy upstream files.
 - Decide whether to suppress or explicitly document known Seurat/HGNChelper runtime warnings in tests and smoke paths.
+- Decide whether `sn_remove_ambient_contamination()` should also gain an explicit input `assay`/`layer` pair for Seurat objects, matching the newer downstream layer-aware APIs.
 - Add deeper coverage for enrichment, DE, CellTypist, and other heavyweight optional integrations when stable fixtures are available.

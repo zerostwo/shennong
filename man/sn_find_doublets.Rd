@@ -9,7 +9,9 @@ sn_find_doublets(
   clusters = NULL,
   group_by = NULL,
   dbr_sd = NULL,
-  ncores = 1
+  ncores = 1,
+  assay = "RNA",
+  layer = "counts"
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ sn_find_doublets(
 \item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.}
 
 \item{ncores}{Number of cores to use (for parallel processing).}
+
+\item{assay}{Assay used for doublet detection. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 }
 \value{
 The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.

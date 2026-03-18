@@ -38,6 +38,8 @@
 #' @param dims_use Deprecated compatibility alias for \code{dims}.
 #' @param species Optional species label. Used when block genes must be resolved
 #'   from built-in signatures.
+#' @param assay Assay used for clustering. Defaults to \code{"RNA"}.
+#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #' @param return_cluster If \code{TRUE}, return only the cluster assignments.
 #' @param verbose Whether to print/log progress messages.
 #'
@@ -75,6 +77,8 @@ sn_run_cluster <- function(object,
                            dims = NULL,
                            dims_use = NULL,
                            species = NULL,
+                           assay = "RNA",
+                           layer = "counts",
                            return_cluster = FALSE,
                            verbose = TRUE) {
   check_installed("Seurat")
@@ -89,6 +93,13 @@ sn_run_cluster <- function(object,
     pipeline <- "sctransform"
   }
   dims <- .sn_resolve_cluster_dims(dims = dims, dims_use = dims_use, npcs = npcs)
+
+  prepared <- .sn_prepare_seurat_analysis_input(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
+  object <- prepared$object
 
   if (!is_null(x = batch)) {
     if (!(batch %in% colnames(object@meta.data))) {
@@ -233,6 +244,7 @@ sn_run_cluster <- function(object,
   object <- Seurat::FindClusters(object, resolution = resolution, random.seed = 717, verbose = verbose)
 
   if (return_cluster) {
+    object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) log_info("Integration completed successfully!")
     return(object@meta.data[, "seurat_clusters"])
   } else {
@@ -244,9 +256,10 @@ sn_run_cluster <- function(object,
       verbose = verbose,
       seed.use = 717
     )
+    object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) log_info("Integration completed successfully!")
     cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+    slot(cmd, "assay.used") <- assay
     object[[slot(cmd, "name")]] <- cmd
     return(object)
   }
@@ -268,6 +281,8 @@ sn_run_cluster <- function(object,
 #' @param transpose_input Logical. If `TRUE`, add the `--transpose-input` argument when calling `celltypist`.
 #' @param gene_file If the provided input is in the `mtx` format, path to the file storing gene information. Otherwise ignored.
 #' @param cell_file If the provided input is in the `mtx` format, path to the file storing cell information. Otherwise ignored.
+#' @param assay Assay used when exporting Seurat counts to CellTypist. Defaults to \code{"RNA"}.
+#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #' @param xlsx Logical. If `TRUE`, merge output tables into a single Excel (.xlsx). Defaults to `FALSE`.
 #' @param plot_results Logical. If `TRUE`, plot the prediction results. Defaults to `FALSE`.
 #' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
@@ -287,6 +302,8 @@ sn_run_celltypist <- function(x,
                               transpose_input = TRUE,
                               gene_file = NULL,
                               cell_file = NULL,
+                              assay = "RNA",
+                              layer = "counts",
                               xlsx = FALSE,
                               plot_results = FALSE,
                               quiet = FALSE) {
@@ -325,7 +342,7 @@ sn_run_celltypist <- function(x,
     input_data <- file.path(outdir, "counts.csv")
 
     counts <- tryCatch(
-      SeuratObject::LayerData(object = x, layer = "counts"),
+      .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer),
       error = function(e) {
         log_error("Failed to extract counts layer: {e$message}")
         stop("Counts layer extraction failed")
@@ -425,7 +442,7 @@ sn_run_celltypist <- function(x,
   log_info("CellTypist analysis completed successfully")
 
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
+  slot(cmd, "assay.used") <- assay
   x[[slot(cmd, "name")]] <- cmd
   return(x)
 }

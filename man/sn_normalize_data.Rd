@@ -4,7 +4,13 @@
 \alias{sn_normalize_data}
 \title{Normalize data in a Seurat object using scran}
 \usage{
-sn_normalize_data(object, method = "scran", clusters = NULL)
+sn_normalize_data(
+  object,
+  method = "scran",
+  clusters = NULL,
+  assay = "RNA",
+  layer = "counts"
+)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
@@ -12,6 +18,10 @@ sn_normalize_data(object, method = "scran", clusters = NULL)
 \item{method}{Currently only "scran" is supported.}
 
 \item{clusters}{Optional cluster assignments for \code{scran::quickCluster}.}
+
+\item{assay}{Assay used for normalization. Defaults to \code{"RNA"}.}
+
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 }
 \value{
 A \code{Seurat} object with normalized data in the \code{"data"} layer.
