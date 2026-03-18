@@ -27,6 +27,7 @@ test_that("sn_initialize_seurat_object accepts base matrices and adds metadata",
   expect_s4_class(object, "Seurat")
   expect_equal(unname(object$study), rep("prep", 4))
   expect_true(all(c("percent.mt", "percent.ribo", "percent.hb", "batch") %in% colnames(object[[]])))
+  expect_true("sn_initialize_seurat_object" %in% names(object@commands))
 })
 
 test_that("sn_filter_genes drops genes below the minimum cell threshold", {
@@ -85,4 +86,17 @@ test_that("sn_filter_cells adds qc flags and can subset outliers", {
   )
 
   expect_lt(ncol(filtered), ncol(object))
+})
+
+test_that("Seurat-returning helpers record commands in the object history", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(80, lambda = 3), nrow = 20, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:20)
+  colnames(counts) <- paste0("cell", 1:4)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "commands")
+  object <- sn_filter_genes(object, min_cells = 1, plot = FALSE, filter = FALSE)
+
+  expect_true(all(c("sn_initialize_seurat_object", "sn_filter_genes") %in% names(object@commands)))
 })

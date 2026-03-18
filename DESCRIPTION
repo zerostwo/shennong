@@ -61,6 +61,7 @@ Suggests:
     SeuratObject,
     SignatuR,
     SingleCellExperiment,
+    SummarizedExperiment,
     SoupX,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

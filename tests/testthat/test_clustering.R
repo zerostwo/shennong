@@ -115,4 +115,28 @@ test_that("sn_remove_ambient_contamination supports decontX on matrices", {
   expect_equal(dim(corrected), dim(counts))
   expect_equal(rownames(corrected), rownames(counts))
   expect_equal(colnames(corrected), colnames(counts))
+  expect_true(all(corrected == round(corrected)))
+})
+
+test_that("sn_remove_ambient_contamination defaults to decontX and writes a new layer for Seurat", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("celda")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 5, prefix = "decontx", n_genes = 120, n_cells = 20)
+  cluster <- rep(c("a", "b"), each = 10)
+
+  updated <- sn_remove_ambient_contamination(
+    x = object,
+    cluster = cluster,
+    verbose = FALSE,
+    estimateDelta = FALSE,
+    maxIter = 5
+  )
+
+  expect_s4_class(updated, "Seurat")
+  expect_true(all(c("decontX_contamination", "decontX_clusters") %in% colnames(updated[[]])))
+  corrected <- SeuratObject::LayerData(updated, layer = "decontaminated_counts")
+  expect_equal(dim(corrected), dim(SeuratObject::LayerData(object, layer = "counts")))
+  expect_true(all(corrected == round(corrected)))
 })

@@ -7,10 +7,9 @@
 sn_remove_ambient_contamination(
   x,
   raw = NULL,
-  method = c("soupx", "decontx"),
+  method = c("decontx", "soupx"),
   cluster = NULL,
-  force_accept = FALSE,
-  contamination_range = c(0.01, 0.8),
+  layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
   ...
@@ -22,16 +21,15 @@ sn_remove_ambient_contamination(
 \item{raw}{Optional raw/background counts. Required for \code{method = "soupx"}.
 If supplied for \code{decontx}, it is used as the background matrix.}
 
-\item{method}{One of \code{"soupx"} or \code{"decontx"}.}
+\item{method}{One of \code{"decontx"} or \code{"soupx"}.}
 
 \item{cluster}{Optional cluster labels. This can be a vector with one value
 per cell, or a metadata column name when \code{x} is a Seurat object. If
 \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.}
 
-\item{force_accept}{Passed to \code{SoupX::autoEstCont()} when using SoupX.}
-
-\item{contamination_range}{Passed to \code{SoupX::autoEstCont()} when using
-SoupX.}
+\item{layer}{Layer name used when writing corrected counts back to a Seurat
+object. Defaults to \code{"decontaminated_counts"}. Use \code{"counts"} to
+overwrite the original counts layer explicitly.}
 
 \item{return_object}{If \code{TRUE} and \code{x} is a Seurat object, return
 the updated Seurat object. Otherwise return the corrected counts matrix.}
@@ -39,11 +37,14 @@ the updated Seurat object. Otherwise return the corrected counts matrix.}
 \item{verbose}{Logical; whether to print progress from helper clustering.}
 
 \item{...}{Additional method-specific arguments passed to
-\code{celda::decontX()} when \code{method = "decontx"}.}
+\code{celda::decontX()} when \code{method = "decontx"}, or to
+\code{SoupX::autoEstCont()} when \code{method = "soupx"}.}
 }
 \value{
 A corrected counts matrix, or an updated Seurat object when
-  \code{return_object = TRUE} and \code{x} is a Seurat object.
+  \code{return_object = TRUE} and \code{x} is a Seurat object. For
+  decontX-based Seurat returns, the \code{decontX_contamination} and
+  \code{decontX_clusters} columns are added to \code{meta.data}.
 }
 \description{
 This function provides a unified interface for ambient RNA correction using

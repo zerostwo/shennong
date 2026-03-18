@@ -59,9 +59,12 @@ sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
 
   if (filter) {
     keep_genes <- gene_counts >= min_cells
-    return(x[keep_genes, ])
+    x <- x[keep_genes, ]
   }
 
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
+  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
+  x[[slot(cmd, "name")]] <- cmd
   return(x)
 }
 
@@ -155,6 +158,9 @@ sn_filter_cells <- function(
     x <- x[, keep]
   }
 
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
+  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
+  x[[slot(cmd, "name")]] <- cmd
   return(x)
 }
 
@@ -308,6 +314,9 @@ sn_find_doublets <- function(
   object$scDblFinder.score <- sce$scDblFinder.score
 
   log_info("Doublet detection complete.")
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
+  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+  object[[slot(cmd, "name")]] <- cmd
   return(object)
 }
 
@@ -437,7 +446,10 @@ sn_find_doublets <- function(
   cli::cli_text("{.field Filtered counts (toc)}: {format(toc_sum, big.mark = ',')}")
   cli::cli_text("{.field Output counts (out)}: {format(out_sum, big.mark = ',')}")
 
-  .sn_restore_count_shape(toc, out)
+  list(
+    counts = .sn_restore_count_shape(toc, out),
+    metadata = NULL
+  )
 }
 
 .sn_remove_ambient_decontx <- function(x_info,
@@ -475,9 +487,15 @@ sn_find_doublets <- function(
     background = background,
     ...
   )
-  out <- celda::decontXcounts(sce)
+  out <- round(celda::decontXcounts(sce))
+  metadata <- as.data.frame(
+    SummarizedExperiment::colData(sce)[, c("decontX_contamination", "decontX_clusters"), drop = FALSE]
+  )
 
-  .sn_restore_count_shape(x_info$counts, out)
+  list(
+    counts = .sn_restore_count_shape(x_info$counts, out),
+    metadata = metadata
+  )
 }
 
 #' Remove ambient RNA contamination from counts
@@ -489,30 +507,32 @@ sn_find_doublets <- function(
 #' @param x A Seurat object, count matrix-like object, or path to filtered data.
 #' @param raw Optional raw/background counts. Required for \code{method = "soupx"}.
 #'   If supplied for \code{decontx}, it is used as the background matrix.
-#' @param method One of \code{"soupx"} or \code{"decontx"}.
+#' @param method One of \code{"decontx"} or \code{"soupx"}.
 #' @param cluster Optional cluster labels. This can be a vector with one value
 #'   per cell, or a metadata column name when \code{x} is a Seurat object. If
 #'   \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.
-#' @param force_accept Passed to \code{SoupX::autoEstCont()} when using SoupX.
-#' @param contamination_range Passed to \code{SoupX::autoEstCont()} when using
-#'   SoupX.
+#' @param layer Layer name used when writing corrected counts back to a Seurat
+#'   object. Defaults to \code{"decontaminated_counts"}. Use \code{"counts"} to
+#'   overwrite the original counts layer explicitly.
 #' @param return_object If \code{TRUE} and \code{x} is a Seurat object, return
 #'   the updated Seurat object. Otherwise return the corrected counts matrix.
 #' @param verbose Logical; whether to print progress from helper clustering.
 #' @param ... Additional method-specific arguments passed to
-#'   \code{celda::decontX()} when \code{method = "decontx"}.
+#'   \code{celda::decontX()} when \code{method = "decontx"}, or to
+#'   \code{SoupX::autoEstCont()} when \code{method = "soupx"}.
 #'
 #' @return A corrected counts matrix, or an updated Seurat object when
-#'   \code{return_object = TRUE} and \code{x} is a Seurat object.
+#'   \code{return_object = TRUE} and \code{x} is a Seurat object. For
+#'   decontX-based Seurat returns, the \code{decontX_contamination} and
+#'   \code{decontX_clusters} columns are added to \code{meta.data}.
 #'
 #' @export
 sn_remove_ambient_contamination <- function(
   x,
   raw = NULL,
-  method = c("soupx", "decontx"),
+  method = c("decontx", "soupx"),
   cluster = NULL,
-  force_accept = FALSE,
-  contamination_range = c(0.01, 0.8),
+  layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
   ...
@@ -529,9 +549,8 @@ sn_remove_ambient_contamination <- function(
       x_info = x_info,
       raw_info = raw_info,
       cluster = cluster,
-      force_accept = force_accept,
-      contamination_range = contamination_range,
-      verbose = verbose
+      verbose = verbose,
+      ...
     ),
     decontx = .sn_remove_ambient_decontx(
       x_info = x_info,
@@ -543,9 +562,15 @@ sn_remove_ambient_contamination <- function(
   )
 
   if (return_object && !is_null(x_info$object)) {
-    SeuratObject::LayerData(object = x_info$object, layer = "counts") <- out
+    if (!is_null(out$metadata)) {
+      x_info$object <- SeuratObject::AddMetaData(x_info$object, metadata = out$metadata)
+    }
+    SeuratObject::LayerData(object = x_info$object, layer = layer) <- out$counts
+    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x_info$object, return.command = TRUE)
+    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x_info$object)
+    x_info$object[[slot(cmd, "name")]] <- cmd
     return(x_info$object)
   }
 
-  out
+  out$counts
 }

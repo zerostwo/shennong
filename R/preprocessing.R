@@ -26,6 +26,9 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 
   # Compute cell cycle difference
   object$CC.Difference <- object$S.Score - object$G2M.Score
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
+  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+  object[[slot(cmd, "name")]] <- cmd
 
   return(object)
 }
@@ -121,6 +124,9 @@ sn_initialize_seurat_object <- function(
   }
 
   log_info("Seurat object initialization complete.")
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = seurat_obj, return.command = TRUE)
+  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(seurat_obj)
+  seurat_obj[[slot(cmd, "name")]] <- cmd
   return(seurat_obj)
 }
 
@@ -181,6 +187,9 @@ sn_normalize_data <- function(
     ) <- methods::as(log(normalized_counts + 1), "CsparseMatrix")
 
     log_info("scran normalization complete.")
+    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
+    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
+    object[[slot(cmd, "name")]] <- cmd
     return(object)
   } else {
     stop("Currently only 'scran' method is supported in sn_normalize_data().")
@@ -299,6 +308,9 @@ sn_standardize_gene_symbols <- function(
   # -- Return updated Seurat or matrix
   if (inherits(x, "Seurat")) {
     x[["RNA"]] <- SeuratObject::CreateAssay5Object(counts = counts)
+    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
+    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
+    x[[slot(cmd, "name")]] <- cmd
     return(x)
   } else {
     return(counts)
