@@ -34,10 +34,10 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #'
 #' This function creates a Seurat object from counts (and optional metadata),
 #' then calculates common QC metrics such as mitochondrial and ribosomal gene
-#' percentages if `qc = TRUE`. Currently supports human and mouse patterns
-#' for these gene sets.
+#' percentages when `species` is supplied. Currently supports human and mouse
+#' patterns for these gene sets.
 #'
-#' @param counts A matrix, data.frame, or sparse matrix of counts.
+#' @param x A matrix, data.frame, sparse matrix, or path to counts data.
 #' @param metadata Optional metadata (data.frame or similar) to add to the Seurat object.
 #' @param names_field Passed to \code{SeuratObject::CreateSeuratObject}, indicating how to parse cell names.
 #' @param names_delim Passed to \code{SeuratObject::CreateSeuratObject}, indicating the delimiter for cell names.
@@ -45,7 +45,9 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' @param min_features Filter out cells with fewer than \code{min_features} genes.
 #' @param project A project name for the Seurat object.
 #' @param species Either "human" or "mouse" (case-sensitive). Affects QC metric patterns.
-#' @param qc Whether to calculate mitochondrial, ribosomal, and hemoglobin gene percentages.
+#' @param standardize_gene_symbols Logical; standardize gene symbols after object creation.
+#' @param is_gene_id Logical; treat row names as gene IDs and convert them to symbols when standardizing.
+#' @param ... Additional arguments passed to \code{SeuratObject::CreateSeuratObject()}.
 #'
 #' @return A \code{Seurat} object with optional QC metadata in its meta.data slot.
 #' @examples
@@ -69,7 +71,7 @@ sn_initialize_seurat_object <- function(
   # -- Logging
   log_info(glue("Initializing Seurat object for project: {project}"))
 
-  if (inherits(x, what = c("Matrix", "data.frame", "MatrixDir"))) {
+  if (inherits(x, what = c("Matrix", "matrix", "data.frame", "MatrixDir"))) {
     counts <- x
   } else {
     counts <- sn_read(path = x)
@@ -176,7 +178,7 @@ sn_normalize_data <- function(
     SeuratObject::LayerData(
       object = object,
       layer  = "data"
-    ) <- as(log(normalized_counts + 1), "CsparseMatrix")
+    ) <- methods::as(log(normalized_counts + 1), "CsparseMatrix")
 
     log_info("scran normalization complete.")
     return(object)
@@ -263,9 +265,9 @@ sn_standardize_gene_symbols <- function(
 
   check_gene_symbols <- check_gene_symbols |>
     dplyr::mutate(Suggested.Symbol = dplyr::if_else(
-      stringr::str_detect(Suggested.Symbol, "///"),
+      stringr::str_detect(.data$Suggested.Symbol, "///"),
       NA_character_,
-      Suggested.Symbol
+      .data$Suggested.Symbol
     ))
 
   # -- Filter out NA suggested symbols

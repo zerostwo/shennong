@@ -12,24 +12,56 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    cli,
+    curl,
     dplyr,
     ggplot2,
     glue,
     logger,
+    Matrix,
     methods,
     rlang,
-    stats,
     tictoc,
     RColorBrewer,
     stringr,
-    tibble,
-    qs
+    tibble
 RoxygenNote: 7.3.3
 Depends: 
-    R (>= 3.5)
+    R (>= 4.1.0)
 Suggests: 
+    anndataR,
+    aplot,
+    BiocParallel,
+    BPCells,
+    catplot,
+    celda,
+    clusterProfiler,
+    data.table,
+    ggrastr,
+    glmGamPoi,
+    harmony,
+    hdf5r,
+    HGNChelper,
     knitr,
+    later,
+    lisi,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
+    pkgdown,
+    readr,
+    remotes,
+    rhdf5,
+    rio,
+    ROGUE,
     rmarkdown,
+    rtracklayer,
+    scDblFinder,
+    scran,
+    Seurat,
+    SeuratObject,
+    SignatuR,
+    SingleCellExperiment,
+    SoupX,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3

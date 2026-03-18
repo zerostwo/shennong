@@ -29,8 +29,8 @@ sn_find_de <- function(
   }
   if (!(is_null(treatment) || is_null(control))) {
     only_pos <- only_pos %||% FALSE
-    deg <- FindMarkers(
-      object = seurat_obj,
+    deg <- Seurat::FindMarkers(
+      object = object,
       ident.1 = treatment,
       ident.2 = control,
       min.pct = min_pct,

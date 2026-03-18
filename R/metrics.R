@@ -2,7 +2,7 @@
 #'
 #' This function calculates the Local Intrinsic Dimensionality-based Outlier score (Lisi score) for a Seurat object.
 #'
-#' @param object A Seurat object.
+#' @param x A Seurat object.
 #' @param reduction The dimensionality reduction method used to generate the embeddings (default is "pca").
 #' @param label The column name in object@meta.data that specifies the sample labels (default is "sample").
 #'
@@ -50,7 +50,7 @@ sn_calculate_rogue <- function(
     stop("Input x must be a Seurat object.")
   }
 
-  if (!"counts" %in% SeuratObject::LayerNames(x)) {
+  if (!"counts" %in% SeuratObject::Layers(x)) {
     stop("The 'counts' layer is not found in the Seurat object.")
   }
 

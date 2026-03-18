@@ -1,89 +1,28 @@
-#' Quickly run a clustering pipeline (standard or SCTransform-based)
-#'
-#' This function provides a simplified clustering workflow for a Seurat object,
-#' including data normalization, variable feature selection, scaling, PCA,
-#' neighbor finding, clustering, and optional UMAP embedding.
-#'
-#' @param object A \code{Seurat} object.
-#' @param pipeline One of \code{"standard"} or \code{"sctransform"} (alias:
-#'   \code{"sct"}).
-#' @param nfeatures Number of variable features to find.
-#' @param vars_to_regress Covariates for regression in \code{ScaleData} or
-#'   \code{SCTransform}.
-#' @param resolution Resolution parameter for \code{FindClusters}.
-#' @param dims Dimensions to use for PCA/UMAP/FindNeighbors.
-#' @param return_cluster If \code{TRUE}, returns just the cluster vector instead
-#'   of the entire Seurat object.
-#' @param verbose Whether to print/log progress messages.
-#'
-#' @return A \code{Seurat} object with clustering and UMAP performed, or a
-#'   cluster vector if \code{return_cluster=TRUE}.
-#'
-#' @examples
-#' \dontrun{
-#' seurat_obj <- sn_quick_cluster(seurat_obj, pipeline = "standard", resolution = 0.8)
-#' }
-sn_quick_cluster <- function(object,
-                             pipeline = "standard",
-                             nfeatures = 3000,
-                             vars_to_regress = NULL,
-                             resolution = 0.8,
-                             dims = 1:30,
-                             return_cluster = FALSE,
-                             verbose = TRUE,
-                             species = NULL) {
-  pipeline <- match.arg(pipeline, c("standard", "sctransform", "sct"))
-
-  if (verbose) log_info(glue("[sn_quick_cluster] Pipeline = {pipeline}"))
-
-  #-- Standard pipeline
-  if (pipeline == "standard") {
-    if (verbose) log_info("Running standard normalization + variable feature selection + scaling...")
-    object <- object |>
-      Seurat::NormalizeData(verbose = verbose) |>
-      Seurat::FindVariableFeatures(nfeatures = nfeatures, verbose = verbose) |>
-      Seurat::ScaleData(vars.to.regress = vars_to_regress, verbose = verbose)
-  } else {
-    # sctransform pipeline
-    check_installed("glmGamPoi", reason = "for SCTransform workflow (suggested in Seurat).")
-
-    if (verbose) log_info("Running SCTransform pipeline...")
-    object <- Seurat::SCTransform(
-      object              = object,
-      variable.features.n = nfeatures,
-      vars.to.regress     = vars_to_regress,
-      verbose             = verbose,
-      seed.use            = 717
-    )
+# Internal helper to normalize the clustering dimension arguments.
+.sn_resolve_cluster_dims <- function(dims = NULL, dims_use = NULL, npcs = 50) {
+  if (!is_null(dims) && !is_null(dims_use) && !identical(dims, dims_use)) {
+    log_warn("Both `dims` and `dims_use` were supplied; using `dims`.")
   }
 
-  #-- PCA / Neighbors / Clusters
-  if (verbose) log_info("Running PCA, FindNeighbors, and FindClusters...")
-  object <- object |>
-    Seurat::RunPCA(seed.use = 717, verbose = verbose) |>
-    Seurat::FindNeighbors(dims = dims, verbose = verbose) |>
-    Seurat::FindClusters(resolution = resolution, random.seed = 717, verbose = verbose)
-
-  if (return_cluster) {
-    return(object@meta.data[, "seurat_clusters"])
-  } else {
-    if (verbose) log_info("Running UMAP for visualization...")
-    object <- object |>
-      Seurat::RunUMAP(dims = dims, seed.use = 717, verbose = verbose)
-
-    return(object)
-  }
+  dims <- dims %||% dims_use %||% seq_len(min(20, npcs))
+  dims <- as.integer(dims)
+  dims[dims > 0]
 }
 
-#' Integrate multiple batches using Harmony + optional blocklist genes
+#' Run clustering for a single dataset or Harmony integration workflow
 #'
-#' This function demonstrates a workflow to integrate multiple batches
-#' using \code{Harmony}, with optional blocklist-based HVG filtering.
-#' It also does cell cycle scoring, HVG detection, scaling, PCA, clustering,
-#' and UMAP. Compatible with Seurat v5 functions for integration.
+#' This function is the main clustering entry point in `Shennong`.
+#' When `batch = NULL`, it performs single-dataset clustering with either the
+#' standard Seurat workflow or an SCTransform workflow. When `batch` is
+#' supplied, it performs Harmony-based integration followed by clustering
+#' and UMAP.
 #'
 #' @param object A \code{Seurat} object.
 #' @param batch A column name in \code{object@meta.data} specifying batch info.
+#'   If \code{NULL}, no integration is performed.
+#' @param pipeline One of \code{"standard"} or \code{"sctransform"} (alias:
+#'   \code{"sct"}). The SCTransform workflow is currently only supported when
+#'   \code{batch = NULL}.
 #' @param nfeatures Number of variable features to select.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
@@ -91,18 +30,32 @@ sn_quick_cluster <- function(object,
 #'   if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude from HVGs.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction.
+#' @param group_by_vars Optional column name or character vector passed to
+#'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}.
 #' @param npcs Number of PCs to compute in \code{RunPCA}.
-#' @param dims_use A numeric vector of PCs (dimensions) to use for \code{Harmony} and subsequent steps.
+#' @param dims A numeric vector of PCs (dimensions) to use for neighbor search,
+#'   clustering, and UMAP.
+#' @param dims_use Deprecated compatibility alias for \code{dims}.
+#' @param species Optional species label. Used when block genes must be resolved
+#'   from built-in signatures.
+#' @param return_cluster If \code{TRUE}, return only the cluster assignments.
 #' @param verbose Whether to print/log progress messages.
 #'
-#' @return A \code{Seurat} object with integrated data (Harmony reduction), cell cycle scores,
-#'   clusters, and UMAP embeddings.
+#' @return A \code{Seurat} object with clustering results and embeddings, or a
+#'   cluster vector if \code{return_cluster = TRUE}.
 #'
 #' @examples
 #' \dontrun{
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
+#'   pipeline = "standard",
+#'   resolution = 0.8
+#' )
+#'
+#' seurat_obj <- sn_run_cluster(
+#'   object = seurat_obj,
 #'   batch = "sample_id",
+#'   pipeline = "standard",
 #'   nfeatures = 3000,
 #'   resolution = 0.5,
 #'   block_genes = c("ribo", "mito") # or a custom vector of gene symbols
@@ -111,6 +64,7 @@ sn_quick_cluster <- function(object,
 #' @export
 sn_run_cluster <- function(object,
                            batch = NULL,
+                           pipeline = c("standard", "sctransform", "sct"),
                            nfeatures = 3000,
                            vars_to_regress = NULL,
                            resolution = 0.8,
@@ -118,30 +72,48 @@ sn_run_cluster <- function(object,
                            theta = 2,
                            group_by_vars = NULL,
                            npcs = 50,
-                           dims_use = 1:20,
+                           dims = NULL,
+                           dims_use = NULL,
                            species = NULL,
                            return_cluster = FALSE,
                            verbose = TRUE) {
   check_installed("Seurat")
   check_installed("HGNChelper")
-  check_installed("harmony")
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
 
+  pipeline <- match.arg(pipeline)
+  if (pipeline == "sct") {
+    pipeline <- "sctransform"
+  }
+  dims <- .sn_resolve_cluster_dims(dims = dims, dims_use = dims_use, npcs = npcs)
+
   if (!is_null(x = batch)) {
     if (!(batch %in% colnames(object@meta.data))) {
       stop(glue("Batch variable '{batch}' not found in metadata."))
     }
-    if (verbose) log_info(glue("[sn_quick_integration] Starting integration for batch='{batch}'..."))
+    if (pipeline != "standard") {
+      stop("`pipeline = \"sctransform\"` is currently only supported when `batch = NULL`.")
+    }
+    check_installed("harmony")
+    if (verbose) log_info(glue("[sn_run_cluster] Starting integration for batch='{batch}'..."))
   }
 
+  if (verbose) {
+    log_info(glue("[sn_run_cluster] Pipeline = {pipeline}; batch = {batch %||% 'none'}"))
+  }
 
   predefined_genesets <- c(
     "tcr", "immunoglobulins", "ribo", "mito",
     "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
   )
+
+  if (pipeline != "standard" && !is_null(block_genes)) {
+    log_warn("`block_genes` is only applied in the standard pipeline; ignoring it for SCTransform.")
+    block_genes <- NULL
+  }
 
   if (!is_null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
@@ -159,100 +131,119 @@ sn_run_cluster <- function(object,
 
       if (length(invalid) > 0) {
         log_warn(glue(
-          "Removed {length(invalid)} invalid genes from block list (e.g. {paste(head(invalid, 3), collapse=', ')})."
+          "Removed {length(invalid)} invalid genes from block list (e.g. {paste(utils::head(invalid, 3), collapse=', ')})."
         ))
       }
       block_genes <- unique(valid_genes)
       if (verbose) log_info(glue("  Using {length(block_genes)} custom block genes."))
     }
   }
-  object <- Seurat::NormalizeData(object = object, verbose = verbose)
 
-  if (!is_null(species)) {
-    if (verbose) log_info("[1/8] Cell cycle scoring...")
-    object <- sn_score_cell_cycle(object = object, species = species)
-  }
-  #-- （Seurat v5）Split by batch & Join
-  if (!is_null(x = batch)) {
-    if (verbose) log_info("[2/8] Splitting object by batch and preparing for integration (Seurat v5 style)...")
-    object[["RNA"]] <- split(object[["RNA"]], f = object[[batch, drop = TRUE]])
-  }
-  if (verbose) log_info("[3/8] Selecting highly variable features...")
-  object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
+  if (pipeline == "sctransform") {
+    check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
 
-  if (is_null(x = batch)) {
-    hvg <- Seurat::VariableFeatures(object = object)
-  } else {
-    hvg <- Seurat::SelectIntegrationFeatures5(object, nfeatures = nfeatures + 1000, verbose = verbose)
-    object <- SeuratObject::JoinLayers(object)
-  }
+    if (verbose) log_info("[1/4] Running SCTransform...")
+    object <- Seurat::SCTransform(
+      object = object,
+      variable.features.n = nfeatures,
+      vars.to.regress = vars_to_regress,
+      verbose = verbose,
+      seed.use = 717
+    )
 
-  if (!is_null(block_genes)) {
-    n_before <- length(hvg)
-    hvg <- setdiff(hvg, block_genes)
-    n_removed <- n_before - length(hvg)
+    if (verbose) log_info("[2/4] Running PCA...")
+    object <- Seurat::RunPCA(
+      object,
+      npcs = npcs,
+      verbose = verbose,
+      seed.use = 717
+    )
 
-    if (verbose) {
-      log_info(glue(
-        "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
-      ))
-    }
-
-    if (length(hvg) < nfeatures) {
-      log_warn(glue(
-        "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
-        "Consider adjusting 'nfeatures' or 'block_genes'."
-      ))
-    }
-    hvg <- head(hvg, nfeatures)
-  }
-  Seurat::VariableFeatures(object = object) <- hvg
-
-  #-- Scaling
-  if (verbose) log_info("[4/8] Scaling data...")
-  object <- Seurat::ScaleData(
-    object          = object,
-    vars.to.regress = vars_to_regress,
-    features        = hvg,
-    verbose         = verbose
-  )
-
-  #-- PCA
-  if (verbose) log_info("[5/8] Running PCA...")
-  object <- Seurat::RunPCA(
-    object,
-    npcs     = npcs,
-    features = hvg,
-    verbose  = verbose
-  )
-
-  if (is_null(x = batch)) {
     reduction <- "pca"
   } else {
-    #-- Harmony
-    if (verbose) log_info("[6/8] Running Harmony integration...")
-    group_by_vars <- group_by_vars %||% batch
-    object <- harmony::RunHarmony(
-      object        = object,
-      group.by.vars = group_by_vars,
-      theta         = theta,
-      reduction.use = "pca",
-      verbose       = verbose
+    object <- Seurat::NormalizeData(object = object, verbose = verbose)
+
+    if (!is_null(species)) {
+      if (verbose) log_info("[1/6] Cell cycle scoring...")
+      object <- sn_score_cell_cycle(object = object, species = species)
+    }
+
+    if (verbose) log_info("[2/6] Selecting highly variable features...")
+    object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
+    hvg <- Seurat::VariableFeatures(object = object)
+
+    if (!is_null(block_genes)) {
+      n_before <- length(hvg)
+      hvg <- setdiff(hvg, block_genes)
+      n_removed <- n_before - length(hvg)
+
+      if (verbose) {
+        log_info(glue(
+          "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
+        ))
+      }
+
+      if (length(hvg) < nfeatures) {
+        log_warn(glue(
+          "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
+          "Consider adjusting 'nfeatures' or 'block_genes'."
+        ))
+      }
+      hvg <- utils::head(hvg, nfeatures)
+    }
+    Seurat::VariableFeatures(object = object) <- hvg
+
+    #-- Scaling
+    if (verbose) log_info("[3/6] Scaling data...")
+    object <- Seurat::ScaleData(
+      object = object,
+      vars.to.regress = vars_to_regress,
+      features = hvg,
+      verbose = verbose
     )
-    reduction <- "harmony"
+
+    #-- PCA
+    if (verbose) log_info("[4/6] Running PCA...")
+    object <- Seurat::RunPCA(
+      object,
+      npcs = npcs,
+      features = hvg,
+      verbose = verbose,
+      seed.use = 717
+    )
+
+    if (is_null(x = batch)) {
+      reduction <- "pca"
+    } else {
+      if (verbose) log_info("[5/6] Running Harmony integration...")
+      group_by_vars <- group_by_vars %||% batch
+      object <- harmony::RunHarmony(
+        object = object,
+        group.by.vars = group_by_vars,
+        theta = theta,
+        reduction.use = "pca",
+        verbose = verbose
+      )
+      reduction <- "harmony"
+    }
   }
 
-  if (verbose) log_info("[7/8] Clustering with integrated embeddings...")
-  object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims_use, verbose = verbose)
-  object <- Seurat::FindClusters(object, resolution = resolution, verbose = verbose)
+  if (verbose) log_info("[6/6] Clustering with integrated embeddings...")
+  object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
+  object <- Seurat::FindClusters(object, resolution = resolution, random.seed = 717, verbose = verbose)
 
   if (return_cluster) {
     if (verbose) log_info("Integration completed successfully!")
     return(object@meta.data[, "seurat_clusters"])
   } else {
-    #-- UMAP
-    if (verbose) log_info("[8/8] Running UMAP...")
-    object <- Seurat::RunUMAP(object, reduction = reduction, dims = dims_use, verbose = verbose)
+    if (verbose) log_info("[7/7] Running UMAP...")
+    object <- Seurat::RunUMAP(
+      object,
+      reduction = reduction,
+      dims = dims,
+      verbose = verbose,
+      seed.use = 717
+    )
     if (verbose) log_info("Integration completed successfully!")
     return(object)
   }
@@ -301,7 +292,7 @@ sn_run_celltypist <- function(x,
   )
 
   mode <- match.arg(mode)
-  celltypist <- celltypist %||% default_celltypist_path
+  celltypist <- celltypist %||% getOption("shennong.celltypist_path", Sys.which("celltypist"))
   sn_check_file(celltypist)
 
   log_info("Starting CellTypist analysis with model: {model}")

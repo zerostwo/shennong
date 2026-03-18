@@ -7,8 +7,9 @@
 sn_get_signatures(species = "human", category = NULL)
 }
 \arguments{
-\item{genesets}{A character vector of predefined gene sets. Must be keys in
-\code{SignatuR$Hs$...}.}
+\item{species}{One of \code{"human"} or \code{"mouse"}.}
+
+\item{category}{A character vector of predefined signature categories.}
 }
 \value{
 A unique character vector of valid gene symbols.

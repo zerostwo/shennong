@@ -2,11 +2,12 @@
 % Please edit documentation in R/integrate.R
 \name{sn_run_cluster}
 \alias{sn_run_cluster}
-\title{Integrate multiple batches using Harmony + optional blocklist genes}
+\title{Run clustering for a single dataset or Harmony integration workflow}
 \usage{
 sn_run_cluster(
   object,
   batch = NULL,
+  pipeline = c("standard", "sctransform", "sct"),
   nfeatures = 3000,
   vars_to_regress = NULL,
   resolution = 0.8,
@@ -14,7 +15,8 @@ sn_run_cluster(
   theta = 2,
   group_by_vars = NULL,
   npcs = 50,
-  dims_use = 1:20,
+  dims = NULL,
+  dims_use = NULL,
   species = NULL,
   return_cluster = FALSE,
   verbose = TRUE
@@ -23,7 +25,12 @@ sn_run_cluster(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch}{A column name in \code{object@meta.data} specifying batch info.}
+\item{batch}{A column name in \code{object@meta.data} specifying batch info.
+If \code{NULL}, no integration is performed.}
+
+\item{pipeline}{One of \code{"standard"} or \code{"sctransform"} (alias:
+\code{"sct"}). The SCTransform workflow is currently only supported when
+\code{batch = NULL}.}
 
 \item{nfeatures}{Number of variable features to select.}
 
@@ -37,27 +44,46 @@ if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude f
 \item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction.}
 
+\item{group_by_vars}{Optional column name or character vector passed to
+\code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}.}
+
 \item{npcs}{Number of PCs to compute in \code{RunPCA}.}
 
-\item{dims_use}{A numeric vector of PCs (dimensions) to use for \code{Harmony} and subsequent steps.}
+\item{dims}{A numeric vector of PCs (dimensions) to use for neighbor search,
+clustering, and UMAP.}
+
+\item{dims_use}{Deprecated compatibility alias for \code{dims}.}
+
+\item{species}{Optional species label. Used when block genes must be resolved
+from built-in signatures.}
+
+\item{return_cluster}{If \code{TRUE}, return only the cluster assignments.}
 
 \item{verbose}{Whether to print/log progress messages.}
 }
 \value{
-A \code{Seurat} object with integrated data (Harmony reduction), cell cycle scores,
-  clusters, and UMAP embeddings.
+A \code{Seurat} object with clustering results and embeddings, or a
+  cluster vector if \code{return_cluster = TRUE}.
 }
 \description{
-This function demonstrates a workflow to integrate multiple batches
-using \code{Harmony}, with optional blocklist-based HVG filtering.
-It also does cell cycle scoring, HVG detection, scaling, PCA, clustering,
-and UMAP. Compatible with Seurat v5 functions for integration.
+This function is the main clustering entry point in `Shennong`.
+When `batch = NULL`, it performs single-dataset clustering with either the
+standard Seurat workflow or an SCTransform workflow. When `batch` is
+supplied, it performs Harmony-based integration followed by clustering
+and UMAP.
 }
 \examples{
 \dontrun{
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
+  pipeline = "standard",
+  resolution = 0.8
+)
+
+seurat_obj <- sn_run_cluster(
+  object = seurat_obj,
   batch = "sample_id",
+  pipeline = "standard",
   nfeatures = 3000,
   resolution = 0.5,
   block_genes = c("ribo", "mito") # or a custom vector of gene symbols

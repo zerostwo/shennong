@@ -5,6 +5,8 @@
 dev
 ^LICENSE\.md$
 ^README\.Rmd$
+^README\.html$
+^\.github$
 ^data-raw$
 ^_pkgdown\.yml$
 ^docs$

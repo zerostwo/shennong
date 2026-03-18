@@ -1,3 +1,28 @@
+#' Read tabular and bioinformatics file formats
+#'
+#' A Shennong wrapper around `rio::import()` with support for common
+#' single-cell and omics formats such as 10x directories, `.h5`, `.h5ad`,
+#' BPCells directories, and GMT files.
+#'
+#' @param path Path, URL, or supported directory to import.
+#' @param format Optional explicit format override.
+#' @param to Optional target class forwarded to `rio`.
+#' @param which Optional archive member index for compressed archives.
+#' @param row_names Optional column index or name to promote to row names when
+#'   importing a data frame.
+#' @param file Input path used by the exported `rio` adapter methods.
+#' @param ... Additional arguments forwarded to the underlying importer.
+#'
+#' @return The imported object. Tabular inputs are typically returned as data
+#'   frames, while supported matrix-like formats are returned in their native
+#'   classes.
+#'
+#' @examples
+#' tmp <- tempfile(fileext = ".csv")
+#' write.csv(mtcars[1:3, 1:3], tmp, row.names = FALSE)
+#' sn_read(tmp)
+#'
+#' @seealso [sn_write()]
 #' @export
 sn_read <- function(path,
                     format,
@@ -5,90 +30,112 @@ sn_read <- function(path,
                     which,
                     row_names = NULL,
                     ...) {
-  # Copy from rio::import(), modified to support some  Bioinformatics formats
   check_installed(pkg = "rio", reason = "to use `sn_read()` function.")
 
-  rio:::.check_file(path, single_only = TRUE)
-  if (R.utils::isUrl(path)) {
-    path <- rio:::remote_to_local(path, format = format)
-  }
-  if ((path != "clipboard") && !file.exists(path)) {
+  format_supplied <- !missing(format)
+  format <- if (format_supplied) .sn_standardize_format(format) else .sn_infer_format(path)
+
+  if ((path != "clipboard") && !.sn_is_url(path) && !file.exists(path)) {
     stop("No such path: ", path, call. = FALSE)
   }
-  # Compressed path, f is a pretty bad name; but export() uses it.
-  f <- rio:::find_compress(path)
-  if (!is.na(f$compress)) {
-    cpath <- path
-    path <- f$path
-    which <- ifelse(missing(which), 1, which)
-    path <- rio:::parse_archive(cpath, which = which, path_type = f$compress)
-    format <- rio:::.get_compressed_format(cpath, path, f$compress, format)
-    # Reset which if `path` is zip or tar. #412
-    which <- rio:::.reset_which(file_type = f$compress, which = which)
-  }
-  if (missing(format)) {
-    format <- .get_info(path)$format
-  } else {
-    # Format such as "|"
-    format <- rio:::.standardize_format(format)
-  }
-  class(path) <- c(paste0("rio_", format), class(path))
-  if (missing(which)) {
-    x <- rio:::.import(file = path, ...)
-  } else {
-    x <- rio:::.import(file = path, which = which, ...)
+
+  if (.sn_is_custom_format(format)) {
+    local_path <- .sn_download_custom_source(path, format)
+    on.exit(if (!identical(local_path, path)) unlink(local_path), add = TRUE)
+    return(.sn_dispatch_custom_reader(local_path, format = format, ...))
   }
 
-  # Return non data.frame objects as is (if not setting class),
-  # for example, dgCMatrix, Seurat, etc.
-  ext_classes <- c(
-    "dgCMatrix", "dgTMatrix", "dgRMatrix", "dsCMatrix", "dsTMatrix",
-    "dsRMatrix", "CsparseMatrix", "RsparseMatrix", "sparseMatrix",
-    "Seurat", "SingleCellExperiment", "InMemoryAnnData", "anndata",
-    "BPCells"
+  args <- c(
+    list(file = path, setclass = to %||% getOption("rio.import.class", "data.frame")),
+    if (format_supplied) list(format = format) else list(),
+    if (!missing(which)) list(which = which) else list(),
+    list(...)
   )
-  if (inherits(x, ext_classes)) {
-    return(x)
+  x <- do.call(rio::import, args = args)
+
+  if (!is_null(x = row_names) && inherits(x, "data.frame")) {
+    rownames(x) <- x[[row_names]]
+    x <- x[, -row_names, drop = FALSE]
   }
 
-  if (!is_null(x = row_names) && inherits(x = x, what = "data.frame")) {
-    rownames(x = x) <- x[, row_names]
-    x <- x[, -row_names]
-  }
-
-  # f R serialized object, just return it without setting object class
-  if (inherits(path, c("rio_rdata", "rio_rds", "rio_json", "rio_qs", "rio_qs2")) && !inherits(x, "data.frame")) {
-    return(x)
-  }
-  # Otherwise, make sure it's a data frame (or requested class)
-  return(rio:::set_class(x, class = to))
+  x
 }
 
-.get_info <- function(file) {
-  rio:::.check_file(file, single_only = TRUE)
-  if (tolower(file) == "clipboard") {
-    return(rio:::.query_format(input = "clipboard", file = "clipboard"))
+.sn_is_url <- function(path) {
+  is.character(path) &&
+    length(path) == 1 &&
+    grepl("^(https?|ftp)://", path, ignore.case = TRUE)
+}
+
+.sn_standardize_format <- function(format) {
+  if (format %in% c(",", ";", "|")) {
+    return(format)
   }
-  if (isFALSE(R.utils::isUrl(file))) {
-    ext <- tolower(tools::file_ext(file))
-  } else {
-    parsed <- strsplit(strsplit(file, "?", fixed = TRUE)[[1]][1], "/", fixed = TRUE)[[1]]
-    url_file <- parsed[length(parsed)]
-    ext <- tolower(tools::file_ext(url_file))
+  tolower(format)
+}
+
+.sn_infer_format <- function(path) {
+  if (tolower(path) == "clipboard") {
+    return("clipboard")
   }
-  # if (ext == "") {
-  #   print("This is a dir")
-  # }
-  info <- rio:::.query_format(input = ext, file = file)
-  if (info$format == "") {
-    # Guess the format of the directory
-    dir_format <- .guess_dir_format(path = file)
-    if (!is_null(dir_format)) {
-      info$format <- dir_format
-      info$input <- dir_format
-    }
+
+  if (.sn_is_url(path)) {
+    path <- strsplit(path, "?", fixed = TRUE)[[1]][1]
   }
-  return(info)
+
+  if (dir.exists(path)) {
+    return(.guess_dir_format(path))
+  }
+
+  ext <- tolower(tools::file_ext(path))
+  if (ext %in% c("gz", "bz2", "xz")) {
+    path <- tools::file_path_sans_ext(path)
+    ext <- tolower(tools::file_ext(path))
+  }
+
+  if (nzchar(ext)) ext else NULL
+}
+
+.sn_is_custom_format <- function(format) {
+  !is_null(format) && format %in% c(
+    "10x", "starsolo", "bpcells", "h5ad", "h5", "gmt", .genomic_exts
+  )
+}
+
+.sn_download_custom_source <- function(path, format) {
+  if (!.sn_is_url(path)) {
+    return(path)
+  }
+
+  ext <- tools::file_ext(strsplit(path, "?", fixed = TRUE)[[1]][1])
+  if (!nzchar(ext)) {
+    ext <- format
+  }
+  tmp <- tempfile(fileext = paste0(".", ext))
+  curl::curl_download(url = path, destfile = tmp, quiet = TRUE)
+  tmp
+}
+
+.sn_dispatch_custom_reader <- function(path, format, ...) {
+  if (format %in% .genomic_exts) {
+    return(.import_genomic_tracks(file = path, ext = format, ...))
+  }
+
+  reader <- switch(format,
+    bpcells = .import.rio_bpcells,
+    `10x` = .import.rio_10x,
+    starsolo = .import.rio_starsolo,
+    h5ad = .import.rio_h5ad,
+    h5 = .import.rio_h5,
+    gmt = .import.rio_gmt,
+    NULL
+  )
+
+  if (is_null(reader)) {
+    stop("Unsupported import format: ", format, call. = FALSE)
+  }
+
+  reader(file = path, ...)
 }
 
 # If .get_info return format is "", that means it's a directory of files,
@@ -113,6 +160,11 @@ sn_read <- function(path,
   }
 }
 
+#' Import a BPCells matrix directory through `rio`
+#'
+#' This adapter is exported so `rio` can dispatch to it.
+#'
+#' @rdname sn_read
 #' @export
 .import.rio_bpcells <- function(file, ...) {
   check_installed(pkg = "BPCells", reason = "to read BPCells format files.")
@@ -121,6 +173,7 @@ sn_read <- function(path,
   return(mat)
 }
 
+#' @rdname sn_read
 #' @export
 .import.rio_10x <- function(file, ...) {
   check_installed(pkg = "Seurat", reason = "to read 10x format files.")
@@ -129,6 +182,7 @@ sn_read <- function(path,
   return(mat)
 }
 
+#' @rdname sn_read
 #' @export
 .import.rio_starsolo <- function(file, ...) {
   check_installed(pkg = "Seurat", reason = "to read STARsolo format files.")
@@ -137,6 +191,7 @@ sn_read <- function(path,
   return(mat)
 }
 
+#' @rdname sn_read
 #' @export
 .import.rio_h5ad <- function(file, ...) {
   check_installed(pkg = "anndataR", reason = "to read h5ad files.")
@@ -145,6 +200,7 @@ sn_read <- function(path,
   return(mat)
 }
 
+#' @rdname sn_read
 #' @export
 .import.rio_h5 <- function(file, ...) {
   check_installed(pkg = c("Seurat", "hdf5r"), reason = "to read 10x h5 files.")
@@ -168,13 +224,14 @@ sn_read <- function(path,
 #' @return A data.frame with two columns: `term` and `gene`.
 #' @seealso [clusterProfiler::read.gmt()]
 #' @author Yu Guangchuang (original implementation)
+#' @rdname sn_read
 #' @export
 .import.rio_gmt <- function(file, ...) {
-  x <- readLines(gmtfile)
+  x <- readLines(file)
   res <- strsplit(x, "\t")
   names(res) <- vapply(res, function(y) y[1], character(1))
   res <- lapply(res, "[", -c(1:2))
-  ont2gene <- stack(res)
+  ont2gene <- utils::stack(res)
   ont2gene <- ont2gene[, c("ind", "values")]
   colnames(ont2gene) <- c("term", "gene")
 
@@ -230,30 +287,44 @@ for (ext in .genomic_exts) {
   assign(paste0(".import.rio_", ext), fn, envir = globalenv())
 }
 
+#' Write tabular and bioinformatics file formats
+#'
+#' A Shennong wrapper around `rio::export()` with support for common
+#' single-cell formats such as BPCells, `.h5ad`, and 10x `.h5`.
+#'
+#' @param x Object to write.
+#' @param path Output path.
+#' @param to Optional format override when it cannot be inferred from `path`.
+#' @param file Output path used by the exported `rio` adapter methods.
+#' @param overwrite Logical; overwrite an existing BPCells directory.
+#' @param mode File mode passed through to `anndataR::write_h5ad()`.
+#' @param ... Additional arguments forwarded to the underlying exporter.
+#'
+#' @return Invisibly returns the output path.
+#'
+#' @examples
+#' tmp <- tempfile(fileext = ".csv")
+#' sn_write(mtcars[1:3, 1:3], tmp)
+#'
+#' @seealso [sn_read()]
 #' @export
 sn_write <- function(x, path = NULL, to = NULL, ...) {
   check_installed(pkg = "rio", reason = "to use `sn_write()` function.")
-  # Copy from rio::export(), modified to support some  Bioinformatics formats
-  rio:::.check_file(path, single_only = TRUE)
+
   if (is.null(path) && is.null(to)) {
     stop("Must specify 'path' and/or 'to'")
   }
 
-  if (is.null(path)) {
-    format <- rio:::.standardize_format(to)
-    path <- paste0(as.character(substitute(x)), ".", format)
-    compress <- NA_character_
+  format <- if (!is_null(to)) {
+    .sn_standardize_format(to)
   } else {
-    cfile <- path
-    f <- rio:::find_compress(path)
-    path <- f$file
-    compress <- f$compress
-    format <- ifelse(is.null(to), .get_info(path)$input, tolower(to))
+    .sn_infer_format(path)
   }
 
-  rio:::.check_tar_support(compress, getRversion())
-  format <- rio:::.standardize_format(format)
-  outfile <- path
+  if (is.null(path)) {
+    path <- paste0(as.character(substitute(x)), ".", format)
+  }
+
   if (is.matrix(x) || inherits(x, "ArrowTabular")) {
     x <- as.data.frame(x)
   }
@@ -266,26 +337,44 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
     "xlsx", "html", "rdata", "rds", "json", "qs", "qs2", "fods", "ods",
     "bpcells", "h5ad", "h5"
   )) {
-    stop("'x' is not a data.frame or matrix", call. = FALSE)
+      stop("'x' is not a data.frame or matrix", call. = FALSE)
   }
-  if (format == "gz") {
-    format <- .get_info(tools::file_path_sans_ext(path, compression = FALSE))$format
-    if (format != "csv") {
-      stop("gz is only supported for csv (for now).", call. = FALSE)
-    }
-  }
-  rio:::.create_directory_if_not_exists(file = path) ## fix 347
-  class(path) <- c(paste0("rio_", format), class(path))
-  rio:::.export(file = path, x = x, ...)
 
-  if (!is.na(compress)) {
-    cfile <- rio:::compress_out(cfile = cfile, filename = path, type = compress)
-    unlink(path)
-    return(invisible(cfile))
+  if (.sn_is_custom_format(format)) {
+    .sn_dispatch_custom_writer(path = path, x = x, format = format, ...)
+    return(invisible(path))
   }
-  invisible(unclass(outfile))
+
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  args <- c(
+    list(x = x, file = path),
+    if (!is_null(to)) list(format = format) else list(),
+    list(...)
+  )
+  do.call(rio::export, args = args)
+  invisible(path)
 }
 
+.sn_dispatch_custom_writer <- function(path, x, format, ...) {
+  writer <- switch(format,
+    bpcells = .export.rio_bpcells,
+    h5ad = .export.rio_h5ad,
+    h5 = .export.rio_h5,
+    NULL
+  )
+
+  if (is_null(writer)) {
+    stop("Unsupported export format: ", format, call. = FALSE)
+  }
+
+  writer(file = path, x = x, ...)
+}
+
+#' Export a matrix to a BPCells directory through `rio`
+#'
+#' This adapter is exported so `rio` can dispatch to it.
+#'
+#' @rdname sn_write
 #' @export
 .export.rio_bpcells <- function(file, x, overwrite = FALSE, ...) {
   check_installed_github(
@@ -296,6 +385,7 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   BPCells::write_matrix_dir(mat = x, dir = file, overwrite = overwrite, ...)
 }
 
+#' @rdname sn_write
 #' @export
 .export.rio_h5ad <- function(file, x, mode = "w", ...) {
   check_installed_github(
@@ -309,6 +399,7 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   anndataR::write_h5ad(object = sce, path = file, mode = mode, ...)
 }
 
+#' @rdname sn_write
 #' @export
 .export.rio_h5 <- function(file, x, ...) {
   check_installed_github(
@@ -321,17 +412,52 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   )
 }
 
+#' Add metadata and embeddings exported from AnnData
+#'
+#' Reads metadata and/or embedding tables from disk and adds them back to a
+#' Seurat object.
+#'
+#' @param object A Seurat object.
+#' @param metadata_path Optional path to a metadata table whose first column
+#'   contains cell names.
+#' @param umap_path Optional path to an embedding table whose first column
+#'   contains cell names.
+#' @param key Reduction key used when storing the imported embedding.
+#'
+#' @return The updated Seurat object.
+#'
+#' @examples
+#' \dontrun{
+#' object <- sn_add_data_from_anndata(
+#'   object,
+#'   metadata_path = "obs.csv",
+#'   umap_path = "umap.csv"
+#' )
+#' }
+#'
 #' @export
 sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = NULL, key = "umap") {
+  read_anndata_table <- function(path) {
+    if (identical(.sn_infer_format(path), "csv")) {
+      return(utils::read.csv(
+        file = path,
+        row.names = 1,
+        check.names = FALSE
+      ))
+    }
+
+    sn_read(path = path, row_names = 1)
+  }
+
   if (!is_null(x = umap_path)) {
-    umap <- sn_read(path = umap_path, row_names = 1) |>
+    umap <- read_anndata_table(umap_path) |>
       Matrix::as.matrix()
     object <- object[, rownames(umap)]
-    object[[key]] <- Seurat::CreateDimReducObject(umap, key = key)
+    reduction_key <- if (grepl("_$", key)) key else paste0(key, "_")
+    object[[key]] <- Seurat::CreateDimReducObject(umap, key = reduction_key)
   }
   if (!is_null(x = metadata_path)) {
-    metadata <- sn_read(path = metadata_path, row_names = 1)
-    # object@meta.data <- metadata
+    metadata <- read_anndata_table(metadata_path)
     object <- Seurat::AddMetaData(object = object, metadata = metadata)
   }
   object

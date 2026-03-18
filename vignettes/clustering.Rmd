@@ -11,30 +11,47 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
   fig.width = 8,
-  fig.height = 6
+  fig.height = 6,
+  eval = run_vignette
 )
 ```
 
+This vignette documents the clustering workflow used in the package. To keep
+package checks fast and deterministic, the code chunks are shown but not
+evaluated unless `SHENNONG_RUN_VIGNETTES=true` is set in the environment.
+
 ```{r setup}
 library(Shennong)
-library(tidyverse)
 library(Seurat)
 ```
 
 ```{r}
-counts <- sn_read("https://zenodo.org/records/14868137/files/filtered_feature_bc_matrix.h5")
+filtered_path <- sn_load_data(
+  dataset = "pbmc3k",
+  matrix_type = "filtered",
+  return_object = FALSE
+)
+
+raw_path <- sn_load_data(
+  dataset = "pbmc3k",
+  matrix_type = "raw",
+  return_object = FALSE
+)
 ```
 
 ```{r}
 ambient_counts <- sn_remove_ambient_contamination(
-  x = counts,
-  raw_path = "https://zenodo.org/records/14868137/files/raw_feature_bc_matrix.h5"
+  x = filtered_path,
+  raw = raw_path,
+  method = "soupx",
+  return_object = FALSE
 )
 ```
 

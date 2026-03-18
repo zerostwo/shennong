@@ -1,13 +1,24 @@
 #' Signature genes
 "SignatuR"
 
-#' Load PBMC datasets from Zenodo
+# Internal registry for example datasets
+.sn_example_data_catalog <- function() {
+  data.frame(
+    dataset = c("pbmc1k", "pbmc3k", "pbmc4k", "pbmc8k"),
+    zenodo_record = c("14884845", "14884845", "14884845", "14884845"),
+    species = c("human", "human", "human", "human"),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Load example datasets from Zenodo
 #'
 #' This function downloads (if not already cached) and loads processed
-#' single-cell RNA-seq datasets of peripheral blood mononuclear cells (PBMCs)
-#' from a Zenodo record. Each dataset (1k, 3k, 4k, or 8k) includes both
-#' \emph{filtered} and \emph{raw} gene–barcode matrices in standard Cell Ranger
-#' HDF5 format.
+#' single-cell RNA-seq example datasets from a Zenodo-backed registry.
+#' The current registry contains PBMC example datasets (`pbmc1k`, `pbmc3k`,
+#' `pbmc4k`, and `pbmc8k`), and the interface is intentionally generalized so
+#' additional example datasets can be added later without introducing another
+#' top-level loader function.
 #'
 #' Instead of storing serialized R objects, the function caches the original
 #' Zenodo \code{.h5} files locally for reproducibility and version consistency.
@@ -19,9 +30,9 @@
 #' Users can also choose to only download/cache the data without loading it
 #' into memory.
 #'
-#' @param dataset Character scalar. Which PBMC dataset to load.
-#'   One of \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"}, \code{"pbmc8k"}.
-#'   Default: \code{"pbmc3k"}.
+#' @param dataset Character scalar. Which example dataset to load.
+#'   Currently one of \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"},
+#'   or \code{"pbmc8k"}. Default: \code{"pbmc3k"}.
 #'
 #' @param matrix_type Character scalar. Which matrix type to load.
 #'   One of:
@@ -46,7 +57,8 @@
 #' @param species Character scalar. Species label passed to
 #'   \code{sn_initialize_seurat_object()} when constructing Seurat objects
 #'   (i.e. when \code{matrix_type == "filtered"}). Ignored if
-#'   \code{matrix_type == "raw"}. Default: \code{"human"}.
+#'   \code{matrix_type == "raw"}. If \code{NULL}, use the dataset default from
+#'   the example-data registry.
 #'
 #' @details
 #' All datasets were re-aligned using Cell Ranger v9.0.1 with a custom reference
@@ -64,14 +76,14 @@
 #'
 #' \preformatted{
 #' ~/.shennong/data/
-#' ├─ pbmc1k_filtered_feature_bc_matrix.h5
-#' ├─ pbmc1k_raw_feature_bc_matrix.h5
-#' ├─ pbmc3k_filtered_feature_bc_matrix.h5
-#' ├─ pbmc3k_raw_feature_bc_matrix.h5
-#' ├─ pbmc4k_filtered_feature_bc_matrix.h5
-#' ├─ pbmc4k_raw_feature_bc_matrix.h5
-#' ├─ pbmc8k_filtered_feature_bc_matrix.h5
-#' └─ pbmc8k_raw_feature_bc_matrix.h5
+#' |- pbmc1k_filtered_feature_bc_matrix.h5
+#' |- pbmc1k_raw_feature_bc_matrix.h5
+#' |- pbmc3k_filtered_feature_bc_matrix.h5
+#' |- pbmc3k_raw_feature_bc_matrix.h5
+#' |- pbmc4k_filtered_feature_bc_matrix.h5
+#' |- pbmc4k_raw_feature_bc_matrix.h5
+#' |- pbmc8k_filtered_feature_bc_matrix.h5
+#' \\- pbmc8k_raw_feature_bc_matrix.h5
 #' }
 #'
 #' When \code{return_object = TRUE}, the cached \code{.h5} file is read on the
@@ -109,16 +121,16 @@
 #' @examples
 #' \dontrun{
 #' # 1. Load filtered PBMC3k as a Seurat object:
-#' pbmc <- sn_load_pbmc()
+#' pbmc <- sn_load_data()
 #'
 #' # 2. Load raw PBMC3k counts as a sparse matrix (for SoupX etc.):
-#' pbmc_raw <- sn_load_pbmc(matrix_type = "raw")
+#' pbmc_raw <- sn_load_data(matrix_type = "raw")
 #'
 #' # 3. Only download/cache PBMC8k, don't construct anything in-memory:
-#' sn_load_pbmc(dataset = "pbmc8k", return_object = FALSE)
+#' sn_load_data(dataset = "pbmc8k", return_object = FALSE)
 #'
 #' # 4. Use a custom cache directory:
-#' pbmc4k <- sn_load_pbmc(
+#' pbmc4k <- sn_load_data(
 #'   dataset  = "pbmc4k",
 #'   save_dir = "~/datasets/pbmc_cache"
 #' )
@@ -132,43 +144,60 @@
 #'
 #' @seealso
 #' \code{\link{sn_initialize_seurat_object}},
-#' \code{\link{sn_read_matrix_h5}},
 #' \code{\link{sn_write}},
 #' \code{\link{sn_read}}
 #'
 #' @export
-sn_load_pbmc <- function(dataset = "pbmc3k",
+sn_load_data <- function(dataset = "pbmc3k",
                          matrix_type = c("filtered", "raw"),
                          save_dir = "~/.shennong/data",
                          return_object = TRUE,
-                         species = "human") {
+                         species = NULL) {
+  catalog <- .sn_example_data_catalog()
+  dataset <- arg_match(dataset, values = catalog$dataset)
   matrix_type <- match.arg(matrix_type)
-  zenodo_record <- "14884845"
+  dataset_info <- catalog[catalog$dataset == dataset, , drop = FALSE]
+  species <- species %||% dataset_info$species[[1]]
+  zenodo_record <- dataset_info$zenodo_record[[1]]
 
   save_dir <- sn_set_path(save_dir)
 
   local_h5 <- glue("{save_dir}/{dataset}_{matrix_type}_feature_bc_matrix.h5")
 
-  if (file.exists(local_h5)) {
-    counts <- sn_read(local_h5)
-  } else {
+  if (!file.exists(local_h5)) {
     remote_url <- glue::glue(
       "https://zenodo.org/records/{zenodo_record}/files/{dataset}_{matrix_type}_feature_bc_matrix.h5"
     )
-    cli::cli_inform("✨ Fetching {dataset} ({matrix_type}) from Zenodo cache...")
+    cli::cli_inform("Fetching {dataset} ({matrix_type}) from Zenodo cache...")
     curl::curl_download(url = remote_url, destfile = local_h5)
   }
 
-  if (matrix_type == "filtered") {
-    x <- sn_initialize_seurat_object(
-      x = counts,
-      species = species
-    )
-  } else {
-    x <- counts
+  if (!return_object) {
+    return(invisible(local_h5))
   }
 
-  return(x)
+  counts <- sn_read(local_h5)
+
+  if (matrix_type == "filtered") {
+    return(sn_initialize_seurat_object(
+      x = counts,
+      species = species
+    ))
+  }
+
+  counts
+}
+
+#' Load PBMC example datasets
+#'
+#' Backward-compatible wrapper around \code{sn_load_data()}.
+#'
+#' @param ... Passed to \code{sn_load_data()}.
+#' @return See \code{sn_load_data()}.
+#' @export
+sn_load_pbmc <- function(...) {
+  .Deprecated("sn_load_data")
+  sn_load_data(...)
 }
 
 
@@ -178,7 +207,7 @@ sn_load_pbmc <- function(dataset = "pbmc3k",
 #' It includes high- and low-hierarchy cell type annotations, human and mouse marker genes, and curated marker gene classification.
 #'
 #' **Reference**:
-#' C. Domínguez Conde et al., Science, 2022. DOI: [10.1126/science.abl5197](https://doi.org/10.1126/science.abl5197)
+#' C. Dominguez Conde et al., Science, 2022. DOI: [10.1126/science.abl5197](https://doi.org/10.1126/science.abl5197)
 #'
 #' **Original Data Source**:
 #' The dataset was obtained from the CellTypist repository at:
@@ -199,7 +228,7 @@ sn_load_pbmc <- function(dataset = "pbmc3k",
 #' @source CellTypist Atlas: Pan-Immune dataset, Teichlab
 #' [GitHub Repository](https://github.com/Teichlab/celltypist_wiki)
 #'
-#' @usage data(pan_immune_celltypist)
+#' @usage data(marker_genes)
 #'
 "marker_genes"
 

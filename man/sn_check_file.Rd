@@ -21,8 +21,10 @@ This function takes a vector of file paths as input and checks if each file exis
 If a file does not exist, the function returns a message indicating which file(s) do(es) not exist.
 }
 \examples{
-sn_check_file(c("file1.txt", "file2.txt", "file3.txt"))
-sn_check_file(c("file1.txt", "file2.txt", "file3.txt"), stop = FALSE)
+existing <- tempfile("existing-")
+file.create(existing)
+missing <- tempfile("missing-")
+sn_check_file(c(existing, missing), stop = FALSE)
 
 }
 \seealso{

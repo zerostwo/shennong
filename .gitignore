@@ -1,6 +1,11 @@
 .Rproj.user
 .Rhistory
 data-raw
-docs
+docs/*
+!docs/codex/
+!docs/codex/**
 inst/doc
 dev
+README.html
+*.tar.gz
+*.Rcheck/

@@ -45,15 +45,15 @@ sn_filter_genes <- function(x, min_cells = 3, plot = TRUE, filter = TRUE) {
       remaining_gene = remaining_genes
     )
 
-    p <- ggplot(plot_data, aes(y = min_cell, x = remaining_gene)) +
-      geom_bar(stat = "identity", fill = "steelblue") +
-      geom_text(aes(label = remaining_gene), hjust = -0.2) +
-      labs(
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(y = .data$min_cell, x = .data$remaining_gene)) +
+      ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
+      ggplot2::geom_text(ggplot2::aes(label = .data$remaining_gene), hjust = -0.2) +
+      ggplot2::labs(
         y = "Filtering threshold (min_cells)",
         x = "Remaining genes",
         title = "Remaining genes at different filtering thresholds"
       ) +
-      theme_minimal()
+      ggplot2::theme_minimal()
     print(x = p)
   }
 
@@ -172,8 +172,8 @@ sn_filter_cells <- function(
 
   # Calculate QC thresholds
   if (is_null(x = group_by)) {
-    m <- median(feature_data)
-    e <- mad(feature_data)
+    m <- stats::median(feature_data)
+    e <- stats::mad(feature_data)
     l <- max(m - n * e, 0)
     u <- m + n * e
     qc_df <- data.frame(median = m, mad = e, l = l, u = u)
@@ -190,11 +190,13 @@ sn_filter_cells <- function(
     qc_df <- x[[]] |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
       dplyr::summarise(
-        median = median(.data[[feature]]),
-        mad = mad(.data[[feature]]),
-        l = pmax(median - n * mad, 0),
-        u = median + n * mad,
+        median = stats::median(.data[[feature]]),
+        mad = stats::mad(.data[[feature]]),
         .groups = "drop"
+      ) |>
+      dplyr::mutate(
+        l = pmax(.data$median - n * .data$mad, 0),
+        u = .data$median + n * .data$mad
       )
 
     # Merge thresholds back to metadata
@@ -231,7 +233,7 @@ sn_filter_cells <- function(
     base_plot <- base_plot +
       ggplot2::geom_errorbar(
         data = qc_info,
-        ggplot2::aes(y = median, ymin = l, ymax = u),
+        ggplot2::aes(y = .data$median, ymin = .data$l, ymax = .data$u),
         color = "red", width = 0.2
       )
   } else {
@@ -240,7 +242,7 @@ sn_filter_cells <- function(
         data = qc_info,
         ggplot2::aes(
           x = "All",
-          y = median, ymin = l, ymax = u
+          y = .data$median, ymin = .data$l, ymax = .data$u
         ),
         color = "red", width = 0.1, inherit.aes = FALSE
       )
@@ -260,7 +262,7 @@ sn_filter_cells <- function(
 #'
 #' @param object A \code{Seurat} object.
 #' @param clusters Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.
-#' @param donor An optional vector of donor IDs (for multi-sample data).
+#' @param group_by An optional metadata column used as the donor or sample grouping.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
 #' @param ncores Number of cores to use (for parallel processing).
 #'
@@ -309,87 +311,241 @@ sn_find_doublets <- function(
   return(object)
 }
 
+.sn_resolve_counts_input <- function(x, arg = "x") {
+  if (inherits(x, "Seurat")) {
+    return(list(
+      object = x,
+      counts = SeuratObject::LayerData(object = x, layer = "counts")
+    ))
+  }
+
+  if (is.character(x)) {
+    return(list(
+      object = NULL,
+      counts = sn_read(path = x)
+    ))
+  }
+
+  if (inherits(x, c("Matrix", "matrix", "data.frame"))) {
+    return(list(object = NULL, counts = x))
+  }
+
+  stop(glue("`{arg}` must be a Seurat object, matrix-like object, or path."))
+}
+
+.sn_restore_count_shape <- function(original_counts, corrected_counts) {
+  if (identical(rownames(original_counts), rownames(corrected_counts)) &&
+      identical(colnames(original_counts), colnames(corrected_counts))) {
+    return(corrected_counts)
+  }
+
+  restored_counts <- original_counts
+  restored_counts[rownames(corrected_counts), colnames(corrected_counts)] <- corrected_counts
+  restored_counts
+}
+
+.sn_resolve_ambient_clusters <- function(x_info, cluster, verbose = FALSE) {
+  counts <- x_info$counts
+
+  if (!is_null(cluster)) {
+    if (is.character(cluster) && length(cluster) == 1 && !is_null(x_info$object)) {
+      if (!cluster %in% colnames(x_info$object[[]])) {
+        stop(glue("Cluster column '{cluster}' was not found in object metadata."))
+      }
+      cluster <- x_info$object[[cluster]][, 1]
+    }
+
+    if (length(cluster) != ncol(counts)) {
+      stop("`cluster` must have one value per cell.")
+    }
+
+    cluster <- as.character(cluster)
+    names(cluster) <- colnames(counts)
+    return(cluster)
+  }
+
+  cluster_object <- x_info$object %||% sn_initialize_seurat_object(x = counts)
+  cluster <- sn_run_cluster(
+    object = cluster_object,
+    return_cluster = TRUE,
+    resolution = 2,
+    block_genes = NULL,
+    verbose = verbose
+  )
+  cluster <- as.character(cluster)
+  names(cluster) <- colnames(counts)
+  cluster
+}
+
+.sn_remove_ambient_soupx <- function(x_info,
+                                     raw_info,
+                                     cluster = NULL,
+                                     force_accept = FALSE,
+                                     contamination_range = c(0.01, 0.8),
+                                     verbose = FALSE) {
+  check_installed(pkg = "SoupX", reason = "to remove ambient RNA contamination with SoupX.")
+
+  if (is_null(raw_info)) {
+    stop("`raw` is required when `method = \"soupx\"`.")
+  }
+
+  tod <- raw_info$counts
+  toc <- x_info$counts
+
+  common_genes <- intersect(rownames(tod), rownames(toc))
+  tod_common <- tod[common_genes, , drop = FALSE]
+  toc_common <- toc[common_genes, , drop = FALSE]
+
+  cli::cli_h3("Gene statistics")
+  cli::cli_alert_info("Raw data:      {nrow(tod)} genes")
+  cli::cli_alert_info("Filtered data: {nrow(toc)} genes")
+  cli::cli_alert_success("Common genes:  {length(common_genes)} genes")
+
+  sc <- SoupX::SoupChannel(
+    tod = tod_common,
+    toc = toc_common,
+    calcSoupProfile = FALSE
+  )
+
+  soup_profile <- data.frame(
+    row.names = rownames(toc_common),
+    est = Matrix::rowSums(toc_common) / sum(toc_common),
+    counts = Matrix::rowSums(toc_common)
+  )
+  sc <- SoupX::setSoupProfile(sc, soup_profile)
+
+  soupx_groups <- .sn_resolve_ambient_clusters(
+    x_info = list(object = x_info$object, counts = toc_common),
+    cluster = cluster,
+    verbose = verbose
+  )
+  sc <- SoupX::setClusters(sc, soupx_groups)
+
+  sc <- SoupX::autoEstCont(
+    sc,
+    doPlot = FALSE,
+    forceAccept = force_accept,
+    contaminationRange = contamination_range
+  )
+  out <- SoupX::adjustCounts(sc, roundToInt = TRUE)
+
+  tod_sum <- sum(Matrix::rowSums(tod_common))
+  toc_sum <- sum(Matrix::rowSums(toc_common))
+  out_sum <- sum(Matrix::rowSums(out))
+  cli::cli_h3("Count summary")
+  cli::cli_text("{.field Raw counts (tod)}: {format(tod_sum, big.mark = ',')}")
+  cli::cli_text("{.field Filtered counts (toc)}: {format(toc_sum, big.mark = ',')}")
+  cli::cli_text("{.field Output counts (out)}: {format(out_sum, big.mark = ',')}")
+
+  .sn_restore_count_shape(toc, out)
+}
+
+.sn_remove_ambient_decontx <- function(x_info,
+                                       raw_info = NULL,
+                                       cluster = NULL,
+                                       verbose = FALSE,
+                                       ...) {
+  check_installed(pkg = "celda", reason = "to remove ambient RNA contamination with decontX.")
+  check_installed(pkg = "SingleCellExperiment", reason = "to run decontX.")
+
+  counts <- x_info$counts
+  background_counts <- NULL
+
+  if (!is_null(raw_info)) {
+    common_genes <- intersect(rownames(counts), rownames(raw_info$counts))
+    counts <- counts[common_genes, , drop = FALSE]
+    background_counts <- raw_info$counts[common_genes, , drop = FALSE]
+  }
+
+  sce <- SingleCellExperiment::SingleCellExperiment(list(counts = counts))
+  background <- NULL
+  if (!is_null(background_counts)) {
+    background <- SingleCellExperiment::SingleCellExperiment(list(counts = background_counts))
+  }
+
+  z <- .sn_resolve_ambient_clusters(
+    x_info = list(object = x_info$object, counts = counts),
+    cluster = cluster,
+    verbose = verbose
+  )
+
+  sce <- celda::decontX(
+    x = sce,
+    z = z,
+    background = background,
+    ...
+  )
+  out <- celda::decontXcounts(sce)
+
+  .sn_restore_count_shape(x_info$counts, out)
+}
+
+#' Remove ambient RNA contamination from counts
+#'
+#' This function provides a unified interface for ambient RNA correction using
+#' either \code{SoupX} or \code{decontX}. The input can be a Seurat object, a
+#' count matrix-like object, or a path that \code{sn_read()} can import.
+#'
+#' @param x A Seurat object, count matrix-like object, or path to filtered data.
+#' @param raw Optional raw/background counts. Required for \code{method = "soupx"}.
+#'   If supplied for \code{decontx}, it is used as the background matrix.
+#' @param method One of \code{"soupx"} or \code{"decontx"}.
+#' @param cluster Optional cluster labels. This can be a vector with one value
+#'   per cell, or a metadata column name when \code{x} is a Seurat object. If
+#'   \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.
+#' @param force_accept Passed to \code{SoupX::autoEstCont()} when using SoupX.
+#' @param contamination_range Passed to \code{SoupX::autoEstCont()} when using
+#'   SoupX.
+#' @param return_object If \code{TRUE} and \code{x} is a Seurat object, return
+#'   the updated Seurat object. Otherwise return the corrected counts matrix.
+#' @param verbose Logical; whether to print progress from helper clustering.
+#' @param ... Additional method-specific arguments passed to
+#'   \code{celda::decontX()} when \code{method = "decontx"}.
+#'
+#' @return A corrected counts matrix, or an updated Seurat object when
+#'   \code{return_object = TRUE} and \code{x} is a Seurat object.
+#'
 #' @export
 sn_remove_ambient_contamination <- function(
-  x, raw, method = "SoupX",
+  x,
+  raw = NULL,
+  method = c("soupx", "decontx"),
+  cluster = NULL,
   force_accept = FALSE,
   contamination_range = c(0.01, 0.8),
-  return_object = TRUE
+  return_object = TRUE,
+  verbose = FALSE,
+  ...
 ) {
   check_installed(pkg = "SeuratObject", reason = "to handle Seurat objects.")
-  if (method == "SoupX") {
-    check_installed(pkg = "SoupX", reason = "to remove ambient RNA contamination.")
-    # Generate SoupChannel Object for SoupX
-    if (is_character(raw)) {
-      tod <- sn_read(path = raw)
-    } else if (inherits(raw, what = c("Matrix", "data.frame"))) {
-      tod <- raw
-    } else if (inherits(raw, what = c("Seurat"))) {
-      tod <- SeuratObject::LayerDa(object = raw, layer = "counts")
-    }
 
-    if (inherits(x, what = c("Matrix", "data.frame"))) {
-      toc <- x
-    } else if (inherits(x, what = c("Seurat"))) {
-      toc <- SeuratObject::LayerData(object = x, layer = "counts")
-    } else if (is_character(x)) {
-      toc <- sn_read(path = x)
-    }
-    # Overlap genes between tod and toc
-    common_genes <- intersect(rownames(tod), rownames(toc))
-    tod <- tod[common_genes, ]
-    toc <- toc[common_genes, ]
-    cli::cli_h3("Gene statistics")
-    cli::cli_alert_info("Raw data:      {nrow(tod)} genes")
-    cli::cli_alert_info("Filtered data: {nrow(toc)} genes")
-    cli::cli_alert_success("Common genes:  {length(common_genes)} genes")
+  method <- match.arg(method)
+  x_info <- .sn_resolve_counts_input(x, arg = "x")
+  raw_info <- if (is_null(raw)) NULL else .sn_resolve_counts_input(raw, arg = "raw")
 
-    sc <- SoupX::SoupChannel(
-      tod = tod,
-      toc = toc,
-      calcSoupProfile = FALSE
+  out <- switch(
+    method,
+    soupx = .sn_remove_ambient_soupx(
+      x_info = x_info,
+      raw_info = raw_info,
+      cluster = cluster,
+      force_accept = force_accept,
+      contamination_range = contamination_range,
+      verbose = verbose
+    ),
+    decontx = .sn_remove_ambient_decontx(
+      x_info = x_info,
+      raw_info = raw_info,
+      cluster = cluster,
+      verbose = verbose,
+      ...
     )
+  )
 
-    # Add extra meta data to the SoupChannel object
-    soupProf <- data.frame(
-      row.names = rownames(x = toc),
-      est = Matrix::rowSums(x = toc) / sum(toc),
-      counts = Matrix::rowSums(x = toc)
-    )
-    sc <- SoupX::setSoupProfile(sc, soupProf)
-    # Set cluster information in SoupChannel
-    soupx_groups <- toc |>
-      sn_initialize_seurat_object() |>
-      sn_run_cluster(
-        return_cluster = TRUE,
-        resolution = 2, verbose = FALSE, block_genes = NULL
-      )
-    sc <- SoupX::setClusters(sc, soupx_groups)
-
-    # Estimate contamination fraction
-    sc <- SoupX::autoEstCont(
-      sc,
-      doPlot = FALSE,
-      forceAccept = force_accept,
-      contaminationRange = contamination_range
-    )
-    # Infer corrected table of counts and rount to integer
-    out <- SoupX::adjustCounts(sc, roundToInt = TRUE)
-    # Print information
-    tod_sum <- sum(Matrix::rowSums(x = tod))
-    toc_sum <- sum(Matrix::rowSums(x = toc))
-    out_sum <- sum(Matrix::rowSums(x = out))
-    cli::cli_h3("Count summary")
-    cli::cli_text("{.field Raw counts (tod)}: {format(tod_sum, big.mark = ',')}")
-    cli::cli_text("{.field Filtered counts (toc)}: {format(toc_sum, big.mark = ',')}")
-    cli::cli_text("{.field Output counts (out)}: {format(out_sum, big.mark = ',')}")
-
+  if (return_object && !is_null(x_info$object)) {
+    SeuratObject::LayerData(object = x_info$object, layer = "counts") <- out
+    return(x_info$object)
   }
 
-  if (return_object) {
-      SeuratObject::LayerData(object = x, layer = "counts") <- out
-    return(x)
-  }
-
-  return(out)
+  out
 }

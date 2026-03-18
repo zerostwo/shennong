@@ -117,35 +117,57 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
   }
 
   # --- Filter by Minimum Cells ---
-  metadata <- metadata %>%
-    mutate(across(all_of(c(group_by, variable)), as.character)) %>%
-    group_by(across(all_of(group_by))) %>%
-    mutate(n_cells_group = n()) %>%
-    ungroup() %>%
-    filter(n_cells_group >= min_cells)
+  metadata <- metadata |>
+    dplyr::mutate(dplyr::across(dplyr::all_of(c(group_by, variable)), as.character)) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
+    dplyr::mutate(n_cells_group = dplyr::n()) |>
+    dplyr::ungroup() |>
+    dplyr::filter(.data$n_cells_group >= min_cells)
 
   if (nrow(metadata) == 0) {
     stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
   }
 
   # --- Calculate Proportions ---
-  proportions <- metadata %>%
-    filter(!is.na(.data[[group_by]]), !is.na(.data[[variable]])) %>%
-    count(across(all_of(c(group_by, variable))), name = "count") %>%
-    group_by(across(all_of(group_by))) %>%
-    mutate(proportion = count / sum(count) * 100) %>%
-    ungroup() %>%
-    select(all_of(group_by), all_of(variable), proportion)
+  proportions <- metadata |>
+    dplyr::filter(!is.na(.data[[group_by]]), !is.na(.data[[variable]])) |>
+    dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "count") |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
+    dplyr::mutate(proportion = .data$count / sum(.data$count) * 100) |>
+    dplyr::ungroup() |>
+    dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), dplyr::all_of("proportion"))
 
   # --- Add Additional Columns ---
   if (!is.null(additional_cols)) {
-    additional_data <- metadata %>%
-      distinct(across(all_of(c(group_by, additional_cols)))) %>%
-      group_by(across(all_of(group_by))) %>%
-      summarise(across(all_of(additional_cols), first), .groups = "drop")
+    inconsistent_cols <- additional_cols[
+      vapply(additional_cols, function(col) {
+        any(
+          metadata |>
+            dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
+            dplyr::summarise(
+              is_inconsistent = length(unique(.data[[col]])) > 1,
+              .groups = "drop"
+            ) |>
+            dplyr::pull(.data$is_inconsistent)
+        )
+      }, logical(1))
+    ]
 
-    proportions <- proportions %>%
-      left_join(additional_data, by = group_by)
+    if (length(inconsistent_cols) > 0) {
+      warning(
+        "Additional columns are not constant within `group_by` groups; ",
+        "using the first value for: ",
+        paste(inconsistent_cols, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    additional_data <- metadata |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
+      dplyr::summarise(dplyr::across(dplyr::all_of(additional_cols), dplyr::first), .groups = "drop")
+
+    proportions <- proportions |>
+      dplyr::left_join(additional_data, by = group_by)
   }
 
   return(proportions)

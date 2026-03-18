@@ -7,11 +7,11 @@
 sn_calculate_lisi(x, reduction = "pca", label = "sample")
 }
 \arguments{
+\item{x}{A Seurat object.}
+
 \item{reduction}{The dimensionality reduction method used to generate the embeddings (default is "pca").}
 
 \item{label}{The column name in object@meta.data that specifies the sample labels (default is "sample").}
-
-\item{object}{A Seurat object.}
 }
 \value{
 A data frame with the Lisi score for each cell, along with the cell ID.

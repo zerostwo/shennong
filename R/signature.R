@@ -4,8 +4,8 @@
 #' genes (e.g. ribosomal, mitochondrial, heatshock, etc.). It then checks
 #' those symbols via \code{HGNChelper} to remove invalid or outdated entries.
 #'
-#' @param genesets A character vector of predefined gene sets. Must be keys in
-#'   \code{SignatuR$Hs$...}.
+#' @param species One of \code{"human"} or \code{"mouse"}.
+#' @param category A character vector of predefined signature categories.
 #'
 #' @return A unique character vector of valid gene symbols.
 #'
@@ -63,7 +63,7 @@ sn_get_signatures <- function(species = "human",
     invalid <- genes[is_na(checked$Suggested.Symbol)]
     message(
       "[g_block_genes] Removed ", length(invalid),
-      " invalid symbols (e.g. ", paste(head(invalid, 3), collapse = ", "), ")"
+      " invalid symbols (e.g. ", paste(utils::head(invalid, 3), collapse = ", "), ")"
     )
   }
 

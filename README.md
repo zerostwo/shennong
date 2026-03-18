@@ -1,30 +1,24 @@
----
-output: github_document
----
 
 # Shennong
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml)
 [![lifecycle](https://img.shields.io/badge/lifecycle-Experimental-important.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 <!-- badges: end -->
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
-```
-
-`Shennong` is an experimental R package for single-cell and broader omics workflows.
-It provides Seurat-oriented helpers for example-data loading, preprocessing,
-quality control, ambient RNA correction, clustering and integration, and common
-visualization tasks.
+`Shennong` is an experimental R package for single-cell and broader
+omics workflows. It provides Seurat-oriented helpers for example-data
+loading, preprocessing, quality control, ambient RNA correction,
+clustering and integration, and common visualization tasks.
 
 ## Installation
 
 Install the development version from GitHub:
 
-```r
+``` r
 install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
@@ -34,15 +28,18 @@ remotes::install_github("zerostwo/shennong")
 - Example data loading with `sn_load_data()`
 - Seurat object initialization and QC helpers
 - Ambient contamination correction with SoupX or decontX
-- Single-dataset clustering and Harmony-based integration through `sn_run_cluster()`
-- Plot helpers for embeddings, violin plots, dot plots, boxplots, and bar plots
+- Single-dataset clustering and Harmony-based integration through
+  `sn_run_cluster()`
+- Plot helpers for embeddings, violin plots, dot plots, boxplots, and
+  bar plots
 - Signature scoring, composition analysis, and enrichment helpers
 
 ## Quick start
 
-The package now uses `sn_load_data()` as the main example-data entry point.
+The package now uses `sn_load_data()` as the main example-data entry
+point.
 
-```r
+``` r
 library(Shennong)
 
 pbmc <- sn_load_data("pbmc1k")
@@ -60,10 +57,10 @@ sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
 
 ## Ambient contamination correction
 
-`sn_remove_ambient_contamination()` exposes a unified interface for multiple
-methods.
+`sn_remove_ambient_contamination()` exposes a unified interface for
+multiple methods.
 
-```r
+``` r
 filtered_path <- sn_load_data(
   dataset = "pbmc3k",
   matrix_type = "filtered",
@@ -86,7 +83,7 @@ ambient_counts <- sn_remove_ambient_contamination(
 
 For decontX, switch the method:
 
-```r
+``` r
 corrected_counts <- sn_remove_ambient_contamination(
   x = ambient_counts,
   method = "decontx",
@@ -96,10 +93,10 @@ corrected_counts <- sn_remove_ambient_contamination(
 
 ## Integration workflow
 
-`sn_run_cluster()` is the main clustering entry point for both single datasets
-and batch-aware workflows.
+`sn_run_cluster()` is the main clustering entry point for both single
+datasets and batch-aware workflows.
 
-```r
+``` r
 pbmc1k <- sn_load_data("pbmc1k")
 pbmc3k <- sn_load_data("pbmc3k")
 
@@ -122,7 +119,7 @@ merged <- sn_run_cluster(
 
 Common local commands:
 
-```r
+``` r
 devtools::document()
 testthat::test_local(stop_on_failure = TRUE)
 pkgdown::build_site()
@@ -130,13 +127,13 @@ pkgdown::build_site()
 
 Package builds and checks can be run from the shell:
 
-```sh
+``` sh
 R CMD build .
 R CMD check --no-manual Shennong_*.tar.gz
 ```
 
-Contributor guidance, testing conventions, and commit rules are documented in
-`AGENTS.md` and `CONTRIBUTING.md`.
+Contributor guidance, testing conventions, and commit rules are
+documented in `AGENTS.md` and `CONTRIBUTING.md`.
 
 ## Project status
 
@@ -145,7 +142,8 @@ The package is being modernized incrementally. Current work focuses on:
 - stabilizing core APIs with test coverage
 - aligning roxygen documentation with exports
 - improving CI and pkgdown readiness
-- keeping user-facing behavior compatible unless a change is explicitly documented
+- keeping user-facing behavior compatible unless a change is explicitly
+  documented
 
 ## Code of Conduct
 

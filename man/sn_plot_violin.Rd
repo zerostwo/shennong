@@ -34,6 +34,8 @@ sn_plot_violin(
 
 \item{angle_x}{The angle of the x-axis labels. Defaults to 0.}
 
+\item{palette}{The color palette to use. Defaults to \code{"Paired"}.}
+
 \item{aspect_ratio}{The aspect ratio of the plot. Defaults to 0.5.}
 }
 \value{

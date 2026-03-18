@@ -19,7 +19,7 @@ CellTypist Atlas: Pan-Immune dataset, Teichlab
 [GitHub Repository](https://github.com/Teichlab/celltypist_wiki)
 }
 \usage{
-data(pan_immune_celltypist)
+data(marker_genes)
 }
 \description{
 This dataset contains hierarchical immune cell type metadata from the Pan-Immune CellTypist atlas.
@@ -27,7 +27,7 @@ It includes high- and low-hierarchy cell type annotations, human and mouse marke
 }
 \details{
 **Reference**:
-C. Domínguez Conde et al., Science, 2022. DOI: [10.1126/science.abl5197](https://doi.org/10.1126/science.abl5197)
+C. Dominguez Conde et al., Science, 2022. DOI: [10.1126/science.abl5197](https://doi.org/10.1126/science.abl5197)
 
 **Original Data Source**:
 The dataset was obtained from the CellTypist repository at:

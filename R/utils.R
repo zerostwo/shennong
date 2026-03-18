@@ -11,8 +11,10 @@
 #' If stop is FALSE, the function returns a vector of file paths that do not exist.
 #'
 #' @examples
-#' sn_check_file(c("file1.txt", "file2.txt", "file3.txt"))
-#' sn_check_file(c("file1.txt", "file2.txt", "file3.txt"), stop = FALSE)
+#' existing <- tempfile("existing-")
+#' file.create(existing)
+#' missing <- tempfile("missing-")
+#' sn_check_file(c(existing, missing), stop = FALSE)
 #'
 #' @export
 #' @keywords file, existence
@@ -33,6 +35,19 @@ sn_check_file <- function(x, stop = TRUE) {
   }
 }
 
+#' Create a directory path if needed
+#'
+#' This helper expands glue expressions in a path string, creates the directory
+#' if it does not already exist, and returns the resulting path.
+#'
+#' @param path A character scalar giving the directory path to create.
+#'
+#' @return The resulting path string.
+#'
+#' @examples
+#' tmp_dir <- tempfile("shennong-")
+#' sn_set_path(tmp_dir)
+#'
 #' @export
 sn_set_path <- function(path) {
   path <- glue(path)

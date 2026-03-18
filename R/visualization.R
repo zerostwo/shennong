@@ -1,20 +1,44 @@
+#' Create a boxplot from a data frame
+#'
+#' @param data A data frame.
+#' @param x,y Columns mapped to the x- and y-axes.
+#' @param sort Currently reserved for future sorting support.
+#'
+#' @return A ggplot object.
+#'
+#' @examples
+#' sn_plot_boxplot(mtcars, x = cyl, y = mpg)
+#'
 #' @export
 sn_plot_boxplot <- function(data, x, y, sort = FALSE) {
-  ggplot(data = data, mapping = aes(x = {{ x }}, y = {{ y }})) +
-    geom_boxplot(
+  ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})) +
+    ggplot2::geom_boxplot(
       outlier.shape = NA,
       staplewidth = 0.2,
       fatten = 1
     )
 }
 
+#' Create a bar plot from a data frame
+#'
+#' @param data A data frame.
+#' @param x,y Columns mapped to the x- and y-axes.
+#' @param fill Column mapped to the fill aesthetic.
+#' @param sort_by Currently reserved for future sorting support.
+#'
+#' @return A ggplot object.
+#'
+#' @examples
+#' plot_data <- data.frame(group = c("A", "B"), value = c(10, 15), type = c("x", "y"))
+#' sn_plot_barplot(plot_data, x = group, y = value, fill = type)
+#'
 #' @export
 sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
-  ggplot(
+  ggplot2::ggplot(
     data = data,
-    mapping = aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
+    mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
   ) +
-    geom_col()
+    ggplot2::geom_col()
 }
 
 #' Create a dimensionality reduction plot for categorical data
@@ -181,6 +205,7 @@ sn_plot_dim <- function(
 #' @param split_by A character vector specifying the splitting variable.
 #' @param show_legend Whether to show the legend or not. Defaults to FALSE.
 #' @param angle_x The angle of the x-axis labels. Defaults to 0.
+#' @param palette The color palette to use. Defaults to \code{"Paired"}.
 #' @param aspect_ratio The aspect ratio of the plot. Defaults to 0.5.
 #'
 #' @return A ggplot2 object.
@@ -229,7 +254,7 @@ sn_plot_violin <- function(object,
       axis.title.x = element_blank(),
       legend.margin = margin(l = -8)
     ) +
-    scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+    ggplot2::scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     guides(x = guide_axis(angle = angle_x)) +
     scale_fill_manual(values = values)
   return(p)
@@ -254,6 +279,7 @@ sn_plot_violin <- function(object,
 #' @param scale_by The variable to scale the dot size by. Defaults to "radius".
 #' @param scale_min The minimum value for the dot size scale. Defaults to NA.
 #' @param scale_max The maximum value for the dot size scale. Defaults to NA.
+#' @param palette The diverging palette used for the color scale.
 #'
 #' @return A ggplot2 object.
 #'
@@ -316,7 +342,7 @@ sn_plot_dot <- function(x,
       axis.text.x = element_text(face = "italic"),
       axis.title = element_blank(),
       legend.margin = margin(l = -8),
-      panel.grid = element_line(
+      panel.grid = ggplot2::element_line(
         colour = "lightgrey",
         linewidth = 0.2 / 1.07
       )
@@ -473,6 +499,16 @@ palette_db$XuPan2024 <- c(
 )
 
 
+#' List available color palettes
+#'
+#' Prints the built-in Shennong palettes and the names of available
+#' `RColorBrewer` palettes.
+#'
+#' @return Invisibly returns `NULL`.
+#'
+#' @examples
+#' show_all_palettes()
+#'
 #' @export
 show_all_palettes <- function() {
   # Collection from paper

@@ -17,11 +17,11 @@ sn_find_doublets(
 
 \item{clusters}{Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.}
 
+\item{group_by}{An optional metadata column used as the donor or sample grouping.}
+
 \item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.}
 
 \item{ncores}{Number of cores to use (for parallel processing).}
-
-\item{donor}{An optional vector of donor IDs (for multi-sample data).}
 }
 \value{
 The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.

@@ -53,6 +53,8 @@ sn_plot_dot(
 \item{scale_min}{The minimum value for the dot size scale. Defaults to NA.}
 
 \item{scale_max}{The maximum value for the dot size scale. Defaults to NA.}
+
+\item{palette}{The diverging palette used for the color scale.}
 }
 \value{
 A ggplot2 object.

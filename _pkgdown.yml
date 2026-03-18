@@ -1,8 +1,18 @@
 url: https://songqi.org/shennong
 
+development:
+  mode: auto
+
 authors:
   Songqi Duan:
     href: https://songqi.org
+
+home:
+  links:
+    - text: Source code
+      href: https://github.com/zerostwo/shennong
+    - text: Issue tracker
+      href: https://github.com/zerostwo/shennong/issues
 
 destination: docs
 
@@ -12,3 +22,37 @@ template:
     in_header:
       <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 
+reference:
+  - title: Data and IO
+    contents:
+      - sn_load_data
+      - sn_load_pbmc
+      - sn_read
+      - sn_write
+      - sn_add_data_from_anndata
+  - title: Preprocessing and QC
+    contents:
+      - sn_initialize_seurat_object
+      - sn_standardize_gene_symbols
+      - sn_score_cell_cycle
+      - sn_filter_genes
+      - sn_filter_cells
+      - sn_remove_ambient_contamination
+  - title: Clustering and metrics
+    contents:
+      - sn_run_cluster
+      - sn_run_celltypist
+      - sn_calculate_lisi
+      - sn_calculate_rogue
+      - sn_calculate_composition
+  - title: Visualization and signatures
+    contents:
+      - sn_plot_dim
+      - sn_plot_feature
+      - sn_plot_violin
+      - sn_plot_dot
+      - sn_plot_boxplot
+      - sn_plot_barplot
+      - show_all_palettes
+      - sn_get_signatures
+      - sn_enrich

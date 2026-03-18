@@ -1,3 +1,30 @@
+#' Run gene set enrichment analysis
+#'
+#' Runs GO or KEGG enrichment for a gene vector or grouped gene table using
+#' `clusterProfiler`.
+#'
+#' @param x A character vector of gene symbols, or a data frame used together
+#'   with `gene_clusters`.
+#' @param gene_clusters An optional grouping formula passed to
+#'   `clusterProfiler::compareCluster()`.
+#' @param species One of `"human"` or `"mouse"`.
+#' @param database One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, or `"KEGG"`.
+#' @param pvalue_cutoff Numeric p-value cutoff used by the enrichment method.
+#' @param prefix Optional filename prefix when writing results.
+#' @param outdir Optional output directory. If supplied, the enrichment result
+#'   is also saved as an `.rds` file.
+#'
+#' @return A `clusterProfiler` enrichment result object.
+#'
+#' @examples
+#' \dontrun{
+#' sn_enrich(
+#'   x = c("CD3D", "IL7R", "LTB"),
+#'   species = "human",
+#'   database = "GOBP"
+#' )
+#' }
+#'
 #' @export
 sn_enrich <- function(
   x,

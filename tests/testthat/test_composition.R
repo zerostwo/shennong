@@ -73,3 +73,43 @@ test_that("sn_calculate_composition works with lightweight data frames", {
   expect_s3_class(result, "data.frame")
   expect_true(all(c("sample_id", "cell_type", "proportion") %in% colnames(result)))
 })
+
+test_that("sn_calculate_composition warns when additional columns vary within groups", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "A", "B", "B"),
+    ctype = c("Tcell", "Bcell", "Tcell", "Tcell", "Bcell"),
+    condition = c("Control", "Treated", "Control", "Control", "Control"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_warning(
+    result <- sn_calculate_composition(
+      x = meta_df,
+      group_by = "sample",
+      variable = "ctype",
+      min_cells = 1,
+      additional_cols = "condition"
+    ),
+    "Additional columns are not constant"
+  )
+
+  expect_equal(unique(result$condition[result$sample == "A"]), "Control")
+})
+
+test_that("sn_calculate_composition errors when min_cells removes all groups", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "B"),
+    ctype = c("Tcell", "Bcell", "Tcell"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    sn_calculate_composition(
+      x = meta_df,
+      group_by = "sample",
+      variable = "ctype",
+      min_cells = 3
+    ),
+    "No groups remaining after filtering by `min_cells`"
+  )
+})

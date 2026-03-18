@@ -19,6 +19,8 @@ sn_initialize_seurat_object(
 )
 }
 \arguments{
+\item{x}{A matrix, data.frame, sparse matrix, or path to counts data.}
+
 \item{metadata}{Optional metadata (data.frame or similar) to add to the Seurat object.}
 
 \item{names_field}{Passed to \code{SeuratObject::CreateSeuratObject}, indicating how to parse cell names.}
@@ -33,9 +35,11 @@ sn_initialize_seurat_object(
 
 \item{species}{Either "human" or "mouse" (case-sensitive). Affects QC metric patterns.}
 
-\item{counts}{A matrix, data.frame, or sparse matrix of counts.}
+\item{standardize_gene_symbols}{Logical; standardize gene symbols after object creation.}
 
-\item{qc}{Whether to calculate mitochondrial, ribosomal, and hemoglobin gene percentages.}
+\item{is_gene_id}{Logical; treat row names as gene IDs and convert them to symbols when standardizing.}
+
+\item{...}{Additional arguments passed to \code{SeuratObject::CreateSeuratObject()}.}
 }
 \value{
 A \code{Seurat} object with optional QC metadata in its meta.data slot.
@@ -43,8 +47,8 @@ A \code{Seurat} object with optional QC metadata in its meta.data slot.
 \description{
 This function creates a Seurat object from counts (and optional metadata),
 then calculates common QC metrics such as mitochondrial and ribosomal gene
-percentages if `qc = TRUE`. Currently supports human and mouse patterns
-for these gene sets.
+percentages when `species` is supplied. Currently supports human and mouse
+patterns for these gene sets.
 }
 \examples{
 \dontrun{
