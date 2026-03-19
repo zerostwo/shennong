@@ -343,19 +343,19 @@ sn_find_doublets <- function(
   if (inherits(x, "Seurat")) {
     return(list(
       object = x,
-      counts = SeuratObject::LayerData(object = x, layer = "counts")
+      counts = .sn_as_sparse_matrix(SeuratObject::LayerData(object = x, layer = "counts"))
     ))
   }
 
   if (is.character(x)) {
     return(list(
       object = NULL,
-      counts = sn_read(path = x)
+      counts = .sn_as_sparse_matrix(sn_read(path = x))
     ))
   }
 
-  if (inherits(x, c("Matrix", "matrix", "data.frame"))) {
-    return(list(object = NULL, counts = x))
+  if (inherits(x, c("Matrix", "matrix", "data.frame", "MatrixDir", "IterableMatrix", "RenameDims"))) {
+    return(list(object = NULL, counts = .sn_as_sparse_matrix(x)))
   }
 
   stop(glue("`{arg}` must be a Seurat object, matrix-like object, or path."))
@@ -452,11 +452,11 @@ sn_find_doublets <- function(
                                      force_accept = FALSE,
                                      contamination_range = c(0.01, 0.8),
                                      verbose = FALSE) {
-  check_installed(pkg = "SoupX", reason = "to remove ambient RNA contamination with SoupX.")
-
   if (is_null(raw_info)) {
     stop("`raw` is required when `method = \"soupx\"`.")
   }
+
+  check_installed(pkg = "SoupX", reason = "to remove ambient RNA contamination with SoupX.")
 
   tod <- raw_info$counts
   toc <- x_info$counts

@@ -413,6 +413,9 @@ sn_find_de <- function(
   p_col <- p_col[p_col %in% colnames(result)][1] %||% NA_character_
 
   stored_result <- list(
+    schema_version = "1.0.0",
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = tibble::as_tibble(result),
     analysis = analysis,
     group_by = group_by,
@@ -428,6 +431,9 @@ sn_find_de <- function(
     p_col = p_col,
     p_val_cutoff = p_val_cutoff,
     de_logfc = de_logfc,
+    min_pct = min_pct,
+    logfc_threshold = logfc_threshold,
+    n_genes = nrow(result),
     test_use = if (analysis == "pseudobulk") pseudobulk_method else test_use
   )
 

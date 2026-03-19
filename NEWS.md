@@ -1,10 +1,67 @@
-# Shennong 0.1.0
+# Changelog
 
-## Modernization
+All notable changes to this project will be documented in this file.
 
-- Added `sn_load_data()` as the primary example-data loader and retained `sn_load_pbmc()` as a deprecated compatibility wrapper.
-- Consolidated clustering into `sn_run_cluster()` and removed the separate `sn_quick_cluster()` implementation.
-- Unified `sn_remove_ambient_contamination()` around a shared SoupX/decontX API.
-- Expanded test coverage for composition, data loading, clustering, utilities, visualization, and ambient contamination.
-- Added missing help pages for several exported functions and refreshed generated documentation.
-- Added CI scaffolding, a richer README, and updated package metadata for current R syntax requirements.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Keep a Changelog-based release structure for future releases.
+
+## [0.1.1] - 2026-03-19
+
+### Added
+
+- Automatic human/mouse species inference through `sn_get_species()` using
+  `hom_genes` and mitochondrial naming patterns.
+- A layer-aware pkgdown article covering inferred species, non-default count
+  layers, and stored differential-expression metadata.
+- Additional regression tests for species inference, DE metadata, and
+  BPCells-backed Seurat layers.
+
+### Changed
+
+- `sn_initialize_seurat_object()` now attempts species inference before deciding
+  whether to compute species-specific QC metrics.
+- `sn_get_signatures()` now uses package-local fallback signatures for the core
+  categories needed by Shennong workflows when `SignatuR` is unavailable.
+- Stored DE results now include schema and provenance metadata such as package
+  version, timestamp, assay/layer context, and threshold settings.
+- `sn_plot_*()` helpers now treat `catplot` as an optional enhancement rather
+  than a mandatory dependency.
+
+### Fixed
+
+- Fixed `sn_remove_ambient_contamination()` for BPCells-backed Seurat layers by
+  materializing BPCells matrices before passing them to `decontX`.
+- Fixed optional dependency handling so missing `SignatuR` no longer breaks core
+  initialization and clustering paths.
+- Fixed SoupX validation order so missing `raw` input is reported before package
+  availability issues.
+
+## [0.1.0] - 2026-03-18
+
+### Added
+
+- `sn_load_data()` as the primary example-data loader.
+- Consolidated clustering into `sn_run_cluster()`.
+- A unified ambient contamination interface for SoupX and decontX.
+- Expanded test coverage across composition, data loading, clustering,
+  utilities, visualization, and ambient contamination.
+- Missing help pages for exported functions, CI scaffolding, a richer README,
+  and updated package metadata for current R syntax requirements.
+
+### Changed
+
+- Retained `sn_load_pbmc()` as a deprecated compatibility wrapper around
+  `sn_load_data()`.
+- Refreshed generated documentation and package metadata as part of the
+  modernization effort.
+
+### Fixed
+
+- Addressed multiple modernization issues in the package build, test, and
+  documentation pipeline.

@@ -36,6 +36,8 @@ The public API uses strict `sn_verb_noun` naming. Common families are:
 - Shennong’s main in-memory object is a Seurat object.
 - Count-like matrix workflows increasingly expose explicit `assay` and `layer`
   parameters.
+- Species can be provided explicitly, but common human/mouse workflows can also
+  be inferred automatically from feature names.
 - Differential expression results can be stored back into the Seurat object in
   `object@misc$de_results`.
 

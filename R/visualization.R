@@ -1,3 +1,15 @@
+# Internal helper to apply the optional catplot theme when available.
+.sn_add_catplot_theme <- function(p, aspect_ratio = 1, show_title = NULL) {
+  if (rlang::is_installed("catplot")) {
+    if (is_null(show_title)) {
+      return(p + catplot::theme_cat(aspect_ratio = aspect_ratio))
+    }
+    return(p + catplot::theme_cat(aspect_ratio = aspect_ratio, show_title = show_title))
+  }
+
+  p + ggplot2::theme_minimal(base_size = 11)
+}
+
 #' Create a boxplot from a data frame
 #'
 #' @param data A data frame.
@@ -166,8 +178,7 @@ sn_plot_dim <- function(
   y <- ifelse(reduction == "tsne", "tSNE 2",
     paste0(stringr::str_to_upper(reduction), " 2")
   )
-  p <- p +
-    catplot::theme_cat(aspect_ratio = 1) +
+  p <- .sn_add_catplot_theme(p, aspect_ratio = 1) +
     theme(legend.margin = margin(l = -8)) +
     labs(
       x = x,
@@ -249,7 +260,7 @@ sn_plot_violin <- function(object,
   } else {
     values <- brewer.pal(n, palette)
   }
-  p <- p + catplot::theme_cat(aspect_ratio = aspect_ratio) +
+  p <- .sn_add_catplot_theme(p, aspect_ratio = aspect_ratio) +
     theme(
       axis.title.x = element_blank(),
       legend.margin = margin(l = -8)
@@ -370,7 +381,6 @@ sn_plot_dot <- function(x,
                         scale_min = NA,
                         scale_max = NA,
                         palette = "RdBu") {
-  check_installed_github(pkg = "catplot", repo = "catplot/catplot")
   feature_info <- .sn_resolve_dotplot_features(
     object = x,
     features = features,
@@ -408,20 +418,20 @@ sn_plot_dot <- function(x,
           ticks.colour = "black",
           ticks.linewidth = 0.2
         )
-      ) +
-      catplot::theme_cat(show_title = "none") +
-      theme(
-        axis.text.x = element_text(face = "italic"),
-        axis.title = element_blank(),
-        legend.margin = margin(l = -8),
-        panel.grid = ggplot2::element_line(
-          colour = "lightgrey",
-          linewidth = 0.2 / 1.07
-        )
-      ) +
-      scale_color_distiller(palette = palette) +
-      scale_y_discrete(limits = rev)
+      )
   )
+  p <- .sn_add_catplot_theme(p, show_title = "none") +
+    theme(
+      axis.text.x = element_text(face = "italic"),
+      axis.title = element_blank(),
+      legend.margin = margin(l = -8),
+      panel.grid = ggplot2::element_line(
+        colour = "lightgrey",
+        linewidth = 0.2 / 1.07
+      )
+    ) +
+    scale_color_distiller(palette = palette) +
+    scale_y_discrete(limits = rev)
   return(p)
 }
 
@@ -499,8 +509,7 @@ sn_plot_feature <-
     reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
     object[["ident"]] <- Seurat::Idents(object = object)
     title <- title %||% features
-    p <- p +
-      catplot::theme_cat(aspect_ratio = 1) +
+    p <- .sn_add_catplot_theme(p, aspect_ratio = 1) +
       theme(legend.margin = margin(l = -8)) +
       labs(
         x = paste0(stringr::str_to_upper(reduction), " 1"),

@@ -73,6 +73,36 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   )
 }
 
+.sn_is_iterable_matrix <- function(x) {
+  inherits(x, "IterableMatrix") || inherits(x, "MatrixDir") || inherits(x, "RenameDims")
+}
+
+.sn_as_sparse_matrix <- function(x) {
+  if (inherits(x, "dgCMatrix")) {
+    return(x)
+  }
+
+  if (.sn_is_iterable_matrix(x)) {
+    message("Materializing a BPCells-backed matrix in memory for this operation.")
+    materialized <- suppressWarnings(as.matrix(x))
+    return(methods::as(Matrix::Matrix(materialized, sparse = TRUE), "dgCMatrix"))
+  }
+
+  if (inherits(x, "matrix")) {
+    return(methods::as(Matrix::Matrix(x, sparse = TRUE), "dgCMatrix"))
+  }
+
+  if (inherits(x, "data.frame")) {
+    return(methods::as(Matrix::Matrix(as.matrix(x), sparse = TRUE), "dgCMatrix"))
+  }
+
+  if (inherits(x, "Matrix")) {
+    return(methods::as(methods::as(x, "generalMatrix"), "CsparseMatrix"))
+  }
+
+  x
+}
+
 .sn_log_seurat_command <- function(object, assay = NULL, name = NULL) {
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(
     object = object,

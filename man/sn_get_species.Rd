@@ -2,19 +2,23 @@
 % Please edit documentation in R/misc.R
 \name{sn_get_species}
 \alias{sn_get_species}
-\title{Retrieve Species Information from a Seurat Object}
+\title{Retrieve or infer species information}
 \usage{
 sn_get_species(object, species = NULL)
 }
 \arguments{
-\item{object}{A Seurat object containing single-cell RNA-seq data.}
+\item{object}{A Seurat object, matrix-like object, or character vector of
+gene symbols.}
 
-\item{species}{(Optional) A character string indicating the species. If provided, it is returned directly.}
+\item{species}{Optional explicit species label. If provided, it is returned
+directly.}
 }
 \value{
-A character string indicating the species.
+A character string indicating the inferred or explicit species.
 }
 \description{
-This function extracts the species information from a Seurat object. If the species is not found,
-it throws an error.
+This helper returns the explicit \code{species} argument when supplied,
+otherwise it tries the species stored in a Seurat object and then falls back
+to feature-name based inference using the packaged \code{hom_genes} mapping
+plus common mitochondrial naming patterns.
 }

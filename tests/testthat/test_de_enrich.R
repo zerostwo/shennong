@@ -55,11 +55,13 @@ test_that("sn_find_de stores marker results on the Seurat object", {
   expect_true("de_results" %in% names(methods::slot(object, "misc")))
   expect_true("celltype_markers" %in% names(object@misc$de_results))
   expect_true("gene" %in% colnames(object@misc$de_results$celltype_markers$table))
+  expect_equal(object@misc$de_results$celltype_markers$schema_version, "1.0.0")
+  expect_equal(object@misc$de_results$celltype_markers$analysis, "markers")
+  expect_true("package_version" %in% names(object@misc$de_results$celltype_markers))
 })
 
 test_that("sn_plot_dot can use stored top markers", {
   skip_if_not_installed("Seurat")
-  skip_if_not(suppressWarnings(requireNamespace("catplot", quietly = TRUE)))
 
   object <- make_de_test_object()
   object <- sn_find_de(

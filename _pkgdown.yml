@@ -27,6 +27,7 @@ articles:
     navbar: Articles
     contents:
       - clustering
+      - layered-workflows
 
 reference:
   - title: Data and IO

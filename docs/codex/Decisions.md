@@ -47,3 +47,6 @@ Last updated: 2026-03-18
 - Enrichment support should include both ORA and ranked-list GSEA so marker interpretation can operate on either thresholded gene sets or full ranked tables.
 - Coverage reporting should be treated as a first-class maintenance signal: the repository now exposes a Codecov badge in the README and validates `covr::package_coverage()` through a dedicated GitHub Actions workflow.
 - pkgdown deployment should be validated from a clean `site/` rebuild, because stale generated files can otherwise mask removed topics or old aliases in the published site.
+- Species handling should be permissive for the common human/mouse case. When `species` is omitted, Shennong now attempts to infer it from feature names using `hom_genes` and mitochondrial naming patterns; only genuinely ambiguous inputs still require an explicit species.
+- Optional packages that enhance core workflows should not block the default path. `SignatuR` and `catplot` are now treated as optional enhancements rather than mandatory dependencies for initialization, clustering, and plotting.
+- Stored DE results should include lightweight provenance metadata (`schema_version`, package version, timestamp, thresholds, and assay/layer context) so downstream plotting and interpretation have a stable object contract.

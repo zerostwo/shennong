@@ -1,0 +1,145 @@
+---
+title: "Layer-aware workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Layer-aware workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This article demonstrates three Shennong behaviors that are important in
+modern multi-layer Seurat workflows:
+
+- automatic species inference when `species` is not provided
+- running analysis from a non-default count layer
+- storing DE metadata in `object@misc$de_results`
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+```
+
+```{r prepare-layered-demo, include = FALSE}
+pbmc <- sn_load_data("pbmc1k")
+counts <- SeuratObject::LayerData(pbmc, layer = "counts")
+inferred_species <- sn_get_species(counts)
+
+pbmc_inferred <- sn_initialize_seurat_object(
+  x = counts,
+  project = "pbmc1k_inferred"
+)
+
+SeuratObject::LayerData(pbmc_inferred, layer = "decontaminated_counts") <- counts
+
+pbmc_layered <- suppressWarnings(
+  sn_run_cluster(
+    object = pbmc_inferred,
+    normalization_method = "seurat",
+    layer = "decontaminated_counts",
+    nfeatures = 800,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.5,
+    verbose = FALSE
+  )
+)
+
+pbmc_layered <- suppressWarnings(
+  sn_find_de(
+    pbmc_layered,
+    analysis = "markers",
+    group_by = "seurat_clusters",
+    store_name = "cluster_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+)
+
+de_store <- pbmc_layered@misc$de_results$cluster_markers
+de_summary <- tibble::tibble(
+  field = c(
+    "schema_version", "package_version", "analysis", "group_by",
+    "rank_col", "p_col", "n_genes"
+  ),
+  value = c(
+    de_store$schema_version,
+    de_store$package_version,
+    de_store$analysis,
+    de_store$group_by,
+    de_store$rank_col,
+    de_store$p_col,
+    as.character(de_store$n_genes)
+  )
+)
+```
+
+## Automatic species inference
+
+The count matrix is initialized without an explicit `species` argument, but
+Shennong still infers the species from feature names using `hom_genes` and
+common mitochondrial patterns.
+
+```{r}
+knitr::kable(
+  tibble::tibble(
+    object = c("raw_counts", "pbmc_inferred"),
+    species = c(inferred_species, sn_get_species(pbmc_inferred))
+  )
+)
+```
+
+## Layer-aware clustering
+
+The object below is clustered from the `decontaminated_counts` layer rather
+than the default `counts` layer.
+
+```{r}
+sn_plot_dim(
+  pbmc_layered,
+  reduction = "umap",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  show_legend = FALSE,
+  title = "pbmc1k clustered from the decontaminated_counts layer"
+)
+```
+
+## Stored differential expression metadata
+
+`sn_find_de(..., return_object = TRUE)` stores both the marker table and the
+analysis metadata required for later reuse in plotting and enrichment.
+
+```{r}
+knitr::kable(de_summary)
+```
+
+## Reusing stored markers
+
+```{r}
+sn_plot_dot(
+  pbmc_layered,
+  features = "top_markers",
+  de_name = "cluster_markers",
+  n = 3
+)
+```

@@ -33,6 +33,31 @@ test_that("sn_initialize_seurat_object accepts base matrices and adds metadata",
   expect_true("sn_initialize_seurat_object" %in% names(object@commands))
 })
 
+test_that("sn_initialize_seurat_object infers species and computes QC metrics", {
+  skip_if_not_installed("Seurat")
+
+  counts <- matrix(
+    c(
+      5, 0, 3, 1,
+      2, 4, 1, 0,
+      0, 1, 0, 2,
+      3, 3, 3, 3
+    ),
+    nrow = 4,
+    byrow = TRUE
+  )
+  rownames(counts) <- c("MT-CO1", "RPLP0", "HBB", "CD3D")
+  colnames(counts) <- paste0("cell", 1:4)
+
+  object <- sn_initialize_seurat_object(
+    x = counts,
+    project = "prep-inferred"
+  )
+
+  expect_equal(sn_get_species(object), "human")
+  expect_true(all(c("percent.mt", "percent.ribo", "percent.hb") %in% colnames(object[[]])))
+})
+
 test_that("sn_filter_genes drops genes below the minimum cell threshold", {
   skip_if_not_installed("Seurat")
 

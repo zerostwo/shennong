@@ -13,6 +13,8 @@ Important places to look:
 - `object@graphs`: neighbor graphs used by clustering
 - `object@commands`: recorded workflow steps for reproducibility
 - `object@misc`: package-specific stored results such as DE outputs
+- species metadata: when present, stored in `Seurat::Misc(object, "species")`;
+  when absent, `sn_get_species()` can infer it from feature names
 
 ## Stored Differential Expression Results
 
@@ -22,6 +24,7 @@ Important places to look:
 
 Each stored entry includes:
 
+- `schema_version`, `package_version`, `created_at`
 - `table`: the result table
 - `analysis`: `markers`, `contrast`, or `pseudobulk`
 - `group_by` and `group_col`: grouping metadata
@@ -29,6 +32,7 @@ Each stored entry includes:
 - `subset_by`: optional stratifying metadata column
 - `rank_col`: ranking column used for top markers or GSEA
 - `p_col`: adjusted p-value column when available
+- `assay`, `layer`, `slot`, `min_pct`, `logfc_threshold`, `n_genes`
 
 This is the structure that `sn_plot_dot(features = "top_markers")` reuses.
 

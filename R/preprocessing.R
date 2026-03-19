@@ -91,13 +91,7 @@ sn_initialize_seurat_object <- function(
     counts <- sn_read(path = x)
   }
 
-  if (inherits(counts, "matrix")) {
-    counts <- methods::as(Matrix::Matrix(counts, sparse = TRUE), "dgCMatrix")
-  } else if (inherits(counts, "data.frame")) {
-    counts <- methods::as(Matrix::Matrix(as.matrix(counts), sparse = TRUE), "dgCMatrix")
-  } else if (inherits(counts, "Matrix") && !inherits(counts, "dgCMatrix")) {
-    counts <- methods::as(methods::as(counts, "generalMatrix"), "CsparseMatrix")
-  }
+  counts <- .sn_as_sparse_matrix(counts)
 
   # -- Create Seurat Object
   seurat_obj <- SeuratObject::CreateSeuratObject(
@@ -116,6 +110,16 @@ sn_initialize_seurat_object <- function(
   }
   if (!is_null(study)) {
     seurat_obj$study <- study
+  }
+
+  if (is_null(species)) {
+    species <- tryCatch(
+      sn_get_species(object = seurat_obj, species = NULL),
+      error = function(e) NULL
+    )
+    if (is_null(species)) {
+      log_warn("Species could not be inferred during initialization; skipping species-specific QC metrics.")
+    }
   }
 
   # -- Calculate QC metrics if required
@@ -315,6 +319,7 @@ sn_standardize_gene_symbols <- function(
     counts <- SeuratObject::LayerData(object = x, layer = "counts")
   } else {
     counts <- x
+    species <- sn_get_species(object = counts, species = species)
   }
 
   # -- Convert to matrix if needed

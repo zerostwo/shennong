@@ -18,6 +18,8 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - The local test surface now covers composition, data loading, clustering, IO/visualization helpers, preprocessing, and utility helpers.
 - A coverage workflow and README coverage badge are now in place, and local `covr::package_coverage()` succeeds.
 - pkgdown has been revalidated with a clean rebuild to `site/`, including the rendered PBMC article and bundled Codex-skill reference pages.
+- Species detection now falls back to automatic inference from feature names using `hom_genes` plus mitochondrial naming patterns, so core workflows no longer require an explicit `species` argument in common human/mouse inputs.
+- pkgdown now includes a second evaluated article covering layer-aware workflows and stored DE metadata.
 
 ## Concise Audit
 
@@ -96,6 +98,10 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Passed: `Rscript -e 'Sys.setenv(SHENNONG_RUN_VIGNETTES = "true"); pkgdown::build_site(new_process = FALSE, install = TRUE)'`
 - Passed: `R CMD build .` after coverage and pkgdown updates
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after coverage and pkgdown updates
+- Passed: `Rscript -e 'testthat::test_local(filter = "utils|preprocessing|clustering|de_enrich", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` with `PASS 112`
+- Passed: `R CMD build .` after species inference and article updates
+- Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after species inference and article updates
 
 ## Completed In This Iteration
 
@@ -142,6 +148,9 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Added targeted unit tests for bundled Codex skill installation, stored-marker/GSEA workflows, signature retrieval, and Seurat plotting helpers, bringing the local full-suite pass count to 105.
 - Added a GitHub Actions coverage workflow and surfaced the Codecov badge in the README.
 - Performed a clean pkgdown rebuild into `site/` to remove stale pages and confirm the article/reference site matches the current package sources.
+- Added species inference through `sn_get_species()` for Seurat objects, matrices, and feature vectors, with `sn_initialize_seurat_object()` now attempting inference automatically before deciding whether to compute species-specific QC metrics.
+- Made built-in signature retrieval resilient to missing `SignatuR` by providing package-local fallback signatures for the categories required by the core workflows.
+- Expanded the stored DE schema with package/version/timestamp metadata and exposed it in a new evaluated pkgdown article, `layered-workflows`.
 
 ## Remaining High-Priority Work
 

@@ -290,6 +290,37 @@ test_that("sn_remove_ambient_contamination defaults to decontX and writes a new 
   expect_true(all(corrected == round(corrected)))
 })
 
+test_that("sn_remove_ambient_contamination supports BPCells-backed Seurat layers", {
+  skip_if_not_installed("BPCells")
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("celda")
+  skip_if_not_installed("SingleCellExperiment")
+
+  counts <- Matrix::Matrix(matrix(rpois(120 * 20, lambda = 3), nrow = 120), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(120))
+  colnames(counts) <- paste0("cell", seq_len(20))
+
+  dir_path <- tempfile("bpc-")
+  BPCells::write_matrix_dir(round(counts), dir_path)
+  bp_counts <- BPCells::open_matrix_dir(dir_path)
+  object <- SeuratObject::CreateSeuratObject(counts = bp_counts, project = "bpcells")
+  cluster <- rep(c("a", "b"), each = 10)
+
+  updated <- sn_remove_ambient_contamination(
+    x = object,
+    method = "decontx",
+    cluster = cluster,
+    verbose = FALSE,
+    estimateDelta = FALSE,
+    maxIter = 5
+  )
+
+  expect_s4_class(updated, "Seurat")
+  expect_true("decontaminated_counts" %in% SeuratObject::Layers(updated[["RNA"]]))
+  corrected <- SeuratObject::LayerData(updated, layer = "decontaminated_counts")
+  expect_equal(dim(corrected), c(120, 20))
+})
+
 test_that("decontX zero-count handling restores original cells by default", {
   original_counts <- Matrix::Matrix(
     matrix(
