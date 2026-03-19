@@ -1,14 +1,18 @@
 #' Run gene set enrichment analysis
 #'
 #' Runs GO or KEGG enrichment for a gene vector or grouped gene table using
-#' `clusterProfiler`.
+#' `clusterProfiler`. It supports both over-representation analysis (ORA) and
+#' ranked-list GSEA.
 #'
 #' @param x A character vector of gene symbols, or a data frame used together
-#'   with `gene_clusters`.
+#'   with `gene_clusters` / ranked-GSEA columns.
 #' @param gene_clusters An optional grouping formula passed to
 #'   `clusterProfiler::compareCluster()`.
+#' @param analysis One of `"ora"` or `"gsea"`.
 #' @param species One of `"human"` or `"mouse"`.
 #' @param database One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, or `"KEGG"`.
+#' @param gene_col Column containing gene symbols when `x` is a data frame.
+#' @param score_col Column containing ranking scores for `analysis = "gsea"`.
 #' @param pvalue_cutoff Numeric p-value cutoff used by the enrichment method.
 #' @param prefix Optional filename prefix when writing results.
 #' @param outdir Optional output directory. If supplied, the enrichment result
@@ -29,12 +33,16 @@
 sn_enrich <- function(
   x,
   gene_clusters = NULL,
+  analysis = c("ora", "gsea"),
   species = "human",
   database = "GOBP",
+  gene_col = "gene",
+  score_col = NULL,
   pvalue_cutoff = 0.05,
   prefix = NULL,
   outdir = NULL
 ) {
+  analysis <- match.arg(analysis)
   # Check if required packages are installed
   if (species == "human") {
     check_installed(pkg = c("clusterProfiler", "org.Hs.eg.db"))
@@ -57,7 +65,30 @@ sn_enrich <- function(
 
   # Print a message indicating which database is being used for gene enrichment
   # analysis
-  log_info("{database} database gene enrichment analysis...")
+  log_info(glue("{database} database {toupper(analysis)} analysis..."))
+
+  if (analysis == "gsea") {
+    gene_list <- NULL
+    if (is.numeric(x) && !is.null(names(x))) {
+      gene_list <- sort(x, decreasing = TRUE)
+    } else if (is.data.frame(x)) {
+      if (!gene_col %in% colnames(x)) {
+        stop(glue("Column '{gene_col}' was not found in `x`."))
+      }
+      inferred_score_col <- score_col %||% c("avg_log2FC", "avg_logFC", "log2FoldChange", "logFC", "stat")[c("avg_log2FC", "avg_logFC", "log2FoldChange", "logFC", "stat") %in% colnames(x)][1]
+      if (is_null(inferred_score_col)) {
+        stop("`score_col` is required for GSEA when `x` is a data frame.")
+      }
+      score_col <- inferred_score_col
+      gene_list <- x[[score_col]]
+      names(gene_list) <- x[[gene_col]]
+      gene_list <- tapply(gene_list, names(gene_list), max)
+      gene_list <- stats::setNames(as.numeric(gene_list), names(gene_list))
+      gene_list <- sort(gene_list, decreasing = TRUE)
+    } else {
+      stop("For GSEA, `x` must be a named numeric vector or a data frame containing gene and score columns.")
+    }
+  }
 
   # Perform gene enrichment analysis for Gene Ontology (GO) terms
   if (database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
@@ -67,8 +98,15 @@ sn_enrich <- function(
       "GOMF" = "MF",
       "GOCC" = "CC"
     )
-    # If gene_clusters is NULL, perform enrichment analysis using enrichGO
-    if (is_null(x = gene_clusters)) {
+    if (analysis == "gsea") {
+      results <- clusterProfiler::gseGO(
+        geneList = gene_list,
+        ont = ont,
+        OrgDb = org_db,
+        keyType = "SYMBOL",
+        pvalueCutoff = pvalue_cutoff
+      )
+    } else if (is_null(x = gene_clusters)) {
       results <- clusterProfiler::enrichGO(
         gene = x,
         ont = ont,
@@ -93,8 +131,22 @@ sn_enrich <- function(
 
   # Perform gene enrichment analysis for KEGG pathways
   if (database == "KEGG") {
-    # If gene_clusters is NULL, perform enrichment analysis using enrichKEGG
-    if (is_null(x = gene_clusters)) {
+    if (analysis == "gsea") {
+      gid <- clusterProfiler::bitr(
+        geneID = names(gene_list),
+        fromType = "SYMBOL",
+        toType = "ENTREZID",
+        OrgDb = org_db
+      )
+      gene_list <- gene_list[gid$SYMBOL]
+      names(gene_list) <- gid$ENTREZID
+      gene_list <- sort(gene_list, decreasing = TRUE)
+      results <- clusterProfiler::gseKEGG(
+        geneList = gene_list,
+        organism = organism,
+        pvalueCutoff = pvalue_cutoff
+      )
+    } else if (is_null(x = gene_clusters)) {
       gid <-
         clusterProfiler::bitr(
           geneID = x,
@@ -137,11 +189,12 @@ sn_enrich <- function(
           organism = organism
         )
     }
-    # Convert the gene IDs to readable format
-    results <- clusterProfiler::setReadable(results,
-      OrgDb = org_db,
-      keyType = "ENTREZID"
-    )
+    if (!inherits(results, "gseaResult")) {
+      results <- clusterProfiler::setReadable(results,
+        OrgDb = org_db,
+        keyType = "ENTREZID"
+      )
+    }
   }
 
   # Save the results as an RDS file

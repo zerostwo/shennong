@@ -454,7 +454,11 @@ sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = N
       Matrix::as.matrix()
     object <- object[, rownames(umap)]
     reduction_key <- if (grepl("_$", key)) key else paste0(key, "_")
-    object[[key]] <- Seurat::CreateDimReducObject(umap, key = reduction_key)
+    object[[key]] <- Seurat::CreateDimReducObject(
+      embeddings = umap,
+      key = reduction_key,
+      assay = SeuratObject::DefaultAssay(object)
+    )
   }
   if (!is_null(x = metadata_path)) {
     metadata <- read_anndata_table(metadata_path)

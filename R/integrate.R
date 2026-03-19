@@ -1,12 +1,55 @@
 # Internal helper to normalize the clustering dimension arguments.
-.sn_resolve_cluster_dims <- function(dims = NULL, dims_use = NULL, npcs = 50) {
-  if (!is_null(dims) && !is_null(dims_use) && !identical(dims, dims_use)) {
-    log_warn("Both `dims` and `dims_use` were supplied; using `dims`.")
-  }
-
-  dims <- dims %||% dims_use %||% seq_len(min(20, npcs))
+.sn_resolve_cluster_dims <- function(dims = NULL, npcs = 50) {
+  dims <- dims %||% seq_len(min(20, npcs))
   dims <- as.integer(dims)
   dims[dims > 0]
+}
+
+.sn_select_variable_features <- function(object,
+                                         nfeatures = 3000,
+                                         split_by = NULL,
+                                         verbose = TRUE) {
+  if (is_null(split_by) || identical(split_by, "global")) {
+    object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
+    return(list(
+      object = object,
+      features = Seurat::VariableFeatures(object = object)
+    ))
+  }
+
+  if (!split_by %in% colnames(object[[]])) {
+    stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{split_by}' was not found."))
+  }
+
+  split_objects <- Seurat::SplitObject(object, split.by = split_by)
+  feature_lists <- lapply(split_objects, function(current_object) {
+    current_object <- Seurat::FindVariableFeatures(
+      current_object,
+      nfeatures = nfeatures,
+      verbose = FALSE
+    )
+    Seurat::VariableFeatures(current_object)
+  })
+
+  feature_frequency <- sort(table(unlist(feature_lists, use.names = FALSE)), decreasing = TRUE)
+  all_features <- names(feature_frequency)
+  feature_ranks <- lapply(feature_lists, function(features) {
+    stats::setNames(seq_along(features), features)
+  })
+  mean_rank <- vapply(all_features, function(feature) {
+    mean(vapply(feature_ranks, function(rank_map) {
+      if (feature %in% names(rank_map)) {
+        rank_map[[feature]]
+      } else {
+        nfeatures + 1
+      }
+    }, numeric(1)))
+  }, numeric(1))
+  selected <- all_features[order(-as.numeric(feature_frequency), mean_rank, all_features)]
+  selected <- utils::head(selected, nfeatures)
+
+  Seurat::VariableFeatures(object = object) <- selected
+  list(object = object, features = selected)
 }
 
 #' Run clustering for a single dataset or Harmony integration workflow
@@ -21,12 +64,14 @@
 #' @param batch A column name in \code{object@meta.data} specifying batch info.
 #'   If \code{NULL}, no integration is performed.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
-#'   \code{"sctransform"} (alias \code{"sct"}). The SCTransform and scran
-#'   workflows are currently only supported when \code{batch = NULL}.
-#' @param pipeline Deprecated compatibility alias for \code{normalization_method}.
+#'   \code{"sctransform"}. The SCTransform and scran workflows are currently
+#'   only supported when \code{batch = NULL}.
 #' @param nfeatures Number of variable features to select.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
+#' @param hvg_group_by Optional metadata column used to compute highly variable
+#'   genes within groups before merging and ranking them. Use \code{NULL} to
+#'   compute HVGs on the full object.
 #' @param block_genes Either a character vector of predefined sets (e.g. \code{c("ribo","mito")})
 #'   if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude from HVGs.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
@@ -36,7 +81,6 @@
 #' @param npcs Number of PCs to compute in \code{RunPCA}.
 #' @param dims A numeric vector of PCs (dimensions) to use for neighbor search,
 #'   clustering, and UMAP.
-#' @param dims_use Deprecated compatibility alias for \code{dims}.
 #' @param species Optional species label. Used when block genes must be resolved
 #'   from built-in signatures.
 #' @param assay Assay used for clustering. Defaults to \code{"RNA"}.
@@ -59,6 +103,7 @@
 #'   object = seurat_obj,
 #'   batch = "sample_id",
 #'   normalization_method = "seurat",
+#'   hvg_group_by = "sample_id",
 #'   nfeatures = 3000,
 #'   resolution = 0.5,
 #'   block_genes = c("ribo", "mito") # or a custom vector of gene symbols
@@ -67,17 +112,16 @@
 #' @export
 sn_run_cluster <- function(object,
                            batch = NULL,
-                           normalization_method = c("seurat", "scran", "sctransform", "sct"),
-                           pipeline = NULL,
+                           normalization_method = c("seurat", "scran", "sctransform"),
                            nfeatures = 3000,
                            vars_to_regress = NULL,
                            resolution = 0.8,
+                           hvg_group_by = NULL,
                            block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
                            group_by_vars = NULL,
                            npcs = 50,
                            dims = NULL,
-                           dims_use = NULL,
                            species = NULL,
                            assay = "RNA",
                            layer = "counts",
@@ -90,21 +134,11 @@ sn_run_cluster <- function(object,
     stop("Input must be a Seurat object.")
   }
 
-  if (!is_null(pipeline)) {
-    log_warn("`pipeline` is deprecated; use `normalization_method` instead.")
-    normalization_method <- switch(
-      pipeline,
-      standard = "seurat",
-      sctransform = "sctransform",
-      sct = "sctransform",
-      pipeline
-    )
-  }
   normalization_method <- match.arg(normalization_method)
-  if (normalization_method == "sct") {
-    normalization_method <- "sctransform"
+  if (!is_null(hvg_group_by) && !hvg_group_by %in% colnames(object[[]])) {
+    stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{hvg_group_by}' was not found."))
   }
-  dims <- .sn_resolve_cluster_dims(dims = dims, dims_use = dims_use, npcs = npcs)
+  dims <- .sn_resolve_cluster_dims(dims = dims, npcs = npcs)
 
   prepared <- .sn_prepare_seurat_analysis_input(
     object = object,
@@ -162,6 +196,14 @@ sn_run_cluster <- function(object,
     }
   }
 
+  hvg_candidate_nfeatures <- nfeatures
+  if (!is_null(block_genes)) {
+    hvg_candidate_nfeatures <- min(
+      nrow(object),
+      nfeatures + length(intersect(block_genes, rownames(object)))
+    )
+  }
+
   if (normalization_method == "sctransform") {
     check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
 
@@ -200,14 +242,24 @@ sn_run_cluster <- function(object,
       object <- sn_score_cell_cycle(object = object, species = species)
     }
 
-    if (verbose) log_info("[2/6] Selecting highly variable features...")
-    object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
-    hvg <- Seurat::VariableFeatures(object = object)
+    if (verbose) {
+      log_info(glue("[2/6] Selecting highly variable features with hvg_group_by = {hvg_group_by %||% 'global'}..."))
+    }
+    hvg_info <- .sn_select_variable_features(
+      object = object,
+      nfeatures = hvg_candidate_nfeatures,
+      split_by = hvg_group_by,
+      verbose = verbose
+    )
+    object <- hvg_info$object
+    hvg <- hvg_info$features
 
     if (!is_null(block_genes)) {
       n_before <- length(hvg)
       hvg <- setdiff(hvg, block_genes)
-      n_removed <- n_before - length(hvg)
+      n_after_filter <- length(hvg)
+      hvg <- utils::head(hvg, nfeatures)
+      n_removed <- n_before - n_after_filter
 
       if (verbose) {
         log_info(glue(
@@ -270,13 +322,15 @@ sn_run_cluster <- function(object,
     return(object@meta.data[, "seurat_clusters"])
   } else {
     if (verbose) log_info("[7/7] Running UMAP...")
-    object <- Seurat::RunUMAP(
+    object <- suppressWarnings(Seurat::RunUMAP(
       object,
       reduction = reduction,
       dims = dims,
+      umap.method = "uwot",
+      metric = "cosine",
       verbose = verbose,
       seed.use = 717
-    )
+    ))
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) log_info("Integration completed successfully!")
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))

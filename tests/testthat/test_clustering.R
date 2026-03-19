@@ -88,6 +88,84 @@ test_that("sn_run_cluster integrates batches with harmony", {
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
 })
 
+test_that("sn_run_cluster can select HVGs by metadata group during integration", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("harmony")
+
+  object1 <- make_test_object(seed = 31, prefix = "batcha")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 32, prefix = "batchb")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  clustered <- sn_run_cluster(
+    object = merged,
+    batch = "sample",
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("harmony" %in% names(clustered@reductions))
+  expect_lte(length(Seurat::VariableFeatures(clustered)), 50)
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+})
+
+test_that("sn_run_cluster handles merged split layers with differing feature sets", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("harmony")
+
+  object1 <- make_test_object(seed = 33, prefix = "mergea")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 34, prefix = "mergeb")
+  object2$sample <- "pbmc3k"
+
+  object1 <- object1[1:180, ]
+  object2 <- object2[c(1:150, 181:200), ]
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  clustered <- sn_run_cluster(
+    object = merged,
+    batch = "sample",
+    hvg_group_by = "sample",
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("harmony" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+})
+
+test_that("sn_run_cluster errors for missing HVG grouping columns", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 41, prefix = "missing-hvg")
+
+  expect_error(
+    sn_run_cluster(
+      object = object,
+      normalization_method = "seurat",
+      hvg_group_by = "missing_column",
+      nfeatures = 50,
+      block_genes = NULL,
+      npcs = 10,
+      dims = 1:10,
+      verbose = FALSE
+    ),
+    "metadata column name"
+  )
+})
+
 test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not overlap", {
   skip_if_not_installed("Seurat")
 
@@ -284,7 +362,7 @@ test_that("decontX zero-count handling can remove affected cells", {
 
 test_that("sn_find_doublets can analyze a non-default layer", {
   skip_if_not_installed("Seurat")
-  skip_if_not_installed("scDblFinder")
+  skip_if_not(suppressWarnings(requireNamespace("scDblFinder", quietly = TRUE)))
   skip_if_not_installed("SingleCellExperiment")
 
   object <- make_test_object(seed = 12, prefix = "doublets", n_genes = 250, n_cells = 40)
@@ -295,13 +373,13 @@ test_that("sn_find_doublets can analyze a non-default layer", {
   SeuratObject::LayerData(object, layer = "counts") <- zero_counts
   SeuratObject::LayerData(object, layer = "decontaminated_counts") <- original_counts
 
-  updated <- sn_find_doublets(
+  updated <- suppressWarnings(sn_find_doublets(
     object = object,
     clusters = "precluster",
     assay = "RNA",
     layer = "decontaminated_counts",
     ncores = 1
-  )
+  ))
 
   expect_true(all(c("scDblFinder.class", "scDblFinder.score") %in% colnames(updated[[]])))
   expect_equal(

@@ -91,6 +91,14 @@ sn_initialize_seurat_object <- function(
     counts <- sn_read(path = x)
   }
 
+  if (inherits(counts, "matrix")) {
+    counts <- methods::as(Matrix::Matrix(counts, sparse = TRUE), "dgCMatrix")
+  } else if (inherits(counts, "data.frame")) {
+    counts <- methods::as(Matrix::Matrix(as.matrix(counts), sparse = TRUE), "dgCMatrix")
+  } else if (inherits(counts, "Matrix") && !inherits(counts, "dgCMatrix")) {
+    counts <- methods::as(methods::as(counts, "generalMatrix"), "CsparseMatrix")
+  }
+
   # -- Create Seurat Object
   seurat_obj <- SeuratObject::CreateSeuratObject(
     counts       = counts,

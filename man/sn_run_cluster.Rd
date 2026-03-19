@@ -7,17 +7,16 @@
 sn_run_cluster(
   object,
   batch = NULL,
-  normalization_method = c("seurat", "scran", "sctransform", "sct"),
-  pipeline = NULL,
+  normalization_method = c("seurat", "scran", "sctransform"),
   nfeatures = 3000,
   vars_to_regress = NULL,
   resolution = 0.8,
+  hvg_group_by = NULL,
   block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
   theta = 2,
   group_by_vars = NULL,
   npcs = 50,
   dims = NULL,
-  dims_use = NULL,
   species = NULL,
   assay = "RNA",
   layer = "counts",
@@ -32,16 +31,18 @@ sn_run_cluster(
 If \code{NULL}, no integration is performed.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
-\code{"sctransform"} (alias \code{"sct"}). The SCTransform and scran
-workflows are currently only supported when \code{batch = NULL}.}
-
-\item{pipeline}{Deprecated compatibility alias for \code{normalization_method}.}
+\code{"sctransform"}. The SCTransform and scran workflows are currently
+only supported when \code{batch = NULL}.}
 
 \item{nfeatures}{Number of variable features to select.}
 
 \item{vars_to_regress}{Covariates to regress out in \code{ScaleData}.}
 
 \item{resolution}{Resolution parameter for \code{FindClusters}.}
+
+\item{hvg_group_by}{Optional metadata column used to compute highly variable
+genes within groups before merging and ranking them. Use \code{NULL} to
+compute HVGs on the full object.}
 
 \item{block_genes}{Either a character vector of predefined sets (e.g. \code{c("ribo","mito")})
 if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude from HVGs.}
@@ -56,8 +57,6 @@ diversity preservation vs. correction.}
 
 \item{dims}{A numeric vector of PCs (dimensions) to use for neighbor search,
 clustering, and UMAP.}
-
-\item{dims_use}{Deprecated compatibility alias for \code{dims}.}
 
 \item{species}{Optional species label. Used when block genes must be resolved
 from built-in signatures.}
@@ -93,6 +92,7 @@ seurat_obj <- sn_run_cluster(
   object = seurat_obj,
   batch = "sample_id",
   normalization_method = "seurat",
+  hvg_group_by = "sample_id",
   nfeatures = 3000,
   resolution = 0.5,
   block_genes = c("ribo", "mito") # or a custom vector of gene symbols

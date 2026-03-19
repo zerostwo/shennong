@@ -8,6 +8,15 @@
 \description{
 The Shennong package provides a comprehensive toolkit for interpreting omics data, offering advanced analysis and visualization tools tailored for genomic, transcriptomic, proteomic, and metabolomic data. It integrates various bioinformatics approaches to facilitate the understanding of complex biological mechanisms and interactions. Designed for researchers and data scientists in the field of bioinformatics, Shennong aims to streamline the process of omics data analysis with a focus on usability and reproducibility.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://songqi.org/shennong}
+  \item \url{https://github.com/zerostwo/shennong}
+  \item Report bugs at \url{https://github.com/zerostwo/shennong/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Songqi Duan \email{duan@songqi.org} (\href{https://orcid.org/0000-0002-0822-5883}{ORCID})
 

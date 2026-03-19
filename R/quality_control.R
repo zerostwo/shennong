@@ -221,7 +221,9 @@ sn_filter_cells <- function(
   # Store QC parameters
   qc_list <- Seurat::Misc(x, "qc") %||% list()
   qc_list[[feature]] <- qc_df
-  Seurat::Misc(x, "qc") <- qc_list
+  misc_data <- methods::slot(x, "misc")
+  misc_data[["qc"]] <- qc_list
+  methods::slot(x, "misc") <- misc_data
 
   return(x)
 }

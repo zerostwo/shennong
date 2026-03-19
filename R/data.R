@@ -1,6 +1,3 @@
-#' Signature genes
-"SignatuR"
-
 # Internal registry for example datasets
 .sn_example_data_catalog <- function() {
   data.frame(

@@ -8,6 +8,9 @@ sn_plot_dot(
   x,
   assay = NULL,
   features,
+  de_name = "default",
+  n = 3,
+  marker_groups = NULL,
   col_min = -2.5,
   col_max = 2.5,
   dot_min = 0,
@@ -28,7 +31,18 @@ sn_plot_dot(
 
 \item{assay}{The assay to plot. Defaults to the default assay.}
 
-\item{features}{A character vector of feature names to plot.}
+\item{features}{A character vector of feature names to plot, or
+\code{"top_markers"} to automatically use the top stored DE markers from
+\code{object@misc$de_results[[de_name]]}.}
+
+\item{de_name}{Name of the stored DE result to use when
+\code{features = "top_markers"}. Defaults to \code{"default"}.}
+
+\item{n}{Number of genes to select per group when
+\code{features = "top_markers"}. Defaults to \code{3}.}
+
+\item{marker_groups}{Optional subset of DE result groups to include when
+\code{features = "top_markers"}.}
 
 \item{col_min}{The minimum value for the color scale. Defaults to -2.5.}
 

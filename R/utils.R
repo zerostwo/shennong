@@ -116,7 +116,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
     SeuratObject::LayerData(object = object, assay = assay, layer = current_layer)
   })
 
-  feature_names <- rownames(mats[[1]])
+  feature_names <- unique(unlist(lapply(mats, rownames), use.names = FALSE))
   combined <- Matrix::Matrix(
     0,
     nrow = length(feature_names),

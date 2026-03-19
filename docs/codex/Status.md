@@ -16,6 +16,8 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Exported functions now have generated help coverage through roxygen-managed `.Rd` files.
 - The package now has a generated `README.md`, guarded vignette execution, repository-local CI workflows, and a passing `R CMD check --no-manual`.
 - The local test surface now covers composition, data loading, clustering, IO/visualization helpers, preprocessing, and utility helpers.
+- A coverage workflow and README coverage badge are now in place, and local `covr::package_coverage()` succeeds.
+- pkgdown has been revalidated with a clean rebuild to `site/`, including the rendered PBMC article and bundled Codex-skill reference pages.
 
 ## Concise Audit
 
@@ -52,7 +54,7 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 ### Likely public API surface
 
 - Exported functions from `NAMESPACE`
-- Documented datasets: `marker_genes`, `hom_genes`, and `SignatuR`
+- Documented datasets: `marker_genes` and `hom_genes`
 
 ### Proposed target architecture
 
@@ -89,6 +91,11 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
 - Passed: `R CMD build .`
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after the CI/pkgdown hardening
+- Passed: `Rscript -e 'testthat::test_local(filter = "io_visualization|codex_skill|signatures", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'cov <- covr::package_coverage(); cat(covr::percent_coverage(cov), "\n")'` with `53.49386`
+- Passed: `Rscript -e 'Sys.setenv(SHENNONG_RUN_VIGNETTES = "true"); pkgdown::build_site(new_process = FALSE, install = TRUE)'`
+- Passed: `R CMD build .` after coverage and pkgdown updates
+- Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after coverage and pkgdown updates
 
 ## Completed In This Iteration
 
@@ -122,6 +129,19 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Adjusted GitHub Actions dependency installation so CI no longer tries to solve or unpack the GitHub-only `BPCells` Suggests dependency through `pak` during the generic dependency bootstrap step.
 - Replaced repeated Seurat command-logging snippets with a shared internal helper while preserving the public `sn_*` command names recorded in `object@commands`.
 - Removed automatic GitHub package installation side effects from `check_installed_github()`. Missing GitHub-only optional packages now produce an explicit install instruction instead of mutating the user library during analysis.
+- Added `hvg_method` to `sn_run_cluster()` so integration workflows can now choose between global HVG selection and per-batch HVG selection followed by ranked merging.
+- Reduced package-side test warnings to zero in the clustering, preprocessing, and IO/visualization slices by removing avoidable coercion, metadata-overwrite, assay-default, and upstream signature warnings.
+- Replaced `hvg_method` with `hvg_group_by` on `sn_run_cluster()`. The clustering API now treats group-aware HVG selection as a direct metadata-column choice rather than an abstract method enum.
+- Added a PBMC workflow smoke script and a pkgdown article that run real `pbmc1k`/`pbmc3k` analyses covering single-sample clustering, Harmony integration, composition summaries, LISI scoring, marker discovery, and GO enrichment with concrete outputs.
+- Removed the vendored `SignatuR` package dataset from `data/` because its `data.tree::Node` / R6 structure is not compatible with package lazydata installation. `sn_get_signatures()` now loads the optional dataset directly from the installed `SignatuR` package when needed.
+- Added a distributable end-user Codex skill under `inst/codex/skills/shennong/`, including package overview, function map, object model, workflow recipes, and packaged helper scripts. Repository-only memory remains in `docs/codex/`.
+- Added `sn_get_codex_skill_path()` and `sn_install_codex_skill()` so installed-package users can discover and copy the bundled skill into their local agent skill directory.
+- Expanded the analysis layer around `sn_find_de()`, `sn_plot_dot()`, and `sn_enrich()`:
+  `sn_find_de()` now supports marker discovery, direct contrasts, and pseudobulk DE with stored results in `object@misc$de_results`; `sn_plot_dot()` can reuse stored top markers; `sn_enrich()` now supports both ORA and GSEA.
+- The PBMC vignette now compares pre- and post-integration embeddings, uses Shennong plotting helpers, and shows stored-marker dot plots plus GSEA-driven interpretation.
+- Added targeted unit tests for bundled Codex skill installation, stored-marker/GSEA workflows, signature retrieval, and Seurat plotting helpers, bringing the local full-suite pass count to 105.
+- Added a GitHub Actions coverage workflow and surfaced the Codecov badge in the README.
+- Performed a clean pkgdown rebuild into `site/` to remove stale pages and confirm the article/reference site matches the current package sources.
 
 ## Remaining High-Priority Work
 

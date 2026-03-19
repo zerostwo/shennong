@@ -23,6 +23,42 @@ test_that("plot helpers return ggplot objects", {
   expect_s3_class(sn_plot_barplot(data, x = group, y = value, fill = fill_group), "ggplot")
 })
 
+test_that("Seurat plotting helpers return ggplot objects", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(200, lambda = 3), nrow = 20, ncol = 10), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(20))
+  rownames(counts)[1:3] <- c("CD3D", "CD3E", "LYZ")
+  colnames(counts) <- paste0("cell", seq_len(10))
+
+  object <- sn_initialize_seurat_object(x = counts, project = "plots")
+  object$group <- rep(c("A", "B"), each = 5)
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  object <- suppressWarnings(
+    Seurat::FindVariableFeatures(object, nfeatures = 10, verbose = FALSE)
+  )
+  object <- Seurat::ScaleData(object, features = rownames(object), verbose = FALSE)
+  object <- suppressWarnings(
+    Seurat::RunPCA(
+      object,
+      features = Seurat::VariableFeatures(object),
+      npcs = 5,
+      verbose = FALSE
+    )
+  )
+  object <- suppressWarnings(
+    Seurat::RunUMAP(object, dims = 1:5, n.neighbors = 5, verbose = FALSE)
+  )
+
+  expect_s3_class(sn_plot_feature(object, features = "CD3D", reduction = "umap"), "ggplot")
+  expect_s3_class(
+    suppressWarnings(
+      sn_plot_violin(object, features = c("CD3D", "LYZ"), group_by = "group")
+    ),
+    "ggplot"
+  )
+})
+
 test_that("show_all_palettes prints without error", {
   expect_no_error(show_all_palettes())
 })

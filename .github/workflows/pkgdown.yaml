@@ -12,6 +12,8 @@ permissions:
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
+    env:
+      SHENNONG_RUN_VIGNETTES: true
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +30,13 @@ jobs:
             any::pkgdown
             any::knitr
             any::rmarkdown
+            any::Seurat
+            any::harmony
+            any::clusterProfiler
+            bioc::org.Hs.eg.db
+            any::HGNChelper
+            github::catplot/catplot
+            github::immunogenomics/lisi
           needs: website
 
       - name: Build and deploy site

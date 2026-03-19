@@ -20,7 +20,14 @@ sn_get_signatures <- function(species = "human",
   check_installed(pkg = "HGNChelper")
   check_installed_github(pkg = "SignatuR", repo = "carmonalab/SignatuR")
   arg_match(arg = species, values = c("human", "mouse"))
-  SignatuR <- get("SignatuR", envir = asNamespace("SignatuR"))
+  signature_env <- new.env(parent = emptyenv())
+  utils::data("SignatuR", package = "SignatuR", envir = signature_env)
+
+  if (!exists("SignatuR", envir = signature_env, inherits = FALSE)) {
+    stop("The `SignatuR` dataset could not be loaded from the SignatuR package.")
+  }
+
+  SignatuR <- get("SignatuR", envir = signature_env, inherits = FALSE)
 
   if (species == "human") {
     gene_list <- list(
@@ -56,7 +63,7 @@ sn_get_signatures <- function(species = "human",
     SignatuR::GetSignature(gene_list[[x]]) |> unlist()
   }))
 
-  checked <- HGNChelper::checkGeneSymbols(genes, species = species)
+  checked <- suppressWarnings(HGNChelper::checkGeneSymbols(genes, species = species))
   valid_genes <- checked$Suggested.Symbol[!is_na(checked$Suggested.Symbol)]
 
   if (length(valid_genes) < length(genes)) {

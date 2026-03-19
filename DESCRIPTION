@@ -40,6 +40,8 @@ Suggests:
     celda,
     clusterProfiler,
     data.table,
+    DESeq2,
+    edgeR,
     ggrastr,
     glmGamPoi,
     harmony,

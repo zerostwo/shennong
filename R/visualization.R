@@ -260,13 +260,73 @@ sn_plot_violin <- function(object,
   return(p)
 }
 
+.sn_resolve_dotplot_features <- function(object,
+                                         features,
+                                         de_name = "default",
+                                         n = 3,
+                                         marker_groups = NULL) {
+  if (!(length(features) == 1 && identical(features, "top_markers"))) {
+    return(list(features = features, group_by = NULL))
+  }
+
+  misc_data <- methods::slot(object, "misc")
+  de_store <- misc_data$de_results %||% list()
+  if (!de_name %in% names(de_store)) {
+    stop(glue("No stored DE result named '{de_name}' was found in `object@misc$de_results`."))
+  }
+
+  de_result <- de_store[[de_name]]
+  marker_table <- de_result$table
+  group_col <- de_result$group_col
+  rank_col <- de_result$rank_col
+
+  if (is_null(group_col) || !group_col %in% colnames(marker_table)) {
+    stop("The stored DE result does not contain a grouping column that can be used to select top markers.")
+  }
+  if (is_null(rank_col) || !rank_col %in% colnames(marker_table)) {
+    stop("The stored DE result does not contain a ranking column that can be used to select top markers.")
+  }
+
+  if (!is_null(marker_groups)) {
+    marker_table <- marker_table[as.character(marker_table[[group_col]]) %in% marker_groups, , drop = FALSE]
+  }
+
+  if (!is.null(de_result$p_col) && de_result$p_col %in% colnames(marker_table)) {
+    marker_table <- marker_table[marker_table[[de_result$p_col]] <= de_result$p_val_cutoff, , drop = FALSE]
+  }
+
+  ranking_values <- marker_table[[rank_col]]
+  if (!identical(de_result$analysis, "markers")) {
+    ranking_values <- abs(ranking_values)
+  }
+  marker_table$..ranking_value <- ranking_values
+
+  selected <- marker_table |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+    dplyr::slice_max(order_by = .data$..ranking_value, n = n, with_ties = FALSE) |>
+    dplyr::ungroup()
+
+  list(
+    features = unique(selected$gene),
+    group_by = de_result$group_by
+  )
+}
+
 #' Plot a dot plot with categorical groups
 #'
 #' This function plots a dot plot with categorical groups using the DotPlot function from the Seurat package.
 #'
 #' @param x A Seurat object containing the data to plot.
 #' @param assay The assay to plot. Defaults to the default assay.
-#' @param features A character vector of feature names to plot.
+#' @param features A character vector of feature names to plot, or
+#'   \code{"top_markers"} to automatically use the top stored DE markers from
+#'   \code{object@misc$de_results[[de_name]]}.
+#' @param de_name Name of the stored DE result to use when
+#'   \code{features = "top_markers"}. Defaults to \code{"default"}.
+#' @param n Number of genes to select per group when
+#'   \code{features = "top_markers"}. Defaults to \code{3}.
+#' @param marker_groups Optional subset of DE result groups to include when
+#'   \code{features = "top_markers"}.
 #' @param col_min The minimum value for the color scale. Defaults to -2.5.
 #' @param col_max The maximum value for the color scale. Defaults to 2.5.
 #' @param dot_min The minimum value for the dot size scale. Defaults to 0.
@@ -294,6 +354,9 @@ sn_plot_violin <- function(object,
 sn_plot_dot <- function(x,
                         assay = NULL,
                         features,
+                        de_name = "default",
+                        n = 3,
+                        marker_groups = NULL,
                         col_min = -2.5,
                         col_max = 2.5,
                         dot_min = 0,
@@ -308,7 +371,16 @@ sn_plot_dot <- function(x,
                         scale_max = NA,
                         palette = "RdBu") {
   check_installed_github(pkg = "catplot", repo = "catplot/catplot")
-  p <-
+  feature_info <- .sn_resolve_dotplot_features(
+    object = x,
+    features = features,
+    de_name = de_name,
+    n = n,
+    marker_groups = marker_groups
+  )
+  features <- feature_info$features
+  group_by <- group_by %||% feature_info$group_by
+  p <- suppressMessages(
     Seurat::DotPlot(
       object = x,
       assay = assay,
@@ -326,29 +398,30 @@ sn_plot_dot <- function(x,
       scale.min = scale_min,
       scale.max = scale_max
     ) + coord_fixed() +
-    guides(
-      x = guide_axis(angle = 90),
-      size = guide_legend(title = "Percent (%)"),
-      color = guide_colorbar(
-        title = "Z score",
-        frame.colour = "black",
-        frame.linewidth = 0.2,
-        ticks.colour = "black",
-        ticks.linewidth = 0.2
-      )
-    ) +
-    catplot::theme_cat(show_title = "none") +
-    theme(
-      axis.text.x = element_text(face = "italic"),
-      axis.title = element_blank(),
-      legend.margin = margin(l = -8),
-      panel.grid = ggplot2::element_line(
-        colour = "lightgrey",
-        linewidth = 0.2 / 1.07
-      )
-    ) +
-    scale_color_distiller(palette = palette) +
-    scale_y_discrete(limits = rev)
+      guides(
+        x = guide_axis(angle = 90),
+        size = guide_legend(title = "Percent (%)"),
+        color = guide_colorbar(
+          title = "Z score",
+          frame.colour = "black",
+          frame.linewidth = 0.2,
+          ticks.colour = "black",
+          ticks.linewidth = 0.2
+        )
+      ) +
+      catplot::theme_cat(show_title = "none") +
+      theme(
+        axis.text.x = element_text(face = "italic"),
+        axis.title = element_blank(),
+        legend.margin = margin(l = -8),
+        panel.grid = ggplot2::element_line(
+          colour = "lightgrey",
+          linewidth = 0.2 / 1.07
+        )
+      ) +
+      scale_color_distiller(palette = palette) +
+      scale_y_discrete(limits = rev)
+  )
   return(p)
 }
 

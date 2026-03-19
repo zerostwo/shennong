@@ -7,6 +7,7 @@
 - `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
 - `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
 - `data/` stores package datasets. `docs/codex/` stores modernization memory files and is already excluded from package builds via `.Rbuildignore`.
+- `inst/codex/skills/shennong/` stores the distributable end-user Codex skill that ships with the installed package. Keep it user-facing and analysis-oriented; do not copy repository-only planning or modernization memory into that tree.
 - `_pkgdown.yml` and `.github/workflows/` define the package website and CI entry points.
 
 ## Build, Test, and Development Commands
@@ -21,7 +22,8 @@
 
 - Preserve public behavior unless a change is explicitly justified, documented, and validated.
 - Prefer small, reviewable refactors over repo-wide rewrites.
-- Keep exported functions prefixed with `sn_`; keep internal helpers unexported and clearly named.
+- Keep exported user-facing functions in the strict `sn_verb_noun` naming family. Do not introduce camelCase, dot.case, or mixed prefixes. Reuse existing `sn_*` naming families whenever possible.
+- Keep internal helpers unexported and clearly named.
 - Prefer explicit namespace usage or roxygen `@importFrom` entries over hidden dependencies.
 - Keep examples deterministic and safe for package checks; wrap network- or dependency-heavy examples in `\dontrun{}` or make them conditional.
 - Avoid introducing new package dependencies unless they remove a concrete maintenance problem that cannot be solved more simply.
@@ -50,3 +52,4 @@
 - Likely public API surface: IO (`sn_read`, `sn_write`, dataset loading), Seurat initialization/normalization/QC, clustering/integration/annotation, plotting, signatures/enrichment, and composition/metrics.
 - Current high-risk zones are `R/io.R` (heavy use of `rio` internals and dynamic global assignment), package dependency declarations in `DESCRIPTION`, and sparse test coverage.
 - Current modernization order is: inventory API, stabilize tests, normalize metadata and namespace handling, reorganize source files without changing behavior, then tighten internals and documentation.
+- Repository-internal developer memory stays in `docs/codex/` and `AGENTS.md`. Installed-package user skills belong under `inst/codex/skills/shennong/`.

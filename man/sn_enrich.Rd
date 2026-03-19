@@ -7,8 +7,11 @@
 sn_enrich(
   x,
   gene_clusters = NULL,
+  analysis = c("ora", "gsea"),
   species = "human",
   database = "GOBP",
+  gene_col = "gene",
+  score_col = NULL,
   pvalue_cutoff = 0.05,
   prefix = NULL,
   outdir = NULL
@@ -16,14 +19,20 @@ sn_enrich(
 }
 \arguments{
 \item{x}{A character vector of gene symbols, or a data frame used together
-with `gene_clusters`.}
+with `gene_clusters` / ranked-GSEA columns.}
 
 \item{gene_clusters}{An optional grouping formula passed to
 `clusterProfiler::compareCluster()`.}
 
+\item{analysis}{One of `"ora"` or `"gsea"`.}
+
 \item{species}{One of `"human"` or `"mouse"`.}
 
 \item{database}{One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, or `"KEGG"`.}
+
+\item{gene_col}{Column containing gene symbols when `x` is a data frame.}
+
+\item{score_col}{Column containing ranking scores for `analysis = "gsea"`.}
 
 \item{pvalue_cutoff}{Numeric p-value cutoff used by the enrichment method.}
 
@@ -37,7 +46,8 @@ A `clusterProfiler` enrichment result object.
 }
 \description{
 Runs GO or KEGG enrichment for a gene vector or grouped gene table using
-`clusterProfiler`.
+`clusterProfiler`. It supports both over-representation analysis (ORA) and
+ranked-list GSEA.
 }
 \examples{
 \dontrun{

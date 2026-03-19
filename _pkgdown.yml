@@ -22,12 +22,17 @@ template:
     in_header:
       <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 
+articles:
+  - title: Analysis Workflows
+    navbar: Articles
+    contents:
+      - clustering
+
 reference:
   - title: Data and IO
     contents:
       - marker_genes
       - hom_genes
-      - SignatuR
       - sn_load_data
       - sn_load_pbmc
       - sn_read
@@ -48,6 +53,7 @@ reference:
   - title: Clustering and metrics
     contents:
       - sn_run_cluster
+      - sn_find_de
       - sn_run_celltypist
       - sn_calculate_lisi
       - sn_calculate_rogue
@@ -66,5 +72,7 @@ reference:
   - title: Utilities
     contents:
       - sn_check_file
+      - sn_get_codex_skill_path
       - sn_get_species
+      - sn_install_codex_skill
       - sn_set_path

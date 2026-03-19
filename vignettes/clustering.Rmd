@@ -1,17 +1,19 @@
 ---
-title: "clustering"
-author: 
+title: "PBMC workflow"
+author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{clustering}
+  %\VignetteIndexEntry{PBMC workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -23,56 +25,311 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette documents the clustering workflow used in the package. To keep
-package checks fast and deterministic, the code chunks are shown but not
-evaluated unless `SHENNONG_RUN_VIGNETTES=true` is set in the environment.
+This article runs a complete PBMC analysis using the built-in `pbmc1k` and
+`pbmc3k` example datasets. The workflow covers QC-aware preprocessing,
+single-sample clustering, pre/post integration comparison, sample composition
+summaries, integration scoring with LISI, marker discovery, dot-plot
+visualization, and functional enrichment from cluster markers.
+
+To keep `R CMD check` deterministic, the analysis is only evaluated when
+`SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
 
 ```{r setup}
 library(Shennong)
+library(dplyr)
+library(ggplot2)
+library(knitr)
 library(Seurat)
 ```
 
-```{r}
-filtered_path <- sn_load_data(
-  dataset = "pbmc3k",
-  matrix_type = "filtered",
-  return_object = FALSE
+```{r prepare-pbmc-demo, include = FALSE}
+prepare_sample <- function(dataset) {
+  object <- sn_load_data(dataset = dataset)
+  object$sample <- dataset
+  object$study <- "pbmc_demo"
+  object <- suppressWarnings(
+    sn_filter_cells(
+      object,
+      features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+      plot = FALSE
+    )
+  )
+  suppressWarnings(sn_filter_genes(object, min_cells = 3, plot = FALSE))
+}
+
+pbmc1k <- prepare_sample("pbmc1k")
+pbmc3k <- prepare_sample("pbmc3k")
+
+pbmc1k_clustered <- suppressWarnings(
+  sn_run_cluster(
+    object = pbmc1k,
+    normalization_method = "seurat",
+    species = "human",
+    nfeatures = 800,
+    block_genes = NULL,
+    npcs = 30,
+    dims = 1:20,
+    resolution = 0.5,
+    verbose = FALSE
+  )
 )
 
-raw_path <- sn_load_data(
-  dataset = "pbmc3k",
-  matrix_type = "raw",
-  return_object = FALSE
+merged_pbmc <- merge(
+  x = pbmc1k,
+  y = pbmc3k,
+  add.cell.ids = c("pbmc1k", "pbmc3k")
+)
+merged_pbmc$sample <- ifelse(
+  grepl("^pbmc1k_", colnames(merged_pbmc)),
+  "pbmc1k",
+  "pbmc3k"
+)
+merged_pbmc$study <- "pbmc_demo"
+
+pbmc_unintegrated <- suppressWarnings(
+  sn_run_cluster(
+    object = merged_pbmc,
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    species = "human",
+    nfeatures = 800,
+    block_genes = NULL,
+    npcs = 30,
+    dims = 1:20,
+    resolution = 0.5,
+    verbose = FALSE
+  )
+)
+
+pbmc_integrated <- suppressWarnings(
+  sn_run_cluster(
+    object = merged_pbmc,
+    batch = "sample",
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    species = "human",
+    nfeatures = 800,
+    block_genes = NULL,
+    npcs = 30,
+    dims = 1:20,
+    resolution = 0.5,
+    verbose = FALSE
+  )
+)
+
+cell_summary <- tibble::tibble(
+  dataset = c("pbmc1k", "pbmc3k", "merged_unintegrated", "merged_integrated"),
+  cells = c(ncol(pbmc1k), ncol(pbmc3k), ncol(pbmc_unintegrated), ncol(pbmc_integrated)),
+  genes = c(nrow(pbmc1k), nrow(pbmc3k), nrow(pbmc_unintegrated), nrow(pbmc_integrated)),
+  clusters = c(
+    length(levels(Seurat::Idents(pbmc1k_clustered))),
+    NA_integer_,
+    length(levels(Seurat::Idents(pbmc_unintegrated))),
+    length(levels(Seurat::Idents(pbmc_integrated)))
+  )
+)
+
+composition_tbl <- sn_calculate_composition(
+  pbmc_integrated,
+  group_by = "sample",
+  variable = "seurat_clusters",
+  min_cells = 0
+)
+
+lisi_before <- sn_calculate_lisi(
+  pbmc_unintegrated,
+  reduction = "pca",
+  label = "sample"
+)
+
+lisi_after <- sn_calculate_lisi(
+  pbmc_integrated,
+  reduction = "harmony",
+  label = "sample"
+)
+
+lisi_summary <- dplyr::bind_rows(
+  tibble::tibble(state = "before_integration", score = lisi_before$sample),
+  tibble::tibble(state = "after_integration", score = lisi_after$sample)
+) |>
+  dplyr::group_by(state) |>
+  dplyr::summarise(
+    min = min(score),
+    q1 = stats::quantile(score, 0.25),
+    median = stats::median(score),
+    mean = mean(score),
+    q3 = stats::quantile(score, 0.75),
+    max = max(score),
+    .groups = "drop"
+  )
+
+pbmc_integrated <- suppressWarnings(
+  sn_find_de(
+    pbmc_integrated,
+    analysis = "markers",
+    group_by = "seurat_clusters",
+    assay = "RNA",
+    slot = "data",
+    logfc_threshold = 0.25,
+    min_pct = 0.2,
+    store_name = "cluster_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+)
+
+markers_full <- pbmc_integrated@misc$de_results$cluster_markers$table
+
+marker_tbl <- markers_full |>
+  dplyr::group_by(cluster) |>
+  dplyr::slice_max(order_by = avg_log2FC, n = 3, with_ties = FALSE) |>
+  dplyr::ungroup() |>
+  dplyr::select(cluster, gene, avg_log2FC, p_val_adj)
+
+find_enrichment_result <- function(markers) {
+  for (current_cluster in unique(as.character(markers$cluster))) {
+    marker_subset <- markers |>
+      dplyr::filter(.data$cluster == current_cluster) |>
+      dplyr::arrange(dplyr::desc(.data$avg_log2FC))
+
+    enrichment <- suppressWarnings(
+      sn_enrich(
+        marker_subset,
+        analysis = "gsea",
+        species = "human",
+        database = "GOBP",
+        gene_col = "gene",
+        score_col = "avg_log2FC",
+        pvalue_cutoff = 0.1
+      )
+    )
+    enrichment_tbl <- as.data.frame(enrichment)
+
+    if (nrow(enrichment_tbl) > 0) {
+      return(list(cluster = current_cluster, table = enrichment_tbl))
+    }
+  }
+
+  stop("No non-empty enrichment result was produced for the PBMC marker sets.")
+}
+
+enrichment_result <- find_enrichment_result(markers_full)
+focus_cluster <- enrichment_result$cluster
+enrichment_tbl <- enrichment_result$table |>
+  dplyr::select(ID, Description, NES, p.adjust) |>
+  utils::head(10)
+```
+
+## Data loaded for the workflow
+
+```{r}
+knitr::kable(cell_summary, digits = 0)
+```
+
+The merged analysis is intentionally run twice: once without batch correction
+and once with Harmony integration. This makes the before/after comparison
+explicit instead of only showing the corrected embedding.
+
+## Single-sample clustering
+
+```{r}
+sn_plot_dim(
+  object = pbmc1k_clustered,
+  reduction = "umap",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  show_legend = FALSE,
+  title = "pbmc1k clustered with sn_run_cluster()"
+)
+```
+
+## Before and after Harmony integration
+
+```{r}
+sn_plot_dim(
+  object = pbmc_unintegrated,
+  reduction = "umap",
+  group_by = "sample",
+  title = "Before integration: merged object colored by sample"
 )
 ```
 
 ```{r}
-ambient_counts <- sn_remove_ambient_contamination(
-  x = filtered_path,
-  raw = raw_path,
-  method = "soupx",
-  return_object = FALSE
+sn_plot_dim(
+  object = pbmc_integrated,
+  reduction = "umap",
+  group_by = "sample",
+  title = "After Harmony integration: merged object colored by sample"
 )
 ```
 
 ```{r}
-seurat_obj <- sn_initialize_seurat_object(x = ambient_counts, species = "human")
+sn_plot_dim(
+  object = pbmc_integrated,
+  reduction = "umap",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  show_legend = FALSE,
+  title = "After Harmony integration: merged object colored by cluster"
+)
+```
+
+## Cluster composition by sample
+
+```{r}
+knitr::kable(dplyr::slice_head(composition_tbl, n = 12), digits = 2)
 ```
 
 ```{r}
-seurat_obj <- sn_filter_cells(seurat_obj, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"))
+sn_plot_barplot(
+  composition_tbl,
+  x = sample,
+  y = proportion,
+  fill = seurat_clusters
+) +
+  labs(
+    title = "Cluster composition across pbmc1k and pbmc3k",
+    x = NULL,
+    y = "Cells (%)",
+    fill = "Cluster"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+## Integration quality summary with LISI
+
+```{r}
+knitr::kable(lisi_summary, digits = 3)
+```
+
+Higher LISI values indicate better local sample mixing. In this two-sample
+example the theoretical maximum is 2, so the post-Harmony distribution should
+shift upward relative to the unintegrated baseline.
+
+## Marker genes from the integrated object
+
+```{r}
+knitr::kable(marker_tbl, digits = 3)
 ```
 
 ```{r}
-seurat_obj <- sn_filter_genes(seurat_obj)
+sn_plot_dot(
+  x = pbmc_integrated,
+  features = "top_markers",
+  de_name = "cluster_markers",
+  n = 3
+)
 ```
 
-```{r}
-seurat_obj <- sn_run_cluster(object = seurat_obj, resolution = 1)
-```
+## Functional enrichment of marker genes
+
+The table below shows the first non-empty GO Biological Process GSEA result
+found among the cluster marker sets. In this run, enrichment was computed from
+cluster
+`r if (run_vignette) focus_cluster else "<evaluated during pkgdown build>"`.
 
 ```{r}
-DimPlot(seurat_obj, group.by = "seurat_clusters", label = TRUE) + NoLegend()
+knitr::kable(enrichment_tbl, digits = 4)
 ```
 
 ```{r}
