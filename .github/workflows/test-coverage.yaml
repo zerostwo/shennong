@@ -6,6 +6,10 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
@@ -45,7 +49,12 @@ jobs:
             bioc::edgeR
 
       - name: Test coverage
-        run: covr::codecov(quiet = FALSE)
+        run: |
+          cov <- covr::package_coverage()
+          covr::to_cobertura(cov, filename = "coverage.xml")
         shell: Rscript {0}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          use_oidc: true
