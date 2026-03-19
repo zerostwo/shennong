@@ -23,6 +23,14 @@ install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
 
+Once the package is installed, you can check whether your local copy is
+current and install the preferred release channel directly from R:
+
+``` r
+sn_check_version()
+sn_install_shennong(channel = "github")
+```
+
 ## What the package covers
 
 - Example data loading with `sn_load_data()`
@@ -50,7 +58,11 @@ pbmc <- sn_filter_cells(
   plot = FALSE
 )
 pbmc <- sn_filter_genes(pbmc, min_cells = 3, plot = FALSE)
-pbmc <- sn_run_cluster(pbmc, pipeline = "standard", resolution = 0.6)
+pbmc <- sn_run_cluster(
+  pbmc,
+  normalization_method = "seurat",
+  resolution = 0.6
+)
 
 sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
 ```
@@ -91,6 +103,10 @@ corrected_counts <- sn_remove_ambient_contamination(
 )
 ```
 
+If you write decontX output back into a Seurat object, the corrected
+counts are stored in a separate layer by default and corrected per-cell
+totals are added to metadata.
+
 ## Integration workflow
 
 `sn_run_cluster()` is the main clustering entry point for both single
@@ -110,7 +126,7 @@ merged <- merge(obj1, y = obj2, add.cell.ids = c("pbmc1k", "pbmc3k"))
 merged <- sn_run_cluster(
   object = merged,
   batch = "sample",
-  pipeline = "standard",
+  normalization_method = "seurat",
   resolution = 0.6
 )
 ```

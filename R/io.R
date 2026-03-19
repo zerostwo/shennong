@@ -460,8 +460,5 @@ sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = N
     metadata <- read_anndata_table(metadata_path)
     object <- Seurat::AddMetaData(object = object, metadata = metadata)
   }
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
-  object[[slot(cmd, "name")]] <- cmd
-  object
+  .sn_log_seurat_command(object = object, name = "sn_add_data_from_anndata")
 }

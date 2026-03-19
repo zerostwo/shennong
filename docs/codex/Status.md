@@ -1,7 +1,7 @@
 # Shennong Modernization Status
 
 Last updated: 2026-03-18
-Current milestone: Public Seurat workflow API refinement
+Current milestone: CI, pkgdown, and package-maintenance hardening
 
 ## Snapshot
 
@@ -11,6 +11,8 @@ Current milestone: Public Seurat workflow API refinement
 - Seurat analysis helpers that operate on count-like layers now accept explicit `assay`/`layer` inputs where that behavior matters operationally.
 - Public Seurat preprocessing and clustering APIs now expose explicit normalization-method controls instead of overloading the old `pipeline` wording.
 - decontX-based ambient-RNA removal now preserves original counts for zeroed cells by default, can optionally drop them, and writes corrected per-cell count/feature metadata.
+- The package now exposes explicit version-checking and install helpers for CRAN-or-GitHub release management.
+- pkgdown now builds to `site/` instead of `docs/`, so the documentation site no longer collides with `docs/codex/` project memory.
 - Exported functions now have generated help coverage through roxygen-managed `.Rd` files.
 - The package now has a generated `README.md`, guarded vignette execution, repository-local CI workflows, and a passing `R CMD check --no-manual`.
 - The local test surface now covers composition, data loading, clustering, IO/visualization helpers, preprocessing, and utility helpers.
@@ -80,6 +82,13 @@ Current milestone: Public Seurat workflow API refinement
 - Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after the decontX and normalization API refinement
 - Passed: `R CMD build .` after the decontX and normalization API refinement
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after the decontX and normalization API refinement
+- Passed: `Rscript -e 'devtools::document()'` after adding version/install helpers and pkgdown metadata updates
+- Passed: `Rscript -e 'testthat::test_local(filter = "versioning|preprocessing|clustering|utils", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'rmarkdown::render("README.Rmd", output_format = "github_document", quiet = TRUE)'`
+- Passed: `Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+- Passed: `R CMD build .`
+- Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after the CI/pkgdown hardening
 
 ## Completed In This Iteration
 
@@ -108,6 +117,11 @@ Current milestone: Public Seurat workflow API refinement
 - Updated `sn_initialize_seurat_object()` to accept optional `sample_name` and `study` metadata at object creation time.
 - Replaced the overloaded `pipeline` argument in `sn_run_cluster()` with `normalization_method`, while retaining a deprecated compatibility alias. The same normalization vocabulary is now used by `sn_normalize_data()`.
 - Hardened cell-cycle scoring so clustering skips that step with a warning when the requested species markers do not overlap the selected assay features, avoiding a low-level `sample.int()` failure.
+- Added `sn_check_version()` and `sn_install_shennong()` so users can check whether their installation is current and install either the CRAN release or GitHub development version once both channels exist.
+- Changed pkgdown output to `site/`, expanded the reference index to cover all user-facing documented topics, and locally validated a successful site build.
+- Adjusted GitHub Actions dependency installation so CI no longer tries to solve or unpack the GitHub-only `BPCells` Suggests dependency through `pak` during the generic dependency bootstrap step.
+- Replaced repeated Seurat command-logging snippets with a shared internal helper while preserving the public `sn_*` command names recorded in `object@commands`.
+- Removed automatic GitHub package installation side effects from `check_installed_github()`. Missing GitHub-only optional packages now produce an explicit install instruction instead of mutating the user library during analysis.
 
 ## Remaining High-Priority Work
 
@@ -115,3 +129,4 @@ Current milestone: Public Seurat workflow API refinement
 - Decide whether to suppress or explicitly document known Seurat/HGNChelper runtime warnings in tests and smoke paths.
 - Decide whether `sn_remove_ambient_contamination()` should also gain an explicit input `assay`/`layer` pair for Seurat objects, matching the newer downstream layer-aware APIs.
 - Add deeper coverage for enrichment, DE, CellTypist, and other heavyweight optional integrations when stable fixtures are available.
+- Revisit `scDblFinder`-originating warnings in tests; they are upstream warnings today, but some deprecation notices may require argument updates in a future compatibility pass.

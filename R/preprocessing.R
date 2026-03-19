@@ -37,11 +37,7 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 
   # Compute cell cycle difference
   object$CC.Difference <- object$S.Score - object$G2M.Score
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(object)
-  object[[slot(cmd, "name")]] <- cmd
-
-  return(object)
+  .sn_log_seurat_command(object = object, name = "sn_score_cell_cycle")
 }
 
 #' Initialize a Seurat object with optional QC metrics
@@ -144,10 +140,7 @@ sn_initialize_seurat_object <- function(
   }
 
   log_info("Seurat object initialization complete.")
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = seurat_obj, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(seurat_obj)
-  seurat_obj[[slot(cmd, "name")]] <- cmd
-  return(seurat_obj)
+  .sn_log_seurat_command(object = seurat_obj, name = "sn_initialize_seurat_object")
 }
 
 #' Normalize data in a Seurat object
@@ -193,10 +186,7 @@ sn_normalize_data <- function(
     )
     object <- Seurat::NormalizeData(object = prepared$object, ...)
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
-    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-    slot(cmd, "assay.used") <- assay
-    object[[slot(cmd, "name")]] <- cmd
-    return(object)
+    return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_normalize_data"))
   }
 
   if (method == "scran") {
@@ -240,10 +230,7 @@ sn_normalize_data <- function(
     ) <- methods::as(log(normalized_counts + 1), "CsparseMatrix")
 
     log_info("scran normalization complete.")
-    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-    slot(cmd, "assay.used") <- assay
-    object[[slot(cmd, "name")]] <- cmd
-    return(object)
+    return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_normalize_data"))
   }
 
   check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
@@ -275,10 +262,7 @@ sn_normalize_data <- function(
     }
   }
 
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-  slot(cmd, "assay.used") <- assay
-  object[[slot(cmd, "name")]] <- cmd
-  object
+  .sn_log_seurat_command(object = object, assay = assay, name = "sn_normalize_data")
 }
 
 #' Standardize gene symbols in a count matrix or Seurat object
@@ -393,10 +377,7 @@ sn_standardize_gene_symbols <- function(
   # -- Return updated Seurat or matrix
   if (inherits(x, "Seurat")) {
     x[["RNA"]] <- SeuratObject::CreateAssay5Object(counts = counts)
-    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
-    x[[slot(cmd, "name")]] <- cmd
-    return(x)
+    return(.sn_log_seurat_command(object = x, name = "sn_standardize_gene_symbols"))
   } else {
     return(counts)
   }

@@ -19,7 +19,25 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          dependencies: '"hard"'
+          extra-packages: |
+            any::rcmdcheck
+            any::testthat
+            any::Seurat
+            any::SeuratObject
+            any::harmony
+            any::HGNChelper
+            any::rio
+            any::anndataR
+            any::hdf5r
+            any::data.table
+            bioc::SingleCellExperiment
+            bioc::SummarizedExperiment
+            bioc::celda
+            bioc::scran
+            bioc::scDblFinder
+            bioc::rhdf5
+            bioc::rtracklayer
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2

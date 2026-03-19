@@ -69,10 +69,7 @@ sn_filter_genes <- function(x,
     x <- x[keep_genes, ]
   }
 
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-  slot(cmd, "assay.used") <- assay
-  x[[slot(cmd, "name")]] <- cmd
-  return(x)
+  .sn_log_seurat_command(object = x, assay = assay, name = "sn_filter_genes")
 }
 
 #' @title Filter cells in a Seurat object based on QC metrics
@@ -165,10 +162,7 @@ sn_filter_cells <- function(
     x <- x[, keep]
   }
 
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-  slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x)
-  x[[slot(cmd, "name")]] <- cmd
-  return(x)
+  .sn_log_seurat_command(object = x, name = "sn_filter_cells")
 }
 
 # Internal helper function
@@ -340,10 +334,7 @@ sn_find_doublets <- function(
   object$scDblFinder.score <- sce$scDblFinder.score
 
   log_info("Doublet detection complete.")
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-  slot(cmd, "assay.used") <- assay
-  object[[slot(cmd, "name")]] <- cmd
-  return(object)
+  .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_doublets")
 }
 
 .sn_resolve_counts_input <- function(x, arg = "x") {
@@ -663,10 +654,7 @@ sn_remove_ambient_contamination <- function(
       x_info$object <- SeuratObject::AddMetaData(x_info$object, metadata = out$metadata)
     }
     SeuratObject::LayerData(object = x_info$object, layer = layer) <- out$counts
-    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x_info$object, return.command = TRUE)
-    slot(cmd, "assay.used") <- SeuratObject::DefaultAssay(x_info$object)
-    x_info$object[[slot(cmd, "name")]] <- cmd
-    return(x_info$object)
+    return(.sn_log_seurat_command(object = x_info$object, name = "sn_remove_ambient_contamination"))
   }
 
   out$counts

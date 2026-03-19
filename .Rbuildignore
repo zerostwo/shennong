@@ -11,3 +11,4 @@ dev
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^site$

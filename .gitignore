@@ -4,6 +4,7 @@ data-raw
 docs/*
 !docs/codex/
 !docs/codex/**
+site/
 inst/doc
 dev
 README.html

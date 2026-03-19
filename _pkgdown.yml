@@ -14,7 +14,7 @@ home:
     - text: Issue tracker
       href: https://github.com/zerostwo/shennong/issues
 
-destination: docs
+destination: site
 
 template:
   bootstrap: 5
@@ -25,18 +25,25 @@ template:
 reference:
   - title: Data and IO
     contents:
+      - marker_genes
+      - hom_genes
+      - SignatuR
       - sn_load_data
       - sn_load_pbmc
       - sn_read
       - sn_write
       - sn_add_data_from_anndata
+      - sn_check_version
+      - sn_install_shennong
   - title: Preprocessing and QC
     contents:
       - sn_initialize_seurat_object
+      - sn_normalize_data
       - sn_standardize_gene_symbols
       - sn_score_cell_cycle
       - sn_filter_genes
       - sn_filter_cells
+      - sn_find_doublets
       - sn_remove_ambient_contamination
   - title: Clustering and metrics
     contents:
@@ -56,3 +63,8 @@ reference:
       - show_all_palettes
       - sn_get_signatures
       - sn_enrich
+  - title: Utilities
+    contents:
+      - sn_check_file
+      - sn_get_species
+      - sn_set_path

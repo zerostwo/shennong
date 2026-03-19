@@ -58,14 +58,31 @@ sn_set_path <- function(path) {
 }
 
 check_installed_github <- function(pkg, repo, reason = NULL) {
-  check_installed(pkg = "remotes", reason = "to install packages from GitHub")
-  check_installed(
-    pkg,
-    action = function(pkg, ...) {
-      remotes::install_github(repo = repo)
-    },
-    reason = reason
+  if (rlang::is_installed(pkg)) {
+    return(invisible(TRUE))
+  }
+
+  reason <- reason %||% paste0("to use functionality that depends on `", pkg, "`.")
+  stop(
+    glue(
+      "Package '{pkg}' is required {reason}\n",
+      "Install it with:\n",
+      "  remotes::install_github('{repo}')"
+    ),
+    call. = FALSE
   )
+}
+
+.sn_log_seurat_command <- function(object, assay = NULL, name = NULL) {
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(
+    object = object,
+    return.command = TRUE
+  )
+  command_name <- name %||% slot(cmd, "name")
+  slot(cmd, "assay.used") <- assay %||% SeuratObject::DefaultAssay(object)
+  slot(cmd, "name") <- command_name
+  object[[command_name]] <- cmd
+  object
 }
 
 .sn_validate_seurat_assay_layer <- function(object, assay = "RNA", layer = "counts") {

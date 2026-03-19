@@ -7,7 +7,7 @@
 - `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
 - `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
 - `data/` stores package datasets. `docs/codex/` stores modernization memory files and is already excluded from package builds via `.Rbuildignore`.
-- `_pkgdown.yml` exists, but no CI workflow directory is currently checked into the repository.
+- `_pkgdown.yml` and `.github/workflows/` define the package website and CI entry points.
 
 ## Build, Test, and Development Commands
 

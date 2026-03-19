@@ -270,6 +270,36 @@ Validation commands:
 
 ## Milestone 7: Strengthen CI and package checks
 
+Status: In progress
+
+Scope:
+- Keep GitHub Actions aligned with the package's real dependency profile.
+- Ensure pkgdown, README rendering, and package checks remain reproducible in CI.
+- Add package-maintenance helpers only when they can be validated locally.
+
+Files affected:
+- `.github/workflows/`
+- `_pkgdown.yml`
+- `README.Rmd`
+- `DESCRIPTION`
+- Selected `R/` helper files
+- `docs/codex/Status.md`
+- `docs/codex/Decisions.md`
+
+Acceptance criteria:
+- CI no longer fails during dependency setup because of GitHub-only optional packages.
+- pkgdown builds successfully without colliding with repository memory files.
+- Package-maintenance helpers are documented and tested where practical.
+- Full local tests and package checks pass after the CI/site changes.
+
+Validation commands:
+- `Rscript -e 'devtools::document()'`
+- `Rscript -e 'rmarkdown::render("README.Rmd", output_format = "github_document", quiet = TRUE)'`
+- `Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'`
+- `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+- `R CMD build .`
+- `R CMD check --no-manual Shennong_*.tar.gz`
+
 Status: Completed
 
 Scope:

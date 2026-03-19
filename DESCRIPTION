@@ -9,6 +9,9 @@ Authors@R: c(
 Maintainer: Songqi Duan <duan@songqi.org>
 Description: The Shennong package provides a comprehensive toolkit for interpreting omics data, offering advanced analysis and visualization tools tailored for genomic, transcriptomic, proteomic, and metabolomic data. It integrates various bioinformatics approaches to facilitate the understanding of complex biological mechanisms and interactions. Designed for researchers and data scientists in the field of bioinformatics, Shennong aims to streamline the process of omics data analysis with a focus on usability and reproducibility.
 License: MIT + file LICENSE
+URL: https://songqi.org/shennong,
+    https://github.com/zerostwo/shennong
+BugReports: https://github.com/zerostwo/shennong/issues
 Encoding: UTF-8
 LazyData: true
 Imports: 

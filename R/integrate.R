@@ -279,10 +279,7 @@ sn_run_cluster <- function(object,
     )
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) log_info("Integration completed successfully!")
-    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
-    slot(cmd, "assay.used") <- assay
-    object[[slot(cmd, "name")]] <- cmd
-    return(object)
+    return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))
   }
 }
 
@@ -462,8 +459,5 @@ sn_run_celltypist <- function(x,
   tictoc::toc()
   log_info("CellTypist analysis completed successfully")
 
-  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = x, return.command = TRUE)
-  slot(cmd, "assay.used") <- assay
-  x[[slot(cmd, "name")]] <- cmd
-  return(x)
+  .sn_log_seurat_command(object = x, assay = assay, name = "sn_run_celltypist")
 }
