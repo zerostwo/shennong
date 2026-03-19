@@ -20,6 +20,17 @@ sn_score_cell_cycle <- function(object, species = NULL) {
   # Retrieve S-phase and G2M-phase markers
   s_features <- sn_get_signatures(species = species, category = "g1s")
   g2m_features <- sn_get_signatures(species = species, category = "g2m")
+  feature_names <- rownames(object)
+  s_features <- intersect(s_features, feature_names)
+  g2m_features <- intersect(g2m_features, feature_names)
+
+  if (length(s_features) == 0 || length(g2m_features) == 0) {
+    log_warn(glue(
+      "Skipping cell cycle scoring because the selected assay has insufficient overlap ",
+      "with {species} cell-cycle markers (S: {length(s_features)}, G2M: {length(g2m_features)})."
+    ))
+    return(object)
+  }
 
   # Perform cell cycle scoring
   object <- Seurat::CellCycleScoring(object, s.features = s_features, g2m.features = g2m_features)
@@ -47,6 +58,8 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' @param min_cells Filter out genes expressed in fewer than \code{min_cells} cells.
 #' @param min_features Filter out cells with fewer than \code{min_features} genes.
 #' @param project A project name for the Seurat object.
+#' @param sample_name Optional sample name to store in \code{meta.data$sample}.
+#' @param study Optional study name to store in \code{meta.data$study}.
 #' @param species Either "human" or "mouse" (case-sensitive). Affects QC metric patterns.
 #' @param standardize_gene_symbols Logical; standardize gene symbols after object creation.
 #' @param is_gene_id Logical; treat row names as gene IDs and convert them to symbols when standardizing.
@@ -67,6 +80,8 @@ sn_initialize_seurat_object <- function(
   project = "Shennong",
   min_cells = 0,
   min_features = 0,
+  sample_name = NULL,
+  study = NULL,
   species = NULL,
   standardize_gene_symbols = FALSE,
   is_gene_id = FALSE, ...
@@ -92,7 +107,12 @@ sn_initialize_seurat_object <- function(
     ...
   )
   # -- Add metadata fields
-  seurat_obj$study <- project
+  if (!is_null(sample_name)) {
+    seurat_obj$sample <- sample_name
+  }
+  if (!is_null(study)) {
+    seurat_obj$study <- study
+  }
 
   # -- Calculate QC metrics if required
   if (!is_null(species)) {
@@ -130,18 +150,23 @@ sn_initialize_seurat_object <- function(
   return(seurat_obj)
 }
 
-#' Normalize data in a Seurat object using scran
+#' Normalize data in a Seurat object
 #'
-#' This function converts a Seurat object to a SingleCellExperiment,
-#' computes size factors with \code{scran}, and then applies log-normalization.
+#' This function provides a unified normalization entry point for Seurat-style
+#' log-normalization, scran normalization, and SCTransform.
 #'
 #' @param object A \code{Seurat} object.
-#' @param method Currently only "scran" is supported.
+#' @param method One of \code{"seurat"}, \code{"scran"}, or
+#'   \code{"sctransform"} (alias \code{"sct"}).
 #' @param clusters Optional cluster assignments for \code{scran::quickCluster}.
 #' @param assay Assay used for normalization. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
+#' @param ... Additional method-specific arguments passed to
+#'   \code{Seurat::NormalizeData()}, \code{scran::computeSumFactors()}, or
+#'   \code{Seurat::SCTransform()}.
 #'
-#' @return A \code{Seurat} object with normalized data in the \code{"data"} layer.
+#' @return A \code{Seurat} object with normalized data stored according to the
+#'   chosen method.
 #' @examples
 #' \dontrun{
 #' seurat_obj <- sn_normalize_data(seurat_obj, method = "scran")
@@ -149,11 +174,31 @@ sn_initialize_seurat_object <- function(
 #' @export
 sn_normalize_data <- function(
   object,
-  method = "scran",
+  method = c("seurat", "scran", "sctransform", "sct"),
   clusters = NULL,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  ...
 ) {
+  method <- match.arg(method)
+  if (method == "sct") {
+    method <- "sctransform"
+  }
+
+  if (method == "seurat") {
+    prepared <- .sn_prepare_seurat_analysis_input(
+      object = object,
+      assay = assay,
+      layer = layer
+    )
+    object <- Seurat::NormalizeData(object = prepared$object, ...)
+    object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
+    cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
+    slot(cmd, "assay.used") <- assay
+    object[[slot(cmd, "name")]] <- cmd
+    return(object)
+  }
+
   if (method == "scran") {
     check_installed("scran", reason = "to perform scran normalization.")
     check_installed("SingleCellExperiment")
@@ -175,7 +220,7 @@ sn_normalize_data <- function(
     }
 
     log_info("Computing size factors via scran::computeSumFactors...")
-    sce <- scran::computeSumFactors(sce, clusters = clusters, min.mean = 0.1)
+    sce <- scran::computeSumFactors(sce, clusters = clusters, min.mean = 0.1, ...)
     size_factors <- SingleCellExperiment::sizeFactors(object = sce)
 
     # log_info(glue("Size factor summary: {summary(size_factors)}"))
@@ -199,9 +244,41 @@ sn_normalize_data <- function(
     slot(cmd, "assay.used") <- assay
     object[[slot(cmd, "name")]] <- cmd
     return(object)
-  } else {
-    stop("Currently only 'scran' method is supported in sn_normalize_data().")
   }
+
+  check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
+  prepared <- .sn_prepare_seurat_analysis_input(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
+  object <- Seurat::SCTransform(
+    object = prepared$object,
+    verbose = TRUE,
+    seed.use = 717,
+    ...
+  )
+
+  if (isTRUE(prepared$context$needs_temp_counts)) {
+    if (isTRUE(prepared$context$had_exact_counts)) {
+      SeuratObject::LayerData(
+        object = object,
+        assay = prepared$context$analysis_assay,
+        layer = "counts"
+      ) <- prepared$context$original_counts
+    } else {
+      SeuratObject::LayerData(
+        object = object,
+        assay = prepared$context$analysis_assay,
+        layer = "counts"
+      ) <- NULL
+    }
+  }
+
+  cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(object = object, return.command = TRUE)
+  slot(cmd, "assay.used") <- assay
+  object[[slot(cmd, "name")]] <- cmd
+  object
 }
 
 #' Standardize gene symbols in a count matrix or Seurat object

@@ -20,9 +20,10 @@
 #' @param object A \code{Seurat} object.
 #' @param batch A column name in \code{object@meta.data} specifying batch info.
 #'   If \code{NULL}, no integration is performed.
-#' @param pipeline One of \code{"standard"} or \code{"sctransform"} (alias:
-#'   \code{"sct"}). The SCTransform workflow is currently only supported when
-#'   \code{batch = NULL}.
+#' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
+#'   \code{"sctransform"} (alias \code{"sct"}). The SCTransform and scran
+#'   workflows are currently only supported when \code{batch = NULL}.
+#' @param pipeline Deprecated compatibility alias for \code{normalization_method}.
 #' @param nfeatures Number of variable features to select.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
@@ -50,14 +51,14 @@
 #' \dontrun{
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
-#'   pipeline = "standard",
+#'   normalization_method = "seurat",
 #'   resolution = 0.8
 #' )
 #'
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
 #'   batch = "sample_id",
-#'   pipeline = "standard",
+#'   normalization_method = "seurat",
 #'   nfeatures = 3000,
 #'   resolution = 0.5,
 #'   block_genes = c("ribo", "mito") # or a custom vector of gene symbols
@@ -66,7 +67,8 @@
 #' @export
 sn_run_cluster <- function(object,
                            batch = NULL,
-                           pipeline = c("standard", "sctransform", "sct"),
+                           normalization_method = c("seurat", "scran", "sctransform", "sct"),
+                           pipeline = NULL,
                            nfeatures = 3000,
                            vars_to_regress = NULL,
                            resolution = 0.8,
@@ -88,9 +90,19 @@ sn_run_cluster <- function(object,
     stop("Input must be a Seurat object.")
   }
 
-  pipeline <- match.arg(pipeline)
-  if (pipeline == "sct") {
-    pipeline <- "sctransform"
+  if (!is_null(pipeline)) {
+    log_warn("`pipeline` is deprecated; use `normalization_method` instead.")
+    normalization_method <- switch(
+      pipeline,
+      standard = "seurat",
+      sctransform = "sctransform",
+      sct = "sctransform",
+      pipeline
+    )
+  }
+  normalization_method <- match.arg(normalization_method)
+  if (normalization_method == "sct") {
+    normalization_method <- "sctransform"
   }
   dims <- .sn_resolve_cluster_dims(dims = dims, dims_use = dims_use, npcs = npcs)
 
@@ -105,15 +117,15 @@ sn_run_cluster <- function(object,
     if (!(batch %in% colnames(object@meta.data))) {
       stop(glue("Batch variable '{batch}' not found in metadata."))
     }
-    if (pipeline != "standard") {
-      stop("`pipeline = \"sctransform\"` is currently only supported when `batch = NULL`.")
+    if (normalization_method != "seurat") {
+      stop("`normalization_method = \"scran\"` and `\"sctransform\"` are currently only supported when `batch = NULL`.")
     }
     check_installed("harmony")
     if (verbose) log_info(glue("[sn_run_cluster] Starting integration for batch='{batch}'..."))
   }
 
   if (verbose) {
-    log_info(glue("[sn_run_cluster] Pipeline = {pipeline}; batch = {batch %||% 'none'}"))
+    log_info(glue("[sn_run_cluster] Normalization method = {normalization_method}; batch = {batch %||% 'none'}"))
   }
 
   predefined_genesets <- c(
@@ -121,8 +133,8 @@ sn_run_cluster <- function(object,
     "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
   )
 
-  if (pipeline != "standard" && !is_null(block_genes)) {
-    log_warn("`block_genes` is only applied in the standard pipeline; ignoring it for SCTransform.")
+  if (normalization_method == "sctransform" && !is_null(block_genes)) {
+    log_warn("`block_genes` is only applied in the log-normalization workflows; ignoring it for SCTransform.")
     block_genes <- NULL
   }
 
@@ -150,7 +162,7 @@ sn_run_cluster <- function(object,
     }
   }
 
-  if (pipeline == "sctransform") {
+  if (normalization_method == "sctransform") {
     check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
 
     if (verbose) log_info("[1/4] Running SCTransform...")
@@ -172,7 +184,16 @@ sn_run_cluster <- function(object,
 
     reduction <- "pca"
   } else {
-    object <- Seurat::NormalizeData(object = object, verbose = verbose)
+    if (normalization_method == "scran") {
+      object <- sn_normalize_data(
+        object = object,
+        method = "scran",
+        assay = assay,
+        layer = "counts"
+      )
+    } else {
+      object <- Seurat::NormalizeData(object = object, verbose = verbose)
+    }
 
     if (!is_null(species)) {
       if (verbose) log_info("[1/6] Cell cycle scoring...")

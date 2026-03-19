@@ -2,33 +2,40 @@
 % Please edit documentation in R/preprocessing.R
 \name{sn_normalize_data}
 \alias{sn_normalize_data}
-\title{Normalize data in a Seurat object using scran}
+\title{Normalize data in a Seurat object}
 \usage{
 sn_normalize_data(
   object,
-  method = "scran",
+  method = c("seurat", "scran", "sctransform", "sct"),
   clusters = NULL,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  ...
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{method}{Currently only "scran" is supported.}
+\item{method}{One of \code{"seurat"}, \code{"scran"}, or
+\code{"sctransform"} (alias \code{"sct"}).}
 
 \item{clusters}{Optional cluster assignments for \code{scran::quickCluster}.}
 
 \item{assay}{Assay used for normalization. Defaults to \code{"RNA"}.}
 
 \item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
+
+\item{...}{Additional method-specific arguments passed to
+\code{Seurat::NormalizeData()}, \code{scran::computeSumFactors()}, or
+\code{Seurat::SCTransform()}.}
 }
 \value{
-A \code{Seurat} object with normalized data in the \code{"data"} layer.
+A \code{Seurat} object with normalized data stored according to the
+  chosen method.
 }
 \description{
-This function converts a Seurat object to a SingleCellExperiment,
-computes size factors with \code{scran}, and then applies log-normalization.
+This function provides a unified normalization entry point for Seurat-style
+log-normalization, scran normalization, and SCTransform.
 }
 \examples{
 \dontrun{

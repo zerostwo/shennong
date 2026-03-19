@@ -12,6 +12,8 @@ sn_initialize_seurat_object(
   project = "Shennong",
   min_cells = 0,
   min_features = 0,
+  sample_name = NULL,
+  study = NULL,
   species = NULL,
   standardize_gene_symbols = FALSE,
   is_gene_id = FALSE,
@@ -32,6 +34,10 @@ sn_initialize_seurat_object(
 \item{min_cells}{Filter out genes expressed in fewer than \code{min_cells} cells.}
 
 \item{min_features}{Filter out cells with fewer than \code{min_features} genes.}
+
+\item{sample_name}{Optional sample name to store in \code{meta.data$sample}.}
+
+\item{study}{Optional study name to store in \code{meta.data$study}.}
 
 \item{species}{Either "human" or "mouse" (case-sensitive). Affects QC metric patterns.}
 

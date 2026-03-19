@@ -9,6 +9,7 @@ sn_remove_ambient_contamination(
   raw = NULL,
   method = c("decontx", "soupx"),
   cluster = NULL,
+  remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
@@ -26,6 +27,10 @@ If supplied for \code{decontx}, it is used as the background matrix.}
 \item{cluster}{Optional cluster labels. This can be a vector with one value
 per cell, or a metadata column name when \code{x} is a Seurat object. If
 \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.}
+
+\item{remove_zero_count_cells}{Logical; if \code{TRUE}, remove cells whose
+decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by
+restoring their original counts and emit a warning.}
 
 \item{layer}{Layer name used when writing corrected counts back to a Seurat
 object. Defaults to \code{"decontaminated_counts"}. Use \code{"counts"} to

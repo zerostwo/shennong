@@ -175,6 +175,37 @@ Validation commands:
 - `Rscript -e 'testthat::test_local(filter = "<target>", stop_on_failure = TRUE)'`
 - `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
 
+## Milestone 5B: Refine decontX and normalization-facing Seurat APIs
+
+Status: Completed
+
+Scope:
+- Refine decontX output handling so zero-count cells are reported and handled explicitly instead of silently patched.
+- Align clustering and normalization APIs around explicit normalization-method terminology.
+- Add optional sample/study metadata at Seurat object initialization time.
+
+Files affected:
+- `R/quality_control.R`
+- `R/preprocessing.R`
+- `R/integrate.R`
+- `tests/testthat/`
+- `man/`
+- `docs/codex/Status.md`
+- `docs/codex/Decisions.md`
+
+Acceptance criteria:
+- `sn_remove_ambient_contamination(method = "decontx")` restores original counts for rounded-to-zero cells by default, can optionally remove them, and records corrected count/feature metadata on Seurat outputs.
+- `sn_run_cluster()` and `sn_normalize_data()` expose a shared normalization-method vocabulary without breaking existing callers abruptly.
+- `sn_initialize_seurat_object()` can attach `sample` and `study` metadata when explicitly provided.
+- Full tests and package checks pass after the API refinement.
+
+Validation commands:
+- `Rscript -e 'devtools::document()'`
+- `Rscript -e 'testthat::test_local(filter = "clustering|preprocessing", stop_on_failure = TRUE)'`
+- `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+- `R CMD build .`
+- `R CMD check --no-manual Shennong_*.tar.gz`
+
 ## Milestone 5A: Make Seurat analysis workflows layer-aware
 
 Status: Completed

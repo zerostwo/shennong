@@ -7,7 +7,8 @@
 sn_run_cluster(
   object,
   batch = NULL,
-  pipeline = c("standard", "sctransform", "sct"),
+  normalization_method = c("seurat", "scran", "sctransform", "sct"),
+  pipeline = NULL,
   nfeatures = 3000,
   vars_to_regress = NULL,
   resolution = 0.8,
@@ -30,9 +31,11 @@ sn_run_cluster(
 \item{batch}{A column name in \code{object@meta.data} specifying batch info.
 If \code{NULL}, no integration is performed.}
 
-\item{pipeline}{One of \code{"standard"} or \code{"sctransform"} (alias:
-\code{"sct"}). The SCTransform workflow is currently only supported when
-\code{batch = NULL}.}
+\item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
+\code{"sctransform"} (alias \code{"sct"}). The SCTransform and scran
+workflows are currently only supported when \code{batch = NULL}.}
+
+\item{pipeline}{Deprecated compatibility alias for \code{normalization_method}.}
 
 \item{nfeatures}{Number of variable features to select.}
 
@@ -82,14 +85,14 @@ and UMAP.
 \dontrun{
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
-  pipeline = "standard",
+  normalization_method = "seurat",
   resolution = 0.8
 )
 
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
   batch = "sample_id",
-  pipeline = "standard",
+  normalization_method = "seurat",
   nfeatures = 3000,
   resolution = 0.5,
   block_genes = c("ribo", "mito") # or a custom vector of gene symbols

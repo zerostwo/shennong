@@ -21,11 +21,14 @@ test_that("sn_initialize_seurat_object accepts base matrices and adds metadata",
     x = counts,
     metadata = metadata,
     project = "prep",
+    sample_name = "sample_a",
+    study = "study_a",
     species = "human"
   )
 
   expect_s4_class(object, "Seurat")
-  expect_equal(unname(object$study), rep("prep", 4))
+  expect_equal(unname(object$sample), rep("sample_a", 4))
+  expect_equal(unname(object$study), rep("study_a", 4))
   expect_true(all(c("percent.mt", "percent.ribo", "percent.hb", "batch") %in% colnames(object[[]])))
   expect_true("sn_initialize_seurat_object" %in% names(object@commands))
 })
@@ -171,6 +174,7 @@ test_that("sn_normalize_data can normalize from a non-default layer", {
 
   normalized <- sn_normalize_data(
     object = object,
+    method = "scran",
     assay = "RNA",
     layer = "decontaminated_counts",
     clusters = rep(c("a", "b"), each = 30)

@@ -1,7 +1,7 @@
 # Shennong Modernization Status
 
 Last updated: 2026-03-18
-Current milestone: Layer-aware Seurat workflows and CI dependency hardening
+Current milestone: Public Seurat workflow API refinement
 
 ## Snapshot
 
@@ -9,6 +9,8 @@ Current milestone: Layer-aware Seurat workflows and CI dependency hardening
 - Codex memory files and repository guidance are in place and now trackable in git.
 - The task-specific API consolidation around `sn_load_data()`, `sn_remove_ambient_contamination()`, and `sn_run_cluster()` is now implemented and validated.
 - Seurat analysis helpers that operate on count-like layers now accept explicit `assay`/`layer` inputs where that behavior matters operationally.
+- Public Seurat preprocessing and clustering APIs now expose explicit normalization-method controls instead of overloading the old `pipeline` wording.
+- decontX-based ambient-RNA removal now preserves original counts for zeroed cells by default, can optionally drop them, and writes corrected per-cell count/feature metadata.
 - Exported functions now have generated help coverage through roxygen-managed `.Rd` files.
 - The package now has a generated `README.md`, guarded vignette execution, repository-local CI workflows, and a passing `R CMD check --no-manual`.
 - The local test surface now covers composition, data loading, clustering, IO/visualization helpers, preprocessing, and utility helpers.
@@ -74,6 +76,10 @@ Current milestone: Layer-aware Seurat workflows and CI dependency hardening
 - Passed: `Rscript -e 'if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak", repos = "https://cloud.r-project.org"); pak::lockfile_create(".", lockfile = tempfile("pkg-", fileext = ".lock"), upgrade = TRUE)'`
 - Passed: `R CMD build .` after `methods::slot` namespace cleanup
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK`
+- Passed: `Rscript -e 'testthat::test_local(filter = "clustering|preprocessing", stop_on_failure = TRUE)'` after the decontX and normalization API refinement
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after the decontX and normalization API refinement
+- Passed: `R CMD build .` after the decontX and normalization API refinement
+- Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after the decontX and normalization API refinement
 
 ## Completed In This Iteration
 
@@ -98,6 +104,10 @@ Current milestone: Layer-aware Seurat workflows and CI dependency hardening
 - Added regression coverage proving non-default layers can drive clustering, doublet detection, gene filtering, and normalization without overwriting the original `counts` layer.
 - Declared GitHub remotes for `BPCells`, `catplot`, `lisi`, `ROGUE`, and `SignatuR`, then locally reproduced a passing `pak::lockfile_create()` to match the failing Actions dependency-resolution step.
 - Imported `methods::slot` and `slot<-` explicitly so `R CMD check` no longer reports namespace notes for command logging.
+- Refined `sn_remove_ambient_contamination()` so decontX-generated zero-count cells no longer receive synthetic counts. Affected cells are restored from the original counts by default, can optionally be removed, and now produce corrected `nCount_*` / `nFeature_*` metadata columns.
+- Updated `sn_initialize_seurat_object()` to accept optional `sample_name` and `study` metadata at object creation time.
+- Replaced the overloaded `pipeline` argument in `sn_run_cluster()` with `normalization_method`, while retaining a deprecated compatibility alias. The same normalization vocabulary is now used by `sn_normalize_data()`.
+- Hardened cell-cycle scoring so clustering skips that step with a warning when the requested species markers do not overlap the selected assay features, avoiding a low-level `sample.int()` failure.
 
 ## Remaining High-Priority Work
 

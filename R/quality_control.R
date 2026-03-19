@@ -379,6 +379,47 @@ sn_find_doublets <- function(
   restored_counts
 }
 
+.sn_handle_zero_count_cells <- function(original_counts,
+                                        corrected_counts,
+                                        remove_zero_count_cells = FALSE) {
+  original_sums <- Matrix::colSums(original_counts)
+  corrected_sums <- Matrix::colSums(corrected_counts)
+  zero_cells <- colnames(corrected_counts)[original_sums > 0 & corrected_sums == 0]
+
+  if (length(zero_cells) == 0) {
+    return(list(
+      counts = corrected_counts,
+      zero_cells = character(0),
+      removed_cells = character(0)
+    ))
+  }
+
+  if (remove_zero_count_cells) {
+    keep_cells <- setdiff(colnames(corrected_counts), zero_cells)
+    log_warn(glue(
+      "decontX produced {length(zero_cells)} zero-count cell(s); removing them because ",
+      "`remove_zero_count_cells = TRUE`."
+    ))
+    return(list(
+      counts = corrected_counts[, keep_cells, drop = FALSE],
+      zero_cells = zero_cells,
+      removed_cells = zero_cells
+    ))
+  }
+
+  corrected_counts[, zero_cells] <- original_counts[, zero_cells, drop = FALSE]
+  log_warn(glue(
+    "decontX produced {length(zero_cells)} zero-count cell(s); restored the original counts ",
+    "for those cells. Set `remove_zero_count_cells = TRUE` to drop them instead."
+  ))
+
+  list(
+    counts = corrected_counts,
+    zero_cells = zero_cells,
+    removed_cells = character(0)
+  )
+}
+
 .sn_resolve_ambient_clusters <- function(x_info, cluster, verbose = FALSE) {
   counts <- x_info$counts
 
@@ -481,6 +522,7 @@ sn_find_doublets <- function(
 .sn_remove_ambient_decontx <- function(x_info,
                                        raw_info = NULL,
                                        cluster = NULL,
+                                       remove_zero_count_cells = FALSE,
                                        verbose = FALSE,
                                        ...) {
   check_installed(pkg = "celda", reason = "to remove ambient RNA contamination with decontX.")
@@ -514,13 +556,27 @@ sn_find_doublets <- function(
     ...
   )
   out <- round(celda::decontXcounts(sce))
+  out <- .sn_handle_zero_count_cells(
+    original_counts = counts,
+    corrected_counts = out,
+    remove_zero_count_cells = remove_zero_count_cells
+  )
   metadata <- as.data.frame(
     SummarizedExperiment::colData(sce)[, c("decontX_contamination", "decontX_clusters"), drop = FALSE]
   )
+  metadata <- metadata[colnames(out$counts), , drop = FALSE]
+  metadata$nCount_corrected <- Matrix::colSums(out$counts)
+  metadata$nFeature_corrected <- Matrix::colSums(out$counts > 0)
+  base_counts <- counts
+  if (length(out$removed_cells) > 0) {
+    base_counts <- base_counts[, colnames(out$counts), drop = FALSE]
+  }
 
   list(
-    counts = .sn_restore_count_shape(x_info$counts, out),
-    metadata = metadata
+    counts = .sn_restore_count_shape(base_counts, out$counts),
+    metadata = metadata,
+    zero_cells = out$zero_cells,
+    removed_cells = out$removed_cells
   )
 }
 
@@ -537,6 +593,9 @@ sn_find_doublets <- function(
 #' @param cluster Optional cluster labels. This can be a vector with one value
 #'   per cell, or a metadata column name when \code{x} is a Seurat object. If
 #'   \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.
+#' @param remove_zero_count_cells Logical; if \code{TRUE}, remove cells whose
+#'   decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by
+#'   restoring their original counts and emit a warning.
 #' @param layer Layer name used when writing corrected counts back to a Seurat
 #'   object. Defaults to \code{"decontaminated_counts"}. Use \code{"counts"} to
 #'   overwrite the original counts layer explicitly.
@@ -558,6 +617,7 @@ sn_remove_ambient_contamination <- function(
   raw = NULL,
   method = c("decontx", "soupx"),
   cluster = NULL,
+  remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
@@ -582,13 +642,24 @@ sn_remove_ambient_contamination <- function(
       x_info = x_info,
       raw_info = raw_info,
       cluster = cluster,
+      remove_zero_count_cells = remove_zero_count_cells,
       verbose = verbose,
       ...
     )
   )
 
   if (return_object && !is_null(x_info$object)) {
+    assay <- SeuratObject::DefaultAssay(x_info$object)
+    ncount_col <- paste0("nCount_", assay, "_corrected")
+    nfeature_col <- paste0("nFeature_", assay, "_corrected")
+    if (length(out$removed_cells) > 0) {
+      x_info$object <- x_info$object[, colnames(out$counts), drop = FALSE]
+    }
     if (!is_null(out$metadata)) {
+      if (all(c("nCount_corrected", "nFeature_corrected") %in% colnames(out$metadata))) {
+        colnames(out$metadata)[colnames(out$metadata) == "nCount_corrected"] <- ncount_col
+        colnames(out$metadata)[colnames(out$metadata) == "nFeature_corrected"] <- nfeature_col
+      }
       x_info$object <- SeuratObject::AddMetaData(x_info$object, metadata = out$metadata)
     }
     SeuratObject::LayerData(object = x_info$object, layer = layer) <- out$counts

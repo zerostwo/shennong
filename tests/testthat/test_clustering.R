@@ -30,7 +30,7 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   object <- make_test_object(seed = 1, prefix = "single")
   clustered <- sn_run_cluster(
     object = object,
-    pipeline = "standard",
+    normalization_method = "seurat",
     nfeatures = 50,
     block_genes = NULL,
     npcs = 10,
@@ -50,7 +50,7 @@ test_that("sn_run_cluster supports the SCTransform workflow for a single dataset
   object <- make_test_object(seed = 2, prefix = "sct")
   clusters <- sn_run_cluster(
     object = object,
-    pipeline = "sctransform",
+    normalization_method = "sctransform",
     nfeatures = 50,
     npcs = 10,
     dims = 1:10,
@@ -75,7 +75,7 @@ test_that("sn_run_cluster integrates batches with harmony", {
   clustered <- sn_run_cluster(
     object = merged,
     batch = "sample",
-    pipeline = "standard",
+    normalization_method = "seurat",
     nfeatures = 50,
     block_genes = NULL,
     npcs = 10,
@@ -86,6 +86,33 @@ test_that("sn_run_cluster integrates batches with harmony", {
   expect_s4_class(clustered, "Seurat")
   expect_true("harmony" %in% names(clustered@reductions))
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+})
+
+test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not overlap", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 13, prefix = "batchx")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 14, prefix = "batchy")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  expect_no_error(
+    clustered <- suppressWarnings(sn_run_cluster(
+      object = merged,
+      batch = "sample",
+      species = "human",
+      normalization_method = "seurat",
+      nfeatures = 50,
+      npcs = 10,
+      dims = 1:10,
+      verbose = FALSE
+    ))
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_false(all(c("S.Score", "G2M.Score", "Phase", "CC.Difference") %in% colnames(clustered[[]])))
 })
 
 test_that("sn_run_cluster can use a non-default layer without overwriting counts", {
@@ -100,7 +127,7 @@ test_that("sn_run_cluster can use a non-default layer without overwriting counts
 
   clustered <- sn_run_cluster(
     object = object,
-    pipeline = "standard",
+    normalization_method = "seurat",
     assay = "RNA",
     layer = "decontaminated_counts",
     nfeatures = 50,
@@ -174,10 +201,85 @@ test_that("sn_remove_ambient_contamination defaults to decontX and writes a new 
   )
 
   expect_s4_class(updated, "Seurat")
-  expect_true(all(c("decontX_contamination", "decontX_clusters") %in% colnames(updated[[]])))
+  expect_true(all(c(
+    "decontX_contamination",
+    "decontX_clusters",
+    "nCount_RNA_corrected",
+    "nFeature_RNA_corrected"
+  ) %in% colnames(updated[[]])))
   corrected <- SeuratObject::LayerData(updated, layer = "decontaminated_counts")
   expect_equal(dim(corrected), dim(SeuratObject::LayerData(object, layer = "counts")))
   expect_true(all(corrected == round(corrected)))
+})
+
+test_that("decontX zero-count handling restores original cells by default", {
+  original_counts <- Matrix::Matrix(
+    matrix(
+      c(
+        5, 0,
+        1, 2,
+        0, 3
+      ),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(original_counts) <- paste0("gene", 1:3)
+  colnames(original_counts) <- paste0("cell", 1:2)
+  corrected_counts <- Matrix::Matrix(
+    matrix(
+      c(
+        0.4, 0,
+        0.3, 0,
+        0.2, 0
+      ),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(corrected_counts) <- rownames(original_counts)
+  colnames(corrected_counts) <- colnames(original_counts)
+
+  handled <- Shennong:::.sn_handle_zero_count_cells(
+    original_counts = original_counts,
+    corrected_counts = round(corrected_counts),
+    remove_zero_count_cells = FALSE
+  )
+
+  expect_equal(as.matrix(handled$counts), as.matrix(original_counts))
+  expect_equal(handled$zero_cells, colnames(original_counts))
+  expect_length(handled$removed_cells, 0)
+})
+
+test_that("decontX zero-count handling can remove affected cells", {
+  original_counts <- Matrix::Matrix(
+    matrix(
+      c(
+        5, 0,
+        1, 2,
+        0, 3
+      ),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(original_counts) <- paste0("gene", 1:3)
+  colnames(original_counts) <- paste0("cell", 1:2)
+  corrected_counts <- Matrix::Matrix(0, nrow = 3, ncol = 2, sparse = TRUE)
+  colnames(corrected_counts) <- colnames(original_counts)
+  rownames(corrected_counts) <- rownames(original_counts)
+
+  handled <- Shennong:::.sn_handle_zero_count_cells(
+    original_counts = original_counts,
+    corrected_counts = corrected_counts,
+    remove_zero_count_cells = TRUE
+  )
+
+  expect_equal(ncol(handled$counts), 0)
+  expect_equal(handled$removed_cells, colnames(original_counts))
 })
 
 test_that("sn_find_doublets can analyze a non-default layer", {
