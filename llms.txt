@@ -1,0 +1,301 @@
+# Shennong
+
+`Shennong` is an experimental R package for single-cell and broader
+omics workflows. It provides Seurat-oriented helpers for example-data
+loading, preprocessing, quality control, ambient RNA correction,
+clustering and integration, and common visualization tasks.
+
+## Installation
+
+Install the development version from GitHub:
+
+``` r
+install.packages("remotes")
+remotes::install_github("zerostwo/shennong")
+```
+
+Once the package is installed, you can check whether your local copy is
+current and install the preferred release channel directly from R:
+
+``` r
+sn_check_version()
+sn_install_shennong(channel = "github")
+```
+
+## What the package covers
+
+- Example data loading with
+  [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
+- Seurat object initialization and QC helpers
+- Ambient contamination correction with SoupX or decontX
+- Single-dataset clustering and Harmony-based integration through
+  [`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
+- Plot helpers for embeddings, violin plots, dot plots, boxplots, and
+  bar plots
+- Signature scoring, composition analysis, and enrichment helpers
+
+## Quick start
+
+The package now uses
+[`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
+as the main example-data entry point.
+
+``` r
+library(Shennong)
+
+pbmc <- sn_load_data("pbmc1k")
+pbmc <- sn_initialize_seurat_object(pbmc, project = "pbmc1k", species = "human")
+pbmc <- sn_filter_cells(
+  pbmc,
+  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  plot = FALSE
+)
+pbmc <- sn_filter_genes(pbmc, min_cells = 3, plot = FALSE)
+pbmc <- sn_run_cluster(
+  pbmc,
+  normalization_method = "seurat",
+  resolution = 0.6
+)
+
+sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
+```
+
+## Ambient contamination correction
+
+[`sn_remove_ambient_contamination()`](https://songqi.org/shennong/reference/sn_remove_ambient_contamination.md)
+exposes a unified interface for multiple methods.
+
+``` r
+filtered_path <- sn_load_data(
+  dataset = "pbmc3k",
+  matrix_type = "filtered",
+  return_object = FALSE
+)
+
+raw_path <- sn_load_data(
+  dataset = "pbmc3k",
+  matrix_type = "raw",
+  return_object = FALSE
+)
+
+ambient_counts <- sn_remove_ambient_contamination(
+  x = filtered_path,
+  raw = raw_path,
+  method = "soupx",
+  return_object = FALSE
+)
+```
+
+For decontX, switch the method:
+
+``` r
+corrected_counts <- sn_remove_ambient_contamination(
+  x = ambient_counts,
+  method = "decontx",
+  return_object = FALSE
+)
+```
+
+If you write decontX output back into a Seurat object, the corrected
+counts are stored in a separate layer by default and corrected per-cell
+totals are added to metadata.
+
+## Integration workflow
+
+[`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
+is the main clustering entry point for both single datasets and
+batch-aware workflows.
+
+``` r
+pbmc1k <- sn_load_data("pbmc1k")
+pbmc3k <- sn_load_data("pbmc3k")
+
+obj1 <- sn_initialize_seurat_object(pbmc1k, project = "pbmc1k")
+obj1$sample <- "pbmc1k"
+obj2 <- sn_initialize_seurat_object(pbmc3k, project = "pbmc3k")
+obj2$sample <- "pbmc3k"
+
+merged <- merge(obj1, y = obj2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+merged <- sn_run_cluster(
+  object = merged,
+  batch = "sample",
+  normalization_method = "seurat",
+  resolution = 0.6
+)
+```
+
+## Development
+
+Common local commands:
+
+``` r
+devtools::document()
+testthat::test_local(stop_on_failure = TRUE)
+pkgdown::build_site()
+```
+
+Package builds and checks can be run from the shell:
+
+``` sh
+R CMD build .
+R CMD check --no-manual Shennong_*.tar.gz
+```
+
+Contributor guidance, testing conventions, and commit rules are
+documented in `AGENTS.md` and `CONTRIBUTING.md`.
+
+## Project status
+
+The package is being modernized incrementally. Current work focuses on:
+
+- stabilizing core APIs with test coverage
+- aligning roxygen documentation with exports
+- improving CI and pkgdown readiness
+- keeping user-facing behavior compatible unless a change is explicitly
+  documented
+
+## Code of Conduct
+
+This project follows the Contributor Covenant code of conduct:
+<https://www.contributor-covenant.org/version/2/1/code_of_conduct/>.
+
+# Package index
+
+## Data and IO
+
+- [`marker_genes`](https://songqi.org/shennong/reference/marker_genes.md)
+  : Pan-Immune CellTypist Metadata
+- [`hom_genes`](https://songqi.org/shennong/reference/hom_genes.md) :
+  Human-Mouse Homologous Genes Table
+- [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
+  : Load example datasets from Zenodo
+- [`sn_load_pbmc()`](https://songqi.org/shennong/reference/sn_load_pbmc.md)
+  : Load PBMC example datasets
+- [`sn_read()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_bpcells()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_10x()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_starsolo()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_h5ad()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_h5()`](https://songqi.org/shennong/reference/sn_read.md)
+  [`.import.rio_gmt()`](https://songqi.org/shennong/reference/sn_read.md)
+  : Read tabular and bioinformatics file formats
+- [`sn_write()`](https://songqi.org/shennong/reference/sn_write.md)
+  [`.export.rio_bpcells()`](https://songqi.org/shennong/reference/sn_write.md)
+  [`.export.rio_h5ad()`](https://songqi.org/shennong/reference/sn_write.md)
+  [`.export.rio_h5()`](https://songqi.org/shennong/reference/sn_write.md)
+  : Write tabular and bioinformatics file formats
+- [`sn_add_data_from_anndata()`](https://songqi.org/shennong/reference/sn_add_data_from_anndata.md)
+  : Add metadata and embeddings exported from AnnData
+- [`sn_check_version()`](https://songqi.org/shennong/reference/sn_check_version.md)
+  : Check whether Shennong is up to date
+- [`sn_install_shennong()`](https://songqi.org/shennong/reference/sn_install_shennong.md)
+  : Install Shennong from CRAN or GitHub
+
+## Preprocessing and QC
+
+- [`sn_initialize_seurat_object()`](https://songqi.org/shennong/reference/sn_initialize_seurat_object.md)
+  : Initialize a Seurat object with optional QC metrics
+- [`sn_normalize_data()`](https://songqi.org/shennong/reference/sn_normalize_data.md)
+  : Normalize data in a Seurat object
+- [`sn_standardize_gene_symbols()`](https://songqi.org/shennong/reference/sn_standardize_gene_symbols.md)
+  : Standardize gene symbols in a count matrix or Seurat object
+- [`sn_score_cell_cycle()`](https://songqi.org/shennong/reference/sn_score_cell_cycle.md)
+  : Score Cell Cycle Phases
+- [`sn_filter_genes()`](https://songqi.org/shennong/reference/sn_filter_genes.md)
+  : Filter genes based on the number of expressing cells
+- [`sn_filter_cells()`](https://songqi.org/shennong/reference/sn_filter_cells.md)
+  : Filter cells in a Seurat object based on QC metrics
+- [`sn_find_doublets()`](https://songqi.org/shennong/reference/sn_find_doublets.md)
+  : Find doublets using scDblFinder
+- [`sn_remove_ambient_contamination()`](https://songqi.org/shennong/reference/sn_remove_ambient_contamination.md)
+  : Remove ambient RNA contamination from counts
+
+## Clustering and metrics
+
+- [`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
+  : Run clustering for a single dataset or Harmony integration workflow
+- [`sn_find_de()`](https://songqi.org/shennong/reference/sn_find_de.md)
+  : Run differential expression analysis on a Seurat object
+- [`sn_run_celltypist()`](https://songqi.org/shennong/reference/sn_run_celltypist.md)
+  : Run CellTypist for automated cell type annotation
+- [`sn_calculate_lisi()`](https://songqi.org/shennong/reference/sn_calculate_lisi.md)
+  : Calculate LISI score
+- [`sn_calculate_rogue()`](https://songqi.org/shennong/reference/sn_calculate_rogue.md)
+  : Calculate ROGUE score for Seurat Object
+- [`sn_calculate_composition()`](https://songqi.org/shennong/reference/sn_calculate_composition.md)
+  : Calculate Composition Proportions
+
+## Visualization and signatures
+
+- [`sn_plot_dim()`](https://songqi.org/shennong/reference/sn_plot_dim.md)
+  : Create a dimensionality reduction plot for categorical data
+- [`sn_plot_feature()`](https://songqi.org/shennong/reference/sn_plot_feature.md)
+  : Plot feature expression in reduced dimensions
+- [`sn_plot_violin()`](https://songqi.org/shennong/reference/sn_plot_violin.md)
+  : Plot a violin plot with categorical groups
+- [`sn_plot_dot()`](https://songqi.org/shennong/reference/sn_plot_dot.md)
+  : Plot a dot plot with categorical groups
+- [`sn_plot_boxplot()`](https://songqi.org/shennong/reference/sn_plot_boxplot.md)
+  : Create a boxplot from a data frame
+- [`sn_plot_barplot()`](https://songqi.org/shennong/reference/sn_plot_barplot.md)
+  : Create a bar plot from a data frame
+- [`show_all_palettes()`](https://songqi.org/shennong/reference/show_all_palettes.md)
+  : List available color palettes
+- [`sn_get_signatures()`](https://songqi.org/shennong/reference/sn_get_signatures.md)
+  : Retrieve blocklist genes from SignatuR by preset gene set names
+- [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md) :
+  Run gene set enrichment analysis
+
+## Interpretation
+
+- [`sn_store_enrichment()`](https://songqi.org/shennong/reference/sn_store_enrichment.md)
+  : Store an enrichment result on a Seurat object
+- [`sn_prepare_annotation_evidence()`](https://songqi.org/shennong/reference/sn_prepare_annotation_evidence.md)
+  : Prepare cluster-annotation evidence from a Seurat object
+- [`sn_prepare_de_evidence()`](https://songqi.org/shennong/reference/sn_prepare_de_evidence.md)
+  : Prepare differential-expression evidence from a stored DE result
+- [`sn_prepare_enrichment_evidence()`](https://songqi.org/shennong/reference/sn_prepare_enrichment_evidence.md)
+  : Prepare enrichment evidence
+- [`sn_prepare_results_evidence()`](https://songqi.org/shennong/reference/sn_prepare_results_evidence.md)
+  : Prepare manuscript-style results evidence
+- [`sn_build_prompt()`](https://songqi.org/shennong/reference/sn_build_prompt.md)
+  : Build an LLM prompt from structured Shennong evidence
+- [`sn_run_llm()`](https://songqi.org/shennong/reference/sn_run_llm.md)
+  : Run an LLM provider on a prepared message list
+- [`sn_interpret_annotation()`](https://songqi.org/shennong/reference/sn_interpret_annotation.md)
+  : Interpret cluster markers for cell-type annotation
+- [`sn_interpret_de()`](https://songqi.org/shennong/reference/sn_interpret_de.md)
+  : Interpret a stored differential-expression result
+- [`sn_interpret_enrichment()`](https://songqi.org/shennong/reference/sn_interpret_enrichment.md)
+  : Interpret a stored enrichment result
+- [`sn_write_results()`](https://songqi.org/shennong/reference/sn_write_results.md)
+  : Write a manuscript-style results summary from stored analysis
+  outputs
+- [`sn_write_figure_legend()`](https://songqi.org/shennong/reference/sn_write_figure_legend.md)
+  : Write a figure legend from stored analysis outputs
+- [`sn_write_presentation_summary()`](https://songqi.org/shennong/reference/sn_write_presentation_summary.md)
+  : Write a presentation-style summary from stored analysis outputs
+
+## Utilities
+
+- [`sn_check_file()`](https://songqi.org/shennong/reference/sn_check_file.md)
+  : Check if files exist
+- [`sn_get_codex_skill_path()`](https://songqi.org/shennong/reference/sn_get_codex_skill_path.md)
+  : Return the installed Shennong Codex skill path
+- [`sn_get_species()`](https://songqi.org/shennong/reference/sn_get_species.md)
+  : Retrieve or infer species information
+- [`sn_install_codex_skill()`](https://songqi.org/shennong/reference/sn_install_codex_skill.md)
+  : Install the bundled Shennong Codex skill for end-user agents
+- [`sn_set_path()`](https://songqi.org/shennong/reference/sn_set_path.md)
+  : Create a directory path if needed
+
+# Articles
+
+### Analysis Workflows
+
+- [PBMC workflow](https://songqi.org/shennong/articles/clustering.md):
+- [Layer-aware
+  workflow](https://songqi.org/shennong/articles/layered-workflows.md):
+- [Interpretation
+  workflow](https://songqi.org/shennong/articles/interpretation-workflows.md):
