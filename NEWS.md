@@ -1,17 +1,35 @@
-# Changelog
-
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+# Unreleased
 
 ### Added
 
-- Keep a Changelog-based release structure for future releases.
+- `sn_find_de()` now supports pseudobulk differential expression with
+  `limma` in addition to `DESeq2` and `edgeR`.
+- `sn_find_de()` now supports marker discovery with `COSGR` when the optional
+  GitHub package is installed.
 
-## [0.1.1] - 2026-03-19
+### Changed
+
+- `sn_find_de()` now uses a single `method` argument instead of separate
+  `test_use` and `pseudobulk_method` parameters.
+- `sn_find_de()` now uses `layer` consistently for Seurat v5 workflows and no
+  longer exposes the legacy `slot` argument.
+- The pkgdown deployment workflow now installs the current package before
+  publishing the site, so reference generation can load `Shennong` inside the
+  temporary deployment worktree.
+
+### Fixed
+
+- Fixed pkgdown GitHub Actions deployment when `deploy_to_branch()` runs in a
+  clean runner without a preinstalled copy of `Shennong`.
+
+# Version 0.1.1
+
+Released 2026-03-19.
 
 ### Added
 
@@ -42,7 +60,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Fixed SoupX validation order so missing `raw` input is reported before package
   availability issues.
 
-## [0.1.0] - 2026-03-18
+# Version 0.1.0
+
+Released 2026-03-18.
 
 ### Added
 

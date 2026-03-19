@@ -28,6 +28,7 @@ articles:
     contents:
       - clustering
       - layered-workflows
+      - interpretation-workflows
 
 reference:
   - title: Data and IO
@@ -70,6 +71,21 @@ reference:
       - show_all_palettes
       - sn_get_signatures
       - sn_enrich
+  - title: Interpretation
+    contents:
+      - sn_store_enrichment
+      - sn_prepare_annotation_evidence
+      - sn_prepare_de_evidence
+      - sn_prepare_enrichment_evidence
+      - sn_prepare_results_evidence
+      - sn_build_prompt
+      - sn_run_llm
+      - sn_interpret_annotation
+      - sn_interpret_de
+      - sn_interpret_enrichment
+      - sn_write_results
+      - sn_write_figure_legend
+      - sn_write_presentation_summary
   - title: Utilities
     contents:
       - sn_check_file

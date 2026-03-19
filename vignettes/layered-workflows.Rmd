@@ -69,6 +69,7 @@ pbmc_layered <- suppressWarnings(
     pbmc_layered,
     analysis = "markers",
     group_by = "seurat_clusters",
+    layer = "data",
     store_name = "cluster_markers",
     return_object = TRUE,
     verbose = FALSE

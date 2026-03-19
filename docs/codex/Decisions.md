@@ -1,6 +1,6 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-18
+Last updated: 2026-03-19
 
 ## 2026-03-18
 
@@ -50,3 +50,11 @@ Last updated: 2026-03-18
 - Species handling should be permissive for the common human/mouse case. When `species` is omitted, Shennong now attempts to infer it from feature names using `hom_genes` and mitochondrial naming patterns; only genuinely ambiguous inputs still require an explicit species.
 - Optional packages that enhance core workflows should not block the default path. `SignatuR` and `catplot` are now treated as optional enhancements rather than mandatory dependencies for initialization, clustering, and plotting.
 - Stored DE results should include lightweight provenance metadata (`schema_version`, package version, timestamp, thresholds, and assay/layer context) so downstream plotting and interpretation have a stable object contract.
+- Seurat v5-facing DE APIs should expose `layer`, not `slot`. Shennong now maps the requested analysis layer onto whatever Seurat backend layer name the selected method requires internally, while keeping the public interface layer-based.
+- Differential-expression backends should be selected with a single `method` argument scoped by `analysis`, rather than separate parameters for Seurat tests and pseudobulk engines. This keeps the public contract smaller and avoids redundant state.
+- The experimental DE API can change incompatibly before the first stable release. The package version is therefore advanced to `0.2.0` to reflect the intentional public API change to `sn_find_de()`.
+- pkgdown deployment in CI should not assume the package is already installed in the runner library. The workflow now performs an explicit `R CMD INSTALL .` before `pkgdown::deploy_to_branch()`.
+- The first LLM integration should be a thin interpretation layer, not a statistical-analysis layer. Shennong now treats DE, enrichment, and clustering outputs as upstream evidence and builds prompts or narrative summaries on top of them.
+- LLM features must remain provider-agnostic at the package boundary. The public API returns prompt bundles by default and only calls a model when the user supplies a provider function explicitly.
+- Interpretation artifacts should be stored alongside other analysis products inside `object@misc`, using dedicated collections such as `enrichment_results` and `interpretation_results` instead of inventing a parallel state system.
+- The `R/` directory should now be organized by durable workflow domains rather than by a mix of historical implementation slices. Preprocessing-related public APIs and helpers are co-located in `preprocessing.R`; analysis code is split into `analysis_clustering.R`, `analysis_de.R`, `analysis_enrichment.R`, and `analysis_metrics.R`; example data, IO, signatures, and package-management helpers each have dedicated modules.

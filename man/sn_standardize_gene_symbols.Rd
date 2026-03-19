@@ -15,14 +15,14 @@ sn_standardize_gene_symbols(x, species = NULL, is_gene_id = FALSE)
 }
 \value{
 If \code{x} is a matrix, returns a matrix with standardized gene symbols.
-        If \code{x} is a Seurat object, returns the modified Seurat object.
+If \code{x} is a Seurat object, returns the modified Seurat object.
 }
 \description{
 This function helps unify gene symbols to a standard format. It can:
 \enumerate{
-  \item Convert gene IDs to gene symbols (if \code{is_gene_id = TRUE}).
-  \item Check and correct gene symbols using \code{HGNChelper::checkGeneSymbols}.
-  \item Aggregate duplicated gene symbols by summing their counts.
+\item Convert gene IDs to gene symbols (if \code{is_gene_id = TRUE}).
+\item Check and correct gene symbols using \code{HGNChelper::checkGeneSymbols}.
+\item Aggregate duplicated gene symbols by summing their counts.
 }
 }
 \examples{

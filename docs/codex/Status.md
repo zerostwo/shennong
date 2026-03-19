@@ -1,7 +1,7 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-18
-Current milestone: CI, pkgdown, and package-maintenance hardening
+Last updated: 2026-03-19
+Current milestone: DE API consolidation and CI deployment hardening
 
 ## Snapshot
 
@@ -20,6 +20,11 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - pkgdown has been revalidated with a clean rebuild to `site/`, including the rendered PBMC article and bundled Codex-skill reference pages.
 - Species detection now falls back to automatic inference from feature names using `hom_genes` plus mitochondrial naming patterns, so core workflows no longer require an explicit `species` argument in common human/mouse inputs.
 - pkgdown now includes a second evaluated article covering layer-aware workflows and stored DE metadata.
+- The differential-expression API has now been consolidated around `analysis`, `layer`, and `method`, removing the old mixed `slot` / `test_use` / `pseudobulk_method` vocabulary.
+- `sn_find_de()` now supports `limma` pseudobulk analysis and optional `COSGR` marker discovery.
+- The pkgdown workflow now installs the package before `deploy_to_branch()`, addressing the Actions failure where the deployment worktree could not `library(Shennong)`.
+- A first LLM-ready interpretation layer now exists on top of the existing analysis stack, including enrichment storage, evidence preparation, prompt construction, and optional provider-backed writing helpers.
+- The `R/` source tree has now been reorganized around stable domains: preprocessing, clustering, DE, enrichment, metrics, example data, IO, package tools, signatures, visualization, utilities, and interpretation.
 
 ## Concise Audit
 
@@ -102,6 +107,13 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` with `PASS 112`
 - Passed: `R CMD build .` after species inference and article updates
 - Passed: `R CMD check --no-manual Shennong_0.1.0.tar.gz` with `Status: OK` after species inference and article updates
+- Passed: `Rscript -e 'devtools::document()'` after the DE API consolidation
+- Passed: `Rscript -e 'testthat::test_local(filter = "de_enrich", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` with `PASS 118`
+- Passed: `Rscript -e 'Sys.setenv(SHENNONG_RUN_VIGNETTES = "true"); pkgdown::build_site(new_process = FALSE, install = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "interpretation", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` with `PASS 139`
+- Passed: `R CMD build .` after adding the interpretation layer
 
 ## Completed In This Iteration
 
@@ -151,6 +163,11 @@ Current milestone: CI, pkgdown, and package-maintenance hardening
 - Added species inference through `sn_get_species()` for Seurat objects, matrices, and feature vectors, with `sn_initialize_seurat_object()` now attempting inference automatically before deciding whether to compute species-specific QC metrics.
 - Made built-in signature retrieval resilient to missing `SignatuR` by providing package-local fallback signatures for the categories required by the core workflows.
 - Expanded the stored DE schema with package/version/timestamp metadata and exposed it in a new evaluated pkgdown article, `layered-workflows`.
+- Consolidated `sn_find_de()` onto a Seurat v5-style `layer` interface, removed the old `slot` / `test_use` / `pseudobulk_method` arguments, and introduced a single method selector covering Seurat, pseudobulk, and COSGR-backed marker workflows.
+- Added `limma` as a supported pseudobulk backend and added targeted tests for both `limma` and optional `COSGR` marker discovery.
+- Hardened the pkgdown GitHub Actions deployment job by installing the package before `pkgdown::deploy_to_branch()`.
+- Added an interpretation-layer module that keeps LLM prompting separate from analysis. It introduces stored enrichment metadata, evidence bundles for annotation/DE/pathway/writing tasks, prompt builders, and optional provider-backed writing helpers.
+- Consolidated the source layout so workflow-adjacent functions now live together: `preprocessing.R` owns initialization, normalization, QC, doublet detection, ambient correction, and species inference; analysis files are split into clustering, DE, enrichment, and metrics; package-maintenance helpers are grouped under `package_tools.R`.
 
 ## Remaining High-Priority Work
 

@@ -53,7 +53,7 @@ A \code{Seurat} object with optional QC metadata in its meta.data slot.
 \description{
 This function creates a Seurat object from counts (and optional metadata),
 then calculates common QC metrics such as mitochondrial and ribosomal gene
-percentages when `species` is supplied. Currently supports human and mouse
+percentages when \code{species} is supplied. Currently supports human and mouse
 patterns for these gene sets.
 }
 \examples{

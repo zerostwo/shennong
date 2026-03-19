@@ -31,9 +31,11 @@ jobs:
             any::anndataR
             any::hdf5r
             any::data.table
+            github::genecell/COSGR
             bioc::SingleCellExperiment
             bioc::SummarizedExperiment
             bioc::celda
+            bioc::limma
             bioc::scran
             bioc::scDblFinder
             bioc::rhdf5

@@ -31,7 +31,7 @@ sn_normalize_data(
 }
 \value{
 A \code{Seurat} object with normalized data stored according to the
-  chosen method.
+chosen method.
 }
 \description{
 This function provides a unified normalization entry point for Seurat-style

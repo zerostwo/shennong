@@ -45,6 +45,7 @@ test_that("sn_find_de stores marker results on the Seurat object", {
     object,
     analysis = "markers",
     group_by = "cell_type",
+    layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
     store_name = "celltype_markers",
@@ -57,6 +58,7 @@ test_that("sn_find_de stores marker results on the Seurat object", {
   expect_true("gene" %in% colnames(object@misc$de_results$celltype_markers$table))
   expect_equal(object@misc$de_results$celltype_markers$schema_version, "1.0.0")
   expect_equal(object@misc$de_results$celltype_markers$analysis, "markers")
+  expect_equal(object@misc$de_results$celltype_markers$method, "wilcox")
   expect_true("package_version" %in% names(object@misc$de_results$celltype_markers))
 })
 
@@ -68,6 +70,7 @@ test_that("sn_plot_dot can use stored top markers", {
     object,
     analysis = "markers",
     group_by = "cell_type",
+    layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
     store_name = "celltype_markers",
@@ -98,6 +101,7 @@ test_that("sn_find_de supports contrasts within each subset", {
     ident_2 = "control",
     group_by = "condition",
     subset_by = "cell_type",
+    layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
     return_object = FALSE,
@@ -121,7 +125,7 @@ test_that("sn_find_de supports pseudobulk contrasts", {
     group_by = "condition",
     subset_by = "cell_type",
     sample_col = "sample",
-    pseudobulk_method = "edgeR",
+    method = "edgeR",
     min_cells_per_sample = 5,
     return_object = FALSE,
     verbose = FALSE
@@ -129,6 +133,52 @@ test_that("sn_find_de supports pseudobulk contrasts", {
 
   expect_true(nrow(result) > 0)
   expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
+})
+
+test_that("sn_find_de supports limma pseudobulk contrasts", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("edgeR")
+  skip_if_not_installed("limma")
+
+  object <- make_de_test_object()
+  result <- sn_find_de(
+    object,
+    analysis = "pseudobulk",
+    ident_1 = "treated",
+    ident_2 = "control",
+    group_by = "condition",
+    subset_by = "cell_type",
+    sample_col = "sample",
+    method = "limma",
+    min_cells_per_sample = 5,
+    return_object = FALSE,
+    verbose = FALSE
+  )
+
+  expect_true(nrow(result) > 0)
+  expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
+})
+
+test_that("sn_find_de supports COSGR markers", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("COSG")
+
+  object <- make_de_test_object()
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    method = "COSGR",
+    n_genes_user = 10,
+    store_name = "cosgr_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+
+  result <- object@misc$de_results$cosgr_markers$table
+  expect_true(all(c("gene", "cluster", "cosg_score", "rank") %in% colnames(result)))
+  expect_equal(object@misc$de_results$cosgr_markers$method, "COSGR")
 })
 
 test_that("sn_enrich supports GSEA from ranked marker tables", {

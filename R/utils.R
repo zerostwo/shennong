@@ -225,3 +225,76 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   SeuratObject::DefaultAssay(object) <- context$original_assay
   object
 }
+
+.sn_guess_seurat_target_layer <- function(layer = "data") {
+  if (grepl("count", layer, ignore.case = TRUE)) {
+    return("counts")
+  }
+
+  if (grepl("scale", layer, ignore.case = TRUE)) {
+    return("scale.data")
+  }
+
+  "data"
+}
+
+.sn_prepare_seurat_layer_alias <- function(object,
+                                           assay = "RNA",
+                                           source_layer = "counts",
+                                           target_layer = NULL) {
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = source_layer)
+
+  target_layer <- target_layer %||% .sn_guess_seurat_target_layer(source_layer)
+  original_assay <- SeuratObject::DefaultAssay(object)
+  assay_layers <- SeuratObject::Layers(object[[assay]])
+  has_exact_target <- target_layer %in% assay_layers
+  original_target <- NULL
+
+  if (has_exact_target) {
+    original_target <- SeuratObject::LayerData(object = object, assay = assay, layer = target_layer)
+  }
+
+  source_data <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = source_layer)
+  needs_temp_layer <- !identical(source_layer, target_layer) ||
+    length(.sn_match_seurat_layers(object = object, assay = assay, layer = source_layer)) > 1
+
+  if (needs_temp_layer) {
+    SeuratObject::LayerData(object = object, assay = assay, layer = target_layer) <- source_data
+  }
+
+  SeuratObject::DefaultAssay(object) <- assay
+
+  list(
+    object = object,
+    target_layer = target_layer,
+    context = list(
+      original_assay = original_assay,
+      analysis_assay = assay,
+      target_layer = target_layer,
+      original_target = original_target,
+      had_exact_target = has_exact_target,
+      needs_temp_layer = needs_temp_layer
+    )
+  )
+}
+
+.sn_restore_seurat_layer_alias <- function(object, context) {
+  if (isTRUE(context$needs_temp_layer)) {
+    if (isTRUE(context$had_exact_target)) {
+      SeuratObject::LayerData(
+        object = object,
+        assay = context$analysis_assay,
+        layer = context$target_layer
+      ) <- context$original_target
+    } else {
+      SeuratObject::LayerData(
+        object = object,
+        assay = context$analysis_assay,
+        layer = context$target_layer
+      ) <- NULL
+    }
+  }
+
+  SeuratObject::DefaultAssay(object) <- context$original_assay
+  object
+}

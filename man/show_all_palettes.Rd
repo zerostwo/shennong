@@ -7,11 +7,11 @@
 show_all_palettes()
 }
 \value{
-Invisibly returns `NULL`.
+Invisibly returns \code{NULL}.
 }
 \description{
 Prints the built-in Shennong palettes and the names of available
-`RColorBrewer` palettes.
+\code{RColorBrewer} palettes.
 }
 \examples{
 show_all_palettes()

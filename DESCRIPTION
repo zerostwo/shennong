@@ -29,6 +29,7 @@ Imports:
     stringr,
     tibble
 RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
 Depends: 
     R (>= 4.1.0)
 Suggests: 
@@ -39,6 +40,7 @@ Suggests:
     catplot,
     celda,
     clusterProfiler,
+    COSG,
     data.table,
     DESeq2,
     edgeR,
@@ -50,6 +52,7 @@ Suggests:
     knitr,
     later,
     lisi,
+    limma,
     org.Hs.eg.db,
     org.Mm.eg.db,
     pkgdown,
@@ -72,6 +75,7 @@ Suggests:
 Remotes:
     github::bnprks/BPCells/r,
     github::catplot/catplot,
+    github::genecell/COSGR,
     github::immunogenomics/lisi,
     github::PaulingLiu/ROGUE,
     github::carmonalab/SignatuR

@@ -38,10 +38,12 @@ jobs:
             any::data.table
             any::clusterProfiler
             github::catplot/catplot
+            github::genecell/COSGR
             bioc::org.Hs.eg.db
             bioc::SingleCellExperiment
             bioc::SummarizedExperiment
             bioc::celda
+            bioc::limma
             bioc::scran
             bioc::scDblFinder
             bioc::rhdf5

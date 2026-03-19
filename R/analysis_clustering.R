@@ -360,6 +360,14 @@ sn_run_cluster <- function(object,
 #' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
 #'
 #' @return A Seurat object with three new columns in its metadata: `_predicted_labels`, `_over_clustering`, `_majority_voting`.
+#'
+#' @examples
+#' \dontrun{
+#' pbmc <- sn_load_data("pbmc1k")
+#' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
+#' pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl")
+#' head(colnames(pbmc[[]]))
+#' }
 #' @export
 sn_run_celltypist <- function(x,
                               celltypist = NULL,

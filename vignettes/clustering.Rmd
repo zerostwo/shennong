@@ -169,7 +169,7 @@ pbmc_integrated <- suppressWarnings(
     analysis = "markers",
     group_by = "seurat_clusters",
     assay = "RNA",
-    slot = "data",
+    layer = "data",
     logfc_threshold = 0.25,
     min_pct = 0.2,
     store_name = "cluster_markers",

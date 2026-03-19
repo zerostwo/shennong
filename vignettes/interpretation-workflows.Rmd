@@ -1,0 +1,260 @@
+---
+title: "Interpretation workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Interpretation workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This article shows how the new interpretation layer fits on top of the current
+Shennong analysis workflow. The key idea is that analysis stays deterministic,
+while interpretation reuses stored DE and enrichment results to build evidence
+bundles, prompts, and optional LLM-style summaries.
+
+The workflow below demonstrates:
+
+- marker discovery with `sn_find_de()`
+- enrichment storage with `sn_store_enrichment()`
+- evidence preparation for annotation, DE, and writing tasks
+- prompt generation with `sn_build_prompt()`
+- provider-based interpretation with `sn_interpret_annotation()`
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+```
+
+```{r prepare-interpretation-demo, include = FALSE}
+pbmc <- sn_load_data("pbmc1k")
+
+pbmc <- suppressWarnings(
+  sn_run_cluster(
+    object = pbmc,
+    normalization_method = "seurat",
+    species = "human",
+    nfeatures = 800,
+    block_genes = NULL,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.5,
+    verbose = FALSE
+  )
+)
+
+pbmc <- suppressWarnings(
+  sn_find_de(
+    pbmc,
+    analysis = "markers",
+    group_by = "seurat_clusters",
+    layer = "data",
+    logfc_threshold = 0.25,
+    min_pct = 0.2,
+    store_name = "cluster_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+)
+
+cluster_markers <- pbmc@misc$de_results$cluster_markers$table
+
+cluster_zero_markers <- cluster_markers |>
+  dplyr::filter(.data$cluster == unique(.data$cluster)[1]) |>
+  dplyr::arrange(dplyr::desc(.data$avg_log2FC))
+
+real_enrichment <- tryCatch(
+  sn_enrich(
+    cluster_zero_markers,
+    analysis = "gsea",
+    species = "human",
+    database = "GOBP",
+    gene_col = "gene",
+    score_col = "avg_log2FC",
+    pvalue_cutoff = 1
+  ),
+  error = function(...) NULL
+)
+
+enrichment_tbl <- if (!is.null(real_enrichment) && nrow(as.data.frame(real_enrichment)) > 0) {
+  as.data.frame(real_enrichment) |>
+    dplyr::select(ID, Description, NES, p.adjust)
+} else {
+  tibble::tibble(
+    ID = c("GO:0006955", "GO:0002250"),
+    Description = c("immune response", "adaptive immune response"),
+    NES = c(1.9, 1.6),
+    p.adjust = c(0.02, 0.05)
+  )
+}
+
+pbmc <- sn_store_enrichment(
+  object = pbmc,
+  result = enrichment_tbl,
+  store_name = "cluster0_gsea",
+  analysis = "gsea",
+  database = "GOBP",
+  species = "human",
+  source_de_name = "cluster_markers",
+  return_object = TRUE
+)
+
+annotation_evidence <- sn_prepare_annotation_evidence(
+  object = pbmc,
+  de_name = "cluster_markers",
+  cluster_col = "seurat_clusters",
+  n_markers = 5
+)
+
+de_evidence <- sn_prepare_de_evidence(
+  object = pbmc,
+  de_name = "cluster_markers",
+  n_genes = 5
+)
+
+enrichment_evidence <- sn_prepare_enrichment_evidence(
+  object = pbmc,
+  enrichment_name = "cluster0_gsea",
+  n_terms = 5
+)
+
+results_evidence <- sn_prepare_results_evidence(
+  object = pbmc,
+  cluster_de_name = "cluster_markers",
+  enrichment_name = "cluster0_gsea",
+  cluster_col = "seurat_clusters",
+  n_markers = 3,
+  n_terms = 5
+)
+
+annotation_prompt <- sn_build_prompt(
+  evidence = annotation_evidence,
+  task = "annotation",
+  style = "concise annotation note",
+  audience = "scientist"
+)
+
+results_prompt <- sn_write_results(
+  object = pbmc,
+  cluster_de_name = "cluster_markers",
+  enrichment_name = "cluster0_gsea",
+  cluster_col = "seurat_clusters",
+  return_prompt = TRUE
+)
+
+mock_provider <- function(messages, model = NULL, ...) {
+  list(
+    text = paste(
+      "Mock interpretation generated from",
+      length(messages),
+      "messages using",
+      model %||% "mock-model"
+    )
+  )
+}
+
+pbmc_interpreted <- sn_interpret_annotation(
+  object = pbmc,
+  de_name = "cluster_markers",
+  cluster_col = "seurat_clusters",
+  n_markers = 5,
+  provider = mock_provider,
+  model = "demo-model",
+  store_name = "cluster_annotation_note",
+  return_object = TRUE
+)
+
+annotation_response <- pbmc_interpreted@misc$interpretation_results$cluster_annotation_note$response$text
+```
+
+## Marker discovery remains the analysis layer
+
+Interpretation starts from stored DE results rather than recomputing
+statistics. Here, `sn_find_de()` has already saved cluster markers into
+`object@misc$de_results`.
+
+```{r}
+knitr::kable(
+  pbmc@misc$de_results$cluster_markers$table |>
+    dplyr::group_by(cluster) |>
+    dplyr::slice_max(order_by = avg_log2FC, n = 3, with_ties = FALSE) |>
+    dplyr::ungroup() |>
+    dplyr::select(cluster, gene, avg_log2FC, p_val_adj)
+)
+```
+
+## Store enrichment for later interpretation
+
+The interpretation layer expects enrichment results to be stored in
+`object@misc$enrichment_results`, just like DE results already live in
+`object@misc$de_results`.
+
+```{r}
+knitr::kable(pbmc@misc$enrichment_results$cluster0_gsea$table)
+```
+
+## Prepare structured evidence
+
+`sn_prepare_*_evidence()` turns stored outputs into compact, reusable evidence
+bundles. These are the objects that can later be turned into prompts or passed
+into writing helpers.
+
+```{r}
+knitr::kable(annotation_evidence$cluster_summary)
+```
+
+```{r}
+knitr::kable(enrichment_evidence$top_terms)
+```
+
+## Build prompts without binding to a specific provider
+
+The first-class package object for the LLM layer is a prompt bundle, not a
+network call. This keeps analysis and interpretation cleanly separated.
+
+```{r}
+cat(substr(annotation_prompt$user, 1, 900))
+```
+
+## Generate manuscript-style prompts
+
+High-level helpers such as `sn_write_results()` can return prompts directly.
+
+```{r}
+cat(substr(results_prompt$user, 1, 900))
+```
+
+## Plug in a provider when needed
+
+If you provide a function that accepts `messages` and returns text, the same
+high-level helpers can store the generated interpretation back into the Seurat
+object.
+
+```{r}
+annotation_response
+```
+
+## Interpretation results are stored alongside analysis results
+
+```{r}
+names(pbmc_interpreted@misc$interpretation_results)
+```

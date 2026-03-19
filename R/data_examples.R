@@ -191,6 +191,12 @@ sn_load_data <- function(dataset = "pbmc3k",
 #'
 #' @param ... Passed to \code{sn_load_data()}.
 #' @return See \code{sn_load_data()}.
+#'
+#' @examples
+#' \dontrun{
+#' pbmc <- sn_load_pbmc(dataset = "pbmc1k")
+#' raw_counts <- sn_load_pbmc(dataset = "pbmc1k", matrix_type = "raw")
+#' }
 #' @export
 sn_load_pbmc <- function(...) {
   .Deprecated("sn_load_data")
