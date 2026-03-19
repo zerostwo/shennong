@@ -14,6 +14,22 @@ vignette: >
 run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
   identical(Sys.getenv("IN_PKGDOWN"), "true")
 
+required_pkgs <- c(
+  "Seurat",
+  "hdf5r",
+  "harmony",
+  "clusterProfiler",
+  "org.Hs.eg.db",
+  "lisi"
+)
+
+run_vignette <- run_vignette && all(vapply(
+  required_pkgs,
+  requireNamespace,
+  quietly = TRUE,
+  FUN.VALUE = logical(1)
+))
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
