@@ -10,6 +10,8 @@ sn_write_figure_legend(
   cluster_de_name = NULL,
   enrichment_name = NULL,
   cluster_col = "seurat_clusters",
+  background = NULL,
+  output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
@@ -83,11 +85,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_figure_legend(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-19 21:13:08] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-19 21:13:08] Running QC metrics for human ...
+#> INFO [2026-03-20 02:56:35] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-20 02:56:35] Running QC metrics for human ...
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-19 21:13:08] Seurat object initialization complete.
+#> INFO [2026-03-20 02:56:35] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "figure_legend"
 ```

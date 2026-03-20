@@ -233,7 +233,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-19
+#>  date     2026-03-20
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -385,7 +385,7 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.1    2026-03-19 [1] local
+#>  Shennong          * 0.1.1    2026-03-20 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)

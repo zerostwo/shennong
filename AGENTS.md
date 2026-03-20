@@ -2,13 +2,14 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by analysis domain rather than by strict object
-  type. Current modules include IO (`io.R`), preprocessing
-  (`preprocessing.R`), QC (`quality_control.R`), integration
-  (`integrate.R`), metrics/composition (`metrics.R`, `composition.R`),
-  visualization (`visualization.R`), enrichment/GRN (`enrich.R`,
-  `grn.R`), datasets (`data.R`), and small utilities (`utils.R`,
-  `misc.R`).
+- `R/` is organized by durable workflow domains. Current modules include
+  preprocessing (`preprocessing.R`), clustering/integration
+  (`analysis_clustering.R`), differential expression (`analysis_de.R`),
+  enrichment (`analysis_enrichment.R`), metrics/composition
+  (`analysis_metrics.R`), example data (`data_examples.R`), IO
+  (`data_io.R`), interpretation (`interpretation.R`), package helpers
+  (`package_tools.R`), signatures (`signatures.R`), visualization
+  (`visualization.R`), and small utilities (`utils.R`).
 - `man/` contains roxygen2-generated `.Rd` files. Treat it as generated
   output and keep it synchronized with the roxygen comments in `R/`.
 - `tests/testthat/` currently has a small unit-test surface; add focused
@@ -64,6 +65,19 @@
   suite before closing a milestone.
 - If roxygen, exports, or package metadata change, regenerate
   documentation and rerun the relevant validation commands.
+- If you add or change any user-facing function, parameter,
+  stored-result schema, or workflow, you must also update the relevant
+  pkgdown article(s) and the shipped Codex skill references under
+  `inst/codex/skills/shennong/` in the same change set.
+- The same user-facing change set must also update `NEWS.md` so the
+  release notes reflect the shipped behavior.
+- New stored-result retrieval or interpretation features must be
+  documented at the user level with at least one concrete example
+  showing how to discover the stored result and how to retrieve it from
+  a Seurat object.
+- After updating any user-facing feature, rebuild pkgdown locally so the
+  rendered site matches the current package sources. Updating only the
+  vignette/reference source files is not sufficient.
 
 ## Commit & Pull Request Guidelines
 
@@ -91,9 +105,9 @@
   loading), Seurat initialization/normalization/QC,
   clustering/integration/annotation, plotting, signatures/enrichment,
   and composition/metrics.
-- Current high-risk zones are `R/io.R` (heavy use of `rio` internals and
-  dynamic global assignment), package dependency declarations in
-  `DESCRIPTION`, and sparse test coverage.
+- Current high-risk zones are data import/export, heavyweight
+  optional-package integrations, and any schema stored under
+  `object@misc`.
 - Current modernization order is: inventory API, stabilize tests,
   normalize metadata and namespace handling, reorganize source files
   without changing behavior, then tighten internals and documentation.

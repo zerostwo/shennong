@@ -45,7 +45,7 @@
 <div class="section level2">
 <h2 id="project-structure--module-organization">Project Structure &amp; Module Organization<a class="anchor" aria-label="anchor" href="#project-structure--module-organization"></a></h2>
 <ul><li>
-<code>R/</code> is organized by analysis domain rather than by strict object type. Current modules include IO (<code>io.R</code>), preprocessing (<code>preprocessing.R</code>), QC (<code>quality_control.R</code>), integration (<code>integrate.R</code>), metrics/composition (<code>metrics.R</code>, <code>composition.R</code>), visualization (<code>visualization.R</code>), enrichment/GRN (<code>enrich.R</code>, <code>grn.R</code>), datasets (<code>data.R</code>), and small utilities (<code>utils.R</code>, <code>misc.R</code>).</li>
+<code>R/</code> is organized by durable workflow domains. Current modules include preprocessing (<code>preprocessing.R</code>), clustering/integration (<code>analysis_clustering.R</code>), differential expression (<code>analysis_de.R</code>), enrichment (<code>analysis_enrichment.R</code>), metrics/composition (<code>analysis_metrics.R</code>), example data (<code>data_examples.R</code>), IO (<code>data_io.R</code>), interpretation (<code>interpretation.R</code>), package helpers (<code>package_tools.R</code>), signatures (<code>signatures.R</code>), visualization (<code>visualization.R</code>), and small utilities (<code>utils.R</code>).</li>
 <li>
 <code>man/</code> contains roxygen2-generated <code>.Rd</code> files. Treat it as generated output and keep it synchronized with the roxygen comments in <code>R/</code>.</li>
 <li>
@@ -88,6 +88,10 @@
 <li>Prefer lightweight tests that do not require external downloads or optional heavyweight packages unless the function contract truly depends on them.</li>
 <li>Run the narrowest relevant tests first, then rerun the full local suite before closing a milestone.</li>
 <li>If roxygen, exports, or package metadata change, regenerate documentation and rerun the relevant validation commands.</li>
+<li>If you add or change any user-facing function, parameter, stored-result schema, or workflow, you must also update the relevant pkgdown article(s) and the shipped Codex skill references under <code>inst/codex/skills/shennong/</code> in the same change set.</li>
+<li>The same user-facing change set must also update <code>NEWS.md</code> so the release notes reflect the shipped behavior.</li>
+<li>New stored-result retrieval or interpretation features must be documented at the user level with at least one concrete example showing how to discover the stored result and how to retrieve it from a Seurat object.</li>
+<li>After updating any user-facing feature, rebuild pkgdown locally so the rendered site matches the current package sources. Updating only the vignette/reference source files is not sufficient.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="commit--pull-request-guidelines">Commit &amp; Pull Request Guidelines<a class="anchor" aria-label="anchor" href="#commit--pull-request-guidelines"></a></h2>
@@ -104,7 +108,7 @@
 <div class="section level2">
 <h2 id="architecture-notes-quick-map">Architecture Notes (Quick Map)<a class="anchor" aria-label="anchor" href="#architecture-notes-quick-map"></a></h2>
 <ul><li>Likely public API surface: IO (<code>sn_read</code>, <code>sn_write</code>, dataset loading), Seurat initialization/normalization/QC, clustering/integration/annotation, plotting, signatures/enrichment, and composition/metrics.</li>
-<li>Current high-risk zones are <code>R/io.R</code> (heavy use of <code>rio</code> internals and dynamic global assignment), package dependency declarations in <code>DESCRIPTION</code>, and sparse test coverage.</li>
+<li>Current high-risk zones are data import/export, heavyweight optional-package integrations, and any schema stored under <code>object@misc</code>.</li>
 <li>Current modernization order is: inventory API, stabilize tests, normalize metadata and namespace handling, reorganize source files without changing behavior, then tighten internals and documentation.</li>
 <li>Repository-internal developer memory stays in <code>docs/codex/</code> and <code>AGENTS.md</code>. Installed-package user skills belong under <code>inst/codex/skills/shennong/</code>.</li>
 </ul></div>

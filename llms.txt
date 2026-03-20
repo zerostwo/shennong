@@ -249,6 +249,15 @@ This project follows the Contributor Covenant code of conduct:
 
 ## Interpretation
 
+- [`sn_list_results()`](https://songqi.org/shennong/reference/sn_list_results.md)
+  : List stored Shennong analysis and interpretation results on a Seurat
+  object
+- [`sn_get_de_result()`](https://songqi.org/shennong/reference/sn_get_de_result.md)
+  : Retrieve a stored DE result from a Seurat object
+- [`sn_get_enrichment_result()`](https://songqi.org/shennong/reference/sn_get_enrichment_result.md)
+  : Retrieve a stored enrichment result from a Seurat object
+- [`sn_get_interpretation_result()`](https://songqi.org/shennong/reference/sn_get_interpretation_result.md)
+  : Retrieve a stored interpretation result from a Seurat object
 - [`sn_store_enrichment()`](https://songqi.org/shennong/reference/sn_store_enrichment.md)
   : Store an enrichment result on a Seurat object
 - [`sn_prepare_annotation_evidence()`](https://songqi.org/shennong/reference/sn_prepare_annotation_evidence.md)

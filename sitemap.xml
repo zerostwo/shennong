@@ -30,6 +30,9 @@
 <url><loc>https://songqi.org/shennong/reference/sn_find_de.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_find_doublets.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_get_codex_skill_path.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_get_de_result.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_get_enrichment_result.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_get_interpretation_result.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_get_signatures.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_get_species.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_initialize_seurat_object.html</loc></url>
@@ -38,6 +41,7 @@
 <url><loc>https://songqi.org/shennong/reference/sn_interpret_annotation.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_interpret_de.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_interpret_enrichment.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_list_results.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_load_data.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_load_pbmc.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_normalize_data.html</loc></url>

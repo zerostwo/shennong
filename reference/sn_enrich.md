@@ -9,13 +9,17 @@ and ranked-list GSEA.
 ``` r
 sn_enrich(
   x,
+  object = NULL,
   gene_clusters = NULL,
   analysis = c("ora", "gsea"),
-  species = "human",
+  species = NULL,
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
   pvalue_cutoff = 0.05,
+  store_name = "default",
+  source_de_name = NULL,
+  return_object = !is.null(object),
   prefix = NULL,
   outdir = NULL
 )
@@ -27,6 +31,12 @@ sn_enrich(
 
   A character vector of gene symbols, or a data frame used together with
   `gene_clusters` / ranked-GSEA columns.
+
+- object:
+
+  Optional `Seurat` object used to store the enrichment result in
+  `object@misc$enrichment_results[[store_name]]`. When supplied,
+  `return_object` defaults to `TRUE`.
 
 - gene_clusters:
 
@@ -56,6 +66,19 @@ sn_enrich(
 - pvalue_cutoff:
 
   Numeric p-value cutoff used by the enrichment method.
+
+- store_name:
+
+  Name used when storing the enrichment result on `object`.
+
+- source_de_name:
+
+  Optional stored DE-result name associated with the enrichment input.
+
+- return_object:
+
+  Logical; when `TRUE` and `object` is supplied, return the updated
+  Seurat object instead of the raw enrichment result.
 
 - prefix:
 
