@@ -20,6 +20,8 @@ object <- sn_find_de(
   store_name = "cluster_markers",
   return_object = TRUE
 )
+sn_list_results(object)
+sn_get_de_result(object, de_name = "cluster_markers", top_n = 3)
 sn_plot_dim(object, reduction = "umap", group_by = "seurat_clusters")
 sn_plot_dot(object, features = "top_markers", de_name = "cluster_markers", n = 3)
 ```
@@ -34,7 +36,14 @@ object <- sn_find_de(
   ident_2 = "control",
   group_by = "condition",
   subset_by = "cell_type",
-  return_object = FALSE
+  return_object = TRUE
+)
+
+sn_get_de_result(
+  object,
+  de_name = "default",
+  top_n = 10,
+  direction = "up"
 )
 ```
 
@@ -44,7 +53,7 @@ Use this when the biological question is:
 ## 3. Run Pseudobulk Differential Expression
 
 ```r
-pb_result <- sn_find_de(
+object <- sn_find_de(
   object,
   analysis = "pseudobulk",
   ident_1 = "treated",
@@ -52,9 +61,12 @@ pb_result <- sn_find_de(
   group_by = "condition",
   subset_by = "cell_type",
   sample_col = "sample",
-  pseudobulk_method = "edgeR",
-  return_object = FALSE
+  method = "edgeR",
+  store_name = "pb_edgeR",
+  return_object = TRUE
 )
+
+sn_get_de_result(object, de_name = "pb_edgeR", top_n = 10, direction = "down")
 ```
 
 Use pseudobulk when sample-level replication matters and cell-level tests are
@@ -104,7 +116,45 @@ gsea_result <- sn_enrich(
 )
 ```
 
-## 6. Troubleshooting Patterns
+Store enrichment on the Seurat object and retrieve top pathways later:
+
+```r
+object <- sn_enrich(
+  marker_table,
+  object = object,
+  analysis = "gsea",
+  species = "human",
+  database = "GOBP",
+  gene_col = "gene",
+  score_col = "avg_log2FC",
+  store_name = "cluster_gsea",
+  source_de_name = "cluster_markers"
+)
+
+sn_list_results(object)
+sn_get_enrichment_result(object, enrichment_name = "cluster_gsea", top_n = 10)
+```
+
+## 6. Reuse Stored Results for Interpretation
+
+```r
+prompt <- sn_interpret_annotation(
+  object,
+  de_name = "cluster_markers",
+  background = "PBMC samples from treated and control donors.",
+  output_format = "llm",
+  return_prompt = TRUE
+)
+
+human_note <- sn_interpret_enrichment(
+  object,
+  enrichment_name = "cluster_gsea",
+  background = "Focus on immune activation programs.",
+  output_format = "human"
+)
+```
+
+## 7. Troubleshooting Patterns
 
 - If a workflow uses a custom counts layer, pass both `assay` and `layer`.
 - If Harmony integration fails, confirm that the `batch` column exists in
@@ -113,3 +163,5 @@ gsea_result <- sn_enrich(
   `sn_find_de(..., return_object = TRUE)` was run first.
 - If `sn_enrich(analysis = "gsea")` fails, ensure the ranking input is a named
   numeric vector or a data frame with both gene and score columns.
+- If you are unsure what has already been stored on the object, call
+  `sn_list_results(object)` before trying to retrieve or interpret a result.

@@ -6,6 +6,9 @@
 #'
 #' @param x A character vector of gene symbols, or a data frame used together
 #'   with `gene_clusters` / ranked-GSEA columns.
+#' @param object Optional \code{Seurat} object used to store the enrichment
+#'   result in \code{object@misc$enrichment_results[[store_name]]}. When
+#'   supplied, \code{return_object} defaults to \code{TRUE}.
 #' @param gene_clusters An optional grouping formula passed to
 #'   `clusterProfiler::compareCluster()`.
 #' @param analysis One of `"ora"` or `"gsea"`.
@@ -14,6 +17,12 @@
 #' @param gene_col Column containing gene symbols when `x` is a data frame.
 #' @param score_col Column containing ranking scores for `analysis = "gsea"`.
 #' @param pvalue_cutoff Numeric p-value cutoff used by the enrichment method.
+#' @param store_name Name used when storing the enrichment result on
+#'   \code{object}.
+#' @param source_de_name Optional stored DE-result name associated with the
+#'   enrichment input.
+#' @param return_object Logical; when \code{TRUE} and \code{object} is supplied,
+#'   return the updated Seurat object instead of the raw enrichment result.
 #' @param prefix Optional filename prefix when writing results.
 #' @param outdir Optional output directory. If supplied, the enrichment result
 #'   is also saved as an `.rds` file.
@@ -32,17 +41,27 @@
 #' @export
 sn_enrich <- function(
   x,
+  object = NULL,
   gene_clusters = NULL,
   analysis = c("ora", "gsea"),
-  species = "human",
+  species = NULL,
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
   pvalue_cutoff = 0.05,
+  store_name = "default",
+  source_de_name = NULL,
+  return_object = !is.null(object),
   prefix = NULL,
   outdir = NULL
 ) {
   analysis <- match.arg(analysis)
+  if (!is_null(object) && !inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object when supplied.")
+  }
+  species <- species %||% if (!is_null(object)) tryCatch(sn_get_species(object), error = function(...) NULL) else NULL
+  species <- species %||% "human"
+
   # Check if required packages are installed
   if (species == "human") {
     check_installed(pkg = c("clusterProfiler", "org.Hs.eg.db"))
@@ -212,6 +231,24 @@ sn_enrich <- function(
     # )
   }
 
-  # Return the enriched terms or pathways
-  return(results)
+  if (!is_null(object)) {
+    object <- sn_store_enrichment(
+      object = object,
+      result = results,
+      store_name = store_name,
+      analysis = analysis,
+      database = database,
+      species = species,
+      source_de_name = source_de_name,
+      gene_col = gene_col,
+      score_col = score_col,
+      return_object = TRUE
+    )
+
+    if (isTRUE(return_object)) {
+      return(object)
+    }
+  }
+
+  results
 }

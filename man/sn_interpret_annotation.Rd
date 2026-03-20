@@ -9,6 +9,8 @@ sn_interpret_annotation(
   de_name,
   cluster_col = "seurat_clusters",
   n_markers = 10,
+  background = NULL,
+  output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,

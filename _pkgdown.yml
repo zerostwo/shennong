@@ -73,6 +73,10 @@ reference:
       - sn_enrich
   - title: Interpretation
     contents:
+      - sn_list_results
+      - sn_get_de_result
+      - sn_get_enrichment_result
+      - sn_get_interpretation_result
       - sn_store_enrichment
       - sn_prepare_annotation_evidence
       - sn_prepare_de_evidence

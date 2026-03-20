@@ -33,7 +33,9 @@ bundles, prompts, and optional LLM-style summaries.
 The workflow below demonstrates:
 
 - marker discovery with `sn_find_de()`
-- enrichment storage with `sn_store_enrichment()`
+- enrichment storage with `sn_enrich()` / `sn_store_enrichment()`
+- result discovery with `sn_list_results()`
+- direct retrieval with `sn_get_de_result()` and `sn_get_enrichment_result()`
 - evidence preparation for annotation, DE, and writing tasks
 - prompt generation with `sn_build_prompt()`
 - provider-based interpretation with `sn_interpret_annotation()`
@@ -76,7 +78,11 @@ pbmc <- suppressWarnings(
   )
 )
 
-cluster_markers <- pbmc@misc$de_results$cluster_markers$table
+cluster_markers <- sn_get_de_result(
+  pbmc,
+  de_name = "cluster_markers",
+  with_metadata = TRUE
+)$table
 
 cluster_zero_markers <- cluster_markers |>
   dplyr::filter(.data$cluster == unique(.data$cluster)[1]) |>
@@ -184,32 +190,46 @@ pbmc_interpreted <- sn_interpret_annotation(
 )
 
 annotation_response <- pbmc_interpreted@misc$interpretation_results$cluster_annotation_note$response$text
+result_index <- sn_list_results(pbmc_interpreted)
+top_cluster_markers <- sn_get_de_result(
+  pbmc_interpreted,
+  de_name = "cluster_markers",
+  top_n = 3,
+  groups = unique(cluster_markers$cluster)[1]
+)
+top_pathways <- sn_get_enrichment_result(
+  pbmc_interpreted,
+  enrichment_name = "cluster0_gsea",
+  top_n = 5
+)
 ```
 
 ## Marker discovery remains the analysis layer
 
 Interpretation starts from stored DE results rather than recomputing
-statistics. Here, `sn_find_de()` has already saved cluster markers into
-`object@misc$de_results`.
+statistics. Here, `sn_find_de()` has already saved cluster markers into the
+Seurat object, and we retrieve them through `sn_get_de_result()`.
 
 ```{r}
-knitr::kable(
-  pbmc@misc$de_results$cluster_markers$table |>
-    dplyr::group_by(cluster) |>
-    dplyr::slice_max(order_by = avg_log2FC, n = 3, with_ties = FALSE) |>
-    dplyr::ungroup() |>
-    dplyr::select(cluster, gene, avg_log2FC, p_val_adj)
-)
+knitr::kable(top_cluster_markers |> dplyr::select(cluster, gene, avg_log2FC, p_val_adj))
 ```
 
 ## Store enrichment for later interpretation
 
-The interpretation layer expects enrichment results to be stored in
-`object@misc$enrichment_results`, just like DE results already live in
-`object@misc$de_results`.
+The interpretation layer expects enrichment results to be stored in the Seurat
+object. `sn_enrich()` can now store them directly when you pass `object =`.
 
 ```{r}
-knitr::kable(pbmc@misc$enrichment_results$cluster0_gsea$table)
+knitr::kable(top_pathways)
+```
+
+## Discover what is currently stored on the object
+
+Use `sn_list_results()` to see which DE, enrichment, and interpretation
+artifacts are available for reuse.
+
+```{r}
+knitr::kable(result_index)
 ```
 
 ## Prepare structured evidence

@@ -204,3 +204,23 @@ test_that("sn_enrich supports GSEA from ranked marker tables", {
 
   expect_true(inherits(result, "gseaResult"))
 })
+
+test_that("sn_enrich stores enrichment results on the Seurat object by default", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  object <- make_de_test_object()
+
+  object <- sn_enrich(
+    x = c("CD3D", "CD3E", "TRAC", "LCK", "LTB"),
+    object = object,
+    analysis = "ora",
+    species = "human",
+    database = "GOBP",
+    store_name = "demo_gsea"
+  )
+
+  expect_s4_class(object, "Seurat")
+  expect_true("demo_gsea" %in% names(object@misc$enrichment_results))
+})

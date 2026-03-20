@@ -8,6 +8,8 @@ sn_interpret_enrichment(
   object,
   enrichment_name,
   n_terms = 10,
+  background = NULL,
+  output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,

@@ -11,6 +11,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
   GitHub package is installed.
+- Stored-result discovery and retrieval helpers were added:
+  `sn_list_results()`, `sn_get_de_result()`, `sn_get_enrichment_result()`, and
+  `sn_get_interpretation_result()`.
+- The interpretation layer now supports user-supplied background context and
+  dual output styles for either model-facing prompt bundles or human-readable
+  summaries.
 
 ### Changed
 
@@ -18,6 +24,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `test_use` and `pseudobulk_method` parameters.
 - `sn_find_de()` now uses `layer` consistently for Seurat v5 workflows and no
   longer exposes the legacy `slot` argument.
+- `sn_enrich()` now stores enrichment results in
+  `object@misc$enrichment_results[[store_name]]` when a Seurat object is
+  supplied, aligning enrichment with the existing stored DE workflow.
+- pkgdown articles, shipped Codex skill references, and `NEWS.md` are now
+  treated as required deliverables for any user-facing workflow change.
 - The pkgdown deployment workflow now installs the current package before
   publishing the site, so reference generation can load `Shennong` inside the
   temporary deployment worktree.

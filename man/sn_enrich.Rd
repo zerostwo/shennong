@@ -6,13 +6,17 @@
 \usage{
 sn_enrich(
   x,
+  object = NULL,
   gene_clusters = NULL,
   analysis = c("ora", "gsea"),
-  species = "human",
+  species = NULL,
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
   pvalue_cutoff = 0.05,
+  store_name = "default",
+  source_de_name = NULL,
+  return_object = !is.null(object),
   prefix = NULL,
   outdir = NULL
 )
@@ -20,6 +24,10 @@ sn_enrich(
 \arguments{
 \item{x}{A character vector of gene symbols, or a data frame used together
 with \code{gene_clusters} / ranked-GSEA columns.}
+
+\item{object}{Optional \code{Seurat} object used to store the enrichment
+result in \code{object@misc$enrichment_results[[store_name]]}. When
+supplied, \code{return_object} defaults to \code{TRUE}.}
 
 \item{gene_clusters}{An optional grouping formula passed to
 \code{clusterProfiler::compareCluster()}.}
@@ -35,6 +43,15 @@ with \code{gene_clusters} / ranked-GSEA columns.}
 \item{score_col}{Column containing ranking scores for \code{analysis = "gsea"}.}
 
 \item{pvalue_cutoff}{Numeric p-value cutoff used by the enrichment method.}
+
+\item{store_name}{Name used when storing the enrichment result on
+\code{object}.}
+
+\item{source_de_name}{Optional stored DE-result name associated with the
+enrichment input.}
+
+\item{return_object}{Logical; when \code{TRUE} and \code{object} is supplied,
+return the updated Seurat object instead of the raw enrichment result.}
 
 \item{prefix}{Optional filename prefix when writing results.}
 

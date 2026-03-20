@@ -25,6 +25,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - The pkgdown workflow now installs the package before `deploy_to_branch()`, addressing the Actions failure where the deployment worktree could not `library(Shennong)`.
 - A first LLM-ready interpretation layer now exists on top of the existing analysis stack, including enrichment storage, evidence preparation, prompt construction, and optional provider-backed writing helpers.
 - The `R/` source tree has now been reorganized around stable domains: preprocessing, clustering, DE, enrichment, metrics, example data, IO, package tools, signatures, visualization, utilities, and interpretation.
+- Stored analysis outputs are now treated as a first-class user interface: Seurat objects can expose DE, enrichment, and interpretation artifacts through explicit listing and retrieval helpers instead of requiring direct access to `object@misc`.
 
 ## Concise Audit
 

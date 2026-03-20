@@ -8,6 +8,8 @@ sn_interpret_de(
   object,
   de_name,
   n_genes = 15,
+  background = NULL,
+  output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,

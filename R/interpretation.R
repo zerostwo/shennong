@@ -15,6 +15,225 @@
   collection_data[[store_name]]
 }
 
+.sn_compact_collection_summary <- function(object, collection, type_label) {
+  misc_data <- methods::slot(object, "misc")
+  collection_data <- misc_data[[collection]] %||% list()
+  if (length(collection_data) == 0) {
+    return(tibble::tibble())
+  }
+
+  tibble::tibble(
+    collection = collection,
+    type = type_label,
+    name = names(collection_data)
+  ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      analysis = collection_data[[name]]$analysis %||% NA_character_,
+      method = collection_data[[name]]$method %||% NA_character_,
+      created_at = collection_data[[name]]$created_at %||% NA_character_,
+      n_rows = nrow(collection_data[[name]]$table %||% tibble::tibble()),
+      source = collection_data[[name]]$source_de_name %||% NA_character_
+    ) |>
+    dplyr::ungroup()
+}
+
+.sn_subset_ranked_table <- function(table,
+                                    rank_col = NULL,
+                                    group_col = NULL,
+                                    top_n = NULL,
+                                    direction = c("all", "up", "down"),
+                                    groups = NULL) {
+  direction <- match.arg(direction)
+  table <- tibble::as_tibble(table)
+
+  if (!is_null(groups) && !is_null(group_col) && group_col %in% colnames(table)) {
+    table <- dplyr::filter(table, .data[[group_col]] %in% groups)
+  }
+
+  if (is_null(top_n) || is_null(rank_col) || !rank_col %in% colnames(table)) {
+    return(table)
+  }
+
+  ranking <- table[[rank_col]]
+  if (direction == "up") {
+    table <- table[ranking > 0, , drop = FALSE]
+    ordering <- ranking[ranking > 0]
+  } else if (direction == "down") {
+    table <- table[ranking < 0, , drop = FALSE]
+    ordering <- abs(ranking[ranking < 0])
+  } else {
+    ordering <- abs(ranking)
+  }
+
+  table$..ranking_value <- ordering
+
+  out <- if (!is_null(group_col) && group_col %in% colnames(table)) {
+    table |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::slice_max(order_by = .data$..ranking_value, n = top_n, with_ties = FALSE) |>
+      dplyr::ungroup()
+  } else {
+    table |>
+      dplyr::slice_max(order_by = .data$..ranking_value, n = top_n, with_ties = FALSE)
+  }
+
+  dplyr::select(out, -dplyr::any_of("..ranking_value"))
+}
+
+#' List stored Shennong analysis and interpretation results on a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#'
+#' @return A tibble describing stored DE, enrichment, and interpretation
+#'   results.
+#'
+#' @examples
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
+#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   colnames(counts) <- paste0("cell", 1:12)
+#'   obj <- sn_initialize_seurat_object(counts, species = "human")
+#'   obj <- sn_find_de(obj, analysis = "markers", group_by = NULL, layer = "data", min_pct = 0, logfc_threshold = 0, return_object = TRUE, verbose = FALSE)
+#'   sn_list_results(obj)
+#' }
+#' @export
+sn_list_results <- function(object) {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  dplyr::bind_rows(
+    .sn_compact_collection_summary(object, "de_results", "de"),
+    .sn_compact_collection_summary(object, "enrichment_results", "enrichment"),
+    .sn_compact_collection_summary(object, "interpretation_results", "interpretation")
+  ) |>
+    dplyr::arrange(.data$collection, .data$name)
+}
+
+#' Retrieve a stored DE result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param de_name Name of the stored DE result.
+#' @param top_n Optional number of rows to keep. When supplied together with a
+#'   ranking column, results are reduced to the top rows overall or per group.
+#' @param direction One of \code{"all"}, \code{"up"}, or \code{"down"}.
+#' @param groups Optional subset of group labels to keep.
+#' @param with_metadata If \code{TRUE}, return the full stored result list
+#'   instead of just the result table.
+#'
+#' @return A tibble or stored-result list.
+#'
+#' @examples
+#' \dontrun{
+#' markers <- sn_get_de_result(seurat_obj, de_name = "cluster_markers", top_n = 5)
+#' }
+#' @export
+sn_get_de_result <- function(object,
+                             de_name = "default",
+                             top_n = NULL,
+                             direction = c("all", "up", "down"),
+                             groups = NULL,
+                             with_metadata = FALSE) {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  stored <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
+  if (isTRUE(with_metadata)) {
+    return(stored)
+  }
+
+  .sn_subset_ranked_table(
+    table = stored$table,
+    rank_col = stored$rank_col,
+    group_col = stored$group_col,
+    top_n = top_n,
+    direction = direction,
+    groups = groups
+  )
+}
+
+#' Retrieve a stored enrichment result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param enrichment_name Name of the stored enrichment result.
+#' @param top_n Optional number of top terms to keep.
+#' @param groups Optional subset of cluster/group labels when the stored table
+#'   includes a \code{Cluster} column.
+#' @param with_metadata If \code{TRUE}, return the full stored result list
+#'   instead of just the term table.
+#'
+#' @return A tibble or stored-result list.
+#'
+#' @examples
+#' \dontrun{
+#' terms <- sn_get_enrichment_result(seurat_obj, enrichment_name = "cluster_gsea", top_n = 10)
+#' }
+#' @export
+sn_get_enrichment_result <- function(object,
+                                     enrichment_name = "default",
+                                     top_n = NULL,
+                                     groups = NULL,
+                                     with_metadata = FALSE) {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  stored <- .sn_get_misc_result(object = object, collection = "enrichment_results", store_name = enrichment_name)
+  if (isTRUE(with_metadata)) {
+    return(stored)
+  }
+
+  table <- tibble::as_tibble(stored$table)
+  group_col <- c("Cluster", "cluster", ".sign")[
+    c("Cluster", "cluster", ".sign") %in% colnames(table)
+  ][1] %||% NULL
+  rank_col <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")[
+    c("NES", "Count", "GeneRatio", "p.adjust", "pvalue") %in% colnames(table)
+  ][1] %||% NULL
+
+  if (!is_null(groups) && !is_null(group_col)) {
+    table <- dplyr::filter(table, .data[[group_col]] %in% groups)
+  }
+
+  if (is_null(top_n) || is_null(rank_col)) {
+    return(table)
+  }
+
+  if (rank_col %in% c("p.adjust", "pvalue")) {
+    table <- table[order(table[[rank_col]], decreasing = FALSE), , drop = FALSE]
+  } else {
+    table <- table[order(abs(table[[rank_col]]), decreasing = TRUE), , drop = FALSE]
+  }
+
+  utils::head(table, top_n)
+}
+
+#' Retrieve a stored interpretation result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param interpretation_name Name of the stored interpretation result.
+#'
+#' @return The stored interpretation-result list.
+#'
+#' @examples
+#' \dontrun{
+#' interpretation <- sn_get_interpretation_result(seurat_obj, "annotation_note")
+#' }
+#' @export
+sn_get_interpretation_result <- function(object, interpretation_name = "default") {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  .sn_get_misc_result(
+    object = object,
+    collection = "interpretation_results",
+    store_name = interpretation_name
+  )
+}
+
 .sn_as_enrichment_table <- function(result) {
   if (is.data.frame(result)) {
     return(tibble::as_tibble(result))
@@ -59,6 +278,114 @@
   )
 }
 
+.sn_render_table_markdown <- function(x, max_rows = 10) {
+  if (!is.data.frame(x) || nrow(x) == 0) {
+    return(NULL)
+  }
+
+  if (requireNamespace("knitr", quietly = TRUE)) {
+    return(paste(utils::capture.output(knitr::kable(utils::head(x, max_rows), format = "pipe")), collapse = "\n"))
+  }
+
+  paste(utils::capture.output(print(utils::head(x, max_rows))), collapse = "\n")
+}
+
+.sn_interpretation_task_instructions <- function(task, evidence) {
+  switch(
+    task,
+    annotation = paste(
+      "Interpret cluster-level marker evidence to support cell type annotation.",
+      "For each cluster, identify the most plausible cell type or state.",
+      "Explicitly cite the top markers that support the label and mention conflicting markers when relevant.",
+      "Flag ambiguous clusters and suggest additional markers or orthogonal checks that would improve confidence.",
+      "Return one concise cluster-by-cluster annotation table followed by a short narrative summary."
+    ),
+    de = {
+      if (identical(evidence$summary$analysis, "markers")) {
+        paste(
+          "Interpret marker genes as cluster-defining or cell-state-defining signatures.",
+          "Summarize what biological identities or programs the top markers imply.",
+          "Explain any uncertainty or overlap between related immune/stromal/myeloid programs.",
+          "Return a structured summary of key marker sets and then a short narrative interpretation."
+        )
+      } else {
+        paste(
+          "Interpret differential-expression results between the contrasted groups.",
+          "Summarize the dominant up-regulated and down-regulated programs, likely biological states, and mechanistic hypotheses.",
+          "Distinguish strong evidence from speculation and point out major caveats such as small effect sizes or broad stress responses.",
+          "Return a compact findings table and then a narrative interpretation."
+        )
+      }
+    },
+    enrichment = paste(
+      "Interpret pathway or enrichment results in biological terms.",
+      "Prioritize the most informative terms, explain whether they indicate activation, suppression, lineage commitment, stress, or immune programs, and avoid simply restating term names.",
+      "If ranked GSEA statistics are available, use them to discuss directionality.",
+      "Return a compact prioritized term table followed by a concise biological interpretation."
+    ),
+    results = paste(
+      "Write a manuscript-style Results subsection using only the supplied evidence.",
+      "Keep the tone formal, precise, and evidence-based.",
+      "Integrate cluster, DE, and enrichment findings into a coherent paragraph sequence instead of bullet fragments.",
+      "Do not claim validation beyond the provided evidence."
+    ),
+    figure_legend = paste(
+      "Write a figure legend for a single-cell analysis figure.",
+      "State what is shown, what samples/groups/clusters are compared, and how the result should be interpreted.",
+      "Keep the legend concise but publication-ready."
+    ),
+    presentation_summary = paste(
+      "Write a short presentation-style summary for an audience slide.",
+      "Use clear, high-signal language and foreground the most important biological takeaway."
+    )
+  )
+}
+
+.sn_human_readable_prompt <- function(task,
+                                      evidence,
+                                      background = NULL,
+                                      instruction = NULL) {
+  sections <- c(
+    paste0("# Shennong Interpretation Request: ", task),
+    if (!is_null(background) && nzchar(background)) paste0("## Background\n", background),
+    paste0("## Goal\n", instruction),
+    "## Evidence Summary"
+  )
+
+  if (is.list(evidence)) {
+    evidence_sections <- unlist(lapply(names(evidence), function(current_name) {
+      current_value <- evidence[[current_name]]
+      if (is.data.frame(current_value)) {
+        table_text <- .sn_render_table_markdown(current_value)
+        return(c(
+          paste0("### ", current_name),
+          if (!is_null(table_text)) table_text else "_No rows available._"
+        ))
+      }
+
+      if (is.list(current_value) && !is.data.frame(current_value)) {
+        return(c(
+          paste0("### ", current_name),
+          .sn_render_prompt_value(current_value)
+        ))
+      }
+
+      c(
+        paste0("### ", current_name),
+        .sn_render_prompt_value(current_value)
+      )
+    }))
+    sections <- c(sections, evidence_sections)
+  }
+
+  list(
+    output_format = "human",
+    task = task,
+    text = paste(sections, collapse = "\n\n"),
+    evidence = evidence
+  )
+}
+
 .sn_finish_interpretation <- function(object,
                                       task,
                                       evidence,
@@ -69,7 +396,7 @@
                                       return_prompt = FALSE,
                                       return_object = TRUE,
                                       ...) {
-  if (return_prompt) {
+  if (return_prompt || identical(prompt$output_format, "human")) {
     return(prompt)
   }
 
@@ -178,6 +505,28 @@
     dplyr::rename(cluster = dplyr::all_of(group_col))
 
   tibble::as_tibble(top_markers)
+}
+
+.sn_prepare_marker_table <- function(de_result, n_markers = 10) {
+  marker_table <- tibble::as_tibble(de_result$table)
+  group_col <- de_result$group_col
+  rank_col <- de_result$rank_col
+
+  if (nrow(marker_table) == 0 || is_null(group_col) || !group_col %in% colnames(marker_table)) {
+    return(tibble::tibble())
+  }
+
+  ranking <- if (!is_null(rank_col) && rank_col %in% colnames(marker_table)) {
+    if (identical(de_result$analysis, "markers")) marker_table[[rank_col]] else abs(marker_table[[rank_col]])
+  } else {
+    rep(0, nrow(marker_table))
+  }
+  marker_table$..ranking_value <- ranking
+
+  marker_table |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+    dplyr::slice_max(order_by = .data$..ranking_value, n = n_markers, with_ties = FALSE) |>
+    dplyr::ungroup()
 }
 
 .sn_prepare_prediction_summary <- function(object, cluster_col = "seurat_clusters") {
@@ -323,6 +672,7 @@ sn_prepare_annotation_evidence <- function(object,
   de_result <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
   cluster_summary <- .sn_prepare_cluster_summary(object = object, cluster_col = cluster_col)
   marker_summary <- .sn_prepare_marker_summary(de_result = de_result, n_markers = n_markers)
+  marker_table <- .sn_prepare_marker_table(de_result = de_result, n_markers = n_markers)
   prediction_summary <- .sn_prepare_prediction_summary(object = object, cluster_col = cluster_col)
 
   merged_summary <- dplyr::left_join(cluster_summary, marker_summary, by = "cluster")
@@ -337,6 +687,7 @@ sn_prepare_annotation_evidence <- function(object,
     analysis_method = de_result$method,
     species = tryCatch(sn_get_species(object), error = function(...) NULL),
     cluster_summary = merged_summary,
+    top_marker_table = marker_table,
     caveats = character()
   )
 }
@@ -394,23 +745,29 @@ sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
 
   if (identical(de_result$analysis, "markers")) {
     top_table <- .sn_prepare_marker_summary(de_result = de_result, n_markers = n_genes)
+    marker_table <- .sn_prepare_marker_table(de_result = de_result, n_markers = n_genes)
     return(list(
       task = "de",
       source_de_name = de_name,
       summary = summary,
       top_markers = top_table,
+      top_marker_table = marker_table,
       caveats = character()
     ))
   }
 
   ordered <- result_table[order(-abs(result_table[[rank_col]])), , drop = FALSE]
   top_hits <- utils::head(ordered, n_genes)
+  top_up <- ordered[ordered[[rank_col]] > 0, , drop = FALSE] |> utils::head(n_genes)
+  top_down <- ordered[ordered[[rank_col]] < 0, , drop = FALSE] |> utils::head(n_genes)
 
   list(
     task = "de",
     source_de_name = de_name,
     summary = summary,
     top_hits = tibble::as_tibble(top_hits),
+    top_up = tibble::as_tibble(top_up),
+    top_down = tibble::as_tibble(top_down),
     caveats = character()
   )
 }
@@ -468,6 +825,7 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
     species = stored$species,
     source_de_name = stored$source_de_name,
     top_terms = tibble::as_tibble(utils::head(ordered, n_terms)),
+    full_term_table = tibble::as_tibble(table),
     caveats = character()
   )
 }
@@ -564,6 +922,10 @@ sn_prepare_results_evidence <- function(object,
 #' @param style Optional style instruction, for example \code{"manuscript"}.
 #' @param audience Intended audience such as \code{"scientist"}.
 #' @param language Output language.
+#' @param background Optional user-supplied study background or biological
+#'   context to inject into the prompt.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable markdown brief.
 #' @param include_json_schema Whether to request structured JSON output.
 #'
 #' @return A prompt bundle with \code{system}, \code{user}, and \code{messages}.
@@ -578,25 +940,44 @@ sn_build_prompt <- function(evidence,
                             style = NULL,
                             audience = c("scientist", "clinician", "general"),
                             language = c("en", "zh"),
+                            background = NULL,
+                            output_format = c("llm", "human"),
                             include_json_schema = FALSE) {
   task <- match.arg(task)
   audience <- match.arg(audience)
   language <- match.arg(language)
+  output_format <- match.arg(output_format)
+
+  instruction <- .sn_interpretation_task_instructions(task = task, evidence = evidence)
+
+  if (identical(output_format, "human")) {
+    return(.sn_human_readable_prompt(
+      task = task,
+      evidence = evidence,
+      background = background,
+      instruction = instruction
+    ))
+  }
 
   system_prompt <- paste(
     "You are assisting with interpretation of single-cell transcriptomics analyses produced by the Shennong R package.",
-    "Use only the supplied evidence. Distinguish direct evidence from inference.",
-    "Keep explanations biologically grounded and concise."
+    "Use only the supplied evidence and any explicitly provided background context.",
+    "Separate direct evidence from inference, avoid overclaiming, and state ambiguity clearly.",
+    "When interpreting markers or pathways, explain what they imply biologically instead of only repeating gene or term names.",
+    "When useful, provide concise structured tables before narrative text."
   )
 
   style_line <- if (!is_null(style)) paste0("Target style: ", style, ".") else ""
   json_line <- if (isTRUE(include_json_schema)) "Return a structured JSON object followed by a brief narrative explanation." else ""
+  background_line <- if (!is_null(background) && nzchar(background)) paste0("Background context:\n", background) else ""
 
   user_prompt <- paste(
     paste0("Task: ", task, "."),
     paste0("Audience: ", audience, "."),
     paste0("Language: ", language, "."),
     style_line,
+    paste0("Task instructions: ", instruction),
+    background_line,
     json_line,
     "Evidence:",
     .sn_render_prompt_value(evidence),
@@ -604,6 +985,7 @@ sn_build_prompt <- function(evidence,
   )
 
   list(
+    output_format = output_format,
     task = task,
     system = system_prompt,
     user = user_prompt,
@@ -689,12 +1071,15 @@ sn_interpret_annotation <- function(object,
                                     de_name,
                                     cluster_col = "seurat_clusters",
                                     n_markers = 10,
+                                    background = NULL,
+                                    output_format = c("llm", "human"),
                                     provider = NULL,
                                     model = NULL,
                                     return_prompt = FALSE,
                                     store_name = "default",
                                     return_object = TRUE,
                                     ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = de_name,
@@ -704,7 +1089,10 @@ sn_interpret_annotation <- function(object,
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "annotation",
-    audience = "scientist"
+    audience = "scientist",
+    style = "cell type annotation",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(
@@ -761,17 +1149,23 @@ sn_interpret_annotation <- function(object,
 sn_interpret_de <- function(object,
                             de_name,
                             n_genes = 15,
+                            background = NULL,
+                            output_format = c("llm", "human"),
                             provider = NULL,
                             model = NULL,
                             return_prompt = FALSE,
                             store_name = "default",
                             return_object = TRUE,
                             ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_de_evidence(object = object, de_name = de_name, n_genes = n_genes)
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "de",
-    audience = "scientist"
+    audience = "scientist",
+    style = "differential expression interpretation",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(
@@ -821,12 +1215,15 @@ sn_interpret_de <- function(object,
 sn_interpret_enrichment <- function(object,
                                     enrichment_name,
                                     n_terms = 10,
+                                    background = NULL,
+                                    output_format = c("llm", "human"),
                                     provider = NULL,
                                     model = NULL,
                                     return_prompt = FALSE,
                                     store_name = "default",
                                     return_object = TRUE,
                                     ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_enrichment_evidence(
     object = object,
     enrichment_name = enrichment_name,
@@ -835,7 +1232,10 @@ sn_interpret_enrichment <- function(object,
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "enrichment",
-    audience = "scientist"
+    audience = "scientist",
+    style = "pathway interpretation",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(
@@ -896,12 +1296,15 @@ sn_write_results <- function(object,
                              contrast_de_name = NULL,
                              enrichment_name = NULL,
                              cluster_col = "seurat_clusters",
+                             background = NULL,
+                             output_format = c("llm", "human"),
                              provider = NULL,
                              model = NULL,
                              return_prompt = FALSE,
                              store_name = "default",
                              return_object = TRUE,
                              ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
@@ -913,7 +1316,9 @@ sn_write_results <- function(object,
     evidence = evidence,
     task = "results",
     style = "manuscript-style Results section",
-    audience = "scientist"
+    audience = "scientist",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(
@@ -967,12 +1372,15 @@ sn_write_figure_legend <- function(object,
                                    cluster_de_name = NULL,
                                    enrichment_name = NULL,
                                    cluster_col = "seurat_clusters",
+                                   background = NULL,
+                                   output_format = c("llm", "human"),
                                    provider = NULL,
                                    model = NULL,
                                    return_prompt = FALSE,
                                    store_name = "default",
                                    return_object = TRUE,
                                    ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
@@ -983,7 +1391,9 @@ sn_write_figure_legend <- function(object,
     evidence = evidence,
     task = "figure_legend",
     style = "figure legend",
-    audience = "scientist"
+    audience = "scientist",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(
@@ -1039,12 +1449,15 @@ sn_write_presentation_summary <- function(object,
                                           contrast_de_name = NULL,
                                           enrichment_name = NULL,
                                           cluster_col = "seurat_clusters",
+                                          background = NULL,
+                                          output_format = c("llm", "human"),
                                           provider = NULL,
                                           model = NULL,
                                           return_prompt = FALSE,
                                           store_name = "default",
                                           return_object = TRUE,
                                           ...) {
+  output_format <- match.arg(output_format)
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
@@ -1056,7 +1469,9 @@ sn_write_presentation_summary <- function(object,
     evidence = evidence,
     task = "presentation_summary",
     style = "presentation slide summary",
-    audience = "scientist"
+    audience = "scientist",
+    background = background,
+    output_format = output_format
   )
 
   .sn_finish_interpretation(

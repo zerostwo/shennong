@@ -11,6 +11,8 @@ sn_build_prompt(
   style = NULL,
   audience = c("scientist", "clinician", "general"),
   language = c("en", "zh"),
+  background = NULL,
+  output_format = c("llm", "human"),
   include_json_schema = FALSE
 )
 }
@@ -25,6 +27,12 @@ sn_build_prompt(
 \item{audience}{Intended audience such as \code{"scientist"}.}
 
 \item{language}{Output language.}
+
+\item{background}{Optional user-supplied study background or biological
+context to inject into the prompt.}
+
+\item{output_format}{One of \code{"llm"} for a model-ready prompt bundle or
+\code{"human"} for a human-readable markdown brief.}
 
 \item{include_json_schema}{Whether to request structured JSON output.}
 }

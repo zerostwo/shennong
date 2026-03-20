@@ -9,6 +9,8 @@ sn_write_figure_legend(
   cluster_de_name = NULL,
   enrichment_name = NULL,
   cluster_col = "seurat_clusters",
+  background = NULL,
+  output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,

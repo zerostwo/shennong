@@ -81,6 +81,39 @@ test_that("sn_store_enrichment stores enrichment results on the Seurat object", 
   expect_equal(object@misc$enrichment_results$celltype_gsea$database, "GOBP")
 })
 
+test_that("stored-result helpers list and retrieve DE, enrichment, and interpretation outputs", {
+  skip_if_not_installed("Seurat")
+
+  provider <- function(messages, model = NULL, ...) {
+    list(text = "mock response")
+  }
+
+  object <- make_interpretation_object()
+  object <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    provider = provider,
+    store_name = "annotation_note",
+    return_object = TRUE
+  )
+
+  result_index <- sn_list_results(object)
+  expect_true(all(c("collection", "type", "name") %in% colnames(result_index)))
+  expect_true(any(result_index$name == "celltype_markers"))
+  expect_true(any(result_index$name == "celltype_gsea"))
+  expect_true(any(result_index$name == "annotation_note"))
+
+  marker_top <- sn_get_de_result(object, de_name = "celltype_markers", top_n = 2)
+  expect_true(nrow(marker_top) > 0)
+
+  enrich_top <- sn_get_enrichment_result(object, enrichment_name = "celltype_gsea", top_n = 1)
+  expect_equal(nrow(enrich_top), 1)
+
+  interpretation <- sn_get_interpretation_result(object, interpretation_name = "annotation_note")
+  expect_match(interpretation$response$text, "mock response")
+})
+
 test_that("annotation and DE evidence helpers return structured outputs", {
   skip_if_not_installed("Seurat")
 
@@ -151,6 +184,30 @@ test_that("sn_build_prompt creates a prompt bundle from evidence", {
   expect_equal(prompt$task, "annotation")
   expect_true(all(c("system", "user", "messages") %in% names(prompt)))
   expect_length(prompt$messages, 2)
+  expect_match(prompt$user, "Task instructions")
+})
+
+test_that("sn_build_prompt supports human-readable output with background context", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  evidence <- sn_prepare_annotation_evidence(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    n_markers = 3
+  )
+
+  prompt <- sn_build_prompt(
+    evidence = evidence,
+    task = "annotation",
+    background = "This dataset profiles PBMCs from a treatment study.",
+    output_format = "human"
+  )
+
+  expect_equal(prompt$output_format, "human")
+  expect_match(prompt$text, "Background")
+  expect_match(prompt$text, "PBMCs")
 })
 
 test_that("high-level interpretation helpers can return prompts or store provider output", {
@@ -167,9 +224,20 @@ test_that("high-level interpretation helpers can return prompts or store provide
     cluster_de_name = "celltype_markers",
     enrichment_name = "celltype_gsea",
     cluster_col = "cell_type",
+    background = "PBMC treatment study",
     return_prompt = TRUE
   )
   expect_equal(prompt$task, "results")
+
+  human_prompt <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    background = "PBMC treatment study",
+    output_format = "human"
+  )
+  expect_equal(human_prompt$output_format, "human")
+  expect_match(human_prompt$text, "cell type annotation")
 
   object <- sn_interpret_annotation(
     object = object,
