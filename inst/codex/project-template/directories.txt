@@ -1,0 +1,9 @@
+data/raw
+data/processed
+data/metadata
+scripts
+notebooks
+runs
+results/figures
+results/tables
+results/reports

@@ -31,6 +31,12 @@ sn_write_presentation_summary(
 
 \item{cluster_col}{Metadata column containing cluster labels.}
 
+\item{background}{Optional study-specific background information to provide
+additional interpretation context.}
+
+\item{output_format}{One of \code{"llm"} for a model-ready prompt bundle or
+\code{"human"} for a human-readable summary.}
+
 \item{provider}{Optional model provider function.}
 
 \item{model}{Optional model identifier.}

@@ -7,6 +7,8 @@ Last updated: 2026-03-21
 - The package root must remain a standard R package repository. Analysis-project governance directories such as `memory/`, `runs/`, `results/`, and raw/processed project data directories belong only in initialized user projects, not in the package root.
 - Initialized-project governance is now shipped under `inst/codex/project-template/`. Package-usage skills are now shipped under `inst/codex/package-skills/`. Maintainership docs remain under `docs/codex/`.
 - `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
+- Empty directories inside the shipped project template should be created from an explicit manifest (`inst/codex/project-template/directories.txt`), not hidden `.gitkeep` placeholders. This keeps the scaffold maintainable while avoiding hidden-file notes in `R CMD check`.
+- Coverage expansion should prioritize durable, stateful behavior over superficial line hits. For this pass, the preferred targets were Seurat layer/state helpers, stored-result contracts in `object@misc`, packaged project scaffolding, IO dispatch paths, and external-tool integration seams such as CellTypist.
 
 ## 2026-03-18
 

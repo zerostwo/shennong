@@ -6,6 +6,8 @@ dev
 ^LICENSE\.md$
 ^README\.Rmd$
 ^README\.html$
+^AGENTS\.md$
+^CONTRIBUTING\.md$
 ^\.github$
 ^data-raw$
 ^_pkgdown\.yml$

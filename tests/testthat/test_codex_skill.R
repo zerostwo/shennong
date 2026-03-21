@@ -29,6 +29,21 @@ test_that("sn_install_codex_skill installs packaged usage skills into a target d
   expect_true(file.exists(file.path(target_root, "manage-shennong-results", "SKILL.md")))
 })
 
+test_that("sn_install_codex_skill can install both package and project skills", {
+  target_root <- tempfile("skill-root-both-")
+  dir.create(target_root)
+
+  installed <- sn_install_codex_skill(
+    path = target_root,
+    type = "both",
+    overwrite = TRUE
+  )
+
+  expect_true(all(dir.exists(installed)))
+  expect_true(file.exists(file.path(target_root, "use-shennong-project-init", "SKILL.md")))
+  expect_true(file.exists(file.path(target_root, "create-analysis-run", "SKILL.md")))
+})
+
 test_that("sn_install_codex_skill refuses to overwrite when disabled", {
   target_root <- tempfile("skill-root-")
   dir.create(target_root)
@@ -111,5 +126,120 @@ test_that("sn_initialize_codex_project scaffolds the full packaged project templ
   expect_true(file.exists(created$agents_md))
   expect_true(file.exists(created$memory_prompt))
   expect_true(file.exists(file.path(created$skills, "create-analysis-run", "SKILL.md")))
-  expect_true(file.exists(file.path(project_root, "results", "figures", ".gitkeep")))
+  expect_true(dir.exists(file.path(project_root, "results", "figures")))
+  expect_true(dir.exists(file.path(project_root, "scripts")))
+})
+
+test_that("project template initialization respects overwrite and governance skip rules", {
+  project_root <- tempfile("overwrite-project-")
+
+  created <- sn_initialize_project(
+    path = project_root,
+    project_name = "Overwrite demo",
+    objective = "Exercise overwrite behavior.",
+    with_agent = FALSE,
+    overwrite = FALSE
+  )
+  writeLines("custom readme", created$readme)
+
+  rerun_preserve <- sn_initialize_project(
+    path = project_root,
+    project_name = "Overwrite demo",
+    objective = "Exercise overwrite behavior.",
+    with_agent = FALSE,
+    overwrite = FALSE
+  )
+
+  expect_equal(readLines(rerun_preserve$readme, warn = FALSE), "custom readme")
+
+  rerun_replace <- sn_initialize_project(
+    path = project_root,
+    project_name = "Overwrite demo",
+    objective = "Exercise overwrite behavior.",
+    with_agent = FALSE,
+    overwrite = TRUE
+  )
+
+  expect_true(any(grepl("Overwrite demo", readLines(rerun_replace$readme, warn = FALSE), fixed = TRUE)))
+  expect_true(Shennong:::.sn_should_skip_template_path("AGENTS.md", include_governance = FALSE))
+  expect_true(Shennong:::.sn_should_skip_template_path(
+    file.path("skills", "update-project-memory", "SKILL.md"),
+    include_governance = FALSE
+  ))
+  expect_false(Shennong:::.sn_should_skip_template_path("README.md", include_governance = FALSE))
+})
+
+test_that("template rendering and version helpers cover all local decision branches", {
+  template_path <- tempfile(fileext = ".md")
+  writeLines(
+    c(
+      "# {{project_name}}",
+      "{{objective}}",
+      "{{date}}"
+    ),
+    template_path
+  )
+
+  shipped_template <- Shennong:::.sn_render_template(file.path("interpretation", "task_annotation.txt"))
+  rendered <- Shennong:::.sn_render_text_file(
+    template_path,
+    context = list(
+      project_name = "Demo",
+      objective = "Render placeholders.",
+      date = "2026-03-21"
+    )
+  )
+
+  expect_true(length(shipped_template) > 0)
+  expect_true(any(grepl("annotation", shipped_template, ignore.case = TRUE)))
+  expect_equal(rendered, c("# Demo", "Render placeholders.", "2026-03-21"))
+  expect_equal(
+    Shennong:::.sn_resolve_release_channel(
+      channel = "auto",
+      cran_version = package_version("1.0.0"),
+      github_version = NULL
+    ),
+    "cran"
+  )
+  expect_equal(
+    Shennong:::.sn_resolve_release_channel(
+      channel = "auto",
+      cran_version = NULL,
+      github_version = package_version("1.1.0")
+    ),
+    "github"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_release_channel(channel = "auto", cran_version = NULL, github_version = NULL),
+    "Could not determine a remote version"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_release_channel(channel = "cran", cran_version = NULL, github_version = NULL),
+    "not currently available on CRAN"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_release_channel(channel = "github", cran_version = NULL, github_version = NULL),
+    "Could not retrieve the GitHub development version"
+  )
+
+  expect_equal(
+    Shennong:::.sn_compare_version_status(installed_version = NULL, remote_version = package_version("1.0.0"))$status,
+    "not installed"
+  )
+  expect_equal(
+    Shennong:::.sn_compare_version_status(installed_version = package_version("0.9.0"), remote_version = package_version("1.0.0"))$status,
+    "update available"
+  )
+  expect_equal(
+    Shennong:::.sn_compare_version_status(installed_version = package_version("1.1.0"), remote_version = package_version("1.0.0"))$status,
+    "ahead of remote"
+  )
+  expect_equal(
+    Shennong:::.sn_compare_version_status(installed_version = package_version("1.0.0"), remote_version = package_version("1.0.0"))$status,
+    "up to date"
+  )
+  expect_equal(
+    Shennong:::.sn_compare_version_status(installed_version = package_version("1.0.0"), remote_version = NULL)$status,
+    "remote unavailable"
+  )
 })

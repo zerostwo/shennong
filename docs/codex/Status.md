@@ -4,7 +4,10 @@ Last updated: 2026-03-21
 
 ## 2026-03-21
 
+- Fixed the failing `R CMD check` example/doc issues in the interpretation layer by regenerating `man/` from the current roxygen source. `sn_list_results()` examples now normalize before requesting the `data` layer, and the `background` / `output_format` arguments are documented again for the interpretation-writing wrappers.
+- Reworked the packaged project-template scaffold so empty analysis directories are created from an explicit `inst/codex/project-template/directories.txt` manifest instead of hidden `.gitkeep` files. This removes the package hidden-file NOTE while preserving initialized-project directory creation.
 - Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
+- Expanded the test suite around Seurat object state, stored-result contracts, IO dispatch, packaged project scaffolding, and metrics/clustering integrations. Local `covr::package_coverage()` now reaches 70.30%, up from the high-60s baseline during this task.
 
 ## 2026-03-19
 
@@ -84,6 +87,20 @@ Current milestone: DE API consolidation and CI deployment hardening
 ## Validation Log
 
 - Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "utils|preprocessing|interpretation|io_visualization", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "data_io_contracts|composition|clustering", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "codex_skill", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "codex_skill", stop_on_failure = TRUE)'` after the project-template directory-manifest change
+- Passed: `Rscript -e 'testthat::test_local(filter = "de_enrich", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "metrics", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "data_loading", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(filter = "data_io_contracts", stop_on_failure = TRUE)'`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after the coverage expansion
+- Passed: `Rscript -e 'cov <- covr::package_coverage(type = c("tests")); cat(covr::percent_coverage(cov), "\n")'` with `70.29831`
+- Passed: `Rscript -e 'if (requireNamespace("devtools", quietly = TRUE)) devtools::document() else stop("devtools not installed")'`
+- Passed: `R CMD build .`
+- Passed: `R CMD check --no-manual -o /tmp/shennong-check-current Shennong_0.1.1.tar.gz`
+- Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after the CI-fix/template-manifest change (`PASS 372`)
 - Passed: `Rscript -e 'testthat::test_local(filter = "composition", stop_on_failure = TRUE)'`
 - Passed: `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` after the composition change
 - Passed: `Rscript -e 'devtools::document()'`

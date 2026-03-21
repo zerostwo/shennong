@@ -81,7 +81,7 @@ sn_install_codex_skill <- function(
       stop(glue("Failed to copy the bundled Codex skill '{basename(source_dir)}' to '{dest_root}'."))
     }
 
-    installed <- c(installed, setNames(dest_dir, basename(source_dir)))
+    installed <- c(installed, stats::setNames(dest_dir, basename(source_dir)))
   }
 
   invisible(installed)
@@ -502,6 +502,7 @@ sn_install_shennong <- function(
   c(
     "AGENTS.md",
     "README.md",
+    "directories.txt",
     file.path("memory", "Decisions.md"),
     file.path("memory", "Plan.md"),
     file.path("memory", "Prompt.md"),
@@ -509,6 +510,25 @@ sn_install_shennong <- function(
     file.path("docs", "standards", "BioinformaticsAnalysisConventions.md"),
     file.path("config", "default.yaml")
   )
+}
+
+.sn_project_template_directory_manifest <- function() {
+  "directories.txt"
+}
+
+.sn_project_template_directories <- function() {
+  manifest_path <- file.path(
+    .sn_codex_component_path("project_template"),
+    .sn_project_template_directory_manifest()
+  )
+
+  if (!file.exists(manifest_path)) {
+    return(character(0))
+  }
+
+  dirs <- readLines(manifest_path, warn = FALSE)
+  dirs <- trimws(dirs)
+  dirs[nzchar(dirs)]
 }
 
 .sn_project_template_skip_patterns <- function(include_governance = TRUE) {
@@ -551,6 +571,10 @@ sn_install_shennong <- function(
   }
 
   template_dir <- .sn_codex_component_path("project_template")
+  rel_dirs <- .sn_project_template_directories()
+  rel_dirs <- rel_dirs[
+    !vapply(rel_dirs, .sn_should_skip_template_path, logical(1), include_governance = include_governance)
+  ]
   rel_files <- list.files(
     template_dir,
     recursive = TRUE,
@@ -558,7 +582,16 @@ sn_install_shennong <- function(
     no.. = TRUE,
     include.dirs = FALSE
   )
+  rel_files <- setdiff(rel_files, .sn_project_template_directory_manifest())
   rel_files <- rel_files[!vapply(rel_files, .sn_should_skip_template_path, logical(1), include_governance = include_governance)]
+
+  for (relative_dir in rel_dirs) {
+    dir.create(
+      file.path(project_dir, relative_dir),
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
+  }
 
   context <- list(
     project_name = project_name,
