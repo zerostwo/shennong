@@ -49,11 +49,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_de_evidence(obj, de_name = "celltype_markers", n_genes = 3)
   names(evidence)
 }
-#> INFO [2026-03-21 21:47:01] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-21 21:47:01] Running QC metrics for human ...
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-21 21:47:01] Seurat object initialization complete.
+#> INFO [2026-03-21 23:21:52] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 23:21:52] Running QC metrics for human ...
+#> INFO [2026-03-21 23:21:52] Seurat object initialization complete.
 #> [1] "task"             "source_de_name"   "summary"          "top_markers"     
 #> [5] "top_marker_table" "caveats"         
 ```

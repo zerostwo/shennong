@@ -44,6 +44,16 @@ sn_write_results(
 
   Metadata column containing cluster labels.
 
+- background:
+
+  Optional study-specific background information to provide additional
+  interpretation context.
+
+- output_format:
+
+  One of `"llm"` for a model-ready prompt bundle or `"human"` for a
+  human-readable summary.
+
 - provider:
 
   Optional model provider function.
@@ -95,11 +105,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_results(obj, cluster_de_name = "celltype_markers", enrichment_name = "demo_gsea", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-21 21:47:10] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-21 21:47:10] Running QC metrics for human ...
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-21 21:47:10] Seurat object initialization complete.
+#> INFO [2026-03-21 23:22:00] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 23:22:00] Running QC metrics for human ...
+#> INFO [2026-03-21 23:22:00] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "results"
 ```

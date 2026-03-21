@@ -39,6 +39,16 @@ sn_interpret_annotation(
 
   Number of top markers per cluster.
 
+- background:
+
+  Optional study-specific background information to provide additional
+  interpretation context.
+
+- output_format:
+
+  One of `"llm"` for a model-ready prompt bundle or `"human"` for a
+  human-readable summary.
+
 - provider:
 
   Optional model provider function.
@@ -90,10 +100,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_annotation(obj, de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-21 21:46:51] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-21 21:46:51] Running QC metrics for human ...
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-21 21:46:51] Seurat object initialization complete.
+#> INFO [2026-03-21 23:21:42] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 23:21:42] Running QC metrics for human ...
+#> INFO [2026-03-21 23:21:42] Seurat object initialization complete.
 #> [1] "annotation"
 ```

@@ -81,7 +81,7 @@
 - [`show_all_palettes()`](https://songqi.org/shennong/reference/show_all_palettes.md)
   : List available color palettes
 - [`sn_get_signatures()`](https://songqi.org/shennong/reference/sn_get_signatures.md)
-  : Retrieve blocklist genes from SignatuR by preset gene set names
+  : Retrieve bundled Shennong signature genes by preset category names
 - [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md) :
   Run gene set enrichment analysis
 

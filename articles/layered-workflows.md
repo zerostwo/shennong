@@ -70,7 +70,7 @@ knitr::kable(de_summary)
 | group_by        | seurat_clusters |
 | rank_col        | avg_log2FC      |
 | p_col           | p_val_adj       |
-| n_genes         | 15614           |
+| n_genes         | 15690           |
 
 ## Reusing stored markers
 

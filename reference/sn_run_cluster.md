@@ -66,8 +66,8 @@ sn_run_cluster(
 
 - block_genes:
 
-  Either a character vector of predefined sets (e.g. `c("ribo","mito")`)
-  if `SignatuR` is installed, or a custom vector of gene symbols to
+  Either a character vector of predefined bundled signature categories
+  (for example `c("ribo","mito")`) or a custom vector of gene symbols to
   exclude from HVGs.
 
 - theta:
