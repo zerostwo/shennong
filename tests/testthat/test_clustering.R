@@ -43,6 +43,42 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   expect_true("umap" %in% names(clustered@reductions))
 })
 
+test_that("clustering helper functions normalize dims and select HVGs by group", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 21, prefix = "helpers")
+  object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  global_hvg <- Shennong:::.sn_select_variable_features(
+    object = object,
+    nfeatures = 25,
+    split_by = NULL,
+    verbose = FALSE
+  )
+  grouped_hvg <- Shennong:::.sn_select_variable_features(
+    object = object,
+    nfeatures = 25,
+    split_by = "sample",
+    verbose = FALSE
+  )
+
+  expect_equal(Shennong:::.sn_resolve_cluster_dims(dims = NULL, npcs = 8), 1:8)
+  expect_equal(Shennong:::.sn_resolve_cluster_dims(dims = c(0, -1, 2, 3, 3), npcs = 10), c(2L, 3L, 3L))
+  expect_lte(length(global_hvg$features), 25)
+  expect_lte(length(grouped_hvg$features), 25)
+  expect_identical(Seurat::VariableFeatures(grouped_hvg$object), grouped_hvg$features)
+  expect_error(
+    Shennong:::.sn_select_variable_features(
+      object = object,
+      nfeatures = 25,
+      split_by = "missing_group",
+      verbose = FALSE
+    ),
+    "hvg_group_by"
+  )
+})
+
 test_that("sn_run_cluster supports the SCTransform workflow for a single dataset", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("glmGamPoi")
@@ -416,5 +452,80 @@ test_that("sn_find_doublets can analyze a non-default layer", {
   expect_equal(
     as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
     as.matrix(zero_counts)
+  )
+})
+
+test_that("sn_run_celltypist adds predicted labels back onto the Seurat object", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 52, prefix = "celltypist", n_genes = 80, n_cells = 8)
+  object$precluster <- rep(c("c1", "c2"), each = 4)
+  original_counts <- SeuratObject::LayerData(object, layer = "counts")
+
+  fake_celltypist <- tempfile("fake-celltypist-")
+  writeLines(
+    c(
+      "#!/usr/bin/env bash",
+      "set -euo pipefail",
+      "outdir=''",
+      "prefix=''",
+      "indata=''",
+      "majority='false'",
+      "while [[ $# -gt 0 ]]; do",
+      "  case \"$1\" in",
+      "    --indata) indata=$2; shift 2 ;;",
+      "    --outdir) outdir=$2; shift 2 ;;",
+      "    --prefix) prefix=$2; shift 2 ;;",
+      "    --majority-voting) majority='true'; shift ;;",
+      "    *) shift ;;",
+      "  esac",
+      "done",
+      "python3 - <<'PY' \"$indata\" \"$outdir\" \"$prefix\" \"$majority\"",
+      "import csv, os, sys",
+      "indata, outdir, prefix, majority = sys.argv[1:]",
+      "with open(indata, newline='') as handle:",
+      "    reader = csv.reader(handle)",
+      "    header = next(reader)",
+      "cells = header[1:]",
+      "output_path = os.path.join(outdir, prefix + 'predicted_labels.csv')",
+      "with open(output_path, 'w', newline='') as handle:",
+      "    writer = csv.writer(handle)",
+      "    if majority == 'true':",
+      "        writer.writerow(['', 'predicted_labels', 'over_clustering', 'majority_voting'])",
+      "        for i, cell in enumerate(cells):",
+      "            writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell', f'cluster_{(i % 2) + 1}', 'T lineage' if i % 2 == 0 else 'B lineage'])",
+      "    else:",
+      "        writer.writerow(['', 'predicted_labels'])",
+      "        for i, cell in enumerate(cells):",
+      "            writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell'])",
+      "PY"
+    ),
+    fake_celltypist
+  )
+  Sys.chmod(fake_celltypist, mode = "0755")
+
+  outdir <- tempfile("celltypist-out-")
+  dir.create(outdir)
+
+  updated <- sn_run_celltypist(
+    x = object,
+    celltypist = fake_celltypist,
+    model = "Immune_All_Low.pkl",
+    outdir = outdir,
+    over_clustering = "precluster",
+    majority_voting = TRUE,
+    quiet = TRUE
+  )
+
+  expect_true(file.exists(file.path(outdir, "over_clustering.txt")))
+  expect_true(all(c(
+    "Immune_All_Low_predicted_labels",
+    "Immune_All_Low_over_clustering",
+    "Immune_All_Low_majority_voting"
+  ) %in% colnames(updated[[]])))
+  expect_true("sn_run_celltypist" %in% names(updated@commands))
+  expect_equal(
+    as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
+    as.matrix(original_counts)
   )
 })

@@ -211,3 +211,149 @@ test_that("sn_normalize_data can normalize from a non-default layer", {
     as.matrix(counts)
   )
 })
+
+test_that("sn_get_species reads stored species and can infer from Seurat object features", {
+  skip_if_not_installed("Seurat")
+
+  mouse_counts <- Matrix::Matrix(
+    matrix(1, nrow = 3, ncol = 2, dimnames = list(c("Cd3d", "Ltb", "Ms4a1"), c("cell1", "cell2"))),
+    sparse = TRUE
+  )
+  mouse_object <- SeuratObject::CreateSeuratObject(counts = mouse_counts)
+  Seurat::Misc(mouse_object, slot = "species") <- "mouse"
+
+  human_counts <- Matrix::Matrix(
+    matrix(
+      c(
+        5, 0, 3, 1,
+        2, 4, 1, 0,
+        0, 1, 0, 2,
+        3, 3, 3, 3
+      ),
+      nrow = 4,
+      byrow = TRUE,
+      dimnames = list(c("MT-CO1", "RPLP0", "HBB", "CD3D"), paste0("cell", 1:4))
+    ),
+    sparse = TRUE
+  )
+  human_object <- SeuratObject::CreateSeuratObject(counts = human_counts)
+
+  expect_equal(sn_get_species(mouse_object), "mouse")
+  expect_equal(sn_get_species(human_object), "human")
+})
+
+test_that("count-input resolution supports Seurat objects, paths, and matrix-like inputs", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(
+    matrix(1:12, nrow = 3, dimnames = list(paste0("gene", 1:3), paste0("cell", 1:4))),
+    sparse = TRUE
+  )
+  object <- sn_initialize_seurat_object(x = counts, project = "resolve-counts")
+
+  from_object <- Shennong:::.sn_resolve_counts_input(object)
+  from_matrix <- Shennong:::.sn_resolve_counts_input(as.matrix(counts))
+
+  expect_s4_class(from_object$object, "Seurat")
+  expect_s4_class(from_object$counts, "dgCMatrix")
+  expect_equal(as.matrix(from_object$counts), as.matrix(counts))
+  expect_null(from_matrix$object)
+  expect_s4_class(from_matrix$counts, "dgCMatrix")
+  expect_equal(as.matrix(from_matrix$counts), as.matrix(counts))
+
+  if (rlang::is_installed("rio")) {
+    path <- tempfile(fileext = ".csv")
+    utils::write.csv(as.data.frame(as.matrix(counts)), path, row.names = FALSE)
+    from_path <- Shennong:::.sn_resolve_counts_input(path)
+    expect_null(from_path$object)
+    expect_s4_class(from_path$counts, "dgCMatrix")
+    expect_identical(dim(from_path$counts), dim(counts))
+  }
+
+  expect_error(
+    Shennong:::.sn_resolve_counts_input(list(counts = counts), arg = "x"),
+    "`x` must be a Seurat object, matrix-like object, or path"
+  )
+})
+
+test_that("count-shape restoration preserves the original matrix extent", {
+  original_counts <- Matrix::Matrix(
+    matrix(1:9, nrow = 3, dimnames = list(paste0("gene", 1:3), paste0("cell", 1:3))),
+    sparse = TRUE
+  )
+  corrected_counts <- Matrix::Matrix(
+    matrix(c(10, 20, 30, 40), nrow = 2, dimnames = list(c("gene1", "gene3"), c("cell1", "cell3"))),
+    sparse = TRUE
+  )
+  expected <- original_counts
+  expected[rownames(corrected_counts), colnames(corrected_counts)] <- corrected_counts
+
+  restored_subset <- Shennong:::.sn_restore_count_shape(original_counts, corrected_counts)
+  restored_same_shape <- Shennong:::.sn_restore_count_shape(original_counts, original_counts)
+
+  expect_equal(as.matrix(restored_subset), as.matrix(expected))
+  expect_identical(dimnames(restored_subset), dimnames(original_counts))
+  expect_identical(restored_same_shape, original_counts)
+})
+
+test_that("ambient-cluster resolution supports metadata columns and explicit vectors", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(24, lambda = 2), nrow = 6, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:6)
+  colnames(counts) <- paste0("cell", 1:4)
+  object <- sn_initialize_seurat_object(x = counts, project = "ambient-clusters")
+  object$cluster_id <- rep(c("a", "b"), each = 2)
+  x_info <- list(
+    object = object,
+    counts = SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+  )
+
+  resolved_from_column <- Shennong:::.sn_resolve_ambient_clusters(x_info, cluster = "cluster_id")
+  resolved_from_vector <- Shennong:::.sn_resolve_ambient_clusters(
+    x_info,
+    cluster = c("x", "x", "y", "y")
+  )
+
+  expect_equal(unname(resolved_from_column), as.character(object$cluster_id))
+  expect_equal(names(resolved_from_column), colnames(object))
+  expect_equal(unname(resolved_from_vector), c("x", "x", "y", "y"))
+  expect_equal(names(resolved_from_vector), colnames(object))
+
+  expect_error(
+    Shennong:::.sn_resolve_ambient_clusters(x_info, cluster = "missing_cluster"),
+    "Cluster column 'missing_cluster' was not found"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_ambient_clusters(x_info, cluster = c("a", "b")),
+    "must have one value per cell"
+  )
+})
+
+test_that("sn_filter_cells stores grouped QC thresholds in misc metadata", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(36, lambda = 3), nrow = 6, ncol = 6), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:6)
+  colnames(counts) <- paste0("cell", 1:6)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "cells-grouped")
+  object$sample <- rep(c("A", "B"), each = 3)
+  object$nCount_RNA <- c(10, 11, 30, 20, 21, 60)
+
+  flagged <- sn_filter_cells(
+    x = object,
+    features = "nCount_RNA",
+    group_by = "sample",
+    n = 1,
+    plot = FALSE,
+    filter = FALSE
+  )
+
+  qc_info <- Seurat::Misc(flagged, "qc")$nCount_RNA
+
+  expect_equal(nrow(qc_info), 2)
+  expect_true(all(c("sample", "median", "mad", "l", "u") %in% colnames(qc_info)))
+  expect_true("nCount_RNA_qc" %in% colnames(flagged[[]]))
+  expect_true(all(flagged$nCount_RNA_qc %in% c("Passed", "Failed")))
+})

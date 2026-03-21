@@ -113,3 +113,58 @@ test_that("sn_calculate_composition errors when min_cells removes all groups", {
     "No groups remaining after filtering by `min_cells`"
   )
 })
+
+test_that("sn_calculate_composition supports Seurat-object metadata directly", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(60, lambda = 2), nrow = 10, ncol = 6), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(10))
+  colnames(counts) <- paste0("cell", seq_len(6))
+
+  object <- sn_initialize_seurat_object(x = counts, project = "composition-seurat")
+  object$sample <- rep(c("A", "B"), each = 3)
+  object$cell_type <- c("Tcell", "Tcell", "Bcell", "Bcell", "Myeloid", "Bcell")
+  object$condition <- rep(c("ctrl", "tx"), each = 3)
+
+  result <- sn_calculate_composition(
+    x = object,
+    group_by = "sample",
+    variable = "cell_type",
+    min_cells = 1,
+    additional_cols = "condition"
+  )
+
+  expect_s3_class(result, "data.frame")
+  expect_true(all(c("sample", "cell_type", "proportion", "condition") %in% colnames(result)))
+  expect_equal(
+    as.numeric(tapply(result$proportion, result$sample, sum)),
+    c(100, 100)
+  )
+})
+
+test_that("sn_calculate_composition validates Seurat/data-frame inputs and additional columns", {
+  expect_error(
+    sn_calculate_composition(
+      x = list(sample = "A"),
+      group_by = "sample",
+      variable = "cell_type"
+    ),
+    "must be a Seurat object or a data frame"
+  )
+
+  meta_df <- data.frame(
+    sample = c("A", "A", "B", "B"),
+    cell_type = c("Tcell", "Bcell", "Tcell", "Bcell"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    sn_calculate_composition(
+      x = meta_df,
+      group_by = "sample",
+      variable = "cell_type",
+      additional_cols = "missing_col"
+    ),
+    "Missing additional columns"
+  )
+})

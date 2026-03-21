@@ -2,7 +2,7 @@
 % Please edit documentation in R/signatures.R
 \name{sn_get_signatures}
 \alias{sn_get_signatures}
-\title{Retrieve blocklist genes from SignatuR by preset gene set names}
+\title{Retrieve bundled Shennong signature genes by preset category names}
 \usage{
 sn_get_signatures(species = "human", category = NULL)
 }
@@ -12,15 +12,17 @@ sn_get_signatures(species = "human", category = NULL)
 \item{category}{A character vector of predefined signature categories.}
 }
 \value{
-A unique character vector of valid gene symbols.
+A unique character vector of signature gene symbols.
 }
 \description{
-This function uses the \code{SignatuR} package to fetch blocklist (or related)
-genes (e.g. ribosomal, mitochondrial, heatshock, etc.). It then checks
-those symbols via \code{HGNChelper} to remove invalid or outdated entries.
+Shennong ships a package-owned snapshot of the signature categories required
+by its core workflows. The snapshot is generated from \pkg{SignatuR} during
+package development and stored inside the package so runtime behavior is
+stable and does not depend on the user's installed \pkg{SignatuR} version.
 }
 \examples{
-\dontrun{
-block_genes <- sn_get_signatures(c("mito", "ribo", "tcr", "immunoglobulins", "pseudogenes", "noncoding"))
-}
+block_genes <- sn_get_signatures(
+  species = "human",
+  category = c("mito", "ribo", "tcr", "immunoglobulins")
+)
 }

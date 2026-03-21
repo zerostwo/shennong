@@ -44,8 +44,9 @@ only supported when \code{batch = NULL}.}
 genes within groups before merging and ranking them. Use \code{NULL} to
 compute HVGs on the full object.}
 
-\item{block_genes}{Either a character vector of predefined sets (e.g. \code{c("ribo","mito")})
-if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude from HVGs.}
+\item{block_genes}{Either a character vector of predefined bundled signature
+categories (for example \code{c("ribo","mito")}) or a custom vector of
+gene symbols to exclude from HVGs.}
 
 \item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction.}

@@ -9,6 +9,7 @@ Last updated: 2026-03-21
 - `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
 - Empty directories inside the shipped project template should be created from an explicit manifest (`inst/codex/project-template/directories.txt`), not hidden `.gitkeep` placeholders. This keeps the scaffold maintainable while avoiding hidden-file notes in `R CMD check`.
 - Coverage expansion should prioritize durable, stateful behavior over superficial line hits. For this pass, the preferred targets were Seurat layer/state helpers, stored-result contracts in `object@misc`, packaged project scaffolding, IO dispatch paths, and external-tool integration seams such as CellTypist.
+- Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships its own `shennong_signatures` snapshot in `sysdata`, and user-facing docs should describe bundled signature categories rather than `SignatuR` installation requirements.
 
 ## 2026-03-18
 

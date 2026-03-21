@@ -67,7 +67,6 @@ Suggests:
     scran,
     Seurat,
     SeuratObject,
-    SignatuR,
     SingleCellExperiment,
     SummarizedExperiment,
     SoupX,
@@ -77,7 +76,6 @@ Remotes:
     github::catplot/catplot,
     github::genecell/COSGR,
     github::immunogenomics/lisi,
-    github::PaulingLiu/ROGUE,
-    github::carmonalab/SignatuR
+    github::PaulingLiu/ROGUE
 VignetteBuilder: knitr
 Config/testthat/edition: 3

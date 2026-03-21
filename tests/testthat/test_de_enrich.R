@@ -224,3 +224,87 @@ test_that("sn_enrich stores enrichment results on the Seurat object by default",
   expect_s4_class(object, "Seurat")
   expect_true("demo_gsea" %in% names(object@misc$enrichment_results))
 })
+
+test_that("sn_enrich validates object type and GSEA input contracts", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  expect_error(
+    sn_enrich(
+      x = c("CD3D", "CD3E"),
+      object = list(not = "seurat"),
+      analysis = "ora",
+      species = "human",
+      database = "GOBP"
+    ),
+    "`object` must be a Seurat object"
+  )
+
+  expect_error(
+    sn_enrich(
+      x = tibble::tibble(symbol = c("CD3D", "CD3E"), avg_logFC = c(1, 2)),
+      analysis = "gsea",
+      species = "human",
+      database = "GOBP"
+    ),
+    "Column 'gene' was not found"
+  )
+
+  expect_error(
+    sn_enrich(
+      x = tibble::tibble(gene = c("CD3D", "CD3E")),
+      analysis = "gsea",
+      species = "human",
+      database = "GOBP"
+    ),
+    "score_col"
+  )
+
+  expect_error(
+    sn_enrich(
+      x = c("CD3D", "CD3E"),
+      analysis = "gsea",
+      species = "human",
+      database = "GOBP"
+    ),
+    "named numeric vector or a data frame"
+  )
+})
+
+test_that("sn_enrich can write GSEA results to disk and compare grouped GO sets", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  ranked_df <- tibble::tibble(
+    gene = c("CD3D", "CD3E", "TRAC", "LCK", "LTB", "IL7R", "MALAT1", "ACTB"),
+    avg_logFC = c(3.2, 3.1, 2.9, 2.5, 2.2, 1.8, -0.5, -1)
+  )
+  outdir <- tempfile("enrich-out-")
+
+  gsea_result <- sn_enrich(
+    x = ranked_df,
+    analysis = "gsea",
+    species = "human",
+    database = "GOBP",
+    prefix = "demo",
+    outdir = outdir,
+    pvalue_cutoff = 1
+  )
+
+  grouped_genes <- tibble::tibble(
+    gene = c("CD3D", "CD3E", "TRAC", "LCK", "MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"),
+    cluster = c("Tcell", "Tcell", "Tcell", "Tcell", "Bcell", "Bcell", "Bcell", "Bcell")
+  )
+  compare_result <- sn_enrich(
+    x = grouped_genes,
+    gene_clusters = gene ~ cluster,
+    analysis = "ora",
+    species = "human",
+    database = "GOBP",
+    pvalue_cutoff = 1
+  )
+
+  expect_true(inherits(gsea_result, "gseaResult"))
+  expect_true(file.exists(file.path(outdir, "demo.enrichment.GOBP.rds")))
+  expect_true(inherits(compare_result, "compareClusterResult"))
+})

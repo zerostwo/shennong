@@ -278,14 +278,7 @@ sn_read <- function(path,
   }
 }
 
-# Vector of extensions you care about
 .genomic_exts <- c("gtf", "gff", "gff1", "gff2", "gff3", "wig", "bed", "bed15", "bedGraph", "bw")
-for (ext in .genomic_exts) {
-  fn <- function(file, ...) {
-    .import_genomic_tracks(file, ext = tolower(ext), ...)
-  }
-  assign(paste0(".import.rio_", ext), fn, envir = globalenv())
-}
 
 #' Write tabular and bioinformatics file formats
 #'

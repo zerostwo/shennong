@@ -1,10 +1,15 @@
 # Internal helper to apply the optional catplot theme when available.
-.sn_add_catplot_theme <- function(p, aspect_ratio = 1, show_title = NULL) {
+.sn_add_catplot_theme <- function(p, aspect_ratio = NULL, show_title = NULL) {
   if (rlang::is_installed("catplot")) {
-    if (is_null(show_title)) {
-      return(p + catplot::theme_cat(aspect_ratio = aspect_ratio))
+    args <- list()
+    if (!is_null(aspect_ratio)) {
+      args$aspect_ratio <- aspect_ratio
     }
-    return(p + catplot::theme_cat(aspect_ratio = aspect_ratio, show_title = show_title))
+    if (!is_null(show_title)) {
+      args$show_title <- show_title
+    }
+    cat_theme <- do.call(catplot::theme_cat, args)
+    return(p + cat_theme)
   }
 
   p + ggplot2::theme_minimal(base_size = 11)
@@ -420,7 +425,7 @@ sn_plot_dot <- function(x,
         )
       )
   )
-  p <- .sn_add_catplot_theme(p, show_title = "none") +
+  p <- .sn_add_catplot_theme(p, aspect_ratio = NULL, show_title = "none") +
     theme(
       axis.text.x = element_text(face = "italic"),
       axis.title = element_blank(),

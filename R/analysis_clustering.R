@@ -72,8 +72,9 @@
 #' @param hvg_group_by Optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. Use \code{NULL} to
 #'   compute HVGs on the full object.
-#' @param block_genes Either a character vector of predefined sets (e.g. \code{c("ribo","mito")})
-#'   if \code{SignatuR} is installed, or a custom vector of gene symbols to exclude from HVGs.
+#' @param block_genes Either a character vector of predefined bundled signature
+#'   categories (for example \code{c("ribo","mito")}) or a custom vector of
+#'   gene symbols to exclude from HVGs.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction.
 #' @param group_by_vars Optional column name or character vector passed to

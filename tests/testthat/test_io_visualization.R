@@ -1,5 +1,42 @@
 library(testthat)
 
+make_dotplot_test_object <- function() {
+  set.seed(717)
+  genes <- c(
+    paste0("GENE", seq_len(40)),
+    "CD3D", "CD3E", "TRAC", "LCK", "LTB",
+    "MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"
+  )
+  counts <- matrix(rpois(length(genes) * 40, lambda = 2), nrow = length(genes), ncol = 40)
+  rownames(counts) <- genes
+  colnames(counts) <- paste0("cell", seq_len(40))
+  cell_type <- rep(rep(c("Tcell", "Bcell"), each = 5), 4)
+
+  counts[rownames(counts) %in% c("CD3D", "CD3E", "TRAC", "LCK", "LTB"), cell_type == "Tcell"] <-
+    counts[rownames(counts) %in% c("CD3D", "CD3E", "TRAC", "LCK", "LTB"), cell_type == "Tcell"] + 8
+  counts[rownames(counts) %in% c("MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"), cell_type == "Bcell"] <-
+    counts[rownames(counts) %in% c("MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"), cell_type == "Bcell"] + 8
+
+  object <- sn_initialize_seurat_object(
+    x = Matrix::Matrix(counts, sparse = TRUE),
+    project = "dotplot-test"
+  )
+  object$cell_type <- cell_type
+  Seurat::Idents(object) <- object$cell_type
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  sn_find_de(
+    object = object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    min_pct = 0,
+    logfc_threshold = 0,
+    store_name = "celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+}
+
 test_that("sn_write and sn_read round-trip a csv file", {
   input <- data.frame(a = 1:3, b = c("x", "y", "z"))
   path <- tempfile(fileext = ".csv")
@@ -56,6 +93,40 @@ test_that("Seurat plotting helpers return ggplot objects", {
       sn_plot_violin(object, features = c("CD3D", "LYZ"), group_by = "group")
     ),
     "ggplot"
+  )
+})
+
+test_that("sn_plot_dot can reuse stored top markers from object@misc", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_dotplot_test_object()
+  feature_info <- Shennong:::.sn_resolve_dotplot_features(
+    object = object,
+    features = "top_markers",
+    de_name = "celltype_markers",
+    n = 2,
+    marker_groups = "Tcell"
+  )
+  plot <- suppressWarnings(
+    sn_plot_dot(
+      x = object,
+      features = "top_markers",
+      de_name = "celltype_markers",
+      n = 2,
+      marker_groups = "Tcell"
+    )
+  )
+
+  expect_equal(feature_info$group_by, "cell_type")
+  expect_length(feature_info$features, 2)
+  expect_s3_class(plot, "ggplot")
+  expect_error(
+    Shennong:::.sn_resolve_dotplot_features(
+      object = object,
+      features = "top_markers",
+      de_name = "missing"
+    ),
+    "No stored DE result named 'missing'"
   )
 })
 

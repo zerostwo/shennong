@@ -8,6 +8,7 @@ Last updated: 2026-03-21
 - Reworked the packaged project-template scaffold so empty analysis directories are created from an explicit `inst/codex/project-template/directories.txt` manifest instead of hidden `.gitkeep` files. This removes the package hidden-file NOTE while preserving initialized-project directory creation.
 - Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
 - Expanded the test suite around Seurat object state, stored-result contracts, IO dispatch, packaged project scaffolding, and metrics/clustering integrations. Local `covr::package_coverage()` now reaches 70.30%, up from the high-60s baseline during this task.
+- Replaced the runtime `SignatuR` dependency with a bundled `shennong_signatures` snapshot stored in `R/sysdata.rda`. Signature retrieval is now package-stable, `DESCRIPTION` no longer suggests or references `SignatuR`, and the clustering/signature documentation now points to bundled categories rather than optional upstream state.
 
 ## 2026-03-19
 
