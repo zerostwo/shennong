@@ -1,0 +1,4 @@
+Interpret differential-expression results between the contrasted groups.
+Summarize the dominant up-regulated and down-regulated programs, likely biological states, and mechanistic hypotheses.
+Distinguish strong evidence from speculation and point out major caveats such as small effect sizes or broad stress responses.
+Return a compact findings table and then a narrative interpretation.

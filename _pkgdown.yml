@@ -95,5 +95,7 @@ reference:
       - sn_check_file
       - sn_get_codex_skill_path
       - sn_get_species
+      - sn_initialize_project
+      - sn_initialize_codex_project
       - sn_install_codex_skill
       - sn_set_path

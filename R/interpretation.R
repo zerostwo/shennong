@@ -22,20 +22,17 @@
     return(tibble::tibble())
   }
 
+  entries <- names(collection_data)
   tibble::tibble(
     collection = collection,
     type = type_label,
-    name = names(collection_data)
-  ) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(
-      analysis = collection_data[[name]]$analysis %||% NA_character_,
-      method = collection_data[[name]]$method %||% NA_character_,
-      created_at = collection_data[[name]]$created_at %||% NA_character_,
-      n_rows = nrow(collection_data[[name]]$table %||% tibble::tibble()),
-      source = collection_data[[name]]$source_de_name %||% NA_character_
-    ) |>
-    dplyr::ungroup()
+    name = entries,
+    analysis = vapply(entries, function(entry) collection_data[[entry]]$analysis %||% NA_character_, character(1)),
+    method = vapply(entries, function(entry) collection_data[[entry]]$method %||% NA_character_, character(1)),
+    created_at = vapply(entries, function(entry) collection_data[[entry]]$created_at %||% NA_character_, character(1)),
+    n_rows = vapply(entries, function(entry) nrow(collection_data[[entry]]$table %||% tibble::tibble()), integer(1)),
+    source = vapply(entries, function(entry) collection_data[[entry]]$source_de_name %||% NA_character_, character(1))
+  )
 }
 
 .sn_subset_ranked_table <- function(table,
@@ -91,10 +88,23 @@
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:12)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
-#'   obj <- sn_find_de(obj, analysis = "markers", group_by = NULL, layer = "data", min_pct = 0, logfc_threshold = 0, return_object = TRUE, verbose = FALSE)
+#'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
+#'   obj <- sn_find_de(
+#'     obj,
+#'     analysis = "markers",
+#'     group_by = NULL,
+#'     layer = "data",
+#'     min_pct = 0,
+#'     logfc_threshold = 0,
+#'     return_object = TRUE,
+#'     verbose = FALSE
+#'   )
 #'   sn_list_results(obj)
 #' }
 #' @export
@@ -291,54 +301,17 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 }
 
 .sn_interpretation_task_instructions <- function(task, evidence) {
-  switch(
+  template_name <- switch(
     task,
-    annotation = paste(
-      "Interpret cluster-level marker evidence to support cell type annotation.",
-      "For each cluster, identify the most plausible cell type or state.",
-      "Explicitly cite the top markers that support the label and mention conflicting markers when relevant.",
-      "Flag ambiguous clusters and suggest additional markers or orthogonal checks that would improve confidence.",
-      "Return one concise cluster-by-cluster annotation table followed by a short narrative summary."
-    ),
-    de = {
-      if (identical(evidence$summary$analysis, "markers")) {
-        paste(
-          "Interpret marker genes as cluster-defining or cell-state-defining signatures.",
-          "Summarize what biological identities or programs the top markers imply.",
-          "Explain any uncertainty or overlap between related immune/stromal/myeloid programs.",
-          "Return a structured summary of key marker sets and then a short narrative interpretation."
-        )
-      } else {
-        paste(
-          "Interpret differential-expression results between the contrasted groups.",
-          "Summarize the dominant up-regulated and down-regulated programs, likely biological states, and mechanistic hypotheses.",
-          "Distinguish strong evidence from speculation and point out major caveats such as small effect sizes or broad stress responses.",
-          "Return a compact findings table and then a narrative interpretation."
-        )
-      }
-    },
-    enrichment = paste(
-      "Interpret pathway or enrichment results in biological terms.",
-      "Prioritize the most informative terms, explain whether they indicate activation, suppression, lineage commitment, stress, or immune programs, and avoid simply restating term names.",
-      "If ranked GSEA statistics are available, use them to discuss directionality.",
-      "Return a compact prioritized term table followed by a concise biological interpretation."
-    ),
-    results = paste(
-      "Write a manuscript-style Results subsection using only the supplied evidence.",
-      "Keep the tone formal, precise, and evidence-based.",
-      "Integrate cluster, DE, and enrichment findings into a coherent paragraph sequence instead of bullet fragments.",
-      "Do not claim validation beyond the provided evidence."
-    ),
-    figure_legend = paste(
-      "Write a figure legend for a single-cell analysis figure.",
-      "State what is shown, what samples/groups/clusters are compared, and how the result should be interpreted.",
-      "Keep the legend concise but publication-ready."
-    ),
-    presentation_summary = paste(
-      "Write a short presentation-style summary for an audience slide.",
-      "Use clear, high-signal language and foreground the most important biological takeaway."
-    )
+    annotation = "task_annotation.txt",
+    de = if (identical(evidence$summary$analysis, "markers")) "task_de_markers.txt" else "task_de_contrast.txt",
+    enrichment = "task_enrichment.txt",
+    results = "task_results.txt",
+    figure_legend = "task_figure_legend.txt",
+    presentation_summary = "task_presentation_summary.txt"
   )
+
+  paste(.sn_render_template(file.path("interpretation", template_name)), collapse = " ")
 }
 
 .sn_human_readable_prompt <- function(task,
@@ -960,11 +933,8 @@ sn_build_prompt <- function(evidence,
   }
 
   system_prompt <- paste(
-    "You are assisting with interpretation of single-cell transcriptomics analyses produced by the Shennong R package.",
-    "Use only the supplied evidence and any explicitly provided background context.",
-    "Separate direct evidence from inference, avoid overclaiming, and state ambiguity clearly.",
-    "When interpreting markers or pathways, explain what they imply biologically instead of only repeating gene or term names.",
-    "When useful, provide concise structured tables before narrative text."
+    .sn_render_template(file.path("interpretation", "system_prompt.txt")),
+    collapse = " "
   )
 
   style_line <- if (!is_null(style)) paste0("Target style: ", style, ".") else ""
@@ -1035,6 +1005,10 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
 #' @param de_name Name of a stored marker result.
 #' @param cluster_col Metadata column containing cluster labels.
 #' @param n_markers Number of top markers per cluster.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
@@ -1114,6 +1088,10 @@ sn_interpret_annotation <- function(object,
 #' @param object A \code{Seurat} object.
 #' @param de_name Name of a stored DE result.
 #' @param n_genes Number of top genes to retain.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
@@ -1187,6 +1165,10 @@ sn_interpret_de <- function(object,
 #' @param object A \code{Seurat} object.
 #' @param enrichment_name Name of a stored enrichment result.
 #' @param n_terms Number of top enrichment terms to retain.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
@@ -1259,6 +1241,10 @@ sn_interpret_enrichment <- function(object,
 #' @param contrast_de_name Optional stored contrast or pseudobulk result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_col Metadata column containing cluster labels.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
@@ -1341,6 +1327,10 @@ sn_write_results <- function(object,
 #' @param cluster_de_name Optional stored cluster-marker result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_col Metadata column containing cluster labels.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
@@ -1417,6 +1407,10 @@ sn_write_figure_legend <- function(object,
 #' @param contrast_de_name Optional stored contrast or pseudobulk result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_col Metadata column containing cluster labels.
+#' @param background Optional study-specific background information to provide
+#'   additional interpretation context.
+#' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
+#'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function.
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling

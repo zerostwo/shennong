@@ -259,6 +259,37 @@ cat(substr(annotation_prompt$user, 1, 900))
 
 High-level helpers such as `sn_write_results()` can return prompts directly.
 
+## Initialize a Codex-ready analysis project
+
+For longer-running projects, it helps to initialize a governed analysis
+repository rather than improvising the folder structure. The packaged project
+template used by `sn_initialize_codex_project()` creates `AGENTS.md`,
+`memory/`, `docs/standards/`, `skills/`, `config/`, `data/`, `scripts/`,
+`notebooks/`, `runs/`, and `results/`.
+
+```{r}
+codex_project <- file.path(tempdir(), "shennong-codex-project")
+
+created <- sn_initialize_codex_project(
+  path = codex_project,
+  project_name = "PBMC interpretation pilot",
+  objective = "Build a reproducible PBMC interpretation workflow with Shennong.",
+  overwrite = TRUE
+)
+
+knitr::kable(
+  tibble::tibble(
+    file = names(created)[-1],
+    path = unname(unlist(created[-1]))
+  )
+)
+```
+
+The initialized project keeps durable operating rules in `AGENTS.md`, project
+state in `memory/`, enforceable directory and naming rules in
+`docs/standards/BioinformaticsAnalysisConventions.md`, and reusable governance
+procedures in `skills/`.
+
 ```{r}
 cat(substr(results_prompt$user, 1, 900))
 ```

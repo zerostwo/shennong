@@ -1,0 +1,28 @@
+project:
+  name: "{{project_name}}"
+  objective: "{{objective}}"
+  initialized_on: "{{date}}"
+
+paths:
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  metadata_dir: "data/metadata"
+  scripts_dir: "scripts"
+  notebooks_dir: "notebooks"
+  runs_dir: "runs"
+  results_dir: "results"
+
+tools:
+  cellranger_path: ""
+  mamba_path: ""
+  reference_genome_dir: ""
+  additional_tools: []
+
+environments:
+  default_mamba_env: ""
+  named_envs: []
+
+memory:
+  persist_successful_tool_usage: true
+  persist_reference_locations: true
+  persist_environment_locations: true

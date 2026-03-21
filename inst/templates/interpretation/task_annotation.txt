@@ -1,0 +1,5 @@
+Interpret cluster-level marker evidence to support cell type annotation.
+For each cluster, identify the most plausible cell type or state.
+Explicitly cite the top markers that support the label and mention conflicting markers when relevant.
+Flag ambiguous clusters and suggest additional markers or orthogonal checks that would improve confidence.
+Return one concise cluster-by-cluster annotation table followed by a short narrative summary.

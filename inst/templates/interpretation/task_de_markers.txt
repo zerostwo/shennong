@@ -1,0 +1,4 @@
+Interpret marker genes as cluster-defining or cell-state-defining signatures.
+Summarize what biological identities or programs the top markers imply.
+Explain any uncertainty or overlap between related immune/stromal/myeloid programs.
+Return a structured summary of key marker sets and then a short narrative interpretation.

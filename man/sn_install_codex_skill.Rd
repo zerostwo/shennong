@@ -4,25 +4,36 @@
 \alias{sn_install_codex_skill}
 \title{Install the bundled Shennong Codex skill for end-user agents}
 \usage{
-sn_install_codex_skill(path = "~/.agents/skills", overwrite = TRUE)
+sn_install_codex_skill(
+  path = "~/.agents/skills",
+  type = c("package_skills", "project_skills", "both"),
+  overwrite = TRUE
+)
 }
 \arguments{
 \item{path}{Destination directory that will contain the \code{shennong}
-skill folder. Defaults to \code{"~/.agents/skills"}.}
+skill folders. Defaults to \code{"~/.agents/skills"}.}
 
-\item{overwrite}{Whether to replace an existing installed copy of the skill.
-Defaults to \code{TRUE}.}
+\item{type}{One of \code{"package_skills"}, \code{"project_skills"}, or
+\code{"both"}.}
+
+\item{overwrite}{Whether to replace an existing installed copy of the target
+skill directories. Defaults to \code{TRUE}.}
 }
 \value{
-Invisibly returns the installed skill directory path.
+Invisibly returns a named character vector of installed directories.
 }
 \description{
-This helper copies the packaged Shennong skill into a user skill directory,
-for example \code{~/.agents/skills}. The installed skill is intended for
-analysis environments where the package is already available.
+This helper installs the packaged Shennong Codex skills into a user skill
+directory, for example \code{~/.agents/skills}. Package usage skills are
+distinct from initialized-project governance skills.
 }
 \examples{
 target_dir <- file.path(tempdir(), "skills")
-installed <- sn_install_codex_skill(path = target_dir, overwrite = TRUE)
-dir.exists(installed)
+installed <- sn_install_codex_skill(
+  path = target_dir,
+  type = "package_skills",
+  overwrite = TRUE
+)
+all(dir.exists(installed))
 }

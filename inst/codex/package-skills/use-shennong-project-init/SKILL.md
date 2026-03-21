@@ -1,0 +1,59 @@
+# use-shennong-project-init
+
+## Purpose
+
+Teach the agent how to initialize a governed analysis project from the Shennong
+package assets.
+
+## When To Use
+
+- starting a new analysis repository with Shennong
+- installing or locating project-template governance assets
+
+## Required Inputs
+
+- target project path
+- project name
+- project objective
+
+## Required Outputs
+
+- initialized analysis project
+- populated governance files
+- project-ready directory structure
+
+## Rules
+
+- use `sn_initialize_codex_project()` or `sn_initialize_project()` rather than
+  recreating the project structure manually when Shennong is available
+- distinguish package assets from initialized project files
+- do not confuse package skills with project governance skills
+- once the project is initialized, follow the created `AGENTS.md`,
+  `memory/`, and `docs/standards/BioinformaticsAnalysisConventions.md`
+
+## Procedure
+
+1. Confirm that `Shennong` is installed.
+2. Use `sn_get_codex_skill_path(component = "project_template")` if the
+   packaged project template path is needed.
+3. Initialize the project with `sn_initialize_codex_project()`.
+4. After initialization, follow the created `AGENTS.md` and `memory/`.
+
+## Common Mistakes
+
+- treating the package repository itself as the analysis project
+- rebuilding template files by hand
+- forgetting to populate `config/default.yaml`
+
+## Examples
+
+```r
+library(Shennong)
+
+sn_initialize_codex_project(
+  path = "analysis-project",
+  project_name = "PBMC pilot",
+  objective = "Build a reproducible PBMC analysis workflow.",
+  overwrite = TRUE
+)
+```

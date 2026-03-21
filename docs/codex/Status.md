@@ -1,6 +1,16 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-19
+Last updated: 2026-03-21
+
+## 2026-03-21
+
+- Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
+
+## 2026-03-19
+
+- Fixed `sn_plot_dot()` so the optional `catplot` theme does not add a second aspect-ratio constraint on top of `coord_fixed()`.
+- Replaced runtime `SignatuR` lookups with a bundled Shennong signature snapshot and added a `data-raw/build_shennong_signatures.R` script for reproducible refreshes during development.
+- Added `sn_initialize_project()` as a convenience wrapper around the packaged initialized-project template. When used with agent governance, the created project now uses `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`, `runs/`, and `results/` rather than the older flat `docs/codex/` layout inside user projects.
 Current milestone: DE API consolidation and CI deployment hardening
 
 ## Snapshot
@@ -153,7 +163,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Replaced `hvg_method` with `hvg_group_by` on `sn_run_cluster()`. The clustering API now treats group-aware HVG selection as a direct metadata-column choice rather than an abstract method enum.
 - Added a PBMC workflow smoke script and a pkgdown article that run real `pbmc1k`/`pbmc3k` analyses covering single-sample clustering, Harmony integration, composition summaries, LISI scoring, marker discovery, and GO enrichment with concrete outputs.
 - Removed the vendored `SignatuR` package dataset from `data/` because its `data.tree::Node` / R6 structure is not compatible with package lazydata installation. `sn_get_signatures()` now loads the optional dataset directly from the installed `SignatuR` package when needed.
-- Added a distributable end-user Codex skill under `inst/codex/skills/shennong/`, including package overview, function map, object model, workflow recipes, and packaged helper scripts. Repository-only memory remains in `docs/codex/`.
+- Added a distributable Codex asset layer inside the package. Package-usage skills now live under `inst/codex/package-skills/`, while initialized-project governance and skills now live under `inst/codex/project-template/`. Repository-only memory remains in `docs/codex/`.
 - Added `sn_get_codex_skill_path()` and `sn_install_codex_skill()` so installed-package users can discover and copy the bundled skill into their local agent skill directory.
 - Expanded the analysis layer around `sn_find_de()`, `sn_plot_dot()`, and `sn_enrich()`:
   `sn_find_de()` now supports marker discovery, direct contrasts, and pseudobulk DE with stored results in `object@misc$de_results`; `sn_plot_dot()` can reuse stored top markers; `sn_enrich()` now supports both ORA and GSEA.

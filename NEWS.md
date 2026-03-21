@@ -11,6 +11,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
   GitHub package is installed.
+- `sn_initialize_codex_project()` now scaffolds user analysis repositories from
+  the shipped `inst/codex/project-template/` assets, creating a governed
+  project layout with `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`,
+  `config/`, `data/`, `scripts/`, `notebooks/`, `runs/`, and `results/`.
+- `sn_initialize_project()` is now a convenience wrapper over the packaged
+  project-template initializer.
+- `sn_get_codex_skill_path()` now exposes packaged Codex asset paths for the
+  Codex root, package-usage skills, project template, and project-template
+  skills.
+- `sn_install_codex_skill()` now installs package-usage skills, project
+  governance skills, or both from the packaged Codex asset layout.
 - Stored-result discovery and retrieval helpers were added:
   `sn_list_results()`, `sn_get_de_result()`, `sn_get_enrichment_result()`, and
   `sn_get_interpretation_result()`.
@@ -24,6 +35,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `test_use` and `pseudobulk_method` parameters.
 - `sn_find_de()` now uses `layer` consistently for Seurat v5 workflows and no
   longer exposes the legacy `slot` argument.
+- `sn_get_signatures()` now reads from a package-owned signature snapshot built
+  from `SignatuR` during development, so runtime signature retrieval is stable
+  and no longer depends on the installed `SignatuR` package version.
 - `sn_enrich()` now stores enrichment results in
   `object@misc$enrichment_results[[store_name]]` when a Seurat object is
   supplied, aligning enrichment with the existing stored DE workflow.
@@ -37,6 +51,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Fixed pkgdown GitHub Actions deployment when `deploy_to_branch()` runs in a
   clean runner without a preinstalled copy of `Shennong`.
+- Fixed `sn_plot_dot()` theme handling so the optional `catplot` theme no
+  longer tries to impose an additional aspect ratio on top of `coord_fixed()`.
 
 # Version 0.1.1
 

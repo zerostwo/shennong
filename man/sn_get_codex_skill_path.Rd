@@ -2,20 +2,28 @@
 % Please edit documentation in R/package_tools.R
 \name{sn_get_codex_skill_path}
 \alias{sn_get_codex_skill_path}
-\title{Return the installed Shennong Codex skill path}
+\title{Return installed Shennong Codex asset paths}
 \usage{
-sn_get_codex_skill_path()
+sn_get_codex_skill_path(
+  component = c("codex_root", "package_skills", "project_template",
+    "project_template_skills")
+)
+}
+\arguments{
+\item{component}{One of \code{"codex_root"}, \code{"package_skills"},
+\code{"project_template"}, or \code{"project_template_skills"}.}
 }
 \value{
-A character scalar path to the bundled skill directory.
+A character scalar path to the requested bundled asset directory.
 }
 \description{
-This helper returns the skill directory bundled with the installed
-\pkg{Shennong} package.
+This helper exposes the Codex-related assets bundled with the installed
+\pkg{Shennong} package. It can return the package-level Codex asset root, the
+packaged project template, or the package and project skill directories.
 }
 \examples{
 if (requireNamespace("Shennong", quietly = TRUE)) {
-  path <- sn_get_codex_skill_path()
-  dir.exists(path)
+  sn_get_codex_skill_path("codex_root")
+  sn_get_codex_skill_path("package_skills")
 }
 }

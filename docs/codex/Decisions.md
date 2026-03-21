@@ -1,6 +1,12 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-19
+Last updated: 2026-03-21
+
+## 2026-03-21
+
+- The package root must remain a standard R package repository. Analysis-project governance directories such as `memory/`, `runs/`, `results/`, and raw/processed project data directories belong only in initialized user projects, not in the package root.
+- Initialized-project governance is now shipped under `inst/codex/project-template/`. Package-usage skills are now shipped under `inst/codex/package-skills/`. Maintainership docs remain under `docs/codex/`.
+- `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
 
 ## 2026-03-18
 
@@ -41,7 +47,7 @@ Last updated: 2026-03-19
 - Batch-aware integration should not hard-code a single HVG strategy. `sn_run_cluster()` now uses `hvg_group_by` instead of an abstract `hvg_method` enum: `NULL` means global HVGs, while any metadata column name triggers per-group HVG discovery followed by ranked merging.
 - pkgdown articles should demonstrate real outputs, not code-only skeletons. The PBMC workflow article is now evaluated during pkgdown builds and uses `pbmc1k`/`pbmc3k` to show actual clustering, integration, composition, LISI, marker, and enrichment results while remaining check-safe outside pkgdown.
 - The repository should not vendor the `SignatuR` R6 `Node` object as package data. It breaks lazydata installation and duplicates upstream state. Signature lookups now load the dataset from the installed `SignatuR` package at runtime instead.
-- End-user Codex skill materials should ship inside the installed package under `inst/codex/skills/shennong/`, while repository-only planning and modernization memory remain in `docs/` and `AGENTS.md`.
+- End-user Codex materials should ship inside the installed package under `inst/codex/project-template/` and `inst/codex/package-skills/`, while repository-only planning and modernization memory remain in `docs/` and `AGENTS.md`.
 - Bundled Codex-skill helpers are part of the public API and therefore must also follow the package naming convention. The installed-package entry points are `sn_get_codex_skill_path()` and `sn_install_codex_skill()`.
 - User-facing differential-expression workflows should converge on `sn_find_de()` instead of ad hoc Seurat calls. Stored DE results now live in `object@misc$de_results`, which makes downstream marker visualization through `sn_plot_dot(features = "top_markers")` reproducible.
 - Enrichment support should include both ORA and ranked-list GSEA so marker interpretation can operate on either thresholded gene sets or full ranked tables.
@@ -61,3 +67,5 @@ Last updated: 2026-03-19
 - User-facing analysis features are not considered complete until their usage is discoverable. Any new or changed public workflow must update both pkgdown articles and the shipped Codex skill references in the same change set, especially when stored-result schemas or retrieval helpers change.
 - pkgdown is part of the delivery surface, not just a derived artifact. After changing user-facing functionality, the site must be rebuilt locally to verify that the rendered reference and articles reflect the new behavior before the task is considered complete.
 - Release notes are also part of the delivery contract. Any user-facing feature change must update `NEWS.md` in the same change set as the code, tests, pkgdown articles, and shipped skill references.
+- Signature retrieval should be runtime-stable. Shennong now ships its own internal signature snapshot generated from `SignatuR` during development, and `sn_get_signatures()` reads that bundled data instead of the user's installed `SignatuR` package.
+- End-user projects need a package-level way to bootstrap a governed analysis repository from packaged assets. Shennong now exposes `sn_initialize_codex_project()` for the full project template and retains `sn_initialize_project()` as a wrapper for convenience.

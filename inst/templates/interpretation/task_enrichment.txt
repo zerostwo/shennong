@@ -1,0 +1,4 @@
+Interpret pathway or enrichment results in biological terms.
+Prioritize the most informative terms, explain whether they indicate activation, suppression, lineage commitment, stress, or immune programs, and avoid simply restating term names.
+If ranked GSEA statistics are available, use them to discuss directionality.
+Return a compact prioritized term table followed by a concise biological interpretation.

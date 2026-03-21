@@ -1,0 +1,4 @@
+Write a manuscript-style Results subsection using only the supplied evidence.
+Keep the tone formal, precise, and evidence-based.
+Integrate cluster, DE, and enrichment findings into a coherent paragraph sequence instead of bullet fragments.
+Do not claim validation beyond the provided evidence.

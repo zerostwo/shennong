@@ -1,0 +1,3 @@
+Write a figure legend for a single-cell analysis figure.
+State what is shown, what samples/groups/clusters are compared, and how the result should be interpreted.
+Keep the legend concise but publication-ready.
