@@ -129,9 +129,13 @@
 - [`sn_check_file()`](https://songqi.org/shennong/reference/sn_check_file.md)
   : Check if files exist
 - [`sn_get_codex_skill_path()`](https://songqi.org/shennong/reference/sn_get_codex_skill_path.md)
-  : Return the installed Shennong Codex skill path
+  : Return installed Shennong Codex asset paths
 - [`sn_get_species()`](https://songqi.org/shennong/reference/sn_get_species.md)
   : Retrieve or infer species information
+- [`sn_initialize_project()`](https://songqi.org/shennong/reference/sn_initialize_project.md)
+  : Initialize a Shennong analysis project
+- [`sn_initialize_codex_project()`](https://songqi.org/shennong/reference/sn_initialize_codex_project.md)
+  : Initialize Codex-style project guidance for a Shennong analysis
 - [`sn_install_codex_skill()`](https://songqi.org/shennong/reference/sn_install_codex_skill.md)
   : Install the bundled Shennong Codex skill for end-user agents
 - [`sn_set_path()`](https://songqi.org/shennong/reference/sn_set_path.md)

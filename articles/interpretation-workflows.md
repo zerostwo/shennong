@@ -83,9 +83,9 @@ knitr::kable(result_index)
 
 | collection             | type           | name                    | analysis | method | created_at              | n_rows | source          |
 |:-----------------------|:---------------|:------------------------|:---------|:-------|:------------------------|-------:|:----------------|
-| de_results             | de             | cluster_markers         | markers  | wilcox | 2026-03-20 03:03:45 UTC |  17203 | NA              |
-| enrichment_results     | enrichment     | cluster0_gsea           | gsea     | NA     | 2026-03-20 03:04:19 UTC |   2646 | cluster_markers |
-| interpretation_results | interpretation | cluster_annotation_note | NA       | NA     | 2026-03-20 03:04:19 UTC |      0 | NA              |
+| de_results             | de             | cluster_markers         | markers  | wilcox | 2026-03-21 21:54:36 UTC |  17203 | NA              |
+| enrichment_results     | enrichment     | cluster0_gsea           | gsea     | NA     | 2026-03-21 21:55:14 UTC |   2646 | cluster_markers |
+| interpretation_results | interpretation | cluster_annotation_note | NA       | NA     | 2026-03-21 21:55:15 UTC |      0 | NA              |
 
 ## Prepare structured evidence
 
@@ -174,6 +174,69 @@ cat(substr(annotation_prompt$user, 1, 900))
 High-level helpers such as
 [`sn_write_results()`](https://songqi.org/shennong/reference/sn_write_results.md)
 can return prompts directly.
+
+## Initialize a Codex-ready analysis project
+
+For longer-running projects, it helps to initialize a governed analysis
+repository rather than improvising the folder structure. The packaged
+project template used by
+[`sn_initialize_codex_project()`](https://songqi.org/shennong/reference/sn_initialize_codex_project.md)
+creates `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`, `config/`,
+`data/`, `scripts/`, `notebooks/`, `runs/`, and `results/`.
+
+``` r
+codex_project <- file.path(tempdir(), "shennong-codex-project")
+
+created <- sn_initialize_codex_project(
+  path = codex_project,
+  project_name = "PBMC interpretation pilot",
+  objective = "Build a reproducible PBMC interpretation workflow with Shennong.",
+  overwrite = TRUE
+)
+
+knitr::kable(
+  tibble::tibble(
+    file = names(created)[-1],
+    path = unname(unlist(created[-1]))
+  )
+)
+```
+
+| file             | path                                                                                       |
+|:-----------------|:-------------------------------------------------------------------------------------------|
+| readme           | /tmp/Rtmph1mDNH/shennong-codex-project/README.md                                           |
+| config           | /tmp/Rtmph1mDNH/shennong-codex-project/config                                              |
+| config_default   | /tmp/Rtmph1mDNH/shennong-codex-project/config/default.yaml                                 |
+| data             | /tmp/Rtmph1mDNH/shennong-codex-project/data                                                |
+| data_raw         | /tmp/Rtmph1mDNH/shennong-codex-project/data/raw                                            |
+| data_processed   | /tmp/Rtmph1mDNH/shennong-codex-project/data/processed                                      |
+| data_metadata    | /tmp/Rtmph1mDNH/shennong-codex-project/data/metadata                                       |
+| scripts          | /tmp/Rtmph1mDNH/shennong-codex-project/scripts                                             |
+| notebooks        | /tmp/Rtmph1mDNH/shennong-codex-project/notebooks                                           |
+| runs             | /tmp/Rtmph1mDNH/shennong-codex-project/runs                                                |
+| results          | /tmp/Rtmph1mDNH/shennong-codex-project/results                                             |
+| results_figures  | /tmp/Rtmph1mDNH/shennong-codex-project/results/figures                                     |
+| results_tables   | /tmp/Rtmph1mDNH/shennong-codex-project/results/tables                                      |
+| results_reports  | /tmp/Rtmph1mDNH/shennong-codex-project/results/reports                                     |
+| agents_md        | /tmp/Rtmph1mDNH/shennong-codex-project/AGENTS.md                                           |
+| agents           | /tmp/Rtmph1mDNH/shennong-codex-project/AGENTS.md                                           |
+| memory           | /tmp/Rtmph1mDNH/shennong-codex-project/memory                                              |
+| memory_decisions | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Decisions.md                                 |
+| decisions        | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Decisions.md                                 |
+| memory_plan      | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Plan.md                                      |
+| plan             | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Plan.md                                      |
+| memory_prompt    | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Prompt.md                                    |
+| prompt           | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Prompt.md                                    |
+| memory_status    | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Status.md                                    |
+| status           | /tmp/Rtmph1mDNH/shennong-codex-project/memory/Status.md                                    |
+| standards        | /tmp/Rtmph1mDNH/shennong-codex-project/docs/standards                                      |
+| conventions      | /tmp/Rtmph1mDNH/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md |
+| skills           | /tmp/Rtmph1mDNH/shennong-codex-project/skills                                              |
+
+The initialized project keeps durable operating rules in `AGENTS.md`,
+project state in `memory/`, enforceable directory and naming rules in
+`docs/standards/BioinformaticsAnalysisConventions.md`, and reusable
+governance procedures in `skills/`.
 
 ``` r
 cat(substr(results_prompt$user, 1, 900))

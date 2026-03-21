@@ -30,10 +30,10 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- sn_find_de(obj, analysis = "markers", group_by = NULL, layer = "data", min_pct = 0, logfc_threshold = 0, return_object = TRUE, verbose = FALSE)
   sn_list_results(obj)
 }
-#> INFO [2026-03-20 02:56:23] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-20 02:56:23] Running QC metrics for human ...
+#> INFO [2026-03-21 21:46:53] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 21:46:53] Running QC metrics for human ...
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-20 02:56:23] Seurat object initialization complete.
+#> INFO [2026-03-21 21:46:53] Seurat object initialization complete.
 #> Error in .sn_validate_seurat_assay_layer(object = object, assay = assay,     layer = source_layer): Layer 'data' was not found in assay 'RNA'.
 ```

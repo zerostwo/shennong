@@ -35,6 +35,8 @@
 <url><loc>https://songqi.org/shennong/reference/sn_get_interpretation_result.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_get_signatures.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_get_species.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_initialize_codex_project.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_initialize_project.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_initialize_seurat_object.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_install_codex_skill.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_install_shennong.html</loc></url>

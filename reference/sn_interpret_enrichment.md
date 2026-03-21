@@ -78,10 +78,10 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_enrichment(obj, enrichment_name = "demo_gsea", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-20 02:56:22] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-20 02:56:22] Running QC metrics for human ...
+#> INFO [2026-03-21 21:46:53] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 21:46:53] Running QC metrics for human ...
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-20 02:56:22] Seurat object initialization complete.
+#> INFO [2026-03-21 21:46:53] Seurat object initialization complete.
 #> [1] "enrichment"
 ```

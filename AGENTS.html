@@ -53,9 +53,9 @@
 <li>
 <code>vignettes/</code> contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.</li>
 <li>
-<code>data/</code> stores package datasets. <code>docs/codex/</code> stores modernization memory files and is already excluded from package builds via <code>.Rbuildignore</code>.</li>
+<code>data/</code> stores package datasets. <code>docs/codex/</code> stores package-maintainer Codex docs and modernization memory; it is already excluded from package builds via <code>.Rbuildignore</code>.</li>
 <li>
-<code>inst/codex/skills/shennong/</code> stores the distributable end-user Codex skill that ships with the installed package. Keep it user-facing and analysis-oriented; do not copy repository-only planning or modernization memory into that tree.</li>
+<code>inst/codex/project-template/</code> stores the shipped initialized-project governance template. <code>inst/codex/package-skills/</code> stores the shipped package-usage Codex skills. Keep repository-only planning and modernization memory out of those installed user assets.</li>
 <li>
 <code>_pkgdown.yml</code> and <code>.github/workflows/</code> define the package website and CI entry points.</li>
 </ul></div>
@@ -88,7 +88,7 @@
 <li>Prefer lightweight tests that do not require external downloads or optional heavyweight packages unless the function contract truly depends on them.</li>
 <li>Run the narrowest relevant tests first, then rerun the full local suite before closing a milestone.</li>
 <li>If roxygen, exports, or package metadata change, regenerate documentation and rerun the relevant validation commands.</li>
-<li>If you add or change any user-facing function, parameter, stored-result schema, or workflow, you must also update the relevant pkgdown article(s) and the shipped Codex skill references under <code>inst/codex/skills/shennong/</code> in the same change set.</li>
+<li>If you add or change any user-facing function, parameter, stored-result schema, or workflow, you must also update the relevant pkgdown article(s) and the shipped Codex assets under <code>inst/codex/project-template/</code> and <code>inst/codex/package-skills/</code> in the same change set when they are affected.</li>
 <li>The same user-facing change set must also update <code>NEWS.md</code> so the release notes reflect the shipped behavior.</li>
 <li>New stored-result retrieval or interpretation features must be documented at the user level with at least one concrete example showing how to discover the stored result and how to retrieve it from a Seurat object.</li>
 <li>After updating any user-facing feature, rebuild pkgdown locally so the rendered site matches the current package sources. Updating only the vignette/reference source files is not sufficient.</li>
@@ -110,7 +110,7 @@
 <ul><li>Likely public API surface: IO (<code>sn_read</code>, <code>sn_write</code>, dataset loading), Seurat initialization/normalization/QC, clustering/integration/annotation, plotting, signatures/enrichment, and composition/metrics.</li>
 <li>Current high-risk zones are data import/export, heavyweight optional-package integrations, and any schema stored under <code>object@misc</code>.</li>
 <li>Current modernization order is: inventory API, stabilize tests, normalize metadata and namespace handling, reorganize source files without changing behavior, then tighten internals and documentation.</li>
-<li>Repository-internal developer memory stays in <code>docs/codex/</code> and <code>AGENTS.md</code>. Installed-package user skills belong under <code>inst/codex/skills/shennong/</code>.</li>
+<li>Repository-internal developer memory stays in <code>docs/codex/</code> and <code>AGENTS.md</code>. Installed-package user assets belong under <code>inst/codex/project-template/</code> and <code>inst/codex/package-skills/</code>.</li>
 </ul></div>
 </div>
 

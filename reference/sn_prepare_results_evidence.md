@@ -73,11 +73,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_results_evidence(obj, cluster_de_name = "celltype_markers", enrichment_name = "demo_gsea", cluster_col = "cell_type")
   names(evidence)
 }
-#> INFO [2026-03-20 02:56:31] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-20 02:56:31] Running QC metrics for human ...
+#> INFO [2026-03-21 21:47:02] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 21:47:02] Running QC metrics for human ...
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-20 02:56:31] Seurat object initialization complete.
+#> INFO [2026-03-21 21:47:02] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "task"               "dataset"            "cluster_summary"   
 #> [4] "cluster_markers"    "enrichment_summary"

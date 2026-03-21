@@ -233,7 +233,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster_markers</td>
 <td align="left">markers</td>
 <td align="left">wilcox</td>
-<td align="left">2026-03-20 03:03:45 UTC</td>
+<td align="left">2026-03-21 21:54:36 UTC</td>
 <td align="right">17203</td>
 <td align="left">NA</td>
 </tr>
@@ -243,7 +243,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster0_gsea</td>
 <td align="left">gsea</td>
 <td align="left">NA</td>
-<td align="left">2026-03-20 03:04:19 UTC</td>
+<td align="left">2026-03-21 21:55:14 UTC</td>
 <td align="right">2646</td>
 <td align="left">cluster_markers</td>
 </tr>
@@ -253,7 +253,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster_annotation_note</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">2026-03-20 03:04:19 UTC</td>
+<td align="left">2026-03-21 21:55:15 UTC</td>
 <td align="right">0</td>
 <td align="left">NA</td>
 </tr>
@@ -458,7 +458,165 @@ separated.</p>
 </h2>
 <p>High-level helpers such as <code><a href="../reference/sn_write_results.html">sn_write_results()</a></code> can return
 prompts directly.</p>
+</div>
+<div class="section level2">
+<h2 id="initialize-a-codex-ready-analysis-project">Initialize a Codex-ready analysis project<a class="anchor" aria-label="anchor" href="#initialize-a-codex-ready-analysis-project"></a>
+</h2>
+<p>For longer-running projects, it helps to initialize a governed
+analysis repository rather than improvising the folder structure. The
+packaged project template used by
+<code><a href="../reference/sn_initialize_codex_project.html">sn_initialize_codex_project()</a></code> creates
+<code>AGENTS.md</code>, <code>memory/</code>,
+<code>docs/standards/</code>, <code>skills/</code>,
+<code>config/</code>, <code>data/</code>, <code>scripts/</code>,
+<code>notebooks/</code>, <code>runs/</code>, and
+<code>results/</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">codex_project</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-codex-project"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">created</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_initialize_codex_project.html">sn_initialize_codex_project</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="va">codex_project</span>,</span>
+<span>  project_name <span class="op">=</span> <span class="st">"PBMC interpretation pilot"</span>,</span>
+<span>  objective <span class="op">=</span> <span class="st">"Build a reproducible PBMC interpretation workflow with Shennong."</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">created</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>    path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">created</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="15%">
+<col width="84%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">file</th>
+<th align="left">path</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">readme</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/README.md</td>
+</tr>
+<tr class="even">
+<td align="left">config</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/config</td>
+</tr>
+<tr class="odd">
+<td align="left">config_default</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/config/default.yaml</td>
+</tr>
+<tr class="even">
+<td align="left">data</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/data</td>
+</tr>
+<tr class="odd">
+<td align="left">data_raw</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/data/raw</td>
+</tr>
+<tr class="even">
+<td align="left">data_processed</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/data/processed</td>
+</tr>
+<tr class="odd">
+<td align="left">data_metadata</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/data/metadata</td>
+</tr>
+<tr class="even">
+<td align="left">scripts</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/scripts</td>
+</tr>
+<tr class="odd">
+<td align="left">notebooks</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/notebooks</td>
+</tr>
+<tr class="even">
+<td align="left">runs</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/runs</td>
+</tr>
+<tr class="odd">
+<td align="left">results</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/results</td>
+</tr>
+<tr class="even">
+<td align="left">results_figures</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/results/figures</td>
+</tr>
+<tr class="odd">
+<td align="left">results_tables</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/results/tables</td>
+</tr>
+<tr class="even">
+<td align="left">results_reports</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/results/reports</td>
+</tr>
+<tr class="odd">
+<td align="left">agents_md</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/AGENTS.md</td>
+</tr>
+<tr class="even">
+<td align="left">agents</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/AGENTS.md</td>
+</tr>
+<tr class="odd">
+<td align="left">memory</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory</td>
+</tr>
+<tr class="even">
+<td align="left">memory_decisions</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Decisions.md</td>
+</tr>
+<tr class="odd">
+<td align="left">decisions</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Decisions.md</td>
+</tr>
+<tr class="even">
+<td align="left">memory_plan</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Plan.md</td>
+</tr>
+<tr class="odd">
+<td align="left">plan</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Plan.md</td>
+</tr>
+<tr class="even">
+<td align="left">memory_prompt</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Prompt.md</td>
+</tr>
+<tr class="odd">
+<td align="left">prompt</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Prompt.md</td>
+</tr>
+<tr class="even">
+<td align="left">memory_status</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Status.md</td>
+</tr>
+<tr class="odd">
+<td align="left">status</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/memory/Status.md</td>
+</tr>
+<tr class="even">
+<td align="left">standards</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/docs/standards</td>
+</tr>
+<tr class="odd">
+<td align="left">conventions</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md</td>
+</tr>
+<tr class="even">
+<td align="left">skills</td>
+<td align="left">/tmp/Rtmph1mDNH/shennong-codex-project/skills</td>
+</tr>
+</tbody>
+</table>
+<p>The initialized project keeps durable operating rules in
+<code>AGENTS.md</code>, project state in <code>memory/</code>,
+enforceable directory and naming rules in
+<code>docs/standards/BioinformaticsAnalysisConventions.md</code>, and
+reusable governance procedures in <code>skills/</code>.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">results_prompt</span><span class="op">$</span><span class="va">user</span>, <span class="fl">1</span>, <span class="fl">900</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Task: results.</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -508,14 +666,14 @@ prompts directly.</p>
 <p>If you provide a function that accepts <code>messages</code> and
 returns text, the same high-level helpers can store the generated
 interpretation back into the Seurat object.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">annotation_response</span></span>
 <span><span class="co">#&gt; [1] "Mock interpretation generated from 2 messages using demo-model"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="interpretation-results-are-stored-alongside-analysis-results">Interpretation results are stored alongside analysis results<a class="anchor" aria-label="anchor" href="#interpretation-results-are-stored-alongside-analysis-results"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc_interpreted</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">interpretation_results</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "cluster_annotation_note"</span></span></code></pre></div>
 </div>

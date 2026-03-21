@@ -233,7 +233,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-20
+#>  date     2026-03-21
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -385,18 +385,18 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.1    2026-03-20 [1] local
+#>  Shennong          * 0.1.1    2026-03-21 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)
 #>  spatstat.data       3.1-9    2025-10-18 [1] CRAN (R 4.5.3)
 #>  spatstat.explore    3.7-0    2026-01-22 [1] CRAN (R 4.5.3)
-#>  spatstat.geom       3.7-0    2026-01-20 [1] CRAN (R 4.5.3)
+#>  spatstat.geom       3.7-2    2026-03-21 [1] CRAN (R 4.5.3)
 #>  spatstat.random     3.4-4    2026-01-21 [1] CRAN (R 4.5.3)
 #>  spatstat.sparse     3.1-0    2024-06-21 [1] CRAN (R 4.5.3)
 #>  spatstat.univar     3.1-7    2026-03-18 [1] CRAN (R 4.5.3)
 #>  spatstat.utils      3.2-2    2026-03-10 [1] CRAN (R 4.5.3)
-#>  splitstackshape     1.4.8    2019-04-21 [1] CRAN (R 4.5.3)
+#>  splitstackshape     1.4.8.1  2026-03-21 [1] CRAN (R 4.5.3)
 #>  statmod             1.5.1    2025-10-09 [1] CRAN (R 4.5.3)
 #>  stringi             1.8.7    2025-03-27 [1] CRAN (R 4.5.3)
 #>  stringr             1.6.0    2025-11-04 [1] CRAN (R 4.5.3)
@@ -413,10 +413,10 @@ sessioninfo::session_info()
 #>  treeio              1.34.0   2025-10-30 [1] Bioconduc~
 #>  tweenr              2.0.3    2024-02-26 [1] CRAN (R 4.5.3)
 #>  uwot                0.2.4    2025-11-10 [1] CRAN (R 4.5.3)
-#>  vctrs               0.7.1    2026-01-23 [1] CRAN (R 4.5.3)
+#>  vctrs               0.7.2    2026-03-21 [1] CRAN (R 4.5.3)
 #>  viridisLite         0.4.3    2026-02-04 [1] CRAN (R 4.5.3)
 #>  withr               3.0.2    2024-10-28 [1] CRAN (R 4.5.3)
-#>  xfun                0.56     2026-01-18 [1] CRAN (R 4.5.3)
+#>  xfun                0.57     2026-03-20 [1] CRAN (R 4.5.3)
 #>  xtable              1.8-8    2026-02-22 [1] CRAN (R 4.5.3)
 #>  XVector             0.50.0   2025-10-29 [1] Bioconduc~
 #>  yaml                2.3.12   2025-12-10 [1] CRAN (R 4.5.3)

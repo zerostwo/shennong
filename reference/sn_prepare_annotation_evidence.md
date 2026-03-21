@@ -58,11 +58,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_annotation_evidence(obj, de_name = "celltype_markers", cluster_col = "cell_type")
   names(evidence)
 }
-#> INFO [2026-03-20 02:56:28] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-20 02:56:28] Running QC metrics for human ...
+#> INFO [2026-03-21 21:46:59] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-21 21:46:59] Running QC metrics for human ...
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
 #> Maps last updated on: Sat Nov 16 10:35:32 2024
-#> INFO [2026-03-20 02:56:28] Seurat object initialization complete.
+#> INFO [2026-03-21 21:46:59] Seurat object initialization complete.
 #> [1] "task"             "cluster_col"      "source_de_name"   "analysis_method" 
 #> [5] "species"          "cluster_summary"  "top_marker_table" "caveats"         
 ```
