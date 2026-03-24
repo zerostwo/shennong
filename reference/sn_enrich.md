@@ -16,6 +16,7 @@ sn_enrich(
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
+  msigdb_subcollection = NULL,
   pvalue_cutoff = 0.05,
   store_name = "default",
   source_de_name = NULL,
@@ -53,7 +54,10 @@ sn_enrich(
 
 - database:
 
-  One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, or `"KEGG"`.
+  One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, `"KEGG"`, or an MSigDB
+  collection handled through msigdbr. Supported MSigDB forms include
+  `"H"`, `"C1"` through `"C8"`, and collection plus subcollection
+  strings such as `"C2:CP:REACTOME"` or `"C5:GO:BP"`.
 
 - gene_col:
 
@@ -62,6 +66,11 @@ sn_enrich(
 - score_col:
 
   Column containing ranking scores for `analysis = "gsea"`.
+
+- msigdb_subcollection:
+
+  Optional MSigDB subcollection used when `database` names an MSigDB
+  collection such as `"C2"` or `"C5"`. Ignored for GO and KEGG.
 
 - pvalue_cutoff:
 

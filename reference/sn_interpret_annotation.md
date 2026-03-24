@@ -100,8 +100,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_annotation(obj, de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-24 18:05:45] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 18:05:45] Running QC metrics for human ...
-#> INFO [2026-03-24 18:05:45] Seurat object initialization complete.
+#> INFO [2026-03-24 21:23:43] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-24 21:23:43] Running QC metrics for human ...
+#> INFO [2026-03-24 21:23:43] Seurat object initialization complete.
 #> [1] "annotation"
 ```

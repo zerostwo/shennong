@@ -103,5 +103,5 @@ pbmc_small_coding <- sn_filter_genes(
   species = "human",
   gene_class = "coding"
 )
-#> WARN [2026-03-24 18:05:41] Annotation-based gene filtering could not match 13 features for species 'human'. Those unmatched features will be dropped.
+#> WARN [2026-03-24 21:23:39] Annotation-based gene filtering could not match 13 features for species 'human'. Those unmatched features will be dropped.
 ```

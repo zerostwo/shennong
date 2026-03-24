@@ -95,8 +95,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_de(obj, de_name = "celltype_markers", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-24 18:05:46] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 18:05:46] Running QC metrics for human ...
-#> INFO [2026-03-24 18:05:47] Seurat object initialization complete.
+#> INFO [2026-03-24 21:23:44] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-24 21:23:44] Running QC metrics for human ...
+#> INFO [2026-03-24 21:23:44] Seurat object initialization complete.
 #> [1] "de"
 ```
