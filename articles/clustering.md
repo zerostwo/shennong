@@ -10,12 +10,48 @@ cluster markers.
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
 
+The integration examples in this article assume the Harmony developer
+branch from `immunogenomics/harmony@harmony2`.
+
+Shennong also ships bundled human and mouse GENCODE gene annotations, so
+[`sn_filter_genes()`](https://songqi.org/shennong/reference/sn_filter_genes.md)
+can combine expression-threshold filtering with annotation-based
+retention such as `gene_class = "coding"` or exact `gene_type` subsets.
+
 ``` r
 library(Shennong)
 library(dplyr)
 library(ggplot2)
 library(knitr)
 library(Seurat)
+```
+
+## Inspect bundled signatures
+
+Shennong now ships a tree-structured signature catalog derived from
+`SignatuR` and stored as package data. You can inspect the available
+signature paths and retrieve a specific signature either by short alias
+or by full tree path.
+
+``` r
+signature_catalog <- sn_list_signatures(species = "human")
+head(signature_catalog[, c("path", "n_genes")], 6)
+#> # A tibble: 6 × 2
+#>   path                   n_genes
+#>   <chr>                    <int>
+#> 1 Blocklists/Pseudogenes   12600
+#> 2 Blocklists/Non-coding     7783
+#> 3 Programs/HeatShock          97
+#> 4 Programs/cellCycle.G1S      42
+#> 5 Programs/cellCycle.G2M      52
+#> 6 Programs/IFN               107
+
+mito_genes <- sn_get_signatures(
+  species = "human",
+  category = c("mito", "Compartments/Ribo")
+)
+length(mito_genes)
+#> [1] 205
 ```
 
 ## Data loaded for the workflow
@@ -29,7 +65,7 @@ knitr::kable(cell_summary, digits = 0)
 | pbmc1k              |  1141 | 24986 |       11 |
 | pbmc3k              |  2671 | 19971 |       NA |
 | merged_unintegrated |  3812 | 25597 |       14 |
-| merged_integrated   |  3812 | 25597 |       12 |
+| merged_integrated   |  3812 | 25597 |       11 |
 
 The merged analysis is intentionally run twice: once without batch
 correction and once with Harmony integration. This makes the
@@ -96,18 +132,18 @@ knitr::kable(dplyr::slice_head(composition_tbl, n = 12), digits = 2)
 
 | sample | seurat_clusters | proportion |
 |:-------|:----------------|-----------:|
-| pbmc1k | 0               |      27.96 |
-| pbmc1k | 1               |      16.39 |
-| pbmc1k | 10              |       2.19 |
-| pbmc1k | 11              |       1.31 |
-| pbmc1k | 2               |      11.13 |
-| pbmc1k | 3               |      11.04 |
-| pbmc1k | 4               |       5.70 |
-| pbmc1k | 5               |       6.22 |
-| pbmc1k | 6               |       4.12 |
-| pbmc1k | 7               |       2.28 |
-| pbmc1k | 8               |       6.22 |
-| pbmc1k | 9               |       5.43 |
+| pbmc1k | 0               |      27.52 |
+| pbmc1k | 1               |      27.96 |
+| pbmc1k | 10              |       1.31 |
+| pbmc1k | 2               |      11.48 |
+| pbmc1k | 3               |       6.05 |
+| pbmc1k | 4               |       6.22 |
+| pbmc1k | 5               |       2.28 |
+| pbmc1k | 6               |       3.94 |
+| pbmc1k | 7               |       6.05 |
+| pbmc1k | 8               |       5.00 |
+| pbmc1k | 9               |       2.19 |
+| pbmc3k | 0               |      36.80 |
 
 ``` r
 sn_plot_barplot(
@@ -133,10 +169,10 @@ sn_plot_barplot(
 knitr::kable(lisi_summary, digits = 3)
 ```
 
-| state              |   min |    q1 | median |  mean |   q3 | max |
-|:-------------------|------:|------:|-------:|------:|-----:|----:|
-| after_integration  | 1.016 | 1.319 |  1.604 | 1.586 | 1.88 |   2 |
-| before_integration | 1.000 | 1.000 |  1.000 | 1.024 | 1.00 |   2 |
+| state              |   min |    q1 | median |  mean |    q3 | max |
+|:-------------------|------:|------:|-------:|------:|------:|----:|
+| after_integration  | 1.002 | 1.214 |  1.497 | 1.519 | 1.839 |   2 |
+| before_integration | 1.000 | 1.000 |  1.000 | 1.024 | 1.000 |   2 |
 
 Higher LISI values indicate better local sample mixing. In this
 two-sample example the theoretical maximum is 2, so the post-Harmony
@@ -150,42 +186,39 @@ knitr::kable(marker_tbl, digits = 3)
 
 | cluster | gene            | avg_log2FC | p_val_adj |
 |:--------|:----------------|-----------:|----------:|
-| 0       | S100A12         |      8.735 |         0 |
-| 0       | FOLR3           |      8.434 |         0 |
-| 0       | CLEC4E          |      7.860 |         0 |
-| 1       | TNFRSF4         |      3.518 |         0 |
-| 1       | EPHA4           |      2.628 |         0 |
-| 1       | CD40LG          |      2.524 |         0 |
-| 2       | EPHX2           |      3.171 |         0 |
-| 2       | TSHZ2           |      2.971 |         0 |
-| 2       | LEF1-AS1        |      2.883 |         0 |
-| 3       | TCL1A           |      8.152 |         0 |
-| 3       | IGHD            |      6.820 |         0 |
-| 3       | PCDH9           |      6.483 |         0 |
-| 4       | GZMH            |      4.425 |         0 |
-| 4       | TRGC2           |      4.098 |         0 |
-| 4       | CD8A            |      3.660 |         0 |
-| 5       | ENSG00000289191 |      7.476 |         0 |
-| 5       | SH2D1B          |      7.247 |         0 |
-| 5       | GNLY            |      7.208 |         0 |
-| 6       | LINC02446       |      5.743 |         0 |
-| 6       | ENSG00000310107 |      4.810 |         0 |
-| 6       | NRCAM           |      4.544 |         0 |
-| 7       | ENSG00000301038 |      8.422 |         0 |
-| 7       | CKB             |      7.007 |         0 |
-| 7       | CDKN1C          |      6.901 |         0 |
-| 8       | ENSG00000228033 |      7.722 |         0 |
-| 8       | SLC4A10         |      7.680 |         0 |
-| 8       | ADAM12          |      6.637 |         0 |
-| 9       | SSPN            |      8.895 |         0 |
-| 9       | IGHA1           |      8.236 |         0 |
-| 9       | IGHG3           |      7.914 |         0 |
-| 10      | LINC01478       |     10.546 |         0 |
-| 10      | FCER1A          |      9.146 |         0 |
-| 10      | DNASE1L3        |      8.366 |         0 |
-| 11      | PF4V1           |     15.127 |         0 |
-| 11      | CLDN5           |     13.516 |         0 |
-| 11      | CMTM5           |     12.998 |         0 |
+| 0       | TSHZ2           |      5.207 |         0 |
+| 0       | ENSG00000249806 |      4.769 |         0 |
+| 0       | CMTM8           |      3.697 |         0 |
+| 1       | S100A12         |      8.658 |         0 |
+| 1       | FOLR3           |      8.432 |         0 |
+| 1       | CLEC4E          |      7.858 |         0 |
+| 2       | TCL1A           |      8.094 |         0 |
+| 2       | IGHD            |      6.872 |         0 |
+| 2       | PCDH9           |      6.472 |         0 |
+| 3       | GZMH            |      4.389 |         0 |
+| 3       | TRGC2           |      4.112 |         0 |
+| 3       | CD8A            |      3.710 |         0 |
+| 4       | ENSG00000289191 |      7.489 |         0 |
+| 4       | SH2D1B          |      7.260 |         0 |
+| 4       | GNLY            |      7.171 |         0 |
+| 5       | ENSG00000301038 |      8.422 |         0 |
+| 5       | CKB             |      7.007 |         0 |
+| 5       | CDKN1C          |      6.901 |         0 |
+| 6       | LINC02446       |      5.625 |         0 |
+| 6       | ENSG00000310107 |      4.914 |         0 |
+| 6       | NRCAM           |      4.655 |         0 |
+| 7       | ENSG00000228033 |      7.664 |         0 |
+| 7       | SLC4A10         |      7.625 |         0 |
+| 7       | ADAM12          |      6.432 |         0 |
+| 8       | SSPN            |      8.854 |         0 |
+| 8       | IGHA1           |      8.238 |         0 |
+| 8       | IGHG3           |      8.030 |         0 |
+| 9       | LINC01478       |     10.575 |         0 |
+| 9       | FCER1A          |      8.814 |         0 |
+| 9       | DNASE1L3        |      8.396 |         0 |
+| 10      | PF4V1           |     15.175 |         0 |
+| 10      | CLDN5           |     13.563 |         0 |
+| 10      | CMTM5           |     13.046 |         0 |
 
 ``` r
 sn_plot_dot(
@@ -208,18 +241,18 @@ computed from cluster 0.
 knitr::kable(enrichment_tbl, digits = 4)
 ```
 
-|              | ID           | Description                                    |    NES | p.adjust |
-|:-------------|:-------------|:-----------------------------------------------|-------:|---------:|
-| <GO:0006954> | <GO:0006954> | inflammatory response                          | 1.6434 |        0 |
-| <GO:0006952> | <GO:0006952> | defense response                               | 1.4651 |        0 |
-| <GO:0051239> | <GO:0051239> | regulation of multicellular organismal process | 1.4272 |        0 |
-| <GO:0006955> | <GO:0006955> | immune response                                | 1.4321 |        0 |
-| <GO:0032101> | <GO:0032101> | regulation of response to external stimulus    | 1.5025 |        0 |
-| <GO:0009617> | <GO:0009617> | response to bacterium                          | 1.5958 |        0 |
-| <GO:0009605> | <GO:0009605> | response to external stimulus                  | 1.4004 |        0 |
-| <GO:0002682> | <GO:0002682> | regulation of immune system process            | 1.4234 |        0 |
-| <GO:0050727> | <GO:0050727> | regulation of inflammatory response            | 1.6908 |        0 |
-| <GO:0031347> | <GO:0031347> | regulation of defense response                 | 1.5254 |        0 |
+|              | ID           | Description                                                        |    NES | p.adjust |
+|:-------------|:-------------|:-------------------------------------------------------------------|-------:|---------:|
+| <GO:0042110> | <GO:0042110> | T cell activation                                                  | 2.1728 |        0 |
+| <GO:0002250> | <GO:0002250> | adaptive immune response                                           | 2.2262 |        0 |
+| <GO:0046649> | <GO:0046649> | lymphocyte activation                                              | 2.0296 |        0 |
+| <GO:0001775> | <GO:0001775> | cell activation                                                    | 1.9828 |        0 |
+| <GO:0045321> | <GO:0045321> | leukocyte activation                                               | 1.9731 |        0 |
+| <GO:1903131> | <GO:1903131> | mononuclear cell differentiation                                   | 2.0381 |        0 |
+| <GO:0002521> | <GO:0002521> | leukocyte differentiation                                          | 1.9958 |        0 |
+| <GO:0006955> | <GO:0006955> | immune response                                                    | 1.9048 |        0 |
+| <GO:0002684> | <GO:0002684> | positive regulation of immune system process                       | 1.9606 |        0 |
+| <GO:0002429> | <GO:0002429> | immune response-activating cell surface receptor signaling pathway | 2.1443 |        0 |
 
 ``` r
 sessioninfo::session_info()
@@ -233,7 +266,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-21
+#>  date     2026-03-24
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -279,7 +312,7 @@ sessioninfo::session_info()
 #>  fontBitstreamVera   0.1.1    2017-02-01 [1] CRAN (R 4.5.3)
 #>  fontLiberation      0.1.0    2016-10-15 [1] CRAN (R 4.5.3)
 #>  fontquiver          0.2.1    2017-02-01 [1] CRAN (R 4.5.3)
-#>  fs                  1.6.7    2026-03-06 [1] CRAN (R 4.5.3)
+#>  fs                  2.0.1    2026-03-24 [1] CRAN (R 4.5.3)
 #>  future            * 1.70.0   2026-03-14 [1] CRAN (R 4.5.3)
 #>  future.apply        1.20.2   2026-02-20 [1] CRAN (R 4.5.3)
 #>  gdtools             0.5.0    2026-02-09 [1] CRAN (R 4.5.3)
@@ -303,7 +336,7 @@ sessioninfo::session_info()
 #>  gridGraphics        0.5-1    2020-12-13 [1] CRAN (R 4.5.3)
 #>  gson                0.1.0    2023-03-07 [1] CRAN (R 4.5.3)
 #>  gtable              0.3.6    2024-10-25 [1] CRAN (R 4.5.3)
-#>  harmony             1.2.4    2025-10-10 [1] any (@1.2.4)
+#>  harmony             2.0.0    2026-03-24 [1] Github (immunogenomics/harmony@3617c00)
 #>  hdf5r               1.3.12   2025-01-20 [1] any (@1.3.12)
 #>  HGNChelper          0.8.15   2024-11-16 [1] any (@0.8.15)
 #>  htmltools           0.5.9    2025-12-04 [1] CRAN (R 4.5.3)
@@ -357,7 +390,7 @@ sessioninfo::session_info()
 #>  R.oo                1.27.1   2025-05-02 [1] CRAN (R 4.5.3)
 #>  R.utils             2.13.0   2025-02-24 [1] CRAN (R 4.5.3)
 #>  R6                  2.6.1    2025-02-15 [1] CRAN (R 4.5.3)
-#>  ragg                1.5.1    2026-03-06 [1] CRAN (R 4.5.3)
+#>  ragg                1.5.2    2026-03-23 [1] CRAN (R 4.5.3)
 #>  RANN                2.6.2    2024-08-25 [1] CRAN (R 4.5.3)
 #>  rappdirs            0.3.4    2026-01-17 [1] CRAN (R 4.5.3)
 #>  RColorBrewer        1.1-3    2022-04-03 [1] CRAN (R 4.5.3)
@@ -385,14 +418,14 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.1    2026-03-21 [1] local
+#>  Shennong          * 0.1.1    2026-03-24 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)
 #>  spatstat.data       3.1-9    2025-10-18 [1] CRAN (R 4.5.3)
-#>  spatstat.explore    3.7-0    2026-01-22 [1] CRAN (R 4.5.3)
-#>  spatstat.geom       3.7-2    2026-03-21 [1] CRAN (R 4.5.3)
-#>  spatstat.random     3.4-4    2026-01-21 [1] CRAN (R 4.5.3)
+#>  spatstat.explore    3.8-0    2026-03-22 [1] CRAN (R 4.5.3)
+#>  spatstat.geom       3.7-3    2026-03-23 [1] CRAN (R 4.5.3)
+#>  spatstat.random     3.4-5    2026-03-22 [1] CRAN (R 4.5.3)
 #>  spatstat.sparse     3.1-0    2024-06-21 [1] CRAN (R 4.5.3)
 #>  spatstat.univar     3.1-7    2026-03-18 [1] CRAN (R 4.5.3)
 #>  spatstat.utils      3.2-2    2026-03-10 [1] CRAN (R 4.5.3)
@@ -412,6 +445,7 @@ sessioninfo::session_info()
 #>  tidytree            0.4.7    2026-01-08 [1] CRAN (R 4.5.3)
 #>  treeio              1.34.0   2025-10-30 [1] Bioconduc~
 #>  tweenr              2.0.3    2024-02-26 [1] CRAN (R 4.5.3)
+#>  utf8                1.2.6    2025-06-08 [1] CRAN (R 4.5.3)
 #>  uwot                0.2.4    2025-11-10 [1] CRAN (R 4.5.3)
 #>  vctrs               0.7.2    2026-03-21 [1] CRAN (R 4.5.3)
 #>  viridisLite         0.4.3    2026-02-04 [1] CRAN (R 4.5.3)

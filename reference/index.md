@@ -6,6 +6,10 @@
   : Pan-Immune CellTypist Metadata
 - [`hom_genes`](https://songqi.org/shennong/reference/hom_genes.md) :
   Human-Mouse Homologous Genes Table
+- [`shennong_gene_annotations`](https://songqi.org/shennong/reference/shennong_gene_annotations.md)
+  : Bundled Shennong Gene Annotations
+- [`shennong_signature_catalog`](https://songqi.org/shennong/reference/shennong_signature_catalog.md)
+  : Bundled Shennong Signature Catalog
 - [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
   : Load example datasets from Zenodo
 - [`sn_load_pbmc()`](https://songqi.org/shennong/reference/sn_load_pbmc.md)
@@ -80,8 +84,16 @@
   : Create a bar plot from a data frame
 - [`show_all_palettes()`](https://songqi.org/shennong/reference/show_all_palettes.md)
   : List available color palettes
+- [`sn_list_signatures()`](https://songqi.org/shennong/reference/sn_list_signatures.md)
+  : List bundled Shennong signatures
 - [`sn_get_signatures()`](https://songqi.org/shennong/reference/sn_get_signatures.md)
-  : Retrieve bundled Shennong signature genes by preset category names
+  : Retrieve bundled Shennong signature genes by category or tree path
+- [`sn_add_signature()`](https://songqi.org/shennong/reference/sn_add_signature.md)
+  : Add a signature to the editable source registry
+- [`sn_update_signature()`](https://songqi.org/shennong/reference/sn_update_signature.md)
+  : Update a signature in the editable source registry
+- [`sn_delete_signature()`](https://songqi.org/shennong/reference/sn_delete_signature.md)
+  : Delete a signature from the editable source registry
 - [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md) :
   Run gene set enrichment analysis
 

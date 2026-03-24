@@ -83,6 +83,13 @@ and functional enrichment from cluster markers.</p>
 <p>To keep <code>R CMD check</code> deterministic, the analysis is only
 evaluated when <code>SHENNONG_RUN_VIGNETTES=true</code> or during
 pkgdown builds.</p>
+<p>The integration examples in this article assume the Harmony developer
+branch from <code>immunogenomics/harmony@harmony2</code>.</p>
+<p>Shennong also ships bundled human and mouse GENCODE gene annotations,
+so <code><a href="../reference/sn_filter_genes.html">sn_filter_genes()</a></code> can combine expression-threshold
+filtering with annotation-based retention such as
+<code>gene_class = "coding"</code> or exact <code>gene_type</code>
+subsets.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -90,9 +97,36 @@ pkgdown builds.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
+<h2 id="inspect-bundled-signatures">Inspect bundled signatures<a class="anchor" aria-label="anchor" href="#inspect-bundled-signatures"></a>
+</h2>
+<p>Shennong now ships a tree-structured signature catalog derived from
+<code>SignatuR</code> and stored as package data. You can inspect the
+available signature paths and retrieve a specific signature either by
+short alias or by full tree path.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">signature_catalog</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_signatures.html">sn_list_signatures</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">signature_catalog</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"n_genes"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 2</span></span></span>
+<span><span class="co">#&gt;   path                   n_genes</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Blocklists/Pseudogenes   <span style="text-decoration: underline;">12</span>600</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Blocklists/Non-coding     <span style="text-decoration: underline;">7</span>783</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Programs/HeatShock          97</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Programs/cellCycle.G1S      42</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Programs/cellCycle.G2M      52</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> Programs/IFN               107</span></span>
+<span></span>
+<span><span class="va">mito_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_signatures.html">sn_get_signatures</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  category <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mito"</span>, <span class="st">"Compartments/Ribo"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">mito_genes</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 205</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="data-loaded-for-the-workflow">Data loaded for the workflow<a class="anchor" aria-label="anchor" href="#data-loaded-for-the-workflow"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cell_summary</span>, digits <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -124,7 +158,7 @@ pkgdown builds.</p>
 <td align="left">merged_integrated</td>
 <td align="right">3812</td>
 <td align="right">25597</td>
-<td align="right">12</td>
+<td align="right">11</td>
 </tr>
 </tbody>
 </table>
@@ -136,7 +170,7 @@ embedding.</p>
 <div class="section level2">
 <h2 id="single-sample-clustering">Single-sample clustering<a class="anchor" aria-label="anchor" href="#single-sample-clustering"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc1k_clustered</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -150,7 +184,7 @@ embedding.</p>
 <div class="section level2">
 <h2 id="before-and-after-harmony-integration">Before and after Harmony integration<a class="anchor" aria-label="anchor" href="#before-and-after-harmony-integration"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_unintegrated</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -158,7 +192,7 @@ embedding.</p>
 <span>  title <span class="op">=</span> <span class="st">"Before integration: merged object colored by sample"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="clustering_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="768"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -166,7 +200,7 @@ embedding.</p>
 <span>  title <span class="op">=</span> <span class="st">"After Harmony integration: merged object colored by sample"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="clustering_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="768"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -180,7 +214,7 @@ embedding.</p>
 <div class="section level2">
 <h2 id="cluster-composition-by-sample">Cluster composition by sample<a class="anchor" aria-label="anchor" href="#cluster-composition-by-sample"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_head</a></span><span class="op">(</span><span class="va">composition_tbl</span>, n <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -192,66 +226,66 @@ embedding.</p>
 <tr class="odd">
 <td align="left">pbmc1k</td>
 <td align="left">0</td>
-<td align="right">27.96</td>
+<td align="right">27.52</td>
 </tr>
 <tr class="even">
 <td align="left">pbmc1k</td>
 <td align="left">1</td>
-<td align="right">16.39</td>
+<td align="right">27.96</td>
 </tr>
 <tr class="odd">
 <td align="left">pbmc1k</td>
 <td align="left">10</td>
+<td align="right">1.31</td>
+</tr>
+<tr class="even">
+<td align="left">pbmc1k</td>
+<td align="left">2</td>
+<td align="right">11.48</td>
+</tr>
+<tr class="odd">
+<td align="left">pbmc1k</td>
+<td align="left">3</td>
+<td align="right">6.05</td>
+</tr>
+<tr class="even">
+<td align="left">pbmc1k</td>
+<td align="left">4</td>
+<td align="right">6.22</td>
+</tr>
+<tr class="odd">
+<td align="left">pbmc1k</td>
+<td align="left">5</td>
+<td align="right">2.28</td>
+</tr>
+<tr class="even">
+<td align="left">pbmc1k</td>
+<td align="left">6</td>
+<td align="right">3.94</td>
+</tr>
+<tr class="odd">
+<td align="left">pbmc1k</td>
+<td align="left">7</td>
+<td align="right">6.05</td>
+</tr>
+<tr class="even">
+<td align="left">pbmc1k</td>
+<td align="left">8</td>
+<td align="right">5.00</td>
+</tr>
+<tr class="odd">
+<td align="left">pbmc1k</td>
+<td align="left">9</td>
 <td align="right">2.19</td>
 </tr>
 <tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">11</td>
-<td align="right">1.31</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">2</td>
-<td align="right">11.13</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">3</td>
-<td align="right">11.04</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">4</td>
-<td align="right">5.70</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">5</td>
-<td align="right">6.22</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">6</td>
-<td align="right">4.12</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">7</td>
-<td align="right">2.28</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">8</td>
-<td align="right">6.22</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">9</td>
-<td align="right">5.43</td>
+<td align="left">pbmc3k</td>
+<td align="left">0</td>
+<td align="right">36.80</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_barplot.html">sn_plot_barplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">composition_tbl</span>,</span>
 <span>  x <span class="op">=</span> <span class="va">sample</span>,</span>
@@ -270,7 +304,7 @@ embedding.</p>
 <div class="section level2">
 <h2 id="integration-quality-summary-with-lisi">Integration quality summary with LISI<a class="anchor" aria-label="anchor" href="#integration-quality-summary-with-lisi"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">lisi_summary</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -285,11 +319,11 @@ embedding.</p>
 <tbody>
 <tr class="odd">
 <td align="left">after_integration</td>
-<td align="right">1.016</td>
-<td align="right">1.319</td>
-<td align="right">1.604</td>
-<td align="right">1.586</td>
-<td align="right">1.88</td>
+<td align="right">1.002</td>
+<td align="right">1.214</td>
+<td align="right">1.497</td>
+<td align="right">1.519</td>
+<td align="right">1.839</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
@@ -298,7 +332,7 @@ embedding.</p>
 <td align="right">1.000</td>
 <td align="right">1.000</td>
 <td align="right">1.024</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">2</td>
 </tr>
 </tbody>
@@ -311,7 +345,7 @@ baseline.</p>
 <div class="section level2">
 <h2 id="marker-genes-from-the-integrated-object">Marker genes from the integrated object<a class="anchor" aria-label="anchor" href="#marker-genes-from-the-integrated-object"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">marker_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -323,223 +357,205 @@ baseline.</p>
 <tbody>
 <tr class="odd">
 <td align="left">0</td>
-<td align="left">S100A12</td>
-<td align="right">8.735</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="left">FOLR3</td>
-<td align="right">8.434</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="left">CLEC4E</td>
-<td align="right">7.860</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">TNFRSF4</td>
-<td align="right">3.518</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">1</td>
-<td align="left">EPHA4</td>
-<td align="right">2.628</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="left">CD40LG</td>
-<td align="right">2.524</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="left">EPHX2</td>
-<td align="right">3.171</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">2</td>
 <td align="left">TSHZ2</td>
-<td align="right">2.971</td>
+<td align="right">5.207</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">ENSG00000249806</td>
+<td align="right">4.769</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">CMTM8</td>
+<td align="right">3.697</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="left">S100A12</td>
+<td align="right">8.658</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">FOLR3</td>
+<td align="right">8.432</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="left">CLEC4E</td>
+<td align="right">7.858</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">2</td>
-<td align="left">LEF1-AS1</td>
-<td align="right">2.883</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
 <td align="left">TCL1A</td>
-<td align="right">8.152</td>
+<td align="right">8.094</td>
 <td align="right">0</td>
 </tr>
-<tr class="odd">
-<td align="left">3</td>
+<tr class="even">
+<td align="left">2</td>
 <td align="left">IGHD</td>
-<td align="right">6.820</td>
+<td align="right">6.872</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">2</td>
+<td align="left">PCDH9</td>
+<td align="right">6.472</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">3</td>
-<td align="left">PCDH9</td>
-<td align="right">6.483</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">4</td>
 <td align="left">GZMH</td>
-<td align="right">4.425</td>
+<td align="right">4.389</td>
 <td align="right">0</td>
 </tr>
-<tr class="even">
-<td align="left">4</td>
+<tr class="odd">
+<td align="left">3</td>
 <td align="left">TRGC2</td>
-<td align="right">4.098</td>
+<td align="right">4.112</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">3</td>
+<td align="left">CD8A</td>
+<td align="right">3.710</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">4</td>
-<td align="left">CD8A</td>
-<td align="right">3.660</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">5</td>
 <td align="left">ENSG00000289191</td>
-<td align="right">7.476</td>
+<td align="right">7.489</td>
 <td align="right">0</td>
 </tr>
-<tr class="odd">
-<td align="left">5</td>
+<tr class="even">
+<td align="left">4</td>
 <td align="left">SH2D1B</td>
-<td align="right">7.247</td>
+<td align="right">7.260</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">4</td>
+<td align="left">GNLY</td>
+<td align="right">7.171</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">5</td>
-<td align="left">GNLY</td>
-<td align="right">7.208</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">6</td>
-<td align="left">LINC02446</td>
-<td align="right">5.743</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">6</td>
-<td align="left">ENSG00000310107</td>
-<td align="right">4.810</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">6</td>
-<td align="left">NRCAM</td>
-<td align="right">4.544</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">7</td>
 <td align="left">ENSG00000301038</td>
 <td align="right">8.422</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left">7</td>
+<td align="left">5</td>
 <td align="left">CKB</td>
 <td align="right">7.007</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
-<td align="left">7</td>
+<td align="left">5</td>
 <td align="left">CDKN1C</td>
 <td align="right">6.901</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left">8</td>
+<td align="left">6</td>
+<td align="left">LINC02446</td>
+<td align="right">5.625</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="left">ENSG00000310107</td>
+<td align="right">4.914</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">6</td>
+<td align="left">NRCAM</td>
+<td align="right">4.655</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
 <td align="left">ENSG00000228033</td>
-<td align="right">7.722</td>
+<td align="right">7.664</td>
 <td align="right">0</td>
 </tr>
-<tr class="even">
-<td align="left">8</td>
+<tr class="odd">
+<td align="left">7</td>
 <td align="left">SLC4A10</td>
-<td align="right">7.680</td>
+<td align="right">7.625</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
+<td align="left">ADAM12</td>
+<td align="right">6.432</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">8</td>
-<td align="left">ADAM12</td>
-<td align="right">6.637</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">9</td>
 <td align="left">SSPN</td>
-<td align="right">8.895</td>
+<td align="right">8.854</td>
 <td align="right">0</td>
 </tr>
-<tr class="odd">
-<td align="left">9</td>
+<tr class="even">
+<td align="left">8</td>
 <td align="left">IGHA1</td>
-<td align="right">8.236</td>
+<td align="right">8.238</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">8</td>
+<td align="left">IGHG3</td>
+<td align="right">8.030</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">9</td>
-<td align="left">IGHG3</td>
-<td align="right">7.914</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left">10</td>
 <td align="left">LINC01478</td>
-<td align="right">10.546</td>
+<td align="right">10.575</td>
 <td align="right">0</td>
 </tr>
-<tr class="even">
-<td align="left">10</td>
+<tr class="odd">
+<td align="left">9</td>
 <td align="left">FCER1A</td>
-<td align="right">9.146</td>
+<td align="right">8.814</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">9</td>
+<td align="left">DNASE1L3</td>
+<td align="right">8.396</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">10</td>
-<td align="left">DNASE1L3</td>
-<td align="right">8.366</td>
+<td align="left">PF4V1</td>
+<td align="right">15.175</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
-<td align="left">11</td>
-<td align="left">PF4V1</td>
-<td align="right">15.127</td>
+<td align="left">10</td>
+<td align="left">CLDN5</td>
+<td align="right">13.563</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left">11</td>
-<td align="left">CLDN5</td>
-<td align="right">13.516</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left">11</td>
+<td align="left">10</td>
 <td align="left">CMTM5</td>
-<td align="right">12.998</td>
+<td align="right">13.046</td>
 <td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"top_markers"</span>,</span>
@@ -554,15 +570,15 @@ baseline.</p>
 <p>The table below shows the first non-empty GO Biological Process GSEA
 result found among the cluster marker sets. In this run, enrichment was
 computed from cluster 0.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">enrichment_tbl</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
-<col width="12%">
-<col width="12%">
-<col width="55%">
-<col width="8%">
 <col width="10%">
+<col width="10%">
+<col width="63%">
+<col width="6%">
+<col width="8%">
 </colgroup>
 <thead><tr class="header">
 <th align="left"></th>
@@ -573,78 +589,79 @@ computed from cluster 0.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left"><a href="GO:0006954" class="uri">GO:0006954</a></td>
-<td align="left"><a href="GO:0006954" class="uri">GO:0006954</a></td>
-<td align="left">inflammatory response</td>
-<td align="right">1.6434</td>
+<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
+<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
+<td align="left">T cell activation</td>
+<td align="right">2.1728</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
-<td align="left"><a href="GO:0006952" class="uri">GO:0006952</a></td>
-<td align="left"><a href="GO:0006952" class="uri">GO:0006952</a></td>
-<td align="left">defense response</td>
-<td align="right">1.4651</td>
+<td align="left"><a href="GO:0002250" class="uri">GO:0002250</a></td>
+<td align="left"><a href="GO:0002250" class="uri">GO:0002250</a></td>
+<td align="left">adaptive immune response</td>
+<td align="right">2.2262</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left"><a href="GO:0051239" class="uri">GO:0051239</a></td>
-<td align="left"><a href="GO:0051239" class="uri">GO:0051239</a></td>
-<td align="left">regulation of multicellular organismal process</td>
-<td align="right">1.4272</td>
+<td align="left"><a href="GO:0046649" class="uri">GO:0046649</a></td>
+<td align="left"><a href="GO:0046649" class="uri">GO:0046649</a></td>
+<td align="left">lymphocyte activation</td>
+<td align="right">2.0296</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left"><a href="GO:0001775" class="uri">GO:0001775</a></td>
+<td align="left"><a href="GO:0001775" class="uri">GO:0001775</a></td>
+<td align="left">cell activation</td>
+<td align="right">1.9828</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left"><a href="GO:0045321" class="uri">GO:0045321</a></td>
+<td align="left"><a href="GO:0045321" class="uri">GO:0045321</a></td>
+<td align="left">leukocyte activation</td>
+<td align="right">1.9731</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
+<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
+<td align="left">mononuclear cell differentiation</td>
+<td align="right">2.0381</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left"><a href="GO:0002521" class="uri">GO:0002521</a></td>
+<td align="left"><a href="GO:0002521" class="uri">GO:0002521</a></td>
+<td align="left">leukocyte differentiation</td>
+<td align="right">1.9958</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left"><a href="GO:0006955" class="uri">GO:0006955</a></td>
 <td align="left"><a href="GO:0006955" class="uri">GO:0006955</a></td>
 <td align="left">immune response</td>
-<td align="right">1.4321</td>
+<td align="right">1.9048</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left"><a href="GO:0032101" class="uri">GO:0032101</a></td>
-<td align="left"><a href="GO:0032101" class="uri">GO:0032101</a></td>
-<td align="left">regulation of response to external stimulus</td>
-<td align="right">1.5025</td>
+<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
+<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
+<td align="left">positive regulation of immune system process</td>
+<td align="right">1.9606</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
-<td align="left"><a href="GO:0009617" class="uri">GO:0009617</a></td>
-<td align="left"><a href="GO:0009617" class="uri">GO:0009617</a></td>
-<td align="left">response to bacterium</td>
-<td align="right">1.5958</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left"><a href="GO:0009605" class="uri">GO:0009605</a></td>
-<td align="left"><a href="GO:0009605" class="uri">GO:0009605</a></td>
-<td align="left">response to external stimulus</td>
-<td align="right">1.4004</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left"><a href="GO:0002682" class="uri">GO:0002682</a></td>
-<td align="left"><a href="GO:0002682" class="uri">GO:0002682</a></td>
-<td align="left">regulation of immune system process</td>
-<td align="right">1.4234</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left"><a href="GO:0050727" class="uri">GO:0050727</a></td>
-<td align="left"><a href="GO:0050727" class="uri">GO:0050727</a></td>
-<td align="left">regulation of inflammatory response</td>
-<td align="right">1.6908</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left"><a href="GO:0031347" class="uri">GO:0031347</a></td>
-<td align="left"><a href="GO:0031347" class="uri">GO:0031347</a></td>
-<td align="left">regulation of defense response</td>
-<td align="right">1.5254</td>
+<td align="left"><a href="GO:0002429" class="uri">GO:0002429</a></td>
+<td align="left"><a href="GO:0002429" class="uri">GO:0002429</a></td>
+<td align="left">immune response-activating cell surface receptor
+signaling pathway</td>
+<td align="right">2.1443</td>
 <td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">sessioninfo</span><span class="fu">::</span><span class="fu"><a href="https://sessioninfo.r-lib.org/reference/session_info.html" class="external-link">session_info</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB; font-weight: bold;">─ Session info ───────────────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt;  <span style="color: #555555; font-style: italic;">setting </span> <span style="color: #555555; font-style: italic;">value</span></span></span>
@@ -656,7 +673,7 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  collate  C.UTF-8</span></span>
 <span><span class="co">#&gt;  ctype    C.UTF-8</span></span>
 <span><span class="co">#&gt;  tz       UTC</span></span>
-<span><span class="co">#&gt;  date     2026-03-21</span></span>
+<span><span class="co">#&gt;  date     2026-03-24</span></span>
 <span><span class="co">#&gt;  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)</span></span>
 <span><span class="co">#&gt;  quarto   NA</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -702,7 +719,7 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  fontBitstreamVera   0.1.1    <span style="color: #555555;">2017-02-01</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  fontLiberation      0.1.0    <span style="color: #555555;">2016-10-15</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  fontquiver          0.2.1    <span style="color: #555555;">2017-02-01</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  fs                  1.6.7    <span style="color: #555555;">2026-03-06</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  fs                  2.0.1    <span style="color: #555555;">2026-03-24</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  future            * 1.70.0   <span style="color: #555555;">2026-03-14</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  future.apply        1.20.2   <span style="color: #555555;">2026-02-20</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  gdtools             0.5.0    <span style="color: #555555;">2026-02-09</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
@@ -726,7 +743,7 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  gridGraphics        0.5-1    <span style="color: #555555;">2020-12-13</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  gson                0.1.0    <span style="color: #555555;">2023-03-07</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  gtable              0.3.6    <span style="color: #555555;">2024-10-25</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  harmony             1.2.4    <span style="color: #555555;">2025-10-10</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@1.2.4)</span></span></span>
+<span><span class="co">#&gt;  harmony             2.0.0    <span style="color: #555555;">2026-03-24</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">Github (immunogenomics/harmony@3617c00)</span></span></span>
 <span><span class="co">#&gt;  hdf5r               1.3.12   <span style="color: #555555;">2025-01-20</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@1.3.12)</span></span></span>
 <span><span class="co">#&gt;  HGNChelper          0.8.15   <span style="color: #555555;">2024-11-16</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@0.8.15)</span></span></span>
 <span><span class="co">#&gt;  htmltools           0.5.9    <span style="color: #555555;">2025-12-04</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
@@ -780,7 +797,7 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  R.oo                1.27.1   <span style="color: #555555;">2025-05-02</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  R.utils             2.13.0   <span style="color: #555555;">2025-02-24</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  R6                  2.6.1    <span style="color: #555555;">2025-02-15</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  ragg                1.5.1    <span style="color: #555555;">2026-03-06</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  ragg                1.5.2    <span style="color: #555555;">2026-03-23</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  RANN                2.6.2    <span style="color: #555555;">2024-08-25</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  rappdirs            0.3.4    <span style="color: #555555;">2026-01-17</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  RColorBrewer        1.1-3    <span style="color: #555555;">2022-04-03</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
@@ -808,14 +825,14 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  sessioninfo         1.2.3    <span style="color: #555555;">2025-02-05</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@1.2.3)</span></span></span>
 <span><span class="co">#&gt;  Seurat            * 5.4.0    <span style="color: #555555;">2025-12-14</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@5.4.0)</span></span></span>
 <span><span class="co">#&gt;  SeuratObject      * 5.3.0    <span style="color: #555555;">2025-12-12</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  Shennong          * 0.1.1    <span style="color: #555555;">2026-03-21</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
+<span><span class="co">#&gt;  Shennong          * 0.1.1    <span style="color: #555555;">2026-03-24</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
 <span><span class="co">#&gt;  shiny               1.13.0   <span style="color: #555555;">2026-02-20</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  sp                * 2.2-1    <span style="color: #555555;">2026-02-13</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spam                2.11-3   <span style="color: #555555;">2026-01-08</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spatstat.data       3.1-9    <span style="color: #555555;">2025-10-18</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  spatstat.explore    3.7-0    <span style="color: #555555;">2026-01-22</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  spatstat.geom       3.7-2    <span style="color: #555555;">2026-03-21</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  spatstat.random     3.4-4    <span style="color: #555555;">2026-01-21</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  spatstat.explore    3.8-0    <span style="color: #555555;">2026-03-22</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  spatstat.geom       3.7-3    <span style="color: #555555;">2026-03-23</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  spatstat.random     3.4-5    <span style="color: #555555;">2026-03-22</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spatstat.sparse     3.1-0    <span style="color: #555555;">2024-06-21</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spatstat.univar     3.1-7    <span style="color: #555555;">2026-03-18</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spatstat.utils      3.2-2    <span style="color: #555555;">2026-03-10</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
@@ -835,6 +852,7 @@ computed from cluster 0.</p>
 <span><span class="co">#&gt;  tidytree            0.4.7    <span style="color: #555555;">2026-01-08</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  treeio              1.34.0   <span style="color: #555555;">2025-10-30</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">Bioconduc~</span></span></span>
 <span><span class="co">#&gt;  tweenr              2.0.3    <span style="color: #555555;">2024-02-26</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
+<span><span class="co">#&gt;  utf8                1.2.6    <span style="color: #555555;">2025-06-08</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  uwot                0.2.4    <span style="color: #555555;">2025-11-10</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  vctrs               0.7.2    <span style="color: #555555;">2026-03-21</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  viridisLite         0.4.3    <span style="color: #555555;">2026-02-04</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>

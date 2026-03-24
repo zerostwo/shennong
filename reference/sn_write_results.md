@@ -105,9 +105,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_results(obj, cluster_de_name = "celltype_markers", enrichment_name = "demo_gsea", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-21 23:22:00] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-21 23:22:00] Running QC metrics for human ...
-#> INFO [2026-03-21 23:22:00] Seurat object initialization complete.
+#> INFO [2026-03-24 17:46:14] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-24 17:46:14] Running QC metrics for human ...
+#> INFO [2026-03-24 17:46:14] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "results"
 ```

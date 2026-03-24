@@ -2,7 +2,8 @@
 
 This function filters genes in a Seurat object based on the number of
 cells in which they are expressed. Optionally, it can visualize the
-effect of different filtering thresholds.
+effect of different filtering thresholds and retain only genes matching
+bundled GENCODE-based annotation classes.
 
 ## Usage
 
@@ -13,7 +14,10 @@ sn_filter_genes(
   plot = TRUE,
   filter = TRUE,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  species = NULL,
+  gene_class = NULL,
+  gene_type = NULL
 )
 ```
 
@@ -46,6 +50,21 @@ sn_filter_genes(
 
   Layer used for gene filtering. Defaults to `"counts"`.
 
+- species:
+
+  Optional species label used for annotation-aware filtering. Required
+  only when it cannot be inferred from the object.
+
+- gene_class:
+
+  Optional coarse annotation class to retain. One of `"coding"` or
+  `"noncoding"`.
+
+- gene_type:
+
+  Optional character vector of exact GENCODE `gene_type` values to
+  retain.
+
 ## Value
 
 A filtered Seurat object if `filter = TRUE`, otherwise the original
@@ -56,7 +75,10 @@ object.
 The function computes the number of cells expressing each gene in the
 Seurat object and filters out genes expressed in fewer than `min_cells`
 cells. If `plot = TRUE`, it visualizes the effect of filtering using
-`ggplot2`.
+`ggplot2`. When `gene_class` or `gene_type` is supplied, the function
+also matches the feature set against the bundled
+`shennong_gene_annotations` data and keeps only the requested annotation
+subset.
 
 ## Examples
 
@@ -73,4 +95,13 @@ library(Seurat)
 # Load example Seurat object
 pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
 
+pbmc_small_coding <- sn_filter_genes(
+  pbmc_small,
+  min_cells = 1,
+  plot = FALSE,
+  filter = TRUE,
+  species = "human",
+  gene_class = "coding"
+)
+#> WARN [2026-03-24 17:45:51] Annotation-based gene filtering could not match 13 features for species 'human'. Those unmatched features will be dropped.
 ```

@@ -73,7 +73,7 @@ sn_run_cluster(
 - theta:
 
   The `theta` parameter for
-  [`harmony::RunHarmony`](https://rdrr.io/pkg/harmony/man/RunHarmony.html),
+  [`harmony::RunHarmony`](https://pati-ni.github.io/harmony/reference/RunHarmony.html),
   controlling batch diversity preservation vs. correction.
 
 - group_by_vars:

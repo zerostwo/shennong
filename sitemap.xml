@@ -16,14 +16,18 @@
 <url><loc>https://songqi.org/shennong/reference/hom_genes.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/index.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/marker_genes.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/shennong_gene_annotations.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/shennong_signature_catalog.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/show_all_palettes.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_add_data_from_anndata.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_add_signature.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_build_prompt.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_calculate_composition.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_calculate_lisi.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_calculate_rogue.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_check_file.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_check_version.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_delete_signature.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_enrich.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_filter_cells.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_filter_genes.html</loc></url>
@@ -44,6 +48,7 @@
 <url><loc>https://songqi.org/shennong/reference/sn_interpret_de.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_interpret_enrichment.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_list_results.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_list_signatures.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_load_data.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_load_pbmc.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_normalize_data.html</loc></url>
@@ -66,6 +71,7 @@
 <url><loc>https://songqi.org/shennong/reference/sn_set_path.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_standardize_gene_symbols.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_store_enrichment.html</loc></url>
+<url><loc>https://songqi.org/shennong/reference/sn_update_signature.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_write.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_write_figure_legend.html</loc></url>
 <url><loc>https://songqi.org/shennong/reference/sn_write_presentation_summary.html</loc></url>
