@@ -100,9 +100,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_presentation_summary(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-24 17:46:13] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 17:46:13] Running QC metrics for human ...
-#> INFO [2026-03-24 17:46:13] Seurat object initialization complete.
+#> INFO [2026-03-24 18:06:02] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-24 18:06:02] Running QC metrics for human ...
+#> INFO [2026-03-24 18:06:02] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "presentation_summary"
 ```
