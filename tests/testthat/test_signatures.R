@@ -33,6 +33,20 @@ test_that("sn_get_signatures uses bundled species snapshots", {
   expect_true(any(grepl("^mt-", mouse_genes)))
 })
 
+test_that("sn_get_signatures preserves legacy cell-cycle aliases", {
+  alias_genes <- sn_get_signatures(
+    species = "human",
+    category = c("g1s", "g2m")
+  )
+  path_genes <- sn_get_signatures(
+    species = "human",
+    category = c("Programs/cellCycle.G1S", "Programs/cellCycle.G2M")
+  )
+
+  expect_setequal(alias_genes, path_genes)
+  expect_true(length(alias_genes) > 0)
+})
+
 test_that("signature registry helpers add, update, and delete custom signatures", {
   registry_path <- tempfile(fileext = ".json")
   jsonlite::write_json(

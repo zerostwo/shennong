@@ -287,6 +287,13 @@
     dplyr::filter(.data$species == selected_species)
 }
 
+.sn_signature_legacy_alias_map <- function() {
+  c(
+    g1s = "Programs/cellCycle.G1S",
+    g2m = "Programs/cellCycle.G2M"
+  )
+}
+
 .sn_signature_resolve_queries <- function(query, leaf_table) {
   if (length(query) == 0) {
     return(integer(0))
@@ -296,6 +303,7 @@
   exact_name <- leaf_table$name
   normalized_path <- .sn_signature_normalize_key(exact_path)
   normalized_name <- .sn_signature_normalize_key(exact_name)
+  legacy_aliases <- .sn_signature_legacy_alias_map()
 
   matches <- integer(0)
   for (current_query in unique(query)) {
@@ -308,6 +316,9 @@
       current_matches <- which(normalized_path == normalized_query)
       if (length(current_matches) == 0) {
         current_matches <- which(normalized_name == normalized_query)
+      }
+      if (length(current_matches) == 0 && normalized_query %in% names(legacy_aliases)) {
+        current_matches <- which(exact_path == legacy_aliases[[normalized_query]])
       }
     }
 

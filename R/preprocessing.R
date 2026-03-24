@@ -156,8 +156,8 @@ sn_score_cell_cycle <- function(object, species = NULL) {
   species <- sn_get_species(object = object, species = species)
 
   # Retrieve S-phase and G2M-phase markers
-  s_features <- sn_get_signatures(species = species, category = "g1s")
-  g2m_features <- sn_get_signatures(species = species, category = "g2m")
+  s_features <- sn_get_signatures(species = species, category = "Programs/cellCycle.G1S")
+  g2m_features <- sn_get_signatures(species = species, category = "Programs/cellCycle.G2M")
   feature_names <- rownames(object)
   s_features <- intersect(s_features, feature_names)
   g2m_features <- intersect(g2m_features, feature_names)
