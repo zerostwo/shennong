@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Bundled human and mouse GENCODE gene-annotation data was added for gene-level
+  filtering workflows. The snapshot now also stores genome-context fields such
+  as sequence name, source, coordinates, strand, gene status/source, and
+  annotation level in addition to gene identifiers and gene types.
 - `sn_find_de()` now supports pseudobulk differential expression with
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
@@ -22,6 +26,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   skills.
 - `sn_install_codex_skill()` now installs package-usage skills, project
   governance skills, or both from the packaged Codex asset layout.
+- Signature catalog helpers were added:
+  `sn_list_signatures()`, `sn_add_signature()`, `sn_update_signature()`, and
+  `sn_delete_signature()`.
 - Stored-result discovery and retrieval helpers were added:
   `sn_list_results()`, `sn_get_de_result()`, `sn_get_enrichment_result()`, and
   `sn_get_interpretation_result()`.
@@ -35,9 +42,22 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `test_use` and `pseudobulk_method` parameters.
 - `sn_find_de()` now uses `layer` consistently for Seurat v5 workflows and no
   longer exposes the legacy `slot` argument.
+- `sn_filter_genes()` now supports annotation-aware filtering through
+  `gene_class` and exact `gene_type` values backed by the bundled GENCODE
+  snapshot for human and mouse.
+- Signature registry maintenance now delegates add/update/delete operations to
+  the upstream `SignatuR` package API instead of maintaining a parallel custom
+  tree-editing implementation inside Shennong.
+- Harmony-backed integration now targets the `immunogenomics/harmony`
+  `harmony2` developer branch in package metadata, CI, and user-facing install
+  guidance instead of the CRAN release line.
 - `sn_get_signatures()` now reads from a package-owned signature snapshot built
-  from `SignatuR` during development, so runtime signature retrieval is stable
-  and no longer depends on the installed `SignatuR` package version.
+  from the full `SignatuR` tree during development, so runtime signature
+  retrieval is stable, tree-structured, and no longer depends on the installed
+  `SignatuR` package version.
+- Signature build assets now live in `data-raw/shennong_signature_registry.json`
+  and `data/shennong_signature_catalog.rda`, replacing the opaque
+  `R/sysdata.rda` storage used by the earlier snapshot prototype.
 - `sn_enrich()` now stores enrichment results in
   `object@misc$enrichment_results[[store_name]]` when a Seurat object is
   supplied, aligning enrichment with the existing stored DE workflow.

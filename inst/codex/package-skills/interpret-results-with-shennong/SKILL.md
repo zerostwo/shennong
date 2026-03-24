@@ -1,3 +1,8 @@
+---
+name: interpret-results-with-shennong
+description: Use when interpreting stored Shennong analysis outputs, building prompt bundles from Seurat object results, or generating annotation and result summaries from packaged evidence helpers.
+---
+
 # interpret-results-with-shennong
 
 ## Purpose

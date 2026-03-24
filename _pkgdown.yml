@@ -35,6 +35,8 @@ reference:
     contents:
       - marker_genes
       - hom_genes
+      - shennong_gene_annotations
+      - shennong_signature_catalog
       - sn_load_data
       - sn_load_pbmc
       - sn_read
@@ -69,7 +71,11 @@ reference:
       - sn_plot_boxplot
       - sn_plot_barplot
       - show_all_palettes
+      - sn_list_signatures
       - sn_get_signatures
+      - sn_add_signature
+      - sn_update_signature
+      - sn_delete_signature
       - sn_enrich
   - title: Interpretation
     contents:

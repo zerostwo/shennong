@@ -20,6 +20,7 @@ Imports:
     dplyr,
     ggplot2,
     glue,
+    jsonlite,
     logger,
     Matrix,
     methods,
@@ -67,14 +68,17 @@ Suggests:
     scran,
     Seurat,
     SeuratObject,
+    SignatuR,
     SingleCellExperiment,
     SummarizedExperiment,
     SoupX,
     testthat (>= 3.0.0)
 Remotes:
     github::bnprks/BPCells/r,
+    github::carmonalab/SignatuR,
     github::catplot/catplot,
     github::genecell/COSGR,
+    github::immunogenomics/harmony@harmony2,
     github::immunogenomics/lisi,
     github::PaulingLiu/ROGUE
 VignetteBuilder: knitr

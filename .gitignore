@@ -1,6 +1,5 @@
 .Rproj.user
 .Rhistory
-data-raw
 docs/*
 !docs/codex/
 !docs/codex/**

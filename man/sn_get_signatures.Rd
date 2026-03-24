@@ -2,27 +2,27 @@
 % Please edit documentation in R/signatures.R
 \name{sn_get_signatures}
 \alias{sn_get_signatures}
-\title{Retrieve bundled Shennong signature genes by preset category names}
+\title{Retrieve bundled Shennong signature genes by category or tree path}
 \usage{
 sn_get_signatures(species = "human", category = NULL)
 }
 \arguments{
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
-\item{category}{A character vector of predefined signature categories.}
+\item{category}{A character vector of signature names or full tree paths.}
 }
 \value{
 A unique character vector of signature gene symbols.
 }
 \description{
-Shennong ships a package-owned snapshot of the signature categories required
-by its core workflows. The snapshot is generated from \pkg{SignatuR} during
-package development and stored inside the package so runtime behavior is
-stable and does not depend on the user's installed \pkg{SignatuR} version.
+Shennong ships a package-owned signature catalog under \code{data/}, built
+from the upstream \pkg{SignatuR} tree plus any package-maintained additions.
+Queries can use either leaf names such as \code{"mito"} or full tree paths
+such as \code{"Compartments/Mito"}.
 }
 \examples{
-block_genes <- sn_get_signatures(
+sn_get_signatures(
   species = "human",
-  category = c("mito", "ribo", "tcr", "immunoglobulins")
+  category = c("mito", "Compartments/Ribo")
 )
 }

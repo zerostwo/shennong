@@ -24,6 +24,13 @@ install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
 
+If you plan to use Harmony-based integration through `sn_run_cluster()`,
+install the current Harmony developer branch as well:
+
+``` r
+remotes::install_github("immunogenomics/harmony", ref = "harmony2")
+```
+
 Once the package is installed, you can check whether your local copy is
 current and install the preferred release channel directly from R:
 

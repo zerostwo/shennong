@@ -1,3 +1,8 @@
+---
+name: manage-shennong-results
+description: Use when storing, listing, retrieving, and reusing Shennong results on Seurat objects, especially for differential expression, enrichment, and interpretation outputs.
+---
+
 # manage-shennong-results
 
 ## Purpose

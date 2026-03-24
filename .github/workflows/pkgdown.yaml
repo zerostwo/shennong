@@ -32,7 +32,8 @@ jobs:
             any::rmarkdown
             any::Seurat
             any::hdf5r
-            any::harmony
+            github::carmonalab/SignatuR
+            github::immunogenomics/harmony@harmony2
             any::clusterProfiler
             bioc::org.Hs.eg.db
             any::HGNChelper

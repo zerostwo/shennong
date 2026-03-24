@@ -50,12 +50,37 @@ visualization, and functional enrichment from cluster markers.
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
 
+The integration examples in this article assume the Harmony developer branch
+from `immunogenomics/harmony@harmony2`.
+
+Shennong also ships bundled human and mouse GENCODE gene annotations, so
+`sn_filter_genes()` can combine expression-threshold filtering with
+annotation-based retention such as `gene_class = "coding"` or exact
+`gene_type` subsets.
+
 ```{r setup}
 library(Shennong)
 library(dplyr)
 library(ggplot2)
 library(knitr)
 library(Seurat)
+```
+
+## Inspect bundled signatures
+
+Shennong now ships a tree-structured signature catalog derived from `SignatuR`
+and stored as package data. You can inspect the available signature paths and
+retrieve a specific signature either by short alias or by full tree path.
+
+```{r signature-catalog}
+signature_catalog <- sn_list_signatures(species = "human")
+head(signature_catalog[, c("path", "n_genes")], 6)
+
+mito_genes <- sn_get_signatures(
+  species = "human",
+  category = c("mito", "Compartments/Ribo")
+)
+length(mito_genes)
 ```
 
 ```{r prepare-pbmc-demo, include = FALSE}

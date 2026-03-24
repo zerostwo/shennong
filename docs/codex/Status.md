@@ -1,6 +1,23 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-21
+Last updated: 2026-03-24
+
+## 2026-03-24
+
+- Added a new `data-raw` build path for bundled human/mouse GENCODE gene
+  annotations and wired that package data into `sn_filter_genes()` through
+  `gene_class` and exact `gene_type` filtering. The packaged snapshot now keeps
+  not only gene names/IDs/types but also genome context fields such as seqname,
+  source, coordinates, strand, status/source tags, and annotation level.
+- Replaced the custom signature-registry tree-editing logic with wrappers that
+  materialize the editable registry as a `SignatuR` object and then call the
+  upstream `SignatuR::AddNode()`, `AddSignature()`, and `RemoveSignature()`
+  APIs before serializing the result back to Shennong's registry format.
+- Switched all Harmony installation paths from the CRAN package line to the
+  upstream `immunogenomics/harmony@harmony2` developer branch. This includes
+  `DESCRIPTION` remotes, GitHub Actions dependency setup, README install
+  guidance, and the clustering vignette note so local, CI, and pkgdown runs all
+  target the same integration backend.
 
 ## 2026-03-21
 
@@ -8,12 +25,13 @@ Last updated: 2026-03-21
 - Reworked the packaged project-template scaffold so empty analysis directories are created from an explicit `inst/codex/project-template/directories.txt` manifest instead of hidden `.gitkeep` files. This removes the package hidden-file NOTE while preserving initialized-project directory creation.
 - Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
 - Expanded the test suite around Seurat object state, stored-result contracts, IO dispatch, packaged project scaffolding, and metrics/clustering integrations. Local `covr::package_coverage()` now reaches 70.30%, up from the high-60s baseline during this task.
-- Replaced the runtime `SignatuR` dependency with a bundled `shennong_signatures` snapshot stored in `R/sysdata.rda`. Signature retrieval is now package-stable, `DESCRIPTION` no longer suggests or references `SignatuR`, and the clustering/signature documentation now points to bundled categories rather than optional upstream state.
+- Replaced the runtime `SignatuR` dependency with a bundled `shennong_signature_catalog` dataset stored under `data/` and sourced from `data-raw/shennong_signature_registry.json`. Signature retrieval is now package-stable, tree-structured, and no longer depends on opaque `sysdata` storage.
+- Added signature-management interfaces for package maintenance: `sn_list_signatures()`, `sn_add_signature()`, `sn_update_signature()`, and `sn_delete_signature()`. The editable registry preserves the full imported `SignatuR` tree, and `data-raw/build_shennong_signatures.R` now rebuilds package data from that registry.
 
 ## 2026-03-19
 
 - Fixed `sn_plot_dot()` so the optional `catplot` theme does not add a second aspect-ratio constraint on top of `coord_fixed()`.
-- Replaced runtime `SignatuR` lookups with a bundled Shennong signature snapshot and added a `data-raw/build_shennong_signatures.R` script for reproducible refreshes during development.
+- Replaced runtime `SignatuR` lookups with a bundled Shennong signature registry plus build script so maintainers can extend the catalog and then regenerate package data reproducibly.
 - Added `sn_initialize_project()` as a convenience wrapper around the packaged initialized-project template. When used with agent governance, the created project now uses `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`, `runs/`, and `results/` rather than the older flat `docs/codex/` layout inside user projects.
 Current milestone: DE API consolidation and CI deployment hardening
 

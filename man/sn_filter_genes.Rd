@@ -10,37 +10,69 @@ sn_filter_genes(
   plot = TRUE,
   filter = TRUE,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  species = NULL,
+  gene_class = NULL,
+  gene_type = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{min_cells}{An integer specifying the minimum number of cells in which a gene must be expressed to be retained. Default is 3.}
+\item{min_cells}{An integer specifying the minimum number of cells in which a
+gene must be expressed to be retained. Default is 3.}
 
-\item{plot}{Logical; if TRUE, a bar plot is generated showing the number of remaining genes at different filtering thresholds. Default is TRUE.}
+\item{plot}{Logical; if TRUE, a bar plot is generated showing the number of
+remaining genes at different filtering thresholds. Default is TRUE.}
 
-\item{filter}{Logical; if TRUE, returns the filtered Seurat object. If FALSE, returns the original object. Default is TRUE.}
+\item{filter}{Logical; if TRUE, returns the filtered Seurat object. If
+FALSE, returns the original object. Default is TRUE.}
 
-\item{assay}{Assay used when extracting expression values. Defaults to \code{"RNA"}.}
+\item{assay}{Assay used when extracting expression values. Defaults to
+\code{"RNA"}.}
 
 \item{layer}{Layer used for gene filtering. Defaults to \code{"counts"}.}
+
+\item{species}{Optional species label used for annotation-aware filtering.
+Required only when it cannot be inferred from the object.}
+
+\item{gene_class}{Optional coarse annotation class to retain. One of
+\code{"coding"} or \code{"noncoding"}.}
+
+\item{gene_type}{Optional character vector of exact GENCODE \code{gene_type}
+values to retain.}
 }
 \value{
-A filtered Seurat object if \code{filter = TRUE}, otherwise the original object.
+A filtered Seurat object if \code{filter = TRUE}, otherwise the
+original object.
 }
 \description{
-This function filters genes in a Seurat object based on the number of cells in which they are expressed.
-Optionally, it can visualize the effect of different filtering thresholds.
+This function filters genes in a Seurat object based on the number of cells
+in which they are expressed. Optionally, it can visualize the effect of
+different filtering thresholds and retain only genes matching bundled
+GENCODE-based annotation classes.
 }
 \details{
-The function computes the number of cells expressing each gene in the Seurat object and filters out genes
-expressed in fewer than \code{min_cells} cells. If \code{plot = TRUE}, it visualizes the effect of filtering using \code{ggplot2}.
+The function computes the number of cells expressing each gene in the Seurat
+object and filters out genes expressed in fewer than \code{min_cells} cells.
+If \code{plot = TRUE}, it visualizes the effect of filtering using
+\code{ggplot2}. When \code{gene_class} or \code{gene_type} is supplied, the
+function also matches the feature set against the bundled
+\code{shennong_gene_annotations} data and keeps only the requested
+annotation subset.
 }
 \examples{
 library(Seurat)
 
 # Load example Seurat object
 pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
+pbmc_small_coding <- sn_filter_genes(
+  pbmc_small,
+  min_cells = 1,
+  plot = FALSE,
+  filter = TRUE,
+  species = "human",
+  gene_class = "coding"
+)
 
 }

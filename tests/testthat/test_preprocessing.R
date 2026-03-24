@@ -133,6 +133,68 @@ test_that("sn_filter_genes can use a non-default layer", {
   expect_equal(rownames(filtered), c("gene1", "gene4"))
 })
 
+test_that("sn_filter_genes can retain only coding genes from bundled annotations", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(
+    matrix(
+      c(
+        1, 1, 1, 1,
+        1, 1, 0, 0,
+        2, 2, 2, 2,
+        3, 0, 0, 0
+      ),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(counts) <- c("CD3D", "MALAT1", "TRBC1", "LINC01409")
+  colnames(counts) <- paste0("cell", 1:4)
+  object <- sn_initialize_seurat_object(x = counts, project = "genes-coding", species = "human")
+
+  filtered <- sn_filter_genes(
+    object,
+    min_cells = 1,
+    plot = FALSE,
+    filter = TRUE,
+    gene_class = "coding"
+  )
+
+  expect_equal(rownames(filtered), c("CD3D", "TRBC1"))
+})
+
+test_that("sn_filter_genes can retain exact GENCODE gene types", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(
+    matrix(
+      c(
+        1, 1, 1, 1,
+        1, 0, 0, 0,
+        2, 2, 2, 2,
+        3, 3, 0, 0
+      ),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(counts) <- c("CD3D", "MALAT1", "TRBC1", "RNU6-1")
+  colnames(counts) <- paste0("cell", 1:4)
+  object <- sn_initialize_seurat_object(x = counts, project = "genes-type", species = "human")
+
+  filtered <- sn_filter_genes(
+    object,
+    min_cells = 1,
+    plot = FALSE,
+    filter = TRUE,
+    gene_type = c("lncRNA", "snRNA")
+  )
+
+  expect_equal(rownames(filtered), c("MALAT1", "RNU6-1"))
+})
+
 test_that("sn_filter_cells adds qc flags and can subset outliers", {
   skip_if_not_installed("Seurat")
 

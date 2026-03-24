@@ -30,7 +30,8 @@ jobs:
             any::testthat
             any::Seurat
             any::SeuratObject
-            any::harmony
+            github::carmonalab/SignatuR
+            github::immunogenomics/harmony@harmony2
             any::HGNChelper
             any::rio
             any::anndataR

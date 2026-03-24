@@ -534,29 +534,135 @@ sn_standardize_gene_symbols <- function(
   }
 }
 
+.sn_get_gene_annotation_table <- function(species = NULL) {
+  annotation_env <- new.env(parent = emptyenv())
+  utils::data("shennong_gene_annotations", package = "Shennong", envir = annotation_env)
+  annotations <- get("shennong_gene_annotations", envir = annotation_env, inherits = FALSE)
+
+  if (!is_null(species)) {
+    species <- arg_match(species, c("human", "mouse"))
+    annotations <- annotations[annotations$species == species, , drop = FALSE]
+  }
+
+  annotations
+}
+
+.sn_match_gene_annotations <- function(features, species) {
+  annotations <- .sn_get_gene_annotation_table(species = species)
+  features <- as.character(features)
+
+  by_name <- annotations[!is.na(annotations$gene_name) & nzchar(annotations$gene_name), , drop = FALSE]
+  by_name <- by_name[!duplicated(by_name$gene_name), , drop = FALSE]
+  rownames(by_name) <- by_name$gene_name
+
+  by_id <- annotations[!is.na(annotations$gene_id) & nzchar(annotations$gene_id), , drop = FALSE]
+  by_id <- by_id[!duplicated(by_id$gene_id), , drop = FALSE]
+  rownames(by_id) <- by_id$gene_id
+
+  by_id_base <- annotations[!is.na(annotations$gene_id_base) & nzchar(annotations$gene_id_base), , drop = FALSE]
+  by_id_base <- by_id_base[!duplicated(by_id_base$gene_id_base), , drop = FALSE]
+  rownames(by_id_base) <- by_id_base$gene_id_base
+
+  feature_id_base <- sub("\\..*$", "", features)
+  matched_index <- rep(NA_character_, length(features))
+  matched_by <- rep(NA_character_, length(features))
+
+  name_hits <- features %in% rownames(by_name)
+  matched_index[name_hits] <- features[name_hits]
+  matched_by[name_hits] <- "gene_name"
+
+  id_hits <- is.na(matched_index) & features %in% rownames(by_id)
+  matched_index[id_hits] <- features[id_hits]
+  matched_by[id_hits] <- "gene_id"
+
+  id_base_hits <- is.na(matched_index) & feature_id_base %in% rownames(by_id_base)
+  matched_index[id_base_hits] <- feature_id_base[id_base_hits]
+  matched_by[id_base_hits] <- "gene_id_base"
+
+  out <- data.frame(
+    feature = features,
+    matched = !is.na(matched_index),
+    matched_by = matched_by,
+    gene_id = NA_character_,
+    gene_id_base = NA_character_,
+    gene_name = NA_character_,
+    gene_type = NA_character_,
+    gene_class = NA_character_,
+    stringsAsFactors = FALSE
+  )
+
+  if (any(out$matched)) {
+    out$gene_id[name_hits] <- by_name[matched_index[name_hits], "gene_id", drop = TRUE]
+    out$gene_id_base[name_hits] <- by_name[matched_index[name_hits], "gene_id_base", drop = TRUE]
+    out$gene_name[name_hits] <- by_name[matched_index[name_hits], "gene_name", drop = TRUE]
+    out$gene_type[name_hits] <- by_name[matched_index[name_hits], "gene_type", drop = TRUE]
+    out$gene_class[name_hits] <- by_name[matched_index[name_hits], "gene_class", drop = TRUE]
+
+    out$gene_id[id_hits] <- by_id[matched_index[id_hits], "gene_id", drop = TRUE]
+    out$gene_id_base[id_hits] <- by_id[matched_index[id_hits], "gene_id_base", drop = TRUE]
+    out$gene_name[id_hits] <- by_id[matched_index[id_hits], "gene_name", drop = TRUE]
+    out$gene_type[id_hits] <- by_id[matched_index[id_hits], "gene_type", drop = TRUE]
+    out$gene_class[id_hits] <- by_id[matched_index[id_hits], "gene_class", drop = TRUE]
+
+    out$gene_id[id_base_hits] <- by_id_base[matched_index[id_base_hits], "gene_id", drop = TRUE]
+    out$gene_id_base[id_base_hits] <- by_id_base[matched_index[id_base_hits], "gene_id_base", drop = TRUE]
+    out$gene_name[id_base_hits] <- by_id_base[matched_index[id_base_hits], "gene_name", drop = TRUE]
+    out$gene_type[id_base_hits] <- by_id_base[matched_index[id_base_hits], "gene_type", drop = TRUE]
+    out$gene_class[id_base_hits] <- by_id_base[matched_index[id_base_hits], "gene_class", drop = TRUE]
+  }
+
+  out
+}
+
 #' Filter genes based on the number of expressing cells
 #'
-#' This function filters genes in a Seurat object based on the number of cells in which they are expressed.
-#' Optionally, it can visualize the effect of different filtering thresholds.
+#' This function filters genes in a Seurat object based on the number of cells
+#' in which they are expressed. Optionally, it can visualize the effect of
+#' different filtering thresholds and retain only genes matching bundled
+#' GENCODE-based annotation classes.
 #'
 #' @param x A Seurat object.
-#' @param min_cells An integer specifying the minimum number of cells in which a gene must be expressed to be retained. Default is 3.
-#' @param plot Logical; if TRUE, a bar plot is generated showing the number of remaining genes at different filtering thresholds. Default is TRUE.
-#' @param filter Logical; if TRUE, returns the filtered Seurat object. If FALSE, returns the original object. Default is TRUE.
-#' @param assay Assay used when extracting expression values. Defaults to \code{"RNA"}.
+#' @param min_cells An integer specifying the minimum number of cells in which a
+#'   gene must be expressed to be retained. Default is 3.
+#' @param plot Logical; if TRUE, a bar plot is generated showing the number of
+#'   remaining genes at different filtering thresholds. Default is TRUE.
+#' @param filter Logical; if TRUE, returns the filtered Seurat object. If
+#'   FALSE, returns the original object. Default is TRUE.
+#' @param assay Assay used when extracting expression values. Defaults to
+#'   \code{"RNA"}.
 #' @param layer Layer used for gene filtering. Defaults to \code{"counts"}.
+#' @param species Optional species label used for annotation-aware filtering.
+#'   Required only when it cannot be inferred from the object.
+#' @param gene_class Optional coarse annotation class to retain. One of
+#'   \code{"coding"} or \code{"noncoding"}.
+#' @param gene_type Optional character vector of exact GENCODE \code{gene_type}
+#'   values to retain.
 #'
-#' @return A filtered Seurat object if `filter = TRUE`, otherwise the original object.
+#' @return A filtered Seurat object if \code{filter = TRUE}, otherwise the
+#'   original object.
 #'
 #' @details
-#' The function computes the number of cells expressing each gene in the Seurat object and filters out genes
-#' expressed in fewer than `min_cells` cells. If `plot = TRUE`, it visualizes the effect of filtering using `ggplot2`.
+#' The function computes the number of cells expressing each gene in the Seurat
+#' object and filters out genes expressed in fewer than \code{min_cells} cells.
+#' If \code{plot = TRUE}, it visualizes the effect of filtering using
+#' \code{ggplot2}. When \code{gene_class} or \code{gene_type} is supplied, the
+#' function also matches the feature set against the bundled
+#' \code{shennong_gene_annotations} data and keeps only the requested
+#' annotation subset.
 #'
 #' @examples
 #' library(Seurat)
 #'
 #' # Load example Seurat object
 #' pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
+#' pbmc_small_coding <- sn_filter_genes(
+#'   pbmc_small,
+#'   min_cells = 1,
+#'   plot = FALSE,
+#'   filter = TRUE,
+#'   species = "human",
+#'   gene_class = "coding"
+#' )
 #'
 #' @export
 sn_filter_genes <- function(x,
@@ -564,12 +670,25 @@ sn_filter_genes <- function(x,
                             plot = TRUE,
                             filter = TRUE,
                             assay = "RNA",
-                            layer = "counts") {
+                            layer = "counts",
+                            species = NULL,
+                            gene_class = NULL,
+                            gene_type = NULL) {
   if (!inherits(x, "Seurat")) {
     stop("The input object x is not a Seurat object.")
   }
 
   counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
+  if (!is_null(gene_class)) {
+    gene_class <- arg_match(gene_class, c("coding", "noncoding"))
+  }
+  if (!is_null(gene_type)) {
+    gene_type <- unique(as.character(gene_type))
+    gene_type <- gene_type[!is.na(gene_type) & nzchar(gene_type)]
+    if (length(gene_type) == 0) {
+      gene_type <- NULL
+    }
+  }
 
   gene_counts <- Matrix::rowSums(x = counts > 0)
   gene_distribution <- table(factor(x = gene_counts, levels = 0:max(gene_counts)))
@@ -598,6 +717,29 @@ sn_filter_genes <- function(x,
 
   if (filter) {
     keep_genes <- gene_counts >= min_cells
+
+    if (!is_null(gene_class) || !is_null(gene_type)) {
+      species <- sn_get_species(x, species = species)
+      annotations <- .sn_match_gene_annotations(rownames(x), species = species)
+
+      if (any(!annotations$matched)) {
+        log_warn(glue(
+          "Annotation-based gene filtering could not match {sum(!annotations$matched)} features for species '{species}'. ",
+          "Those unmatched features will be dropped."
+        ))
+      }
+
+      annotation_keep <- annotations$matched
+      if (!is_null(gene_class)) {
+        annotation_keep <- annotation_keep & annotations$gene_class %in% gene_class
+      }
+      if (!is_null(gene_type)) {
+        annotation_keep <- annotation_keep & annotations$gene_type %in% gene_type
+      }
+
+      keep_genes <- keep_genes & annotation_keep
+    }
+
     x <- x[keep_genes, ]
   }
 

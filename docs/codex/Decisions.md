@@ -1,6 +1,27 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-21
+Last updated: 2026-03-24
+
+## 2026-03-24
+
+- Gene-annotation filtering should be driven by bundled package data built from
+  local GENCODE GTF sources rather than ad hoc runtime imports. `sn_filter_genes()`
+  now accepts a coarse `gene_class` selector and exact `gene_type` values, with
+  species-aware matching against either gene symbols or GENCODE gene IDs.
+  The packaged annotation snapshot should retain enough genome context to stay
+  useful outside simple biotype filtering, so it now keeps seqname/source,
+  coordinates, strand, gene status/source, level, and version-stripped IDs.
+- Shennong should not maintain a second independent implementation of
+  signature-registry editing when `SignatuR` already provides the authoritative
+  mutation API. Registry add/update/delete helpers now bridge into a transient
+  `SignatuR` object, call the upstream functions, and then serialize back to
+  Shennong's editable registry.
+- Harmony integration should track the upstream `immunogenomics/harmony`
+  `harmony2` developer branch explicitly in package metadata and CI, rather
+  than implicitly relying on the CRAN release line. The runtime namespace
+  remains `harmony`, so the clustering implementation can stay on
+  `harmony::RunHarmony()` while installation sources are pinned to the intended
+  development branch.
 
 ## 2026-03-21
 
@@ -9,7 +30,7 @@ Last updated: 2026-03-21
 - `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
 - Empty directories inside the shipped project template should be created from an explicit manifest (`inst/codex/project-template/directories.txt`), not hidden `.gitkeep` placeholders. This keeps the scaffold maintainable while avoiding hidden-file notes in `R CMD check`.
 - Coverage expansion should prioritize durable, stateful behavior over superficial line hits. For this pass, the preferred targets were Seurat layer/state helpers, stored-result contracts in `object@misc`, packaged project scaffolding, IO dispatch paths, and external-tool integration seams such as CellTypist.
-- Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships its own `shennong_signatures` snapshot in `sysdata`, and user-facing docs should describe bundled signature categories rather than `SignatuR` installation requirements.
+- Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships a meaningful `shennong_signature_catalog` dataset under `data/`, with an editable registry under `data-raw/`, and user-facing docs should describe bundled signature paths rather than `SignatuR` installation requirements.
 
 ## 2026-03-18
 
