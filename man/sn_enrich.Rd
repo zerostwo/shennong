@@ -13,6 +13,7 @@ sn_enrich(
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
+  msigdb_subcollection = NULL,
   pvalue_cutoff = 0.05,
   store_name = "default",
   source_de_name = NULL,
@@ -36,11 +37,18 @@ supplied, \code{return_object} defaults to \code{TRUE}.}
 
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
-\item{database}{One of \code{"GO"}, \code{"GOBP"}, \code{"GOMF"}, \code{"GOCC"}, or \code{"KEGG"}.}
+\item{database}{One of \code{"GO"}, \code{"GOBP"}, \code{"GOMF"}, \code{"GOCC"}, \code{"KEGG"}, or
+an MSigDB collection handled through \pkg{msigdbr}. Supported MSigDB forms
+include \code{"H"}, \code{"C1"} through \code{"C8"}, and collection plus subcollection
+strings such as \code{"C2:CP:REACTOME"} or \code{"C5:GO:BP"}.}
 
 \item{gene_col}{Column containing gene symbols when \code{x} is a data frame.}
 
 \item{score_col}{Column containing ranking scores for \code{analysis = "gsea"}.}
+
+\item{msigdb_subcollection}{Optional MSigDB subcollection used when
+\code{database} names an MSigDB collection such as \code{"C2"} or
+\code{"C5"}. Ignored for GO and KEGG.}
 
 \item{pvalue_cutoff}{Numeric p-value cutoff used by the enrichment method.}
 

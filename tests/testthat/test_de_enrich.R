@@ -308,3 +308,51 @@ test_that("sn_enrich can write GSEA results to disk and compare grouped GO sets"
   expect_true(file.exists(file.path(outdir, "demo.enrichment.GOBP.rds")))
   expect_true(inherits(compare_result, "compareClusterResult"))
 })
+
+test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("msigdbr")
+
+  grouped_genes <- tibble::tibble(
+    gene = c(
+      "CD3D", "CD3E", "TRAC", "LCK", "IL7R",
+      "MKI67", "TOP2A", "UBE2C", "BIRC5", "HMGB2"
+    ),
+    cluster = c(
+      "Tcell", "Tcell", "Tcell", "Tcell", "Tcell",
+      "Cycling", "Cycling", "Cycling", "Cycling", "Cycling"
+    )
+  )
+
+  expect_no_error({
+    result <- sn_enrich(
+      grouped_genes,
+      gene_clusters = gene ~ cluster,
+      analysis = "ora",
+      species = "human",
+      database = "H",
+      pvalue_cutoff = 1
+    )
+  })
+
+  expect_true(inherits(result, "compareClusterResult"))
+})
+
+test_that("sn_enrich supports msigdbr subcollections via database strings", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("msigdbr")
+
+  genes <- c("CD3D", "CD3E", "TRAC", "LCK", "LAT", "ZAP70")
+
+  expect_no_error({
+    result <- sn_enrich(
+      genes,
+      analysis = "ora",
+      species = "human",
+      database = "C2:CP:REACTOME",
+      pvalue_cutoff = 1
+    )
+  })
+
+  expect_true(inherits(result, "enrichResult"))
+})

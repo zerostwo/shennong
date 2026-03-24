@@ -54,6 +54,7 @@ Suggests:
     later,
     lisi,
     limma,
+    msigdbr,
     org.Hs.eg.db,
     org.Mm.eg.db,
     pkgdown,

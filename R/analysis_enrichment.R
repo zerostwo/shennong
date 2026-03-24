@@ -13,9 +13,15 @@
 #'   `clusterProfiler::compareCluster()`.
 #' @param analysis One of `"ora"` or `"gsea"`.
 #' @param species One of `"human"` or `"mouse"`.
-#' @param database One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, or `"KEGG"`.
+#' @param database One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, `"KEGG"`, or
+#'   an MSigDB collection handled through \pkg{msigdbr}. Supported MSigDB forms
+#'   include `"H"`, `"C1"` through `"C8"`, and collection plus subcollection
+#'   strings such as `"C2:CP:REACTOME"` or `"C5:GO:BP"`.
 #' @param gene_col Column containing gene symbols when `x` is a data frame.
 #' @param score_col Column containing ranking scores for `analysis = "gsea"`.
+#' @param msigdb_subcollection Optional MSigDB subcollection used when
+#'   \code{database} names an MSigDB collection such as \code{"C2"} or
+#'   \code{"C5"}. Ignored for GO and KEGG.
 #' @param pvalue_cutoff Numeric p-value cutoff used by the enrichment method.
 #' @param store_name Name used when storing the enrichment result on
 #'   \code{object}.
@@ -48,6 +54,7 @@ sn_enrich <- function(
   database = "GOBP",
   gene_col = "gene",
   score_col = NULL,
+  msigdb_subcollection = NULL,
   pvalue_cutoff = 0.05,
   store_name = "default",
   source_de_name = NULL,
@@ -56,6 +63,7 @@ sn_enrich <- function(
   outdir = NULL
 ) {
   analysis <- match.arg(analysis)
+  database <- toupper(database)
   if (!is_null(object) && !inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object when supplied.")
   }
@@ -68,6 +76,57 @@ sn_enrich <- function(
   }
   if (species == "mouse") {
     check_installed(pkg = c("clusterProfiler", "org.Mm.eg.db"))
+  }
+  parse_msigdb_database <- function(database, msigdb_subcollection = NULL) {
+    parts <- strsplit(database, ":", fixed = TRUE)[[1]]
+    collection <- parts[[1]]
+    known_collections <- c("H", paste0("C", 1:8))
+    if (!collection %in% known_collections) {
+      return(NULL)
+    }
+
+    subcollection <- if (length(parts) > 1) {
+      paste(parts[-1], collapse = ":")
+    } else {
+      msigdb_subcollection
+    }
+
+    list(
+      collection = collection,
+      subcollection = subcollection
+    )
+  }
+
+  get_msigdb_terms <- function(species, collection, subcollection = NULL) {
+    msig_args <- list(
+      species = species,
+      collection = collection
+    )
+    if (!is_null(subcollection) && nzchar(subcollection)) {
+      msig_args$subcollection <- subcollection
+    }
+
+    msigdbr_tbl <- do.call(msigdbr::msigdbr, msig_args)
+    if (nrow(msigdbr_tbl) == 0) {
+      sub_msg <- if (!is_null(subcollection) && nzchar(subcollection)) paste0(":", subcollection) else ""
+      stop(
+        glue("No MSigDB terms were returned for collection '{collection}{sub_msg}' and species '{species}'."),
+        call. = FALSE
+      )
+    }
+
+    msigdbr_tbl |>
+      dplyr::transmute(
+        term = .data$gs_name,
+        description = .data$gs_description,
+        gene = .data$gene_symbol
+      ) |>
+      dplyr::distinct()
+  }
+
+  msigdb_cfg <- parse_msigdb_database(database, msigdb_subcollection = msigdb_subcollection)
+  if (!is_null(msigdb_cfg)) {
+    check_installed(pkg = "msigdbr")
   }
 
   # Determine the organism database based on the species input
@@ -212,6 +271,53 @@ sn_enrich <- function(
       results <- clusterProfiler::setReadable(results,
         OrgDb = org_db,
         keyType = "ENTREZID"
+      )
+    }
+  }
+
+  if (!is_null(msigdb_cfg)) {
+    msigdb_tbl <- get_msigdb_terms(
+      species = species,
+      collection = msigdb_cfg$collection,
+      subcollection = msigdb_cfg$subcollection
+    )
+
+    term2gene <- dplyr::select(msigdb_tbl, "term", "gene")
+    term2name <- msigdb_tbl |>
+      dplyr::select("term", "description") |>
+      dplyr::distinct()
+
+    if (analysis == "gsea") {
+      results <- clusterProfiler::GSEA(
+        geneList = gene_list,
+        TERM2GENE = term2gene,
+        TERM2NAME = term2name,
+        pvalueCutoff = pvalue_cutoff
+      )
+    } else if (is_null(x = gene_clusters)) {
+      genes <- if (is.data.frame(x)) {
+        if (!gene_col %in% colnames(x)) {
+          stop(glue("Column '{gene_col}' was not found in `x`."))
+        }
+        unique(as.character(x[[gene_col]]))
+      } else {
+        unique(as.character(x))
+      }
+
+      results <- clusterProfiler::enricher(
+        gene = genes,
+        TERM2GENE = term2gene,
+        TERM2NAME = term2name,
+        pvalueCutoff = pvalue_cutoff
+      )
+    } else {
+      results <- clusterProfiler::compareCluster(
+        geneClusters = gene_clusters,
+        data = x,
+        fun = clusterProfiler::enricher,
+        TERM2GENE = term2gene,
+        TERM2NAME = term2name,
+        pvalueCutoff = pvalue_cutoff
       )
     }
   }
