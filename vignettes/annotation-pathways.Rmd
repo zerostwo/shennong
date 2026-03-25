@@ -1,0 +1,199 @@
+---
+title: "Annotation, markers, and pathways workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Annotation, markers, and pathways workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+required_pkgs <- c("Seurat", "clusterProfiler", "org.Hs.eg.db")
+run_vignette <- run_vignette && all(vapply(
+  required_pkgs,
+  requireNamespace,
+  quietly = TRUE,
+  FUN.VALUE = logical(1)
+))
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This article covers the main biological-interpretation stage after clustering:
+
+- inspect bundled signatures
+- score marker structure with differential expression
+- visualize top markers
+- run ORA or GSEA with `sn_enrich()`
+- optionally bring in reference-based annotation with `sn_run_celltypist()`
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+
+if (!exists("pbmc_small", inherits = FALSE)) {
+  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
+}
+if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
+  load(file.path("data", "pbmc_small.rda"))
+}
+```
+
+```{r prepare-annotation-demo, include = FALSE}
+pbmc_clustered <- suppressWarnings(
+  sn_run_cluster(
+    pbmc_small,
+    normalization_method = "seurat",
+    nfeatures = 800,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.4,
+    verbose = FALSE
+  )
+)
+
+signature_tbl <- sn_list_signatures(species = "human")
+stress_genes <- sn_get_signatures(
+  species = "human",
+  category = c("Programs/HeatShock", "Compartments/Mito")
+)
+
+pbmc_clustered <- suppressWarnings(
+  sn_find_de(
+    pbmc_clustered,
+    analysis = "markers",
+    group_by = "seurat_clusters",
+    layer = "data",
+    store_name = "cluster_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+)
+
+marker_tbl <- sn_get_de_result(
+  pbmc_clustered,
+  de_name = "cluster_markers",
+  top_n = 3
+)
+
+enrichment_object <- tryCatch(
+  sn_enrich(
+    x = pbmc_clustered,
+    source_de_name = "cluster_markers",
+    gene_clusters = gene ~ cluster,
+    database = c("H", "GOBP"),
+    species = "human",
+    pvalue_cutoff = 0.05,
+    store_name = "cluster_pathways",
+    return_object = TRUE
+  ),
+  error = function(...) pbmc_clustered
+)
+
+stored_pathways <- tryCatch(
+  sn_get_enrichment_result(
+    enrichment_object,
+    enrichment_name = "cluster_pathways",
+    top_n = 5
+  ),
+  error = function(...) NULL
+)
+```
+
+## 1. Start from bundled signatures
+
+Bundled signatures provide a stable set of marker programs and technical gene
+sets for filtering, scoring, or interpretation.
+
+```{r}
+knitr::kable(head(signature_tbl[, c("path", "n_genes")], 8))
+length(stress_genes)
+```
+
+## 2. Find marker genes
+
+Cluster markers are usually the first evidence layer for annotation.
+
+```{r}
+knitr::kable(marker_tbl)
+```
+
+## 3. Visualize top markers
+
+`sn_plot_dot()` can reuse the stored DE result directly, which avoids manual
+gene selection in routine cluster review.
+
+```{r}
+sn_plot_dot(
+  pbmc_clustered,
+  features = "top_markers",
+  de_name = "cluster_markers",
+  n = 3
+)
+```
+
+## 4. Run pathway analysis
+
+`sn_enrich()` now supports grouped ORA and ranked GSEA through the same
+`gene_clusters` formula interface. It can also query multiple databases in one
+call.
+
+```{r}
+if (!is.null(stored_pathways)) {
+  knitr::kable(stored_pathways, digits = 4)
+}
+```
+
+Grouped ORA uses a categorical right-hand side:
+
+```r
+ora_result <- sn_enrich(
+  x = pbmc_clustered,
+  source_de_name = "cluster_markers",
+  gene_clusters = gene ~ cluster,
+  database = c("H", "C2:CP:REACTOME"),
+  species = "human"
+)
+```
+
+Ranked GSEA uses a numeric right-hand side:
+
+```r
+gsea_result <- sn_enrich(
+  marker_table,
+  gene_clusters = gene ~ avg_log2FC,
+  database = "GOBP",
+  species = "human"
+)
+```
+
+## 5. Optional reference-based annotation
+
+If CellTypist is configured in the local environment, Shennong can add
+reference labels to the Seurat object:
+
+```r
+pbmc_annotated <- sn_run_celltypist(
+  pbmc_clustered,
+  model = "Immune_All_Low.pkl"
+)
+```
+
+That annotation can then be reused as the `label` input for downstream
+integration metrics or cluster summaries.

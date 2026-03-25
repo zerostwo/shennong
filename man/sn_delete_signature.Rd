@@ -4,14 +4,14 @@
 \alias{sn_delete_signature}
 \title{Delete a signature from the editable source registry}
 \usage{
-sn_delete_signature(species = "human", path, registry_path = NULL)
+sn_delete_signature(species = "human", path, catalog_path = NULL)
 }
 \arguments{
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
 \item{path}{Slash-delimited signature path relative to the species root.}
 
-\item{registry_path}{Optional path to the editable registry JSON file.}
+\item{catalog_path}{Optional path to a signature catalog \code{.rda} snapshot.}
 }
 \value{
 Invisibly returns the normalized registry path.

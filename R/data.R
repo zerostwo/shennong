@@ -37,8 +37,8 @@
 #' Bundled Shennong Signature Catalog
 #'
 #' A package-owned, tree-structured signature catalog built from the upstream
-#' \pkg{SignatuR} hierarchy plus any Shennong-maintained additions recorded in
-#' \code{data-raw/shennong_signature_registry.json}.
+#' \pkg{SignatuR} hierarchy and stored as the current Shennong-controlled
+#' snapshot under \code{data/}.
 #'
 #' @format A named list with two top-level entries:
 #' \describe{

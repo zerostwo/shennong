@@ -24,6 +24,29 @@ make_zero_layer <- function(object) {
   )
 }
 
+make_rare_test_object <- function() {
+  set.seed(88)
+  counts <- matrix(rpois(220 * 60, lambda = 2), nrow = 220, ncol = 60)
+  counts[1:20, 1:30] <- counts[1:20, 1:30] + 4
+  counts[201:220, ] <- 0
+  counts[201:210, 55:60] <- 25
+  counts[211:220, 57:60] <- 18
+  counts <- Matrix::Matrix(counts, sparse = TRUE)
+  rownames(counts) <- c(
+    paste0("gene", seq_len(200)),
+    paste0("raregene", seq_len(20))
+  )
+  colnames(counts) <- paste0("rare_cell", seq_len(60))
+
+  object <- sn_initialize_seurat_object(
+    x = counts,
+    project = "rare"
+  )
+  object$sample <- rep(c("A", "B"), each = 30)
+  object$seed_cluster <- c(rep("major", 54), rep("rare", 6))
+  object
+}
+
 test_that("sn_run_cluster clusters a single dataset with the standard workflow", {
   skip_if_not_installed("Seurat")
 
@@ -200,6 +223,110 @@ test_that("sn_run_cluster errors for missing HVG grouping columns", {
     ),
     "metadata column name"
   )
+})
+
+test_that("sn_detect_rare_cells detects rare-score outliers with the gini method", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  rare_tbl <- sn_detect_rare_cells(
+    object,
+    method = "gini",
+    nfeatures = 20,
+    max_fraction = 0.15
+  )
+
+  expect_s3_class(rare_tbl, "data.frame")
+  expect_true(all(c("cell_id", "method", "rare_score", "rare_cell") %in% colnames(rare_tbl)))
+  expect_true(any(rare_tbl$rare_cell))
+  expect_true(any(rare_tbl$cell_id[rare_tbl$rare_cell] %in% colnames(object)[55:60]))
+})
+
+test_that("sn_detect_rare_cells validates the scCAD backend inputs", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  expect_error(
+    sn_detect_rare_cells(
+      object,
+      method = "sccad",
+      sccad_script = tempfile(fileext = ".py")
+    ),
+    "Could not find a Python executable|Could not locate `scCAD.py`|scCAD execution failed"
+  )
+})
+
+test_that("sn_detect_rare_cells validates optional rare-cell backend dependencies", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+
+  expect_error(
+    sn_detect_rare_cells(
+      object = object,
+      method = "cellsius",
+      group = "seed_cluster",
+      layer = "counts",
+      cellsius_mcl_path = tempfile("missing-mcl-")
+    ),
+    "CellSIUS|mcl"
+  )
+
+  expect_error(
+    sn_detect_rare_cells(
+      object = object,
+      method = "gapclust",
+      layer = "counts"
+    ),
+    "GapClust|No rare cell cluster identified"
+  )
+
+  expect_error(
+    sn_detect_rare_cells(
+      object = object,
+      method = "edge",
+      layer = "counts"
+    ),
+    "EDGE|endr"
+  )
+
+  expect_error(
+    sn_detect_rare_cells(
+      object = object,
+      method = "sca",
+      layer = "counts",
+      sca_python = tempfile("missing-python-")
+    ),
+    "Python|shannonca|SCA execution failed"
+  )
+})
+
+test_that("sn_run_cluster can append rare-aware features before PCA", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 40,
+    rare_feature_method = "gini",
+    rare_feature_n = 15,
+    rare_gene_max_fraction = 0.15,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("rare_feature_selection" %in% names(clustered@misc))
+  expect_true(length(clustered@misc$rare_feature_selection$rare_features) > 0)
+  expect_true(any(grepl("^raregene", clustered@misc$rare_feature_selection$rare_features)))
+  expect_true(length(Seurat::VariableFeatures(clustered)) >= 40)
 })
 
 test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not overlap", {

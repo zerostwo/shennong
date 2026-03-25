@@ -7,15 +7,24 @@ Last updated: 2026-03-25
 - Expanded `R/analysis_metrics.R` from a minimal LISI/ROGUE/composition module
   into a broader integration-assessment layer. New exported helpers now cover
   silhouette widths, graph connectivity, PCR batch scoring, clustering
-  agreement, rare/difficult-group diagnostics, and an aggregate
-  `sn_assess_integration()` wrapper that returns summary, per-cell, and
-  per-group outputs.
+  agreement, isolated-label preservation, cluster entropy/purity diagnostics,
+  rare/difficult-group diagnostics, and an aggregate `sn_assess_integration()`
+  wrapper that returns summary, per-cell, and per-group outputs.
+- Added rare-cell-aware clustering support in `R/analysis_clustering.R`. The
+  package now exposes `sn_detect_rare_cells()` plus optional
+  `sn_run_cluster(rare_feature_method = ...)` feature augmentation using native
+  Gini scoring, local rare-group HVGs/markers, and an optional CIARA backend.
 - Added structured metrics tests that exercise graph reuse, Annoy fallback,
   exact-kNN fallback, PCR improvement against a baseline reduction, aggregate
   summary scoring, and rare-group flagging on synthetic integrated embeddings.
 - Updated the README, PBMC clustering vignette, and shipped single-cell skill
   reference so the new metrics workflow is visible at the user level instead of
   remaining an undocumented helper layer.
+- Reorganized pkgdown around workflow stages instead of mixed implementation
+  topics. Added new end-to-end articles for preprocessing/QC, metrics and
+  diagnostics, annotation/pathway analysis, and composition/comparative
+  summaries, while retitling the clustering and interpretation articles to
+  match the new taxonomy.
 - Refactored `sn_enrich()` around a single primary `x` input plus a formula
   contract for enrichment semantics. `gene_clusters = gene ~ cluster` now
   drives grouped ORA, while `gene_clusters = gene ~ log2fc` or a named numeric
@@ -46,9 +55,9 @@ Last updated: 2026-03-25
   not only gene names/IDs/types but also genome context fields such as seqname,
   source, coordinates, strand, status/source tags, and annotation level.
 - Replaced the custom signature-registry tree-editing logic with wrappers that
-  materialize the editable registry as a `SignatuR` object and then call the
+  materialize the packaged snapshot as a `SignatuR` object and then call the
   upstream `SignatuR::AddNode()`, `AddSignature()`, and `RemoveSignature()`
-  APIs before serializing the result back to Shennong's registry format.
+  APIs before serializing the result back to Shennong's packaged snapshot.
 - Switched all Harmony installation paths from the CRAN package line to the
   upstream `immunogenomics/harmony@harmony2` developer branch. This includes
   `DESCRIPTION` remotes, GitHub Actions dependency setup, README install
@@ -61,13 +70,13 @@ Last updated: 2026-03-25
 - Reworked the packaged project-template scaffold so empty analysis directories are created from an explicit `inst/codex/project-template/directories.txt` manifest instead of hidden `.gitkeep` files. This removes the package hidden-file NOTE while preserving initialized-project directory creation.
 - Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
 - Expanded the test suite around Seurat object state, stored-result contracts, IO dispatch, packaged project scaffolding, and metrics/clustering integrations. Local `covr::package_coverage()` now reaches 70.30%, up from the high-60s baseline during this task.
-- Replaced the runtime `SignatuR` dependency with a bundled `shennong_signature_catalog` dataset stored under `data/` and sourced from `data-raw/shennong_signature_registry.json`. Signature retrieval is now package-stable, tree-structured, and no longer depends on opaque `sysdata` storage.
-- Added signature-management interfaces for package maintenance: `sn_list_signatures()`, `sn_add_signature()`, `sn_update_signature()`, and `sn_delete_signature()`. The editable registry preserves the full imported `SignatuR` tree, and `data-raw/build_shennong_signatures.R` now rebuilds package data from that registry.
+- Replaced the runtime `SignatuR` dependency with a bundled `shennong_signature_catalog` dataset stored under `data/` and rebuilt directly from the upstream `SignatuR` dataset during development. Signature retrieval is now package-stable, tree-structured, and no longer depends on opaque `sysdata` storage.
+- Added signature-management interfaces for package maintenance: `sn_list_signatures()`, `sn_add_signature()`, `sn_update_signature()`, and `sn_delete_signature()`. They now operate on the packaged snapshot and `data-raw/build_shennong_signatures.R` rebuilds that snapshot directly from `SignatuR`.
 
 ## 2026-03-19
 
 - Fixed `sn_plot_dot()` so the optional `catplot` theme does not add a second aspect-ratio constraint on top of `coord_fixed()`.
-- Replaced runtime `SignatuR` lookups with a bundled Shennong signature registry plus build script so maintainers can extend the catalog and then regenerate package data reproducibly.
+- Replaced runtime `SignatuR` lookups with a bundled Shennong signature snapshot plus build script so maintainers can regenerate package data reproducibly from the upstream source.
 - Added `sn_initialize_project()` as a convenience wrapper around the packaged initialized-project template. When used with agent governance, the created project now uses `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`, `runs/`, and `results/` rather than the older flat `docs/codex/` layout inside user projects.
 Current milestone: DE API consolidation and CI deployment hardening
 

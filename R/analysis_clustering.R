@@ -5,6 +5,1006 @@
   dims[dims > 0]
 }
 
+.sn_gini_coefficient <- function(x) {
+  x <- as.numeric(x)
+  x <- x[is.finite(x) & x >= 0]
+  if (length(x) == 0 || sum(x) <= 0) {
+    return(0)
+  }
+  x <- sort(x, decreasing = FALSE)
+  n <- length(x)
+  (2 * sum(seq_len(n) * x) / (n * sum(x))) - ((n + 1) / n)
+}
+
+.sn_detect_rare_features_gini <- function(expr,
+                                          nfeatures = 200,
+                                          min_cells = 3,
+                                          max_fraction = 0.1) {
+  stopifnot(nrow(expr) > 0, ncol(expr) > 1)
+
+  prevalence <- Matrix::rowSums(expr > 0)
+  prevalence_fraction <- prevalence / ncol(expr)
+  keep <- prevalence >= min_cells & prevalence_fraction <= max_fraction
+
+  if (!any(keep)) {
+    return(data.frame(
+      feature = character(0),
+      score = numeric(0),
+      prevalence = integer(0),
+      prevalence_fraction = numeric(0),
+      mean_expression = numeric(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  kept_features <- rownames(expr)[keep]
+  gini_score <- vapply(kept_features, function(feature) {
+    .sn_gini_coefficient(expr[feature, ])
+  }, numeric(1))
+  mean_expression <- Matrix::rowMeans(expr[kept_features, , drop = FALSE])
+
+  out <- data.frame(
+    feature = kept_features,
+    score = gini_score,
+    prevalence = as.integer(prevalence[keep]),
+    prevalence_fraction = as.numeric(prevalence_fraction[keep]),
+    mean_expression = as.numeric(mean_expression),
+    stringsAsFactors = FALSE
+  )
+  out <- out[order(-out$score, out$prevalence_fraction, -out$mean_expression, out$feature), , drop = FALSE]
+  utils::head(out, nfeatures)
+}
+
+.sn_make_temporary_grouping <- function(object,
+                                        features,
+                                        npcs = 20,
+                                        dims = 1:10,
+                                        resolution = 0.2) {
+  temp_object <- suppressWarnings(
+    Seurat::ScaleData(
+      object = object,
+      features = features,
+      verbose = FALSE
+    )
+  )
+  temp_object <- suppressWarnings(
+    Seurat::RunPCA(
+      object = temp_object,
+      features = features,
+      npcs = npcs,
+      verbose = FALSE,
+      seed.use = 717
+    )
+  )
+  temp_dims <- dims[dims <= npcs]
+  temp_object <- Seurat::FindNeighbors(
+    object = temp_object,
+    reduction = "pca",
+    dims = temp_dims,
+    verbose = FALSE
+  )
+  temp_object <- Seurat::FindClusters(
+    object = temp_object,
+    resolution = resolution,
+    random.seed = 717,
+    verbose = FALSE
+  )
+  as.character(temp_object$seurat_clusters)
+}
+
+.sn_resolve_rare_groups <- function(object,
+                                    group_by = NULL,
+                                    features = NULL,
+                                    npcs = 20,
+                                    dims = 1:10,
+                                    resolution = 0.2,
+                                    max_fraction = 0.05,
+                                    max_cells = 100) {
+  groups <- if (!is.null(group_by)) {
+    if (!group_by %in% colnames(object[[]])) {
+      stop(glue("`rare_feature_group_by` column '{group_by}' was not found."), call. = FALSE)
+    }
+    as.character(object[[group_by, drop = TRUE]])
+  } else {
+    .sn_make_temporary_grouping(
+      object = object,
+      features = features,
+      npcs = npcs,
+      dims = dims,
+      resolution = resolution
+    )
+  }
+
+  group_sizes <- table(groups)
+  rare_groups <- names(group_sizes)[
+    group_sizes <= max_cells | (group_sizes / length(groups)) <= max_fraction
+  ]
+
+  list(
+    groups = groups,
+    rare_groups = rare_groups,
+    group_sizes = group_sizes
+  )
+}
+
+.sn_detect_rare_features_local_hvg <- function(object,
+                                               groups,
+                                               rare_groups,
+                                               nfeatures = 200) {
+  if (length(rare_groups) == 0) {
+    return(character(0))
+  }
+
+  local_features <- lapply(rare_groups, function(current_group) {
+    current_cells <- colnames(object)[groups == current_group]
+    if (length(current_cells) < 3) {
+      return(character(0))
+    }
+    current_object <- subset(object, cells = current_cells)
+    current_object <- Seurat::FindVariableFeatures(
+      current_object,
+      nfeatures = nfeatures,
+      verbose = FALSE
+    )
+    Seurat::VariableFeatures(current_object)
+  })
+
+  unique(unlist(local_features, use.names = FALSE))
+}
+
+.sn_detect_rare_features_local_markers <- function(object,
+                                                   groups,
+                                                   rare_groups,
+                                                   assay = "RNA",
+                                                   layer = "data",
+                                                   nfeatures = 200,
+                                                   min_cells = 3) {
+  if (length(rare_groups) == 0) {
+    return(character(0))
+  }
+
+  expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  local_markers <- lapply(rare_groups, function(current_group) {
+    in_group <- groups == current_group
+    if (sum(in_group) < min_cells || sum(!in_group) < min_cells) {
+      return(character(0))
+    }
+    avg_in <- Matrix::rowMeans(expr[, in_group, drop = FALSE])
+    avg_out <- Matrix::rowMeans(expr[, !in_group, drop = FALSE])
+    pct_in <- Matrix::rowSums(expr[, in_group, drop = FALSE] > 0) / sum(in_group)
+    pct_out <- Matrix::rowSums(expr[, !in_group, drop = FALSE] > 0) / sum(!in_group)
+    score <- avg_in - avg_out
+    keep <- is.finite(score) & pct_in > pct_out & pct_in > 0
+    ranked <- names(sort(score[keep], decreasing = TRUE))
+    utils::head(ranked, nfeatures)
+  })
+
+  unique(unlist(local_markers, use.names = FALSE))
+}
+
+.sn_detect_rare_features_ciara <- function(object,
+                                           assay = "RNA",
+                                           nfeatures = 200,
+                                           min_cells = 3,
+                                           max_cells = 100,
+                                           k = 20) {
+  check_installed("CIARA", reason = "to select rare-cell markers with the CIARA backend.")
+
+  expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = "data")
+  temp_object <- Seurat::FindNeighbors(
+    object = object,
+    reduction = "pca",
+    dims = seq_len(min(20, ncol(SeuratObject::Embeddings(object, "pca")))),
+    k.param = k,
+    verbose = FALSE
+  )
+  nn_graph <- methods::as(temp_object@graphs[[.sn_guess_graph_name(temp_object)]], "dgCMatrix")
+  background <- CIARA::get_background_full(
+    norm_matrix = as.matrix(expr),
+    threshold = 1,
+    n_cells_low = min_cells,
+    n_cells_high = max_cells
+  )
+  result <- CIARA::CIARA(
+    norm_matrix = as.matrix(expr),
+    knn_matrix = as.matrix(nn_graph),
+    background = background,
+    cores_number = 1,
+    p_value = 0.001,
+    local_region = 1,
+    approximation = FALSE
+  )
+  ranked <- rownames(result)[order(as.numeric(result[, 1]), rownames(result))]
+  utils::head(ranked, nfeatures)
+}
+
+.sn_select_rare_features <- function(object,
+                                     base_features,
+                                     method = "none",
+                                     assay = "RNA",
+                                     layer = "data",
+                                     nfeatures = 200,
+                                     group_by = NULL,
+                                     rare_group_max_fraction = 0.05,
+                                     rare_group_max_cells = 100,
+                                     rare_gene_max_fraction = 0.1,
+                                     min_cells = 3,
+                                     npcs = 20,
+                                     dims = 1:10,
+                                     resolution = 0.2,
+                                     verbose = TRUE) {
+  method <- unique(match.arg(method, c("none", "gini", "local_hvg", "local_markers", "ciara"), several.ok = TRUE))
+  method <- setdiff(method, "none")
+  if (length(method) == 0) {
+    return(list(
+      features = character(0),
+      metadata = data.frame(),
+      groups = NULL
+    ))
+  }
+
+  expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  rare_features <- list()
+  rare_meta <- list()
+  rare_group_info <- NULL
+
+  if (any(method %in% c("local_hvg", "local_markers"))) {
+    rare_group_info <- .sn_resolve_rare_groups(
+      object = object,
+      group_by = group_by,
+      features = base_features,
+      npcs = npcs,
+      dims = dims,
+      resolution = resolution,
+      max_fraction = rare_group_max_fraction,
+      max_cells = rare_group_max_cells
+    )
+  }
+
+  if ("gini" %in% method) {
+    gini_tbl <- .sn_detect_rare_features_gini(
+      expr = expr,
+      nfeatures = nfeatures,
+      min_cells = min_cells,
+      max_fraction = rare_gene_max_fraction
+    )
+    rare_features$gini <- gini_tbl$feature
+    if (nrow(gini_tbl) > 0) {
+      rare_meta[[length(rare_meta) + 1]] <- transform(gini_tbl, method = "gini")
+    }
+  }
+
+  if ("local_hvg" %in% method) {
+    local_hvg <- .sn_detect_rare_features_local_hvg(
+      object = object,
+      groups = rare_group_info$groups,
+      rare_groups = rare_group_info$rare_groups,
+      nfeatures = nfeatures
+    )
+    rare_features$local_hvg <- local_hvg
+    if (length(local_hvg) > 0) {
+      rare_meta[[length(rare_meta) + 1]] <- data.frame(
+        feature = local_hvg,
+        score = NA_real_,
+        prevalence = NA_integer_,
+        prevalence_fraction = NA_real_,
+        mean_expression = NA_real_,
+        method = "local_hvg",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  if ("local_markers" %in% method) {
+    local_markers <- .sn_detect_rare_features_local_markers(
+      object = object,
+      groups = rare_group_info$groups,
+      rare_groups = rare_group_info$rare_groups,
+      assay = assay,
+      layer = layer,
+      nfeatures = nfeatures,
+      min_cells = min_cells
+    )
+    rare_features$local_markers <- local_markers
+    if (length(local_markers) > 0) {
+      rare_meta[[length(rare_meta) + 1]] <- data.frame(
+        feature = local_markers,
+        score = NA_real_,
+        prevalence = NA_integer_,
+        prevalence_fraction = NA_real_,
+        mean_expression = NA_real_,
+        method = "local_markers",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  if ("ciara" %in% method) {
+    ciara_features <- .sn_detect_rare_features_ciara(
+      object = object,
+      assay = assay,
+      nfeatures = nfeatures,
+      min_cells = min_cells,
+      max_cells = rare_group_max_cells
+    )
+    rare_features$ciara <- ciara_features
+    if (length(ciara_features) > 0) {
+      rare_meta[[length(rare_meta) + 1]] <- data.frame(
+        feature = ciara_features,
+        score = NA_real_,
+        prevalence = NA_integer_,
+        prevalence_fraction = NA_real_,
+        mean_expression = NA_real_,
+        method = "ciara",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  combined <- unique(unlist(rare_features, use.names = FALSE))
+  if (verbose) {
+    log_info(glue(
+      "[rare_features] Added {length(combined)} rare-aware feature(s) from method(s): {paste(method, collapse = ', ')}"
+    ))
+  }
+
+  list(
+    features = combined,
+    metadata = .sn_bind_rows(rare_meta),
+    groups = rare_group_info
+  )
+}
+
+.sn_run_sccad <- function(expr,
+                          cell_ids,
+                          gene_ids,
+                          python = NULL,
+                          script = NULL,
+                          normalization = FALSE,
+                          seed = 2023,
+                          rare_h = 0.01,
+                          merge_h = 0.3,
+                          overlap_h = 0.7,
+                          save_full = FALSE) {
+  python <- python %||% getOption("shennong.sccad_python", Sys.which("python"))
+  if (!nzchar(python)) {
+    stop("Could not find a Python executable for the scCAD backend.", call. = FALSE)
+  }
+
+  script <- script %||% getOption("shennong.sccad_script", Sys.getenv("SHENNONG_SCCAD_SCRIPT", unset = ""))
+  if (!nzchar(script) || !file.exists(path.expand(script))) {
+    stop(
+      "Could not locate `scCAD.py`. Supply `sccad_script` or set `options(shennong.sccad_script = ...)`.",
+      call. = FALSE
+    )
+  }
+  script <- normalizePath(path.expand(script), winslash = "/", mustWork = TRUE)
+
+  workdir <- tempfile("sccad_")
+  dir.create(workdir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(workdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expr_path <- file.path(workdir, "expression.csv")
+  output_path <- file.path(workdir, "sccad_result.json")
+  runner_path <- file.path(workdir, "run_sccad.py")
+
+  expr_df <- as.data.frame(t(as.matrix(expr)))
+  colnames(expr_df) <- gene_ids
+  rownames(expr_df) <- cell_ids
+  utils::write.csv(expr_df, file = expr_path, quote = FALSE)
+
+  runner_lines <- c(
+    "import json",
+    "import os",
+    "import sys",
+    "import numpy as np",
+    "import pandas as pd",
+    sprintf("sys.path.insert(0, %s)", shQuote(dirname(script))),
+    sprintf("import %s as sccad_module", tools::file_path_sans_ext(basename(script))),
+    sprintf("expr = pd.read_csv(%s, index_col=0)", shQuote(expr_path)),
+    "data = expr.to_numpy(dtype=float)",
+    "cell_names = expr.index.to_numpy()",
+    "gene_names = expr.columns.to_numpy()",
+    sprintf(
+      paste0(
+        "result, score, sub_clusters, degs_list = sccad_module.scCAD(",
+        "data=data, dataName='Shennong', cellNames=cell_names, geneNames=gene_names, ",
+        "normalization=%s, seed=%s, rare_h=%s, merge_h=%s, overlap_h=%s, save_full=%s, save_path=%s)"
+      ),
+      if (isTRUE(normalization)) "True" else "False",
+      as.integer(seed),
+      as.numeric(rare_h),
+      as.numeric(merge_h),
+      as.numeric(overlap_h),
+      if (isTRUE(save_full)) "True" else "False",
+      shQuote(workdir)
+    ),
+    "def _to_str_list(x):",
+    "    out = []",
+    "    for item in x:",
+    "        if isinstance(item, bytes):",
+    "            out.append(item.decode('utf-8'))",
+    "        else:",
+    "            out.append(str(item))",
+    "    return out",
+    "rare_sets = [_to_str_list(cluster) for cluster in result]",
+    "sub_clusters = [str(x) for x in sub_clusters]",
+    "score = [float(x) for x in score]",
+    "payload = {",
+    "    'rare_sets': rare_sets,",
+    "    'scores': score,",
+    "    'sub_clusters': sub_clusters,",
+    "    'degs_list': [[str(g) for g in genes] for genes in degs_list]",
+    "}",
+    sprintf("with open(%s, 'w') as handle:", shQuote(output_path)),
+    "    json.dump(payload, handle)"
+  )
+  writeLines(runner_lines, con = runner_path, useBytes = TRUE)
+
+  status <- tryCatch(
+    system2(
+      command = python,
+      args = c(shQuote(runner_path)),
+      stdout = TRUE,
+      stderr = TRUE
+    ),
+    error = function(e) {
+      stop(
+        "SCA execution failed. Ensure the Python executable and the `shannonca` package are available. ",
+        conditionMessage(e),
+        call. = FALSE
+      )
+    }
+  )
+  exit_code <- attr(status, "status") %||% 0L
+  if (!identical(exit_code, 0L) || !file.exists(output_path)) {
+    stop(
+      "scCAD execution failed. ",
+      paste(status, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+
+  jsonlite::read_json(output_path, simplifyVector = TRUE)
+}
+
+.sn_drop_self_neighbors <- function(nn_idx, nn_dist = NULL) {
+  if (ncol(nn_idx) == 0) {
+    return(list(idx = nn_idx, dist = nn_dist))
+  }
+
+  cleaned_idx <- vector("list", length = nrow(nn_idx))
+  cleaned_dist <- if (!is.null(nn_dist)) vector("list", length = nrow(nn_dist)) else NULL
+
+  for (i in seq_len(nrow(nn_idx))) {
+    keep <- nn_idx[i, ] != i & !is.na(nn_idx[i, ])
+    cleaned_idx[[i]] <- as.integer(nn_idx[i, keep])
+    if (!is.null(nn_dist)) {
+      cleaned_dist[[i]] <- as.numeric(nn_dist[i, keep])
+    }
+  }
+
+  target_k <- max(vapply(cleaned_idx, length, integer(1)))
+  idx_mat <- matrix(NA_integer_, nrow = length(cleaned_idx), ncol = target_k)
+  dist_mat <- if (!is.null(cleaned_dist)) {
+    matrix(NA_real_, nrow = length(cleaned_dist), ncol = target_k)
+  } else {
+    NULL
+  }
+
+  for (i in seq_along(cleaned_idx)) {
+    current_k <- length(cleaned_idx[[i]])
+    if (current_k == 0) {
+      next
+    }
+    idx_mat[i, seq_len(current_k)] <- cleaned_idx[[i]]
+    if (!is.null(dist_mat)) {
+      dist_mat[i, seq_len(current_k)] <- cleaned_dist[[i]]
+    }
+  }
+
+  list(idx = idx_mat, dist = dist_mat)
+}
+
+.sn_get_embedding_knn <- function(embeddings, k = 20, n_trees = 50) {
+  k <- min(as.integer(k), nrow(embeddings) - 1L)
+  if (k < 1L) {
+    stop("At least two cells are required to score embedding rarity.", call. = FALSE)
+  }
+
+  if (rlang::is_installed("Seurat") && nrow(embeddings) > 1000L) {
+    neighbor <- Seurat::FindNeighbors(
+      object = embeddings,
+      k.param = min(k + 1L, nrow(embeddings)),
+      return.neighbor = TRUE,
+      compute.SNN = FALSE,
+      nn.method = "annoy",
+      n.trees = n_trees,
+      verbose = FALSE
+    )
+    cleaned <- .sn_drop_self_neighbors(
+      nn_idx = methods::slot(neighbor, "nn.idx"),
+      nn_dist = methods::slot(neighbor, "nn.dist")
+    )
+    return(cleaned)
+  }
+
+  squared_norms <- rowSums(embeddings^2)
+  distance_sq <- outer(squared_norms, squared_norms, "+") - 2 * tcrossprod(embeddings)
+  distance_sq[distance_sq < 0] <- 0
+  diag(distance_sq) <- Inf
+
+  nn_idx <- t(vapply(seq_len(nrow(distance_sq)), function(i) {
+    order(distance_sq[i, ], decreasing = FALSE)[seq_len(k)]
+  }, integer(k)))
+  nn_dist <- matrix(
+    sqrt(distance_sq[cbind(rep(seq_len(nrow(nn_idx)), each = ncol(nn_idx)), c(nn_idx))]),
+    nrow = nrow(nn_idx),
+    byrow = TRUE
+  )
+
+  list(idx = nn_idx, dist = nn_dist)
+}
+
+.sn_score_embedding_rarity <- function(embeddings, k = 20, n_trees = 50) {
+  knn <- .sn_get_embedding_knn(embeddings = embeddings, k = k, n_trees = n_trees)
+  rare_score <- rowMeans(knn$dist, na.rm = TRUE)
+  rare_score[!is.finite(rare_score)] <- 0
+  stats::setNames(as.numeric(rare_score), rownames(embeddings))
+}
+
+.sn_run_cellsius <- function(expr,
+                             group_ids,
+                             mcl_path = NULL,
+                             min_n_cells = 10,
+                             min_fc = 2,
+                             max_perc_cells = 50,
+                             fc_between_cutoff = 1,
+                             min_n_genes = 3) {
+  check_installed_github("CellSIUS", "Novartis/CellSIUS", reason = "to detect rare cells with the CellSIUS backend.")
+
+  mcl_path <- mcl_path %||% Sys.which("mcl")
+  if (!nzchar(mcl_path) || !file.exists(path.expand(mcl_path))) {
+    stop("Could not locate the `mcl` executable required by CellSIUS.", call. = FALSE)
+  }
+
+  group_ids <- as.character(group_ids)
+  names(group_ids) <- names(group_ids) %||% colnames(expr)
+  cellsius_out <- CellSIUS::CellSIUS(
+    mat.norm = as.matrix(expr),
+    group_id = group_ids,
+    min_n_cells = min_n_cells,
+    min_fc = min_fc,
+    max_perc_cells = max_perc_cells,
+    fc_between_cutoff = fc_between_cutoff,
+    mcl_path = path.expand(mcl_path)
+  )
+
+  if (length(cellsius_out) == 1 && is.na(cellsius_out)) {
+    return(data.frame(
+      cell_id = names(group_ids),
+      rare_score = 0,
+      rare_cell = FALSE,
+      subcluster = NA_character_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  sub_tbl <- unique(as.data.frame(cellsius_out[, c("cell_idx", "sub_cluster", "gene_id")]))
+  rare_subclusters <- unique(sub_tbl$sub_cluster[grepl("_1$", sub_tbl$sub_cluster)])
+  if (length(rare_subclusters) == 0) {
+    return(data.frame(
+      cell_id = names(group_ids),
+      rare_score = 0,
+      rare_cell = FALSE,
+      subcluster = NA_character_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  sub_tbl <- sub_tbl[sub_tbl$sub_cluster %in% rare_subclusters, , drop = FALSE]
+  score_tbl <- stats::aggregate(
+    gene_id ~ cell_idx + sub_cluster,
+    data = sub_tbl,
+    FUN = function(x) length(unique(x))
+  )
+  names(score_tbl)[names(score_tbl) == "gene_id"] <- "rare_score"
+  score_tbl <- score_tbl[order(score_tbl$cell_idx, -score_tbl$rare_score), , drop = FALSE]
+  score_tbl <- score_tbl[!duplicated(score_tbl$cell_idx), , drop = FALSE]
+
+  final_assignment <- CellSIUS::CellSIUS_final_cluster_assignment(
+    CellSIUS.out = cellsius_out,
+    group_id = group_ids,
+    min_n_genes = min_n_genes
+  )
+  rare_cell <- final_assignment != group_ids
+  rare_cell[is.na(rare_cell)] <- FALSE
+
+  out <- data.frame(
+    cell_id = names(group_ids),
+    rare_score = 0,
+    rare_cell = as.logical(rare_cell),
+    subcluster = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  matched <- match(out$cell_id, score_tbl$cell_idx)
+  out$rare_score[!is.na(matched)] <- score_tbl$rare_score[matched[!is.na(matched)]]
+  out$subcluster[!is.na(matched)] <- as.character(score_tbl$sub_cluster[matched[!is.na(matched)]])
+  out
+}
+
+.sn_run_gapclust <- function(expr, k = 200) {
+  check_installed_github("GapClust", "fabotao/GapClust", reason = "to detect rare cells with the GapClust backend.")
+
+  result <- GapClust::GapClust(data = as.matrix(expr), k = as.integer(k))
+  cell_ids <- colnames(expr)
+  if (length(result) == 1 && is.na(result)) {
+    return(data.frame(
+      cell_id = cell_ids,
+      rare_score = 0,
+      rare_cell = FALSE,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  rare_membership <- sort(unique(unlist(result$rare_cell_indices, use.names = FALSE)))
+  rare_score <- apply(result$rare_score, 1, function(x) {
+    current <- x[is.finite(x)]
+    if (length(current) == 0) {
+      return(0)
+    }
+    max(current)
+  })
+
+  data.frame(
+    cell_id = cell_ids,
+    rare_score = as.numeric(rare_score),
+    rare_cell = seq_along(cell_ids) %in% rare_membership,
+    stringsAsFactors = FALSE
+  )
+}
+
+.sn_run_edge <- function(expr,
+                         n_comps = 20,
+                         n_dm = 500,
+                         n_wl = 500,
+                         k = 20,
+                         seed = 717) {
+  check_installed_github("EDGE", "shawnstat/EDGE", reason = "to compute an EDGE reduction for rare-cell scoring.")
+
+  dat <- t(as.matrix(expr))
+  rownames(dat) <- colnames(expr)
+  embedding <- EDGE::endr(
+    dat = dat,
+    n_comps = min(as.integer(n_comps), nrow(dat) - 1L),
+    n_dm = min(as.integer(n_dm), ncol(dat)),
+    n_wl = as.integer(n_wl),
+    n_neigs = min(as.integer(k), nrow(dat) - 1L),
+    seed = as.integer(seed)
+  )
+  rownames(embedding) <- colnames(expr)
+  embedding
+}
+
+.sn_run_sca <- function(expr,
+                        python = NULL,
+                        n_comps = 20,
+                        iters = 3,
+                        nbhd_size = 15,
+                        model = "wilcoxon",
+                        seed = 717) {
+  python <- python %||% getOption("shennong.sca_python", Sys.which("python"))
+  if (!nzchar(python)) {
+    stop("Could not find a Python executable for the SCA backend.", call. = FALSE)
+  }
+
+  workdir <- tempfile("sca_")
+  dir.create(workdir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(workdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expr_path <- file.path(workdir, "expression.csv")
+  output_path <- file.path(workdir, "sca_result.json")
+  runner_path <- file.path(workdir, "run_sca.py")
+
+  expr_df <- as.data.frame(t(as.matrix(expr)))
+  colnames(expr_df) <- rownames(expr)
+  rownames(expr_df) <- colnames(expr)
+  utils::write.csv(expr_df, file = expr_path, quote = FALSE)
+
+  runner_lines <- c(
+    "import json",
+    "import pandas as pd",
+    "from shannonca.dimred import reduce",
+    sprintf("expr = pd.read_csv(%s, index_col=0)", shQuote(expr_path)),
+    "reduction = reduce(",
+    "    expr.to_numpy(dtype=float),",
+    sprintf("    n_comps=%s,", min(as.integer(n_comps), ncol(expr_df) - 1L)),
+    sprintf("    iters=%s,", as.integer(iters)),
+    sprintf("    nbhd_size=%s,", as.integer(nbhd_size)),
+    sprintf("    model=%s,", shQuote(model)),
+    sprintf("    seed=%s", as.integer(seed)),
+    ")",
+    "payload = {'reduction': reduction.tolist()}",
+    sprintf("with open(%s, 'w') as handle:", shQuote(output_path)),
+    "    json.dump(payload, handle)"
+  )
+  writeLines(runner_lines, con = runner_path, useBytes = TRUE)
+
+  status <- tryCatch(
+    system2(
+      command = python,
+      args = c(shQuote(runner_path)),
+      stdout = TRUE,
+      stderr = TRUE
+    ),
+    error = function(e) {
+      stop(
+        "SCA execution failed. Ensure the Python executable and the `shannonca` package are available. ",
+        conditionMessage(e),
+        call. = FALSE
+      )
+    }
+  )
+  exit_code <- attr(status, "status") %||% 0L
+  if (!identical(exit_code, 0L) || !file.exists(output_path)) {
+    stop(
+      "SCA execution failed. Ensure the Python package `shannonca` is installed. ",
+      paste(status, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+
+  result <- jsonlite::read_json(output_path, simplifyVector = TRUE)
+  embedding <- as.matrix(result$reduction)
+  rownames(embedding) <- colnames(expr)
+  embedding
+}
+
+#' Detect rare cells with native or optional rare-cell backends
+#'
+#' @param object A \code{Seurat} object.
+#' @param method Rare-cell method. Supported values are \code{"gini"},
+#'   \code{"fire"}, \code{"sccad"}, \code{"cellsius"}, \code{"sca"},
+#'   \code{"edge"}, \code{"gapclust"}, and \code{"challenging_groups"}.
+#' @param group Optional metadata column used with
+#'   \code{method = "challenging_groups"} or cluster-seeded methods such as
+#'   \code{"cellsius"}.
+#' @param reduction Reduction used by graph-based methods. Defaults to
+#'   \code{"harmony"} when present, otherwise \code{"pca"}.
+#' @param dims Optional embedding dimensions to use.
+#' @param assay Assay used to extract expression values.
+#' @param layer Layer used to extract expression values for score-based methods.
+#' @param nfeatures Number of rare-aware genes to use for score construction.
+#' @param min_cells Minimum number of cells a gene must be detected in before it
+#'   is considered by score-based methods.
+#' @param max_fraction Maximum expressing-cell fraction for score-based rare
+#'   genes.
+#' @param threshold Optional explicit threshold on the rare-cell score. When
+#'   \code{NULL}, the function uses the upper-IQR rule.
+#' @param k Number of neighbors for graph-based methods.
+#' @param seed Random seed used by stochastic backends.
+#' @param sccad_python Optional Python executable used by the scCAD backend.
+#' @param sccad_script Optional path to the upstream \code{scCAD.py} script.
+#' @param sccad_normalization Whether scCAD should normalize the provided
+#'   matrix internally.
+#' @param sccad_rare_h Rare threshold passed to scCAD.
+#' @param sccad_merge_h Merge threshold passed to scCAD.
+#' @param sccad_overlap_h Overlap threshold passed to scCAD.
+#' @param cellsius_mcl_path Optional path to the \code{mcl} executable required
+#'   by CellSIUS.
+#' @param cellsius_min_n_cells Minimum number of cells used by CellSIUS when
+#'   testing bimodality.
+#' @param cellsius_min_fc Minimum within-cluster fold change used by CellSIUS.
+#' @param cellsius_max_perc_cells Maximum subgroup size percentage allowed by
+#'   CellSIUS.
+#' @param cellsius_fc_between_cutoff Minimum between-cluster fold change used by
+#'   CellSIUS.
+#' @param cellsius_min_n_genes Minimum signature size retained when generating
+#'   final CellSIUS assignments.
+#' @param gapclust_k Upper limit of the minor-cluster size used by GapClust.
+#' @param edge_n_comps Number of EDGE components used before rarity scoring.
+#' @param edge_n_dm Number of genes sampled by EDGE weak learners.
+#' @param edge_n_wl Number of EDGE weak learners.
+#' @param sca_python Optional Python executable used by the SCA backend.
+#' @param sca_n_comps Number of SCA components used before rarity scoring.
+#' @param sca_iters Number of SCA iterations.
+#' @param sca_nbhd_size Neighborhood size passed to SCA.
+#' @param sca_model Scoring model passed to SCA.
+#'
+#' @return A data frame with one row per cell, including a \code{rare_score}
+#'   column and a logical \code{rare_cell} flag.
+#'
+#' @examples
+#' \dontrun{
+#' data("pbmc_small", package = "Shennong")
+#' rare_tbl <- sn_detect_rare_cells(pbmc_small, method = "gini")
+#' head(rare_tbl)
+#' }
+#'
+#' @export
+sn_detect_rare_cells <- function(object,
+                                 method = c("gini", "fire", "sccad", "cellsius", "sca", "edge", "gapclust", "challenging_groups"),
+                                 group = NULL,
+                                 reduction = .sn_default_metric_reduction(object),
+                                 dims = NULL,
+                                 assay = "RNA",
+                                 layer = "data",
+                                 nfeatures = 200,
+                                 min_cells = 3,
+                                 max_fraction = 0.1,
+                                 threshold = NULL,
+                                 k = 20,
+                                 seed = 717,
+                                 sccad_python = NULL,
+                                 sccad_script = NULL,
+                                 sccad_normalization = FALSE,
+                                 sccad_rare_h = 0.01,
+                                 sccad_merge_h = 0.3,
+                                 sccad_overlap_h = 0.7,
+                                 cellsius_mcl_path = NULL,
+                                 cellsius_min_n_cells = 10,
+                                 cellsius_min_fc = 2,
+                                 cellsius_max_perc_cells = 50,
+                                 cellsius_fc_between_cutoff = 1,
+                                 cellsius_min_n_genes = 3,
+                                 gapclust_k = 200,
+                                 edge_n_comps = 20,
+                                 edge_n_dm = 500,
+                                 edge_n_wl = 500,
+                                 sca_python = NULL,
+                                 sca_n_comps = 20,
+                                 sca_iters = 3,
+                                 sca_nbhd_size = 15,
+                                 sca_model = "wilcoxon") {
+  if (!inherits(object, "Seurat")) {
+    stop("Input must be a Seurat object.", call. = FALSE)
+  }
+
+  method <- rlang::arg_match(method)
+  expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  cell_ids <- colnames(object)
+
+  if (identical(method, "gini")) {
+    gini_tbl <- .sn_detect_rare_features_gini(
+      expr = expr,
+      nfeatures = nfeatures,
+      min_cells = min_cells,
+      max_fraction = max_fraction
+    )
+    if (nrow(gini_tbl) == 0) {
+      return(data.frame(
+        cell_id = cell_ids,
+        method = method,
+        rare_score = 0,
+        rare_cell = FALSE,
+        stringsAsFactors = FALSE
+      ))
+    }
+
+    feature_mat <- expr[gini_tbl$feature, , drop = FALSE]
+    feature_scale <- pmax(Matrix::rowMeans(feature_mat), 1e-8)
+    normalized <- Matrix::Diagonal(x = 1 / feature_scale) %*% feature_mat
+    rare_score <- Matrix::colMeans(normalized)
+  } else if (identical(method, "fire")) {
+    check_installed("FiRE", reason = "to detect rare cells with the FiRE backend.")
+    data_mat <- list(
+      mat = t(as.matrix(expr)),
+      gene_symbols = rownames(expr)
+    )
+    preprocessed_list <- FiRE::ranger_preprocess(
+      data_mat = data_mat,
+      ngenes_keep = min(nfeatures, nrow(expr)),
+      verbose = FALSE
+    )
+    preprocessed_data <- as.matrix(preprocessed_list$preprocessedData)
+    model <- methods::new(FiRE::FiRE, 100L, min(50L, ncol(preprocessed_data)), 1017881L, as.integer(seed), 0L)
+    model$fit(preprocessed_data)
+    rare_score <- as.numeric(model$score(preprocessed_data))
+  } else if (identical(method, "sccad")) {
+    sccad_result <- .sn_run_sccad(
+      expr = expr,
+      cell_ids = cell_ids,
+      gene_ids = rownames(expr),
+      python = sccad_python,
+      script = sccad_script,
+      normalization = sccad_normalization,
+      seed = seed,
+      rare_h = sccad_rare_h,
+      merge_h = sccad_merge_h,
+      overlap_h = sccad_overlap_h
+    )
+    rare_membership <- unique(unlist(sccad_result$rare_sets, use.names = FALSE))
+    subcluster_score <- stats::setNames(
+      as.numeric(sccad_result$scores),
+      unique(sccad_result$sub_clusters)
+    )
+    rare_score <- unname(subcluster_score[as.character(sccad_result$sub_clusters)])
+    rare_flag <- cell_ids %in% rare_membership
+    return(data.frame(
+      cell_id = cell_ids,
+      method = method,
+      rare_score = as.numeric(rare_score),
+      rare_cell = rare_flag,
+      subcluster = as.character(sccad_result$sub_clusters),
+      stringsAsFactors = FALSE
+    ))
+  } else if (identical(method, "cellsius")) {
+    if (is.null(group)) {
+      stop("`group` must be supplied when `method = \"cellsius\"`.", call. = FALSE)
+    }
+    if (!group %in% colnames(object[[]])) {
+      stop(glue("Metadata column '{group}' was not found."), call. = FALSE)
+    }
+    return(transform(
+      .sn_run_cellsius(
+        expr = expr,
+        group_ids = stats::setNames(as.character(object[[group, drop = TRUE]]), cell_ids),
+        mcl_path = cellsius_mcl_path,
+        min_n_cells = cellsius_min_n_cells,
+        min_fc = cellsius_min_fc,
+        max_perc_cells = cellsius_max_perc_cells,
+        fc_between_cutoff = cellsius_fc_between_cutoff,
+        min_n_genes = cellsius_min_n_genes
+      ),
+      method = method
+    ))
+  } else if (identical(method, "gapclust")) {
+    return(transform(
+      .sn_run_gapclust(expr = expr, k = gapclust_k),
+      method = method
+    ))
+  } else if (identical(method, "edge")) {
+    edge_embedding <- .sn_run_edge(
+      expr = expr,
+      n_comps = edge_n_comps,
+      n_dm = edge_n_dm,
+      n_wl = edge_n_wl,
+      k = k,
+      seed = seed
+    )
+    rare_score <- .sn_score_embedding_rarity(edge_embedding, k = k)
+  } else if (identical(method, "sca")) {
+    sca_embedding <- .sn_run_sca(
+      expr = expr,
+      python = sca_python,
+      n_comps = sca_n_comps,
+      iters = sca_iters,
+      nbhd_size = sca_nbhd_size,
+      model = sca_model,
+      seed = seed
+    )
+    rare_score <- .sn_score_embedding_rarity(sca_embedding, k = k)
+  } else {
+    if (is.null(group)) {
+      stop("`group` must be supplied when `method = \"challenging_groups\"`.", call. = FALSE)
+    }
+    group_tbl <- sn_identify_challenging_groups(
+      x = object,
+      group = group,
+      reduction = reduction,
+      dims = dims,
+      k = k,
+      neighbor_method = "auto",
+      seed = seed
+    )
+    group_scores <- setNames(group_tbl$challenge_score, group_tbl[[group]])
+    rare_score <- unname(group_scores[as.character(object[[group, drop = TRUE]])])
+  }
+
+  score_threshold <- threshold %||% as.numeric(stats::quantile(rare_score, 0.75, na.rm = TRUE) + 1.5 * stats::IQR(rare_score, na.rm = TRUE))
+  if (!is.finite(score_threshold)) {
+    score_threshold <- Inf
+  }
+
+  data.frame(
+    cell_id = cell_ids,
+    method = method,
+    rare_score = as.numeric(rare_score),
+    rare_cell = as.numeric(rare_score) >= score_threshold,
+    stringsAsFactors = FALSE
+  )
+}
+
 .sn_select_variable_features <- function(object,
                                          nfeatures = 3000,
                                          split_by = NULL,
@@ -72,6 +1072,21 @@
 #' @param hvg_group_by Optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. Use \code{NULL} to
 #'   compute HVGs on the full object.
+#' @param rare_feature_method Optional rare-cell-aware feature methods appended
+#'   to the base HVG set before PCA/clustering. Supported values are
+#'   \code{"none"}, \code{"gini"}, \code{"local_hvg"},
+#'   \code{"local_markers"}, and \code{"ciara"}.
+#' @param rare_feature_group_by Optional metadata column used to define groups
+#'   for rare-group-aware feature extraction. When \code{NULL}, Shennong builds
+#'   a temporary coarse clustering from the base HVGs.
+#' @param rare_feature_n Number of rare-aware features to add per selected
+#'   method.
+#' @param rare_group_max_fraction Maximum cluster fraction used when identifying
+#'   rare groups for rare-aware feature selection.
+#' @param rare_group_max_cells Maximum absolute cluster size used when
+#'   identifying rare groups for rare-aware feature selection.
+#' @param rare_gene_max_fraction Maximum expressing-cell fraction used by
+#'   score-based rare-feature methods such as \code{"gini"}.
 #' @param block_genes Either a character vector of predefined bundled signature
 #'   categories (for example \code{c("ribo","mito")}) or a custom vector of
 #'   gene symbols to exclude from HVGs.
@@ -118,6 +1133,12 @@ sn_run_cluster <- function(object,
                            vars_to_regress = NULL,
                            resolution = 0.8,
                            hvg_group_by = NULL,
+                           rare_feature_method = "none",
+                           rare_feature_group_by = NULL,
+                           rare_feature_n = 200,
+                           rare_group_max_fraction = 0.05,
+                           rare_group_max_cells = 100,
+                           rare_gene_max_fraction = 0.1,
                            block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
                            group_by_vars = NULL,
@@ -136,6 +1157,11 @@ sn_run_cluster <- function(object,
   }
 
   normalization_method <- match.arg(normalization_method)
+  rare_feature_method <- unique(match.arg(
+    rare_feature_method,
+    c("none", "gini", "local_hvg", "local_markers", "ciara"),
+    several.ok = TRUE
+  ))
   if (!is_null(hvg_group_by) && !hvg_group_by %in% colnames(object[[]])) {
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{hvg_group_by}' was not found."))
   }
@@ -171,6 +1197,10 @@ sn_run_cluster <- function(object,
   if (normalization_method == "sctransform" && !is_null(block_genes)) {
     log_warn("`block_genes` is only applied in the log-normalization workflows; ignoring it for SCTransform.")
     block_genes <- NULL
+  }
+  if (normalization_method == "sctransform" && !identical(rare_feature_method, "none")) {
+    log_warn("`rare_feature_method` is only applied in the log-normalization workflows; ignoring it for SCTransform.")
+    rare_feature_method <- "none"
   }
 
   if (!is_null(block_genes)) {
@@ -276,7 +1306,38 @@ sn_run_cluster <- function(object,
       }
       hvg <- utils::head(hvg, nfeatures)
     }
+
+    rare_feature_info <- .sn_select_rare_features(
+      object = object,
+      base_features = hvg,
+      method = rare_feature_method,
+      assay = assay,
+      layer = "data",
+      nfeatures = rare_feature_n,
+      group_by = rare_feature_group_by,
+      rare_group_max_fraction = rare_group_max_fraction,
+      rare_group_max_cells = rare_group_max_cells,
+      rare_gene_max_fraction = rare_gene_max_fraction,
+      min_cells = 3,
+      npcs = min(npcs, 20),
+      dims = seq_len(min(10, npcs)),
+      resolution = min(resolution, 0.4),
+      verbose = verbose
+    )
+    selected_rare_features <- utils::head(rare_feature_info$features, rare_feature_n)
+    if (length(selected_rare_features) > 0) {
+      hvg <- unique(c(hvg, selected_rare_features))
+    }
     Seurat::VariableFeatures(object = object) <- hvg
+    object@misc$rare_feature_selection <- list(
+      method = rare_feature_method,
+      base_hvg_n = nfeatures,
+      rare_feature_n = length(selected_rare_features),
+      selected_features = hvg,
+      rare_features = selected_rare_features,
+      rare_feature_table = rare_feature_info$metadata,
+      rare_groups = if (!is.null(rare_feature_info$groups)) rare_feature_info$groups$rare_groups else character(0)
+    )
 
     #-- Scaling
     if (verbose) log_info("[3/6] Scaling data...")

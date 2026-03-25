@@ -1,11 +1,11 @@
 ---
-title: "PBMC workflow"
+title: "Clustering and integration workflow"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{PBMC workflow}
+  %\VignetteIndexEntry{Clustering and integration workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -41,12 +41,19 @@ knitr::opts_chunk$set(
 )
 ```
 
-This article runs a complete PBMC analysis using the built-in `pbmc1k` and
-`pbmc3k` example datasets. The workflow covers QC-aware preprocessing,
-single-sample clustering, pre/post integration comparison, sample composition
-summaries, multi-metric integration scoring, rare-group diagnostics, marker
-discovery, dot-plot visualization, and functional enrichment from cluster
-markers.
+This article covers the core unsupervised-analysis stage in Shennong using the
+built-in PBMC examples. The workflow shows how to move from a preprocessed
+Seurat object to:
+
+- single-sample clustering
+- multi-sample Harmony integration
+- optional rare-aware feature selection before PCA/integration
+- pre/post integration embedding comparison
+- cluster visualization on the integrated object
+
+Downstream metrics, composition, and interpretation now have their own
+dedicated articles, but a few summary outputs remain here so the integration
+workflow is visible end to end.
 
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
@@ -146,6 +153,8 @@ pbmc_integrated <- suppressWarnings(
     batch = "sample",
     normalization_method = "seurat",
     hvg_group_by = "sample",
+    rare_feature_method = "gini",
+    rare_feature_n = 100,
     species = "human",
     nfeatures = 800,
     block_genes = NULL,
@@ -154,6 +163,13 @@ pbmc_integrated <- suppressWarnings(
     resolution = 0.5,
     verbose = FALSE
   )
+)
+
+rare_detection <- sn_detect_rare_cells(
+  pbmc_integrated,
+  method = "gini",
+  nfeatures = 100,
+  max_fraction = 0.05
 )
 
 cell_summary <- tibble::tibble(
@@ -371,8 +387,9 @@ knitr::kable(assessment_summary, digits = 3)
 ```
 
 `sn_assess_integration()` combines local sample mixing, PCR batch reduction,
-graph connectivity, and cluster-level diagnostics into one summary object while
-reusing the stored neighbor graph when possible.
+graph connectivity, isolated-label preservation, cluster batch entropy, cluster
+purity, and difficult-group diagnostics into one summary object while reusing
+the stored neighbor graph when possible.
 
 ```{r}
 knitr::kable(challenging_groups, digits = 3)
@@ -380,6 +397,25 @@ knitr::kable(challenging_groups, digits = 3)
 
 The `challenging_groups` table is especially useful for surfacing rare groups
 or poorly separated populations that may not stand out as isolated UMAP islands.
+
+```{r}
+knitr::kable(integration_assessment$per_group$isolated_label_score, digits = 3)
+```
+
+The isolated-label summary makes it easier to spot small populations that stay
+biologically distinct even when they do not appear as a visually isolated UMAP
+island after integration.
+
+## Rare-aware feature selection
+
+When small populations are a concern, `sn_run_cluster()` can append rare-aware
+features to the main HVG set before PCA and Harmony. In this article the
+integrated object was run with `rare_feature_method = "gini"`, and the
+resulting rare-cell scores can be inspected directly:
+
+```{r}
+knitr::kable(head(rare_detection[order(rare_detection$rare_score, decreasing = TRUE), ], 10), digits = 3)
+```
 
 ## Marker genes from the integrated object
 

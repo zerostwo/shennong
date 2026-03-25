@@ -1,0 +1,146 @@
+---
+title: "Composition and comparative analysis workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Composition and comparative analysis workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+required_pkgs <- c("Seurat")
+run_vignette <- run_vignette && all(vapply(
+  required_pkgs,
+  requireNamespace,
+  quietly = TRUE,
+  FUN.VALUE = logical(1)
+))
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This workflow covers the analysis tasks that happen after clusters or cell
+types already exist and the main question becomes comparative rather than
+structural:
+
+- how cell states are distributed across samples
+- whether cluster proportions shift between groups
+- how QC or score columns differ across categories
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+
+if (!exists("pbmc_small", inherits = FALSE)) {
+  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
+}
+if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
+  load(file.path("data", "pbmc_small.rda"))
+}
+```
+
+```{r prepare-composition-demo, include = FALSE}
+pbmc_comp <- suppressWarnings(
+  sn_run_cluster(
+    pbmc_small,
+    normalization_method = "seurat",
+    nfeatures = 800,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.4,
+    verbose = FALSE
+  )
+)
+pbmc_comp$sample <- pbmc_small@meta.data[colnames(pbmc_comp), "sample"]
+pbmc_comp <- sn_score_cell_cycle(pbmc_comp, species = "human")
+
+composition_tbl <- sn_calculate_composition(
+  pbmc_comp,
+  group_by = "sample",
+  variable = "seurat_clusters",
+  min_cells = 0
+)
+
+phase_tbl <- sn_calculate_composition(
+  pbmc_comp,
+  group_by = "sample",
+  variable = "Phase",
+  min_cells = 0
+)
+
+score_tbl <- pbmc_comp@meta.data |>
+  dplyr::select(sample, seurat_clusters, S.Score, G2M.Score, nFeature_RNA)
+```
+
+## 1. Summarize cell-state proportions
+
+`sn_calculate_composition()` is the main helper for grouped proportion
+summaries. The most common pattern is sample-by-cluster composition.
+
+```{r}
+knitr::kable(composition_tbl, digits = 2)
+```
+
+## 2. Plot proportions across groups
+
+The returned composition table can be fed directly into `sn_plot_barplot()`.
+
+```{r}
+sn_plot_barplot(
+  composition_tbl,
+  x = sample,
+  y = proportion,
+  fill = seurat_clusters
+)
+```
+
+## 3. Compare categorical structure beyond clusters
+
+The same composition helper also works for cell-cycle phase, annotation labels,
+or any other metadata column.
+
+```{r}
+knitr::kable(phase_tbl, digits = 2)
+```
+
+## 4. Compare continuous scores across groups
+
+Once a grouped table exists, Shennong's plotting helpers can summarize how QC
+or score columns differ by sample or cluster.
+
+```{r}
+sn_plot_boxplot(score_tbl, x = sample, y = nFeature_RNA)
+```
+
+```{r}
+sn_plot_boxplot(score_tbl, x = seurat_clusters, y = S.Score)
+```
+
+## 5. Keep comparative analysis downstream of stable labels
+
+Composition and grouped-score analysis become much more interpretable once the
+labels are stable. In practice the recommended order is:
+
+1. preprocessing and QC
+2. clustering or integration
+3. marker or reference-based annotation
+4. composition and grouped comparisons
+
+That order reduces the chance of over-interpreting composition shifts that are
+actually caused by unstable clustering.

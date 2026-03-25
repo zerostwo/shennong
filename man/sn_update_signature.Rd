@@ -8,7 +8,7 @@ sn_update_signature(
   species = "human",
   path,
   genes = NULL,
-  registry_path = NULL,
+  catalog_path = NULL,
   rename_to = NULL,
   source = NULL
 )
@@ -21,7 +21,7 @@ sn_update_signature(
 \item{genes}{Optional replacement gene vector. If \code{NULL}, keep the
 existing genes.}
 
-\item{registry_path}{Optional path to the editable registry JSON file.}
+\item{catalog_path}{Optional path to a signature catalog \code{.rda} snapshot.}
 
 \item{rename_to}{Optional new terminal node name.}
 

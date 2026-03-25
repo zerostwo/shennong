@@ -103,6 +103,9 @@ metrics <- sn_assess_integration(
 )
 
 metrics$summary
+metrics$per_group$isolated_label_score
+metrics$per_group$cluster_entropy
+metrics$per_group$cluster_purity
 metrics$per_group$challenging_groups
 ```
 

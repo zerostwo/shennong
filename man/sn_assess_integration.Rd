@@ -54,7 +54,9 @@ PCR batch scoring. If \code{NULL}, the baseline is taken from \code{x}.}
 Supported values are \code{"batch_lisi"}, \code{"label_lisi"},
 \code{"batch_silhouette"}, \code{"label_silhouette"},
 \code{"graph_connectivity"}, \code{"clustering_agreement"},
-\code{"pcr_batch"}, and \code{"challenging_groups"}.}
+\code{"isolated_label_score"}, \code{"cluster_purity"},
+\code{"cluster_entropy"}, \code{"pcr_batch"}, and
+\code{"challenging_groups"}.}
 
 \item{neighbor_method}{Strategy used when a graph must be built. One of
 \code{"auto"}, \code{"graph"}, \code{"annoy"}, or \code{"exact"}.}

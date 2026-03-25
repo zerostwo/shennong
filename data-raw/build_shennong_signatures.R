@@ -1,20 +1,6 @@
-# Build the editable Shennong signature registry and package data catalog.
+# Build the packaged Shennong signature snapshot from SignatuR.
 # Run manually during development.
-#
-# Default behavior:
-# - if `data-raw/shennong_signature_registry.json` does not exist, bootstrap it
-#   from the installed SignatuR package while preserving the full tree.
-# - always rebuild `data/shennong_signature_catalog.rda` from the current
-#   registry.
-#
-# Set `SHENNONG_REFRESH_SIGNATURE_REGISTRY=true` when you explicitly want to
-# replace the editable registry with a fresh import from SignatuR.
 
-refresh_from_signatur <- identical(
-  tolower(Sys.getenv("SHENNONG_REFRESH_SIGNATURE_REGISTRY", unset = "false")),
-  "true"
-)
-registry_path <- file.path("data-raw", "shennong_signature_registry.json")
 data_path <- file.path("data", "shennong_signature_catalog.rda")
 
 extract_signatur_genes <- function(node) {
@@ -54,10 +40,10 @@ signatur_to_tree <- function(node, source = "SignatuR") {
   out
 }
 
-bootstrap_registry_from_signatur <- function() {
+build_catalog_from_signatur <- function() {
   if (!requireNamespace("SignatuR", quietly = TRUE)) {
     stop(
-      "Install SignatuR before bootstrapping the signature registry from the upstream tree.",
+      "Install SignatuR before building the packaged signature catalog from the upstream tree.",
       call. = FALSE
     )
   }
@@ -76,7 +62,7 @@ bootstrap_registry_from_signatur <- function() {
 
   list(
     metadata = list(
-      registry_name = "shennong_signature_registry",
+      snapshot_name = "shennong_signature_catalog",
       source_package = "SignatuR",
       source_version = as.character(utils::packageVersion("SignatuR")),
       built_on = as.character(Sys.Date())
@@ -88,31 +74,7 @@ bootstrap_registry_from_signatur <- function() {
   )
 }
 
-read_registry <- function(path) {
-  jsonlite::read_json(path, simplifyVector = FALSE)
-}
-
-write_registry <- function(registry, path) {
-  jsonlite::write_json(
-    registry,
-    path = path,
-    auto_unbox = TRUE,
-    pretty = TRUE,
-    null = "null"
-  )
-}
-
-if (isTRUE(refresh_from_signatur) || !file.exists(registry_path)) {
-  registry <- bootstrap_registry_from_signatur()
-  dir.create(dirname(registry_path), recursive = TRUE, showWarnings = FALSE)
-  write_registry(registry, registry_path)
-}
-
-registry <- read_registry(registry_path)
-shennong_signature_catalog <- list(
-  metadata = registry$metadata,
-  tree = registry$tree
-)
+shennong_signature_catalog <- build_catalog_from_signatur()
 
 dir.create(dirname(data_path), recursive = TRUE, showWarnings = FALSE)
 save(

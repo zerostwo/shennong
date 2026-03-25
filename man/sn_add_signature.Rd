@@ -8,7 +8,7 @@ sn_add_signature(
   species = "human",
   path,
   genes,
-  registry_path = NULL,
+  catalog_path = NULL,
   overwrite = FALSE,
   source = "custom"
 )
@@ -21,7 +21,7 @@ example \code{"Programs/MyProgram/MySignature"}.}
 
 \item{genes}{Character vector of gene symbols stored at the leaf node.}
 
-\item{registry_path}{Optional path to the editable registry JSON file.}
+\item{catalog_path}{Optional path to a signature catalog \code{.rda} snapshot.}
 
 \item{overwrite}{If \code{TRUE}, replace an existing signature at the same
 path.}

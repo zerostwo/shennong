@@ -17,6 +17,22 @@ Last updated: 2026-03-25
   of being inferred indirectly from a single global score. The metrics layer
   therefore now includes `sn_identify_challenging_groups()` with group size,
   neighbor purity, connectivity, and silhouette-derived diagnostics.
+- Integration assessment should include explicit small-population and
+  within-cluster mixing diagnostics rather than relying only on global LISI or
+  PCR summaries. The default workflow now includes isolated-label preservation,
+  cluster purity against biological labels, and cluster entropy against batch
+  labels so rare or weakly separated groups remain visible in routine reports.
+- Rare-cell support should enter the workflow at two points: as a diagnostic
+  layer (`sn_detect_rare_cells()`) and as a feature-selection enhancement for
+  clustering/integration (`sn_run_cluster(rare_feature_method = ...)`). This is
+  more controllable than replacing the main HVG logic with a single opaque
+  rare-cell algorithm.
+- User-facing documentation should be organized by analysis stage rather than
+  by source-file boundaries. The primary taxonomy is now:
+  preprocessing/QC; clustering/integration; diagnostics/benchmarking;
+  annotation/markers/pathways; composition/comparative analysis; and
+  interpretation/reporting. pkgdown reference groups and articles should follow
+  that workflow-oriented structure.
 - Because Shennong is still explicitly experimental, current refactors do not
   need to preserve backward compatibility with earlier 0.x interfaces. Legacy
   wrappers, deprecated aliases, and "backwards-compatible" transitional
@@ -54,9 +70,9 @@ Last updated: 2026-03-25
   coordinates, strand, gene status/source, level, and version-stripped IDs.
 - Shennong should not maintain a second independent implementation of
   signature-registry editing when `SignatuR` already provides the authoritative
-  mutation API. Registry add/update/delete helpers now bridge into a transient
+  mutation API. Signature add/update/delete helpers now bridge into a transient
   `SignatuR` object, call the upstream functions, and then serialize back to
-  Shennong's editable registry.
+  Shennong's packaged snapshot.
 - Harmony integration should track the upstream `immunogenomics/harmony`
   `harmony2` developer branch explicitly in package metadata and CI, rather
   than implicitly relying on the CRAN release line. The runtime namespace
@@ -71,7 +87,7 @@ Last updated: 2026-03-25
 - `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
 - Empty directories inside the shipped project template should be created from an explicit manifest (`inst/codex/project-template/directories.txt`), not hidden `.gitkeep` placeholders. This keeps the scaffold maintainable while avoiding hidden-file notes in `R CMD check`.
 - Coverage expansion should prioritize durable, stateful behavior over superficial line hits. For this pass, the preferred targets were Seurat layer/state helpers, stored-result contracts in `object@misc`, packaged project scaffolding, IO dispatch paths, and external-tool integration seams such as CellTypist.
-- Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships a meaningful `shennong_signature_catalog` dataset under `data/`, with an editable registry under `data-raw/`, and user-facing docs should describe bundled signature paths rather than `SignatuR` installation requirements.
+- Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships a meaningful `shennong_signature_catalog` dataset under `data/`, rebuilt directly from the upstream `SignatuR` dataset during development, and user-facing docs should describe bundled signature paths rather than `SignatuR` installation requirements.
 
 ## 2026-03-18
 
@@ -132,5 +148,5 @@ Last updated: 2026-03-25
 - User-facing analysis features are not considered complete until their usage is discoverable. Any new or changed public workflow must update both pkgdown articles and the shipped Codex skill references in the same change set, especially when stored-result schemas or retrieval helpers change.
 - pkgdown is part of the delivery surface, not just a derived artifact. After changing user-facing functionality, the site must be rebuilt locally to verify that the rendered reference and articles reflect the new behavior before the task is considered complete.
 - Release notes are also part of the delivery contract. Any user-facing feature change must update `NEWS.md` in the same change set as the code, tests, pkgdown articles, and shipped skill references.
-- Signature retrieval should be runtime-stable. Shennong now ships its own internal signature snapshot generated from `SignatuR` during development, and `sn_get_signatures()` reads that bundled data instead of the user's installed `SignatuR` package.
+- Signature retrieval should be runtime-stable. Shennong now ships its own internal signature snapshot generated directly from `SignatuR` during development, and `sn_get_signatures()` reads that bundled data instead of the user's installed `SignatuR` package.
 - End-user projects need a package-level way to bootstrap a governed analysis repository from packaged assets. Shennong now exposes `sn_initialize_codex_project()` for the full project template and retains `sn_initialize_project()` as a wrapper for convenience.

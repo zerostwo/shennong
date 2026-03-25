@@ -1,0 +1,204 @@
+---
+title: "Metrics and diagnostics workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Metrics and diagnostics workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+required_pkgs <- c("Seurat", "harmony")
+run_vignette <- run_vignette && all(vapply(
+  required_pkgs,
+  requireNamespace,
+  quietly = TRUE,
+  FUN.VALUE = logical(1)
+))
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This article focuses on the diagnostic layer that sits after clustering or
+integration. In practice, Shennong metrics fall into three scientific groups:
+
+- batch removal: LISI, batch silhouette, PCR batch score
+- biological conservation: graph connectivity, isolated-label preservation
+- structure diagnostics: challenging groups, cluster entropy, cluster purity
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+
+if (!exists("pbmc_small", inherits = FALSE)) {
+  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
+}
+if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
+  load(file.path("data", "pbmc_small.rda"))
+}
+```
+
+```{r prepare-metrics-demo, include = FALSE}
+pbmc_unintegrated <- suppressWarnings(
+  sn_run_cluster(
+    pbmc_small,
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    nfeatures = 800,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.4,
+    verbose = FALSE
+  )
+)
+
+pbmc_integrated <- suppressWarnings(
+  sn_run_cluster(
+    pbmc_small,
+    batch = "sample",
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    nfeatures = 800,
+    npcs = 20,
+    dims = 1:15,
+    resolution = 0.4,
+    verbose = FALSE
+  )
+)
+
+batch_lisi <- tryCatch(
+  sn_calculate_lisi(
+    pbmc_integrated,
+    reduction = "harmony",
+    label = "sample"
+  ),
+  error = function(...) NULL
+)
+
+assessment <- sn_assess_integration(
+  pbmc_integrated,
+  batch = "sample",
+  label = "seurat_clusters",
+  cluster = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+
+summary_tbl <- assessment$summary |>
+  dplyr::filter(
+    .data$metric %in% c(
+      "batch_silhouette",
+      "batch_lisi",
+      "pcr_batch",
+      "cluster_batch_entropy",
+      "well_resolved_group_fraction",
+      "overall_integration_score"
+    )
+  )
+
+challenging_tbl <- assessment$per_group$challenging_groups
+isolated_tbl <- assessment$per_group$isolated_label_score
+entropy_tbl <- assessment$per_group$cluster_entropy
+rare_tbl <- sn_detect_rare_cells(
+  pbmc_integrated,
+  method = "gini",
+  nfeatures = 100,
+  max_fraction = 0.05
+)
+```
+
+## Run the aggregate assessment first
+
+`sn_assess_integration()` is the recommended entry point because it bundles the
+main metrics into one object with summary, per-cell, and per-group outputs.
+
+```{r}
+knitr::kable(summary_tbl, digits = 3)
+```
+
+## Inspect local sample mixing with LISI
+
+Higher sample LISI indicates better local batch mixing. When `lisi` is
+installed, Shennong stores the per-cell values so you can examine the full
+distribution rather than relying on a single mean.
+
+```{r}
+if (!is.null(batch_lisi)) {
+  knitr::kable(head(batch_lisi, 10), digits = 3)
+}
+```
+
+## Surface rare or difficult groups
+
+The challenging-group summary is useful for small populations that do not form
+an obvious island in UMAP but still look unstable in neighbor structure or
+silhouette space.
+
+```{r}
+knitr::kable(challenging_tbl, digits = 3)
+```
+
+## Score candidate rare cells directly
+
+`sn_detect_rare_cells()` provides a cell-level complement to the group-level
+diagnostics. The native `gini` backend uses rare-gene enrichment to score cells,
+while optional backends such as FiRE or Python-based scCAD can be used when
+installed locally.
+
+```{r}
+knitr::kable(head(rare_tbl[order(rare_tbl$rare_score, decreasing = TRUE), ], 10), digits = 3)
+```
+
+## Inspect isolated-label preservation
+
+`sn_calculate_isolated_label_score()` and the corresponding table inside
+`sn_assess_integration()` highlight low-frequency labels or clusters that
+remain well-separated after integration.
+
+```{r}
+knitr::kable(isolated_tbl, digits = 3)
+```
+
+## Quantify batch mixing inside each cluster
+
+Cluster entropy is a practical complement to LISI because it answers a simpler
+question: within a given cluster, are the batches actually mixed?
+
+```{r}
+knitr::kable(entropy_tbl, digits = 3)
+```
+
+## Add supervised metrics when labels are available
+
+If you already have a trusted annotation column such as `cell_type`, you can
+extend the same workflow with supervised conservation metrics:
+
+```r
+assessment <- sn_assess_integration(
+  pbmc_integrated,
+  batch = "sample",
+  label = "cell_type",
+  cluster = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+```
+
+That enables `label_lisi`, ARI/NMI, cluster purity against `cell_type`, and a
+more interpretable isolated-label summary.

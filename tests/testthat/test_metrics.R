@@ -151,6 +151,45 @@ test_that("silhouette, connectivity, PCR, and agreement metrics work on structur
   expect_equal(agreement_tbl$nmi, 1)
 })
 
+test_that("isolated-label, purity, and entropy metrics summarize rare labels and cluster mixing", {
+  object <- make_structured_metrics_object(with_graph = TRUE)
+
+  isolated_tbl <- sn_calculate_isolated_label_score(
+    object,
+    label = "cell_type",
+    reduction = "harmony",
+    isolated_fraction = 0.1,
+    isolated_n = 15
+  )
+  purity_tbl <- sn_calculate_cluster_purity(
+    object,
+    cluster = "seurat_clusters",
+    label = "cell_type"
+  )
+  entropy_tbl <- sn_calculate_cluster_entropy(
+    object,
+    cluster = "seurat_clusters",
+    label = "sample"
+  )
+
+  expect_s3_class(isolated_tbl, "data.frame")
+  expect_true(all(
+    c("cell_type", "n_cells", "fraction_cells", "isolated_score", "isolated_label") %in%
+      colnames(isolated_tbl)
+  ))
+  expect_true(any(isolated_tbl$isolated_label))
+  expect_true("Rare" %in% isolated_tbl$cell_type[isolated_tbl$isolated_label])
+  expect_gt(attr(isolated_tbl, "overall_score"), 0)
+
+  expect_s3_class(purity_tbl, "data.frame")
+  expect_true(all(c("seurat_clusters", "dominant_label", "purity_score") %in% colnames(purity_tbl)))
+  expect_true(all(purity_tbl$purity_score == 1))
+
+  expect_s3_class(entropy_tbl, "data.frame")
+  expect_true(all(c("seurat_clusters", "entropy", "normalized_entropy") %in% colnames(entropy_tbl)))
+  expect_true(all(entropy_tbl$normalized_entropy >= 0 & entropy_tbl$normalized_entropy <= 1))
+})
+
 test_that("graph-based diagnostics support annoy and exact fallbacks", {
   object <- make_structured_metrics_object(with_graph = FALSE)
 
@@ -202,6 +241,12 @@ test_that("sn_assess_integration aggregates metrics and tolerates missing cluste
   expect_true("overall_integration_score" %in% assessment$summary$metric)
   expect_true("challenging_groups" %in% names(assessment$per_group))
   expect_true("composition" %in% names(assessment$per_group))
+  expect_true("isolated_label_score" %in% assessment$summary$metric)
+  expect_true("cluster_label_purity" %in% assessment$summary$metric)
+  expect_true("cluster_batch_entropy" %in% assessment$summary$metric)
+  expect_true("isolated_label_score" %in% names(assessment$per_group))
+  expect_true("cluster_purity" %in% names(assessment$per_group))
+  expect_true("cluster_entropy" %in% names(assessment$per_group))
 
   object$seurat_clusters <- NULL
   assessment_no_cluster <- sn_assess_integration(
@@ -214,6 +259,8 @@ test_that("sn_assess_integration aggregates metrics and tolerates missing cluste
 
   expect_true("graph_connectivity" %in% assessment_no_cluster$summary$metric)
   expect_false("composition" %in% names(assessment_no_cluster$per_group))
+  expect_false("cluster_purity" %in% names(assessment_no_cluster$per_group))
+  expect_false("cluster_entropy" %in% names(assessment_no_cluster$per_group))
 })
 
 test_that("sn_calculate_rogue returns a score and validates metadata columns", {

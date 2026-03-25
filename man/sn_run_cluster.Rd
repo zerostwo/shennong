@@ -12,6 +12,12 @@ sn_run_cluster(
   vars_to_regress = NULL,
   resolution = 0.8,
   hvg_group_by = NULL,
+  rare_feature_method = "none",
+  rare_feature_group_by = NULL,
+  rare_feature_n = 200,
+  rare_group_max_fraction = 0.05,
+  rare_group_max_cells = 100,
+  rare_gene_max_fraction = 0.1,
   block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
   theta = 2,
   group_by_vars = NULL,
@@ -43,6 +49,27 @@ only supported when \code{batch = NULL}.}
 \item{hvg_group_by}{Optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. Use \code{NULL} to
 compute HVGs on the full object.}
+
+\item{rare_feature_method}{Optional rare-cell-aware feature methods appended
+to the base HVG set before PCA/clustering. Supported values are
+\code{"none"}, \code{"gini"}, \code{"local_hvg"},
+\code{"local_markers"}, and \code{"ciara"}.}
+
+\item{rare_feature_group_by}{Optional metadata column used to define groups
+for rare-group-aware feature extraction. When \code{NULL}, Shennong builds
+a temporary coarse clustering from the base HVGs.}
+
+\item{rare_feature_n}{Number of rare-aware features to add per selected
+method.}
+
+\item{rare_group_max_fraction}{Maximum cluster fraction used when identifying
+rare groups for rare-aware feature selection.}
+
+\item{rare_group_max_cells}{Maximum absolute cluster size used when
+identifying rare groups for rare-aware feature selection.}
+
+\item{rare_gene_max_fraction}{Maximum expressing-cell fraction used by
+score-based rare-feature methods such as \code{"gini"}.}
 
 \item{block_genes}{Either a character vector of predefined bundled signature
 categories (for example \code{c("ribo","mito")}) or a custom vector of

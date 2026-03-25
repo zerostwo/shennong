@@ -47,26 +47,25 @@ test_that("sn_get_signatures preserves legacy cell-cycle aliases", {
   expect_true(length(alias_genes) > 0)
 })
 
-test_that("signature registry helpers add, update, and delete custom signatures", {
-  registry_path <- tempfile(fileext = ".json")
-  jsonlite::write_json(
+test_that("signature catalog helpers add, update, and delete custom signatures", {
+  catalog_path <- tempfile(fileext = ".rda")
+  shennong_signature_catalog <- get("shennong_signature_catalog", inherits = TRUE)
+  save(
     shennong_signature_catalog,
-    path = registry_path,
-    auto_unbox = TRUE,
-    pretty = TRUE,
-    null = "null"
+    file = catalog_path,
+    version = 2,
+    compress = "xz"
   )
 
   sn_add_signature(
     species = "human",
     path = "Programs/custom/MySignature",
     genes = c("GENE1", "GENE2"),
-    registry_path = registry_path
+    catalog_path = catalog_path
   )
-  after_add <- sn_list_signatures(
+  after_add <- Shennong:::.sn_signature_leaf_table(
     species = "human",
-    source = "registry",
-    registry_path = registry_path
+    path = catalog_path
   )
   expect_true("Programs/custom/MySignature" %in% after_add$path)
 
@@ -75,12 +74,11 @@ test_that("signature registry helpers add, update, and delete custom signatures"
     path = "Programs/custom/MySignature",
     genes = c("GENE1", "GENE3"),
     rename_to = "MyRenamedSignature",
-    registry_path = registry_path
+    catalog_path = catalog_path
   )
   after_update <- Shennong:::.sn_signature_leaf_table(
     species = "human",
-    source = "registry",
-    registry_path = registry_path
+    path = catalog_path
   )
   updated_row <- after_update[after_update$path == "Programs/custom/MyRenamedSignature", ]
   expect_equal(updated_row$genes[[1]], c("GENE1", "GENE3"))
@@ -89,7 +87,7 @@ test_that("signature registry helpers add, update, and delete custom signatures"
       species = "human",
       path = "Programs",
       genes = c("GENE1"),
-      registry_path = registry_path
+      catalog_path = catalog_path
     ),
     "group node"
   )
@@ -97,12 +95,11 @@ test_that("signature registry helpers add, update, and delete custom signatures"
   sn_delete_signature(
     species = "human",
     path = "Programs/custom/MyRenamedSignature",
-    registry_path = registry_path
+    catalog_path = catalog_path
   )
-  after_delete <- sn_list_signatures(
+  after_delete <- Shennong:::.sn_signature_leaf_table(
     species = "human",
-    source = "registry",
-    registry_path = registry_path
+    path = catalog_path
   )
   expect_false("Programs/custom/MyRenamedSignature" %in% after_delete$path)
 })

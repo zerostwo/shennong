@@ -1,0 +1,202 @@
+---
+title: "Preprocessing and QC workflow"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Preprocessing and QC workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
+  identical(Sys.getenv("IN_PKGDOWN"), "true")
+
+required_pkgs <- c("Seurat", "SeuratObject")
+run_vignette <- run_vignette && all(vapply(
+  required_pkgs,
+  requireNamespace,
+  quietly = TRUE,
+  FUN.VALUE = logical(1)
+))
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  eval = run_vignette
+)
+```
+
+This article covers the first stage of a typical Shennong analysis:
+
+- constructing a Seurat object
+- inferring species and standardizing feature naming
+- filtering poor-quality cells
+- filtering genes by expression and bundled GENCODE annotations
+- normalizing data
+- adding cell-cycle scores for downstream modeling
+
+The examples use the built-in `pbmc_small` and `pbmc_small_raw` objects so the
+workflow stays check-safe and does not depend on network downloads.
+
+```{r setup}
+library(Shennong)
+library(dplyr)
+library(knitr)
+library(Seurat)
+
+if (!exists("pbmc_small", inherits = FALSE)) {
+  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
+}
+if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
+  load(file.path("data", "pbmc_small.rda"))
+}
+
+if (!exists("pbmc_small_raw", inherits = FALSE)) {
+  try(data("pbmc_small_raw", package = "Shennong", envir = environment()), silent = TRUE)
+}
+if (!exists("pbmc_small_raw", inherits = FALSE) && file.exists(file.path("data", "pbmc_small_raw.rda"))) {
+  load(file.path("data", "pbmc_small_raw.rda"))
+}
+```
+
+```{r prepare-preprocessing-demo, include = FALSE}
+counts <- SeuratObject::LayerData(pbmc_small, layer = "counts")
+meta_cols <- intersect(
+  c("sample", "source_dataset", "source_barcode"),
+  colnames(pbmc_small@meta.data)
+)
+meta_tbl <- pbmc_small@meta.data[, meta_cols, drop = FALSE]
+
+pbmc_init <- sn_initialize_seurat_object(
+  x = counts,
+  project = "pbmc_small_preprocessing"
+)
+pbmc_init <- Seurat::AddMetaData(pbmc_init, metadata = meta_tbl)
+
+pbmc_cells <- suppressWarnings(
+  sn_filter_cells(
+    pbmc_init,
+    features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+    plot = FALSE
+  )
+)
+
+pbmc_genes <- suppressWarnings(
+  sn_filter_genes(
+    pbmc_cells,
+    min_cells = 3,
+    gene_class = "coding",
+    plot = FALSE
+  )
+)
+
+pbmc_norm <- sn_normalize_data(
+  pbmc_genes,
+  normalization_method = "seurat",
+  verbose = FALSE
+)
+
+pbmc_cycle <- sn_score_cell_cycle(pbmc_norm, species = "human")
+
+qc_summary <- tibble::tibble(
+  stage = c("initialized", "cell_filtered", "gene_filtered", "normalized"),
+  cells = c(ncol(pbmc_init), ncol(pbmc_cells), ncol(pbmc_genes), ncol(pbmc_norm)),
+  genes = c(nrow(pbmc_init), nrow(pbmc_cells), nrow(pbmc_genes), nrow(pbmc_norm))
+)
+
+feature_summary <- tibble::tibble(
+  metric = c("species", "median_nFeature", "median_nCount", "median_percent_mt"),
+  value = c(
+    sn_get_species(pbmc_init),
+    round(stats::median(pbmc_cells$nFeature_RNA), 1),
+    round(stats::median(pbmc_cells$nCount_RNA), 1),
+    round(stats::median(pbmc_cells$percent.mt), 2)
+  )
+)
+
+cycle_summary <- pbmc_cycle@meta.data |>
+  dplyr::count(Phase, name = "cells")
+```
+
+## 1. Initialize a Seurat object
+
+Start from a matrix-like object and let Shennong create the Seurat object with
+species-aware QC metadata.
+
+```{r}
+knitr::kable(feature_summary)
+```
+
+## 2. Filter poor-quality cells
+
+`sn_filter_cells()` works on standard QC columns such as `nFeature_RNA`,
+`nCount_RNA`, and `percent.mt`. The function can also draw diagnostics, but the
+article disables plotting to keep the rendered workflow compact.
+
+```{r}
+knitr::kable(qc_summary)
+```
+
+## 3. Filter genes with expression and annotation rules
+
+Shennong ships bundled human and mouse GENCODE snapshots. That means
+`sn_filter_genes()` can combine expression thresholds with annotation-aware
+filters such as `gene_class = "coding"` or exact `gene_type` values.
+
+```r
+pbmc_genes <- sn_filter_genes(
+  pbmc_cells,
+  min_cells = 3,
+  gene_class = "coding",
+  plot = FALSE
+)
+```
+
+For finer control you can target exact biotypes:
+
+```r
+pbmc_lnc_only <- sn_filter_genes(
+  pbmc_cells,
+  min_cells = 3,
+  gene_type = c("lncRNA", "antisense"),
+  plot = FALSE
+)
+```
+
+## 4. Normalize and add cell-cycle scores
+
+After QC, normalize the object and add cell-cycle scores if they are useful for
+regression, cluster interpretation, or doublet diagnostics.
+
+```{r}
+knitr::kable(cycle_summary)
+```
+
+## 5. Optional QC extensions
+
+Shennong also exposes heavier QC helpers that are usually run only when the
+analysis requires them:
+
+```r
+# Doublet detection
+pbmc_doublets <- sn_find_doublets(pbmc_norm)
+
+# Ambient RNA correction from a raw count matrix
+pbmc_decont <- sn_remove_ambient_contamination(
+  pbmc_norm,
+  raw_counts = pbmc_small_raw
+)
+```
+
+## Where this stage leads next
+
+Once preprocessing is complete, the usual next step is `sn_run_cluster()` for
+single-sample clustering or Harmony-based integration. The dedicated clustering
+article continues from this point.

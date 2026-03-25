@@ -1,11 +1,11 @@
 ---
-title: "Layer-aware workflow"
+title: "Advanced layer-aware workflow"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Layer-aware workflow}
+  %\VignetteIndexEntry{Advanced layer-aware workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -1,11 +1,11 @@
 ---
-title: "Interpretation workflow"
+title: "Interpretation and reporting workflow"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Interpretation workflow}
+  %\VignetteIndexEntry{Interpretation and reporting workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

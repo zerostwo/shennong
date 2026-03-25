@@ -26,12 +26,16 @@ articles:
   - title: Analysis Workflows
     navbar: Articles
     contents:
+      - preprocessing-qc
       - clustering
-      - layered-workflows
+      - metrics-diagnostics
+      - annotation-pathways
+      - composition-analysis
       - interpretation-workflows
+      - layered-workflows
 
 reference:
-  - title: Data and IO
+  - title: Data and Import
     contents:
       - marker_genes
       - hom_genes
@@ -43,48 +47,48 @@ reference:
       - sn_read
       - sn_write
       - sn_add_data_from_anndata
-      - sn_check_version
-      - sn_install_shennong
   - title: Preprocessing and QC
     contents:
+      - sn_get_species
       - sn_initialize_seurat_object
-      - sn_normalize_data
       - sn_standardize_gene_symbols
+      - sn_normalize_data
       - sn_score_cell_cycle
       - sn_filter_genes
       - sn_filter_cells
       - sn_find_doublets
       - sn_remove_ambient_contamination
-  - title: Clustering and metrics
+  - title: Clustering and Integration
     contents:
       - sn_run_cluster
-      - sn_find_de
-      - sn_run_celltypist
+  - title: Diagnostics and Benchmarking
+    contents:
       - sn_assess_integration
+      - sn_detect_rare_cells
       - sn_calculate_lisi
       - sn_calculate_silhouette
       - sn_calculate_graph_connectivity
       - sn_calculate_pcr_batch
       - sn_calculate_clustering_agreement
+      - sn_calculate_isolated_label_score
+      - sn_calculate_cluster_purity
+      - sn_calculate_cluster_entropy
       - sn_identify_challenging_groups
       - sn_calculate_rogue
-      - sn_calculate_composition
-  - title: Visualization and signatures
+  - title: Annotation, Markers, and Pathways
     contents:
-      - sn_plot_dim
-      - sn_plot_feature
-      - sn_plot_violin
-      - sn_plot_dot
-      - sn_plot_boxplot
-      - sn_plot_barplot
-      - show_all_palettes
+      - sn_run_celltypist
+      - sn_find_de
+      - sn_enrich
       - sn_list_signatures
       - sn_get_signatures
       - sn_add_signature
       - sn_update_signature
       - sn_delete_signature
-      - sn_enrich
-  - title: Interpretation
+  - title: Composition and Comparative Analysis
+    contents:
+      - sn_calculate_composition
+  - title: Interpretation and Reporting
     contents:
       - sn_list_results
       - sn_get_de_result
@@ -103,11 +107,21 @@ reference:
       - sn_write_results
       - sn_write_figure_legend
       - sn_write_presentation_summary
-  - title: Utilities
+  - title: Visualization
     contents:
+      - sn_plot_dim
+      - sn_plot_feature
+      - sn_plot_violin
+      - sn_plot_dot
+      - sn_plot_boxplot
+      - sn_plot_barplot
+      - show_all_palettes
+  - title: Utilities and Project Setup
+    contents:
+      - sn_check_version
+      - sn_install_shennong
       - sn_check_file
       - sn_get_codex_skill_path
-      - sn_get_species
       - sn_initialize_project
       - sn_initialize_codex_project
       - sn_install_codex_skill

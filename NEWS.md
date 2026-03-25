@@ -17,8 +17,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Integration and cluster-diagnostics metrics were expanded with
   `sn_calculate_silhouette()`, `sn_calculate_graph_connectivity()`,
   `sn_calculate_pcr_batch()`, `sn_calculate_clustering_agreement()`,
-  `sn_identify_challenging_groups()`, and the aggregate
-  `sn_assess_integration()` wrapper.
+  `sn_calculate_isolated_label_score()`, `sn_calculate_cluster_entropy()`,
+  `sn_calculate_cluster_purity()`, `sn_identify_challenging_groups()`, and the
+  aggregate `sn_assess_integration()` wrapper.
+- Rare-cell-aware clustering support was added through
+  `sn_detect_rare_cells()` and new `sn_run_cluster()` parameters that can
+  append rare-aware features such as Gini-selected genes, local HVGs, local
+  markers, or optional CIARA-derived features before PCA and Harmony.
+- pkgdown documentation is now reorganized around workflow stages rather than
+  source files alone. New end-to-end articles cover preprocessing and QC,
+  clustering and integration, metrics and diagnostics, annotation and pathways,
+  composition analysis, and interpretation/reporting.
 - `sn_find_de()` now supports pseudobulk differential expression with
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
@@ -81,9 +90,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   from the full `SignatuR` tree during development, so runtime signature
   retrieval is stable, tree-structured, and no longer depends on the installed
   `SignatuR` package version.
-- Signature build assets now live in `data-raw/shennong_signature_registry.json`
-  and `data/shennong_signature_catalog.rda`, replacing the opaque
-  `R/sysdata.rda` storage used by the earlier snapshot prototype.
+- Signature build assets now center on `data/shennong_signature_catalog.rda`,
+  which is rebuilt directly from the upstream `SignatuR` dataset during
+  development, replacing the opaque `R/sysdata.rda` storage used by the earlier
+  snapshot prototype.
 - `sn_enrich()` now stores enrichment results in
   `object@misc$enrichment_results[[store_name]]` when a Seurat object is
   supplied, aligning enrichment with the existing stored DE workflow.

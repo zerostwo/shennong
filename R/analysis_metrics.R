@@ -397,6 +397,235 @@ sn_calculate_clustering_agreement <- function(x, cluster, label) {
   )
 }
 
+#' Calculate isolated-label preservation scores
+#'
+#' This helper focuses on rare or low-frequency labels and summarizes how well
+#' they remain separated in the selected embedding. The score is based on the
+#' mean silhouette width of isolated labels and is scaled to \code{[0, 1]} where
+#' larger values indicate better preservation.
+#'
+#' @param x A Seurat object.
+#' @param label Metadata column containing biological labels.
+#' @param reduction Reduction name used to extract embeddings. Defaults to
+#'   \code{"harmony"} when present, otherwise \code{"pca"}.
+#' @param dims Optional integer vector of embedding dimensions to retain.
+#' @param cells Optional character vector of cell names to score.
+#' @param max_cells Optional integer cap used to subsample cells before running
+#'   the metric. Defaults to \code{3000} because silhouette needs a full
+#'   distance matrix.
+#' @param stratify_by Optional metadata column used to preserve representation
+#'   during subsampling. Defaults to \code{label}.
+#' @param isolated_fraction Fraction-of-cells threshold used to flag isolated
+#'   labels.
+#' @param isolated_n Absolute cell-count threshold used to flag isolated labels.
+#' @param seed Random seed used when \code{max_cells} triggers subsampling.
+#'
+#' @return A data frame with one row per label and columns describing label
+#'   abundance, silhouette separation, and whether the label is considered
+#'   isolated. The attributes \code{overall_score} and \code{isolated_labels}
+#'   summarize the isolated-label subset.
+#'
+#' @examples
+#' \dontrun{
+#' data("pbmc_small", package = "Shennong")
+#' pbmc <- sn_run_cluster(
+#'   pbmc_small,
+#'   batch = "sample",
+#'   species = "human",
+#'   verbose = FALSE
+#' )
+#' isolated_tbl <- sn_calculate_isolated_label_score(
+#'   pbmc,
+#'   label = "seurat_clusters",
+#'   reduction = "harmony"
+#' )
+#' isolated_tbl
+#' }
+#'
+#' @export
+sn_calculate_isolated_label_score <- function(
+  x,
+  label,
+  reduction = .sn_default_metric_reduction(x),
+  dims = NULL,
+  cells = NULL,
+  max_cells = 3000,
+  stratify_by = label,
+  isolated_fraction = 0.05,
+  isolated_n = 100,
+  seed = 717
+) {
+  metric_input <- .sn_prepare_metric_input(
+    x = x,
+    reduction = reduction,
+    dims = dims,
+    cells = cells,
+    max_cells = max_cells,
+    stratify_by = stratify_by,
+    seed = seed,
+    required_cols = label
+  )
+
+  silhouette_tbl <- .sn_compute_silhouette_table(
+    embeddings = metric_input$embeddings,
+    labels = metric_input$metadata[[label]],
+    cell_ids = metric_input$cells,
+    label_name = label
+  )
+  label_values <- as.character(metric_input$metadata[[label]])
+  label_n <- table(label_values)
+  total_cells <- length(label_values)
+
+  label_tbl <- lapply(names(label_n), function(current_label) {
+    n_cells <- as.integer(label_n[[current_label]])
+    fraction_cells <- n_cells / total_cells
+    current_silhouette <- mean(
+      silhouette_tbl$silhouette_width[silhouette_tbl[[label]] == current_label]
+    )
+    isolated_flag <- n_cells <= isolated_n || fraction_cells <= isolated_fraction
+
+    data.frame(
+      label = current_label,
+      n_cells = n_cells,
+      fraction_cells = fraction_cells,
+      mean_silhouette = current_silhouette,
+      isolated_score = .sn_scale_silhouette(current_silhouette),
+      isolated_label = isolated_flag,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  label_tbl <- .sn_bind_rows(label_tbl)
+  names(label_tbl)[names(label_tbl) == "label"] <- label
+  label_tbl <- label_tbl[order(label_tbl$n_cells, label_tbl$isolated_score), , drop = FALSE]
+  rownames(label_tbl) <- NULL
+
+  isolated_rows <- label_tbl$isolated_label
+  overall_score <- if (any(isolated_rows)) {
+    mean(label_tbl$isolated_score[isolated_rows], na.rm = TRUE)
+  } else {
+    NA_real_
+  }
+  attr(label_tbl, "overall_score") <- overall_score
+  attr(label_tbl, "isolated_labels") <- label_tbl[[label]][isolated_rows]
+  label_tbl
+}
+
+#' Calculate cluster purity against a reference label
+#'
+#' Cluster purity summarizes how homogeneous each cluster is with respect to a
+#' reference label. This is useful for checking whether clustering preserves
+#' known cell identities after integration.
+#'
+#' @param x A Seurat object or data frame containing the required columns.
+#' @param cluster Metadata/data-frame column containing cluster labels.
+#' @param label Metadata/data-frame column containing reference labels.
+#'
+#' @return A data frame with one row per cluster and purity diagnostics in
+#'   \code{[0, 1]}.
+#'
+#' @examples
+#' meta <- data.frame(
+#'   cluster = c("T", "T", "B", "B"),
+#'   label = c("T", "T", "B", "B")
+#' )
+#' sn_calculate_cluster_purity(meta, cluster = "cluster", label = "label")
+#'
+#' @export
+sn_calculate_cluster_purity <- function(x, cluster, label) {
+  metadata <- .sn_extract_metric_metadata(x)
+  .sn_check_metric_columns(metadata, c(cluster, label))
+
+  keep <- !is.na(metadata[[cluster]]) & !is.na(metadata[[label]])
+  metadata <- metadata[keep, , drop = FALSE]
+  if (nrow(metadata) == 0) {
+    stop("No cells remain after removing missing cluster/label values.")
+  }
+
+  cluster_levels <- unique(as.character(metadata[[cluster]]))
+  purity_tbl <- lapply(cluster_levels, function(current_cluster) {
+    current_labels <- as.character(metadata[[label]][metadata[[cluster]] == current_cluster])
+    label_n <- sort(table(current_labels), decreasing = TRUE)
+    n_cells <- sum(label_n)
+    dominant_label <- names(label_n)[[1]]
+    dominant_n <- as.integer(label_n[[1]])
+
+    data.frame(
+      cluster = current_cluster,
+      n_cells = n_cells,
+      dominant_label = dominant_label,
+      dominant_label_n = dominant_n,
+      purity_score = dominant_n / n_cells,
+      impurity_score = 1 - dominant_n / n_cells,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  purity_tbl <- .sn_bind_rows(purity_tbl)
+  names(purity_tbl)[names(purity_tbl) == "cluster"] <- cluster
+  purity_tbl
+}
+
+#' Calculate cluster entropy for a categorical label
+#'
+#' Cluster entropy measures how mixed a categorical label is within each
+#' cluster. When used with batch labels, higher normalized entropy indicates
+#' stronger within-cluster batch mixing.
+#'
+#' @param x A Seurat object or data frame containing the required columns.
+#' @param cluster Metadata/data-frame column containing cluster labels.
+#' @param label Metadata/data-frame column containing the label to evaluate
+#'   within each cluster.
+#'
+#' @return A data frame with one row per cluster, including raw entropy and a
+#'   normalized entropy score in \code{[0, 1]}.
+#'
+#' @examples
+#' meta <- data.frame(
+#'   cluster = c("0", "0", "1", "1"),
+#'   batch = c("a", "b", "a", "b")
+#' )
+#' sn_calculate_cluster_entropy(meta, cluster = "cluster", label = "batch")
+#'
+#' @export
+sn_calculate_cluster_entropy <- function(x, cluster, label) {
+  metadata <- .sn_extract_metric_metadata(x)
+  .sn_check_metric_columns(metadata, c(cluster, label))
+
+  keep <- !is.na(metadata[[cluster]]) & !is.na(metadata[[label]])
+  metadata <- metadata[keep, , drop = FALSE]
+  if (nrow(metadata) == 0) {
+    stop("No cells remain after removing missing cluster/label values.")
+  }
+
+  max_levels <- length(unique(as.character(metadata[[label]])))
+  cluster_levels <- unique(as.character(metadata[[cluster]]))
+
+  entropy_tbl <- lapply(cluster_levels, function(current_cluster) {
+    current_labels <- as.character(metadata[[label]][metadata[[cluster]] == current_cluster])
+    label_n <- table(current_labels)
+    proportions <- as.numeric(label_n) / sum(label_n)
+    entropy <- -sum(proportions * log(proportions))
+    max_entropy <- if (max_levels > 1) log(max_levels) else 0
+    normalized_entropy <- if (max_entropy > 0) entropy / max_entropy else 0
+    dominant_label <- names(label_n)[which.max(label_n)]
+
+    data.frame(
+      cluster = current_cluster,
+      n_cells = sum(label_n),
+      n_labels = length(label_n),
+      dominant_label = dominant_label,
+      entropy = entropy,
+      normalized_entropy = normalized_entropy,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  entropy_tbl <- .sn_bind_rows(entropy_tbl)
+  names(entropy_tbl)[names(entropy_tbl) == "cluster"] <- cluster
+  entropy_tbl
+}
+
 #' Identify rare or difficult-to-separate groups
 #'
 #' This helper summarizes group size, local neighbor purity, graph connectivity,
@@ -590,7 +819,9 @@ sn_identify_challenging_groups <- function(
 #'   Supported values are \code{"batch_lisi"}, \code{"label_lisi"},
 #'   \code{"batch_silhouette"}, \code{"label_silhouette"},
 #'   \code{"graph_connectivity"}, \code{"clustering_agreement"},
-#'   \code{"pcr_batch"}, and \code{"challenging_groups"}.
+#'   \code{"isolated_label_score"}, \code{"cluster_purity"},
+#'   \code{"cluster_entropy"}, \code{"pcr_batch"}, and
+#'   \code{"challenging_groups"}.
 #' @param neighbor_method Strategy used when a graph must be built. One of
 #'   \code{"auto"}, \code{"graph"}, \code{"annoy"}, or \code{"exact"}.
 #' @param max_cells Optional integer cap used to subsample cells before running
@@ -662,6 +893,9 @@ sn_assess_integration <- function(
     "label_silhouette",
     "graph_connectivity",
     "clustering_agreement",
+    "isolated_label_score",
+    "cluster_purity",
+    "cluster_entropy",
     "pcr_batch",
     "challenging_groups"
   )
@@ -863,6 +1097,82 @@ sn_assess_integration <- function(
       source = paste(cluster, "vs", label)
     )
     per_group$clustering_agreement <- agreement_tbl
+  }
+
+  if ("isolated_label_score" %in% metrics &&
+    !is.null(label) &&
+    label %in% colnames(metric_input$metadata)) {
+    isolated_tbl <- sn_calculate_isolated_label_score(
+      x = x,
+      label = label,
+      reduction = reduction,
+      dims = dims,
+      cells = metric_input$cells,
+      max_cells = NULL,
+      stratify_by = NULL,
+      isolated_fraction = rare_fraction,
+      isolated_n = rare_n,
+      seed = seed
+    )
+    isolated_score <- attr(isolated_tbl, "overall_score")
+    if (!is.na(isolated_score)) {
+      summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
+        metric = "isolated_label_score",
+        category = "biology_conservation",
+        score = isolated_score,
+        scaled_score = isolated_score,
+        n_cells = sum(isolated_tbl$n_cells[isolated_tbl$isolated_label]),
+        source = label,
+        note = paste(length(attr(isolated_tbl, "isolated_labels")), "isolated labels")
+      )
+    } else {
+      notes <- c(
+        notes,
+        paste0("Skipped isolated_label_score because no labels met the isolated thresholds for '", label, "'.")
+      )
+    }
+    per_group$isolated_label_score <- isolated_tbl
+  }
+
+  if ("cluster_purity" %in% metrics &&
+    !is.null(cluster) &&
+    !is.null(label) &&
+    cluster %in% colnames(metric_input$metadata) &&
+    label %in% colnames(metric_input$metadata)) {
+    purity_tbl <- sn_calculate_cluster_purity(
+      x = metric_input$metadata,
+      cluster = cluster,
+      label = label
+    )
+    summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
+      metric = "cluster_label_purity",
+      category = "biology_conservation",
+      score = mean(purity_tbl$purity_score),
+      scaled_score = mean(purity_tbl$purity_score),
+      n_cells = sum(purity_tbl$n_cells),
+      source = paste(cluster, "vs", label)
+    )
+    per_group$cluster_purity <- purity_tbl
+  }
+
+  if ("cluster_entropy" %in% metrics &&
+    !is.null(cluster) &&
+    cluster %in% colnames(metric_input$metadata) &&
+    batch %in% colnames(metric_input$metadata)) {
+    entropy_tbl <- sn_calculate_cluster_entropy(
+      x = metric_input$metadata,
+      cluster = cluster,
+      label = batch
+    )
+    summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
+      metric = "cluster_batch_entropy",
+      category = "batch_removal",
+      score = mean(entropy_tbl$normalized_entropy),
+      scaled_score = mean(entropy_tbl$normalized_entropy),
+      n_cells = sum(entropy_tbl$n_cells),
+      source = paste(cluster, "vs", batch)
+    )
+    per_group$cluster_entropy <- entropy_tbl
   }
 
   if ("pcr_batch" %in% metrics) {

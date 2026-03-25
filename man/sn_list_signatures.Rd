@@ -4,12 +4,7 @@
 \alias{sn_list_signatures}
 \title{List bundled Shennong signatures}
 \usage{
-sn_list_signatures(
-  species = NULL,
-  include_groups = FALSE,
-  source = c("package", "registry"),
-  registry_path = NULL
-)
+sn_list_signatures(species = NULL, include_groups = FALSE)
 }
 \arguments{
 \item{species}{Optional species filter. Use \code{NULL} to return all
@@ -17,13 +12,6 @@ species.}
 
 \item{include_groups}{If \code{TRUE}, include non-leaf group nodes from the
 signature tree.}
-
-\item{source}{One of \code{"package"} for the built package catalog or
-\code{"registry"} for the editable source registry under
-\code{data-raw/}.}
-
-\item{registry_path}{Optional path to a signature registry JSON file. Used
-only when \code{source = "registry"}.}
 }
 \value{
 A tibble with the available signature paths, node kinds, and gene

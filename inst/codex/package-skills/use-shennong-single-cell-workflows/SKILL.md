@@ -36,20 +36,27 @@ differential expression, enrichment, and related single-cell tasks.
 
 ## Procedure
 
-1. Initialize or load the object.
-2. Run QC with `sn_filter_cells()` and `sn_filter_genes()` when appropriate.
+1. Start with data access and preprocessing:
+   initialize or load the object, infer species if needed, and run QC with
+   `sn_filter_cells()` and `sn_filter_genes()`.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
-3. Run clustering or integration with `sn_run_cluster()`.
-4. Assess integration quality or cluster structure with
-   `sn_assess_integration()`, `sn_calculate_lisi()`, or
-   `sn_identify_challenging_groups()` when sample mixing, rare groups, or
-   difficult-to-separate populations matter.
-5. Run DE with `sn_find_de()`.
-6. Run enrichment with `sn_enrich()` when needed.
+2. Run clustering or batch integration with `sn_run_cluster()`.
+3. Assess integration quality or cluster structure with
+   `sn_assess_integration()`, `sn_calculate_lisi()`,
+   `sn_calculate_isolated_label_score()`, or
+   `sn_identify_challenging_groups()` when sample mixing, rare groups,
+   isolated labels, or difficult-to-separate populations matter.
+4. Move to downstream biological interpretation:
+   marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
+   and optional reference annotation with `sn_run_celltypist()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
+5. Use `sn_calculate_composition()` and grouped plots for comparative summaries
+   across samples, conditions, or annotations.
+6. Build prompts or stored-result summaries with the interpretation helpers
+   when a narrative or report-ready output is needed.
 7. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
@@ -66,6 +73,7 @@ differential expression, enrichment, and related single-cell tasks.
 - `sn_initialize_seurat_object()`
 - `sn_run_cluster()`
 - `sn_assess_integration()`
+- `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_list_signatures(species = "human")`

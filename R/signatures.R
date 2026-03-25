@@ -1,7 +1,5 @@
-.sn_signature_catalog <- function(source = c("package", "registry"), registry_path = NULL) {
-  source <- match.arg(source)
-
-  if (source == "package") {
+.sn_signature_catalog <- function(path = NULL) {
+  if (is.null(path)) {
     if (exists("shennong_signature_catalog", inherits = TRUE)) {
       return(get("shennong_signature_catalog", inherits = TRUE))
     }
@@ -11,21 +9,24 @@
     return(get("shennong_signature_catalog", envir = data_env, inherits = FALSE))
   }
 
-  .sn_read_signature_registry(path = registry_path)
+  catalog_path <- .sn_signature_catalog_path(path = path)
+  data_env <- new.env(parent = emptyenv())
+  load(catalog_path, envir = data_env)
+  get("shennong_signature_catalog", envir = data_env, inherits = FALSE)
 }
 
-.sn_signature_tree <- function(source = c("package", "registry"), registry_path = NULL) {
-  .sn_signature_catalog(source = source, registry_path = registry_path)$tree
+.sn_signature_tree <- function(path = NULL) {
+  .sn_signature_catalog(path = path)$tree
 }
 
-.sn_signature_registry_path <- function(path = NULL, create = FALSE) {
+.sn_signature_catalog_path <- function(path = NULL, create = FALSE) {
   if (!is_null(path)) {
     return(path.expand(path))
   }
 
   candidates <- unique(c(
-    file.path(getwd(), "data-raw", "shennong_signature_registry.json"),
-    file.path(.sn_namespace_path(), "data-raw", "shennong_signature_registry.json")
+    file.path(getwd(), "data", "shennong_signature_catalog.rda"),
+    file.path(.sn_namespace_path(), "data", "shennong_signature_catalog.rda")
   ))
   existing <- candidates[file.exists(candidates)]
   if (length(existing) > 0) {
@@ -33,33 +34,28 @@
   }
 
   if (isTRUE(create)) {
-    dir_path <- file.path(getwd(), "data-raw")
+    dir_path <- file.path(getwd(), "data")
     dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
-    return(file.path(dir_path, "shennong_signature_registry.json"))
+    return(file.path(dir_path, "shennong_signature_catalog.rda"))
   }
 
   stop(
-    "Could not locate `data-raw/shennong_signature_registry.json`. ",
-    "Supply `registry_path` explicitly when using signature-maintenance helpers.",
+    "Could not locate `data/shennong_signature_catalog.rda`. ",
+    "Supply `path` explicitly when using signature-maintenance helpers.",
     call. = FALSE
   )
 }
 
-.sn_read_signature_registry <- function(path = NULL) {
-  registry_path <- .sn_signature_registry_path(path = path)
-  jsonlite::read_json(registry_path, simplifyVector = FALSE)
-}
-
-.sn_write_signature_registry <- function(registry, path = NULL) {
-  registry_path <- .sn_signature_registry_path(path = path, create = TRUE)
-  jsonlite::write_json(
-    registry,
-    path = registry_path,
-    auto_unbox = TRUE,
-    pretty = TRUE,
-    null = "null"
+.sn_write_signature_catalog <- function(catalog, path = NULL) {
+  catalog_path <- .sn_signature_catalog_path(path = path, create = TRUE)
+  shennong_signature_catalog <- catalog
+  save(
+    shennong_signature_catalog,
+    file = catalog_path,
+    version = 2,
+    compress = "xz"
   )
-  invisible(normalizePath(registry_path, winslash = "/", mustWork = FALSE))
+  invisible(normalizePath(catalog_path, winslash = "/", mustWork = FALSE))
 }
 
 .sn_signature_normalize_key <- function(x) {
@@ -279,10 +275,9 @@
 }
 
 .sn_signature_leaf_table <- function(species = c("human", "mouse"),
-                                     source = c("package", "registry"),
-                                     registry_path = NULL) {
+                                     path = NULL) {
   selected_species <- match.arg(species)
-  tree <- .sn_signature_tree(source = source, registry_path = registry_path)
+  tree <- .sn_signature_tree(path = path)
   .sn_flatten_signature_tree(tree, include_groups = FALSE) |>
     dplyr::filter(.data$species == selected_species)
 }
@@ -362,12 +357,6 @@
 #'   species.
 #' @param include_groups If \code{TRUE}, include non-leaf group nodes from the
 #'   signature tree.
-#' @param source One of \code{"package"} for the built package catalog or
-#'   \code{"registry"} for the editable source registry under
-#'   \code{data-raw/}.
-#' @param registry_path Optional path to a signature registry JSON file. Used
-#'   only when \code{source = "registry"}.
-#'
 #' @return A tibble with the available signature paths, node kinds, and gene
 #'   counts.
 #'
@@ -376,12 +365,9 @@
 #' sn_list_signatures(species = "human", include_groups = TRUE)
 #' @export
 sn_list_signatures <- function(species = NULL,
-                               include_groups = FALSE,
-                               source = c("package", "registry"),
-                               registry_path = NULL) {
-  source <- match.arg(source)
+                               include_groups = FALSE) {
   signature_table <- .sn_flatten_signature_tree(
-    tree = .sn_signature_tree(source = source, registry_path = registry_path),
+    tree = .sn_signature_tree(),
     include_groups = include_groups
   ) |>
     dplyr::select(-"genes")
@@ -419,7 +405,7 @@ sn_get_signatures <- function(species = "human",
     stop("`category` must contain at least one signature category or path.", call. = FALSE)
   }
 
-  leaf_table <- .sn_signature_leaf_table(species = species, source = "package")
+  leaf_table <- .sn_signature_leaf_table(species = species)
   matched_rows <- .sn_signature_resolve_queries(category, leaf_table)
   unique(unlist(leaf_table$genes[matched_rows], use.names = FALSE))
 }
@@ -430,7 +416,7 @@ sn_get_signatures <- function(species = "human",
 #' @param path Slash-delimited signature path relative to the species root, for
 #'   example \code{"Programs/MyProgram/MySignature"}.
 #' @param genes Character vector of gene symbols stored at the leaf node.
-#' @param registry_path Optional path to the editable registry JSON file.
+#' @param catalog_path Optional path to a signature catalog `.rda` snapshot.
 #' @param overwrite If \code{TRUE}, replace an existing signature at the same
 #'   path.
 #' @param source Optional source label recorded on the signature node.
@@ -449,7 +435,7 @@ sn_get_signatures <- function(species = "human",
 sn_add_signature <- function(species = "human",
                              path,
                              genes,
-                             registry_path = NULL,
+                             catalog_path = NULL,
                              overwrite = FALSE,
                              source = "custom") {
   species <- rlang::arg_match(species, c("human", "mouse"))
@@ -461,8 +447,8 @@ sn_add_signature <- function(species = "human",
     stop("`genes` must contain at least one gene symbol.", call. = FALSE)
   }
 
-  registry <- .sn_read_signature_registry(path = registry_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(registry$tree)
+  catalog <- .sn_signature_catalog(path = catalog_path)
+  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
   parent_parts <- path_parts[-length(path_parts)]
   signatur_db <- .sn_signature_signatur_ensure_path(
     db = signatur_db,
@@ -479,8 +465,8 @@ sn_add_signature <- function(species = "human",
     reference = source %||% NA_character_,
     overwrite = overwrite
   )
-  registry$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
-  .sn_write_signature_registry(registry, path = registry_path)
+  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
+  .sn_write_signature_catalog(catalog, path = catalog_path)
 }
 
 #' Update a signature in the editable source registry
@@ -489,7 +475,7 @@ sn_add_signature <- function(species = "human",
 #' @param path Slash-delimited signature path relative to the species root.
 #' @param genes Optional replacement gene vector. If \code{NULL}, keep the
 #'   existing genes.
-#' @param registry_path Optional path to the editable registry JSON file.
+#' @param catalog_path Optional path to a signature catalog `.rda` snapshot.
 #' @param rename_to Optional new terminal node name.
 #' @param source Optional source label recorded on the signature node.
 #'
@@ -507,7 +493,7 @@ sn_add_signature <- function(species = "human",
 sn_update_signature <- function(species = "human",
                                 path,
                                 genes = NULL,
-                                registry_path = NULL,
+                                catalog_path = NULL,
                                 rename_to = NULL,
                                 source = NULL) {
   species <- rlang::arg_match(species, c("human", "mouse"))
@@ -516,8 +502,8 @@ sn_update_signature <- function(species = "human",
     stop("`path` must contain at least one non-empty path segment.", call. = FALSE)
   }
 
-  registry <- .sn_read_signature_registry(path = registry_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(registry$tree)
+  catalog <- .sn_signature_catalog(path = catalog_path)
+  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
   existing_node <- .sn_signature_signatur_get_node(signatur_db, species, path_parts)
   if (is.null(existing_node)) {
     stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
@@ -558,15 +544,15 @@ sn_update_signature <- function(species = "human",
     SignatuR::RemoveSignature(old_node)
   }
 
-  registry$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
-  .sn_write_signature_registry(registry, path = registry_path)
+  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
+  .sn_write_signature_catalog(catalog, path = catalog_path)
 }
 
 #' Delete a signature from the editable source registry
 #'
 #' @param species One of \code{"human"} or \code{"mouse"}.
 #' @param path Slash-delimited signature path relative to the species root.
-#' @param registry_path Optional path to the editable registry JSON file.
+#' @param catalog_path Optional path to a signature catalog `.rda` snapshot.
 #'
 #' @return Invisibly returns the normalized registry path.
 #'
@@ -580,20 +566,20 @@ sn_update_signature <- function(species = "human",
 #' @export
 sn_delete_signature <- function(species = "human",
                                 path,
-                                registry_path = NULL) {
+                                catalog_path = NULL) {
   species <- rlang::arg_match(species, c("human", "mouse"))
   path_parts <- .sn_signature_split_path(path)
   if (length(path_parts) == 0) {
     stop("`path` must contain at least one non-empty path segment.", call. = FALSE)
   }
 
-  registry <- .sn_read_signature_registry(path = registry_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(registry$tree)
+  catalog <- .sn_signature_catalog(path = catalog_path)
+  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
   target_node <- .sn_signature_signatur_get_node(signatur_db, species, path_parts)
   if (is.null(target_node)) {
     stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
   }
   SignatuR::RemoveSignature(target_node)
-  registry$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
-  .sn_write_signature_registry(registry, path = registry_path)
+  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
+  .sn_write_signature_catalog(catalog, path = catalog_path)
 }
