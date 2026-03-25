@@ -62,17 +62,22 @@ function also matches the feature set against the bundled
 annotation subset.
 }
 \examples{
-library(Seurat)
-
-# Load example Seurat object
-pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
-pbmc_small_coding <- sn_filter_genes(
-  pbmc_small,
-  min_cells = 1,
-  plot = FALSE,
-  filter = TRUE,
-  species = "human",
-  gene_class = "coding"
-)
+if (requireNamespace("Seurat", quietly = TRUE)) {
+  data("pbmc_small", package = "Shennong")
+  pbmc_filtered <- sn_filter_genes(
+    pbmc,
+    min_cells = 5,
+    plot = FALSE,
+    filter = TRUE
+  )
+  pbmc_coding <- sn_filter_genes(
+    pbmc,
+    min_cells = 1,
+    plot = FALSE,
+    filter = TRUE,
+    species = "human",
+    gene_class = "coding"
+  )
+}
 
 }

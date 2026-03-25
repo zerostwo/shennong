@@ -1,6 +1,30 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
+
+## 2026-03-25
+
+- Refactored `sn_enrich()` around a single primary `x` input plus a formula
+  contract for enrichment semantics. `gene_clusters = gene ~ cluster` now
+  drives grouped ORA, while `gene_clusters = gene ~ log2fc` or a named numeric
+  vector drives ranked GSEA without a separate `score_col`-only path.
+- Expanded `sn_enrich()` database dispatch so one call can run against mixed
+  requests such as `c("H", "GOBP", "KEGG", "C2:CP:REACTOME")`, while also
+  exposing `collection` and `subcollection` arguments aligned with `msigdbr`.
+- Fixed enrichment result persistence so `prefix` / `outdir` save one `.rds`
+  per requested database with stable filenames, and post-filtered all returned
+  results by raw p-value rather than the upstream adjusted-p cutoff behavior.
+- Added targeted enrichment tests for formula auto-detection, Seurat-stored DE
+  reuse, multi-database storage/output, helper validation, and raw p-value
+  filtering. Local file-level coverage for `R/analysis_enrichment.R` now
+  reaches `78.77095%`, up from the earlier ~44% baseline.
+- Removed the legacy `sn_load_pbmc()` wrapper and started collapsing package
+  data documentation into a single `R/data.R` source. New built-in example data
+  objects `pbmc_small` and `pbmc_small_raw` are now built from sampled
+  `pbmc1k`/`pbmc3k` assets through `data-raw/build_shennong_example_data.R`.
+- README is being rewritten around a standard package-facing structure, using
+  the new built-in PBMC sample data instead of governance text or network-backed
+  examples.
 
 ## 2026-03-24
 

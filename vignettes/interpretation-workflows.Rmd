@@ -91,11 +91,9 @@ cluster_zero_markers <- cluster_markers |>
 real_enrichment <- tryCatch(
   sn_enrich(
     cluster_zero_markers,
-    analysis = "gsea",
+    gene_clusters = gene ~ avg_log2FC,
     species = "human",
     database = "GOBP",
-    gene_col = "gene",
-    score_col = "avg_log2FC",
     pvalue_cutoff = 1
   ),
   error = function(...) NULL
@@ -217,7 +215,10 @@ knitr::kable(top_cluster_markers |> dplyr::select(cluster, gene, avg_log2FC, p_v
 ## Store enrichment for later interpretation
 
 The interpretation layer expects enrichment results to be stored in the Seurat
-object. `sn_enrich()` can now store them directly when you pass `object =`.
+object. `sn_enrich()` can now store them directly when you pass a Seurat object
+through `x` or `object =`, and its `gene_clusters` formula now covers both
+grouped ORA inputs such as `gene ~ cluster` and ranked GSEA inputs such as
+`gene ~ avg_log2FC`.
 
 ```{r}
 knitr::kable(top_pathways)

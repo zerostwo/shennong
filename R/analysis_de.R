@@ -336,8 +336,10 @@
 #'     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
 #'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
-#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+#'     counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+#'     counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
 #'
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)

@@ -43,6 +43,9 @@ differential expression, enrichment, and related single-cell tasks.
 3. Run clustering or integration with `sn_run_cluster()`.
 4. Run DE with `sn_find_de()`.
 5. Run enrichment with `sn_enrich()` when needed.
+   Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
+   or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
+   same input should be tested against multiple databases in one call.
 6. Inspect and reuse bundled signatures with `sn_list_signatures()` and `sn_get_signatures()` when workflows need curated blocklists or marker programs.
 
 ## Common Mistakes

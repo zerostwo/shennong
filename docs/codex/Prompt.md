@@ -63,7 +63,7 @@ Modernize the `Shennong` R package incrementally and safely toward current R pac
 
 ### Likely public API surface
 
-- Data IO: `sn_read()`, `sn_write()`, `sn_load_pbmc()`, `sn_add_data_from_anndata()`
+- Data IO: `sn_read()`, `sn_write()`, `sn_load_data()`, `sn_add_data_from_anndata()`
 - Preprocessing and QC: `sn_initialize_seurat_object()`, `sn_score_cell_cycle()`, `sn_normalize_data()`, `sn_standardize_gene_symbols()`, `sn_filter_genes()`, `sn_filter_cells()`, `sn_find_doublets()`, `sn_remove_ambient_contamination()`
 - Clustering and annotation: `sn_run_cluster()`, `sn_run_celltypist()`, `sn_run_pyscenic()`
 - Metrics and summaries: `sn_calculate_composition()`, `sn_calculate_lisi()`, `sn_calculate_rogue()`
@@ -77,7 +77,8 @@ Modernize the `Shennong` R package incrementally and safely toward current R pac
 - Treat IO adapters as internal implementation details unless there is a documented reason to keep them exported.
 - Strengthen tests around critical behavior before refactoring high-risk internals.
 - Keep vignettes, examples, and pkgdown configuration compatible with non-interactive package checks.
-- Prefer compatibility wrappers when renaming exported functions, unless the user explicitly requires a hard break.
+- The current package is still experimental, so simplifying the public surface
+  is preferred over retaining deprecated wrappers or transitional aliases.
 
 ## Validation Policy
 

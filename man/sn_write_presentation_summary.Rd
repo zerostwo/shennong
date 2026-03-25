@@ -59,7 +59,10 @@ Write a presentation-style summary from stored analysis outputs
 \examples{
 if (requireNamespace("Seurat", quietly = TRUE)) {
   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-  rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+  rownames(counts) <- c(
+    "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+    "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+  )
   colnames(counts) <- paste0("cell", 1:24)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -69,7 +72,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     layer = "data", min_pct = 0, logfc_threshold = 0,
     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  prompt <- sn_write_presentation_summary(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
+  prompt <- sn_write_presentation_summary(
+    obj,
+    cluster_de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    return_prompt = TRUE
+  )
   prompt$task
 }
 }

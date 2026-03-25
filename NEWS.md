@@ -11,6 +11,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   filtering workflows. The snapshot now also stores genome-context fields such
   as sequence name, source, coordinates, strand, gene status/source, and
   annotation level in addition to gene identifiers and gene types.
+- Small built-in PBMC example assets were added as `pbmc_small` and
+  `pbmc_small_raw`, sampled from the packaged `pbmc1k` / `pbmc3k` references
+  for check-safe examples and README workflows.
 - `sn_find_de()` now supports pseudobulk differential expression with
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
@@ -38,6 +41,21 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- `sn_enrich()` now uses a single `x` input with automatic dispatch across
+  gene vectors, ranked named vectors, data frames, and Seurat-stored DE
+  results. Its `gene_clusters` formula now drives both grouped ORA
+  (`gene ~ cluster`) and ranked GSEA (`gene ~ log2fc`) workflows, and
+  multi-database requests such as `database = c("H", "GOBP", "KEGG",
+  "C2:CP:REACTOME")` are supported in one call.
+- `sn_enrich()` now aligns MSigDB arguments with `msigdbr` by supporting
+  `collection` / `subcollection`, while still accepting collection strings in
+  `database` such as `H` or `C2:CP:REACTOME`.
+- `sn_enrich()` now filters returned enrichment tables by raw p-value rather
+  than adjusted p-value and writes one result file per requested database with
+  stable `prefix` / `outdir` naming.
+- Dataset documentation is now being consolidated into a single `R/data.R`
+  source, and user-facing examples are shifting from simulated matrices or
+  network-backed PBMC downloads to the built-in small PBMC package data.
 - `sn_find_de()` now uses a single `method` argument instead of separate
   `test_use` and `pseudobulk_method` parameters.
 - `sn_find_de()` now uses `layer` consistently for Seurat v5 workflows and no
@@ -73,6 +91,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   clean runner without a preinstalled copy of `Shennong`.
 - Fixed `sn_plot_dot()` theme handling so the optional `catplot` theme no
   longer tries to impose an additional aspect ratio on top of `coord_fixed()`.
+- Fixed Rd example line-width failures in `R CMD check` and declared the
+  runtime `data.tree` dependency explicitly.
 
 # Version 0.1.1
 

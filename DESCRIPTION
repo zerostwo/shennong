@@ -14,9 +14,11 @@ URL: https://songqi.org/shennong,
 BugReports: https://github.com/zerostwo/shennong/issues
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: xz
 Imports: 
     cli,
     curl,
+    data.tree,
     dplyr,
     ggplot2,
     glue,

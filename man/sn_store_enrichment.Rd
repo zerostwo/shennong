@@ -52,7 +52,10 @@ helpers can reuse it later.
 \examples{
 if (requireNamespace("Seurat", quietly = TRUE)) {
   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
-  rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+  rownames(counts) <- c(
+    "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+    "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+  )
   colnames(counts) <- paste0("cell", 1:12)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   enrich_tbl <- tibble::tibble(

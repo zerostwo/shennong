@@ -6,80 +6,80 @@
 \usage{
 sn_enrich(
   x,
-  object = NULL,
   gene_clusters = NULL,
-  analysis = c("ora", "gsea"),
+  analysis = NULL,
   species = NULL,
   database = "GOBP",
-  gene_col = "gene",
-  score_col = NULL,
-  msigdb_subcollection = NULL,
+  collection = NULL,
+  subcollection = NULL,
   pvalue_cutoff = 0.05,
   store_name = "default",
   source_de_name = NULL,
-  return_object = !is.null(object),
+  return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL
 )
 }
 \arguments{
-\item{x}{A character vector of gene symbols, or a data frame used together
-with \code{gene_clusters} / ranked-GSEA columns.}
+\item{x}{A character vector of genes, a named numeric vector for GSEA, a
+data frame, or a \code{Seurat} object when enriching a stored DE result.}
 
-\item{object}{Optional \code{Seurat} object used to store the enrichment
-result in \code{object@misc$enrichment_results[[store_name]]}. When
-supplied, \code{return_object} defaults to \code{TRUE}.}
+\item{gene_clusters}{Optional two-sided formula describing the gene column
+and the grouping/ranking column. Examples include \code{gene ~ cluster} for
+grouped ORA and \code{gene ~ log2fc} for GSEA.}
 
-\item{gene_clusters}{An optional grouping formula passed to
-\code{clusterProfiler::compareCluster()}.}
-
-\item{analysis}{One of \code{"ora"} or \code{"gsea"}.}
+\item{analysis}{Optional explicit analysis mode. If omitted, Shennong
+infers ORA versus GSEA from the input type or the formula RHS column type.}
 
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
-\item{database}{One of \code{"GO"}, \code{"GOBP"}, \code{"GOMF"}, \code{"GOCC"}, \code{"KEGG"}, or
-an MSigDB collection handled through \pkg{msigdbr}. Supported MSigDB forms
-include \code{"H"}, \code{"C1"} through \code{"C8"}, and collection plus subcollection
-strings such as \code{"C2:CP:REACTOME"} or \code{"C5:GO:BP"}.}
+\item{database}{One or more databases. Supported values include GO/KEGG
+databases such as \code{"GOBP"} and MSigDB collections such as
+\code{"H"}, \code{"C2"}, or \code{"C2:CP:REACTOME"}.}
 
-\item{gene_col}{Column containing gene symbols when \code{x} is a data frame.}
+\item{collection}{Optional MSigDB collection used when
+\code{database = "MSIGDB"}.}
 
-\item{score_col}{Column containing ranking scores for \code{analysis = "gsea"}.}
+\item{subcollection}{Optional MSigDB subcollection used when
+\code{database = "MSIGDB"} or when you want to override the parsed
+subcollection for a collection-level request such as \code{"C2"}.}
 
-\item{msigdb_subcollection}{Optional MSigDB subcollection used when
-\code{database} names an MSigDB collection such as \code{"C2"} or
-\code{"C5"}. Ignored for GO and KEGG.}
+\item{pvalue_cutoff}{Raw p-value cutoff used to filter returned enrichment
+tables after the underlying enrichment call completes.}
 
-\item{pvalue_cutoff}{Numeric p-value cutoff used by the enrichment method.}
-
-\item{store_name}{Name used when storing the enrichment result on
-\code{object}.}
+\item{store_name}{Name used when storing the enrichment result on a Seurat
+object. When multiple databases are requested, the database label is
+appended automatically unless a vector of names is supplied.}
 
 \item{source_de_name}{Optional stored DE-result name associated with the
 enrichment input.}
 
-\item{return_object}{Logical; when \code{TRUE} and \code{object} is supplied,
-return the updated Seurat object instead of the raw enrichment result.}
+\item{return_object}{Logical; when \code{TRUE} and a Seurat object is
+available, return the updated Seurat object instead of raw enrichment
+results.}
 
 \item{prefix}{Optional filename prefix when writing results.}
 
-\item{outdir}{Optional output directory. If supplied, the enrichment result
-is also saved as an \code{.rds} file.}
+\item{outdir}{Optional output directory. If supplied, each enrichment result
+is saved as an \code{.rds} file.}
 }
 \value{
-A \code{clusterProfiler} enrichment result object.
+A single \code{clusterProfiler} result, a named list of results when
+multiple databases are requested, or a \code{Seurat} object when
+\code{return_object = TRUE}.
 }
 \description{
-Runs GO or KEGG enrichment for a gene vector or grouped gene table using
-\code{clusterProfiler}. It supports both over-representation analysis (ORA) and
-ranked-list GSEA.
+Runs GO, KEGG, or MSigDB enrichment using \pkg{clusterProfiler}. It supports
+both over-representation analysis (ORA) and ranked-list GSEA. The enrichment
+input can be a gene vector, a ranked numeric vector, a data frame, or a
+Seurat object paired with \code{source_de_name} to reuse stored DE results.
 }
 \examples{
 \dontrun{
 sn_enrich(
   x = c("CD3D", "IL7R", "LTB"),
   species = "human",
-  database = "GOBP"
+  database = c("GOBP", "H")
 )
 }
 

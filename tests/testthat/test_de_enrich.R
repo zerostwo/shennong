@@ -193,11 +193,9 @@ test_that("sn_enrich supports GSEA from ranked marker tables", {
   expect_no_error({
     result <- sn_enrich(
       ranked_markers,
-      analysis = "gsea",
+      gene_clusters = gene ~ avg_log2FC,
       species = "human",
       database = "GOBP",
-      gene_col = "gene",
-      score_col = "avg_log2FC",
       pvalue_cutoff = 1
     )
   })
@@ -211,11 +209,22 @@ test_that("sn_enrich stores enrichment results on the Seurat object by default",
   skip_if_not_installed("org.Hs.eg.db")
 
   object <- make_de_test_object()
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    min_pct = 0,
+    logfc_threshold = 0,
+    store_name = "celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
 
   object <- sn_enrich(
-    x = c("CD3D", "CD3E", "TRAC", "LCK", "LTB"),
-    object = object,
-    analysis = "ora",
+    x = object,
+    source_de_name = "celltype_markers",
+    gene_clusters = gene ~ cluster,
     species = "human",
     database = "GOBP",
     store_name = "demo_gsea"
@@ -231,13 +240,12 @@ test_that("sn_enrich validates object type and GSEA input contracts", {
 
   expect_error(
     sn_enrich(
-      x = c("CD3D", "CD3E"),
-      object = list(not = "seurat"),
-      analysis = "ora",
+      x = make_de_test_object(),
       species = "human",
-      database = "GOBP"
+      database = "GOBP",
+      return_object = TRUE
     ),
-    "`object` must be a Seurat object"
+    "source_de_name"
   )
 
   expect_error(
@@ -247,7 +255,7 @@ test_that("sn_enrich validates object type and GSEA input contracts", {
       species = "human",
       database = "GOBP"
     ),
-    "Column 'gene' was not found"
+    "gene_clusters"
   )
 
   expect_error(
@@ -257,7 +265,7 @@ test_that("sn_enrich validates object type and GSEA input contracts", {
       species = "human",
       database = "GOBP"
     ),
-    "score_col"
+    "gene_clusters"
   )
 
   expect_error(
@@ -283,7 +291,7 @@ test_that("sn_enrich can write GSEA results to disk and compare grouped GO sets"
 
   gsea_result <- sn_enrich(
     x = ranked_df,
-    analysis = "gsea",
+    gene_clusters = gene ~ avg_logFC,
     species = "human",
     database = "GOBP",
     prefix = "demo",
@@ -307,6 +315,204 @@ test_that("sn_enrich can write GSEA results to disk and compare grouped GO sets"
   expect_true(inherits(gsea_result, "gseaResult"))
   expect_true(file.exists(file.path(outdir, "demo.enrichment.GOBP.rds")))
   expect_true(inherits(compare_result, "compareClusterResult"))
+})
+
+test_that("sn_enrich auto-detects ORA and GSEA from formula inputs", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  ora_input <- tibble::tibble(
+    gene = c("CD3D", "CD3E", "TRAC", "LCK", "MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"),
+    cell_type = c("Tcell", "Tcell", "Tcell", "Tcell", "Bcell", "Bcell", "Bcell", "Bcell")
+  )
+  gsea_input <- tibble::tibble(
+    gene = c("CD3D", "CD3E", "TRAC", "LCK", "LTB", "IL7R", "MALAT1", "ACTB"),
+    log2fc = c(3.2, 3.1, 2.9, 2.5, 2.2, 1.8, -0.5, -1)
+  )
+
+  ora_result <- sn_enrich(
+    ora_input,
+    gene_clusters = gene ~ cell_type,
+    species = "human",
+    database = "GOBP",
+    pvalue_cutoff = 1
+  )
+  gsea_result <- sn_enrich(
+    gsea_input,
+    gene_clusters = gene ~ log2fc,
+    species = "human",
+    database = "GOBP",
+    pvalue_cutoff = 1
+  )
+
+  expect_true(inherits(ora_result, "compareClusterResult"))
+  expect_true(inherits(gsea_result, "gseaResult"))
+})
+
+test_that("sn_enrich supports multi-database requests and database-specific storage names", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+  skip_if_not_installed("msigdbr")
+
+  object <- make_de_test_object()
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    min_pct = 0,
+    logfc_threshold = 0,
+    store_name = "celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+  outdir <- tempfile("multi-enrich-")
+
+  object <- sn_enrich(
+    x = object,
+    source_de_name = "celltype_markers",
+    gene_clusters = gene ~ cluster,
+    species = "human",
+    database = c("GOBP", "H"),
+    store_name = "combined",
+    prefix = "bundle",
+    outdir = outdir,
+    pvalue_cutoff = 1
+  )
+
+  expect_s4_class(object, "Seurat")
+  expect_true(all(c("combined.GOBP", "combined.H") %in% names(object@misc$enrichment_results)))
+  expect_true(file.exists(file.path(outdir, "bundle.enrichment.GOBP.rds")))
+  expect_true(file.exists(file.path(outdir, "bundle.enrichment.H.rds")))
+})
+
+test_that("sn_enrich supports Seurat x input via stored DE results", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  object <- make_de_test_object()
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    min_pct = 0,
+    logfc_threshold = 0,
+    store_name = "celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+
+  object <- sn_enrich(
+    x = object,
+    source_de_name = "celltype_markers",
+    gene_clusters = gene ~ cluster,
+    species = "human",
+    database = "GOBP",
+    store_name = "from_de",
+    pvalue_cutoff = 1
+  )
+
+  expect_s4_class(object, "Seurat")
+  expect_true("from_de" %in% names(object@misc$enrichment_results))
+})
+
+test_that("sn_enrich uses raw p-value filtering for enrichResult outputs", {
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+
+  result <- methods::new(
+    "enrichResult",
+    result = data.frame(
+      ID = c("A", "B"),
+      Description = c("term A", "term B"),
+      pvalue = c(0.01, 0.2),
+      p.adjust = c(0.8, 0.01),
+      qvalue = c(0.8, 0.01),
+      geneID = c("CD3D/CD3E", "MS4A1/CD79A"),
+      Count = c(2L, 2L)
+    ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "BH",
+    qvalueCutoff = 0.2,
+    organism = "human",
+    ontology = "BP",
+    gene = c("CD3D", "CD3E", "MS4A1", "CD79A"),
+    keytype = "SYMBOL",
+    universe = character(),
+    gene2Symbol = character(),
+    geneSets = list(A = c("CD3D", "CD3E"), B = c("MS4A1", "CD79A")),
+    readable = FALSE,
+    termsim = matrix(0, nrow = 0, ncol = 0),
+    method = character(),
+    dr = list()
+  )
+
+  filtered <- Shennong:::.sn_enrich_filter_by_pvalue(result, pvalue_cutoff = 0.05)
+
+  expect_equal(nrow(filtered@result), 1)
+  expect_equal(filtered@result$ID[[1]], "A")
+})
+
+test_that("sn_enrich helper parsers validate formulas and msigdb inputs", {
+  expect_null(Shennong:::.sn_enrich_parse_msigdb_database("GOBP"))
+  expect_equal(
+    Shennong:::.sn_enrich_parse_msigdb_database("C2:CP:REACTOME"),
+    list(collection = "C2", subcollection = "CP:REACTOME")
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_parse_msigdb_database("MSIGDB", collection = "h", subcollection = "all"),
+    list(collection = "H", subcollection = "ALL")
+  )
+  expect_error(
+    Shennong:::.sn_enrich_parse_msigdb_database("MSIGDB"),
+    "collection"
+  )
+
+  expect_equal(
+    Shennong:::.sn_enrich_parse_formula(gene ~ cluster),
+    list(gene_col = "gene", value_col = "cluster")
+  )
+  expect_error(
+    Shennong:::.sn_enrich_parse_formula(~ cluster),
+    "two-sided formula"
+  )
+  expect_error(
+    Shennong:::.sn_enrich_parse_formula("gene ~ cluster"),
+    "`gene_clusters` must be a two-sided formula"
+  )
+})
+
+test_that("sn_enrich helper resolution covers store names and analysis inference", {
+  expect_equal(
+    Shennong:::.sn_enrich_store_names("default", c("GOBP", "H")),
+    stats::setNames(c("default.GOBP", "default.H"), c("GOBP", "H"))
+  )
+  expect_error(
+    Shennong:::.sn_enrich_store_names(c("only", "two"), c("GOBP", "H", "KEGG")),
+    "length 1 or match the length"
+  )
+
+  expect_equal(
+    Shennong:::.sn_enrich_resolve_analysis(
+      input = tibble::tibble(gene = c("A", "B"), group = c("x", "y")),
+      mapping = list(gene_col = "gene", value_col = "group")
+    ),
+    "ora"
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_resolve_analysis(
+      input = tibble::tibble(gene = c("A", "B"), score = c(1, -1)),
+      mapping = list(gene_col = "gene", value_col = "score")
+    ),
+    "gsea"
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_resolve_analysis(stats::setNames(c(1, -1), c("A", "B"))),
+    "gsea"
+  )
 })
 
 test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {

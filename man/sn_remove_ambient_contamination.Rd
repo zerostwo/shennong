@@ -58,13 +58,13 @@ count matrix-like object, or a path that \code{sn_read()} can import.
 }
 \examples{
 \dontrun{
-pbmc <- sn_load_data("pbmc1k")
+data("pbmc_small", package = "Shennong")
+data("pbmc_small_raw", package = "Shennong")
 pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
 
-raw_counts <- sn_load_data("pbmc1k", matrix_type = "raw")
 corrected <- sn_remove_ambient_contamination(
   x = SeuratObject::LayerData(pbmc, layer = "counts"),
-  raw = raw_counts,
+  raw = pbmc_small_raw,
   method = "soupx",
   return_object = FALSE
 )

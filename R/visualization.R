@@ -97,12 +97,14 @@ sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' library(Seurat)
-#' library(ggplot2)
-#' data("pbmc_small")
-#' pbmc_small <- CreateSeuratObject(counts = pbmc_small)
-#' Idents(pbmc_small) <- pbmc_small$percent.mt > 10
-#' sn_plot_dim(object = pbmc_small, reduction = "tsne", group_by = "ident", palette = "Set1")
+#' data("pbmc_small", package = "Shennong")
+#' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
+#' sn_plot_dim(
+#'   object = pbmc,
+#'   reduction = "umap",
+#'   group_by = "seurat_clusters",
+#'   palette = "Set1"
+#' )
 #' }
 #'
 #' @importFrom ggplot2 theme element_blank element_text margin scale_color_manual labs

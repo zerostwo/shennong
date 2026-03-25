@@ -38,6 +38,12 @@ it to a SingleCellExperiment and using the \code{scDblFinder} package.
 }
 \examples{
 \dontrun{
-seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, group_by = NULL, dbr_sd = NULL, ncores = 4)
+seurat_obj <- sn_find_doublets(
+  seurat_obj,
+  clusters = NULL,
+  group_by = NULL,
+  dbr_sd = NULL,
+  ncores = 4
+)
 }
 }

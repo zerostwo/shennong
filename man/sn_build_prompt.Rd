@@ -43,7 +43,10 @@ A prompt bundle with \code{system}, \code{user}, and \code{messages}.
 Build an LLM prompt from structured Shennong evidence
 }
 \examples{
-evidence <- list(task = "annotation", cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC"))
+evidence <- list(
+  task = "annotation",
+  cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC")
+)
 prompt <- sn_build_prompt(evidence = evidence, task = "annotation")
 names(prompt)
 }

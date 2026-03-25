@@ -1,6 +1,34 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
+
+## 2026-03-25
+
+- Because Shennong is still explicitly experimental, current refactors do not
+  need to preserve backward compatibility with earlier 0.x interfaces. Legacy
+  wrappers, deprecated aliases, and "backwards-compatible" transitional
+  arguments should be removed rather than carried forward.
+- `sn_enrich()` should prefer one primary input contract over parallel
+  `x`/`object`/`gene_clusters` entry points. `x` is now the only primary input;
+  stored-result enrichment on Seurat objects should flow through `x` plus
+  `source_de_name`, while direct enrichment of vectors/data frames returns raw
+  results and can be stored later with `sn_store_enrichment()`.
+- Enrichment intent should be inferred from the formula RHS whenever practical:
+  categorical/grouping RHS values mean grouped ORA, while numeric RHS values
+  mean ranked GSEA. This keeps `sn_enrich()` aligned with the user's table
+  shape instead of forcing separate argument vocabularies.
+- Multi-database enrichment is part of the public workflow, not a caller-side
+  loop. `sn_enrich()` should therefore accept a vectorized `database` argument
+  spanning GO, KEGG, and MSigDB collection strings in one call, with
+  per-database storage/output names generated deterministically.
+- Upstream `clusterProfiler` p-value cutoffs should not define the final user
+  contract for Shennong enrichment. Shennong now runs enrichment with permissive
+  upstream cutoffs and applies its own raw p-value filtering afterward so the
+  exported `pvalue_cutoff` argument has the intended semantics.
+- Dataset documentation should be centralized in one `R/data.R` source rather
+  than split across multiple small `data_*.R` files. Small built-in PBMC
+  example assets should be packaged from sampled `pbmc1k`/`pbmc3k` data so
+  README and examples can avoid network downloads.
 
 ## 2026-03-24
 

@@ -651,18 +651,23 @@ sn_standardize_gene_symbols <- function(
 #' annotation subset.
 #'
 #' @examples
-#' library(Seurat)
-#'
-#' # Load example Seurat object
-#' pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
-#' pbmc_small_coding <- sn_filter_genes(
-#'   pbmc_small,
-#'   min_cells = 1,
-#'   plot = FALSE,
-#'   filter = TRUE,
-#'   species = "human",
-#'   gene_class = "coding"
-#' )
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'   data("pbmc_small", package = "Shennong")
+#'   pbmc_filtered <- sn_filter_genes(
+#'     pbmc,
+#'     min_cells = 5,
+#'     plot = FALSE,
+#'     filter = TRUE
+#'   )
+#'   pbmc_coding <- sn_filter_genes(
+#'     pbmc,
+#'     min_cells = 1,
+#'     plot = FALSE,
+#'     filter = TRUE,
+#'     species = "human",
+#'     gene_class = "coding"
+#'   )
+#' }
 #'
 #' @export
 sn_filter_genes <- function(x,
@@ -943,7 +948,13 @@ sn_filter_cells <- function(
 #' @return The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
 #' @examples
 #' \dontrun{
-#' seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, group_by = NULL, dbr_sd = NULL, ncores = 4)
+#' seurat_obj <- sn_find_doublets(
+#'   seurat_obj,
+#'   clusters = NULL,
+#'   group_by = NULL,
+#'   dbr_sd = NULL,
+#'   ncores = 4
+#' )
 #' }
 #' @export
 sn_find_doublets <- function(
@@ -1268,13 +1279,13 @@ sn_find_doublets <- function(
 #'
 #' @examples
 #' \dontrun{
-#' pbmc <- sn_load_data("pbmc1k")
+#' data("pbmc_small", package = "Shennong")
+#' data("pbmc_small_raw", package = "Shennong")
 #' pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
 #'
-#' raw_counts <- sn_load_data("pbmc1k", matrix_type = "raw")
 #' corrected <- sn_remove_ambient_contamination(
 #'   x = SeuratObject::LayerData(pbmc, layer = "counts"),
-#'   raw = raw_counts,
+#'   raw = pbmc_small_raw,
 #'   method = "soupx",
 #'   return_object = FALSE
 #' )

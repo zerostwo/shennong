@@ -548,7 +548,10 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:12)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   enrich_tbl <- tibble::tibble(
@@ -620,8 +623,10 @@ sn_store_enrichment <- function(object,
 #'     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
 #'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
-#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+#'     counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+#'     counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
 #'   Seurat::Idents(obj) <- obj$cell_type
@@ -630,7 +635,11 @@ sn_store_enrichment <- function(object,
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
 #'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   evidence <- sn_prepare_annotation_evidence(obj, de_name = "celltype_markers", cluster_col = "cell_type")
+#'   evidence <- sn_prepare_annotation_evidence(
+#'     obj,
+#'     de_name = "celltype_markers",
+#'     cluster_col = "cell_type"
+#'   )
 #'   names(evidence)
 #' }
 #' @export
@@ -681,8 +690,10 @@ sn_prepare_annotation_evidence <- function(object,
 #'     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
 #'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
-#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+#'     counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+#'     counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
 #'   Seurat::Idents(obj) <- obj$cell_type
@@ -818,7 +829,10 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -833,7 +847,12 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
 #'     store_name = "demo_gsea"
 #'   )
-#'   evidence <- sn_prepare_results_evidence(obj, cluster_de_name = "celltype_markers", enrichment_name = "demo_gsea", cluster_col = "cell_type")
+#'   evidence <- sn_prepare_results_evidence(
+#'     obj,
+#'     cluster_de_name = "celltype_markers",
+#'     enrichment_name = "demo_gsea",
+#'     cluster_col = "cell_type"
+#'   )
 #'   names(evidence)
 #' }
 #' @export
@@ -904,7 +923,10 @@ sn_prepare_results_evidence <- function(object,
 #' @return A prompt bundle with \code{system}, \code{user}, and \code{messages}.
 #'
 #' @examples
-#' evidence <- list(task = "annotation", cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC"))
+#' evidence <- list(
+#'   task = "annotation",
+#'   cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC")
+#' )
 #' prompt <- sn_build_prompt(evidence = evidence, task = "annotation")
 #' names(prompt)
 #' @export
@@ -1027,8 +1049,10 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
 #'     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
 #'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
-#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+#'     counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+#'     counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
 #'   Seurat::Idents(obj) <- obj$cell_type
@@ -1037,7 +1061,12 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
 #'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   prompt <- sn_interpret_annotation(obj, de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
+#'   prompt <- sn_interpret_annotation(
+#'     obj,
+#'     de_name = "celltype_markers",
+#'     cluster_col = "cell_type",
+#'     return_prompt = TRUE
+#'   )
 #'   prompt$task
 #' }
 #' @export
@@ -1110,8 +1139,10 @@ sn_interpret_annotation <- function(object,
 #'     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
 #'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
-#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+#'   counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+#'     counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+#'   counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+#'     counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
 #'   Seurat::Idents(obj) <- obj$cell_type
@@ -1182,7 +1213,10 @@ sn_interpret_de <- function(object,
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:12)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj <- sn_store_enrichment(
@@ -1190,7 +1224,11 @@ sn_interpret_de <- function(object,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
 #'     store_name = "demo_gsea"
 #'   )
-#'   prompt <- sn_interpret_enrichment(obj, enrichment_name = "demo_gsea", return_prompt = TRUE)
+#'   prompt <- sn_interpret_enrichment(
+#'     obj,
+#'     enrichment_name = "demo_gsea",
+#'     return_prompt = TRUE
+#'   )
 #'   prompt$task
 #' }
 #' @export
@@ -1258,7 +1296,10 @@ sn_interpret_enrichment <- function(object,
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -1273,7 +1314,13 @@ sn_interpret_enrichment <- function(object,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
 #'     store_name = "demo_gsea"
 #'   )
-#'   prompt <- sn_write_results(obj, cluster_de_name = "celltype_markers", enrichment_name = "demo_gsea", cluster_col = "cell_type", return_prompt = TRUE)
+#'   prompt <- sn_write_results(
+#'     obj,
+#'     cluster_de_name = "celltype_markers",
+#'     enrichment_name = "demo_gsea",
+#'     cluster_col = "cell_type",
+#'     return_prompt = TRUE
+#'   )
 #'   prompt$task
 #' }
 #' @export
@@ -1344,7 +1391,10 @@ sn_write_results <- function(object,
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -1354,7 +1404,12 @@ sn_write_results <- function(object,
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
 #'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   prompt <- sn_write_figure_legend(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
+#'   prompt <- sn_write_figure_legend(
+#'     obj,
+#'     cluster_de_name = "celltype_markers",
+#'     cluster_col = "cell_type",
+#'     return_prompt = TRUE
+#'   )
 #'   prompt$task
 #' }
 #' @export
@@ -1424,7 +1479,10 @@ sn_write_figure_legend <- function(object,
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
 #'   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-#'   rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
 #'   colnames(counts) <- paste0("cell", 1:24)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -1434,7 +1492,12 @@ sn_write_figure_legend <- function(object,
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
 #'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   prompt <- sn_write_presentation_summary(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
+#'   prompt <- sn_write_presentation_summary(
+#'     obj,
+#'     cluster_de_name = "celltype_markers",
+#'     cluster_col = "cell_type",
+#'     return_prompt = TRUE
+#'   )
 #'   prompt$task
 #' }
 #' @export

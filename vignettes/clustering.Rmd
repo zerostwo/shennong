@@ -236,11 +236,9 @@ find_enrichment_result <- function(markers) {
     enrichment <- suppressWarnings(
       sn_enrich(
         marker_subset,
-        analysis = "gsea",
+        gene_clusters = gene ~ avg_log2FC,
         species = "human",
         database = "GOBP",
-        gene_col = "gene",
-        score_col = "avg_log2FC",
         pvalue_cutoff = 0.1
       )
     )
