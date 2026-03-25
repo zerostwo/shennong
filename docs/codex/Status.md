@@ -20,6 +20,10 @@ Last updated: 2026-03-25
 - Updated the README, PBMC clustering vignette, and shipped single-cell skill
   reference so the new metrics workflow is visible at the user level instead of
   remaining an undocumented helper layer.
+- Added bulk deconvolution support in a new `R/analysis_deconvolution.R`
+  module. Shennong now supports local BayesPrism runs and local CIBERSORTx
+  container workflows, with stored results available under
+  `object@misc$deconvolution_results`.
 - Reorganized pkgdown around workflow stages instead of mixed implementation
   topics. Added new end-to-end articles for preprocessing/QC, metrics and
   diagnostics, annotation/pathway analysis, and composition/comparative

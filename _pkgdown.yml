@@ -31,6 +31,7 @@ articles:
       - metrics-diagnostics
       - annotation-pathways
       - composition-analysis
+      - bulk-deconvolution
       - interpretation-workflows
       - layered-workflows
 
@@ -88,6 +89,10 @@ reference:
   - title: Composition and Comparative Analysis
     contents:
       - sn_calculate_composition
+      - sn_deconvolve_bulk
+      - sn_set_cibersortx_credentials
+      - sn_store_deconvolution
+      - sn_get_deconvolution_result
   - title: Interpretation and Reporting
     contents:
       - sn_list_results

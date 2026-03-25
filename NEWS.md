@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Unreleased
+# Version 0.1.2
+
+Released 2026-03-25.
 
 ### Added
 
@@ -24,6 +26,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `sn_detect_rare_cells()` and new `sn_run_cluster()` parameters that can
   append rare-aware features such as Gini-selected genes, local HVGs, local
   markers, or optional CIARA-derived features before PCA and Harmony.
+- Bulk RNA-seq deconvolution support was added through
+  `sn_deconvolve_bulk()`, `sn_store_deconvolution()`, and
+  `sn_get_deconvolution_result()`, covering local BayesPrism runs plus
+  local CIBERSORTx container workflows and result import.
 - pkgdown documentation is now reorganized around workflow stages rather than
   source files alone. New end-to-end articles cover preprocessing and QC,
   clustering and integration, metrics and diagnostics, annotation and pathways,

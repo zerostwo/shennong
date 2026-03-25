@@ -8,7 +8,8 @@ description: Use when working with Shennong preprocessing, clustering, different
 ## Purpose
 
 Teach the agent how to use Shennong workflows for preprocessing, clustering,
-differential expression, enrichment, and related single-cell tasks.
+differential expression, enrichment, bulk deconvolution, and related
+single-cell tasks.
 
 ## When To Use
 
@@ -53,8 +54,9 @@ differential expression, enrichment, and related single-cell tasks.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
-5. Use `sn_calculate_composition()` and grouped plots for comparative summaries
-   across samples, conditions, or annotations.
+5. Use `sn_calculate_composition()` and `sn_deconvolve_bulk()` for comparative
+   summaries across samples, conditions, annotations, or paired bulk RNA-seq
+   mixtures.
 6. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
 7. Inspect and reuse bundled signatures with `sn_list_signatures()` and
@@ -76,5 +78,6 @@ differential expression, enrichment, and related single-cell tasks.
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
+- `sn_deconvolve_bulk(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

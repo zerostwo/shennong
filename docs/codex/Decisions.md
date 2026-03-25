@@ -27,6 +27,12 @@ Last updated: 2026-03-25
   clustering/integration (`sn_run_cluster(rare_feature_method = ...)`). This is
   more controllable than replacing the main HVG logic with a single opaque
   rare-cell algorithm.
+- Bulk RNA-seq deconvolution should be exposed as a first-class Shennong
+  workflow rather than as scattered export scripts. The package now uses a
+  single `sn_deconvolve_bulk()` entry point with backend-specific behavior:
+  BayesPrism runs locally through its R API, while CIBERSORTx is handled as a
+  local container workflow with explicit credentials and reproducible commands
+  instead of a manual website-upload step.
 - User-facing documentation should be organized by analysis stage rather than
   by source-file boundaries. The primary taxonomy is now:
   preprocessing/QC; clustering/integration; diagnostics/benchmarking;

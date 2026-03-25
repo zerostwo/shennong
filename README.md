@@ -36,6 +36,8 @@ remotes::install_github("zerostwo/shennong")
 - Multi-metric integration assessment with `sn_assess_integration()`
 - Marker detection, pseudobulk differential expression, and enrichment
   analysis
+- Bulk deconvolution workflows with BayesPrism and local CIBERSORTx
+  containers
 - Stored-result workflows for downstream interpretation and reporting
 
 ## Built-In Example Data
