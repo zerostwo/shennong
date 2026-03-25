@@ -35,10 +35,11 @@ reference:
     contents:
       - marker_genes
       - hom_genes
+      - pbmc_small
+      - pbmc_small_raw
       - shennong_gene_annotations
       - shennong_signature_catalog
       - sn_load_data
-      - sn_load_pbmc
       - sn_read
       - sn_write
       - sn_add_data_from_anndata
@@ -59,7 +60,13 @@ reference:
       - sn_run_cluster
       - sn_find_de
       - sn_run_celltypist
+      - sn_assess_integration
       - sn_calculate_lisi
+      - sn_calculate_silhouette
+      - sn_calculate_graph_connectivity
+      - sn_calculate_pcr_batch
+      - sn_calculate_clustering_agreement
+      - sn_identify_challenging_groups
       - sn_calculate_rogue
       - sn_calculate_composition
   - title: Visualization and signatures

@@ -41,12 +41,18 @@ differential expression, enrichment, and related single-cell tasks.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
 3. Run clustering or integration with `sn_run_cluster()`.
-4. Run DE with `sn_find_de()`.
-5. Run enrichment with `sn_enrich()` when needed.
+4. Assess integration quality or cluster structure with
+   `sn_assess_integration()`, `sn_calculate_lisi()`, or
+   `sn_identify_challenging_groups()` when sample mixing, rare groups, or
+   difficult-to-separate populations matter.
+5. Run DE with `sn_find_de()`.
+6. Run enrichment with `sn_enrich()` when needed.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
-6. Inspect and reuse bundled signatures with `sn_list_signatures()` and `sn_get_signatures()` when workflows need curated blocklists or marker programs.
+7. Inspect and reuse bundled signatures with `sn_list_signatures()` and
+   `sn_get_signatures()` when workflows need curated blocklists or marker
+   programs.
 
 ## Common Mistakes
 
@@ -59,6 +65,8 @@ differential expression, enrichment, and related single-cell tasks.
 
 - `sn_initialize_seurat_object()`
 - `sn_run_cluster()`
+- `sn_assess_integration()`
+- `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

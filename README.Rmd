@@ -37,6 +37,7 @@ remotes::install_github("zerostwo/shennong")
 - Gene and cell filtering, including bundled human/mouse GENCODE gene classes
 - Doublet detection and ambient RNA correction
 - Single-dataset clustering and Harmony-based integration with `sn_run_cluster()`
+- Multi-metric integration assessment with `sn_assess_integration()`
 - Marker detection, pseudobulk differential expression, and enrichment analysis
 - Stored-result workflows for downstream interpretation and reporting
 
@@ -87,6 +88,22 @@ pbmc_integrated <- sn_run_cluster(
 
 sn_plot_dim(pbmc_integrated, group_by = "sample")
 sn_plot_dim(pbmc_integrated, group_by = "seurat_clusters", label = TRUE)
+```
+
+You can summarize integration quality and surface rare or difficult groups
+directly from the integrated object:
+
+```r
+metrics <- sn_assess_integration(
+  pbmc_integrated,
+  batch = "sample",
+  cluster = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+
+metrics$summary
+metrics$per_group$challenging_groups
 ```
 
 ## Differential Expression And Enrichment

@@ -4,6 +4,19 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Integration assessment should be a first-class workflow, not an ad hoc
+  collection of standalone helpers. Shennong now exposes `sn_assess_integration()`
+  as the aggregate entry point while still exporting lower-level metric
+  functions for users who want one score at a time.
+- The default performance strategy for graph-based metrics is now:
+  reuse an existing Seurat neighbor graph when available, otherwise fall back
+  to Annoy-based approximate kNN through Seurat, and only then use an exact
+  distance-based neighbor search. This gives a practical speed/accuracy balance
+  without introducing a new heavy dependency just for nearest-neighbor search.
+- Rare groups and poorly separated groups should be reported explicitly instead
+  of being inferred indirectly from a single global score. The metrics layer
+  therefore now includes `sn_identify_challenging_groups()` with group size,
+  neighbor purity, connectivity, and silhouette-derived diagnostics.
 - Because Shennong is still explicitly experimental, current refactors do not
   need to preserve backward compatibility with earlier 0.x interfaces. Legacy
   wrappers, deprecated aliases, and "backwards-compatible" transitional

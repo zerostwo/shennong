@@ -44,14 +44,12 @@ knitr::opts_chunk$set(
 This article runs a complete PBMC analysis using the built-in `pbmc1k` and
 `pbmc3k` example datasets. The workflow covers QC-aware preprocessing,
 single-sample clustering, pre/post integration comparison, sample composition
-summaries, integration scoring with LISI, marker discovery, dot-plot
-visualization, and functional enrichment from cluster markers.
+summaries, multi-metric integration scoring, rare-group diagnostics, marker
+discovery, dot-plot visualization, and functional enrichment from cluster
+markers.
 
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
-
-The integration examples in this article assume the Harmony developer branch
-from `immunogenomics/harmony@harmony2`.
 
 Shennong also ships bundled human and mouse GENCODE gene annotations, so
 `sn_filter_genes()` can combine expression-threshold filtering with
@@ -204,6 +202,27 @@ lisi_summary <- dplyr::bind_rows(
     .groups = "drop"
   )
 
+integration_assessment <- sn_assess_integration(
+  pbmc_integrated,
+  batch = "sample",
+  cluster = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+
+assessment_summary <- integration_assessment$summary |>
+  dplyr::filter(
+    .data$metric %in% c(
+      "batch_silhouette",
+      "batch_lisi",
+      "pcr_batch",
+      "cluster_connectivity",
+      "overall_integration_score"
+    )
+  )
+
+challenging_groups <- integration_assessment$per_group$challenging_groups
+
 pbmc_integrated <- suppressWarnings(
   sn_find_de(
     pbmc_integrated,
@@ -344,6 +363,23 @@ knitr::kable(lisi_summary, digits = 3)
 Higher LISI values indicate better local sample mixing. In this two-sample
 example the theoretical maximum is 2, so the post-Harmony distribution should
 shift upward relative to the unintegrated baseline.
+
+## Multi-metric integration assessment
+
+```{r}
+knitr::kable(assessment_summary, digits = 3)
+```
+
+`sn_assess_integration()` combines local sample mixing, PCR batch reduction,
+graph connectivity, and cluster-level diagnostics into one summary object while
+reusing the stored neighbor graph when possible.
+
+```{r}
+knitr::kable(challenging_groups, digits = 3)
+```
+
+The `challenging_groups` table is especially useful for surfacing rare groups
+or poorly separated populations that may not stand out as isolated UMAP islands.
 
 ## Marker genes from the integrated object
 

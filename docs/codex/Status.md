@@ -4,6 +4,18 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Expanded `R/analysis_metrics.R` from a minimal LISI/ROGUE/composition module
+  into a broader integration-assessment layer. New exported helpers now cover
+  silhouette widths, graph connectivity, PCR batch scoring, clustering
+  agreement, rare/difficult-group diagnostics, and an aggregate
+  `sn_assess_integration()` wrapper that returns summary, per-cell, and
+  per-group outputs.
+- Added structured metrics tests that exercise graph reuse, Annoy fallback,
+  exact-kNN fallback, PCR improvement against a baseline reduction, aggregate
+  summary scoring, and rare-group flagging on synthetic integrated embeddings.
+- Updated the README, PBMC clustering vignette, and shipped single-cell skill
+  reference so the new metrics workflow is visible at the user level instead of
+  remaining an undocumented helper layer.
 - Refactored `sn_enrich()` around a single primary `x` input plus a formula
   contract for enrichment semantics. `gene_clusters = gene ~ cluster` now
   drives grouped ORA, while `gene_clusters = gene ~ log2fc` or a named numeric

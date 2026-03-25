@@ -35,7 +35,7 @@ This function calculates ROGUE score based on Seurat object.
 \examples{
 \dontrun{
 data("pbmc_small", package = "Shennong")
-pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
+pbmc <- sn_run_cluster(pbmc_small, normalization_method = "seurat", verbose = FALSE)
 rogue_tbl <- sn_calculate_rogue(pbmc, cluster = "seurat_clusters")
 head(rogue_tbl)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_metrics.R
 \name{sn_calculate_composition}
 \alias{sn_calculate_composition}
-\title{Calculate Composition Proportions}
+\title{Calculate composition proportions}
 \usage{
 sn_calculate_composition(
   x,
@@ -13,40 +13,29 @@ sn_calculate_composition(
 )
 }
 \arguments{
-\item{x}{A Seurat object or a data frame (e.g., metadata).}
+\item{x}{A Seurat object or a data frame.}
 
-\item{group_by}{A character string specifying the column name in the metadata
-to group by (e.g., "sample_id", "treatment").}
+\item{group_by}{Column name used to define groups.}
 
-\item{variable}{A character string specifying the column name in the metadata
-for which to calculate proportions (e.g., "cell_type", "cluster_id").}
+\item{variable}{Column name whose proportions should be calculated.}
 
-\item{min_cells}{An integer specifying the minimum number of cells required
-for a group (defined by \code{group_by}) to be included in the analysis.
-Defaults to 20. Set to 0 to include all groups.}
+\item{min_cells}{Minimum number of cells required for a \code{group_by}
+category to be retained. Defaults to \code{20}.}
 
-\item{additional_cols}{A character vector specifying the names of additional
-metadata columns to include in the output table. These columns should ideally
-have values that are constant within each \code{group_by} category. If values
-are not constant, the function will use the first value encountered for each group
-and issue a warning. Defaults to NULL.}
+\item{additional_cols}{Optional character vector of additional columns to
+carry into the output.}
 }
 \value{
-A data frame with the following columns:
-\item{group_by}{The grouping variable categories.}
-\item{variable}{The variable categories whose proportions are calculated.}
-\item{proportion}{The calculated proportion (percentage) for each variable category within each group.}
-\item{...}{Additional columns specified by \code{additional_cols}.}
+A data frame with per-group proportions.
 }
 \description{
 Calculates the proportion of different categories within groups from metadata.
 }
 \details{
-This function takes either a Seurat object or a data frame (like cell metadata)
-and computes the percentage composition of a given \code{variable} (e.g., cell type)
-for each category specified by \code{group_by} (e.g., sample, condition).
-It allows filtering out groups with fewer than a minimum number of cells
-and optionally adding other metadata columns to the results.
+This function takes either a Seurat object or a data frame (like cell
+metadata) and computes the percentage composition of a given \code{variable}
+(for example, cell type) for each category specified by \code{group_by}
+(for example, sample or condition).
 }
 \examples{
 \dontrun{
@@ -58,4 +47,5 @@ composition_df <- sn_calculate_composition(
 )
 print(composition_df)
 }
+
 }

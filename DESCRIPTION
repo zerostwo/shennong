@@ -16,6 +16,7 @@ Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
 Imports: 
+    cluster,
     cli,
     curl,
     data.tree,

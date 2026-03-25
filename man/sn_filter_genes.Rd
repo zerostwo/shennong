@@ -65,13 +65,13 @@ annotation subset.
 if (requireNamespace("Seurat", quietly = TRUE)) {
   data("pbmc_small", package = "Shennong")
   pbmc_filtered <- sn_filter_genes(
-    pbmc,
+    pbmc_small,
     min_cells = 5,
     plot = FALSE,
     filter = TRUE
   )
   pbmc_coding <- sn_filter_genes(
-    pbmc,
+    pbmc_small,
     min_cells = 1,
     plot = FALSE,
     filter = TRUE,
