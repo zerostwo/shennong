@@ -81,7 +81,9 @@ sn_assess_integration(
   Optional character vector selecting which metrics to compute.
   Supported values are `"batch_lisi"`, `"label_lisi"`,
   `"batch_silhouette"`, `"label_silhouette"`, `"graph_connectivity"`,
-  `"clustering_agreement"`, `"pcr_batch"`, and `"challenging_groups"`.
+  `"clustering_agreement"`, `"isolated_label_score"`,
+  `"cluster_purity"`, `"cluster_entropy"`, `"pcr_batch"`, and
+  `"challenging_groups"`.
 
 - neighbor_method:
 

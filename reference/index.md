@@ -1,6 +1,6 @@
 # Package index
 
-## Data and IO
+## Data and Import
 
 - [`marker_genes`](https://songqi.org/shennong/reference/marker_genes.md)
   : Pan-Immune CellTypist Metadata
@@ -31,19 +31,17 @@
   : Write tabular and bioinformatics file formats
 - [`sn_add_data_from_anndata()`](https://songqi.org/shennong/reference/sn_add_data_from_anndata.md)
   : Add metadata and embeddings exported from AnnData
-- [`sn_check_version()`](https://songqi.org/shennong/reference/sn_check_version.md)
-  : Check whether Shennong is up to date
-- [`sn_install_shennong()`](https://songqi.org/shennong/reference/sn_install_shennong.md)
-  : Install Shennong from CRAN or GitHub
 
 ## Preprocessing and QC
 
+- [`sn_get_species()`](https://songqi.org/shennong/reference/sn_get_species.md)
+  : Retrieve or infer species information
 - [`sn_initialize_seurat_object()`](https://songqi.org/shennong/reference/sn_initialize_seurat_object.md)
   : Initialize a Seurat object with optional QC metrics
-- [`sn_normalize_data()`](https://songqi.org/shennong/reference/sn_normalize_data.md)
-  : Normalize data in a Seurat object
 - [`sn_standardize_gene_symbols()`](https://songqi.org/shennong/reference/sn_standardize_gene_symbols.md)
   : Standardize gene symbols in a count matrix or Seurat object
+- [`sn_normalize_data()`](https://songqi.org/shennong/reference/sn_normalize_data.md)
+  : Normalize data in a Seurat object
 - [`sn_score_cell_cycle()`](https://songqi.org/shennong/reference/sn_score_cell_cycle.md)
   : Score Cell Cycle Phases
 - [`sn_filter_genes()`](https://songqi.org/shennong/reference/sn_filter_genes.md)
@@ -55,16 +53,17 @@
 - [`sn_remove_ambient_contamination()`](https://songqi.org/shennong/reference/sn_remove_ambient_contamination.md)
   : Remove ambient RNA contamination from counts
 
-## Clustering and metrics
+## Clustering and Integration
 
 - [`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
   : Run clustering for a single dataset or Harmony integration workflow
-- [`sn_find_de()`](https://songqi.org/shennong/reference/sn_find_de.md)
-  : Run differential expression analysis on a Seurat object
-- [`sn_run_celltypist()`](https://songqi.org/shennong/reference/sn_run_celltypist.md)
-  : Run CellTypist for automated cell type annotation
+
+## Diagnostics and Benchmarking
+
 - [`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
   : Assess integration quality across multiple metrics
+- [`sn_detect_rare_cells()`](https://songqi.org/shennong/reference/sn_detect_rare_cells.md)
+  : Detect rare cells with native or optional rare-cell backends
 - [`sn_calculate_lisi()`](https://songqi.org/shennong/reference/sn_calculate_lisi.md)
   : Calculate LISI scores from a Seurat embedding
 - [`sn_calculate_silhouette()`](https://songqi.org/shennong/reference/sn_calculate_silhouette.md)
@@ -75,29 +74,25 @@
   : Calculate PCR batch effect scores
 - [`sn_calculate_clustering_agreement()`](https://songqi.org/shennong/reference/sn_calculate_clustering_agreement.md)
   : Calculate agreement between clusters and reference labels
+- [`sn_calculate_isolated_label_score()`](https://songqi.org/shennong/reference/sn_calculate_isolated_label_score.md)
+  : Calculate isolated-label preservation scores
+- [`sn_calculate_cluster_purity()`](https://songqi.org/shennong/reference/sn_calculate_cluster_purity.md)
+  : Calculate cluster purity against a reference label
+- [`sn_calculate_cluster_entropy()`](https://songqi.org/shennong/reference/sn_calculate_cluster_entropy.md)
+  : Calculate cluster entropy for a categorical label
 - [`sn_identify_challenging_groups()`](https://songqi.org/shennong/reference/sn_identify_challenging_groups.md)
   : Identify rare or difficult-to-separate groups
 - [`sn_calculate_rogue()`](https://songqi.org/shennong/reference/sn_calculate_rogue.md)
   : Calculate ROGUE score for Seurat Object
-- [`sn_calculate_composition()`](https://songqi.org/shennong/reference/sn_calculate_composition.md)
-  : Calculate composition proportions
 
-## Visualization and signatures
+## Annotation, Markers, and Pathways
 
-- [`sn_plot_dim()`](https://songqi.org/shennong/reference/sn_plot_dim.md)
-  : Create a dimensionality reduction plot for categorical data
-- [`sn_plot_feature()`](https://songqi.org/shennong/reference/sn_plot_feature.md)
-  : Plot feature expression in reduced dimensions
-- [`sn_plot_violin()`](https://songqi.org/shennong/reference/sn_plot_violin.md)
-  : Plot a violin plot with categorical groups
-- [`sn_plot_dot()`](https://songqi.org/shennong/reference/sn_plot_dot.md)
-  : Plot a dot plot with categorical groups
-- [`sn_plot_boxplot()`](https://songqi.org/shennong/reference/sn_plot_boxplot.md)
-  : Create a boxplot from a data frame
-- [`sn_plot_barplot()`](https://songqi.org/shennong/reference/sn_plot_barplot.md)
-  : Create a bar plot from a data frame
-- [`show_all_palettes()`](https://songqi.org/shennong/reference/show_all_palettes.md)
-  : List available color palettes
+- [`sn_run_celltypist()`](https://songqi.org/shennong/reference/sn_run_celltypist.md)
+  : Run CellTypist for automated cell type annotation
+- [`sn_find_de()`](https://songqi.org/shennong/reference/sn_find_de.md)
+  : Run differential expression analysis on a Seurat object
+- [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md) :
+  Run gene set enrichment analysis
 - [`sn_list_signatures()`](https://songqi.org/shennong/reference/sn_list_signatures.md)
   : List bundled Shennong signatures
 - [`sn_get_signatures()`](https://songqi.org/shennong/reference/sn_get_signatures.md)
@@ -108,10 +103,21 @@
   : Update a signature in the editable source registry
 - [`sn_delete_signature()`](https://songqi.org/shennong/reference/sn_delete_signature.md)
   : Delete a signature from the editable source registry
-- [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md) :
-  Run gene set enrichment analysis
 
-## Interpretation
+## Composition and Comparative Analysis
+
+- [`sn_calculate_composition()`](https://songqi.org/shennong/reference/sn_calculate_composition.md)
+  : Calculate composition proportions
+- [`sn_deconvolve_bulk()`](https://songqi.org/shennong/reference/sn_deconvolve_bulk.md)
+  : Run bulk RNA-seq deconvolution with single-cell references
+- [`sn_set_cibersortx_credentials()`](https://songqi.org/shennong/reference/sn_set_cibersortx_credentials.md)
+  : Store local CIBERSORTx credentials for container execution
+- [`sn_store_deconvolution()`](https://songqi.org/shennong/reference/sn_store_deconvolution.md)
+  : Store a deconvolution result on a Seurat object
+- [`sn_get_deconvolution_result()`](https://songqi.org/shennong/reference/sn_get_deconvolution_result.md)
+  : Retrieve a stored deconvolution result from a Seurat object
+
+## Interpretation and Reporting
 
 - [`sn_list_results()`](https://songqi.org/shennong/reference/sn_list_results.md)
   : List stored Shennong analysis and interpretation results on a Seurat
@@ -150,14 +156,33 @@
 - [`sn_write_presentation_summary()`](https://songqi.org/shennong/reference/sn_write_presentation_summary.md)
   : Write a presentation-style summary from stored analysis outputs
 
-## Utilities
+## Visualization
 
+- [`sn_plot_dim()`](https://songqi.org/shennong/reference/sn_plot_dim.md)
+  : Create a dimensionality reduction plot for categorical data
+- [`sn_plot_feature()`](https://songqi.org/shennong/reference/sn_plot_feature.md)
+  : Plot feature expression in reduced dimensions
+- [`sn_plot_violin()`](https://songqi.org/shennong/reference/sn_plot_violin.md)
+  : Plot a violin plot with categorical groups
+- [`sn_plot_dot()`](https://songqi.org/shennong/reference/sn_plot_dot.md)
+  : Plot a dot plot with categorical groups
+- [`sn_plot_boxplot()`](https://songqi.org/shennong/reference/sn_plot_boxplot.md)
+  : Create a boxplot from a data frame
+- [`sn_plot_barplot()`](https://songqi.org/shennong/reference/sn_plot_barplot.md)
+  : Create a bar plot from a data frame
+- [`show_all_palettes()`](https://songqi.org/shennong/reference/show_all_palettes.md)
+  : List available color palettes
+
+## Utilities and Project Setup
+
+- [`sn_check_version()`](https://songqi.org/shennong/reference/sn_check_version.md)
+  : Check whether Shennong is up to date
+- [`sn_install_shennong()`](https://songqi.org/shennong/reference/sn_install_shennong.md)
+  : Install Shennong from CRAN or GitHub
 - [`sn_check_file()`](https://songqi.org/shennong/reference/sn_check_file.md)
   : Check if files exist
 - [`sn_get_codex_skill_path()`](https://songqi.org/shennong/reference/sn_get_codex_skill_path.md)
   : Return installed Shennong Codex asset paths
-- [`sn_get_species()`](https://songqi.org/shennong/reference/sn_get_species.md)
-  : Retrieve or infer species information
 - [`sn_initialize_project()`](https://songqi.org/shennong/reference/sn_initialize_project.md)
   : Initialize a Shennong analysis project
 - [`sn_initialize_codex_project()`](https://songqi.org/shennong/reference/sn_initialize_codex_project.md)

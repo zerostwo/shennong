@@ -27,6 +27,8 @@ remotes::install_github("zerostwo/shennong")
   [`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
 - Marker detection, pseudobulk differential expression, and enrichment
   analysis
+- Bulk deconvolution workflows with BayesPrism and local CIBERSORTx
+  containers
 - Stored-result workflows for downstream interpretation and reporting
 
 ## Built-In Example Data
@@ -92,6 +94,9 @@ metrics <- sn_assess_integration(
 )
 
 metrics$summary
+metrics$per_group$isolated_label_score
+metrics$per_group$cluster_entropy
+metrics$per_group$cluster_purity
 metrics$per_group$challenging_groups
 ```
 

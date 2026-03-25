@@ -9,7 +9,7 @@ sn_add_signature(
   species = "human",
   path,
   genes,
-  registry_path = NULL,
+  catalog_path = NULL,
   overwrite = FALSE,
   source = "custom"
 )
@@ -30,9 +30,9 @@ sn_add_signature(
 
   Character vector of gene symbols stored at the leaf node.
 
-- registry_path:
+- catalog_path:
 
-  Optional path to the editable registry JSON file.
+  Optional path to a signature catalog `.rda` snapshot.
 
 - overwrite:
 

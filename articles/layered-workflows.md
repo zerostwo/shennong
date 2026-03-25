@@ -1,4 +1,4 @@
-# Layer-aware workflow
+# Advanced layer-aware workflow
 
 This article demonstrates three Shennong behaviors that are important in
 modern multi-layer Seurat workflows:
@@ -65,7 +65,7 @@ knitr::kable(de_summary)
 | field           | value           |
 |:----------------|:----------------|
 | schema_version  | 1.0.0           |
-| package_version | 0.1.1           |
+| package_version | 0.1.2           |
 | analysis        | markers         |
 | group_by        | seurat_clusters |
 | rank_col        | avg_log2FC      |

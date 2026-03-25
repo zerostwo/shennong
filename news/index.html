@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,9 +20,14 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">PBMC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -40,6 +45,66 @@
       <small>Source: <a href="https://github.com/zerostwo/shennong/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.2" id="version-012">Version 0.1.2<a class="anchor" aria-label="anchor" href="#version-012"></a></h2>
+<p>Released 2026-03-25.</p>
+<div class="section level4">
+<h4 id="added-0-1-2">Added<a class="anchor" aria-label="anchor" href="#added-0-1-2"></a></h4>
+<ul><li>Bundled human and mouse GENCODE gene-annotation data was added for gene-level filtering workflows. The snapshot now also stores genome-context fields such as sequence name, source, coordinates, strand, gene status/source, and annotation level in addition to gene identifiers and gene types.</li>
+<li>Small built-in PBMC example assets were added as <code>pbmc_small</code> and <code>pbmc_small_raw</code>, sampled from the packaged <code>pbmc1k</code> / <code>pbmc3k</code> references for check-safe examples and README workflows.</li>
+<li>Integration and cluster-diagnostics metrics were expanded with <code><a href="../reference/sn_calculate_silhouette.html">sn_calculate_silhouette()</a></code>, <code><a href="../reference/sn_calculate_graph_connectivity.html">sn_calculate_graph_connectivity()</a></code>, <code><a href="../reference/sn_calculate_pcr_batch.html">sn_calculate_pcr_batch()</a></code>, <code><a href="../reference/sn_calculate_clustering_agreement.html">sn_calculate_clustering_agreement()</a></code>, <code><a href="../reference/sn_calculate_isolated_label_score.html">sn_calculate_isolated_label_score()</a></code>, <code><a href="../reference/sn_calculate_cluster_entropy.html">sn_calculate_cluster_entropy()</a></code>, <code><a href="../reference/sn_calculate_cluster_purity.html">sn_calculate_cluster_purity()</a></code>, <code><a href="../reference/sn_identify_challenging_groups.html">sn_identify_challenging_groups()</a></code>, and the aggregate <code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code> wrapper.</li>
+<li>Rare-cell-aware clustering support was added through <code><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells()</a></code> and new <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> parameters that can append rare-aware features such as Gini-selected genes, local HVGs, local markers, or optional CIARA-derived features before PCA and Harmony.</li>
+<li>Bulk RNA-seq deconvolution support was added through <code><a href="../reference/sn_deconvolve_bulk.html">sn_deconvolve_bulk()</a></code>, <code><a href="../reference/sn_store_deconvolution.html">sn_store_deconvolution()</a></code>, and <code><a href="../reference/sn_get_deconvolution_result.html">sn_get_deconvolution_result()</a></code>, covering local BayesPrism runs plus local CIBERSORTx container workflows and result import.</li>
+<li>pkgdown documentation is now reorganized around workflow stages rather than source files alone. New end-to-end articles cover preprocessing and QC, clustering and integration, metrics and diagnostics, annotation and pathways, composition analysis, and interpretation/reporting.</li>
+<li>
+<code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> now supports pseudobulk differential expression with <code>limma</code> in addition to <code>DESeq2</code> and <code>edgeR</code>.</li>
+<li>
+<code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> now supports marker discovery with <code>COSGR</code> when the optional GitHub package is installed.</li>
+<li>
+<code><a href="../reference/sn_initialize_codex_project.html">sn_initialize_codex_project()</a></code> now scaffolds user analysis repositories from the shipped <code>inst/codex/project-template/</code> assets, creating a governed project layout with <code>AGENTS.md</code>, <code>memory/</code>, <code>docs/standards/</code>, <code>skills/</code>, <code>config/</code>, <code>data/</code>, <code>scripts/</code>, <code>notebooks/</code>, <code>runs/</code>, and <code>results/</code>.</li>
+<li>
+<code><a href="../reference/sn_initialize_project.html">sn_initialize_project()</a></code> is now a convenience wrapper over the packaged project-template initializer.</li>
+<li>
+<code><a href="../reference/sn_get_codex_skill_path.html">sn_get_codex_skill_path()</a></code> now exposes packaged Codex asset paths for the Codex root, package-usage skills, project template, and project-template skills.</li>
+<li>
+<code><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill()</a></code> now installs package-usage skills, project governance skills, or both from the packaged Codex asset layout.</li>
+<li>Signature catalog helpers were added: <code><a href="../reference/sn_list_signatures.html">sn_list_signatures()</a></code>, <code><a href="../reference/sn_add_signature.html">sn_add_signature()</a></code>, <code><a href="../reference/sn_update_signature.html">sn_update_signature()</a></code>, and <code><a href="../reference/sn_delete_signature.html">sn_delete_signature()</a></code>.</li>
+<li>Stored-result discovery and retrieval helpers were added: <code><a href="../reference/sn_list_results.html">sn_list_results()</a></code>, <code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code>, <code><a href="../reference/sn_get_enrichment_result.html">sn_get_enrichment_result()</a></code>, and <code><a href="../reference/sn_get_interpretation_result.html">sn_get_interpretation_result()</a></code>.</li>
+<li>The interpretation layer now supports user-supplied background context and dual output styles for either model-facing prompt bundles or human-readable summaries.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="changed-0-1-2">Changed<a class="anchor" aria-label="anchor" href="#changed-0-1-2"></a></h4>
+<ul><li>
+<code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now uses a single <code>x</code> input with automatic dispatch across gene vectors, ranked named vectors, data frames, and Seurat-stored DE results. Its <code>gene_clusters</code> formula now drives both grouped ORA (<code>gene ~ cluster</code>) and ranked GSEA (<code>gene ~ log2fc</code>) workflows, and multi-database requests such as <code>database = c("H", "GOBP", "KEGG",   "C2:CP:REACTOME")</code> are supported in one call.</li>
+<li>
+<code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now aligns MSigDB arguments with <code>msigdbr</code> by supporting <code>collection</code> / <code>subcollection</code>, while still accepting collection strings in <code>database</code> such as <code>H</code> or <code>C2:CP:REACTOME</code>.</li>
+<li>
+<code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now filters returned enrichment tables by raw p-value rather than adjusted p-value and writes one result file per requested database with stable <code>prefix</code> / <code>outdir</code> naming.</li>
+<li>Dataset documentation is now being consolidated into a single <code>R/data.R</code> source, and user-facing examples are shifting from simulated matrices or network-backed PBMC downloads to the built-in small PBMC package data.</li>
+<li>
+<code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> now uses a single <code>method</code> argument instead of separate <code>test_use</code> and <code>pseudobulk_method</code> parameters.</li>
+<li>
+<code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> now uses <code>layer</code> consistently for Seurat v5 workflows and no longer exposes the legacy <code>slot</code> argument.</li>
+<li>
+<code><a href="../reference/sn_filter_genes.html">sn_filter_genes()</a></code> now supports annotation-aware filtering through <code>gene_class</code> and exact <code>gene_type</code> values backed by the bundled GENCODE snapshot for human and mouse.</li>
+<li>Signature registry maintenance now delegates add/update/delete operations to the upstream <code>SignatuR</code> package API instead of maintaining a parallel custom tree-editing implementation inside Shennong.</li>
+<li>Harmony-backed integration now targets the <code>immunogenomics/harmony</code> <code>harmony2</code> developer branch in package metadata and CI instead of the CRAN release line.</li>
+<li>Integration metrics now prefer stored Seurat neighbor graphs when available and otherwise fall back to Annoy-based approximate kNN or exact distance search, keeping the default assessment path fast enough for routine use.</li>
+<li>
+<code><a href="../reference/sn_get_signatures.html">sn_get_signatures()</a></code> now reads from a package-owned signature snapshot built from the full <code>SignatuR</code> tree during development, so runtime signature retrieval is stable, tree-structured, and no longer depends on the installed <code>SignatuR</code> package version.</li>
+<li>Signature build assets now center on <code>data/shennong_signature_catalog.rda</code>, which is rebuilt directly from the upstream <code>SignatuR</code> dataset during development, replacing the opaque <code>R/sysdata.rda</code> storage used by the earlier snapshot prototype.</li>
+<li>
+<code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now stores enrichment results in <code>object@misc$enrichment_results[[store_name]]</code> when a Seurat object is supplied, aligning enrichment with the existing stored DE workflow.</li>
+<li>pkgdown articles, shipped Codex skill references, and <code>NEWS.md</code> are now treated as required deliverables for any user-facing workflow change.</li>
+<li>The pkgdown deployment workflow now installs the current package before publishing the site, so reference generation can load <code>Shennong</code> inside the temporary deployment worktree.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="fixed-0-1-2">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-1-2"></a></h4>
+<ul><li>Fixed pkgdown GitHub Actions deployment when <code>deploy_to_branch()</code> runs in a clean runner without a preinstalled copy of <code>Shennong</code>.</li>
+<li>Fixed <code><a href="../reference/sn_plot_dot.html">sn_plot_dot()</a></code> theme handling so the optional <code>catplot</code> theme no longer tries to impose an additional aspect ratio on top of <code><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_fixed()</a></code>.</li>
+<li>Fixed Rd example line-width failures in <code>R CMD check</code> and declared the runtime <code>data.tree</code> dependency explicitly.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="version-011">Version 0.1.1<a class="anchor" aria-label="anchor" href="#version-011"></a></h2>
 <p>Released 2026-03-19.</p>

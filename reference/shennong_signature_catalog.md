@@ -1,8 +1,8 @@
 # Bundled Shennong Signature Catalog
 
 A package-owned, tree-structured signature catalog built from the
-upstream SignatuR hierarchy plus any Shennong-maintained additions
-recorded in `data-raw/shennong_signature_registry.json`.
+upstream SignatuR hierarchy and stored as the current
+Shennong-controlled snapshot under `data/`.
 
 ## Usage
 

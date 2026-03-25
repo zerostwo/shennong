@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Interpretation workflow • Shennong</title>
+<title>Interpretation and reporting workflow • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Interpretation workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Interpretation and reporting workflow">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,9 +36,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">PBMC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -61,7 +66,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Interpretation workflow</h1>
+      <h1>Interpretation and reporting workflow</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -236,7 +241,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster_markers</td>
 <td align="left">markers</td>
 <td align="left">wilcox</td>
-<td align="left">2026-03-25 17:09:56 UTC</td>
+<td align="left">2026-03-25 21:46:30 UTC</td>
 <td align="right">17203</td>
 <td align="left">NA</td>
 </tr>
@@ -246,7 +251,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster0_gsea</td>
 <td align="left">gsea</td>
 <td align="left">NA</td>
-<td align="left">2026-03-25 17:10:32 UTC</td>
+<td align="left">2026-03-25 21:47:06 UTC</td>
 <td align="right">2646</td>
 <td align="left">cluster_markers</td>
 </tr>
@@ -256,7 +261,7 @@ interpretation artifacts are available for reuse.</p>
 <td align="left">cluster_annotation_note</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">2026-03-25 17:10:32 UTC</td>
+<td align="left">2026-03-25 21:47:07 UTC</td>
 <td align="right">0</td>
 <td align="left">NA</td>
 </tr>
@@ -502,115 +507,115 @@ packaged project template used by
 <tbody>
 <tr class="odd">
 <td align="left">readme</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/README.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/README.md</td>
 </tr>
 <tr class="even">
 <td align="left">config</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/config</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/config</td>
 </tr>
 <tr class="odd">
 <td align="left">config_default</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/config/default.yaml</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/config/default.yaml</td>
 </tr>
 <tr class="even">
 <td align="left">data</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/data</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/data</td>
 </tr>
 <tr class="odd">
 <td align="left">data_raw</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/data/raw</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/data/raw</td>
 </tr>
 <tr class="even">
 <td align="left">data_processed</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/data/processed</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/data/processed</td>
 </tr>
 <tr class="odd">
 <td align="left">data_metadata</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/data/metadata</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/data/metadata</td>
 </tr>
 <tr class="even">
 <td align="left">scripts</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/scripts</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/scripts</td>
 </tr>
 <tr class="odd">
 <td align="left">notebooks</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/notebooks</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/notebooks</td>
 </tr>
 <tr class="even">
 <td align="left">runs</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/runs</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/runs</td>
 </tr>
 <tr class="odd">
 <td align="left">results</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/results</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/results</td>
 </tr>
 <tr class="even">
 <td align="left">results_figures</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/results/figures</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/results/figures</td>
 </tr>
 <tr class="odd">
 <td align="left">results_tables</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/results/tables</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/results/tables</td>
 </tr>
 <tr class="even">
 <td align="left">results_reports</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/results/reports</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/results/reports</td>
 </tr>
 <tr class="odd">
 <td align="left">agents_md</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/AGENTS.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/AGENTS.md</td>
 </tr>
 <tr class="even">
 <td align="left">agents</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/AGENTS.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/AGENTS.md</td>
 </tr>
 <tr class="odd">
 <td align="left">memory</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory</td>
 </tr>
 <tr class="even">
 <td align="left">memory_decisions</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Decisions.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Decisions.md</td>
 </tr>
 <tr class="odd">
 <td align="left">decisions</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Decisions.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Decisions.md</td>
 </tr>
 <tr class="even">
 <td align="left">memory_plan</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Plan.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Plan.md</td>
 </tr>
 <tr class="odd">
 <td align="left">plan</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Plan.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Plan.md</td>
 </tr>
 <tr class="even">
 <td align="left">memory_prompt</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Prompt.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Prompt.md</td>
 </tr>
 <tr class="odd">
 <td align="left">prompt</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Prompt.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Prompt.md</td>
 </tr>
 <tr class="even">
 <td align="left">memory_status</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Status.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Status.md</td>
 </tr>
 <tr class="odd">
 <td align="left">status</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/memory/Status.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/memory/Status.md</td>
 </tr>
 <tr class="even">
 <td align="left">standards</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/docs/standards</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/docs/standards</td>
 </tr>
 <tr class="odd">
 <td align="left">conventions</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md</td>
 </tr>
 <tr class="even">
 <td align="left">skills</td>
-<td align="left">/tmp/RtmpCYJ5qh/shennong-codex-project/skills</td>
+<td align="left">/tmp/RtmpOw4pXZ/shennong-codex-project/skills</td>
 </tr>
 </tbody>
 </table>

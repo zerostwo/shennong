@@ -1,11 +1,18 @@
-# PBMC workflow
+# Clustering and integration workflow
 
-This article runs a complete PBMC analysis using the built-in `pbmc1k`
-and `pbmc3k` example datasets. The workflow covers QC-aware
-preprocessing, single-sample clustering, pre/post integration
-comparison, sample composition summaries, multi-metric integration
-scoring, rare-group diagnostics, marker discovery, dot-plot
-visualization, and functional enrichment from cluster markers.
+This article covers the core unsupervised-analysis stage in Shennong
+using the built-in PBMC examples. The workflow shows how to move from a
+preprocessed Seurat object to:
+
+- single-sample clustering
+- multi-sample Harmony integration
+- optional rare-aware feature selection before PCA/integration
+- pre/post integration embedding comparison
+- cluster visualization on the integrated object
+
+Downstream metrics, composition, and interpretation now have their own
+dedicated articles, but a few summary outputs remain here so the
+integration workflow is visible end to end.
 
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
@@ -129,18 +136,18 @@ knitr::kable(dplyr::slice_head(composition_tbl, n = 12), digits = 2)
 
 | sample | seurat_clusters | proportion |
 |:-------|:----------------|-----------:|
-| pbmc1k | 0               |      27.52 |
+| pbmc1k | 0               |      27.61 |
 | pbmc1k | 1               |      27.96 |
 | pbmc1k | 10              |       1.31 |
-| pbmc1k | 2               |      11.48 |
-| pbmc1k | 3               |       6.05 |
+| pbmc1k | 2               |      11.31 |
+| pbmc1k | 3               |       5.96 |
 | pbmc1k | 4               |       6.22 |
 | pbmc1k | 5               |       2.28 |
-| pbmc1k | 6               |       3.94 |
-| pbmc1k | 7               |       6.05 |
-| pbmc1k | 8               |       5.00 |
+| pbmc1k | 6               |       3.86 |
+| pbmc1k | 7               |       6.13 |
+| pbmc1k | 8               |       5.17 |
 | pbmc1k | 9               |       2.19 |
-| pbmc3k | 0               |      36.80 |
+| pbmc3k | 0               |      36.62 |
 
 ``` r
 sn_plot_barplot(
@@ -168,7 +175,7 @@ knitr::kable(lisi_summary, digits = 3)
 
 | state              |   min |    q1 | median |  mean |    q3 | max |
 |:-------------------|------:|------:|-------:|------:|------:|----:|
-| after_integration  | 1.002 | 1.214 |  1.497 | 1.519 | 1.839 |   2 |
+| after_integration  | 1.002 | 1.212 |  1.491 | 1.517 | 1.837 |   2 |
 | before_integration | 1.000 | 1.000 |  1.000 | 1.024 | 1.000 |   2 |
 
 Higher LISI values indicate better local sample mixing. In this
@@ -183,14 +190,15 @@ knitr::kable(assessment_summary, digits = 3)
 
 | metric               | category      | score | scaled_score | n_cells | source         | note                    |
 |:---------------------|:--------------|------:|-------------:|--------:|:---------------|:------------------------|
-| batch_silhouette     | batch_removal | 0.091 |        0.909 |    3812 | harmony        | Global batch silhouette |
-| batch_lisi           | batch_removal | 1.519 |        0.519 |    3812 | harmony        |                         |
+| batch_silhouette     | batch_removal | 0.096 |        0.904 |    3812 | harmony        | Global batch silhouette |
+| batch_lisi           | batch_removal | 1.517 |        0.517 |    3812 | harmony        |                         |
 | cluster_connectivity | structure     | 1.000 |        1.000 |    3812 | RNA_nn         |                         |
 | pcr_batch            | batch_removal | 0.007 |        0.929 |    3812 | harmony vs pca |                         |
 
 [`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
 combines local sample mixing, PCR batch reduction, graph connectivity,
-and cluster-level diagnostics into one summary object while reusing the
+isolated-label preservation, cluster batch entropy, cluster purity, and
+difficult-group diagnostics into one summary object while reusing the
 stored neighbor graph when possible.
 
 ``` r
@@ -199,21 +207,55 @@ knitr::kable(challenging_groups, digits = 3)
 
 | seurat_clusters | n_cells | fraction_cells | median_neighbor_purity | mean_neighbor_purity | graph_connectivity | mean_silhouette | separation_score | challenge_score | rare_group | challenging_group |
 |:----------------|--------:|---------------:|-----------------------:|---------------------:|-------------------:|----------------:|-----------------:|----------------:|:-----------|:------------------|
-| 9               |      49 |          0.013 |                  0.947 |                0.841 |                  1 |          -0.009 |            0.814 |           0.186 | TRUE       | FALSE             |
-| 3               |     326 |          0.086 |                  0.979 |                0.886 |                  1 |           0.061 |            0.836 |           0.164 | FALSE      | FALSE             |
-| 8               |     149 |          0.039 |                  1.000 |                0.900 |                  1 |           0.112 |            0.852 |           0.148 | FALSE      | FALSE             |
-| 0               |    1297 |          0.340 |                  1.000 |                0.977 |                  1 |           0.196 |            0.866 |           0.134 | FALSE      | FALSE             |
-| 4               |     245 |          0.064 |                  1.000 |                0.952 |                  1 |           0.217 |            0.869 |           0.131 | FALSE      | FALSE             |
-| 2               |     393 |          0.103 |                  1.000 |                0.966 |                  1 |           0.273 |            0.879 |           0.121 | FALSE      | FALSE             |
-| 6               |     176 |          0.046 |                  1.000 |                0.913 |                  1 |           0.305 |            0.884 |           0.116 | FALSE      | FALSE             |
-| 7               |     163 |          0.043 |                  1.000 |                0.939 |                  1 |           0.317 |            0.886 |           0.114 | FALSE      | FALSE             |
-| 5               |     185 |          0.049 |                  1.000 |                0.962 |                  1 |           0.380 |            0.897 |           0.103 | FALSE      | FALSE             |
-| 1               |     799 |          0.210 |                  1.000 |                0.987 |                  1 |           0.383 |            0.897 |           0.103 | FALSE      | FALSE             |
-| 10              |      30 |          0.008 |                  1.000 |                0.995 |                  1 |           0.740 |            0.957 |           0.043 | TRUE       | FALSE             |
+| 9               |      48 |          0.013 |                  0.956 |                0.836 |                  1 |          -0.041 |            0.812 |           0.188 | TRUE       | FALSE             |
+| 8               |     146 |          0.038 |                  0.969 |                0.903 |                  1 |           0.102 |            0.840 |           0.160 | FALSE      | FALSE             |
+| 3               |     329 |          0.086 |                  1.000 |                0.886 |                  1 |           0.058 |            0.843 |           0.157 | FALSE      | FALSE             |
+| 0               |    1293 |          0.339 |                  1.000 |                0.977 |                  1 |           0.196 |            0.866 |           0.134 | FALSE      | FALSE             |
+| 4               |     244 |          0.064 |                  1.000 |                0.952 |                  1 |           0.223 |            0.870 |           0.130 | FALSE      | FALSE             |
+| 2               |     395 |          0.104 |                  1.000 |                0.967 |                  1 |           0.281 |            0.880 |           0.120 | FALSE      | FALSE             |
+| 6               |     177 |          0.046 |                  1.000 |                0.907 |                  1 |           0.305 |            0.884 |           0.116 | FALSE      | FALSE             |
+| 7               |     165 |          0.043 |                  1.000 |                0.939 |                  1 |           0.313 |            0.886 |           0.114 | FALSE      | FALSE             |
+| 5               |     184 |          0.048 |                  1.000 |                0.962 |                  1 |           0.376 |            0.896 |           0.104 | FALSE      | FALSE             |
+| 1               |     801 |          0.210 |                  1.000 |                0.987 |                  1 |           0.378 |            0.896 |           0.104 | FALSE      | FALSE             |
+| 10              |      30 |          0.008 |                  1.000 |                0.995 |                  1 |           0.738 |            0.956 |           0.044 | TRUE       | FALSE             |
 
 The `challenging_groups` table is especially useful for surfacing rare
 groups or poorly separated populations that may not stand out as
 isolated UMAP islands.
+
+``` r
+knitr::kable(integration_assessment$per_group$isolated_label_score, digits = 3)
+```
+
+The isolated-label summary makes it easier to spot small populations
+that stay biologically distinct even when they do not appear as a
+visually isolated UMAP island after integration.
+
+## Rare-aware feature selection
+
+When small populations are a concern,
+[`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
+can append rare-aware features to the main HVG set before PCA and
+Harmony. In this article the integrated object was run with
+`rare_feature_method = "gini"`, and the resulting rare-cell scores can
+be inspected directly:
+
+``` r
+knitr::kable(head(rare_detection[order(rare_detection$rare_score, decreasing = TRUE), ], 10), digits = 3)
+```
+
+|      | cell_id                   | method | rare_score | rare_cell |
+|:-----|:--------------------------|:-------|-----------:|:----------|
+| 640  | pbmc1k_GCCGTGAGTCAGTCCG-1 | gini   |     79.314 | TRUE      |
+| 838  | pbmc1k_TACCGGGTCCTCGATC-1 | gini   |     78.042 | TRUE      |
+| 1040 | pbmc1k_TGTAACGGTTGCGTAT-1 | gini   |     71.848 | TRUE      |
+| 148  | pbmc1k_AGCCAGCGTAGTTAGA-1 | gini   |     69.761 | TRUE      |
+| 674  | pbmc1k_GGATCTAGTGCCTGCA-1 | gini   |     69.457 | TRUE      |
+| 1093 | pbmc1k_TTCCTAAGTGACGTCC-1 | gini   |     63.962 | TRUE      |
+| 801  | pbmc1k_GTGTTCCGTAGTTCCA-1 | gini   |     61.457 | TRUE      |
+| 32   | pbmc1k_AACGAAAAGGTTGGTG-1 | gini   |     52.102 | TRUE      |
+| 1089 | pbmc1k_TTCCACGAGGAAGTGA-1 | gini   |     47.752 | TRUE      |
+| 192  | pbmc1k_AGTCACATCTCCCATG-1 | gini   |     47.373 | TRUE      |
 
 ## Marker genes from the integrated object
 
@@ -223,36 +265,36 @@ knitr::kable(marker_tbl, digits = 3)
 
 | cluster | gene            | avg_log2FC | p_val_adj |
 |:--------|:----------------|-----------:|----------:|
-| 0       | TSHZ2           |      5.207 |         0 |
-| 0       | ENSG00000249806 |      4.769 |         0 |
-| 0       | CMTM8           |      3.697 |         0 |
-| 1       | S100A12         |      8.658 |         0 |
-| 1       | FOLR3           |      8.432 |         0 |
-| 1       | CLEC4E          |      7.858 |         0 |
-| 2       | TCL1A           |      8.094 |         0 |
-| 2       | IGHD            |      6.872 |         0 |
-| 2       | PCDH9           |      6.472 |         0 |
-| 3       | GZMH            |      4.389 |         0 |
-| 3       | TRGC2           |      4.112 |         0 |
-| 3       | CD8A            |      3.710 |         0 |
-| 4       | ENSG00000289191 |      7.489 |         0 |
-| 4       | SH2D1B          |      7.260 |         0 |
-| 4       | GNLY            |      7.171 |         0 |
-| 5       | ENSG00000301038 |      8.422 |         0 |
-| 5       | CKB             |      7.007 |         0 |
-| 5       | CDKN1C          |      6.901 |         0 |
-| 6       | LINC02446       |      5.625 |         0 |
-| 6       | ENSG00000310107 |      4.914 |         0 |
-| 6       | NRCAM           |      4.655 |         0 |
-| 7       | ENSG00000228033 |      7.664 |         0 |
-| 7       | SLC4A10         |      7.625 |         0 |
-| 7       | ADAM12          |      6.432 |         0 |
-| 8       | SSPN            |      8.854 |         0 |
-| 8       | IGHA1           |      8.238 |         0 |
-| 8       | IGHG3           |      8.030 |         0 |
-| 9       | LINC01478       |     10.575 |         0 |
-| 9       | FCER1A          |      8.814 |         0 |
-| 9       | DNASE1L3        |      8.396 |         0 |
+| 0       | TSHZ2           |      5.214 |         0 |
+| 0       | ENSG00000249806 |      4.826 |         0 |
+| 0       | CMTM8           |      3.704 |         0 |
+| 1       | S100A12         |      8.653 |         0 |
+| 1       | FOLR3           |      8.427 |         0 |
+| 1       | CLEC4E          |      7.854 |         0 |
+| 2       | TCL1A           |      8.067 |         0 |
+| 2       | IGHD            |      6.823 |         0 |
+| 2       | PCDH9           |      6.358 |         0 |
+| 3       | GZMH            |      4.361 |         0 |
+| 3       | TRGC2           |      4.120 |         0 |
+| 3       | CD8A            |      3.721 |         0 |
+| 4       | ENSG00000289191 |      7.495 |         0 |
+| 4       | SH2D1B          |      7.266 |         0 |
+| 4       | GNLY            |      7.205 |         0 |
+| 5       | ENSG00000301038 |      8.430 |         0 |
+| 5       | CKB             |      7.015 |         0 |
+| 5       | CDKN1C          |      6.909 |         0 |
+| 6       | LINC02446       |      5.616 |         0 |
+| 6       | ENSG00000310107 |      4.854 |         0 |
+| 6       | NRCAM           |      4.647 |         0 |
+| 7       | SLC4A10         |      7.660 |         0 |
+| 7       | ENSG00000228033 |      7.646 |         0 |
+| 7       | ADAM12          |      6.413 |         0 |
+| 8       | SSPN            |      8.885 |         0 |
+| 8       | IGHA1           |      8.245 |         0 |
+| 8       | IGHG3           |      7.907 |         0 |
+| 9       | LINC01478       |     10.605 |         0 |
+| 9       | FCER1A          |      8.531 |         0 |
+| 9       | DNASE1L3        |      8.426 |         0 |
 | 10      | PF4V1           |     15.175 |         0 |
 | 10      | CLDN5           |     13.563 |         0 |
 | 10      | CMTM5           |     13.046 |         0 |
@@ -266,7 +308,7 @@ sn_plot_dot(
 )
 ```
 
-![](clustering_files/figure-html/unnamed-chunk-13-1.png)
+![](clustering_files/figure-html/unnamed-chunk-15-1.png)
 
 ## Functional enrichment of marker genes
 
@@ -280,16 +322,16 @@ knitr::kable(enrichment_tbl, digits = 4)
 
 |              | ID           | Description                                                        |    NES | p.adjust |
 |:-------------|:-------------|:-------------------------------------------------------------------|-------:|---------:|
-| <GO:0042110> | <GO:0042110> | T cell activation                                                  | 2.1728 |        0 |
-| <GO:0002250> | <GO:0002250> | adaptive immune response                                           | 2.2262 |        0 |
-| <GO:0046649> | <GO:0046649> | lymphocyte activation                                              | 2.0296 |        0 |
-| <GO:0001775> | <GO:0001775> | cell activation                                                    | 1.9828 |        0 |
-| <GO:0045321> | <GO:0045321> | leukocyte activation                                               | 1.9731 |        0 |
-| <GO:1903131> | <GO:1903131> | mononuclear cell differentiation                                   | 2.0381 |        0 |
-| <GO:0002521> | <GO:0002521> | leukocyte differentiation                                          | 1.9958 |        0 |
-| <GO:0006955> | <GO:0006955> | immune response                                                    | 1.9048 |        0 |
-| <GO:0002684> | <GO:0002684> | positive regulation of immune system process                       | 1.9606 |        0 |
-| <GO:0002429> | <GO:0002429> | immune response-activating cell surface receptor signaling pathway | 2.1443 |        0 |
+| <GO:0002250> | <GO:0002250> | adaptive immune response                                           | 2.2222 |        0 |
+| <GO:0042110> | <GO:0042110> | T cell activation                                                  | 2.1480 |        0 |
+| <GO:0046649> | <GO:0046649> | lymphocyte activation                                              | 1.9937 |        0 |
+| <GO:0001775> | <GO:0001775> | cell activation                                                    | 1.9338 |        0 |
+| <GO:0045321> | <GO:0045321> | leukocyte activation                                               | 1.9244 |        0 |
+| <GO:0006955> | <GO:0006955> | immune response                                                    | 1.8855 |        0 |
+| <GO:1903131> | <GO:1903131> | mononuclear cell differentiation                                   | 2.0001 |        0 |
+| <GO:0002684> | <GO:0002684> | positive regulation of immune system process                       | 1.9479 |        0 |
+| <GO:0002682> | <GO:0002682> | regulation of immune system process                                | 1.8416 |        0 |
+| <GO:0002768> | <GO:0002768> | immune response-regulating cell surface receptor signaling pathway | 2.1336 |        0 |
 
 ``` r
 sessioninfo::session_info()
@@ -455,7 +497,7 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.1    2026-03-25 [1] local
+#>  Shennong          * 0.1.2    2026-03-25 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)

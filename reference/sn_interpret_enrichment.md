@@ -95,8 +95,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-03-25 17:02:21] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-25 17:02:21] Running QC metrics for human ...
-#> INFO [2026-03-25 17:02:21] Seurat object initialization complete.
+#> INFO [2026-03-25 21:26:16] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-25 21:26:16] Running QC metrics for human ...
+#> INFO [2026-03-25 21:26:17] Seurat object initialization complete.
 #> [1] "enrichment"
 ```

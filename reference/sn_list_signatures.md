@@ -5,12 +5,7 @@ List bundled Shennong signatures
 ## Usage
 
 ``` r
-sn_list_signatures(
-  species = NULL,
-  include_groups = FALSE,
-  source = c("package", "registry"),
-  registry_path = NULL
-)
+sn_list_signatures(species = NULL, include_groups = FALSE)
 ```
 
 ## Arguments
@@ -22,16 +17,6 @@ sn_list_signatures(
 - include_groups:
 
   If `TRUE`, include non-leaf group nodes from the signature tree.
-
-- source:
-
-  One of `"package"` for the built package catalog or `"registry"` for
-  the editable source registry under `data-raw/`.
-
-- registry_path:
-
-  Optional path to a signature registry JSON file. Used only when
-  `source = "registry"`.
 
 ## Value
 

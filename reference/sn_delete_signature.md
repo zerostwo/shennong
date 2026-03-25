@@ -5,7 +5,7 @@ Delete a signature from the editable source registry
 ## Usage
 
 ``` r
-sn_delete_signature(species = "human", path, registry_path = NULL)
+sn_delete_signature(species = "human", path, catalog_path = NULL)
 ```
 
 ## Arguments
@@ -18,9 +18,9 @@ sn_delete_signature(species = "human", path, registry_path = NULL)
 
   Slash-delimited signature path relative to the species root.
 
-- registry_path:
+- catalog_path:
 
-  Optional path to the editable registry JSON file.
+  Optional path to a signature catalog `.rda` snapshot.
 
 ## Value
 

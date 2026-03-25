@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>PBMC workflow • Shennong</title>
+<title>Clustering and integration workflow • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="PBMC workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Clustering and integration workflow">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,9 +36,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">PBMC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -61,7 +66,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>PBMC workflow</h1>
+      <h1>Clustering and integration workflow</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -74,13 +79,19 @@ Duan</h4>
 
     
     
-<p>This article runs a complete PBMC analysis using the built-in
-<code>pbmc1k</code> and <code>pbmc3k</code> example datasets. The
-workflow covers QC-aware preprocessing, single-sample clustering,
-pre/post integration comparison, sample composition summaries,
-multi-metric integration scoring, rare-group diagnostics, marker
-discovery, dot-plot visualization, and functional enrichment from
-cluster markers.</p>
+<p>This article covers the core unsupervised-analysis stage in Shennong
+using the built-in PBMC examples. The workflow shows how to move from a
+preprocessed Seurat object to:</p>
+<ul>
+<li>single-sample clustering</li>
+<li>multi-sample Harmony integration</li>
+<li>optional rare-aware feature selection before PCA/integration</li>
+<li>pre/post integration embedding comparison</li>
+<li>cluster visualization on the integrated object</li>
+</ul>
+<p>Downstream metrics, composition, and interpretation now have their
+own dedicated articles, but a few summary outputs remain here so the
+integration workflow is visible end to end.</p>
 <p>To keep <code>R CMD check</code> deterministic, the analysis is only
 evaluated when <code>SHENNONG_RUN_VIGNETTES=true</code> or during
 pkgdown builds.</p>
@@ -225,7 +236,7 @@ embedding.</p>
 <tr class="odd">
 <td align="left">pbmc1k</td>
 <td align="left">0</td>
-<td align="right">27.52</td>
+<td align="right">27.61</td>
 </tr>
 <tr class="even">
 <td align="left">pbmc1k</td>
@@ -240,12 +251,12 @@ embedding.</p>
 <tr class="even">
 <td align="left">pbmc1k</td>
 <td align="left">2</td>
-<td align="right">11.48</td>
+<td align="right">11.31</td>
 </tr>
 <tr class="odd">
 <td align="left">pbmc1k</td>
 <td align="left">3</td>
-<td align="right">6.05</td>
+<td align="right">5.96</td>
 </tr>
 <tr class="even">
 <td align="left">pbmc1k</td>
@@ -260,17 +271,17 @@ embedding.</p>
 <tr class="even">
 <td align="left">pbmc1k</td>
 <td align="left">6</td>
-<td align="right">3.94</td>
+<td align="right">3.86</td>
 </tr>
 <tr class="odd">
 <td align="left">pbmc1k</td>
 <td align="left">7</td>
-<td align="right">6.05</td>
+<td align="right">6.13</td>
 </tr>
 <tr class="even">
 <td align="left">pbmc1k</td>
 <td align="left">8</td>
-<td align="right">5.00</td>
+<td align="right">5.17</td>
 </tr>
 <tr class="odd">
 <td align="left">pbmc1k</td>
@@ -280,7 +291,7 @@ embedding.</p>
 <tr class="even">
 <td align="left">pbmc3k</td>
 <td align="left">0</td>
-<td align="right">36.80</td>
+<td align="right">36.62</td>
 </tr>
 </tbody>
 </table>
@@ -319,10 +330,10 @@ embedding.</p>
 <tr class="odd">
 <td align="left">after_integration</td>
 <td align="right">1.002</td>
-<td align="right">1.214</td>
-<td align="right">1.497</td>
-<td align="right">1.519</td>
-<td align="right">1.839</td>
+<td align="right">1.212</td>
+<td align="right">1.491</td>
+<td align="right">1.517</td>
+<td align="right">1.837</td>
 <td align="right">2</td>
 </tr>
 <tr class="even">
@@ -369,8 +380,8 @@ baseline.</p>
 <tr class="odd">
 <td align="left">batch_silhouette</td>
 <td align="left">batch_removal</td>
-<td align="right">0.091</td>
-<td align="right">0.909</td>
+<td align="right">0.096</td>
+<td align="right">0.904</td>
 <td align="right">3812</td>
 <td align="left">harmony</td>
 <td align="left">Global batch silhouette</td>
@@ -378,8 +389,8 @@ baseline.</p>
 <tr class="even">
 <td align="left">batch_lisi</td>
 <td align="left">batch_removal</td>
-<td align="right">1.519</td>
-<td align="right">0.519</td>
+<td align="right">1.517</td>
+<td align="right">0.517</td>
 <td align="right">3812</td>
 <td align="left">harmony</td>
 <td align="left"></td>
@@ -405,7 +416,8 @@ baseline.</p>
 </tbody>
 </table>
 <p><code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code> combines local sample mixing,
-PCR batch reduction, graph connectivity, and cluster-level diagnostics
+PCR batch reduction, graph connectivity, isolated-label preservation,
+cluster batch entropy, cluster purity, and difficult-group diagnostics
 into one summary object while reusing the stored neighbor graph when
 possible.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -440,47 +452,47 @@ possible.</p>
 <tbody>
 <tr class="odd">
 <td align="left">9</td>
-<td align="right">49</td>
+<td align="right">48</td>
 <td align="right">0.013</td>
-<td align="right">0.947</td>
-<td align="right">0.841</td>
+<td align="right">0.956</td>
+<td align="right">0.836</td>
 <td align="right">1</td>
-<td align="right">-0.009</td>
-<td align="right">0.814</td>
-<td align="right">0.186</td>
+<td align="right">-0.041</td>
+<td align="right">0.812</td>
+<td align="right">0.188</td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
-<td align="left">3</td>
-<td align="right">326</td>
-<td align="right">0.086</td>
-<td align="right">0.979</td>
-<td align="right">0.886</td>
+<td align="left">8</td>
+<td align="right">146</td>
+<td align="right">0.038</td>
+<td align="right">0.969</td>
+<td align="right">0.903</td>
 <td align="right">1</td>
-<td align="right">0.061</td>
-<td align="right">0.836</td>
-<td align="right">0.164</td>
+<td align="right">0.102</td>
+<td align="right">0.840</td>
+<td align="right">0.160</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
-<td align="left">8</td>
-<td align="right">149</td>
-<td align="right">0.039</td>
+<td align="left">3</td>
+<td align="right">329</td>
+<td align="right">0.086</td>
 <td align="right">1.000</td>
-<td align="right">0.900</td>
+<td align="right">0.886</td>
 <td align="right">1</td>
-<td align="right">0.112</td>
-<td align="right">0.852</td>
-<td align="right">0.148</td>
+<td align="right">0.058</td>
+<td align="right">0.843</td>
+<td align="right">0.157</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">0</td>
-<td align="right">1297</td>
-<td align="right">0.340</td>
+<td align="right">1293</td>
+<td align="right">0.339</td>
 <td align="right">1.000</td>
 <td align="right">0.977</td>
 <td align="right">1</td>
@@ -492,36 +504,36 @@ possible.</p>
 </tr>
 <tr class="odd">
 <td align="left">4</td>
-<td align="right">245</td>
+<td align="right">244</td>
 <td align="right">0.064</td>
 <td align="right">1.000</td>
 <td align="right">0.952</td>
 <td align="right">1</td>
-<td align="right">0.217</td>
-<td align="right">0.869</td>
-<td align="right">0.131</td>
+<td align="right">0.223</td>
+<td align="right">0.870</td>
+<td align="right">0.130</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">2</td>
-<td align="right">393</td>
-<td align="right">0.103</td>
+<td align="right">395</td>
+<td align="right">0.104</td>
 <td align="right">1.000</td>
-<td align="right">0.966</td>
+<td align="right">0.967</td>
 <td align="right">1</td>
-<td align="right">0.273</td>
-<td align="right">0.879</td>
-<td align="right">0.121</td>
+<td align="right">0.281</td>
+<td align="right">0.880</td>
+<td align="right">0.120</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td align="left">6</td>
-<td align="right">176</td>
+<td align="right">177</td>
 <td align="right">0.046</td>
 <td align="right">1.000</td>
-<td align="right">0.913</td>
+<td align="right">0.907</td>
 <td align="right">1</td>
 <td align="right">0.305</td>
 <td align="right">0.884</td>
@@ -531,12 +543,12 @@ possible.</p>
 </tr>
 <tr class="even">
 <td align="left">7</td>
-<td align="right">163</td>
+<td align="right">165</td>
 <td align="right">0.043</td>
 <td align="right">1.000</td>
 <td align="right">0.939</td>
 <td align="right">1</td>
-<td align="right">0.317</td>
+<td align="right">0.313</td>
 <td align="right">0.886</td>
 <td align="right">0.114</td>
 <td align="left">FALSE</td>
@@ -544,27 +556,27 @@ possible.</p>
 </tr>
 <tr class="odd">
 <td align="left">5</td>
-<td align="right">185</td>
-<td align="right">0.049</td>
+<td align="right">184</td>
+<td align="right">0.048</td>
 <td align="right">1.000</td>
 <td align="right">0.962</td>
 <td align="right">1</td>
-<td align="right">0.380</td>
-<td align="right">0.897</td>
-<td align="right">0.103</td>
+<td align="right">0.376</td>
+<td align="right">0.896</td>
+<td align="right">0.104</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td align="left">1</td>
-<td align="right">799</td>
+<td align="right">801</td>
 <td align="right">0.210</td>
 <td align="right">1.000</td>
 <td align="right">0.987</td>
 <td align="right">1</td>
-<td align="right">0.383</td>
-<td align="right">0.897</td>
-<td align="right">0.103</td>
+<td align="right">0.378</td>
+<td align="right">0.896</td>
+<td align="right">0.104</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
@@ -575,9 +587,9 @@ possible.</p>
 <td align="right">1.000</td>
 <td align="right">0.995</td>
 <td align="right">1</td>
-<td align="right">0.740</td>
-<td align="right">0.957</td>
-<td align="right">0.043</td>
+<td align="right">0.738</td>
+<td align="right">0.956</td>
+<td align="right">0.044</td>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
 </tr>
@@ -586,11 +598,108 @@ possible.</p>
 <p>The <code>challenging_groups</code> table is especially useful for
 surfacing rare groups or poorly separated populations that may not stand
 out as isolated UMAP islands.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">integration_assessment</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">isolated_label_score</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p>The isolated-label summary makes it easier to spot small populations
+that stay biologically distinct even when they do not appear as a
+visually isolated UMAP island after integration.</p>
+</div>
+<div class="section level2">
+<h2 id="rare-aware-feature-selection">Rare-aware feature selection<a class="anchor" aria-label="anchor" href="#rare-aware-feature-selection"></a>
+</h2>
+<p>When small populations are a concern, <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code>
+can append rare-aware features to the main HVG set before PCA and
+Harmony. In this article the integrated object was run with
+<code>rare_feature_method = "gini"</code>, and the resulting rare-cell
+scores can be inspected directly:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rare_detection</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">rare_detection</span><span class="op">$</span><span class="va">rare_score</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">10</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="left">cell_id</th>
+<th align="left">method</th>
+<th align="right">rare_score</th>
+<th align="left">rare_cell</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">640</td>
+<td align="left">pbmc1k_GCCGTGAGTCAGTCCG-1</td>
+<td align="left">gini</td>
+<td align="right">79.314</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">838</td>
+<td align="left">pbmc1k_TACCGGGTCCTCGATC-1</td>
+<td align="left">gini</td>
+<td align="right">78.042</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">1040</td>
+<td align="left">pbmc1k_TGTAACGGTTGCGTAT-1</td>
+<td align="left">gini</td>
+<td align="right">71.848</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">148</td>
+<td align="left">pbmc1k_AGCCAGCGTAGTTAGA-1</td>
+<td align="left">gini</td>
+<td align="right">69.761</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">674</td>
+<td align="left">pbmc1k_GGATCTAGTGCCTGCA-1</td>
+<td align="left">gini</td>
+<td align="right">69.457</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">1093</td>
+<td align="left">pbmc1k_TTCCTAAGTGACGTCC-1</td>
+<td align="left">gini</td>
+<td align="right">63.962</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">801</td>
+<td align="left">pbmc1k_GTGTTCCGTAGTTCCA-1</td>
+<td align="left">gini</td>
+<td align="right">61.457</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">32</td>
+<td align="left">pbmc1k_AACGAAAAGGTTGGTG-1</td>
+<td align="left">gini</td>
+<td align="right">52.102</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">1089</td>
+<td align="left">pbmc1k_TTCCACGAGGAAGTGA-1</td>
+<td align="left">gini</td>
+<td align="right">47.752</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">192</td>
+<td align="left">pbmc1k_AGTCACATCTCCCATG-1</td>
+<td align="left">gini</td>
+<td align="right">47.373</td>
+<td align="left">TRUE</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
 <h2 id="marker-genes-from-the-integrated-object">Marker genes from the integrated object<a class="anchor" aria-label="anchor" href="#marker-genes-from-the-integrated-object"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">marker_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -603,181 +712,181 @@ out as isolated UMAP islands.</p>
 <tr class="odd">
 <td align="left">0</td>
 <td align="left">TSHZ2</td>
-<td align="right">5.207</td>
+<td align="right">5.214</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">0</td>
 <td align="left">ENSG00000249806</td>
-<td align="right">4.769</td>
+<td align="right">4.826</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">0</td>
 <td align="left">CMTM8</td>
-<td align="right">3.697</td>
+<td align="right">3.704</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">1</td>
 <td align="left">S100A12</td>
-<td align="right">8.658</td>
+<td align="right">8.653</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">1</td>
 <td align="left">FOLR3</td>
-<td align="right">8.432</td>
+<td align="right">8.427</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">1</td>
 <td align="left">CLEC4E</td>
-<td align="right">7.858</td>
+<td align="right">7.854</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">2</td>
 <td align="left">TCL1A</td>
-<td align="right">8.094</td>
+<td align="right">8.067</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">2</td>
 <td align="left">IGHD</td>
-<td align="right">6.872</td>
+<td align="right">6.823</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">2</td>
 <td align="left">PCDH9</td>
-<td align="right">6.472</td>
+<td align="right">6.358</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">3</td>
 <td align="left">GZMH</td>
-<td align="right">4.389</td>
+<td align="right">4.361</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">3</td>
 <td align="left">TRGC2</td>
-<td align="right">4.112</td>
+<td align="right">4.120</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">3</td>
 <td align="left">CD8A</td>
-<td align="right">3.710</td>
+<td align="right">3.721</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">4</td>
 <td align="left">ENSG00000289191</td>
-<td align="right">7.489</td>
+<td align="right">7.495</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">4</td>
 <td align="left">SH2D1B</td>
-<td align="right">7.260</td>
+<td align="right">7.266</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">4</td>
 <td align="left">GNLY</td>
-<td align="right">7.171</td>
+<td align="right">7.205</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">5</td>
 <td align="left">ENSG00000301038</td>
-<td align="right">8.422</td>
+<td align="right">8.430</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">5</td>
 <td align="left">CKB</td>
-<td align="right">7.007</td>
+<td align="right">7.015</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">5</td>
 <td align="left">CDKN1C</td>
-<td align="right">6.901</td>
+<td align="right">6.909</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">6</td>
 <td align="left">LINC02446</td>
-<td align="right">5.625</td>
+<td align="right">5.616</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">6</td>
 <td align="left">ENSG00000310107</td>
-<td align="right">4.914</td>
+<td align="right">4.854</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">6</td>
 <td align="left">NRCAM</td>
-<td align="right">4.655</td>
+<td align="right">4.647</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">7</td>
-<td align="left">ENSG00000228033</td>
-<td align="right">7.664</td>
+<td align="left">SLC4A10</td>
+<td align="right">7.660</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">7</td>
-<td align="left">SLC4A10</td>
-<td align="right">7.625</td>
+<td align="left">ENSG00000228033</td>
+<td align="right">7.646</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">7</td>
 <td align="left">ADAM12</td>
-<td align="right">6.432</td>
+<td align="right">6.413</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">8</td>
 <td align="left">SSPN</td>
-<td align="right">8.854</td>
+<td align="right">8.885</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">8</td>
 <td align="left">IGHA1</td>
-<td align="right">8.238</td>
+<td align="right">8.245</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">8</td>
 <td align="left">IGHG3</td>
-<td align="right">8.030</td>
+<td align="right">7.907</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">9</td>
 <td align="left">LINC01478</td>
-<td align="right">10.575</td>
+<td align="right">10.605</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left">9</td>
 <td align="left">FCER1A</td>
-<td align="right">8.814</td>
+<td align="right">8.531</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left">9</td>
 <td align="left">DNASE1L3</td>
-<td align="right">8.396</td>
+<td align="right">8.426</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
@@ -800,14 +909,14 @@ out as isolated UMAP islands.</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"top_markers"</span>,</span>
 <span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  n <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="clustering_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="768"></p>
+<p><img src="clustering_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="functional-enrichment-of-marker-genes">Functional enrichment of marker genes<a class="anchor" aria-label="anchor" href="#functional-enrichment-of-marker-genes"></a>
@@ -815,7 +924,7 @@ out as isolated UMAP islands.</p>
 <p>The table below shows the first non-empty GO Biological Process GSEA
 result found among the cluster marker sets. In this run, enrichment was
 computed from cluster 0.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">enrichment_tbl</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -834,79 +943,79 @@ computed from cluster 0.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
-<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
-<td align="left">T cell activation</td>
-<td align="right">2.1728</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
 <td align="left"><a href="GO:0002250" class="uri">GO:0002250</a></td>
 <td align="left"><a href="GO:0002250" class="uri">GO:0002250</a></td>
 <td align="left">adaptive immune response</td>
-<td align="right">2.2262</td>
+<td align="right">2.2222</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
+<td align="left"><a href="GO:0042110" class="uri">GO:0042110</a></td>
+<td align="left">T cell activation</td>
+<td align="right">2.1480</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left"><a href="GO:0046649" class="uri">GO:0046649</a></td>
 <td align="left"><a href="GO:0046649" class="uri">GO:0046649</a></td>
 <td align="left">lymphocyte activation</td>
-<td align="right">2.0296</td>
+<td align="right">1.9937</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left"><a href="GO:0001775" class="uri">GO:0001775</a></td>
 <td align="left"><a href="GO:0001775" class="uri">GO:0001775</a></td>
 <td align="left">cell activation</td>
-<td align="right">1.9828</td>
+<td align="right">1.9338</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
 <td align="left"><a href="GO:0045321" class="uri">GO:0045321</a></td>
 <td align="left"><a href="GO:0045321" class="uri">GO:0045321</a></td>
 <td align="left">leukocyte activation</td>
-<td align="right">1.9731</td>
-<td align="right">0</td>
-</tr>
-<tr class="even">
-<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
-<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
-<td align="left">mononuclear cell differentiation</td>
-<td align="right">2.0381</td>
-<td align="right">0</td>
-</tr>
-<tr class="odd">
-<td align="left"><a href="GO:0002521" class="uri">GO:0002521</a></td>
-<td align="left"><a href="GO:0002521" class="uri">GO:0002521</a></td>
-<td align="left">leukocyte differentiation</td>
-<td align="right">1.9958</td>
+<td align="right">1.9244</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
 <td align="left"><a href="GO:0006955" class="uri">GO:0006955</a></td>
 <td align="left"><a href="GO:0006955" class="uri">GO:0006955</a></td>
 <td align="left">immune response</td>
-<td align="right">1.9048</td>
+<td align="right">1.8855</td>
 <td align="right">0</td>
 </tr>
 <tr class="odd">
-<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
-<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
-<td align="left">positive regulation of immune system process</td>
-<td align="right">1.9606</td>
+<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
+<td align="left"><a href="GO:1903131" class="uri">GO:1903131</a></td>
+<td align="left">mononuclear cell differentiation</td>
+<td align="right">2.0001</td>
 <td align="right">0</td>
 </tr>
 <tr class="even">
-<td align="left"><a href="GO:0002429" class="uri">GO:0002429</a></td>
-<td align="left"><a href="GO:0002429" class="uri">GO:0002429</a></td>
-<td align="left">immune response-activating cell surface receptor
+<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
+<td align="left"><a href="GO:0002684" class="uri">GO:0002684</a></td>
+<td align="left">positive regulation of immune system process</td>
+<td align="right">1.9479</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left"><a href="GO:0002682" class="uri">GO:0002682</a></td>
+<td align="left"><a href="GO:0002682" class="uri">GO:0002682</a></td>
+<td align="left">regulation of immune system process</td>
+<td align="right">1.8416</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left"><a href="GO:0002768" class="uri">GO:0002768</a></td>
+<td align="left"><a href="GO:0002768" class="uri">GO:0002768</a></td>
+<td align="left">immune response-regulating cell surface receptor
 signaling pathway</td>
-<td align="right">2.1443</td>
+<td align="right">2.1336</td>
 <td align="right">0</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">sessioninfo</span><span class="fu">::</span><span class="fu"><a href="https://sessioninfo.r-lib.org/reference/session_info.html" class="external-link">session_info</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB; font-weight: bold;">─ Session info ───────────────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt;  <span style="color: #555555; font-style: italic;">setting </span> <span style="color: #555555; font-style: italic;">value</span></span></span>
@@ -1070,7 +1179,7 @@ signaling pathway</td>
 <span><span class="co">#&gt;  sessioninfo         1.2.3    <span style="color: #555555;">2025-02-05</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@1.2.3)</span></span></span>
 <span><span class="co">#&gt;  Seurat            * 5.4.0    <span style="color: #555555;">2025-12-14</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@5.4.0)</span></span></span>
 <span><span class="co">#&gt;  SeuratObject      * 5.3.0    <span style="color: #555555;">2025-12-12</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  Shennong          * 0.1.1    <span style="color: #555555;">2026-03-25</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
+<span><span class="co">#&gt;  Shennong          * 0.1.2    <span style="color: #555555;">2026-03-25</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
 <span><span class="co">#&gt;  shiny               1.13.0   <span style="color: #555555;">2026-02-20</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  sp                * 2.2-1    <span style="color: #555555;">2026-02-13</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spam                2.11-3   <span style="color: #555555;">2026-01-08</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>

@@ -2,10 +2,15 @@ pandoc: 3.1.11
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  annotation-pathways: annotation-pathways.html
+  bulk-deconvolution: bulk-deconvolution.html
   clustering: clustering.html
+  composition-analysis: composition-analysis.html
   interpretation-workflows: interpretation-workflows.html
   layered-workflows: layered-workflows.html
-last_built: 2026-03-25T17:02Z
+  metrics-diagnostics: metrics-diagnostics.html
+  preprocessing-qc: preprocessing-qc.html
+last_built: 2026-03-25T21:25Z
 urls:
   reference: https://songqi.org/shennong/reference
   article: https://songqi.org/shennong/articles

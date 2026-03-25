@@ -9,7 +9,7 @@ sn_update_signature(
   species = "human",
   path,
   genes = NULL,
-  registry_path = NULL,
+  catalog_path = NULL,
   rename_to = NULL,
   source = NULL
 )
@@ -29,9 +29,9 @@ sn_update_signature(
 
   Optional replacement gene vector. If `NULL`, keep the existing genes.
 
-- registry_path:
+- catalog_path:
 
-  Optional path to the editable registry JSON file.
+  Optional path to a signature catalog `.rda` snapshot.
 
 - rename_to:
 
