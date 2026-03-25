@@ -75,7 +75,10 @@ A `Seurat` object or a stored-result list.
 ``` r
 if (requireNamespace("Seurat", quietly = TRUE)) {
   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
-  rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+  rownames(counts) <- c(
+    "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+    "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+  )
   colnames(counts) <- paste0("cell", 1:12)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   enrich_tbl <- tibble::tibble(
@@ -87,8 +90,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
   names(obj@misc$enrichment_results)
 }
-#> INFO [2026-03-24 21:23:57] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 21:23:57] Running QC metrics for human ...
-#> INFO [2026-03-24 21:23:57] Seurat object initialization complete.
+#> INFO [2026-03-25 17:02:37] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-25 17:02:37] Running QC metrics for human ...
+#> INFO [2026-03-25 17:02:37] Seurat object initialization complete.
 #> [1] "demo_gsea"
 ```

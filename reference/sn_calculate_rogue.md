@@ -49,8 +49,8 @@ A data.frame of ROGUE score per cluster/sample or per cluster.
 
 ``` r
 if (FALSE) { # \dontrun{
-pbmc <- sn_load_data("pbmc1k")
-pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
+data("pbmc_small", package = "Shennong")
+pbmc <- sn_run_cluster(pbmc_small, normalization_method = "seurat", verbose = FALSE)
 rogue_tbl <- sn_calculate_rogue(pbmc, cluster = "seurat_clusters")
 head(rogue_tbl)
 } # }

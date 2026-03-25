@@ -45,8 +45,10 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
   )
   colnames(counts) <- paste0("cell", 1:24)
-  counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-  counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+  counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+    counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+  counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+    counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
   Seurat::Idents(obj) <- obj$cell_type
@@ -55,12 +57,16 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     layer = "data", min_pct = 0, logfc_threshold = 0,
     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  evidence <- sn_prepare_annotation_evidence(obj, de_name = "celltype_markers", cluster_col = "cell_type")
+  evidence <- sn_prepare_annotation_evidence(
+    obj,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type"
+  )
   names(evidence)
 }
-#> INFO [2026-03-24 21:23:51] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 21:23:51] Running QC metrics for human ...
-#> INFO [2026-03-24 21:23:51] Seurat object initialization complete.
+#> INFO [2026-03-25 17:02:29] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-25 17:02:29] Running QC metrics for human ...
+#> INFO [2026-03-25 17:02:29] Seurat object initialization complete.
 #> [1] "task"             "cluster_col"      "source_de_name"   "analysis_method" 
 #> [5] "species"          "cluster_summary"  "top_marker_table" "caveats"         
 ```

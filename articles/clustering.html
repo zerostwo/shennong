@@ -78,13 +78,12 @@ Duan</h4>
 <code>pbmc1k</code> and <code>pbmc3k</code> example datasets. The
 workflow covers QC-aware preprocessing, single-sample clustering,
 pre/post integration comparison, sample composition summaries,
-integration scoring with LISI, marker discovery, dot-plot visualization,
-and functional enrichment from cluster markers.</p>
+multi-metric integration scoring, rare-group diagnostics, marker
+discovery, dot-plot visualization, and functional enrichment from
+cluster markers.</p>
 <p>To keep <code>R CMD check</code> deterministic, the analysis is only
 evaluated when <code>SHENNONG_RUN_VIGNETTES=true</code> or during
 pkgdown builds.</p>
-<p>The integration examples in this article assume the Harmony developer
-branch from <code>immunogenomics/harmony@harmony2</code>.</p>
 <p>Shennong also ships bundled human and mouse GENCODE gene annotations,
 so <code><a href="../reference/sn_filter_genes.html">sn_filter_genes()</a></code> can combine expression-threshold
 filtering with annotation-based retention such as
@@ -343,9 +342,255 @@ distribution should shift upward relative to the unintegrated
 baseline.</p>
 </div>
 <div class="section level2">
-<h2 id="marker-genes-from-the-integrated-object">Marker genes from the integrated object<a class="anchor" aria-label="anchor" href="#marker-genes-from-the-integrated-object"></a>
+<h2 id="multi-metric-integration-assessment">Multi-metric integration assessment<a class="anchor" aria-label="anchor" href="#multi-metric-integration-assessment"></a>
 </h2>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">assessment_summary</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="20%">
+<col width="13%">
+<col width="5%">
+<col width="12%">
+<col width="7%">
+<col width="14%">
+<col width="23%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">metric</th>
+<th align="left">category</th>
+<th align="right">score</th>
+<th align="right">scaled_score</th>
+<th align="right">n_cells</th>
+<th align="left">source</th>
+<th align="left">note</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">batch_silhouette</td>
+<td align="left">batch_removal</td>
+<td align="right">0.091</td>
+<td align="right">0.909</td>
+<td align="right">3812</td>
+<td align="left">harmony</td>
+<td align="left">Global batch silhouette</td>
+</tr>
+<tr class="even">
+<td align="left">batch_lisi</td>
+<td align="left">batch_removal</td>
+<td align="right">1.519</td>
+<td align="right">0.519</td>
+<td align="right">3812</td>
+<td align="left">harmony</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">cluster_connectivity</td>
+<td align="left">structure</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">3812</td>
+<td align="left">RNA_nn</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">pcr_batch</td>
+<td align="left">batch_removal</td>
+<td align="right">0.007</td>
+<td align="right">0.929</td>
+<td align="right">3812</td>
+<td align="left">harmony vs pca</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+<p><code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code> combines local sample mixing,
+PCR batch reduction, graph connectivity, and cluster-level diagnostics
+into one summary object while reusing the stored neighbor graph when
+possible.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">challenging_groups</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="8%">
+<col width="4%">
+<col width="8%">
+<col width="12%">
+<col width="11%">
+<col width="10%">
+<col width="8%">
+<col width="9%">
+<col width="8%">
+<col width="6%">
+<col width="10%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">seurat_clusters</th>
+<th align="right">n_cells</th>
+<th align="right">fraction_cells</th>
+<th align="right">median_neighbor_purity</th>
+<th align="right">mean_neighbor_purity</th>
+<th align="right">graph_connectivity</th>
+<th align="right">mean_silhouette</th>
+<th align="right">separation_score</th>
+<th align="right">challenge_score</th>
+<th align="left">rare_group</th>
+<th align="left">challenging_group</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">9</td>
+<td align="right">49</td>
+<td align="right">0.013</td>
+<td align="right">0.947</td>
+<td align="right">0.841</td>
+<td align="right">1</td>
+<td align="right">-0.009</td>
+<td align="right">0.814</td>
+<td align="right">0.186</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">3</td>
+<td align="right">326</td>
+<td align="right">0.086</td>
+<td align="right">0.979</td>
+<td align="right">0.886</td>
+<td align="right">1</td>
+<td align="right">0.061</td>
+<td align="right">0.836</td>
+<td align="right">0.164</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">8</td>
+<td align="right">149</td>
+<td align="right">0.039</td>
+<td align="right">1.000</td>
+<td align="right">0.900</td>
+<td align="right">1</td>
+<td align="right">0.112</td>
+<td align="right">0.852</td>
+<td align="right">0.148</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="right">1297</td>
+<td align="right">0.340</td>
+<td align="right">1.000</td>
+<td align="right">0.977</td>
+<td align="right">1</td>
+<td align="right">0.196</td>
+<td align="right">0.866</td>
+<td align="right">0.134</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">4</td>
+<td align="right">245</td>
+<td align="right">0.064</td>
+<td align="right">1.000</td>
+<td align="right">0.952</td>
+<td align="right">1</td>
+<td align="right">0.217</td>
+<td align="right">0.869</td>
+<td align="right">0.131</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="right">393</td>
+<td align="right">0.103</td>
+<td align="right">1.000</td>
+<td align="right">0.966</td>
+<td align="right">1</td>
+<td align="right">0.273</td>
+<td align="right">0.879</td>
+<td align="right">0.121</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">6</td>
+<td align="right">176</td>
+<td align="right">0.046</td>
+<td align="right">1.000</td>
+<td align="right">0.913</td>
+<td align="right">1</td>
+<td align="right">0.305</td>
+<td align="right">0.884</td>
+<td align="right">0.116</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
+<td align="right">163</td>
+<td align="right">0.043</td>
+<td align="right">1.000</td>
+<td align="right">0.939</td>
+<td align="right">1</td>
+<td align="right">0.317</td>
+<td align="right">0.886</td>
+<td align="right">0.114</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="right">185</td>
+<td align="right">0.049</td>
+<td align="right">1.000</td>
+<td align="right">0.962</td>
+<td align="right">1</td>
+<td align="right">0.380</td>
+<td align="right">0.897</td>
+<td align="right">0.103</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td align="left">1</td>
+<td align="right">799</td>
+<td align="right">0.210</td>
+<td align="right">1.000</td>
+<td align="right">0.987</td>
+<td align="right">1</td>
+<td align="right">0.383</td>
+<td align="right">0.897</td>
+<td align="right">0.103</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td align="left">10</td>
+<td align="right">30</td>
+<td align="right">0.008</td>
+<td align="right">1.000</td>
+<td align="right">0.995</td>
+<td align="right">1</td>
+<td align="right">0.740</td>
+<td align="right">0.957</td>
+<td align="right">0.043</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>challenging_groups</code> table is especially useful for
+surfacing rare groups or poorly separated populations that may not stand
+out as isolated UMAP islands.</p>
+</div>
+<div class="section level2">
+<h2 id="marker-genes-from-the-integrated-object">Marker genes from the integrated object<a class="anchor" aria-label="anchor" href="#marker-genes-from-the-integrated-object"></a>
+</h2>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">marker_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -555,14 +800,14 @@ baseline.</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"top_markers"</span>,</span>
 <span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  n <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="clustering_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="768"></p>
+<p><img src="clustering_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="functional-enrichment-of-marker-genes">Functional enrichment of marker genes<a class="anchor" aria-label="anchor" href="#functional-enrichment-of-marker-genes"></a>
@@ -570,7 +815,7 @@ baseline.</p>
 <p>The table below shows the first non-empty GO Biological Process GSEA
 result found among the cluster marker sets. In this run, enrichment was
 computed from cluster 0.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">enrichment_tbl</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -661,7 +906,7 @@ signaling pathway</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">sessioninfo</span><span class="fu">::</span><span class="fu"><a href="https://sessioninfo.r-lib.org/reference/session_info.html" class="external-link">session_info</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB; font-weight: bold;">─ Session info ───────────────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt;  <span style="color: #555555; font-style: italic;">setting </span> <span style="color: #555555; font-style: italic;">value</span></span></span>
@@ -673,7 +918,7 @@ signaling pathway</td>
 <span><span class="co">#&gt;  collate  C.UTF-8</span></span>
 <span><span class="co">#&gt;  ctype    C.UTF-8</span></span>
 <span><span class="co">#&gt;  tz       UTC</span></span>
-<span><span class="co">#&gt;  date     2026-03-24</span></span>
+<span><span class="co">#&gt;  date     2026-03-25</span></span>
 <span><span class="co">#&gt;  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)</span></span>
 <span><span class="co">#&gt;  quarto   NA</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -825,7 +1070,7 @@ signaling pathway</td>
 <span><span class="co">#&gt;  sessioninfo         1.2.3    <span style="color: #555555;">2025-02-05</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@1.2.3)</span></span></span>
 <span><span class="co">#&gt;  Seurat            * 5.4.0    <span style="color: #555555;">2025-12-14</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">any (@5.4.0)</span></span></span>
 <span><span class="co">#&gt;  SeuratObject      * 5.3.0    <span style="color: #555555;">2025-12-12</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
-<span><span class="co">#&gt;  Shennong          * 0.1.1    <span style="color: #555555;">2026-03-24</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
+<span><span class="co">#&gt;  Shennong          * 0.1.1    <span style="color: #555555;">2026-03-25</span> <span style="color: #555555;">[1]</span> <span style="color: #BB00BB; font-weight: bold;">local</span></span></span>
 <span><span class="co">#&gt;  shiny               1.13.0   <span style="color: #555555;">2026-02-20</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  sp                * 2.2-1    <span style="color: #555555;">2026-02-13</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>
 <span><span class="co">#&gt;  spam                2.11-3   <span style="color: #555555;">2026-01-08</span> <span style="color: #555555;">[1]</span> <span style="color: #555555;">CRAN (R 4.5.3)</span></span></span>

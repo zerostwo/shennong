@@ -39,7 +39,7 @@ human GRCh38 v48 and mouse GRCm39 vM37 primary-assembly GTF files."><script asyn
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Bundled Shennong Gene Annotations</h1>
-      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/main/R/data_gene_annotations.R" class="external-link"><code>R/data_gene_annotations.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>shennong_gene_annotations.Rd</code></div>
     </div>
 
@@ -56,17 +56,16 @@ human GRCh38 v48 and mouse GRCm39 vM37 primary-assembly GTF files.</p>
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
     <p>A data frame with one row per gene and the following columns:</p><dl><dt><code>species</code></dt>
-<dd><p>Species label used by Shennong (<code>"human"</code> or
-<code>"mouse"</code>).</p></dd>
+<dd><p>Species label used by Shennong.</p></dd>
 
 <dt><code>release</code></dt>
-<dd><p>GENCODE release identifier used to build the row.</p></dd>
+<dd><p>GENCODE release identifier.</p></dd>
 
 <dt><code>seqname</code></dt>
-<dd><p>Sequence/chromosome name from the GTF.</p></dd>
+<dd><p>Sequence or chromosome name from the GTF.</p></dd>
 
 <dt><code>source</code></dt>
-<dd><p>Second GTF column describing the annotation source.</p></dd>
+<dd><p>Annotation source from the GTF.</p></dd>
 
 <dt><code>start</code></dt>
 <dd><p>1-based gene start coordinate.</p></dd>
@@ -82,40 +81,33 @@ human GRCh38 v48 and mouse GRCm39 vM37 primary-assembly GTF files.</p>
 suffix when present.</p></dd>
 
 <dt><code>gene_id_base</code></dt>
-<dd><p>GENCODE gene identifier with the version suffix
-removed.</p></dd>
+<dd><p>Version-stripped GENCODE gene identifier.</p></dd>
 
 <dt><code>gene_name</code></dt>
-<dd><p>Gene symbol/name from the GTF.</p></dd>
+<dd><p>Gene symbol from the GTF.</p></dd>
 
 <dt><code>gene_type</code></dt>
-<dd><p>GENCODE <code>gene_type</code> / <code>gene_biotype</code>
-annotation.</p></dd>
+<dd><p>GENCODE gene biotype.</p></dd>
 
 <dt><code>gene_status</code></dt>
-<dd><p>Optional GTF <code>gene_status</code> attribute when
-available.</p></dd>
+<dd><p>Optional GTF <code>gene_status</code> attribute.</p></dd>
 
 <dt><code>gene_source</code></dt>
-<dd><p>Optional GTF <code>gene_source</code> attribute when
-available.</p></dd>
+<dd><p>Optional GTF <code>gene_source</code> attribute.</p></dd>
 
 <dt><code>level</code></dt>
 <dd><p>Optional GENCODE annotation level.</p></dd>
 
 <dt><code>gene_class</code></dt>
-<dd><p>Shennong-level coarse classification used by
-filtering helpers. Currently <code>"coding"</code> marks protein-coding, IG,
-and TCR genes; all other annotated types are treated as
-<code>"noncoding"</code>.</p></dd>
+<dd><p>Shennong coarse classification used by gene
+filtering helpers.</p></dd>
 
 
 </dl></div>
     <div class="section level2">
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>
-    <p>Built during development from:</p><ul><li><p><code>/mnt/reference_genomes/gencode/human/48/GRCh38.v48.primary_assembly.annotation.gtf</code></p></li>
-<li><p><code>/mnt/reference_genomes/gencode/mouse/M37/GRCm39.vM37.primary_assembly.annotation.gtf</code></p></li>
-</ul><p>via <code>data-raw/build_shennong_gene_annotations.R</code>.</p>
+    <p>Built from local GENCODE sources via
+<code>data-raw/build_shennong_gene_annotations.R</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

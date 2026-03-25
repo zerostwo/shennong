@@ -87,7 +87,10 @@ A prompt bundle, response, or updated `Seurat` object.
 ``` r
 if (requireNamespace("Seurat", quietly = TRUE)) {
   counts <- matrix(rpois(10 * 24, lambda = 1), nrow = 10, ncol = 24)
-  rownames(counts) <- c("CD3D", "CD3E", "TRAC", "LTB", "MS4A1", "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1")
+  rownames(counts) <- c(
+    "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+    "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+  )
   colnames(counts) <- paste0("cell", 1:24)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
@@ -97,12 +100,17 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     layer = "data", min_pct = 0, logfc_threshold = 0,
     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  prompt <- sn_write_presentation_summary(obj, cluster_de_name = "celltype_markers", cluster_col = "cell_type", return_prompt = TRUE)
+  prompt <- sn_write_presentation_summary(
+    obj,
+    cluster_de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    return_prompt = TRUE
+  )
   prompt$task
 }
-#> INFO [2026-03-24 21:23:59] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 21:23:59] Running QC metrics for human ...
-#> INFO [2026-03-24 21:23:59] Seurat object initialization complete.
+#> INFO [2026-03-25 17:02:39] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-25 17:02:39] Running QC metrics for human ...
+#> INFO [2026-03-25 17:02:39] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "presentation_summary"
 ```

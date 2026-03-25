@@ -58,9 +58,7 @@ Released 2026-03-18.
 
 #### Changed
 
-- Retained
-  [`sn_load_pbmc()`](https://songqi.org/shennong/reference/sn_load_pbmc.md)
-  as a deprecated compatibility wrapper around
+- Retained `sn_load_pbmc()` as a deprecated compatibility wrapper around
   [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md).
 - Refreshed generated documentation and package metadata as part of the
   modernization effort.

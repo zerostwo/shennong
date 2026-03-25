@@ -3,15 +3,12 @@
 This article runs a complete PBMC analysis using the built-in `pbmc1k`
 and `pbmc3k` example datasets. The workflow covers QC-aware
 preprocessing, single-sample clustering, pre/post integration
-comparison, sample composition summaries, integration scoring with LISI,
-marker discovery, dot-plot visualization, and functional enrichment from
-cluster markers.
+comparison, sample composition summaries, multi-metric integration
+scoring, rare-group diagnostics, marker discovery, dot-plot
+visualization, and functional enrichment from cluster markers.
 
 To keep `R CMD check` deterministic, the analysis is only evaluated when
 `SHENNONG_RUN_VIGNETTES=true` or during pkgdown builds.
-
-The integration examples in this article assume the Harmony developer
-branch from `immunogenomics/harmony@harmony2`.
 
 Shennong also ships bundled human and mouse GENCODE gene annotations, so
 [`sn_filter_genes()`](https://songqi.org/shennong/reference/sn_filter_genes.md)
@@ -178,6 +175,46 @@ Higher LISI values indicate better local sample mixing. In this
 two-sample example the theoretical maximum is 2, so the post-Harmony
 distribution should shift upward relative to the unintegrated baseline.
 
+## Multi-metric integration assessment
+
+``` r
+knitr::kable(assessment_summary, digits = 3)
+```
+
+| metric               | category      | score | scaled_score | n_cells | source         | note                    |
+|:---------------------|:--------------|------:|-------------:|--------:|:---------------|:------------------------|
+| batch_silhouette     | batch_removal | 0.091 |        0.909 |    3812 | harmony        | Global batch silhouette |
+| batch_lisi           | batch_removal | 1.519 |        0.519 |    3812 | harmony        |                         |
+| cluster_connectivity | structure     | 1.000 |        1.000 |    3812 | RNA_nn         |                         |
+| pcr_batch            | batch_removal | 0.007 |        0.929 |    3812 | harmony vs pca |                         |
+
+[`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
+combines local sample mixing, PCR batch reduction, graph connectivity,
+and cluster-level diagnostics into one summary object while reusing the
+stored neighbor graph when possible.
+
+``` r
+knitr::kable(challenging_groups, digits = 3)
+```
+
+| seurat_clusters | n_cells | fraction_cells | median_neighbor_purity | mean_neighbor_purity | graph_connectivity | mean_silhouette | separation_score | challenge_score | rare_group | challenging_group |
+|:----------------|--------:|---------------:|-----------------------:|---------------------:|-------------------:|----------------:|-----------------:|----------------:|:-----------|:------------------|
+| 9               |      49 |          0.013 |                  0.947 |                0.841 |                  1 |          -0.009 |            0.814 |           0.186 | TRUE       | FALSE             |
+| 3               |     326 |          0.086 |                  0.979 |                0.886 |                  1 |           0.061 |            0.836 |           0.164 | FALSE      | FALSE             |
+| 8               |     149 |          0.039 |                  1.000 |                0.900 |                  1 |           0.112 |            0.852 |           0.148 | FALSE      | FALSE             |
+| 0               |    1297 |          0.340 |                  1.000 |                0.977 |                  1 |           0.196 |            0.866 |           0.134 | FALSE      | FALSE             |
+| 4               |     245 |          0.064 |                  1.000 |                0.952 |                  1 |           0.217 |            0.869 |           0.131 | FALSE      | FALSE             |
+| 2               |     393 |          0.103 |                  1.000 |                0.966 |                  1 |           0.273 |            0.879 |           0.121 | FALSE      | FALSE             |
+| 6               |     176 |          0.046 |                  1.000 |                0.913 |                  1 |           0.305 |            0.884 |           0.116 | FALSE      | FALSE             |
+| 7               |     163 |          0.043 |                  1.000 |                0.939 |                  1 |           0.317 |            0.886 |           0.114 | FALSE      | FALSE             |
+| 5               |     185 |          0.049 |                  1.000 |                0.962 |                  1 |           0.380 |            0.897 |           0.103 | FALSE      | FALSE             |
+| 1               |     799 |          0.210 |                  1.000 |                0.987 |                  1 |           0.383 |            0.897 |           0.103 | FALSE      | FALSE             |
+| 10              |      30 |          0.008 |                  1.000 |                0.995 |                  1 |           0.740 |            0.957 |           0.043 | TRUE       | FALSE             |
+
+The `challenging_groups` table is especially useful for surfacing rare
+groups or poorly separated populations that may not stand out as
+isolated UMAP islands.
+
 ## Marker genes from the integrated object
 
 ``` r
@@ -229,7 +266,7 @@ sn_plot_dot(
 )
 ```
 
-![](clustering_files/figure-html/unnamed-chunk-11-1.png)
+![](clustering_files/figure-html/unnamed-chunk-13-1.png)
 
 ## Functional enrichment of marker genes
 
@@ -266,7 +303,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-24
+#>  date     2026-03-25
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -418,7 +455,7 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.1    2026-03-24 [1] local
+#>  Shennong          * 0.1.1    2026-03-25 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)

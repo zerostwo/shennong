@@ -59,6 +59,12 @@ The input Seurat object with two new columns in `meta.data`:
 
 ``` r
 if (FALSE) { # \dontrun{
-seurat_obj <- sn_find_doublets(seurat_obj, clusters = NULL, group_by = NULL, dbr_sd = NULL, ncores = 4)
+seurat_obj <- sn_find_doublets(
+  seurat_obj,
+  clusters = NULL,
+  group_by = NULL,
+  dbr_sd = NULL,
+  ncores = 4
+)
 } # }
 ```

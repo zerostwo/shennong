@@ -36,8 +36,10 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     "CD3D", "CD3E", "TRAC", "MS4A1", "CD79A", "HLA-DRA"
   )
   colnames(counts) <- paste0("cell", 1:24)
-  counts[c("CD3D", "CD3E", "TRAC"), 1:12] <- counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
-  counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <- counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
+  counts[c("CD3D", "CD3E", "TRAC"), 1:12] <-
+    counts[c("CD3D", "CD3E", "TRAC"), 1:12] + 20
+  counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] <-
+    counts[c("MS4A1", "CD79A", "HLA-DRA"), 13:24] + 20
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj$cell_type <- rep(c("Tcell", "Bcell"), each = 12)
   Seurat::Idents(obj) <- obj$cell_type
@@ -49,9 +51,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_de_evidence(obj, de_name = "celltype_markers", n_genes = 3)
   names(evidence)
 }
-#> INFO [2026-03-24 21:23:52] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-24 21:23:52] Running QC metrics for human ...
-#> INFO [2026-03-24 21:23:52] Seurat object initialization complete.
+#> INFO [2026-03-25 17:02:30] Initializing Seurat object for project: Shennong
+#> INFO [2026-03-25 17:02:30] Running QC metrics for human ...
+#> INFO [2026-03-25 17:02:30] Seurat object initialization complete.
 #> [1] "task"             "source_de_name"   "summary"          "top_markers"     
 #> [5] "top_marker_table" "caveats"         
 ```

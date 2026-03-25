@@ -1,26 +1,26 @@
 # Run gene set enrichment analysis
 
-Runs GO or KEGG enrichment for a gene vector or grouped gene table using
-`clusterProfiler`. It supports both over-representation analysis (ORA)
-and ranked-list GSEA.
+Runs GO, KEGG, or MSigDB enrichment using clusterProfiler. It supports
+both over-representation analysis (ORA) and ranked-list GSEA. The
+enrichment input can be a gene vector, a ranked numeric vector, a data
+frame, or a Seurat object paired with `source_de_name` to reuse stored
+DE results.
 
 ## Usage
 
 ``` r
 sn_enrich(
   x,
-  object = NULL,
   gene_clusters = NULL,
-  analysis = c("ora", "gsea"),
+  analysis = NULL,
   species = NULL,
   database = "GOBP",
-  gene_col = "gene",
-  score_col = NULL,
-  msigdb_subcollection = NULL,
+  collection = NULL,
+  subcollection = NULL,
   pvalue_cutoff = 0.05,
   store_name = "default",
   source_de_name = NULL,
-  return_object = !is.null(object),
+  return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL
 )
@@ -30,23 +30,19 @@ sn_enrich(
 
 - x:
 
-  A character vector of gene symbols, or a data frame used together with
-  `gene_clusters` / ranked-GSEA columns.
-
-- object:
-
-  Optional `Seurat` object used to store the enrichment result in
-  `object@misc$enrichment_results[[store_name]]`. When supplied,
-  `return_object` defaults to `TRUE`.
+  A character vector of genes, a named numeric vector for GSEA, a data
+  frame, or a `Seurat` object when enriching a stored DE result.
 
 - gene_clusters:
 
-  An optional grouping formula passed to
-  [`clusterProfiler::compareCluster()`](https://rdrr.io/pkg/clusterProfiler/man/compareCluster.html).
+  Optional two-sided formula describing the gene column and the
+  grouping/ranking column. Examples include `gene ~ cluster` for grouped
+  ORA and `gene ~ log2fc` for GSEA.
 
 - analysis:
 
-  One of `"ora"` or `"gsea"`.
+  Optional explicit analysis mode. If omitted, Shennong infers ORA
+  versus GSEA from the input type or the formula RHS column type.
 
 - species:
 
@@ -54,31 +50,30 @@ sn_enrich(
 
 - database:
 
-  One of `"GO"`, `"GOBP"`, `"GOMF"`, `"GOCC"`, `"KEGG"`, or an MSigDB
-  collection handled through msigdbr. Supported MSigDB forms include
-  `"H"`, `"C1"` through `"C8"`, and collection plus subcollection
-  strings such as `"C2:CP:REACTOME"` or `"C5:GO:BP"`.
+  One or more databases. Supported values include GO/KEGG databases such
+  as `"GOBP"` and MSigDB collections such as `"H"`, `"C2"`, or
+  `"C2:CP:REACTOME"`.
 
-- gene_col:
+- collection:
 
-  Column containing gene symbols when `x` is a data frame.
+  Optional MSigDB collection used when `database = "MSIGDB"`.
 
-- score_col:
+- subcollection:
 
-  Column containing ranking scores for `analysis = "gsea"`.
-
-- msigdb_subcollection:
-
-  Optional MSigDB subcollection used when `database` names an MSigDB
-  collection such as `"C2"` or `"C5"`. Ignored for GO and KEGG.
+  Optional MSigDB subcollection used when `database = "MSIGDB"` or when
+  you want to override the parsed subcollection for a collection-level
+  request such as `"C2"`.
 
 - pvalue_cutoff:
 
-  Numeric p-value cutoff used by the enrichment method.
+  Raw p-value cutoff used to filter returned enrichment tables after the
+  underlying enrichment call completes.
 
 - store_name:
 
-  Name used when storing the enrichment result on `object`.
+  Name used when storing the enrichment result on a Seurat object. When
+  multiple databases are requested, the database label is appended
+  automatically unless a vector of names is supplied.
 
 - source_de_name:
 
@@ -86,8 +81,8 @@ sn_enrich(
 
 - return_object:
 
-  Logical; when `TRUE` and `object` is supplied, return the updated
-  Seurat object instead of the raw enrichment result.
+  Logical; when `TRUE` and a Seurat object is available, return the
+  updated Seurat object instead of raw enrichment results.
 
 - prefix:
 
@@ -95,12 +90,14 @@ sn_enrich(
 
 - outdir:
 
-  Optional output directory. If supplied, the enrichment result is also
+  Optional output directory. If supplied, each enrichment result is
   saved as an `.rds` file.
 
 ## Value
 
-A `clusterProfiler` enrichment result object.
+A single `clusterProfiler` result, a named list of results when multiple
+databases are requested, or a `Seurat` object when
+`return_object = TRUE`.
 
 ## Examples
 
@@ -109,7 +106,7 @@ if (FALSE) { # \dontrun{
 sn_enrich(
   x = c("CD3D", "IL7R", "LTB"),
   species = "human",
-  database = "GOBP"
+  database = c("GOBP", "H")
 )
 } # }
 ```

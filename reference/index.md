@@ -6,14 +6,16 @@
   : Pan-Immune CellTypist Metadata
 - [`hom_genes`](https://songqi.org/shennong/reference/hom_genes.md) :
   Human-Mouse Homologous Genes Table
+- [`pbmc_small`](https://songqi.org/shennong/reference/pbmc_small.md) :
+  Small Built-In PBMC Seurat Object
+- [`pbmc_small_raw`](https://songqi.org/shennong/reference/pbmc_small_raw.md)
+  : Small Built-In PBMC Raw Counts Matrix
 - [`shennong_gene_annotations`](https://songqi.org/shennong/reference/shennong_gene_annotations.md)
   : Bundled Shennong Gene Annotations
 - [`shennong_signature_catalog`](https://songqi.org/shennong/reference/shennong_signature_catalog.md)
   : Bundled Shennong Signature Catalog
 - [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
   : Load example datasets from Zenodo
-- [`sn_load_pbmc()`](https://songqi.org/shennong/reference/sn_load_pbmc.md)
-  : Load PBMC example datasets
 - [`sn_read()`](https://songqi.org/shennong/reference/sn_read.md)
   [`.import.rio_bpcells()`](https://songqi.org/shennong/reference/sn_read.md)
   [`.import.rio_10x()`](https://songqi.org/shennong/reference/sn_read.md)
@@ -61,12 +63,24 @@
   : Run differential expression analysis on a Seurat object
 - [`sn_run_celltypist()`](https://songqi.org/shennong/reference/sn_run_celltypist.md)
   : Run CellTypist for automated cell type annotation
+- [`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
+  : Assess integration quality across multiple metrics
 - [`sn_calculate_lisi()`](https://songqi.org/shennong/reference/sn_calculate_lisi.md)
-  : Calculate LISI score
+  : Calculate LISI scores from a Seurat embedding
+- [`sn_calculate_silhouette()`](https://songqi.org/shennong/reference/sn_calculate_silhouette.md)
+  : Calculate silhouette widths from a Seurat embedding
+- [`sn_calculate_graph_connectivity()`](https://songqi.org/shennong/reference/sn_calculate_graph_connectivity.md)
+  : Calculate graph connectivity for a grouping label
+- [`sn_calculate_pcr_batch()`](https://songqi.org/shennong/reference/sn_calculate_pcr_batch.md)
+  : Calculate PCR batch effect scores
+- [`sn_calculate_clustering_agreement()`](https://songqi.org/shennong/reference/sn_calculate_clustering_agreement.md)
+  : Calculate agreement between clusters and reference labels
+- [`sn_identify_challenging_groups()`](https://songqi.org/shennong/reference/sn_identify_challenging_groups.md)
+  : Identify rare or difficult-to-separate groups
 - [`sn_calculate_rogue()`](https://songqi.org/shennong/reference/sn_calculate_rogue.md)
   : Calculate ROGUE score for Seurat Object
 - [`sn_calculate_composition()`](https://songqi.org/shennong/reference/sn_calculate_composition.md)
-  : Calculate Composition Proportions
+  : Calculate composition proportions
 
 ## Visualization and signatures
 

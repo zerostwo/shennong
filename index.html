@@ -63,45 +63,50 @@
 <!-- badges: start -->
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<p><code>Shennong</code> is an experimental R package for single-cell and broader omics workflows. It provides Seurat-oriented helpers for example-data loading, preprocessing, quality control, ambient RNA correction, clustering and integration, and common visualization tasks.</p>
+<p><code>Shennong</code> is an experimental R package for single-cell transcriptomics workflows built around Seurat objects. It focuses on practical analysis steps that are commonly repeated across projects: preprocessing, clustering, batch integration, differential expression, enrichment, visualization, and interpretation-ready result storage.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Install the development version from GitHub:</p>
+<p>Install the current development version from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"zerostwo/shennong"</span><span class="op">)</span></span></code></pre></div>
-<p>If you plan to use Harmony-based integration through <code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code>, install the current Harmony developer branch as well:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"immunogenomics/harmony"</span>, ref <span class="op">=</span> <span class="st">"harmony2"</span><span class="op">)</span></span></code></pre></div>
-<p>Once the package is installed, you can check whether your local copy is current and install the preferred release channel directly from R:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/sn_check_version.html">sn_check_version</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/sn_install_shennong.html">sn_install_shennong</a></span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"github"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-the-package-covers">What the package covers<a class="anchor" aria-label="anchor" href="#what-the-package-covers"></a>
+<h2 id="what-shennong-covers">What Shennong Covers<a class="anchor" aria-label="anchor" href="#what-shennong-covers"></a>
 </h2>
 <ul>
-<li>Example data loading with <code><a href="reference/sn_load_data.html">sn_load_data()</a></code>
+<li>Seurat object initialization and QC-aware preprocessing</li>
+<li>Gene and cell filtering, including bundled human/mouse GENCODE gene classes</li>
+<li>Doublet detection and ambient RNA correction</li>
+<li>Single-dataset clustering and Harmony-based integration with <code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code>
 </li>
-<li>Seurat object initialization and QC helpers</li>
-<li>Ambient contamination correction with SoupX or decontX</li>
-<li>Single-dataset clustering and Harmony-based integration through <code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code>
+<li>Multi-metric integration assessment with <code><a href="reference/sn_assess_integration.html">sn_assess_integration()</a></code>
 </li>
-<li>Plot helpers for embeddings, violin plots, dot plots, boxplots, and bar plots</li>
-<li>Signature scoring, composition analysis, and enrichment helpers</li>
+<li>Marker detection, pseudobulk differential expression, and enrichment analysis</li>
+<li>Stored-result workflows for downstream interpretation and reporting</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+<h2 id="built-in-example-data">Built-In Example Data<a class="anchor" aria-label="anchor" href="#built-in-example-data"></a>
 </h2>
-<p>The package now uses <code><a href="reference/sn_load_data.html">sn_load_data()</a></code> as the main example-data entry point.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>The package ships a small built-in PBMC example derived from the <code>pbmc1k</code> and <code>pbmc3k</code> assets:</p>
+<ul>
+<li>
+<code>pbmc_small</code>: a Seurat object with sample metadata</li>
+<li>
+<code>pbmc_small_raw</code>: a matching raw count matrix with extra droplets</li>
+</ul>
+<p>For larger example datasets, <code><a href="reference/sn_load_data.html">sn_load_data()</a></code> can still download the full PBMC references on demand.</p>
+</div>
+<div class="section level2">
+<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+</h2>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc1k"</span><span class="op">)</span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">pbmc</span>, project <span class="op">=</span> <span class="st">"pbmc1k"</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_filter_cells.html">sn_filter_cells</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span>,</span>
@@ -117,87 +122,70 @@
 <span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="ambient-contamination-correction">Ambient contamination correction<a class="anchor" aria-label="anchor" href="#ambient-contamination-correction"></a>
+<h2 id="integration-example">Integration Example<a class="anchor" aria-label="anchor" href="#integration-example"></a>
 </h2>
-<p><code><a href="reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination()</a></code> exposes a unified interface for multiple methods.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">filtered_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
-<span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
-<span>  matrix_type <span class="op">=</span> <span class="st">"filtered"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">raw_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
-<span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
-<span>  matrix_type <span class="op">=</span> <span class="st">"raw"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ambient_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">filtered_path</span>,</span>
-<span>  raw <span class="op">=</span> <span class="va">raw_path</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"soupx"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>For decontX, switch the method:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">corrected_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">ambient_counts</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"decontx"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>If you write decontX output back into a Seurat object, the corrected counts are stored in a separate layer by default and corrected per-cell totals are added to metadata.</p>
-</div>
-<div class="section level2">
-<h2 id="integration-workflow">Integration workflow<a class="anchor" aria-label="anchor" href="#integration-workflow"></a>
-</h2>
-<p><code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code> is the main clustering entry point for both single datasets and batch-aware workflows.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc1k</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc1k"</span><span class="op">)</span></span>
-<span><span class="va">pbmc3k</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">obj1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">pbmc1k</span>, project <span class="op">=</span> <span class="st">"pbmc1k"</span><span class="op">)</span></span>
-<span><span class="va">obj1</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="st">"pbmc1k"</span></span>
-<span><span class="va">obj2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">pbmc3k</span>, project <span class="op">=</span> <span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="va">obj2</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="st">"pbmc3k"</span></span>
-<span></span>
-<span><span class="va">merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">obj1</span>, y <span class="op">=</span> <span class="va">obj2</span>, add.cell.ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc1k"</span>, <span class="st">"pbmc3k"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">merged</span>,</span>
+<p>The same built-in PBMC example can be used for batch-aware integration:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>You can summarize integration quality and surface rare or difficult groups directly from the integrated object:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc_integrated</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  cluster <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  baseline_reduction <span class="op">=</span> <span class="st">"pca"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">metrics</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="va">metrics</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">challenging_groups</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="differential-expression-and-enrichment">Differential Expression And Enrichment<a class="anchor" aria-label="anchor" href="#differential-expression-and-enrichment"></a>
+</h2>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  gene_clusters <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">cluster</span>,</span>
+<span>  database <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GOBP"</span>, <span class="st">"H"</span><span class="op">)</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_pathways"</span>,</span>
+<span>  pvalue_cutoff <span class="op">=</span> <span class="fl">0.05</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="development">Development<a class="anchor" aria-label="anchor" href="#development"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>Common local commands:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">document</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_package.html" class="external-link">test_local</a></span><span class="op">(</span>stop_on_failure <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Package builds and checks can be run from the shell:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">R</span> CMD build .</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="ex">R</span> CMD check <span class="at">--no-manual</span> Shennong_<span class="pp">*</span>.tar.gz</span></code></pre></div>
-<p>Contributor guidance, testing conventions, and commit rules are documented in <code>AGENTS.md</code> and <code>CONTRIBUTING.md</code>.</p>
-</div>
-<div class="section level2">
-<h2 id="project-status">Project status<a class="anchor" aria-label="anchor" href="#project-status"></a>
-</h2>
-<p>The package is being modernized incrementally. Current work focuses on:</p>
+<p>Longer workflow articles are available in the package site and vignettes, including:</p>
 <ul>
-<li>stabilizing core APIs with test coverage</li>
-<li>aligning roxygen documentation with exports</li>
-<li>improving CI and pkgdown readiness</li>
-<li>keeping user-facing behavior compatible unless a change is explicitly documented</li>
+<li>clustering and integration</li>
+<li>layer-aware preprocessing</li>
+<li>stored-result interpretation workflows</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
+<h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>This project follows the Contributor Covenant code of conduct: <a href="https://www.contributor-covenant.org/version/2/1/code_of_conduct/" class="external-link uri">https://www.contributor-covenant.org/version/2/1/code_of_conduct/</a>.</p>
+<p><code>Shennong</code> is still experimental. The package currently prioritizes a clean and consistent workflow surface over backward compatibility across early versions.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

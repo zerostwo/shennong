@@ -1,58 +1,53 @@
 # Shennong
 
-`Shennong` is an experimental R package for single-cell and broader
-omics workflows. It provides Seurat-oriented helpers for example-data
-loading, preprocessing, quality control, ambient RNA correction,
-clustering and integration, and common visualization tasks.
+`Shennong` is an experimental R package for single-cell transcriptomics
+workflows built around Seurat objects. It focuses on practical analysis
+steps that are commonly repeated across projects: preprocessing,
+clustering, batch integration, differential expression, enrichment,
+visualization, and interpretation-ready result storage.
 
 ## Installation
 
-Install the development version from GitHub:
+Install the current development version from GitHub:
 
 ``` r
 install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
 
-If you plan to use Harmony-based integration through
-[`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md),
-install the current Harmony developer branch as well:
+## What Shennong Covers
 
-``` r
-remotes::install_github("immunogenomics/harmony", ref = "harmony2")
-```
-
-Once the package is installed, you can check whether your local copy is
-current and install the preferred release channel directly from R:
-
-``` r
-sn_check_version()
-sn_install_shennong(channel = "github")
-```
-
-## What the package covers
-
-- Example data loading with
-  [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
-- Seurat object initialization and QC helpers
-- Ambient contamination correction with SoupX or decontX
-- Single-dataset clustering and Harmony-based integration through
+- Seurat object initialization and QC-aware preprocessing
+- Gene and cell filtering, including bundled human/mouse GENCODE gene
+  classes
+- Doublet detection and ambient RNA correction
+- Single-dataset clustering and Harmony-based integration with
   [`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
-- Plot helpers for embeddings, violin plots, dot plots, boxplots, and
-  bar plots
-- Signature scoring, composition analysis, and enrichment helpers
+- Multi-metric integration assessment with
+  [`sn_assess_integration()`](https://songqi.org/shennong/reference/sn_assess_integration.md)
+- Marker detection, pseudobulk differential expression, and enrichment
+  analysis
+- Stored-result workflows for downstream interpretation and reporting
 
-## Quick start
+## Built-In Example Data
 
-The package now uses
+The package ships a small built-in PBMC example derived from the
+`pbmc1k` and `pbmc3k` assets:
+
+- `pbmc_small`: a Seurat object with sample metadata
+- `pbmc_small_raw`: a matching raw count matrix with extra droplets
+
+For larger example datasets,
 [`sn_load_data()`](https://songqi.org/shennong/reference/sn_load_data.md)
-as the main example-data entry point.
+can still download the full PBMC references on demand.
+
+## Quick Start
 
 ``` r
 library(Shennong)
 
-pbmc <- sn_load_data("pbmc1k")
-pbmc <- sn_initialize_seurat_object(pbmc, project = "pbmc1k", species = "human")
+data("pbmc_small", package = "Shennong")
+
 pbmc <- sn_filter_cells(
   pbmc,
   features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
@@ -68,102 +63,73 @@ pbmc <- sn_run_cluster(
 sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
 ```
 
-## Ambient contamination correction
+## Integration Example
 
-[`sn_remove_ambient_contamination()`](https://songqi.org/shennong/reference/sn_remove_ambient_contamination.md)
-exposes a unified interface for multiple methods.
-
-``` r
-filtered_path <- sn_load_data(
-  dataset = "pbmc3k",
-  matrix_type = "filtered",
-  return_object = FALSE
-)
-
-raw_path <- sn_load_data(
-  dataset = "pbmc3k",
-  matrix_type = "raw",
-  return_object = FALSE
-)
-
-ambient_counts <- sn_remove_ambient_contamination(
-  x = filtered_path,
-  raw = raw_path,
-  method = "soupx",
-  return_object = FALSE
-)
-```
-
-For decontX, switch the method:
+The same built-in PBMC example can be used for batch-aware integration:
 
 ``` r
-corrected_counts <- sn_remove_ambient_contamination(
-  x = ambient_counts,
-  method = "decontx",
-  return_object = FALSE
-)
-```
-
-If you write decontX output back into a Seurat object, the corrected
-counts are stored in a separate layer by default and corrected per-cell
-totals are added to metadata.
-
-## Integration workflow
-
-[`sn_run_cluster()`](https://songqi.org/shennong/reference/sn_run_cluster.md)
-is the main clustering entry point for both single datasets and
-batch-aware workflows.
-
-``` r
-pbmc1k <- sn_load_data("pbmc1k")
-pbmc3k <- sn_load_data("pbmc3k")
-
-obj1 <- sn_initialize_seurat_object(pbmc1k, project = "pbmc1k")
-obj1$sample <- "pbmc1k"
-obj2 <- sn_initialize_seurat_object(pbmc3k, project = "pbmc3k")
-obj2$sample <- "pbmc3k"
-
-merged <- merge(obj1, y = obj2, add.cell.ids = c("pbmc1k", "pbmc3k"))
-
-merged <- sn_run_cluster(
-  object = merged,
+pbmc_integrated <- sn_run_cluster(
+  pbmc,
   batch = "sample",
   normalization_method = "seurat",
   resolution = 0.6
 )
+
+sn_plot_dim(pbmc_integrated, group_by = "sample")
+sn_plot_dim(pbmc_integrated, group_by = "seurat_clusters", label = TRUE)
 ```
 
-## Development
-
-Common local commands:
+You can summarize integration quality and surface rare or difficult
+groups directly from the integrated object:
 
 ``` r
-devtools::document()
-testthat::test_local(stop_on_failure = TRUE)
-pkgdown::build_site()
+metrics <- sn_assess_integration(
+  pbmc_integrated,
+  batch = "sample",
+  cluster = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+
+metrics$summary
+metrics$per_group$challenging_groups
 ```
 
-Package builds and checks can be run from the shell:
+## Differential Expression And Enrichment
 
-``` sh
-R CMD build .
-R CMD check --no-manual Shennong_*.tar.gz
+``` r
+pbmc <- sn_find_de(
+  pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  layer = "data",
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
+
+pbmc <- sn_enrich(
+  x = pbmc,
+  source_de_name = "cluster_markers",
+  gene_clusters = gene ~ cluster,
+  database = c("GOBP", "H"),
+  species = "human",
+  store_name = "cluster_pathways",
+  pvalue_cutoff = 0.05
+)
 ```
 
-Contributor guidance, testing conventions, and commit rules are
-documented in `AGENTS.md` and `CONTRIBUTING.md`.
+## Documentation
 
-## Project status
+Longer workflow articles are available in the package site and
+vignettes, including:
 
-The package is being modernized incrementally. Current work focuses on:
+- clustering and integration
+- layer-aware preprocessing
+- stored-result interpretation workflows
 
-- stabilizing core APIs with test coverage
-- aligning roxygen documentation with exports
-- improving CI and pkgdown readiness
-- keeping user-facing behavior compatible unless a change is explicitly
-  documented
+## Status
 
-## Code of Conduct
-
-This project follows the Contributor Covenant code of conduct:
-<https://www.contributor-covenant.org/version/2/1/code_of_conduct/>.
+`Shennong` is still experimental. The package currently prioritizes a
+clean and consistent workflow surface over backward compatibility across
+early versions.

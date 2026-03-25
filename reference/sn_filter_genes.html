@@ -134,27 +134,24 @@ annotation subset.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: SeuratObject</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: sp</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Attaching package: ‘SeuratObject’</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> The following objects are masked from ‘package:base’:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>     intersect, t</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Load example Seurat object</span></span></span>
-<span class="r-in"><span><span class="va">pbmc_small_filtered</span> <span class="op">&lt;-</span> <span class="fu">sn_filter_genes</span><span class="op">(</span><span class="va">pbmc_small</span>, min_cells <span class="op">=</span> <span class="fl">5</span>, plot <span class="op">=</span> <span class="cn">TRUE</span>, filter <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="sn_filter_genes-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span><span class="va">pbmc_small_coding</span> <span class="op">&lt;-</span> <span class="fu">sn_filter_genes</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="va">pbmc_small</span>,</span></span>
-<span class="r-in"><span>  min_cells <span class="op">=</span> <span class="fl">1</span>,</span></span>
-<span class="r-in"><span>  plot <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
-<span class="r-in"><span>  filter <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>  species <span class="op">=</span> <span class="st">"human"</span>,</span></span>
-<span class="r-in"><span>  gene_class <span class="op">=</span> <span class="st">"coding"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> WARN [2026-03-24 21:23:39] Annotation-based gene filtering could not match 13 features for species 'human'. Those unmatched features will be dropped.</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">pbmc_filtered</span> <span class="op">&lt;-</span> <span class="fu">sn_filter_genes</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc_small</span>,</span></span>
+<span class="r-in"><span>    min_cells <span class="op">=</span> <span class="fl">5</span>,</span></span>
+<span class="r-in"><span>    plot <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    filter <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">pbmc_coding</span> <span class="op">&lt;-</span> <span class="fu">sn_filter_genes</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">pbmc_small</span>,</span></span>
+<span class="r-in"><span>    min_cells <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>    plot <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    filter <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    species <span class="op">=</span> <span class="st">"human"</span>,</span></span>
+<span class="r-in"><span>    gene_class <span class="op">=</span> <span class="st">"coding"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> WARN [2026-03-25 17:02:15] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped.</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

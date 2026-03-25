@@ -16,19 +16,19 @@ A data frame with one row per gene and the following columns:
 
 - `species`:
 
-  Species label used by Shennong (`"human"` or `"mouse"`).
+  Species label used by Shennong.
 
 - `release`:
 
-  GENCODE release identifier used to build the row.
+  GENCODE release identifier.
 
 - `seqname`:
 
-  Sequence/chromosome name from the GTF.
+  Sequence or chromosome name from the GTF.
 
 - `source`:
 
-  Second GTF column describing the annotation source.
+  Annotation source from the GTF.
 
 - `start`:
 
@@ -49,23 +49,23 @@ A data frame with one row per gene and the following columns:
 
 - `gene_id_base`:
 
-  GENCODE gene identifier with the version suffix removed.
+  Version-stripped GENCODE gene identifier.
 
 - `gene_name`:
 
-  Gene symbol/name from the GTF.
+  Gene symbol from the GTF.
 
 - `gene_type`:
 
-  GENCODE `gene_type` / `gene_biotype` annotation.
+  GENCODE gene biotype.
 
 - `gene_status`:
 
-  Optional GTF `gene_status` attribute when available.
+  Optional GTF `gene_status` attribute.
 
 - `gene_source`:
 
-  Optional GTF `gene_source` attribute when available.
+  Optional GTF `gene_source` attribute.
 
 - `level`:
 
@@ -73,16 +73,9 @@ A data frame with one row per gene and the following columns:
 
 - `gene_class`:
 
-  Shennong-level coarse classification used by filtering helpers.
-  Currently `"coding"` marks protein-coding, IG, and TCR genes; all
-  other annotated types are treated as `"noncoding"`.
+  Shennong coarse classification used by gene filtering helpers.
 
 ## Source
 
-Built during development from:
-
-- `/mnt/reference_genomes/gencode/human/48/GRCh38.v48.primary_assembly.annotation.gtf`
-
-- `/mnt/reference_genomes/gencode/mouse/M37/GRCm39.vM37.primary_assembly.annotation.gtf`
-
-via `data-raw/build_shennong_gene_annotations.R`.
+Built from local GENCODE sources via
+`data-raw/build_shennong_gene_annotations.R`.

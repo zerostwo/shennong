@@ -61,7 +61,10 @@ A prompt bundle with `system`, `user`, and `messages`.
 ## Examples
 
 ``` r
-evidence <- list(task = "annotation", cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC"))
+evidence <- list(
+  task = "annotation",
+  cluster_summary = data.frame(cluster = "0", top_markers = "CD3D, TRAC")
+)
 prompt <- sn_build_prompt(evidence = evidence, task = "annotation")
 names(prompt)
 #> [1] "output_format" "task"          "system"        "user"         

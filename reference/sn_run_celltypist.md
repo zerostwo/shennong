@@ -126,7 +126,7 @@ A Seurat object with three new columns in its metadata:
 
 ``` r
 if (FALSE) { # \dontrun{
-pbmc <- sn_load_data("pbmc1k")
+data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl")
 head(colnames(pbmc[[]]))

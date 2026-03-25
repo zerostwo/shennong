@@ -83,25 +83,22 @@ subset.
 ## Examples
 
 ``` r
-library(Seurat)
-#> Loading required package: SeuratObject
-#> Loading required package: sp
-#> 
-#> Attaching package: ‘SeuratObject’
-#> The following objects are masked from ‘package:base’:
-#> 
-#>     intersect, t
-
-# Load example Seurat object
-pbmc_small_filtered <- sn_filter_genes(pbmc_small, min_cells = 5, plot = TRUE, filter = TRUE)
-
-pbmc_small_coding <- sn_filter_genes(
-  pbmc_small,
-  min_cells = 1,
-  plot = FALSE,
-  filter = TRUE,
-  species = "human",
-  gene_class = "coding"
-)
-#> WARN [2026-03-24 21:23:39] Annotation-based gene filtering could not match 13 features for species 'human'. Those unmatched features will be dropped.
+if (requireNamespace("Seurat", quietly = TRUE)) {
+  data("pbmc_small", package = "Shennong")
+  pbmc_filtered <- sn_filter_genes(
+    pbmc_small,
+    min_cells = 5,
+    plot = FALSE,
+    filter = TRUE
+  )
+  pbmc_coding <- sn_filter_genes(
+    pbmc_small,
+    min_cells = 1,
+    plot = FALSE,
+    filter = TRUE,
+    species = "human",
+    gene_class = "coding"
+  )
+}
+#> WARN [2026-03-25 17:02:15] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped.
 ```
