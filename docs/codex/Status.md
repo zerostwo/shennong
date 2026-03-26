@@ -274,6 +274,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Verified locally that `pak::lockfile_create(".", lockfile = ".github/pkg.lock", upgrade = TRUE)` now succeeds again with the revised CI dependency set.
 - Updated `sn_install_shennong(channel = "github")` so GitHub installs default to `dependencies = FALSE` and `upgrade = "never"`, preventing optional GitHub `Suggests` from breaking package installation.
 - Added regression tests covering the default and overridden GitHub-install argument paths for `sn_install_shennong()`.
+- Removed the `FiRE`, `CellSIUS`, and `EDGE` rare-cell backends from `sn_detect_rare_cells()`, package metadata, tests, and vignette references so Shennong no longer depends on those unstable optional integrations.
 - Expanded the analysis layer around `sn_find_de()`, `sn_plot_dot()`, and `sn_enrich()`:
   `sn_find_de()` now supports marker discovery, direct contrasts, and pseudobulk DE with stored results in `object@misc$de_results`; `sn_plot_dot()` can reuse stored top markers; `sn_enrich()` now supports both ORA and GSEA.
 - The PBMC vignette now compares pre- and post-integration embeddings, uses Shennong plotting helpers, and shows stored-marker dot plots plus GSEA-driven interpretation.

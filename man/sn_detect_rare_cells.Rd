@@ -6,8 +6,7 @@
 \usage{
 sn_detect_rare_cells(
   object,
-  method = c("gini", "fire", "sccad", "cellsius", "sca", "edge", "gapclust",
-    "challenging_groups"),
+  method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
   group = NULL,
   reduction = .sn_default_metric_reduction(object),
   dims = NULL,
@@ -25,16 +24,7 @@ sn_detect_rare_cells(
   sccad_rare_h = 0.01,
   sccad_merge_h = 0.3,
   sccad_overlap_h = 0.7,
-  cellsius_mcl_path = NULL,
-  cellsius_min_n_cells = 10,
-  cellsius_min_fc = 2,
-  cellsius_max_perc_cells = 50,
-  cellsius_fc_between_cutoff = 1,
-  cellsius_min_n_genes = 3,
   gapclust_k = 200,
-  edge_n_comps = 20,
-  edge_n_dm = 500,
-  edge_n_wl = 500,
   sca_python = NULL,
   sca_n_comps = 20,
   sca_iters = 3,
@@ -46,12 +36,11 @@ sn_detect_rare_cells(
 \item{object}{A \code{Seurat} object.}
 
 \item{method}{Rare-cell method. Supported values are \code{"gini"},
-\code{"fire"}, \code{"sccad"}, \code{"cellsius"}, \code{"sca"},
-\code{"edge"}, \code{"gapclust"}, and \code{"challenging_groups"}.}
+\code{"sccad"}, \code{"sca"}, \code{"gapclust"}, and
+\code{"challenging_groups"}.}
 
 \item{group}{Optional metadata column used with
-\code{method = "challenging_groups"} or cluster-seeded methods such as
-\code{"cellsius"}.}
+\code{method = "challenging_groups"}.}
 
 \item{reduction}{Reduction used by graph-based methods. Defaults to
 \code{"harmony"} when present, otherwise \code{"pca"}.}
@@ -90,30 +79,7 @@ matrix internally.}
 
 \item{sccad_overlap_h}{Overlap threshold passed to scCAD.}
 
-\item{cellsius_mcl_path}{Optional path to the \code{mcl} executable required
-by CellSIUS.}
-
-\item{cellsius_min_n_cells}{Minimum number of cells used by CellSIUS when
-testing bimodality.}
-
-\item{cellsius_min_fc}{Minimum within-cluster fold change used by CellSIUS.}
-
-\item{cellsius_max_perc_cells}{Maximum subgroup size percentage allowed by
-CellSIUS.}
-
-\item{cellsius_fc_between_cutoff}{Minimum between-cluster fold change used by
-CellSIUS.}
-
-\item{cellsius_min_n_genes}{Minimum signature size retained when generating
-final CellSIUS assignments.}
-
 \item{gapclust_k}{Upper limit of the minor-cluster size used by GapClust.}
-
-\item{edge_n_comps}{Number of EDGE components used before rarity scoring.}
-
-\item{edge_n_dm}{Number of genes sampled by EDGE weak learners.}
-
-\item{edge_n_wl}{Number of EDGE weak learners.}
 
 \item{sca_python}{Optional Python executable used by the SCA backend.}
 

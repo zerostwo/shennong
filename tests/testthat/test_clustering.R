@@ -268,30 +268,10 @@ test_that("sn_detect_rare_cells validates optional rare-cell backend dependencie
   expect_error(
     sn_detect_rare_cells(
       object = object,
-      method = "cellsius",
-      group = "seed_cluster",
-      layer = "counts",
-      cellsius_mcl_path = tempfile("missing-mcl-")
-    ),
-    "CellSIUS|mcl"
-  )
-
-  expect_error(
-    sn_detect_rare_cells(
-      object = object,
       method = "gapclust",
       layer = "counts"
     ),
     "GapClust|No rare cell cluster identified"
-  )
-
-  expect_error(
-    sn_detect_rare_cells(
-      object = object,
-      method = "edge",
-      layer = "counts"
-    ),
-    "EDGE|endr"
   )
 
   expect_error(

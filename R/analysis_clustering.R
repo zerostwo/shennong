@@ -497,86 +497,6 @@
   stats::setNames(as.numeric(rare_score), rownames(embeddings))
 }
 
-.sn_run_cellsius <- function(expr,
-                             group_ids,
-                             mcl_path = NULL,
-                             min_n_cells = 10,
-                             min_fc = 2,
-                             max_perc_cells = 50,
-                             fc_between_cutoff = 1,
-                             min_n_genes = 3) {
-  check_installed_github("CellSIUS", "Novartis/CellSIUS", reason = "to detect rare cells with the CellSIUS backend.")
-
-  mcl_path <- mcl_path %||% Sys.which("mcl")
-  if (!nzchar(mcl_path) || !file.exists(path.expand(mcl_path))) {
-    stop("Could not locate the `mcl` executable required by CellSIUS.", call. = FALSE)
-  }
-
-  group_ids <- as.character(group_ids)
-  names(group_ids) <- names(group_ids) %||% colnames(expr)
-  cellsius_out <- CellSIUS::CellSIUS(
-    mat.norm = as.matrix(expr),
-    group_id = group_ids,
-    min_n_cells = min_n_cells,
-    min_fc = min_fc,
-    max_perc_cells = max_perc_cells,
-    fc_between_cutoff = fc_between_cutoff,
-    mcl_path = path.expand(mcl_path)
-  )
-
-  if (length(cellsius_out) == 1 && is.na(cellsius_out)) {
-    return(data.frame(
-      cell_id = names(group_ids),
-      rare_score = 0,
-      rare_cell = FALSE,
-      subcluster = NA_character_,
-      stringsAsFactors = FALSE
-    ))
-  }
-
-  sub_tbl <- unique(as.data.frame(cellsius_out[, c("cell_idx", "sub_cluster", "gene_id")]))
-  rare_subclusters <- unique(sub_tbl$sub_cluster[grepl("_1$", sub_tbl$sub_cluster)])
-  if (length(rare_subclusters) == 0) {
-    return(data.frame(
-      cell_id = names(group_ids),
-      rare_score = 0,
-      rare_cell = FALSE,
-      subcluster = NA_character_,
-      stringsAsFactors = FALSE
-    ))
-  }
-
-  sub_tbl <- sub_tbl[sub_tbl$sub_cluster %in% rare_subclusters, , drop = FALSE]
-  score_tbl <- stats::aggregate(
-    gene_id ~ cell_idx + sub_cluster,
-    data = sub_tbl,
-    FUN = function(x) length(unique(x))
-  )
-  names(score_tbl)[names(score_tbl) == "gene_id"] <- "rare_score"
-  score_tbl <- score_tbl[order(score_tbl$cell_idx, -score_tbl$rare_score), , drop = FALSE]
-  score_tbl <- score_tbl[!duplicated(score_tbl$cell_idx), , drop = FALSE]
-
-  final_assignment <- CellSIUS::CellSIUS_final_cluster_assignment(
-    CellSIUS.out = cellsius_out,
-    group_id = group_ids,
-    min_n_genes = min_n_genes
-  )
-  rare_cell <- final_assignment != group_ids
-  rare_cell[is.na(rare_cell)] <- FALSE
-
-  out <- data.frame(
-    cell_id = names(group_ids),
-    rare_score = 0,
-    rare_cell = as.logical(rare_cell),
-    subcluster = NA_character_,
-    stringsAsFactors = FALSE
-  )
-  matched <- match(out$cell_id, score_tbl$cell_idx)
-  out$rare_score[!is.na(matched)] <- score_tbl$rare_score[matched[!is.na(matched)]]
-  out$subcluster[!is.na(matched)] <- as.character(score_tbl$sub_cluster[matched[!is.na(matched)]])
-  out
-}
-
 .sn_run_gapclust <- function(expr, k = 200) {
   check_installed_github("GapClust", "fabotao/GapClust", reason = "to detect rare cells with the GapClust backend.")
 
@@ -606,28 +526,6 @@
     rare_cell = seq_along(cell_ids) %in% rare_membership,
     stringsAsFactors = FALSE
   )
-}
-
-.sn_run_edge <- function(expr,
-                         n_comps = 20,
-                         n_dm = 500,
-                         n_wl = 500,
-                         k = 20,
-                         seed = 717) {
-  check_installed_github("EDGE", "shawnstat/EDGE", reason = "to compute an EDGE reduction for rare-cell scoring.")
-
-  dat <- t(as.matrix(expr))
-  rownames(dat) <- colnames(expr)
-  embedding <- EDGE::endr(
-    dat = dat,
-    n_comps = min(as.integer(n_comps), nrow(dat) - 1L),
-    n_dm = min(as.integer(n_dm), ncol(dat)),
-    n_wl = as.integer(n_wl),
-    n_neigs = min(as.integer(k), nrow(dat) - 1L),
-    seed = as.integer(seed)
-  )
-  rownames(embedding) <- colnames(expr)
-  embedding
 }
 
 .sn_run_sca <- function(expr,
@@ -708,11 +606,10 @@
 #'
 #' @param object A \code{Seurat} object.
 #' @param method Rare-cell method. Supported values are \code{"gini"},
-#'   \code{"fire"}, \code{"sccad"}, \code{"cellsius"}, \code{"sca"},
-#'   \code{"edge"}, \code{"gapclust"}, and \code{"challenging_groups"}.
+#'   \code{"sccad"}, \code{"sca"}, \code{"gapclust"}, and
+#'   \code{"challenging_groups"}.
 #' @param group Optional metadata column used with
-#'   \code{method = "challenging_groups"} or cluster-seeded methods such as
-#'   \code{"cellsius"}.
+#'   \code{method = "challenging_groups"}.
 #' @param reduction Reduction used by graph-based methods. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional embedding dimensions to use.
@@ -734,21 +631,7 @@
 #' @param sccad_rare_h Rare threshold passed to scCAD.
 #' @param sccad_merge_h Merge threshold passed to scCAD.
 #' @param sccad_overlap_h Overlap threshold passed to scCAD.
-#' @param cellsius_mcl_path Optional path to the \code{mcl} executable required
-#'   by CellSIUS.
-#' @param cellsius_min_n_cells Minimum number of cells used by CellSIUS when
-#'   testing bimodality.
-#' @param cellsius_min_fc Minimum within-cluster fold change used by CellSIUS.
-#' @param cellsius_max_perc_cells Maximum subgroup size percentage allowed by
-#'   CellSIUS.
-#' @param cellsius_fc_between_cutoff Minimum between-cluster fold change used by
-#'   CellSIUS.
-#' @param cellsius_min_n_genes Minimum signature size retained when generating
-#'   final CellSIUS assignments.
 #' @param gapclust_k Upper limit of the minor-cluster size used by GapClust.
-#' @param edge_n_comps Number of EDGE components used before rarity scoring.
-#' @param edge_n_dm Number of genes sampled by EDGE weak learners.
-#' @param edge_n_wl Number of EDGE weak learners.
 #' @param sca_python Optional Python executable used by the SCA backend.
 #' @param sca_n_comps Number of SCA components used before rarity scoring.
 #' @param sca_iters Number of SCA iterations.
@@ -767,7 +650,7 @@
 #'
 #' @export
 sn_detect_rare_cells <- function(object,
-                                 method = c("gini", "fire", "sccad", "cellsius", "sca", "edge", "gapclust", "challenging_groups"),
+                                 method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
                                  group = NULL,
                                  reduction = .sn_default_metric_reduction(object),
                                  dims = NULL,
@@ -785,16 +668,7 @@ sn_detect_rare_cells <- function(object,
                                  sccad_rare_h = 0.01,
                                  sccad_merge_h = 0.3,
                                  sccad_overlap_h = 0.7,
-                                 cellsius_mcl_path = NULL,
-                                 cellsius_min_n_cells = 10,
-                                 cellsius_min_fc = 2,
-                                 cellsius_max_perc_cells = 50,
-                                 cellsius_fc_between_cutoff = 1,
-                                 cellsius_min_n_genes = 3,
                                  gapclust_k = 200,
-                                 edge_n_comps = 20,
-                                 edge_n_dm = 500,
-                                 edge_n_wl = 500,
                                  sca_python = NULL,
                                  sca_n_comps = 20,
                                  sca_iters = 3,
@@ -829,21 +703,6 @@ sn_detect_rare_cells <- function(object,
     feature_scale <- pmax(Matrix::rowMeans(feature_mat), 1e-8)
     normalized <- Matrix::Diagonal(x = 1 / feature_scale) %*% feature_mat
     rare_score <- Matrix::colMeans(normalized)
-  } else if (identical(method, "fire")) {
-    check_installed("FiRE", reason = "to detect rare cells with the FiRE backend.")
-    data_mat <- list(
-      mat = t(as.matrix(expr)),
-      gene_symbols = rownames(expr)
-    )
-    preprocessed_list <- FiRE::ranger_preprocess(
-      data_mat = data_mat,
-      ngenes_keep = min(nfeatures, nrow(expr)),
-      verbose = FALSE
-    )
-    preprocessed_data <- as.matrix(preprocessed_list$preprocessedData)
-    model <- methods::new(FiRE::FiRE, 100L, min(50L, ncol(preprocessed_data)), 1017881L, as.integer(seed), 0L)
-    model$fit(preprocessed_data)
-    rare_score <- as.numeric(model$score(preprocessed_data))
   } else if (identical(method, "sccad")) {
     sccad_result <- .sn_run_sccad(
       expr = expr,
@@ -872,41 +731,11 @@ sn_detect_rare_cells <- function(object,
       subcluster = as.character(sccad_result$sub_clusters),
       stringsAsFactors = FALSE
     ))
-  } else if (identical(method, "cellsius")) {
-    if (is.null(group)) {
-      stop("`group` must be supplied when `method = \"cellsius\"`.", call. = FALSE)
-    }
-    if (!group %in% colnames(object[[]])) {
-      stop(glue("Metadata column '{group}' was not found."), call. = FALSE)
-    }
-    return(transform(
-      .sn_run_cellsius(
-        expr = expr,
-        group_ids = stats::setNames(as.character(object[[group, drop = TRUE]]), cell_ids),
-        mcl_path = cellsius_mcl_path,
-        min_n_cells = cellsius_min_n_cells,
-        min_fc = cellsius_min_fc,
-        max_perc_cells = cellsius_max_perc_cells,
-        fc_between_cutoff = cellsius_fc_between_cutoff,
-        min_n_genes = cellsius_min_n_genes
-      ),
-      method = method
-    ))
   } else if (identical(method, "gapclust")) {
     return(transform(
       .sn_run_gapclust(expr = expr, k = gapclust_k),
       method = method
     ))
-  } else if (identical(method, "edge")) {
-    edge_embedding <- .sn_run_edge(
-      expr = expr,
-      n_comps = edge_n_comps,
-      n_dm = edge_n_dm,
-      n_wl = edge_n_wl,
-      k = k,
-      seed = seed
-    )
-    rare_score <- .sn_score_embedding_rarity(edge_embedding, k = k)
   } else if (identical(method, "sca")) {
     sca_embedding <- .sn_run_sca(
       expr = expr,

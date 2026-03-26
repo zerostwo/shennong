@@ -157,8 +157,8 @@ knitr::kable(challenging_tbl, digits = 3)
 ## Score candidate rare cells directly
 
 `sn_detect_rare_cells()` provides a cell-level complement to the group-level
-diagnostics. The native `gini` backend uses rare-gene enrichment to score cells,
-while optional backends such as FiRE or Python-based scCAD can be used when
+diagnostics. The native `gini` backend uses rare-gene enrichment to score
+cells, while optional backends such as Python-based scCAD can be used when
 installed locally.
 
 ```{r}

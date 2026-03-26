@@ -128,6 +128,9 @@ Released 2026-03-25.
   clean runner without a preinstalled copy of `Shennong`.
 - Fixed `sn_install_shennong(channel = "github")` so it no longer tries to
   resolve runtime-optional GitHub `Suggests` by default during installation.
+- Removed the optional rare-cell backends `FiRE`, `CellSIUS`, and `EDGE` from
+  Shennong's supported dependency surface and `sn_detect_rare_cells()`
+  interface.
 - Fixed `sn_plot_dot()` theme handling so the optional `catplot` theme no
   longer tries to impose an additional aspect ratio on top of `coord_fixed()`.
 - Fixed Rd example line-width failures in `R CMD check` and declared the
