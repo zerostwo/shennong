@@ -270,15 +270,18 @@ container workflow, or imports an existing fractions result file.</p></li>
 <span class="r-in"><span>    method <span class="op">=</span> <span class="st">"cibersortx"</span>,</span></span>
 <span class="r-in"><span>    cell_type_col <span class="op">=</span> <span class="st">"cell_type"</span>,</span></span>
 <span class="r-in"><span>    outdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    cibersortx_email <span class="op">=</span> <span class="st">"demo@example.org"</span>,</span></span>
+<span class="r-in"><span>    cibersortx_token <span class="op">=</span> <span class="st">"fake-token"</span>,</span></span>
 <span class="r-in"><span>    cibersortx_dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>    return_object <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bundle</span><span class="op">$</span><span class="va">files</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-25 21:26:07] Initializing Seurat object for project: Shennong</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-25 21:26:07] Running QC metrics for human ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-25 21:26:07] Seurat object initialization complete.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> CIBERSORTx credentials are required. Supply `cibersortx_email` and `cibersortx_token`, call `sn_set_cibersortx_credentials()`, or set SHENNONG_CIBERSORTX_EMAIL / SHENNONG_CIBERSORTX_TOKEN.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-26 18:52:15] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-26 18:52:15] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-03-26 18:52:15] Seurat object initialization complete.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "single_cell_reference" "mixture"               "signature_matrix"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4] "result"               </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

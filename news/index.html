@@ -74,7 +74,9 @@
 </ul></div>
 <div class="section level4">
 <h4 id="changed-0-1-2">Changed<a class="anchor" aria-label="anchor" href="#changed-0-1-2"></a></h4>
-<ul><li>
+<ul><li>Internal sparse-matrix workflows were optimized for better runtime and lower peak memory use. Pseudobulk DE aggregation now groups columns without materializing dense matrices, split Seurat assay layers are combined through sparse triplet assembly instead of repeated indexed writes, exact kNN fallbacks now use blockwise distance evaluation instead of constructing a full cell-by-cell distance matrix, and gene-symbol standardization now reuses bundled annotation data plus grouped row aggregation instead of external CSV reads and per-column duplicate collapsing.</li>
+<li>Developer-facing informational notifications are now routed through internal package logging helpers instead of a mix of ad hoc <code>logger</code>, <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code>, and <code>cli</code> progress calls. Progress wording is now more consistent across initialization, clustering, enrichment, and preprocessing workflows, while real <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">warning()</a></code> and <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> conditions retain their existing semantics.</li>
+<li>
 <code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now uses a single <code>x</code> input with automatic dispatch across gene vectors, ranked named vectors, data frames, and Seurat-stored DE results. Its <code>gene_clusters</code> formula now drives both grouped ORA (<code>gene ~ cluster</code>) and ranked GSEA (<code>gene ~ log2fc</code>) workflows, and multi-database requests such as <code>database = c("H", "GOBP", "KEGG",   "C2:CP:REACTOME")</code> are supported in one call.</li>
 <li>
 <code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now aligns MSigDB arguments with <code>msigdbr</code> by supporting <code>collection</code> / <code>subcollection</code>, while still accepting collection strings in <code>database</code> such as <code>H</code> or <code>C2:CP:REACTOME</code>.</li>
@@ -101,6 +103,8 @@
 <div class="section level4">
 <h4 id="fixed-0-1-2">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-1-2"></a></h4>
 <ul><li>Fixed pkgdown GitHub Actions deployment when <code>deploy_to_branch()</code> runs in a clean runner without a preinstalled copy of <code>Shennong</code>.</li>
+<li>Fixed <code>sn_install_shennong(channel = "github")</code> so it no longer tries to resolve runtime-optional GitHub <code>Suggests</code> by default during installation.</li>
+<li>Removed the optional rare-cell backends <code>FiRE</code>, <code>CellSIUS</code>, and <code>EDGE</code> from Shennong’s supported dependency surface and <code><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells()</a></code> interface.</li>
 <li>Fixed <code><a href="../reference/sn_plot_dot.html">sn_plot_dot()</a></code> theme handling so the optional <code>catplot</code> theme no longer tries to impose an additional aspect ratio on top of <code><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_fixed()</a></code>.</li>
 <li>Fixed Rd example line-width failures in <code>R CMD check</code> and declared the runtime <code>data.tree</code> dependency explicitly.</li>
 </ul></div>
@@ -129,6 +133,8 @@
 <ul><li>Fixed <code><a href="../reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination()</a></code> for BPCells-backed Seurat layers by materializing BPCells matrices before passing them to <code>decontX</code>.</li>
 <li>Fixed optional dependency handling so missing <code>SignatuR</code> no longer breaks core initialization and clustering paths.</li>
 <li>Fixed SoupX validation order so missing <code>raw</code> input is reported before package availability issues.</li>
+<li>Fixed the <code><a href="../reference/sn_deconvolve_bulk.html">sn_deconvolve_bulk()</a></code> example so the <code>cibersortx</code> dry-run path no longer fails package examples for missing credentials.</li>
+<li>Fixed GitHub Actions dependency installation so check and coverage jobs keep a minimal, solvable dependency set instead of trying to install unsupported GitHub-only optional backends during lockfile generation.</li>
 </ul></div>
 </div>
     <div class="section level2">

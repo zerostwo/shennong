@@ -83,6 +83,23 @@ Released 2026-03-25.
 
 #### Changed
 
+- Internal sparse-matrix workflows were optimized for better runtime and
+  lower peak memory use. Pseudobulk DE aggregation now groups columns
+  without materializing dense matrices, split Seurat assay layers are
+  combined through sparse triplet assembly instead of repeated indexed
+  writes, exact kNN fallbacks now use blockwise distance evaluation
+  instead of constructing a full cell-by-cell distance matrix, and
+  gene-symbol standardization now reuses bundled annotation data plus
+  grouped row aggregation instead of external CSV reads and per-column
+  duplicate collapsing.
+- Developer-facing informational notifications are now routed through
+  internal package logging helpers instead of a mix of ad hoc `logger`,
+  [`message()`](https://rdrr.io/r/base/message.html), and `cli` progress
+  calls. Progress wording is now more consistent across initialization,
+  clustering, enrichment, and preprocessing workflows, while real
+  [`warning()`](https://rdrr.io/r/base/warning.html) and
+  [`stop()`](https://rdrr.io/r/base/stop.html) conditions retain their
+  existing semantics.
 - [`sn_enrich()`](https://songqi.org/shennong/reference/sn_enrich.md)
   now uses a single `x` input with automatic dispatch across gene
   vectors, ranked named vectors, data frames, and Seurat-stored DE
@@ -148,6 +165,13 @@ Released 2026-03-25.
 
 - Fixed pkgdown GitHub Actions deployment when `deploy_to_branch()` runs
   in a clean runner without a preinstalled copy of `Shennong`.
+- Fixed `sn_install_shennong(channel = "github")` so it no longer tries
+  to resolve runtime-optional GitHub `Suggests` by default during
+  installation.
+- Removed the optional rare-cell backends `FiRE`, `CellSIUS`, and `EDGE`
+  from Shennong’s supported dependency surface and
+  [`sn_detect_rare_cells()`](https://songqi.org/shennong/reference/sn_detect_rare_cells.md)
+  interface.
 - Fixed
   [`sn_plot_dot()`](https://songqi.org/shennong/reference/sn_plot_dot.md)
   theme handling so the optional `catplot` theme no longer tries to
@@ -194,6 +218,14 @@ Released 2026-03-19.
   breaks core initialization and clustering paths.
 - Fixed SoupX validation order so missing `raw` input is reported before
   package availability issues.
+- Fixed the
+  [`sn_deconvolve_bulk()`](https://songqi.org/shennong/reference/sn_deconvolve_bulk.md)
+  example so the `cibersortx` dry-run path no longer fails package
+  examples for missing credentials.
+- Fixed GitHub Actions dependency installation so check and coverage
+  jobs keep a minimal, solvable dependency set instead of trying to
+  install unsupported GitHub-only optional backends during lockfile
+  generation.
 
 ## Version 0.1.0
 

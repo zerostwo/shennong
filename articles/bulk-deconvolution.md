@@ -52,22 +52,22 @@ bundle <- sn_deconvolve_bulk(
 
 bundle$files
 #> $single_cell_reference
-#> [1] "/tmp/RtmprIB0up/sample_file_for_cibersort.txt"
+#> [1] "/tmp/RtmpKzPMK7/sample_file_for_cibersort.txt"
 #> 
 #> $mixture
-#> [1] "/tmp/RtmprIB0up/mixture_file_for_cibersort.txt"
+#> [1] "/tmp/RtmpKzPMK7/mixture_file_for_cibersort.txt"
 #> 
 #> $signature_matrix
-#> [1] "/tmp/RtmprIB0up/CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt"
+#> [1] "/tmp/RtmpKzPMK7/CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt"
 #> 
 #> $result
-#> [1] "/tmp/RtmprIB0up/CIBERSORTx_pbmc_demo_Results.txt"
+#> [1] "/tmp/RtmpKzPMK7/CIBERSORTx_pbmc_demo_Results.txt"
 bundle$artifacts$commands
 #> $create_signature
-#> [1] "docker run -v '/tmp/RtmprIB0up':/src/data:z -v '/tmp/RtmprIB0up':/src/outdir:z cibersortx/fractions --single_cell TRUE --username 'user@example.org' --token 'replace-with-real-token' --refsample 'sample_file_for_cibersort.txt' --G.min 300 --G.max 500 --q.value 0.01 --filter FALSE --k.max 999 --remake FALSE --replicates 5 --sampling 0.5 --fraction 0.75"
+#> [1] "docker run -v '/tmp/RtmpKzPMK7':/src/data:z -v '/tmp/RtmpKzPMK7':/src/outdir:z cibersortx/fractions --single_cell TRUE --username 'user@example.org' --token 'replace-with-real-token' --refsample 'sample_file_for_cibersort.txt' --G.min 300 --G.max 500 --q.value 0.01 --filter FALSE --k.max 999 --remake FALSE --replicates 5 --sampling 0.5 --fraction 0.75"
 #> 
 #> $deconvolve
-#> [1] "docker run -v '/tmp/RtmprIB0up':/src/data:z -v '/tmp/RtmprIB0up':/src/outdir:z cibersortx/fractions --single_cell TRUE --username 'user@example.org' --token 'replace-with-real-token' --mixture 'mixture_file_for_cibersort.txt' --sigmatrix 'CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt' --perm 0 --label 'pbmc_demo' --rmbatchBmode FALSE --rmbatchSmode FALSE --sourceGEPs 'CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt' --QN FALSE --absolute FALSE --abs_method 'sig.score'"
+#> [1] "docker run -v '/tmp/RtmpKzPMK7':/src/data:z -v '/tmp/RtmpKzPMK7':/src/outdir:z cibersortx/fractions --single_cell TRUE --username 'user@example.org' --token 'replace-with-real-token' --mixture 'mixture_file_for_cibersort.txt' --sigmatrix 'CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt' --perm 0 --label 'pbmc_demo' --rmbatchBmode FALSE --rmbatchSmode FALSE --sourceGEPs 'CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt' --QN FALSE --absolute FALSE --abs_method 'sig.score'"
 ```
 
 In `dry_run` mode, Shennong writes the local input files and returns the

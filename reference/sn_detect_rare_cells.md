@@ -7,8 +7,7 @@ Detect rare cells with native or optional rare-cell backends
 ``` r
 sn_detect_rare_cells(
   object,
-  method = c("gini", "fire", "sccad", "cellsius", "sca", "edge", "gapclust",
-    "challenging_groups"),
+  method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
   group = NULL,
   reduction = .sn_default_metric_reduction(object),
   dims = NULL,
@@ -26,16 +25,7 @@ sn_detect_rare_cells(
   sccad_rare_h = 0.01,
   sccad_merge_h = 0.3,
   sccad_overlap_h = 0.7,
-  cellsius_mcl_path = NULL,
-  cellsius_min_n_cells = 10,
-  cellsius_min_fc = 2,
-  cellsius_max_perc_cells = 50,
-  cellsius_fc_between_cutoff = 1,
-  cellsius_min_n_genes = 3,
   gapclust_k = 200,
-  edge_n_comps = 20,
-  edge_n_dm = 500,
-  edge_n_wl = 500,
   sca_python = NULL,
   sca_n_comps = 20,
   sca_iters = 3,
@@ -52,14 +42,12 @@ sn_detect_rare_cells(
 
 - method:
 
-  Rare-cell method. Supported values are `"gini"`, `"fire"`, `"sccad"`,
-  `"cellsius"`, `"sca"`, `"edge"`, `"gapclust"`, and
-  `"challenging_groups"`.
+  Rare-cell method. Supported values are `"gini"`, `"sccad"`, `"sca"`,
+  `"gapclust"`, and `"challenging_groups"`.
 
 - group:
 
-  Optional metadata column used with `method = "challenging_groups"` or
-  cluster-seeded methods such as `"cellsius"`.
+  Optional metadata column used with `method = "challenging_groups"`.
 
 - reduction:
 
@@ -128,46 +116,9 @@ sn_detect_rare_cells(
 
   Overlap threshold passed to scCAD.
 
-- cellsius_mcl_path:
-
-  Optional path to the `mcl` executable required by CellSIUS.
-
-- cellsius_min_n_cells:
-
-  Minimum number of cells used by CellSIUS when testing bimodality.
-
-- cellsius_min_fc:
-
-  Minimum within-cluster fold change used by CellSIUS.
-
-- cellsius_max_perc_cells:
-
-  Maximum subgroup size percentage allowed by CellSIUS.
-
-- cellsius_fc_between_cutoff:
-
-  Minimum between-cluster fold change used by CellSIUS.
-
-- cellsius_min_n_genes:
-
-  Minimum signature size retained when generating final CellSIUS
-  assignments.
-
 - gapclust_k:
 
   Upper limit of the minor-cluster size used by GapClust.
-
-- edge_n_comps:
-
-  Number of EDGE components used before rarity scoring.
-
-- edge_n_dm:
-
-  Number of genes sampled by EDGE weak learners.
-
-- edge_n_wl:
-
-  Number of EDGE weak learners.
 
 - sca_python:
 

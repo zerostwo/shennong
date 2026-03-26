@@ -356,7 +356,7 @@ structure or silhouette space.</p>
 <p><code><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells()</a></code> provides a cell-level complement
 to the group-level diagnostics. The native <code>gini</code> backend
 uses rare-gene enrichment to score cells, while optional backends such
-as FiRE or Python-based scCAD can be used when installed locally.</p>
+as Python-based scCAD can be used when installed locally.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">$</span><span class="va">rare_score</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">10</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <table class="table">

@@ -345,7 +345,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-25
+#>  date     2026-03-26
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -481,7 +481,7 @@ sessioninfo::session_info()
 #>  RhpcBLASctl         0.23-42  2023-02-11 [1] CRAN (R 4.5.3)
 #>  rio                 1.2.4    2025-09-26 [1] any (@1.2.4)
 #>  rlang               1.1.7    2026-01-09 [1] CRAN (R 4.5.3)
-#>  rmarkdown           2.30     2025-09-28 [1] CRAN (R 4.5.3)
+#>  rmarkdown           2.31     2026-03-26 [1] CRAN (R 4.5.3)
 #>  ROCR                1.0-12   2026-01-23 [1] CRAN (R 4.5.3)
 #>  RSpectra            0.16-2   2024-07-18 [1] CRAN (R 4.5.3)
 #>  RSQLite             2.4.6    2026-02-06 [1] CRAN (R 4.5.3)
@@ -497,7 +497,7 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.2    2026-03-25 [1] local
+#>  Shennong          * 0.1.2    2026-03-26 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)

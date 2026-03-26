@@ -213,13 +213,16 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     method = "cibersortx",
     cell_type_col = "cell_type",
     outdir = tempdir(),
+    cibersortx_email = "demo@example.org",
+    cibersortx_token = "fake-token",
     cibersortx_dry_run = TRUE,
     return_object = FALSE
   )
   names(bundle$files)
 }
-#> INFO [2026-03-25 21:26:07] Initializing Seurat object for project: Shennong
-#> INFO [2026-03-25 21:26:07] Running QC metrics for human ...
-#> INFO [2026-03-25 21:26:07] Seurat object initialization complete.
-#> Error: CIBERSORTx credentials are required. Supply `cibersortx_email` and `cibersortx_token`, call `sn_set_cibersortx_credentials()`, or set SHENNONG_CIBERSORTX_EMAIL / SHENNONG_CIBERSORTX_TOKEN.
+#> INFO [2026-03-26 18:52:15] Initializing Seurat object for project: Shennong.
+#> INFO [2026-03-26 18:52:15] Running QC metrics for human.
+#> INFO [2026-03-26 18:52:15] Seurat object initialization complete.
+#> [1] "single_cell_reference" "mixture"               "signature_matrix"     
+#> [4] "result"               
 ```

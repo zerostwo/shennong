@@ -44,7 +44,9 @@ sn_install_shennong(
 
   Additional arguments passed to
   [`utils::install.packages()`](https://rdrr.io/r/utils/install.packages.html)
-  or `remotes::install_github()`.
+  or `remotes::install_github()`. For GitHub installs, Shennong defaults
+  to `dependencies = FALSE` and `upgrade = "never"` unless you override
+  them explicitly.
 
 ## Value
 
