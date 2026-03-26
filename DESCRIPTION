@@ -84,14 +84,8 @@ Suggests:
     SoupX,
     testthat (>= 3.0.0)
 Remotes:
-    github::fabotao/GapClust,
     github::genecell/COSGR,
-    github::Novartis/CellSIUS,
     github::PaulingLiu/ROGUE,
-    github::princethewinner/FiRE,
-    github::ScialdoneLab/CIARA,
-    github::shawnstat/EDGE,
-    github::Danko-Lab/BayesPrism/BayesPrism,
     github::bnprks/BPCells/r,
     github::carmonalab/SignatuR,
     github::catplot/catplot,

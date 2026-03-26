@@ -65,3 +65,59 @@ test_that("version comparison reports update states correctly", {
     "ahead of remote"
   )
 })
+
+test_that("sn_install_shennong uses conservative defaults for GitHub installs", {
+  local_mocked_bindings(
+    .sn_get_cran_version = function(...) NULL,
+    .sn_get_github_version = function(...) package_version("1.0.0"),
+    check_installed = function(...) invisible(TRUE),
+    .env = asNamespace("Shennong")
+  )
+
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_install_github_release = function(repo, ref, args = list()) {
+      captured <<- c(list(repo = repo, ref = ref), args)
+      invisible(TRUE)
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  expect_invisible(
+    Shennong::sn_install_shennong(channel = "github")
+  )
+
+  expect_equal(captured$repo, "zerostwo/shennong")
+  expect_equal(captured$ref, "main")
+  expect_false(isTRUE(captured$dependencies))
+  expect_equal(captured$upgrade, "never")
+})
+
+test_that("sn_install_shennong respects explicit GitHub install overrides", {
+  local_mocked_bindings(
+    .sn_get_cran_version = function(...) NULL,
+    .sn_get_github_version = function(...) package_version("1.0.0"),
+    check_installed = function(...) invisible(TRUE),
+    .env = asNamespace("Shennong")
+  )
+
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_install_github_release = function(repo, ref, args = list()) {
+      captured <<- c(list(repo = repo, ref = ref), args)
+      invisible(TRUE)
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  expect_invisible(
+    Shennong::sn_install_shennong(
+      channel = "github",
+      dependencies = TRUE,
+      upgrade = "always"
+    )
+  )
+
+  expect_true(isTRUE(captured$dependencies))
+  expect_equal(captured$upgrade, "always")
+})

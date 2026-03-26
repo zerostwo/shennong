@@ -126,6 +126,8 @@ Released 2026-03-25.
 
 - Fixed pkgdown GitHub Actions deployment when `deploy_to_branch()` runs in a
   clean runner without a preinstalled copy of `Shennong`.
+- Fixed `sn_install_shennong(channel = "github")` so it no longer tries to
+  resolve runtime-optional GitHub `Suggests` by default during installation.
 - Fixed `sn_plot_dot()` theme handling so the optional `catplot` theme no
   longer tries to impose an additional aspect ratio on top of `coord_fixed()`.
 - Fixed Rd example line-width failures in `R CMD check` and declared the
@@ -165,8 +167,9 @@ Released 2026-03-19.
   availability issues.
 - Fixed the `sn_deconvolve_bulk()` example so the `cibersortx` dry-run path no
   longer fails package examples for missing credentials.
-- Fixed GitHub Actions dependency installation for GitHub-hosted optional rare
-  cell and deconvolution backends used during checks and coverage runs.
+- Fixed GitHub Actions dependency installation so check and coverage jobs keep
+  a minimal, solvable dependency set instead of trying to install unsupported
+  GitHub-only optional backends during lockfile generation.
 
 # Version 0.1.0
 

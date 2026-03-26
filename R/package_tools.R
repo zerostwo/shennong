@@ -276,7 +276,9 @@ sn_check_version <- function(
 #' @param github_ref GitHub ref to install from. Defaults to \code{"main"}.
 #' @param repos CRAN-like repositories used by \code{install.packages()}.
 #' @param ... Additional arguments passed to \code{utils::install.packages()} or
-#'   \code{remotes::install_github()}.
+#'   \code{remotes::install_github()}. For GitHub installs, Shennong defaults to
+#'   \code{dependencies = FALSE} and \code{upgrade = "never"} unless you
+#'   override them explicitly.
 #'
 #' @return Invisibly returns the chosen installation channel.
 #'
@@ -309,8 +311,27 @@ sn_install_shennong <- function(
   }
 
   check_installed("remotes", reason = "to install the GitHub development version.")
-  remotes::install_github(repo = github_repo, ref = github_ref, ...)
+  github_args <- list(...)
+  if (is.null(github_args$dependencies)) {
+    github_args$dependencies <- FALSE
+  }
+  if (is.null(github_args$upgrade)) {
+    github_args$upgrade <- "never"
+  }
+
+  .sn_install_github_release(
+    repo = github_repo,
+    ref = github_ref,
+    args = github_args
+  )
   invisible(resolved_channel)
+}
+
+.sn_install_github_release <- function(repo, ref, args = list()) {
+  do.call(
+    remotes::install_github,
+    c(list(repo = repo, ref = ref), args)
+  )
 }
 
 .sn_get_installed_version <- function(package = "Shennong") {

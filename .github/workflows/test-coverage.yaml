@@ -30,7 +30,6 @@ jobs:
             any::testthat
             any::Seurat
             any::SeuratObject
-            github::Danko-Lab/BayesPrism/BayesPrism
             github::carmonalab/SignatuR
             github::immunogenomics/harmony@harmony2
             any::HGNChelper
@@ -40,11 +39,6 @@ jobs:
             any::data.table
             any::clusterProfiler
             github::catplot/catplot
-            github::ScialdoneLab/CIARA
-            github::Novartis/CellSIUS
-            github::shawnstat/EDGE
-            github::princethewinner/FiRE
-            github::fabotao/GapClust
             github::genecell/COSGR
             bioc::org.Hs.eg.db
             bioc::SingleCellExperiment

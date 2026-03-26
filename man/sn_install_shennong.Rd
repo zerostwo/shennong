@@ -25,7 +25,9 @@ sn_install_shennong(
 \item{repos}{CRAN-like repositories used by \code{install.packages()}.}
 
 \item{...}{Additional arguments passed to \code{utils::install.packages()} or
-\code{remotes::install_github()}.}
+\code{remotes::install_github()}. For GitHub installs, Shennong defaults to
+\code{dependencies = FALSE} and \code{upgrade = "never"} unless you
+override them explicitly.}
 }
 \value{
 Invisibly returns the chosen installation channel.
