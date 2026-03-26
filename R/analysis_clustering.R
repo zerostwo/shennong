@@ -343,9 +343,9 @@
 
   combined <- unique(unlist(rare_features, use.names = FALSE))
   if (verbose) {
-    log_info(glue(
+    .sn_log_info(
       "[rare_features] Added {length(combined)} rare-aware feature(s) from method(s): {paste(method, collapse = ', ')}"
-    ))
+    )
   }
 
   list(
@@ -468,44 +468,6 @@
   jsonlite::read_json(output_path, simplifyVector = TRUE)
 }
 
-.sn_drop_self_neighbors <- function(nn_idx, nn_dist = NULL) {
-  if (ncol(nn_idx) == 0) {
-    return(list(idx = nn_idx, dist = nn_dist))
-  }
-
-  cleaned_idx <- vector("list", length = nrow(nn_idx))
-  cleaned_dist <- if (!is.null(nn_dist)) vector("list", length = nrow(nn_dist)) else NULL
-
-  for (i in seq_len(nrow(nn_idx))) {
-    keep <- nn_idx[i, ] != i & !is.na(nn_idx[i, ])
-    cleaned_idx[[i]] <- as.integer(nn_idx[i, keep])
-    if (!is.null(nn_dist)) {
-      cleaned_dist[[i]] <- as.numeric(nn_dist[i, keep])
-    }
-  }
-
-  target_k <- max(vapply(cleaned_idx, length, integer(1)))
-  idx_mat <- matrix(NA_integer_, nrow = length(cleaned_idx), ncol = target_k)
-  dist_mat <- if (!is.null(cleaned_dist)) {
-    matrix(NA_real_, nrow = length(cleaned_dist), ncol = target_k)
-  } else {
-    NULL
-  }
-
-  for (i in seq_along(cleaned_idx)) {
-    current_k <- length(cleaned_idx[[i]])
-    if (current_k == 0) {
-      next
-    }
-    idx_mat[i, seq_len(current_k)] <- cleaned_idx[[i]]
-    if (!is.null(dist_mat)) {
-      dist_mat[i, seq_len(current_k)] <- cleaned_dist[[i]]
-    }
-  }
-
-  list(idx = idx_mat, dist = dist_mat)
-}
-
 .sn_get_embedding_knn <- function(embeddings, k = 20, n_trees = 50) {
   k <- min(as.integer(k), nrow(embeddings) - 1L)
   if (k < 1L) {
@@ -513,37 +475,19 @@
   }
 
   if (rlang::is_installed("Seurat") && nrow(embeddings) > 1000L) {
-    neighbor <- Seurat::FindNeighbors(
-      object = embeddings,
-      k.param = min(k + 1L, nrow(embeddings)),
-      return.neighbor = TRUE,
-      compute.SNN = FALSE,
-      nn.method = "annoy",
-      n.trees = n_trees,
-      verbose = FALSE
-    )
-    cleaned <- .sn_drop_self_neighbors(
-      nn_idx = methods::slot(neighbor, "nn.idx"),
-      nn_dist = methods::slot(neighbor, "nn.dist")
-    )
-    return(cleaned)
+    return(.sn_find_annoy_knn(
+      embeddings = embeddings,
+      k = k,
+      n_trees = n_trees,
+      include_distance = TRUE
+    ))
   }
 
-  squared_norms <- rowSums(embeddings^2)
-  distance_sq <- outer(squared_norms, squared_norms, "+") - 2 * tcrossprod(embeddings)
-  distance_sq[distance_sq < 0] <- 0
-  diag(distance_sq) <- Inf
-
-  nn_idx <- t(vapply(seq_len(nrow(distance_sq)), function(i) {
-    order(distance_sq[i, ], decreasing = FALSE)[seq_len(k)]
-  }, integer(k)))
-  nn_dist <- matrix(
-    sqrt(distance_sq[cbind(rep(seq_len(nrow(nn_idx)), each = ncol(nn_idx)), c(nn_idx))]),
-    nrow = nrow(nn_idx),
-    byrow = TRUE
+  .sn_exact_knn(
+    embeddings = embeddings,
+    k = k,
+    include_distance = TRUE
   )
-
-  list(idx = nn_idx, dist = nn_dist)
 }
 
 .sn_score_embedding_rarity <- function(embeddings, k = 20, n_trees = 50) {
@@ -987,7 +931,7 @@ sn_detect_rare_cells <- function(object,
       neighbor_method = "auto",
       seed = seed
     )
-    group_scores <- setNames(group_tbl$challenge_score, group_tbl[[group]])
+    group_scores <- stats::setNames(group_tbl$challenge_score, group_tbl[[group]])
     rare_score <- unname(group_scores[as.character(object[[group, drop = TRUE]])])
   }
 
@@ -1021,8 +965,11 @@ sn_detect_rare_cells <- function(object,
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{split_by}' was not found."))
   }
 
-  split_objects <- Seurat::SplitObject(object, split.by = split_by)
-  feature_lists <- lapply(split_objects, function(current_object) {
+  split_values <- as.character(object[[split_by, drop = TRUE]])
+  split_levels <- unique(split_values)
+  feature_lists <- lapply(split_levels, function(current_group) {
+    current_cells <- colnames(object)[split_values == current_group]
+    current_object <- object[, current_cells]
     current_object <- Seurat::FindVariableFeatures(
       current_object,
       nfeatures = nfeatures,
@@ -1182,11 +1129,11 @@ sn_run_cluster <- function(object,
       stop("`normalization_method = \"scran\"` and `\"sctransform\"` are currently only supported when `batch = NULL`.")
     }
     check_installed("harmony")
-    if (verbose) log_info(glue("[sn_run_cluster] Starting integration for batch='{batch}'..."))
+    if (verbose) .sn_log_info("[sn_run_cluster] Starting integration for batch = '{batch}'.")
   }
 
   if (verbose) {
-    log_info(glue("[sn_run_cluster] Normalization method = {normalization_method}; batch = {batch %||% 'none'}"))
+    .sn_log_info("[sn_run_cluster] Normalization method = {normalization_method}; batch = {batch %||% 'none'}.")
   }
 
   predefined_genesets <- c(
@@ -1195,22 +1142,22 @@ sn_run_cluster <- function(object,
   )
 
   if (normalization_method == "sctransform" && !is_null(block_genes)) {
-    log_warn("`block_genes` is only applied in the log-normalization workflows; ignoring it for SCTransform.")
+    .sn_log_warn("`block_genes` is only applied in log-normalization workflows; ignoring it for SCTransform.")
     block_genes <- NULL
   }
   if (normalization_method == "sctransform" && !identical(rare_feature_method, "none")) {
-    log_warn("`rare_feature_method` is only applied in the log-normalization workflows; ignoring it for SCTransform.")
+    .sn_log_warn("`rare_feature_method` is only applied in log-normalization workflows; ignoring it for SCTransform.")
     rare_feature_method <- "none"
   }
 
   if (!is_null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
-    if (verbose) log_info("Processing block genes...")
+    if (verbose) .sn_log_info("Processing blocked genes.")
 
     if (is_character(block_genes) && all(block_genes %in% predefined_genesets)) {
       block_genes <- sn_get_signatures(species = species, category = block_genes)
       if (verbose) {
-        log_info(glue("  Loaded {length(block_genes)} blocked genes from built-in sets."))
+        .sn_log_info("Loaded {length(block_genes)} blocked genes from built-in sets.")
       }
     } else {
       checked <- HGNChelper::checkGeneSymbols(block_genes, species = species)
@@ -1218,12 +1165,12 @@ sn_run_cluster <- function(object,
       invalid <- setdiff(block_genes, valid_genes)
 
       if (length(invalid) > 0) {
-        log_warn(glue(
+        .sn_log_warn(
           "Removed {length(invalid)} invalid genes from block list (e.g. {paste(utils::head(invalid, 3), collapse=', ')})."
-        ))
+        )
       }
       block_genes <- unique(valid_genes)
-      if (verbose) log_info(glue("  Using {length(block_genes)} custom block genes."))
+      if (verbose) .sn_log_info("Using {length(block_genes)} custom blocked genes.")
     }
   }
 
@@ -1238,7 +1185,7 @@ sn_run_cluster <- function(object,
   if (normalization_method == "sctransform") {
     check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
 
-    if (verbose) log_info("[1/4] Running SCTransform...")
+    if (verbose) .sn_log_info("[1/4] Running SCTransform.")
     object <- Seurat::SCTransform(
       object = object,
       variable.features.n = nfeatures,
@@ -1247,7 +1194,7 @@ sn_run_cluster <- function(object,
       seed.use = 717
     )
 
-    if (verbose) log_info("[2/4] Running PCA...")
+    if (verbose) .sn_log_info("[2/4] Running PCA.")
     object <- Seurat::RunPCA(
       object,
       npcs = npcs,
@@ -1269,12 +1216,12 @@ sn_run_cluster <- function(object,
     }
 
     if (!is_null(species)) {
-      if (verbose) log_info("[1/6] Cell cycle scoring...")
+      if (verbose) .sn_log_info("[1/6] Scoring cell cycle.")
       object <- sn_score_cell_cycle(object = object, species = species)
     }
 
     if (verbose) {
-      log_info(glue("[2/6] Selecting highly variable features with hvg_group_by = {hvg_group_by %||% 'global'}..."))
+      .sn_log_info("[2/6] Selecting highly variable features with hvg_group_by = {hvg_group_by %||% 'global'}.")
     }
     hvg_info <- .sn_select_variable_features(
       object = object,
@@ -1293,16 +1240,16 @@ sn_run_cluster <- function(object,
       n_removed <- n_before - n_after_filter
 
       if (verbose) {
-        log_info(glue(
+        .sn_log_info(
           "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
-        ))
+        )
       }
 
       if (length(hvg) < nfeatures) {
-        log_warn(glue(
+        .sn_log_warn(
           "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
           "Consider adjusting 'nfeatures' or 'block_genes'."
-        ))
+        )
       }
       hvg <- utils::head(hvg, nfeatures)
     }
@@ -1340,7 +1287,7 @@ sn_run_cluster <- function(object,
     )
 
     #-- Scaling
-    if (verbose) log_info("[3/6] Scaling data...")
+    if (verbose) .sn_log_info("[3/6] Scaling data.")
     object <- Seurat::ScaleData(
       object = object,
       vars.to.regress = vars_to_regress,
@@ -1349,7 +1296,7 @@ sn_run_cluster <- function(object,
     )
 
     #-- PCA
-    if (verbose) log_info("[4/6] Running PCA...")
+    if (verbose) .sn_log_info("[4/6] Running PCA.")
     object <- Seurat::RunPCA(
       object,
       npcs = npcs,
@@ -1361,7 +1308,7 @@ sn_run_cluster <- function(object,
     if (is_null(x = batch)) {
       reduction <- "pca"
     } else {
-      if (verbose) log_info("[5/6] Running Harmony integration...")
+      if (verbose) .sn_log_info("[5/6] Running Harmony integration.")
       group_by_vars <- group_by_vars %||% batch
       object <- harmony::RunHarmony(
         object = object,
@@ -1374,16 +1321,16 @@ sn_run_cluster <- function(object,
     }
   }
 
-  if (verbose) log_info("[6/6] Clustering with integrated embeddings...")
+  if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
   object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
   object <- Seurat::FindClusters(object, resolution = resolution, random.seed = 717, verbose = verbose)
 
   if (return_cluster) {
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
-    if (verbose) log_info("Integration completed successfully!")
+    if (verbose) .sn_log_info("Integration completed successfully.")
     return(object@meta.data[, "seurat_clusters"])
   } else {
-    if (verbose) log_info("[7/7] Running UMAP...")
+    if (verbose) .sn_log_info("[7/7] Running UMAP.")
     object <- suppressWarnings(Seurat::RunUMAP(
       object,
       reduction = reduction,
@@ -1394,7 +1341,7 @@ sn_run_cluster <- function(object,
       seed.use = 717
     ))
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
-    if (verbose) log_info("Integration completed successfully!")
+    if (verbose) .sn_log_info("Integration completed successfully.")
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))
   }
 }
@@ -1457,16 +1404,16 @@ sn_run_celltypist <- function(x,
   celltypist <- celltypist %||% getOption("shennong.celltypist_path", Sys.which("celltypist"))
   sn_check_file(celltypist)
 
-  log_info("Starting CellTypist analysis with model: {model}")
+  .sn_log_info("Starting CellTypist analysis with model = {model}.")
   tictoc::tic("Total CellTypist runtime")
 
   if (is_null(outdir)) {
     outdir <- tempfile("celltypist_")
     dir.create(outdir, recursive = TRUE)
-    log_info("Using temporary output directory: {outdir}")
+    .sn_log_info("Using a temporary output directory: {outdir}.")
   } else {
     outdir <- sn_set_path(outdir)
-    log_info("Using user-specified output directory: {outdir}")
+    .sn_log_info("Using the user-specified output directory: {outdir}.")
   }
 
   on.exit(
@@ -1480,13 +1427,13 @@ sn_run_celltypist <- function(x,
   )
 
   if (inherits(x, "Seurat")) {
-    log_info("Converting Seurat object to CellTypist input format")
+    .sn_log_info("Converting the Seurat object to CellTypist input format.")
     input_data <- file.path(outdir, "counts.csv")
 
     counts <- tryCatch(
       .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer),
       error = function(e) {
-        log_error("Failed to extract counts layer: {e$message}")
+        .sn_log_error("Failed to extract the counts layer: {e$message}.")
         stop("Counts layer extraction failed")
       }
     )
@@ -1501,20 +1448,20 @@ sn_run_celltypist <- function(x,
     log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
   } else {
     input_data <- x
-    log_info("Using precomputed input matrix: {input_data}")
+    .sn_log_info("Using the precomputed input matrix: {input_data}.")
   }
 
   over_clustering_path <- NULL
 
   if (over_clustering != "auto" && over_clustering %in% colnames(x@meta.data)) {
-    log_info("Using existing clustering column: {over_clustering}")
+    .sn_log_info("Using the existing clustering column: {over_clustering}.")
     over_clustering_path <- file.path(outdir, "over_clustering.txt")
     writeLines(
       as.character(x[[over_clustering, drop = TRUE]]),
       over_clustering_path
     )
   } else if (over_clustering == "auto") {
-    log_warn("Automatic over-clustering not yet implemented")
+    .sn_log_warn("Automatic over-clustering is not implemented yet.")
   }
 
   model_name <- tools::file_path_sans_ext(basename(model))
@@ -1544,7 +1491,7 @@ sn_run_celltypist <- function(x,
   if (plot_results) cmd_args <- c(cmd_args, "--plot-results")
   if (quiet) cmd_args <- c(cmd_args, "--quiet")
   if (majority_voting) cmd_args <- c(cmd_args, "--majority-voting")
-  log_info("Executing CellTypist with command:\n{celltypist} {paste(cmd_args, collapse=' ')}")
+  .sn_log_info("Executing CellTypist with command:\n{celltypist} {paste(cmd_args, collapse = ' ')}")
 
   exit_code <- system2(
     command = celltypist,
@@ -1554,13 +1501,13 @@ sn_run_celltypist <- function(x,
   )
 
   if (exit_code != 0) {
-    log_error("CellTypist failed with exit code {exit_code}")
+    .sn_log_error("CellTypist failed with exit code {exit_code}.")
     stop("CellTypist execution failed. Check logs for details.")
   }
   log_debug("CellTypist output written to {outdir}")
 
   if (!file.exists(predicted_labels_path)) {
-    log_error("Prediction output missing: {predicted_labels_path}")
+    .sn_log_error("Prediction output is missing: {predicted_labels_path}.")
     stop("CellTypist did not generate expected output files")
   }
 
@@ -1577,11 +1524,11 @@ sn_run_celltypist <- function(x,
     )
   }
 
-  log_info("Adding {ncol(predicted_labels)} metadata columns to Seurat object")
+  .sn_log_info("Adding {ncol(predicted_labels)} metadata columns to the Seurat object.")
   x <- SeuratObject::AddMetaData(x, metadata = predicted_labels)
 
   tictoc::toc()
-  log_info("CellTypist analysis completed successfully")
+  .sn_log_info("CellTypist analysis completed successfully.")
 
   .sn_log_seurat_command(object = x, assay = assay, name = "sn_run_celltypist")
 }

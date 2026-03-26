@@ -1325,10 +1325,10 @@ sn_calculate_rogue <- function(
 
   counts <- ROGUE::matr.filter(counts, min.cells = 10, min.genes = 10)
 
-  message("Calculating entropy...")
+  .sn_log_info("Calculating ROGUE entropy.")
   entropy <- ROGUE::SE_fun(counts)
 
-  message("Calculating ROGUE score...")
+  .sn_log_info("Calculating the ROGUE score.")
   rogue_result <- ROGUE::CalculateRogue(entropy, platform = "UMI")
 
   if (!is_null(cluster) && !is_null(sample)) {
@@ -1784,17 +1784,12 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
     stop("At least two cells are required to build a neighbor graph.")
   }
 
-  neighbor <- Seurat::FindNeighbors(
-    object = embeddings,
-    k.param = min(k + 1L, nrow(embeddings)),
-    return.neighbor = TRUE,
-    compute.SNN = FALSE,
-    nn.method = "annoy",
-    n.trees = n_trees,
-    verbose = FALSE
+  nn_idx <- .sn_find_annoy_knn(
+    embeddings = embeddings,
+    k = k,
+    n_trees = n_trees,
+    include_distance = FALSE
   )
-  nn_idx <- methods::slot(neighbor, "nn.idx")
-  nn_idx <- .sn_drop_self_neighbor(nn_idx)
   .sn_neighbor_index_to_adjacency(nn_idx, cell_names = rownames(embeddings))
 }
 
@@ -1812,41 +1807,12 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
     )
   }
 
-  squared_norms <- rowSums(embeddings^2)
-  distance_sq <- outer(squared_norms, squared_norms, "+") -
-    2 * tcrossprod(embeddings)
-  distance_sq[distance_sq < 0] <- 0
-  diag(distance_sq) <- Inf
-
-  nn_idx <- t(vapply(seq_len(nrow(distance_sq)), function(i) {
-    order(distance_sq[i, ], decreasing = FALSE)[seq_len(k)]
-  }, integer(k)))
-
+  nn_idx <- .sn_exact_knn(
+    embeddings = embeddings,
+    k = k,
+    include_distance = FALSE
+  )$idx
   .sn_neighbor_index_to_adjacency(nn_idx, cell_names = rownames(embeddings))
-}
-
-.sn_drop_self_neighbor <- function(nn_idx) {
-  if (ncol(nn_idx) == 0) {
-    return(nn_idx)
-  }
-
-  cleaned_list <- lapply(seq_len(nrow(nn_idx)), function(i) {
-    current <- nn_idx[i, ]
-    current <- current[current != i]
-    current <- current[!is.na(current)]
-    as.integer(current)
-  })
-  max_neighbors <- max(vapply(cleaned_list, length, integer(1)))
-  if (max_neighbors == 0) {
-    return(matrix(NA_integer_, nrow = nrow(nn_idx), ncol = 0))
-  }
-  cleaned <- t(vapply(cleaned_list, function(current) {
-    c(current, rep(NA_integer_, max_neighbors - length(current)))
-  }, integer(max_neighbors)))
-  if (is.vector(cleaned)) {
-    cleaned <- matrix(cleaned, ncol = max_neighbors)
-  }
-  cleaned
 }
 
 .sn_neighbor_index_to_adjacency <- function(nn_idx, cell_names) {

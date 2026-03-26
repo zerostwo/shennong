@@ -88,6 +88,81 @@ test_that("sparse-matrix helpers coerce common inputs without changing values", 
   expect_equal(as.matrix(from_general), dense)
 })
 
+test_that("sparse aggregation helpers preserve grouped sums", {
+  counts <- Matrix::Matrix(
+    matrix(
+      c(
+        1, 0, 2, 0,
+        0, 3, 0, 4,
+        5, 0, 6, 0
+      ),
+      nrow = 3,
+      byrow = TRUE,
+      dimnames = list(
+        c("gene1", "gene2", "gene3"),
+        c("cell1", "cell2", "cell3", "cell4")
+      )
+    ),
+    sparse = TRUE
+  )
+
+  by_sample <- Shennong:::.sn_aggregate_columns_by_group(
+    counts,
+    groups = c("s1", "s2", "s1", "s2")
+  )
+  by_gene <- Shennong:::.sn_aggregate_rows_by_group(
+    counts,
+    groups = c("set1", "set2", "set1")
+  )
+
+  expect_equal(
+    as.matrix(by_sample),
+    matrix(
+      c(
+        3, 0,
+        0, 7,
+        11, 0
+      ),
+      nrow = 3,
+      byrow = TRUE,
+      dimnames = list(rownames(counts), c("s1", "s2"))
+    )
+  )
+  expect_equal(
+    as.matrix(by_gene),
+    matrix(
+      c(
+        6, 0, 8, 0,
+        0, 3, 0, 4
+      ),
+      nrow = 2,
+      byrow = TRUE,
+      dimnames = list(c("set1", "set2"), colnames(counts))
+    )
+  )
+})
+
+test_that("exact knn helper matches brute-force neighbors on small embeddings", {
+  embeddings <- rbind(
+    c(0, 0),
+    c(1, 0),
+    c(0, 2),
+    c(3, 0)
+  )
+  rownames(embeddings) <- paste0("cell", seq_len(nrow(embeddings)))
+
+  knn <- Shennong:::.sn_exact_knn(
+    embeddings = embeddings,
+    k = 2,
+    include_distance = TRUE,
+    block_size = 2
+  )
+
+  expect_equal(knn$idx[1, ], c(2, 3))
+  expect_equal(round(knn$dist[1, ], 6), round(c(1, 2), 6))
+  expect_equal(knn$idx[4, ], c(2, 1))
+})
+
 test_that("Seurat command logging stores named command objects on the Seurat object", {
   skip_if_not_installed("Seurat")
 

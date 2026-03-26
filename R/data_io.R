@@ -143,19 +143,19 @@ sn_read <- function(path,
 .guess_dir_format <- function(path) {
   files <- list.files(path = path)
   if (all(any(grepl("matrix.mtx.gz$", files)) && any(grepl("barcodes.tsv.gz$", files)) && any(grepl("features.tsv.gz$", files)))) {
-    log_info("Detected 10x format in directory: ", path)
+    .sn_log_info("Detected 10x format in directory: {path}.")
     return("10x")
   } else if (all(any(grepl("matrix.mtx$", files)) && any(grepl("barcodes.tsv$", files)) && any(grepl("features.tsv$", files)))) {
-    log_info("Detected STARsolo format in directory: ", path)
+    .sn_log_info("Detected STARsolo format in directory: {path}.")
     return("starsolo")
   } else if (any(grepl("val$", files))) {
-    log_info("Detected BPCells format in directory: ", path)
+    .sn_log_info("Detected BPCells format in directory: {path}.")
     return("bpcells")
   } else if (any(grepl("filtered_feature_bc_matrix.h5$", files))) {
-    log_info("Detected 10x spatial format in directory: ", path)
+    .sn_log_info("Detected 10x spatial format in directory: {path}.")
     return("10x_spatial")
   } else {
-    log_info("Cannot guess the format of the directory: ", path)
+    .sn_log_info("Could not infer a directory format for: {path}.")
     return(NULL)
   }
 }

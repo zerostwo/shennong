@@ -4,6 +4,26 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Reworked several internal sparse-matrix hot paths for better performance and
+  lower peak memory use. Pseudobulk DE aggregation now uses sparse grouped
+  matrix multiplication instead of `t(as.matrix(...))` + `rowsum()`, exact kNN
+  fallbacks now compute neighbors blockwise instead of allocating a full
+  distance matrix, split Seurat layer merges now assemble one sparse matrix
+  from triplets rather than repeated indexed writes, and gene-symbol
+  standardization now uses bundled annotation data plus grouped row
+  aggregation.
+- Continued the refactor by removing duplicated kNN cleanup / Annoy lookup
+  logic across clustering and metrics. Shared helpers now own self-neighbor
+  removal and Annoy neighbor extraction, and grouped HVG selection now
+  processes one metadata level at a time instead of materializing
+  `Seurat::SplitObject()` output for every group at once.
+- Standardized package progress logging through internal wrappers instead of a
+  mix of ad hoc `logger::log_*()`, `message()`, and `cli` progress calls.
+  Informational notifications now flow through shared helpers with glue-based
+  interpolation, while direct warnings/errors remain reserved for actual
+  conditions that callers may need to handle.
+- Added regression coverage for the new sparse aggregation helpers and the
+  blockwise exact-kNN helper in `tests/testthat/test_utils.R`.
 - Expanded `R/analysis_metrics.R` from a minimal LISI/ROGUE/composition module
   into a broader integration-assessment layer. New exported helpers now cover
   silhouette widths, graph connectivity, PCR batch scoring, clustering
@@ -264,6 +284,9 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Hardened the pkgdown GitHub Actions deployment job by installing the package before `pkgdown::deploy_to_branch()`.
 - Added an interpretation-layer module that keeps LLM prompting separate from analysis. It introduces stored enrichment metadata, evidence bundles for annotation/DE/pathway/writing tasks, prompt builders, and optional provider-backed writing helpers.
 - Consolidated the source layout so workflow-adjacent functions now live together: `preprocessing.R` owns initialization, normalization, QC, doublet detection, ambient correction, and species inference; analysis files are split into clustering, DE, enrichment, and metrics; package-maintenance helpers are grouped under `package_tools.R`.
+- Fixed the `sn_deconvolve_bulk()` example so the `cibersortx` dry-run example path supplies placeholder credentials during checks.
+- Added the missing GitHub-hosted optional packages (`BayesPrism`, `CIARA`, `CellSIUS`, `EDGE`, `FiRE`, `GapClust`) to `DESCRIPTION`/CI installation paths so Actions can satisfy the same optional backends referenced in package code and examples.
+- Qualified the remaining `setNames()` call under `stats::setNames()` so `R CMD check` no longer reports a global-function note in the rare-cell workflow.
 
 ## Remaining High-Priority Work
 

@@ -61,6 +61,19 @@ Released 2026-03-25.
 
 ### Changed
 
+- Internal sparse-matrix workflows were optimized for better runtime and lower
+  peak memory use. Pseudobulk DE aggregation now groups columns without
+  materializing dense matrices, split Seurat assay layers are combined through
+  sparse triplet assembly instead of repeated indexed writes, exact kNN
+  fallbacks now use blockwise distance evaluation instead of constructing a
+  full cell-by-cell distance matrix, and gene-symbol standardization now reuses
+  bundled annotation data plus grouped row aggregation instead of external CSV
+  reads and per-column duplicate collapsing.
+- Developer-facing informational notifications are now routed through internal
+  package logging helpers instead of a mix of ad hoc `logger`, `message()`,
+  and `cli` progress calls. Progress wording is now more consistent across
+  initialization, clustering, enrichment, and preprocessing workflows, while
+  real `warning()` and `stop()` conditions retain their existing semantics.
 - `sn_enrich()` now uses a single `x` input with automatic dispatch across
   gene vectors, ranked named vectors, data frames, and Seurat-stored DE
   results. Its `gene_clusters` formula now drives both grouped ORA
@@ -150,6 +163,10 @@ Released 2026-03-19.
   initialization and clustering paths.
 - Fixed SoupX validation order so missing `raw` input is reported before package
   availability issues.
+- Fixed the `sn_deconvolve_bulk()` example so the `cibersortx` dry-run path no
+  longer fails package examples for missing credentials.
+- Fixed GitHub Actions dependency installation for GitHub-hosted optional rare
+  cell and deconvolution backends used during checks and coverage runs.
 
 # Version 0.1.0
 

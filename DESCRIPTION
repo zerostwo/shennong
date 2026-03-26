@@ -44,11 +44,16 @@ Suggests:
     BPCells,
     catplot,
     celda,
+    CIARA,
     clusterProfiler,
     COSG,
+    CellSIUS,
     data.table,
     DESeq2,
+    EDGE,
     edgeR,
+    FiRE,
+    GapClust,
     ggrastr,
     glmGamPoi,
     harmony,
@@ -79,13 +84,18 @@ Suggests:
     SoupX,
     testthat (>= 3.0.0)
 Remotes:
+    github::fabotao/GapClust,
+    github::genecell/COSGR,
+    github::Novartis/CellSIUS,
+    github::PaulingLiu/ROGUE,
+    github::princethewinner/FiRE,
+    github::ScialdoneLab/CIARA,
+    github::shawnstat/EDGE,
     github::Danko-Lab/BayesPrism/BayesPrism,
     github::bnprks/BPCells/r,
     github::carmonalab/SignatuR,
     github::catplot/catplot,
-    github::genecell/COSGR,
     github::immunogenomics/harmony@harmony2,
-    github::immunogenomics/lisi,
-    github::PaulingLiu/ROGUE
+    github::immunogenomics/lisi
 VignetteBuilder: knitr
 Config/testthat/edition: 3

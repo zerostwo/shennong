@@ -4,6 +4,32 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- When Shennong has to fall back to exact neighbor search, it should optimize
+  for bounded memory rather than for the shortest implementation. The exact
+  kNN path now computes distances blockwise so larger embeddings do not require
+  an `n x n` dense distance matrix just to recover the top-k neighbors.
+- Sparse grouped aggregation should stay sparse all the way through DE and
+  preprocessing helpers whenever the underlying algorithm allows it. Internal
+  grouped count aggregation and duplicate-feature collapsing now use matrix
+  multiplication / grouped row sums instead of dense transposes or per-column
+  `apply()` loops.
+- Split Seurat assay layers should be merged by sparse assembly, not by
+  repeated subassignment into a preallocated sparse matrix. This avoids
+  unnecessary reallocations when the package needs a temporary combined layer
+  for downstream workflows.
+- Repeated nearest-neighbor plumbing should live in one shared helper layer.
+  Annoy neighbor extraction and self-neighbor cleanup are now centralized so
+  clustering and metrics use the same implementation and future tuning applies
+  consistently across both workflows.
+- Grouped HVG selection should reduce peak memory without changing ranking
+  semantics. Shennong now iterates through one metadata group at a time rather
+  than materializing all split Seurat objects up front; the ranking logic
+  remains inline because it is specific to this one feature-selection path.
+- Developer-facing progress notifications should use one lightweight internal
+  logging surface. Shennong now routes informational messages through internal
+  glue-aware wrappers so progress wording and formatting stay consistent,
+  without changing `warning()` or `stop()` semantics for real runtime
+  conditions.
 - Integration assessment should be a first-class workflow, not an ad hoc
   collection of standalone helpers. Shennong now exposes `sn_assess_integration()`
   as the aggregate entry point while still exporting lower-level metric
@@ -156,3 +182,5 @@ Last updated: 2026-03-25
 - Release notes are also part of the delivery contract. Any user-facing feature change must update `NEWS.md` in the same change set as the code, tests, pkgdown articles, and shipped skill references.
 - Signature retrieval should be runtime-stable. Shennong now ships its own internal signature snapshot generated directly from `SignatuR` during development, and `sn_get_signatures()` reads that bundled data instead of the user's installed `SignatuR` package.
 - End-user projects need a package-level way to bootstrap a governed analysis repository from packaged assets. Shennong now exposes `sn_initialize_codex_project()` for the full project template and retains `sn_initialize_project()` as a wrapper for convenience.
+- Package examples must be check-safe even when they exercise credentialed integrations. The `sn_deconvolve_bulk(method = "cibersortx", cibersortx_dry_run = TRUE)` example now passes explicit placeholder credentials so dry-run validation stays local and deterministic.
+- CI should explicitly install the GitHub-hosted optional backends that appear in examples, checks, or coverage paths, rather than assuming `setup-r-dependencies` will infer them from `Suggests`. The check and coverage workflows now list those remotes directly.

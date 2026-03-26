@@ -73,6 +73,32 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   )
 }
 
+.sn_log <- function(level = c("info", "warn", "error"), ..., .envir = parent.frame()) {
+  level <- match.arg(level)
+  msg <- as.character(glue::glue(..., .envir = .envir, .sep = ""))
+
+  switch(
+    level,
+    info = logger::log_info(msg),
+    warn = logger::log_warn(msg),
+    error = logger::log_error(msg)
+  )
+
+  invisible(msg)
+}
+
+.sn_log_info <- function(..., .envir = parent.frame()) {
+  .sn_log("info", ..., .envir = .envir)
+}
+
+.sn_log_warn <- function(..., .envir = parent.frame()) {
+  .sn_log("warn", ..., .envir = .envir)
+}
+
+.sn_log_error <- function(..., .envir = parent.frame()) {
+  .sn_log("error", ..., .envir = .envir)
+}
+
 .sn_is_iterable_matrix <- function(x) {
   inherits(x, "IterableMatrix") || inherits(x, "MatrixDir") || inherits(x, "RenameDims")
 }
@@ -83,7 +109,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   }
 
   if (.sn_is_iterable_matrix(x)) {
-    message("Materializing a BPCells-backed matrix in memory for this operation.")
+    .sn_log_info("Materializing a BPCells-backed matrix in memory for this operation.")
     materialized <- suppressWarnings(as.matrix(x))
     return(methods::as(Matrix::Matrix(materialized, sparse = TRUE), "dgCMatrix"))
   }
@@ -101,6 +127,169 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   }
 
   x
+}
+
+.sn_sparse_group_membership <- function(groups) {
+  group_levels <- unique(as.character(groups))
+  Matrix::sparseMatrix(
+    i = seq_along(groups),
+    j = match(as.character(groups), group_levels),
+    x = 1,
+    dims = c(length(groups), length(group_levels)),
+    dimnames = list(NULL, group_levels)
+  )
+}
+
+.sn_aggregate_columns_by_group <- function(x, groups) {
+  if (ncol(x) != length(groups)) {
+    stop("`groups` must have one entry per column in `x`.")
+  }
+
+  membership <- .sn_sparse_group_membership(groups)
+  if (inherits(x, "Matrix")) {
+    aggregated <- .sn_as_sparse_matrix(x) %*% membership
+  } else {
+    aggregated <- x %*% as.matrix(membership)
+  }
+
+  if (is.null(dim(aggregated))) {
+    aggregated <- matrix(
+      aggregated,
+      nrow = nrow(x),
+      ncol = ncol(membership),
+      dimnames = list(rownames(x), colnames(membership))
+    )
+  }
+
+  colnames(aggregated) <- colnames(membership)
+  aggregated
+}
+
+.sn_aggregate_rows_by_group <- function(x, groups) {
+  if (nrow(x) != length(groups)) {
+    stop("`groups` must have one entry per row in `x`.")
+  }
+
+  if (inherits(x, "Matrix")) {
+    membership <- .sn_sparse_group_membership(groups)
+    aggregated <- Matrix::t(membership) %*% .sn_as_sparse_matrix(x)
+    if (is.null(dim(aggregated))) {
+      aggregated <- matrix(
+        aggregated,
+        nrow = ncol(membership),
+        ncol = ncol(x),
+        dimnames = list(colnames(membership), colnames(x))
+      )
+    }
+    rownames(aggregated) <- colnames(membership)
+    return(aggregated)
+  }
+
+  rowsum(x, group = groups, reorder = FALSE)
+}
+
+.sn_exact_knn <- function(embeddings,
+                          k = 20,
+                          include_distance = FALSE,
+                          block_size = 1024L) {
+  n_cells <- nrow(embeddings)
+  k <- min(as.integer(k), n_cells - 1L)
+  if (k < 1L) {
+    stop("At least two cells are required to compute exact nearest neighbors.")
+  }
+
+  block_size <- max(1L, as.integer(block_size))
+  squared_norms <- rowSums(embeddings^2)
+  nn_idx <- matrix(NA_integer_, nrow = n_cells, ncol = k)
+  nn_dist <- if (isTRUE(include_distance)) {
+    matrix(NA_real_, nrow = n_cells, ncol = k)
+  } else {
+    NULL
+  }
+
+  for (start in seq.int(1L, n_cells, by = block_size)) {
+    end <- min(start + block_size - 1L, n_cells)
+    block_idx <- start:end
+    block <- embeddings[block_idx, , drop = FALSE]
+    distance_sq <- outer(rowSums(block^2), squared_norms, "+") - 2 * tcrossprod(block, embeddings)
+    distance_sq[distance_sq < 0] <- 0
+    distance_sq[cbind(seq_along(block_idx), block_idx)] <- Inf
+
+    for (i in seq_along(block_idx)) {
+      nearest <- order(distance_sq[i, ], decreasing = FALSE)[seq_len(k)]
+      nn_idx[block_idx[[i]], ] <- nearest
+      if (!is.null(nn_dist)) {
+        nn_dist[block_idx[[i]], ] <- sqrt(distance_sq[i, nearest])
+      }
+    }
+  }
+
+  list(idx = nn_idx, dist = nn_dist)
+}
+
+.sn_drop_self_knn <- function(nn_idx, nn_dist = NULL) {
+  if (ncol(nn_idx) == 0) {
+    return(list(idx = nn_idx, dist = nn_dist))
+  }
+
+  cleaned_idx <- vector("list", length = nrow(nn_idx))
+  cleaned_dist <- if (!is.null(nn_dist)) vector("list", length = nrow(nn_idx)) else NULL
+
+  for (i in seq_len(nrow(nn_idx))) {
+    keep <- nn_idx[i, ] != i & !is.na(nn_idx[i, ])
+    cleaned_idx[[i]] <- as.integer(nn_idx[i, keep])
+    if (!is.null(cleaned_dist)) {
+      cleaned_dist[[i]] <- as.numeric(nn_dist[i, keep])
+    }
+  }
+
+  target_k <- max(vapply(cleaned_idx, length, integer(1)))
+  idx_mat <- matrix(NA_integer_, nrow = length(cleaned_idx), ncol = target_k)
+  dist_mat <- if (!is.null(cleaned_dist)) {
+    matrix(NA_real_, nrow = length(cleaned_dist), ncol = target_k)
+  } else {
+    NULL
+  }
+
+  for (i in seq_along(cleaned_idx)) {
+    current_k <- length(cleaned_idx[[i]])
+    if (current_k == 0) {
+      next
+    }
+    idx_mat[i, seq_len(current_k)] <- cleaned_idx[[i]]
+    if (!is.null(dist_mat)) {
+      dist_mat[i, seq_len(current_k)] <- cleaned_dist[[i]]
+    }
+  }
+
+  list(idx = idx_mat, dist = dist_mat)
+}
+
+.sn_find_annoy_knn <- function(embeddings, k = 20, n_trees = 50, include_distance = FALSE) {
+  k <- min(as.integer(k), nrow(embeddings) - 1L)
+  if (k < 1L) {
+    stop("At least two cells are required to compute nearest neighbors.")
+  }
+
+  neighbor <- Seurat::FindNeighbors(
+    object = embeddings,
+    k.param = min(k + 1L, nrow(embeddings)),
+    return.neighbor = TRUE,
+    compute.SNN = FALSE,
+    nn.method = "annoy",
+    n.trees = n_trees,
+    verbose = FALSE
+  )
+  cleaned <- .sn_drop_self_knn(
+    nn_idx = methods::slot(neighbor, "nn.idx"),
+    nn_dist = if (isTRUE(include_distance)) methods::slot(neighbor, "nn.dist") else NULL
+  )
+
+  if (isTRUE(include_distance)) {
+    return(cleaned)
+  }
+
+  cleaned$idx
 }
 
 .sn_log_seurat_command <- function(object, assay = NULL, name = NULL) {
@@ -143,23 +332,30 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
 
 .sn_combine_seurat_layers <- function(object, assay = "RNA", layers) {
   mats <- lapply(layers, function(current_layer) {
-    SeuratObject::LayerData(object = object, assay = assay, layer = current_layer)
+    .sn_as_sparse_matrix(SeuratObject::LayerData(object = object, assay = assay, layer = current_layer))
   })
 
   feature_names <- unique(unlist(lapply(mats, rownames), use.names = FALSE))
-  combined <- Matrix::Matrix(
-    0,
-    nrow = length(feature_names),
-    ncol = ncol(object),
-    sparse = TRUE,
-    dimnames = list(feature_names, colnames(object))
+  cell_names <- colnames(object)
+  feature_index <- stats::setNames(seq_along(feature_names), feature_names)
+  cell_index <- stats::setNames(seq_along(cell_names), cell_names)
+
+  combined_triplets <- lapply(mats, function(mat) {
+    triplets <- Matrix::summary(methods::as(mat, "TsparseMatrix"))
+    list(
+      i = unname(feature_index[rownames(mat)[triplets$i]]),
+      j = unname(cell_index[colnames(mat)[triplets$j]]),
+      x = triplets$x
+    )
+  })
+
+  Matrix::sparseMatrix(
+    i = unlist(lapply(combined_triplets, `[[`, "i"), use.names = FALSE),
+    j = unlist(lapply(combined_triplets, `[[`, "j"), use.names = FALSE),
+    x = unlist(lapply(combined_triplets, `[[`, "x"), use.names = FALSE),
+    dims = c(length(feature_names), length(cell_names)),
+    dimnames = list(feature_names, cell_names)
   )
-
-  for (mat in mats) {
-    combined[rownames(mat), colnames(mat)] <- mat
-  }
-
-  combined
 }
 
 .sn_get_seurat_layer_data <- function(object, assay = "RNA", layer = "counts") {

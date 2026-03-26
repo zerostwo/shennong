@@ -201,12 +201,10 @@
       next
     }
 
-    aggregated <- rowsum(
-      x = t(as.matrix(counts_subset)),
-      group = meta_subset$pb_key,
-      reorder = FALSE
+    aggregated <- .sn_aggregate_columns_by_group(
+      x = counts_subset,
+      groups = meta_subset$pb_key
     )
-    aggregated <- t(aggregated)
 
     pb_meta <- unique(meta_subset[, c("pb_key", "pb_sample", "pb_group"), drop = FALSE])
     pb_meta <- pb_meta[match(colnames(aggregated), pb_meta$pb_key), , drop = FALSE]
@@ -214,9 +212,9 @@
     replicate_counts <- table(pb_meta$pb_group)
     if (any(replicate_counts[c(ident_1, ident_2)] < 2)) {
       if (verbose) {
-        log_warn(glue(
+        .sn_log_warn(
           "Skipping pseudobulk DE for subset '{current_subset}' because fewer than 2 samples were available in at least one comparison group."
-        ))
+        )
       }
       next
     }
@@ -245,7 +243,7 @@
       fit <- edgeR::glmQLFit(dge, design = design)
       test <- edgeR::glmQLFTest(fit, coef = 2)
       result <- edgeR::topTags(test, n = Inf, sort.by = "none")$table
-      result$baseMean <- rowMeans(aggregated)
+      result$baseMean <- if (inherits(aggregated, "Matrix")) Matrix::rowMeans(aggregated) else rowMeans(aggregated)
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$PValue
       result$padj <- result$FDR
@@ -259,7 +257,7 @@
       fit <- limma::lmFit(v, design = design)
       fit <- limma::eBayes(fit)
       result <- limma::topTable(fit, coef = 2, number = Inf, sort.by = "none")
-      result$baseMean <- rowMeans(aggregated)
+      result$baseMean <- if (inherits(aggregated, "Matrix")) Matrix::rowMeans(aggregated) else rowMeans(aggregated)
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$P.Value
       result$padj <- result$adj.P.Val

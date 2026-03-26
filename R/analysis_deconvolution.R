@@ -78,6 +78,8 @@
 #'     method = "cibersortx",
 #'     cell_type_col = "cell_type",
 #'     outdir = tempdir(),
+#'     cibersortx_email = "demo@example.org",
+#'     cibersortx_token = "fake-token",
 #'     cibersortx_dry_run = TRUE,
 #'     return_object = FALSE
 #'   )

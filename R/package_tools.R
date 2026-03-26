@@ -252,14 +252,12 @@ sn_check_version <- function(
   if (!quiet) {
     installed_label <- if (is.null(installed_version)) "not installed" else as.character(installed_version)
     remote_label <- if (is.null(remote_version)) "unavailable" else as.character(remote_version)
-    message(
-      glue(
-        "Shennong ({resolved_channel}): installed = {installed_label}; ",
-        "latest = {remote_label}; status = {status$status}"
-      )
+    .sn_log_info(
+      "Shennong ({resolved_channel}): installed = {installed_label}; ",
+      "latest = {remote_label}; status = {status$status}."
     )
     if (!isTRUE(status$up_to_date)) {
-      message("Install/update with: ", install_command)
+      .sn_log_info("Install or update with: {install_command}.")
     }
   }
 

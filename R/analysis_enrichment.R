@@ -346,7 +346,7 @@ sn_enrich <- function(
 
   run_one <- function(current_database) {
     current_cfg <- msigdb_cfgs[[current_database]]
-    log_info(glue("{current_database} database {toupper(analysis)} analysis..."))
+    .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
 
     if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
       ont <- switch(EXPR = current_database,
