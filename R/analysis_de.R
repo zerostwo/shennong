@@ -1,11 +1,3 @@
-.sn_store_de_result <- function(object, store_name, result) {
-  misc_data <- methods::slot(object, "misc")
-  misc_data$de_results <- misc_data$de_results %||% list()
-  misc_data$de_results[[store_name]] <- result
-  methods::slot(object, "misc") <- misc_data
-  object
-}
-
 .sn_normalize_de_method <- function(analysis, method = NULL) {
   if (is_null(method)) {
     if (analysis == "pseudobulk") {
@@ -557,8 +549,9 @@ sn_find_de <- function(
     n_genes = nrow(result)
   )
 
-  object <- .sn_store_de_result(
+  object <- .sn_store_misc_result(
     object = object,
+    collection = "de_results",
     store_name = store_name,
     result = stored_result
   )

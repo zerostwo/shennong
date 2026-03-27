@@ -3,9 +3,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Version 0.1.2
-
-Released 2026-03-25.
+# Unreleased
 
 ### Added
 
@@ -15,6 +13,45 @@ Released 2026-03-25.
   pre-filter reference to quantify low-quality-cell removal, doublet removal,
   and clean-cell retention. Reports can be stored under
   `object@misc$qc_assessments`.
+- `sn_list_input_dirs()` now scans a root directory for recognized single-cell
+  input folders such as 10x, 10x spatial, STARsolo, and BPCells layouts.
+
+### Changed
+
+- `sn_calculate_composition()` now supports multi-column `group_by` values and
+  can return proportions, counts, or both through `measure`.
+- `sn_find_doublets()` now skips zero-count and low-feature cells before
+  running `scDblFinder()` on corrected layers, records corrected-layer results
+  with `_corrected` suffixes, and works with the zero-count flags produced by
+  ambient-RNA correction.
+- `sn_filter_cells()` now validates its `method` argument, keeps constant-value
+  QC groups when MAD collapses to zero, and checks plotting dependencies
+  explicitly before rendering diagnostics. `sn_filter_genes()` now validates
+  `min_cells` and keeps its threshold summary stable when the requested
+  threshold exceeds the number of cells in the object.
+- `sn_run_cluster()` now defaults `hvg_group_by` to the `batch` column when
+  batch integration is requested and the user does not explicitly supply a
+  separate HVG grouping variable.
+- The repository now ships `scripts/check-prepush.R` so maintainers can run
+  documentation, targeted tests, the full test suite, `R CMD build`, and
+  `R CMD check --no-manual` in one local pre-push command.
+- Internal DE result storage now reuses the shared misc-result helper instead
+  of maintaining a second collection-specific implementation.
+
+### Fixed
+
+- Fixed local and CI test helpers so Seurat fixtures used in `de_enrich` and
+  `utils` tests no longer depend on implicit species inference or non-returned
+  normalization calls.
+- Fixed pkgdown reference indexing so new helpers such as `sn_assess_qc()` and
+  `sn_list_input_dirs()` are included in the generated site configuration.
+
+# Version 0.1.2
+
+Released 2026-03-25.
+
+### Added
+
 - Bundled human and mouse GENCODE gene-annotation data was added for gene-level
   filtering workflows. The snapshot now also stores genome-context fields such
   as sequence name, source, coordinates, strand, gene status/source, and
@@ -67,11 +104,6 @@ Released 2026-03-25.
 
 ### Changed
 
-- `sn_filter_cells()` now validates its `method` argument, keeps constant-value
-  QC groups when MAD collapses to zero, and checks plotting dependencies
-  explicitly before rendering diagnostics. `sn_filter_genes()` now validates
-  `min_cells` and keeps its threshold summary stable when the requested
-  threshold exceeds the number of cells in the object.
 - Internal sparse-matrix workflows were optimized for better runtime and lower
   peak memory use. Pseudobulk DE aggregation now groups columns without
   materializing dense matrices, split Seurat assay layers are combined through
@@ -129,14 +161,9 @@ Released 2026-03-25.
   supplied, aligning enrichment with the existing stored DE workflow.
 - pkgdown articles, shipped Codex skill references, and `NEWS.md` are now
   treated as required deliverables for any user-facing workflow change.
-- The pkgdown deployment workflow now installs the current package before
-  publishing the site, so reference generation can load `Shennong` inside the
-  temporary deployment worktree.
 
 ### Fixed
 
-- Fixed pkgdown GitHub Actions deployment when `deploy_to_branch()` runs in a
-  clean runner without a preinstalled copy of `Shennong`.
 - Fixed `sn_install_shennong(channel = "github")` so it no longer tries to
   resolve runtime-optional GitHub `Suggests` by default during installation.
 - Removed the optional rare-cell backends `FiRE`, `CellSIUS`, and `EDGE` from

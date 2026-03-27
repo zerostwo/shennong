@@ -4,6 +4,14 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Default collaboration for this repository should stop at local commits unless
+  the user explicitly asks to push to GitHub. Do not push after a successful
+  fix or refactor by default; wait for an explicit "push"/"submit to GitHub"
+  instruction.
+- `NEWS.md` updates belong under an unreleased section while work is still in
+  progress. Once a version is marked as released, treat that section as frozen
+  and record subsequent changes in the current unreleased section instead of
+  appending to the released version.
 - Pre-push validation should be encoded in one repository-local command rather
   than left to memory. Shennong now ships `scripts/check-prepush.R` so the
   standard maintainer path can run documentation, tests, build, and check in a
