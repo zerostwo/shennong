@@ -9,7 +9,8 @@ make_utils_test_object <- function(seed = 1, prefix = "utils", n_genes = 12, n_c
 
   sn_initialize_seurat_object(
     x = counts,
-    project = prefix
+    project = prefix,
+    species = "human"
   )
 }
 

@@ -27,14 +27,15 @@ make_de_test_object <- function() {
 
   object <- sn_initialize_seurat_object(
     x = Matrix::Matrix(counts, sparse = TRUE),
-    species = NULL,
+    species = "human",
     project = "de-test"
   )
   object$sample <- sample
   object$condition <- condition
   object$cell_type <- cell_type
   Seurat::Idents(object) <- object$cell_type
-  Seurat::NormalizeData(object, verbose = FALSE)
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  object
 }
 
 test_that("sn_find_de stores marker results on the Seurat object", {
