@@ -8,6 +8,18 @@
   )
 }
 
+.sn_example_remote_url <- function(dataset, matrix_type, zenodo_record) {
+  glue::glue(
+    "https://zenodo.org/records/{zenodo_record}/files/{dataset}_{matrix_type}_feature_bc_matrix.h5"
+  )
+}
+
+.sn_download_example_file <- function(url, destfile) {
+  cli::cli_inform("Fetching {basename(destfile)} from Zenodo cache...")
+  curl::curl_download(url = url, destfile = destfile)
+  invisible(destfile)
+}
+
 #' Load example datasets from Zenodo
 #'
 #' This function downloads (if not already cached) and loads processed
@@ -162,11 +174,12 @@ sn_load_data <- function(dataset = "pbmc3k",
   local_h5 <- glue("{save_dir}/{dataset}_{matrix_type}_feature_bc_matrix.h5")
 
   if (!file.exists(local_h5)) {
-    remote_url <- glue::glue(
-      "https://zenodo.org/records/{zenodo_record}/files/{dataset}_{matrix_type}_feature_bc_matrix.h5"
+    remote_url <- .sn_example_remote_url(
+      dataset = dataset,
+      matrix_type = matrix_type,
+      zenodo_record = zenodo_record
     )
-    cli::cli_inform("Fetching {dataset} ({matrix_type}) from Zenodo cache...")
-    curl::curl_download(url = remote_url, destfile = local_h5)
+    .sn_download_example_file(url = remote_url, destfile = local_h5)
   }
 
   if (!return_object) {

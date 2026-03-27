@@ -41,6 +41,48 @@ test_that("io helper functions detect urls and infer formats from files and dire
   expect_null(Shennong:::.guess_dir_format(unknown_dir))
 })
 
+test_that("sn_list_input_dirs finds matching input directories", {
+  root <- tempfile("inputs-")
+  dir.create(root)
+
+  tenx_dir <- file.path(root, "sample1")
+  dir.create(tenx_dir)
+  file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
+
+  nested_root <- file.path(root, "nested")
+  dir.create(nested_root)
+  starsolo_dir <- file.path(nested_root, "sample2")
+  dir.create(starsolo_dir)
+  file.create(file.path(starsolo_dir, c("matrix.mtx", "barcodes.tsv", "features.tsv")))
+
+  spatial_dir <- file.path(root, "spatial")
+  dir.create(spatial_dir)
+  file.create(file.path(spatial_dir, "filtered_feature_bc_matrix.h5"))
+
+  expect_equal(
+    normalizePath(sn_list_input_dirs(root), winslash = "/", mustWork = TRUE),
+    normalizePath(tenx_dir, winslash = "/", mustWork = TRUE)
+  )
+
+  expect_equal(
+    sort(normalizePath(
+      sn_list_input_dirs(root, format = c("10x", "starsolo")),
+      winslash = "/",
+      mustWork = TRUE
+    )),
+    sort(normalizePath(c(tenx_dir, starsolo_dir), winslash = "/", mustWork = TRUE))
+  )
+
+  expect_equal(
+    sort(normalizePath(
+      sn_list_input_dirs(root, recursive = FALSE, format = c("10x", "10x_spatial")),
+      winslash = "/",
+      mustWork = TRUE
+    )),
+    sort(normalizePath(c(spatial_dir, tenx_dir), winslash = "/", mustWork = TRUE))
+  )
+})
+
 test_that("GMT import and custom dispatchers follow the expected IO contracts", {
   gmt_path <- tempfile(fileext = ".gmt")
   writeLines(

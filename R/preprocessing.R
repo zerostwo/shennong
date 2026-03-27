@@ -290,7 +290,7 @@ sn_initialize_seurat_object <- function(
   }
 
   .sn_log_info("Seurat object initialization complete.")
-  .sn_log_seurat_command(object = seurat_obj, name = "sn_initialize_seurat_object")
+  return(.sn_log_seurat_command(object = seurat_obj, name = "sn_initialize_seurat_object"))
 }
 
 #' Normalize data in a Seurat object
@@ -682,6 +682,11 @@ sn_filter_genes <- function(x,
   if (!inherits(x, "Seurat")) {
     stop("The input object x is not a Seurat object.")
   }
+  if (!is.numeric(min_cells) || length(min_cells) != 1 || is.na(min_cells) ||
+    min_cells < 0 || min_cells != as.integer(min_cells)) {
+    stop("`min_cells` must be a single non-negative integer.")
+  }
+  min_cells <- as.integer(min_cells)
 
   counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
   if (!is_null(gene_class)) {
@@ -700,7 +705,9 @@ sn_filter_genes <- function(x,
   cumulative_genes <- rev(x = cumsum(x = rev(x = gene_distribution)))
 
   min_cells_seq <- 0:min_cells
-  remaining_genes <- cumulative_genes[min_cells_seq + 1]
+  remaining_genes <- numeric(length(min_cells_seq))
+  valid_thresholds <- min_cells_seq <= max(gene_counts)
+  remaining_genes[valid_thresholds] <- cumulative_genes[min_cells_seq[valid_thresholds] + 1]
 
   if (plot) {
     plot_data <- data.frame(
@@ -790,6 +797,14 @@ sn_filter_cells <- function(
   filter = TRUE
 ) {
   if (!inherits(x, "Seurat")) stop("Input must be a Seurat object")
+  features <- unique(as.character(features))
+  if (length(features) == 0) {
+    stop("`features` must contain at least one metadata column.")
+  }
+  method <- rlang::arg_match(method, values = "mad")
+  if (!is_null(group_by) && (length(group_by) != 1 || !is.character(group_by))) {
+    stop("`group_by` must be NULL or a single metadata column name.")
+  }
   if (!all(features %in% colnames(x[[]]))) {
     stop("Missing features in metadata: ",
       paste(setdiff(features, colnames(x[[]]))),
@@ -814,6 +829,7 @@ sn_filter_cells <- function(
   }
 
   if (plot) {
+    check_installed(c("aplot", "ggrastr"), reason = "to plot QC filtering diagnostics.")
     plot_data <- x[[]]
     qc_data <- Seurat::Misc(x, "qc")
 
@@ -850,14 +866,10 @@ sn_filter_cells <- function(
   }
 
   if (is_null(x = group_by)) {
-    m <- stats::median(feature_data)
-    e <- stats::mad(feature_data)
-    l <- max(m - n * e, 0)
-    u <- m + n * e
-    qc_df <- data.frame(median = m, mad = e, l = l, u = u)
+    qc_df <- .sn_qc_bounds(feature_data, n = n)
     meta <- x[[]]
     x[[paste0(feature, "_qc")]] <- ifelse(
-      meta[[feature]] >= l & meta[[feature]] < u,
+      .sn_is_within_qc_bounds(meta[[feature]], qc_df$l, qc_df$u),
       "Passed", "Failed"
     )
   } else {
@@ -868,8 +880,8 @@ sn_filter_cells <- function(
     qc_df <- x[[]] |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
       dplyr::summarise(
-        median = stats::median(.data[[feature]]),
-        mad = stats::mad(.data[[feature]]),
+        median = stats::median(.data[[feature]], na.rm = TRUE),
+        mad = stats::mad(.data[[feature]], na.rm = TRUE),
         .groups = "drop"
       ) |>
       dplyr::mutate(
@@ -883,7 +895,7 @@ sn_filter_cells <- function(
       tibble::column_to_rownames("barcode")
 
     x[[paste0(feature, "_qc")]] <- ifelse(
-      meta[[feature]] >= meta$l & meta[[feature]] < meta$u,
+      .sn_is_within_qc_bounds(meta[[feature]], meta$l, meta$u),
       "Passed", "Failed"
     )
   }
@@ -897,7 +909,24 @@ sn_filter_cells <- function(
   x
 }
 
+.sn_qc_bounds <- function(x, n = 5) {
+  median_value <- stats::median(x, na.rm = TRUE)
+  mad_value <- stats::mad(x, na.rm = TRUE)
+
+  data.frame(
+    median = median_value,
+    mad = mad_value,
+    l = max(median_value - n * mad_value, 0),
+    u = median_value + n * mad_value
+  )
+}
+
+.sn_is_within_qc_bounds <- function(x, lower, upper) {
+  !is.na(x) & !is.na(lower) & !is.na(upper) & x >= lower & x <= upper
+}
+
 .create_qc_plot <- function(metadata, qc_info, feature, group_by) {
+  failed_points <- metadata[metadata[[paste0(feature, "_qc")]] == "Failed", , drop = FALSE]
   base_plot <- ggplot2::ggplot(metadata, ggplot2::aes(
     x = if (!is_null(group_by)) .data[[group_by]] else "All",
     y = .data[[feature]]
@@ -927,9 +956,13 @@ sn_filter_cells <- function(
 
   base_plot +
     ggrastr::geom_jitter_rast(
-      data = subset(metadata, get(paste0(feature, "_qc")) == "Failed"),
+      data = failed_points,
       size = 0.3, alpha = 0.5, color = "red", width = 0.2
     )
+}
+
+.sn_run_scDblFinder <- function(sce, ...) {
+  scDblFinder::scDblFinder(sce = sce, ...)
 }
 
 #' Find doublets using scDblFinder
@@ -944,8 +977,17 @@ sn_filter_cells <- function(
 #' @param ncores Number of cores to use (for parallel processing).
 #' @param assay Assay used for doublet detection. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
+#' @param min_features Minimum number of detected features required for a cell
+#'   to be passed to \code{scDblFinder()}. Defaults to \code{200}. Cells below
+#'   this threshold are skipped and retain \code{NA} in the output columns.
 #'
-#' @return The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
+#' @return The input Seurat object with two new columns in \code{meta.data}:
+#'   \code{scDblFinder.class} and \code{scDblFinder.score} when
+#'   \code{layer = "counts"}, or \code{scDblFinder.class_corrected} and
+#'   \code{scDblFinder.score_corrected} for non-default corrected layers. Cells
+#'   whose selected layer sums to zero or whose detected-feature count is below
+#'   \code{min_features} are skipped and retain \code{NA} in the corresponding
+#'   output columns.
 #' @examples
 #' \dontrun{
 #' seurat_obj <- sn_find_doublets(
@@ -964,13 +1006,47 @@ sn_find_doublets <- function(
   dbr_sd = NULL,
   ncores = 1,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  min_features = 200
 ) {
   check_installed("scDblFinder", reason = "to run doublet detection.")
   check_installed("SingleCellExperiment")
+  stopifnot(is.numeric(min_features), length(min_features) == 1, min_features >= 0)
 
   counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
   metadata <- object[[]]
+  layer_sums <- Matrix::colSums(counts)
+  feature_counts <- Matrix::colSums(counts > 0)
+  positive_cells <- colnames(counts)[layer_sums > 0]
+  keep_cells <- colnames(counts)[layer_sums > 0 & feature_counts >= min_features]
+  skipped_zero_cells <- setdiff(colnames(counts), positive_cells)
+  skipped_low_feature_cells <- setdiff(positive_cells, keep_cells)
+
+  if (length(keep_cells) == 0) {
+    stop(
+      glue(
+        "No cells passed doublet-detection filtering in assay '{assay}' layer '{layer}'. ",
+        "Check zero-count cells or lower `min_features` (current: {min_features})."
+      ),
+      call. = FALSE
+    )
+  }
+
+  if (length(skipped_zero_cells) > 0) {
+    .sn_log_warn(
+      "Skipping {length(skipped_zero_cells)} zero-count cell(s) in assay '{assay}' layer '{layer}' ",
+      "before running `scDblFinder()`."
+    )
+  }
+  if (length(skipped_low_feature_cells) > 0) {
+    .sn_log_warn(
+      "Skipping {length(skipped_low_feature_cells)} cell(s) in assay '{assay}' layer '{layer}' ",
+      "with fewer than {min_features} detected feature(s) before running `scDblFinder()`."
+    )
+  }
+
+  counts <- counts[, keep_cells, drop = FALSE]
+  metadata <- metadata[keep_cells, , drop = FALSE]
 
   .sn_log_info("Converting the Seurat object to SingleCellExperiment for doublet detection.")
   sce <- SingleCellExperiment::SingleCellExperiment(
@@ -979,7 +1055,9 @@ sn_find_doublets <- function(
   )
 
   if (is.character(clusters) && length(clusters) == 1 && clusters %in% colnames(object[[]])) {
-    clusters <- object[[clusters]][, 1]
+    clusters <- object[[clusters]][keep_cells, 1]
+  } else if (!is_null(clusters) && length(clusters) == ncol(object)) {
+    clusters <- clusters[match(keep_cells, colnames(object))]
   }
 
   if (!is_null(group_by) && !group_by %in% colnames(object[[]])) {
@@ -988,23 +1066,38 @@ sn_find_doublets <- function(
 
   if (is_null(group_by)) {
     .sn_log_info("Running `scDblFinder()` without donor grouping.")
-    sce <- scDblFinder::scDblFinder(
-      sce       = sce,
+    sce <- .sn_run_scDblFinder(
+      sce = sce,
       clusters  = clusters,
       dbr.sd    = dbr_sd
     )
   } else {
     .sn_log_info("Running `scDblFinder()` with donor grouping (parallel with {ncores} cores).")
-    sce <- scDblFinder::scDblFinder(
-      sce      = sce,
+    sce <- .sn_run_scDblFinder(
+      sce = sce,
       samples  = group_by,
       dbr.sd   = dbr_sd,
       BPPARAM  = BiocParallel::MulticoreParam(ncores)
     )
   }
 
-  object$scDblFinder.class <- sce$scDblFinder.class
-  object$scDblFinder.score <- sce$scDblFinder.score
+  class_col <- "scDblFinder.class"
+  score_col <- "scDblFinder.score"
+  if (!identical(layer, "counts")) {
+    class_col <- paste0(class_col, "_corrected")
+    score_col <- paste0(score_col, "_corrected")
+  }
+
+  class_values <- rep(NA_character_, ncol(object))
+  names(class_values) <- colnames(object)
+  class_values[keep_cells] <- as.character(sce$scDblFinder.class)
+
+  score_values <- rep(NA_real_, ncol(object))
+  names(score_values) <- colnames(object)
+  score_values[keep_cells] <- as.numeric(sce$scDblFinder.score)
+
+  object[[class_col]] <- class_values[colnames(object)]
+  object[[score_col]] <- score_values[colnames(object)]
 
   .sn_log_info("Doublet detection complete.")
   .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_doublets")
@@ -1248,6 +1341,31 @@ sn_find_doublets <- function(
   )
 }
 
+.sn_apply_ambient_result_to_object <- function(object, out, assay, layer) {
+  ncount_col <- paste0("nCount_", assay, "_corrected")
+  nfeature_col <- paste0("nFeature_", assay, "_corrected")
+  zero_flag_col <- paste0(layer, "_zero_count")
+
+  if (length(out$removed_cells) > 0) {
+    object <- object[, colnames(out$counts), drop = FALSE]
+  }
+
+  if (!is_null(out$metadata)) {
+    if (all(c("nCount_corrected", "nFeature_corrected") %in% colnames(out$metadata))) {
+      colnames(out$metadata)[colnames(out$metadata) == "nCount_corrected"] <- ncount_col
+      colnames(out$metadata)[colnames(out$metadata) == "nFeature_corrected"] <- nfeature_col
+    }
+    out$metadata[[zero_flag_col]] <- rownames(out$metadata) %in% (out$zero_cells %||% character(0))
+    for (col_name in colnames(out$metadata)) {
+      values <- out$metadata[[col_name]][match(colnames(object), rownames(out$metadata))]
+      object[[col_name]] <- values
+    }
+  }
+
+  SeuratObject::LayerData(object = object, layer = layer) <- out$counts
+  object
+}
+
 #' Remove ambient RNA contamination from counts
 #'
 #' This function provides a unified interface for ambient RNA correction using
@@ -1332,19 +1450,12 @@ sn_remove_ambient_contamination <- function(
 
   if (return_object && !is_null(x_info$object)) {
     assay <- SeuratObject::DefaultAssay(x_info$object)
-    ncount_col <- paste0("nCount_", assay, "_corrected")
-    nfeature_col <- paste0("nFeature_", assay, "_corrected")
-    if (length(out$removed_cells) > 0) {
-      x_info$object <- x_info$object[, colnames(out$counts), drop = FALSE]
-    }
-    if (!is_null(out$metadata)) {
-      if (all(c("nCount_corrected", "nFeature_corrected") %in% colnames(out$metadata))) {
-        colnames(out$metadata)[colnames(out$metadata) == "nCount_corrected"] <- ncount_col
-        colnames(out$metadata)[colnames(out$metadata) == "nFeature_corrected"] <- nfeature_col
-      }
-      x_info$object <- SeuratObject::AddMetaData(x_info$object, metadata = out$metadata)
-    }
-    SeuratObject::LayerData(object = x_info$object, layer = layer) <- out$counts
+    x_info$object <- .sn_apply_ambient_result_to_object(
+      object = x_info$object,
+      out = out,
+      assay = assay,
+      layer = layer
+    )
     return(.sn_log_seurat_command(object = x_info$object, name = "sn_remove_ambient_contamination"))
   }
 

@@ -79,9 +79,10 @@ composition_tbl <- sn_calculate_composition(
 
 phase_tbl <- sn_calculate_composition(
   pbmc_comp,
-  group_by = "sample",
+  group_by = c("sample", "cell_type"),
   variable = "Phase",
-  min_cells = 0
+  min_cells = 0,
+  measure = "both"
 )
 
 score_tbl <- pbmc_comp@meta.data |>
@@ -91,7 +92,9 @@ score_tbl <- pbmc_comp@meta.data |>
 ## 1. Summarize cell-state proportions
 
 `sn_calculate_composition()` is the main helper for grouped proportion
-summaries. The most common pattern is sample-by-cluster composition.
+summaries. The most common pattern is sample-by-cluster composition. When you
+need a nested summary such as phase proportions within each cell type inside
+each sample, pass multiple grouping columns.
 
 ```{r}
 knitr::kable(composition_tbl, digits = 2)

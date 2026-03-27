@@ -547,7 +547,20 @@ sn_install_shennong <- function(
 
   dirs <- readLines(manifest_path, warn = FALSE)
   dirs <- trimws(dirs)
-  dirs[nzchar(dirs)]
+  unique(dirs[nzchar(dirs)])
+}
+
+.sn_create_directories <- function(root, relative_paths) {
+  if (length(relative_paths) == 0) {
+    return(invisible(character(0)))
+  }
+
+  created_paths <- file.path(root, relative_paths)
+  for (dir_path in created_paths) {
+    dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  invisible(created_paths)
 }
 
 .sn_project_template_skip_patterns <- function(include_governance = TRUE) {
@@ -604,13 +617,7 @@ sn_install_shennong <- function(
   rel_files <- setdiff(rel_files, .sn_project_template_directory_manifest())
   rel_files <- rel_files[!vapply(rel_files, .sn_should_skip_template_path, logical(1), include_governance = include_governance)]
 
-  for (relative_dir in rel_dirs) {
-    dir.create(
-      file.path(project_dir, relative_dir),
-      recursive = TRUE,
-      showWarnings = FALSE
-    )
-  }
+  .sn_create_directories(project_dir, rel_dirs)
 
   context <- list(
     project_name = project_name,

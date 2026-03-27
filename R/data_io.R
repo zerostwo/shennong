@@ -61,6 +61,68 @@ sn_read <- function(path,
   x
 }
 
+#' List 10x-formatted input directories under a root folder
+#'
+#' This helper scans a root directory and returns the subdirectories that look
+#' like 10x Genomics matrix folders based on the same directory-format
+#' detection used by [sn_read()]. By default it searches recursively and
+#' returns only standard 10x matrix directories, not STARsolo, BPCells, or
+#' spatial bundles.
+#'
+#' @param path Root directory to scan.
+#' @param recursive Logical; if \code{TRUE}, scan subdirectories recursively.
+#'   Defaults to \code{TRUE}.
+#' @param include_root Logical; if \code{TRUE}, also test \code{path} itself.
+#'   Defaults to \code{TRUE}.
+#' @param format One or more directory formats to match. Defaults to
+#'   \code{"10x"}. Supported values are \code{"10x"}, \code{"10x_spatial"},
+#'   \code{"starsolo"}, and \code{"bpcells"}.
+#'
+#' @return A character vector of matching directory paths.
+#'
+#' @examples
+#' root <- tempfile("tenx-root-")
+#' dir.create(root)
+#' tenx_dir <- file.path(root, "sample1")
+#' dir.create(tenx_dir)
+#' file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
+#' sn_list_input_dirs(root)
+#'
+#' @export
+sn_list_input_dirs <- function(path,
+                               recursive = TRUE,
+                               include_root = TRUE,
+                               format = "10x") {
+  if (!dir.exists(path)) {
+    stop("`path` must be an existing directory.", call. = FALSE)
+  }
+
+  format <- unique(match.arg(
+    format,
+    choices = c("10x", "10x_spatial", "starsolo", "bpcells"),
+    several.ok = TRUE
+  ))
+
+  candidates <- if (isTRUE(recursive)) {
+    list.dirs(path = path, recursive = TRUE, full.names = TRUE)
+  } else {
+    list.dirs(path = path, recursive = FALSE, full.names = TRUE)
+  }
+
+  if (!isTRUE(include_root)) {
+    candidates <- setdiff(candidates, normalizePath(path, winslash = "/", mustWork = TRUE))
+  }
+
+  detected <- vapply(
+    candidates,
+    FUN = function(dir_path) .guess_dir_format(dir_path) %||% NA_character_,
+    FUN.VALUE = character(1),
+    USE.NAMES = FALSE
+  )
+  matched <- candidates[detected %in% format]
+  unname(matched)
+}
+
 .sn_is_url <- function(path) {
   is.character(path) &&
     length(path) == 1 &&

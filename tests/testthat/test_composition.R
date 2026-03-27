@@ -74,6 +74,81 @@ test_that("sn_calculate_composition works with lightweight data frames", {
   expect_true(all(c("sample_id", "cell_type", "proportion") %in% colnames(result)))
 })
 
+test_that("sn_calculate_composition supports multi-column grouping", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "A", "A", "B", "B"),
+    cell_type = c("Tcell", "Tcell", "Bcell", "Bcell", "Tcell", "Tcell"),
+    Phase = c("G1", "S", "G1", "G1", "S", "S"),
+    stringsAsFactors = FALSE
+  )
+
+  result <- sn_calculate_composition(
+    x = meta_df,
+    group_by = c("sample", "cell_type"),
+    variable = "Phase",
+    min_cells = 1
+  )
+
+  expect_true(all(c("sample", "cell_type", "Phase", "proportion") %in% colnames(result)))
+  expect_equal(
+    result |>
+      dplyr::group_by(sample, cell_type) |>
+      dplyr::summarise(total = sum(proportion), .groups = "drop") |>
+      dplyr::pull(total),
+    c(100, 100, 100)
+  )
+  expect_equal(
+    result$proportion[result$sample == "A" & result$cell_type == "Tcell" & result$Phase == "G1"],
+    50
+  )
+  expect_equal(
+    result$proportion[result$sample == "A" & result$cell_type == "Tcell" & result$Phase == "S"],
+    50
+  )
+})
+
+test_that("sn_calculate_composition can return counts or both counts and proportions", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "A", "A"),
+    cell_type = c("Tcell", "Tcell", "Tcell", "Bcell"),
+    Phase = c("G1", "S", "S", "G1"),
+    stringsAsFactors = FALSE
+  )
+
+  count_result <- sn_calculate_composition(
+    x = meta_df,
+    group_by = c("sample", "cell_type"),
+    variable = "Phase",
+    min_cells = 1,
+    measure = "count"
+  )
+
+  both_result <- sn_calculate_composition(
+    x = meta_df,
+    group_by = c("sample", "cell_type"),
+    variable = "Phase",
+    min_cells = 1,
+    measure = "both"
+  )
+
+  expect_true(all(c("sample", "cell_type", "Phase", "count") %in% colnames(count_result)))
+  expect_false("proportion" %in% colnames(count_result))
+  expect_equal(
+    count_result$count[count_result$sample == "A" & count_result$cell_type == "Tcell" & count_result$Phase == "S"],
+    2
+  )
+
+  expect_true(all(c("count", "group_total", "proportion") %in% colnames(both_result)))
+  expect_equal(
+    both_result$group_total[both_result$sample == "A" & both_result$cell_type == "Tcell" & both_result$Phase == "G1"],
+    3
+  )
+  expect_equal(
+    both_result$proportion[both_result$sample == "A" & both_result$cell_type == "Tcell" & both_result$Phase == "S"],
+    2 / 3 * 100
+  )
+})
+
 test_that("sn_calculate_composition warns when additional columns vary within groups", {
   meta_df <- data.frame(
     sample = c("A", "A", "A", "B", "B"),
@@ -94,6 +169,28 @@ test_that("sn_calculate_composition warns when additional columns vary within gr
   )
 
   expect_equal(unique(result$condition[result$sample == "A"]), "Control")
+})
+
+test_that("sn_calculate_composition does not warn when varying columns are grouped explicitly", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "A", "A"),
+    cell_type = c("Tcell", "Tcell", "Bcell", "Bcell"),
+    Phase = c("G1", "S", "G1", "G1"),
+    group = c("ctrl", "ctrl", "ctrl", "ctrl"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_no_warning(
+    result <- sn_calculate_composition(
+      x = meta_df,
+      group_by = c("sample", "cell_type"),
+      variable = "Phase",
+      min_cells = 1,
+      additional_cols = "group"
+    )
+  )
+
+  expect_true(all(c("sample", "cell_type", "Phase", "group") %in% colnames(result)))
 })
 
 test_that("sn_calculate_composition errors when min_cells removes all groups", {

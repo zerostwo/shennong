@@ -9,18 +9,23 @@ sn_calculate_composition(
   group_by,
   variable,
   min_cells = 20,
+  measure = c("proportion", "count", "both"),
   additional_cols = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object or a data frame.}
 
-\item{group_by}{Column name used to define groups.}
+\item{group_by}{Column name or character vector of column names used to
+define groups.}
 
 \item{variable}{Column name whose proportions should be calculated.}
 
 \item{min_cells}{Minimum number of cells required for a \code{group_by}
 category to be retained. Defaults to \code{20}.}
+
+\item{measure}{One of \code{"proportion"}, \code{"count"}, or
+\code{"both"}. Defaults to \code{"proportion"}.}
 
 \item{additional_cols}{Optional character vector of additional columns to
 carry into the output.}
@@ -35,10 +40,19 @@ Calculates the proportion of different categories within groups from metadata.
 This function takes either a Seurat object or a data frame (like cell
 metadata) and computes the percentage composition of a given \code{variable}
 (for example, cell type) for each category specified by \code{group_by}
-(for example, sample or condition).
+(for example, sample or condition). When \code{group_by} contains multiple
+columns, proportions are calculated within each unique combination of those
+grouping columns.
 }
 \examples{
 \dontrun{
+composition_df <- sn_calculate_composition(
+  x = seu,
+  group_by = c("sample_id", "cell_type"),
+  variable = "Phase",
+  min_cells = 10,
+  measure = "both"
+)
 composition_df <- sn_calculate_composition(
   x = seu,
   group_by = "sample_id",

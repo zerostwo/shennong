@@ -11,7 +11,8 @@ sn_find_doublets(
   dbr_sd = NULL,
   ncores = 1,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  min_features = 200
 )
 }
 \arguments{
@@ -28,9 +29,19 @@ sn_find_doublets(
 \item{assay}{Assay used for doublet detection. Defaults to \code{"RNA"}.}
 
 \item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
+
+\item{min_features}{Minimum number of detected features required for a cell
+to be passed to \code{scDblFinder()}. Defaults to \code{200}. Cells below
+this threshold are skipped and retain \code{NA} in the output columns.}
 }
 \value{
-The input Seurat object with two new columns in \code{meta.data}: \code{scDblFinder.class} and \code{scDblFinder.score}.
+The input Seurat object with two new columns in \code{meta.data}:
+\code{scDblFinder.class} and \code{scDblFinder.score} when
+\code{layer = "counts"}, or \code{scDblFinder.class_corrected} and
+\code{scDblFinder.score_corrected} for non-default corrected layers. Cells
+whose selected layer sums to zero or whose detected-feature count is below
+\code{min_features} are skipped and retain \code{NA} in the corresponding
+output columns.
 }
 \description{
 This function identifies potential doublets in a Seurat object by converting

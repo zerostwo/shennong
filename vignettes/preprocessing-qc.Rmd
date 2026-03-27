@@ -193,6 +193,10 @@ pbmc_decont <- sn_remove_ambient_contamination(
   pbmc_norm,
   raw_counts = pbmc_small_raw
 )
+
+# Summarize current QC status or compare a filtered object against a pre-QC reference
+qc_report <- sn_assess_qc(pbmc_decont, reference = pbmc_norm)
+qc_report$overall
 ```
 
 ## Where this stage leads next

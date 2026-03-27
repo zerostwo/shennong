@@ -419,3 +419,73 @@ test_that("sn_filter_cells stores grouped QC thresholds in misc metadata", {
   expect_true("nCount_RNA_qc" %in% colnames(flagged[[]]))
   expect_true(all(flagged$nCount_RNA_qc %in% c("Passed", "Failed")))
 })
+
+test_that("sn_filter_cells keeps constant-valued cells when MAD is zero", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(1, nrow = 6, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:6)
+  colnames(counts) <- paste0("cell", 1:4)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "cells-constant")
+  object$nCount_RNA <- rep(100, 4)
+
+  flagged <- sn_filter_cells(
+    x = object,
+    features = "nCount_RNA",
+    n = 1,
+    plot = FALSE,
+    filter = FALSE
+  )
+
+  expect_true(all(flagged$nCount_RNA_qc == "Passed"))
+})
+
+test_that("sn_filter_cells validates the filtering method", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(1, nrow = 6, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:6)
+  colnames(counts) <- paste0("cell", 1:4)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "cells-method")
+
+  expect_error(
+    sn_filter_cells(
+      x = object,
+      features = "nCount_RNA",
+      method = "iqr",
+      plot = FALSE
+    ),
+    "must be one of"
+  )
+})
+
+test_that("sn_filter_genes accepts large plotting thresholds without NA counts", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(
+    matrix(
+      c(
+        1, 1, 0, 0,
+        1, 0, 0, 0,
+        0, 0, 0, 1
+      ),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", 1:3)
+  colnames(counts) <- paste0("cell", 1:4)
+  object <- sn_initialize_seurat_object(x = counts, project = "genes-plot")
+
+  expect_no_error(
+    sn_filter_genes(
+      object,
+      min_cells = 10,
+      plot = TRUE,
+      filter = FALSE
+    )
+  )
+})

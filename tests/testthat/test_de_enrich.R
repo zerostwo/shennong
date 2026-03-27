@@ -515,6 +515,96 @@ test_that("sn_enrich helper resolution covers store names and analysis inference
   )
 })
 
+test_that("sn_enrich helper utilities normalize labels and resolve inputs consistently", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_de_test_object()
+  object@misc$de_results <- list(
+    markers = list(table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")))
+  )
+
+  resolved <- Shennong:::.sn_enrich_resolve_input(object, source_de_name = "markers")
+  passthrough <- Shennong:::.sn_enrich_resolve_input(c("CD3D", "MS4A1"))
+
+  expect_true(is.data.frame(resolved$input))
+  expect_identical(resolved$object, object)
+  expect_equal(passthrough$input, c("CD3D", "MS4A1"))
+  expect_null(passthrough$object)
+  expect_error(
+    Shennong:::.sn_enrich_resolve_input(object, source_de_name = "missing"),
+    "was not found"
+  )
+
+  expect_equal(
+    Shennong:::.sn_enrich_normalize_database_labels(c("gobp", "H", "gobp")),
+    c("GOBP", "H")
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_output_label("C2:CP:REACTOME"),
+    "C2_CP_REACTOME"
+  )
+})
+
+test_that("sn_enrich gene resolvers deduplicate ORA and GSEA inputs meaningfully", {
+  ora_df <- data.frame(gene = c("CD3D", "CD3D", "MS4A1"), stringsAsFactors = FALSE)
+  gsea_df <- data.frame(
+    gene = c("CD3D", "CD3D", "MS4A1"),
+    score = c(1.5, 2.5, -1),
+    stringsAsFactors = FALSE
+  )
+
+  expect_equal(
+    Shennong:::.sn_enrich_resolve_gene_vector(ora_df, gene_col = "gene"),
+    c("CD3D", "MS4A1")
+  )
+  expect_error(
+    Shennong:::.sn_enrich_resolve_gene_vector(data.frame(symbol = "CD3D"), gene_col = "gene"),
+    "was not found"
+  )
+
+  gene_list <- Shennong:::.sn_enrich_resolve_gene_list(
+    gsea_df,
+    mapping = list(gene_col = "gene", value_col = "score")
+  )
+  expect_equal(unname(gene_list), c(2.5, -1))
+  expect_equal(names(gene_list), c("CD3D", "MS4A1"))
+  expect_error(
+    Shennong:::.sn_enrich_resolve_gene_list(
+      data.frame(gene = c("A", "B"), score = c("up", "down")),
+      mapping = list(gene_col = "gene", value_col = "score")
+    ),
+    "must be numeric"
+  )
+})
+
+test_that("sn_enrich p-value filtering handles compareCluster and passthrough objects", {
+  compare_result <- methods::new(
+    "compareClusterResult",
+    compareClusterResult = data.frame(
+      Cluster = c("A", "A", "B"),
+      ID = c("term1", "term2", "term3"),
+      pvalue = c(0.01, 0.2, 0.03),
+      stringsAsFactors = FALSE
+    ),
+    geneClusters = list(A = c("CD3D"), B = c("MS4A1")),
+    fun = "enrichGO",
+    gene2Symbol = character(),
+    keytype = "SYMBOL",
+    readable = FALSE,
+    .call = call("compareCluster"),
+    termsim = matrix(0, nrow = 0, ncol = 0),
+    method = character(),
+    dr = list()
+  )
+
+  filtered <- Shennong:::.sn_enrich_filter_by_pvalue(compare_result, pvalue_cutoff = 0.05)
+  expect_equal(nrow(filtered@compareClusterResult), 2)
+  expect_equal(filtered@compareClusterResult$ID, c("term1", "term3"))
+
+  passthrough <- Shennong:::.sn_enrich_filter_by_pvalue(list(a = 1), pvalue_cutoff = 0.05)
+  expect_equal(passthrough, list(a = 1))
+})
+
 test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("msigdbr")

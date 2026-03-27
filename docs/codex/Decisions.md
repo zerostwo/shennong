@@ -4,6 +4,17 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- QC reporting should be recomputable from merged Seurat metadata rather than
+  depend on fragile per-object history alone. `sn_assess_qc()` therefore uses
+  sample-level metadata aggregation by default, can optionally compare against a
+  pre-filter reference object for before/after judgments, and stores the
+  resulting report as a convenience snapshot rather than as the sole source of
+  truth.
+- QC filtering should fail safe on degenerate thresholds instead of classifying
+  an entire group as outliers. When MAD collapses to zero, Shennong should
+  treat values exactly on the derived bound as passing, and it should validate
+  the supported outlier method plus plotting dependencies at the public entry
+  point rather than relying on downstream failures.
 - When Shennong has to fall back to exact neighbor search, it should optimize
   for bounded memory rather than for the shortest implementation. The exact
   kNN path now computes distances blockwise so larger embeddings do not require

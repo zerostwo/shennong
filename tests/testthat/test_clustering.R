@@ -102,6 +102,157 @@ test_that("clustering helper functions normalize dims and select HVGs by group",
   )
 })
 
+test_that("rare-feature helper functions cover gini, local markers, and grouped selection", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  expect_equal(Shennong:::.sn_gini_coefficient(c(0, 0, 0)), 0)
+  expect_gt(Shennong:::.sn_gini_coefficient(c(0, 0, 10, 20)), 0)
+
+  empty_gini <- Shennong:::.sn_detect_rare_features_gini(
+    expr = SeuratObject::LayerData(object, layer = "counts"),
+    nfeatures = 10,
+    min_cells = 100,
+    max_fraction = 0.01
+  )
+  expect_equal(nrow(empty_gini), 0)
+
+  group_info <- Shennong:::.sn_resolve_rare_groups(
+    object = object,
+    group_by = "seed_cluster",
+    max_fraction = 0.2,
+    max_cells = 10
+  )
+  expect_true("rare" %in% group_info$rare_groups)
+  expect_equal(unname(group_info$group_sizes["rare"]), 6)
+
+  marker_features <- Shennong:::.sn_detect_rare_features_local_markers(
+    object = object,
+    groups = group_info$groups,
+    rare_groups = group_info$rare_groups,
+    assay = "RNA",
+    layer = "data",
+    nfeatures = 10,
+    min_cells = 3
+  )
+  expect_true(any(grepl("^raregene", marker_features)))
+
+  selected <- Shennong:::.sn_select_rare_features(
+    object = object,
+    base_features = rownames(object),
+    method = c("gini", "local_markers"),
+    assay = "RNA",
+    layer = "data",
+    nfeatures = 10,
+    group_by = "seed_cluster",
+    rare_group_max_fraction = 0.2,
+    rare_group_max_cells = 10,
+    rare_gene_max_fraction = 0.2,
+    min_cells = 3,
+    verbose = FALSE
+  )
+
+  expect_true(length(selected$features) > 0)
+  expect_true(any(selected$metadata$method == "gini"))
+  expect_true(any(selected$metadata$method == "local_markers"))
+  expect_true(any(grepl("^raregene", selected$features)))
+})
+
+test_that("rare-cell backend runners validate required executables and scripts", {
+  expr <- Matrix::Matrix(matrix(rpois(30, lambda = 2), nrow = 6), sparse = TRUE)
+  rownames(expr) <- paste0("gene", seq_len(6))
+  colnames(expr) <- paste0("cell", seq_len(5))
+
+  expect_error(
+    Shennong:::.sn_run_sccad(
+      expr = expr,
+      cell_ids = colnames(expr),
+      gene_ids = rownames(expr),
+      python = "",
+      script = tempfile(fileext = ".py")
+    ),
+    "Could not find a Python executable"
+  )
+
+  expect_error(
+    Shennong:::.sn_run_sccad(
+      expr = expr,
+      cell_ids = colnames(expr),
+      gene_ids = rownames(expr),
+      python = Sys.which("python"),
+      script = tempfile(fileext = ".py")
+    ),
+    "Could not locate `scCAD.py`"
+  )
+
+  expect_error(
+    Shennong:::.sn_run_sca(
+      expr = expr,
+      python = tempfile("missing-python-")
+    ),
+    "SCA execution failed|shannonca"
+  )
+})
+
+test_that("rare-cell helper functions support challenging-groups and mocked backends", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  object <- Seurat::ScaleData(object, verbose = FALSE)
+  object <- Seurat::FindVariableFeatures(object, nfeatures = 60, verbose = FALSE)
+  object <- Seurat::RunPCA(object, npcs = 10, verbose = FALSE, seed.use = 717)
+
+  challenging <- sn_detect_rare_cells(
+    object = object,
+    method = "challenging_groups",
+    group = "seed_cluster",
+    reduction = "pca",
+    dims = 1:10,
+    k = 5
+  )
+
+  expect_s3_class(challenging, "data.frame")
+  expect_true(all(c("cell_id", "method", "rare_score", "rare_cell") %in% colnames(challenging)))
+  expect_equal(unique(challenging$method), "challenging_groups")
+
+  local_mocked_bindings(
+    .sn_run_sccad = function(...) {
+      list(
+        rare_sets = list(colnames(object)[55:60]),
+        scores = 0.95,
+        sub_clusters = rep("rare_subcluster", ncol(object))
+      )
+    },
+    .sn_run_sca = function(...) {
+      embedding <- cbind(seq_len(ncol(object)), rep(1, ncol(object)))
+      rownames(embedding) <- colnames(object)
+      embedding
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  sccad_tbl <- sn_detect_rare_cells(
+    object = object,
+    method = "sccad",
+    layer = "data"
+  )
+  sca_tbl <- sn_detect_rare_cells(
+    object = object,
+    method = "sca",
+    layer = "data",
+    k = 5
+  )
+
+  expect_true(any(sccad_tbl$rare_cell))
+  expect_true("subcluster" %in% colnames(sccad_tbl))
+  expect_equal(unique(sccad_tbl$method), "sccad")
+  expect_equal(unique(sca_tbl$method), "sca")
+  expect_true(all(is.finite(sca_tbl$rare_score)))
+})
+
 test_that("sn_run_cluster supports the SCTransform workflow for a single dataset", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("glmGamPoi")
@@ -242,47 +393,6 @@ test_that("sn_detect_rare_cells detects rare-score outliers with the gini method
   expect_true(all(c("cell_id", "method", "rare_score", "rare_cell") %in% colnames(rare_tbl)))
   expect_true(any(rare_tbl$rare_cell))
   expect_true(any(rare_tbl$cell_id[rare_tbl$rare_cell] %in% colnames(object)[55:60]))
-})
-
-test_that("sn_detect_rare_cells validates the scCAD backend inputs", {
-  skip_if_not_installed("Seurat")
-
-  object <- make_rare_test_object()
-  object <- Seurat::NormalizeData(object, verbose = FALSE)
-
-  expect_error(
-    sn_detect_rare_cells(
-      object,
-      method = "sccad",
-      sccad_script = tempfile(fileext = ".py")
-    ),
-    "Could not find a Python executable|Could not locate `scCAD.py`|scCAD execution failed"
-  )
-})
-
-test_that("sn_detect_rare_cells validates optional rare-cell backend dependencies", {
-  skip_if_not_installed("Seurat")
-
-  object <- make_rare_test_object()
-
-  expect_error(
-    sn_detect_rare_cells(
-      object = object,
-      method = "gapclust",
-      layer = "counts"
-    ),
-    "GapClust|No rare cell cluster identified"
-  )
-
-  expect_error(
-    sn_detect_rare_cells(
-      object = object,
-      method = "sca",
-      layer = "counts",
-      sca_python = tempfile("missing-python-")
-    ),
-    "Python|shannonca|SCA execution failed"
-  )
 })
 
 test_that("sn_run_cluster can append rare-aware features before PCA", {
@@ -433,6 +543,40 @@ test_that("sn_remove_ambient_contamination defaults to decontX and writes a new 
   expect_true(all(corrected == round(corrected)))
 })
 
+test_that("sn_remove_ambient_contamination marks zero-count corrected cells in metadata", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 45, prefix = "ambient-flag", n_genes = 60, n_cells = 6)
+  zero_flag <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
+  counts <- SeuratObject::LayerData(object, layer = "counts")
+  metadata <- data.frame(
+    decontX_contamination = rep(0.1, ncol(counts)),
+    decontX_clusters = rep(c("a", "b"), each = 3),
+    nCount_corrected = Matrix::colSums(counts),
+    nFeature_corrected = Matrix::colSums(counts > 0),
+    row.names = colnames(counts)
+  )
+  out <- list(
+    counts = counts,
+    metadata = metadata,
+    zero_cells = colnames(counts)[zero_flag],
+    removed_cells = character(0)
+  )
+
+  updated <- Shennong:::.sn_apply_ambient_result_to_object(
+    object = object,
+    out = out,
+    assay = "RNA",
+    layer = "decontaminated_counts"
+  )
+
+  expect_true("decontaminated_counts_zero_count" %in% colnames(updated[[]]))
+  expect_identical(
+    as.logical(updated$decontaminated_counts_zero_count),
+    zero_flag
+  )
+})
+
 test_that("sn_remove_ambient_contamination supports BPCells-backed Seurat layers", {
   skip_if_not_installed("BPCells")
   skip_if_not_installed("Seurat")
@@ -555,11 +699,90 @@ test_that("sn_find_doublets can analyze a non-default layer", {
     ncores = 1
   ))
 
-  expect_true(all(c("scDblFinder.class", "scDblFinder.score") %in% colnames(updated[[]])))
+  expect_true(all(c("scDblFinder.class_corrected", "scDblFinder.score_corrected") %in% colnames(updated[[]])))
   expect_equal(
     as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
     as.matrix(zero_counts)
   )
+})
+
+test_that("sn_find_doublets skips zero-count cells in corrected layers", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 15, prefix = "doublets-corrected", n_genes = 40, n_cells = 6)
+  object$precluster <- rep(c("a", "b"), each = 3)
+
+  corrected_counts <- SeuratObject::LayerData(object, layer = "counts")
+  corrected_counts[, 1] <- 0
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- corrected_counts
+
+  local_mocked_bindings(
+    .sn_run_scDblFinder = function(sce, ...) {
+      n <- ncol(sce)
+      colData <- SummarizedExperiment::colData(sce)
+      colData$scDblFinder.class <- rep("singlet", n)
+      colData$scDblFinder.score <- seq_len(n) / 10
+      SummarizedExperiment::colData(sce) <- colData
+      sce
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  updated <- sn_find_doublets(
+    object = object,
+    clusters = "precluster",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    min_features = 1,
+    ncores = 1
+  )
+
+  expect_true(all(c("scDblFinder.class_corrected", "scDblFinder.score_corrected") %in% colnames(updated[[]])))
+  expect_true(is.na(updated$scDblFinder.class_corrected[[1]]))
+  expect_true(is.na(updated$scDblFinder.score_corrected[[1]]))
+  expect_true(all(!is.na(updated$scDblFinder.class_corrected[-1])))
+  expect_true(all(!is.na(updated$scDblFinder.score_corrected[-1])))
+})
+
+test_that("sn_find_doublets skips low-feature cells before running scDblFinder", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 18, prefix = "doublets-lowfeat", n_genes = 300, n_cells = 6)
+  object$precluster <- rep(c("a", "b"), each = 3)
+
+  corrected_counts <- Matrix::Matrix(0, nrow = 300, ncol = 6, sparse = TRUE)
+  rownames(corrected_counts) <- rownames(object)
+  colnames(corrected_counts) <- colnames(object)
+  corrected_counts[1:50, 1] <- 1
+  corrected_counts[1:220, 2:6] <- 1
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- corrected_counts
+
+  local_mocked_bindings(
+    .sn_run_scDblFinder = function(sce, ...) {
+      n <- ncol(sce)
+      colData <- SummarizedExperiment::colData(sce)
+      colData$scDblFinder.class <- rep("singlet", n)
+      colData$scDblFinder.score <- seq_len(n) / 10
+      SummarizedExperiment::colData(sce) <- colData
+      sce
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  updated <- sn_find_doublets(
+    object = object,
+    clusters = "precluster",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    min_features = 200,
+    ncores = 1
+  )
+
+  expect_true(is.na(updated$scDblFinder.class_corrected[[1]]))
+  expect_true(is.na(updated$scDblFinder.score_corrected[[1]]))
+  expect_true(all(!is.na(updated$scDblFinder.class_corrected[-1])))
 })
 
 test_that("sn_run_celltypist adds predicted labels back onto the Seurat object", {

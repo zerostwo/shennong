@@ -9,7 +9,7 @@ make_metrics_test_object <- function() {
   rownames(counts) <- paste0("gene", seq_len(80))
   colnames(counts) <- paste0("cell", seq_len(120))
 
-  object <- sn_initialize_seurat_object(x = counts, project = "metrics-test")
+  object <- sn_initialize_seurat_object(x = counts, project = "metrics-test", species = "human")
   object$sample <- rep(c("s1", "s2", "s3", "s4"), each = 30)
   object$cluster_id <- rep(c("A", "B"), each = 60)
   object <- Seurat::NormalizeData(object, verbose = FALSE)
@@ -47,7 +47,7 @@ make_structured_metrics_object <- function(with_graph = TRUE) {
   rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
   colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
 
-  object <- sn_initialize_seurat_object(x = counts, project = "integration-metrics")
+  object <- sn_initialize_seurat_object(x = counts, project = "integration-metrics", species = "human")
   object$sample <- sample
   object$cell_type <- cell_type
   object$seurat_clusters <- cell_type

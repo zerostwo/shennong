@@ -1362,13 +1362,18 @@ sn_calculate_rogue <- function(
 #' This function takes either a Seurat object or a data frame (like cell
 #' metadata) and computes the percentage composition of a given \code{variable}
 #' (for example, cell type) for each category specified by \code{group_by}
-#' (for example, sample or condition).
+#' (for example, sample or condition). When \code{group_by} contains multiple
+#' columns, proportions are calculated within each unique combination of those
+#' grouping columns.
 #'
 #' @param x A Seurat object or a data frame.
-#' @param group_by Column name used to define groups.
+#' @param group_by Column name or character vector of column names used to
+#'   define groups.
 #' @param variable Column name whose proportions should be calculated.
 #' @param min_cells Minimum number of cells required for a \code{group_by}
 #'   category to be retained. Defaults to \code{20}.
+#' @param measure One of \code{"proportion"}, \code{"count"}, or
+#'   \code{"both"}. Defaults to \code{"proportion"}.
 #' @param additional_cols Optional character vector of additional columns to
 #'   carry into the output.
 #'
@@ -1380,6 +1385,13 @@ sn_calculate_rogue <- function(
 #' \dontrun{
 #' composition_df <- sn_calculate_composition(
 #'   x = seu,
+#'   group_by = c("sample_id", "cell_type"),
+#'   variable = "Phase",
+#'   min_cells = 10,
+#'   measure = "both"
+#' )
+#' composition_df <- sn_calculate_composition(
+#'   x = seu,
 #'   group_by = "sample_id",
 #'   variable = "cell_type",
 #'   min_cells = 10
@@ -1388,13 +1400,14 @@ sn_calculate_rogue <- function(
 #' }
 #'
 #' @export
-sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, additional_cols = NULL) {
-  stopifnot(is.character(group_by), length(group_by) == 1)
+sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, measure = c("proportion", "count", "both"), additional_cols = NULL) {
+  stopifnot(is.character(group_by), length(group_by) >= 1)
   stopifnot(is.character(variable), length(variable) == 1)
   stopifnot(is.numeric(min_cells), length(min_cells) == 1, min_cells >= 0)
   if (!is.null(additional_cols)) {
     stopifnot(is.character(additional_cols))
   }
+  measure <- match.arg(measure)
 
   metadata <- .sn_extract_metric_metadata(x)
 
@@ -1410,8 +1423,10 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
     }
   }
 
+  character_cols <- unique(c(group_by, variable, additional_cols))
+
   metadata <- metadata |>
-    dplyr::mutate(dplyr::across(dplyr::all_of(c(group_by, variable)), as.character)) |>
+    dplyr::mutate(dplyr::across(dplyr::all_of(character_cols), as.character)) |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
     dplyr::mutate(n_cells_group = dplyr::n()) |>
     dplyr::ungroup() |>
@@ -1421,13 +1436,28 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
     stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
   }
 
-  proportions <- metadata |>
-    dplyr::filter(!is.na(.data[[group_by]]), !is.na(.data[[variable]])) |>
+  composition <- metadata |>
+    dplyr::filter(
+      dplyr::if_all(dplyr::all_of(group_by), ~ !is.na(.x)),
+      !is.na(.data[[variable]])
+    ) |>
     dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "count") |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-    dplyr::mutate(proportion = .data$count / sum(.data$count) * 100) |>
-    dplyr::ungroup() |>
-    dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), dplyr::all_of("proportion"))
+    dplyr::mutate(
+      group_total = sum(.data$count),
+      proportion = .data$count / .data$group_total * 100
+    ) |>
+    dplyr::ungroup()
+
+  composition <- switch(
+    measure,
+    proportion = composition |>
+      dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "proportion"),
+    count = composition |>
+      dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "count"),
+    both = composition |>
+      dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "count", "group_total", "proportion")
+  )
 
   if (!is.null(additional_cols)) {
     inconsistent_cols <- additional_cols[
@@ -1460,11 +1490,357 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, addi
         .groups = "drop"
       )
 
-    proportions <- proportions |>
+    composition <- composition |>
       dplyr::left_join(additional_data, by = group_by)
   }
 
-  proportions
+  composition
+}
+
+.sn_qc_assessment_sample_col <- function(object, sample_col = NULL) {
+  metadata <- object@meta.data
+  if (!is_null(sample_col)) {
+    if (!sample_col %in% colnames(metadata)) {
+      stop("Sample column '", sample_col, "' was not found in the Seurat metadata.", call. = FALSE)
+    }
+    return(sample_col)
+  }
+
+  candidates <- c("sample", "orig.ident")
+  available <- candidates[candidates %in% colnames(metadata)]
+  if (length(available) > 0) {
+    return(available[[1]])
+  }
+
+  NULL
+}
+
+.sn_qc_assessment_count_col <- function(metadata) {
+  candidates <- c("nCount_RNA_corrected", "nCount_RNA")
+  available <- candidates[candidates %in% colnames(metadata)]
+  if (length(available) > 0) available[[1]] else NULL
+}
+
+.sn_qc_assessment_feature_col <- function(metadata) {
+  candidates <- c("nFeature_RNA_corrected", "nFeature_RNA")
+  available <- candidates[candidates %in% colnames(metadata)]
+  if (length(available) > 0) available[[1]] else NULL
+}
+
+.sn_qc_assessment_doublet_col <- function(metadata) {
+  candidates <- c("scDblFinder.class_corrected", "scDblFinder.class")
+  available <- candidates[candidates %in% colnames(metadata)]
+  if (length(available) > 0) available[[1]] else NULL
+}
+
+.sn_qc_assessment_zero_col <- function(metadata) {
+  zero_cols <- grep("_zero_count$", colnames(metadata), value = TRUE)
+  if (length(zero_cols) == 0) {
+    return(NULL)
+  }
+  corrected_first <- grep("^decontaminated_counts_zero_count$", zero_cols, value = TRUE)
+  if (length(corrected_first) > 0) {
+    return(corrected_first[[1]])
+  }
+  zero_cols[[1]]
+}
+
+.sn_qc_assessment_flag_cols <- function(metadata) {
+  grep("_qc$", colnames(metadata), value = TRUE)
+}
+
+.sn_qc_quality_label <- function(score) {
+  dplyr::case_when(
+    is.na(score) ~ "unknown",
+    score >= 85 ~ "high",
+    score >= 70 ~ "good",
+    score >= 50 ~ "mixed",
+    TRUE ~ "poor"
+  )
+}
+
+.sn_qc_format_percent <- function(x, digits = 1) {
+  if (is.na(x)) {
+    return("NA")
+  }
+  paste0(formatC(100 * x, format = "f", digits = digits), "%")
+}
+
+.sn_qc_scale_score <- function(x, good, minimum = 0) {
+  if (is.na(x)) {
+    return(NA_real_)
+  }
+  100 * max(min((x - minimum) / max(good - minimum, .Machine$double.eps), 1), 0)
+}
+
+.sn_qc_inverse_score <- function(x, warning, failure) {
+  if (is.na(x)) {
+    return(NA_real_)
+  }
+  if (x <= warning) {
+    return(100)
+  }
+  if (x >= failure) {
+    return(0)
+  }
+  100 * (1 - (x - warning) / (failure - warning))
+}
+
+.sn_qc_current_summary <- function(metadata, sample_col = NULL) {
+  metadata <- as.data.frame(metadata)
+  count_col <- .sn_qc_assessment_count_col(metadata)
+  feature_col <- .sn_qc_assessment_feature_col(metadata)
+  doublet_col <- .sn_qc_assessment_doublet_col(metadata)
+  zero_col <- .sn_qc_assessment_zero_col(metadata)
+  qc_cols <- .sn_qc_assessment_flag_cols(metadata)
+
+  if (is_null(sample_col)) {
+    metadata$.sn_qc_sample <- "all_cells"
+    sample_col <- ".sn_qc_sample"
+  }
+
+  split_meta <- split(metadata, metadata[[sample_col]], drop = TRUE)
+  summary_tbl <- lapply(names(split_meta), function(sample_name) {
+    current_meta <- split_meta[[sample_name]]
+    failed_qc_fraction <- if (length(qc_cols) > 0) {
+      mean(rowSums(current_meta[, qc_cols, drop = FALSE] == "Failed", na.rm = TRUE) > 0)
+    } else {
+      NA_real_
+    }
+    doublet_fraction <- if (!is_null(doublet_col)) {
+      mean(tolower(as.character(current_meta[[doublet_col]])) == "doublet", na.rm = TRUE)
+    } else {
+      NA_real_
+    }
+    zero_fraction <- if (!is_null(zero_col)) {
+      mean(as.logical(current_meta[[zero_col]]), na.rm = TRUE)
+    } else {
+      NA_real_
+    }
+
+    library_score <- mean(c(
+      if (!is_null(feature_col)) .sn_qc_scale_score(stats::median(current_meta[[feature_col]], na.rm = TRUE), good = 1500, minimum = 200) else NA_real_,
+      if (!is_null(count_col)) .sn_qc_scale_score(stats::median(current_meta[[count_col]], na.rm = TRUE), good = 5000, minimum = 500) else NA_real_
+    ), na.rm = TRUE)
+    if (is.nan(library_score)) {
+      library_score <- NA_real_
+    }
+
+    stress_score <- mean(c(
+      if ("percent.mt" %in% colnames(current_meta)) .sn_qc_inverse_score(stats::median(current_meta$percent.mt, na.rm = TRUE), warning = 10, failure = 25) else NA_real_,
+      if (!is.na(failed_qc_fraction)) .sn_qc_inverse_score(failed_qc_fraction, warning = 0.1, failure = 0.4) else NA_real_,
+      if (!is.na(doublet_fraction)) .sn_qc_inverse_score(doublet_fraction, warning = 0.08, failure = 0.2) else NA_real_,
+      if (!is.na(zero_fraction)) .sn_qc_inverse_score(zero_fraction, warning = 0.01, failure = 0.1) else NA_real_
+    ), na.rm = TRUE)
+    if (is.nan(stress_score)) {
+      stress_score <- NA_real_
+    }
+
+    score <- mean(c(library_score, stress_score), na.rm = TRUE)
+    if (is.nan(score)) {
+      score <- NA_real_
+    }
+
+    data.frame(
+      sample = as.character(sample_name),
+      n_cells = nrow(current_meta),
+      median_nCount = if (!is_null(count_col)) stats::median(current_meta[[count_col]], na.rm = TRUE) else NA_real_,
+      median_nFeature = if (!is_null(feature_col)) stats::median(current_meta[[feature_col]], na.rm = TRUE) else NA_real_,
+      median_percent_mt = if ("percent.mt" %in% colnames(current_meta)) stats::median(current_meta$percent.mt, na.rm = TRUE) else NA_real_,
+      failed_qc_fraction = failed_qc_fraction,
+      doublet_fraction = doublet_fraction,
+      zero_count_fraction = zero_fraction,
+      library_score = library_score,
+      stress_score = stress_score,
+      qc_score = score,
+      qc_label = .sn_qc_quality_label(score),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  .sn_bind_rows(summary_tbl)
+}
+
+.sn_qc_compare_to_reference <- function(object, reference, sample_col = NULL) {
+  current_meta <- object@meta.data
+  reference_meta <- reference@meta.data
+  current_cells <- rownames(current_meta)
+  qc_cols <- .sn_qc_assessment_flag_cols(reference_meta)
+  doublet_col <- .sn_qc_assessment_doublet_col(reference_meta)
+
+  if (is_null(sample_col)) {
+    reference_meta$.sn_qc_sample <- "all_cells"
+    current_meta$.sn_qc_sample <- "all_cells"
+    sample_col <- ".sn_qc_sample"
+  }
+
+  split_reference <- split(reference_meta, reference_meta[[sample_col]], drop = TRUE)
+  compare_tbl <- lapply(names(split_reference), function(sample_name) {
+    ref_meta <- split_reference[[sample_name]]
+    keep <- rownames(ref_meta) %in% current_cells
+
+    low_quality <- if (length(qc_cols) > 0) {
+      rowSums(ref_meta[, qc_cols, drop = FALSE] == "Failed", na.rm = TRUE) > 0
+    } else {
+      rep(FALSE, nrow(ref_meta))
+    }
+    doublet <- if (!is_null(doublet_col)) {
+      tolower(as.character(ref_meta[[doublet_col]])) == "doublet"
+    } else {
+      rep(FALSE, nrow(ref_meta))
+    }
+    clean <- !low_quality & !doublet
+
+    data.frame(
+      sample = as.character(sample_name),
+      n_cells_reference = nrow(ref_meta),
+      retention_fraction = mean(keep),
+      low_quality_removed_fraction = if (any(low_quality)) mean(!keep[low_quality]) else NA_real_,
+      doublet_removed_fraction = if (any(doublet)) mean(!keep[doublet]) else NA_real_,
+      clean_retained_fraction = if (any(clean)) mean(keep[clean]) else NA_real_,
+      comparison_score = mean(c(
+        if (any(low_quality)) 100 * mean(!keep[low_quality]) else NA_real_,
+        if (any(doublet)) 100 * mean(!keep[doublet]) else NA_real_,
+        if (any(clean)) 100 * mean(keep[clean]) else NA_real_
+      ), na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  .sn_bind_rows(compare_tbl)
+}
+
+.sn_qc_assessment_messages <- function(overall, by_sample, has_reference = FALSE) {
+  lines <- c(
+    glue::glue(
+      "QC assessment: {overall$qc_label[[1]]} quality (score {round(overall$qc_score[[1]], 1)}/100) across {overall$n_samples[[1]]} sample(s) and {overall$n_cells[[1]]} cell(s)."
+    )
+  )
+
+  if (has_reference) {
+    lines <- c(
+      lines,
+      glue::glue(
+        "QC comparison: retained {.sn_qc_format_percent(overall$retention_fraction[[1]])} of reference cells, removed {.sn_qc_format_percent(overall$low_quality_removed_fraction[[1]])} of flagged low-quality cells, and removed {.sn_qc_format_percent(overall$doublet_removed_fraction[[1]])} of called doublets."
+      )
+    )
+  }
+
+  sample_lines <- apply(by_sample, 1, function(row) {
+    glue::glue(
+      "Sample {row[['sample']]}: {row[['qc_label']]} quality, {row[['n_cells']]} cells, median features {round(as.numeric(row[['median_nFeature']]), 1)}, median counts {round(as.numeric(row[['median_nCount']]), 1)}, median percent.mt {round(as.numeric(row[['median_percent_mt']]), 1)}."
+    )
+  })
+
+  c(lines, sample_lines)
+}
+
+#' Assess overall QC status and before/after filtering outcomes
+#'
+#' This function summarizes the QC status of a Seurat object, optionally
+#' compares it against a reference object captured before filtering, and
+#' produces per-sample and overall quality scores. It is designed to answer
+#' whether low-quality cells and called doublets were removed while retaining
+#' clean cells, and whether ambient-RNA correction introduced problematic
+#' zero-count cells.
+#'
+#' @param object A Seurat object to assess.
+#' @param reference Optional Seurat object representing the pre-filter state.
+#'   When supplied, the function compares the retained cells in \code{object}
+#'   against the QC flags and doublet calls recorded in \code{reference}.
+#' @param sample_col Optional metadata column defining samples. When
+#'   \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
+#'   available and otherwise treats the object as one sample.
+#' @param store_name Name used when storing the assessment under
+#'   \code{object@misc$qc_assessments}.
+#' @param return_object Logical; when \code{TRUE}, store the assessment in the
+#'   Seurat object and return the updated object.
+#' @param verbose Logical; when \code{TRUE}, print a concise QC summary.
+#'
+#' @return A list with \code{overall}, \code{by_sample}, \code{comparison},
+#'   and \code{messages} when \code{return_object = FALSE}; otherwise the
+#'   updated Seurat object with the stored assessment.
+#'
+#' @examples
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'   data("pbmc_small", package = "Shennong")
+#'   qc_report <- sn_assess_qc(pbmc_small, verbose = FALSE)
+#'   qc_report$overall
+#' }
+#'
+#' @export
+sn_assess_qc <- function(object,
+                         reference = NULL,
+                         sample_col = NULL,
+                         store_name = "default",
+                         return_object = FALSE,
+                         verbose = TRUE) {
+  check_installed("SeuratObject")
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.", call. = FALSE)
+  }
+  if (!is_null(reference) && !inherits(reference, "Seurat")) {
+    stop("`reference` must be NULL or a Seurat object.", call. = FALSE)
+  }
+
+  sample_col <- .sn_qc_assessment_sample_col(object, sample_col = sample_col)
+  by_sample <- .sn_qc_current_summary(object@meta.data, sample_col = sample_col)
+  comparison <- if (!is_null(reference)) {
+    reference_sample_col <- .sn_qc_assessment_sample_col(reference, sample_col = sample_col)
+    .sn_qc_compare_to_reference(object = object, reference = reference, sample_col = reference_sample_col)
+  } else {
+    NULL
+  }
+
+  if (!is_null(comparison) && nrow(comparison) > 0) {
+    by_sample <- dplyr::left_join(by_sample, comparison, by = "sample")
+  }
+
+  overall_score <- mean(c(by_sample$qc_score, by_sample$comparison_score), na.rm = TRUE)
+  if (is.nan(overall_score)) {
+    overall_score <- mean(by_sample$qc_score, na.rm = TRUE)
+  }
+  overall <- data.frame(
+    n_samples = nrow(by_sample),
+    n_cells = sum(by_sample$n_cells),
+    qc_score = overall_score,
+    qc_label = .sn_qc_quality_label(overall_score),
+    retention_fraction = if ("retention_fraction" %in% colnames(by_sample)) stats::weighted.mean(by_sample$retention_fraction, by_sample$n_cells_reference, na.rm = TRUE) else NA_real_,
+    low_quality_removed_fraction = if ("low_quality_removed_fraction" %in% colnames(by_sample)) stats::weighted.mean(by_sample$low_quality_removed_fraction, by_sample$n_cells_reference, na.rm = TRUE) else NA_real_,
+    doublet_removed_fraction = if ("doublet_removed_fraction" %in% colnames(by_sample)) stats::weighted.mean(by_sample$doublet_removed_fraction, by_sample$n_cells_reference, na.rm = TRUE) else NA_real_,
+    stringsAsFactors = FALSE
+  )
+
+  report <- list(
+    overall = overall,
+    by_sample = by_sample,
+    comparison = comparison,
+    sample_col = sample_col %||% NA_character_,
+    reference_provided = !is_null(reference)
+  )
+  report$messages <- .sn_qc_assessment_messages(
+    overall = overall,
+    by_sample = by_sample,
+    has_reference = !is_null(reference)
+  )
+
+  if (isTRUE(verbose)) {
+    for (line in report$messages) {
+      .sn_log_info("{line}")
+    }
+  }
+
+  if (isTRUE(return_object)) {
+    object <- .sn_store_misc_result(
+      object = object,
+      collection = "qc_assessments",
+      store_name = store_name,
+      result = report
+    )
+    return(object)
+  }
+
+  report
 }
 
 .sn_extract_metric_metadata <- function(x) {

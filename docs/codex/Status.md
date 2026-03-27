@@ -4,6 +4,17 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Added `sn_assess_qc()` as a lightweight QC-reporting layer for Seurat
+  objects. It now summarizes per-sample QC status, reports current risk signals
+  such as failed-QC fractions, doublet rates, and decontamination zero-count
+  rates, and can compare a filtered object against a reference object to
+  quantify low-quality-cell removal, doublet removal, and clean-cell
+  retention. Reports can be stored under `object@misc$qc_assessments`.
+- Reviewed `sn_filter_genes()` / `sn_filter_cells()` and fixed several QC-edge
+  cases. Cell filtering now validates the supported method, treats zero-MAD
+  groups as stable rather than failing every cell, and checks plotting
+  dependencies explicitly; gene-filter threshold plots now stay well-defined
+  even when `min_cells` exceeds the number of cells.
 - Reworked several internal sparse-matrix hot paths for better performance and
   lower peak memory use. Pseudobulk DE aggregation now uses sparse grouped
   matrix multiplication instead of `t(as.matrix(...))` + `rowsum()`, exact kNN

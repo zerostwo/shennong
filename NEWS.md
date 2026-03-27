@@ -9,6 +9,12 @@ Released 2026-03-25.
 
 ### Added
 
+- `sn_assess_qc()` now summarizes overall and per-sample QC status, reports
+  current QC risk signals such as failed-QC fractions, doublet rates, and
+  decontamination zero-count rates, and can compare a filtered object against a
+  pre-filter reference to quantify low-quality-cell removal, doublet removal,
+  and clean-cell retention. Reports can be stored under
+  `object@misc$qc_assessments`.
 - Bundled human and mouse GENCODE gene-annotation data was added for gene-level
   filtering workflows. The snapshot now also stores genome-context fields such
   as sequence name, source, coordinates, strand, gene status/source, and
@@ -61,6 +67,11 @@ Released 2026-03-25.
 
 ### Changed
 
+- `sn_filter_cells()` now validates its `method` argument, keeps constant-value
+  QC groups when MAD collapses to zero, and checks plotting dependencies
+  explicitly before rendering diagnostics. `sn_filter_genes()` now validates
+  `min_cells` and keeps its threshold summary stable when the requested
+  threshold exceeds the number of cells in the object.
 - Internal sparse-matrix workflows were optimized for better runtime and lower
   peak memory use. Pseudobulk DE aggregation now groups columns without
   materializing dense matrices, split Seurat assay layers are combined through
