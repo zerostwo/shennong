@@ -4,6 +4,10 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Added a repository-local pre-push helper at `scripts/check-prepush.R`. It
+  now runs the maintainer-standard validation sequence in one place:
+  `devtools::document()`, an optional targeted `testthat` pass, the full local
+  test suite, `R CMD build`, and `R CMD check --no-manual`.
 - Added `sn_assess_qc()` as a lightweight QC-reporting layer for Seurat
   objects. It now summarizes per-sample QC status, reports current risk signals
   such as failed-QC fractions, doublet rates, and decontamination zero-count

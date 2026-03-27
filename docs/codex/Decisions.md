@@ -4,6 +4,10 @@ Last updated: 2026-03-25
 
 ## 2026-03-25
 
+- Pre-push validation should be encoded in one repository-local command rather
+  than left to memory. Shennong now ships `scripts/check-prepush.R` so the
+  standard maintainer path can run documentation, tests, build, and check in a
+  predictable order before code reaches GitHub Actions.
 - QC reporting should be recomputable from merged Seurat metadata rather than
   depend on fragile per-object history alone. `sn_assess_qc()` therefore uses
   sample-level metadata aggregation by default, can optionally compare against a

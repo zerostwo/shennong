@@ -19,6 +19,16 @@ R CMD build .
 R CMD check --no-manual Shennong_*.tar.gz
 ```
 
+For the standard local pre-push path, you can use the bundled helper:
+
+```sh
+Rscript scripts/check-prepush.R --filter="utils|de_enrich"
+```
+
+This runs documentation refresh, an optional targeted test pass, the full test
+suite, `R CMD build`, and `R CMD check --no-manual` in one command. Use
+`--help` to see the available `--skip-*` options.
+
 ## Documentation
 
 - Edit roxygen comments in `R/` and regenerate `man/` with `devtools::document()`.
