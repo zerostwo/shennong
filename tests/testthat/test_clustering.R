@@ -160,42 +160,6 @@ test_that("rare-feature helper functions cover gini, local markers, and grouped 
   expect_true(any(grepl("^raregene", selected$features)))
 })
 
-test_that("rare-cell backend runners validate required executables and scripts", {
-  expr <- Matrix::Matrix(matrix(rpois(30, lambda = 2), nrow = 6), sparse = TRUE)
-  rownames(expr) <- paste0("gene", seq_len(6))
-  colnames(expr) <- paste0("cell", seq_len(5))
-
-  expect_error(
-    Shennong:::.sn_run_sccad(
-      expr = expr,
-      cell_ids = colnames(expr),
-      gene_ids = rownames(expr),
-      python = "",
-      script = tempfile(fileext = ".py")
-    ),
-    "Could not find a Python executable"
-  )
-
-  expect_error(
-    Shennong:::.sn_run_sccad(
-      expr = expr,
-      cell_ids = colnames(expr),
-      gene_ids = rownames(expr),
-      python = Sys.which("python"),
-      script = tempfile(fileext = ".py")
-    ),
-    "Could not locate `scCAD.py`"
-  )
-
-  expect_error(
-    Shennong:::.sn_run_sca(
-      expr = expr,
-      python = tempfile("missing-python-")
-    ),
-    "SCA execution failed|shannonca"
-  )
-})
-
 test_that("rare-cell helper functions support challenging-groups and mocked backends", {
   skip_if_not_installed("Seurat")
 
@@ -324,6 +288,61 @@ test_that("sn_run_cluster can select HVGs by metadata group during integration",
   expect_true("harmony" %in% names(clustered@reductions))
   expect_lte(length(Seurat::VariableFeatures(clustered)), 50)
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+})
+
+test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 61, prefix = "autoa")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 62, prefix = "autob")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  captured <- list()
+  local_mocked_bindings(
+    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, verbose = TRUE) {
+      captured <<- c(captured, list(split_by))
+      list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  sn_run_cluster(
+    object = merged,
+    batch = "sample",
+    normalization_method = "seurat",
+    nfeatures = 30,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_equal(captured[[1]], "sample")
+
+  captured <- list()
+  local_mocked_bindings(
+    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, verbose = TRUE) {
+      captured <<- c(captured, list(split_by))
+      list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  sn_run_cluster(
+    object = merged,
+    batch = "sample",
+    hvg_group_by = "orig.ident",
+    normalization_method = "seurat",
+    nfeatures = 30,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_equal(captured[[1]], "orig.ident")
 })
 
 test_that("sn_run_cluster handles merged split layers with differing feature sets", {

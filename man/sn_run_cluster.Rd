@@ -47,8 +47,9 @@ only supported when \code{batch = NULL}.}
 \item{resolution}{Resolution parameter for \code{FindClusters}.}
 
 \item{hvg_group_by}{Optional metadata column used to compute highly variable
-genes within groups before merging and ranking them. Use \code{NULL} to
-compute HVGs on the full object.}
+genes within groups before merging and ranking them. When \code{NULL} and
+\code{batch} is supplied, Shennong reuses \code{batch} by default. Use
+\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.}
 
 \item{rare_feature_method}{Optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are

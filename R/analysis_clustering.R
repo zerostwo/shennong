@@ -846,8 +846,9 @@ sn_detect_rare_cells <- function(object,
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
 #' @param hvg_group_by Optional metadata column used to compute highly variable
-#'   genes within groups before merging and ranking them. Use \code{NULL} to
-#'   compute HVGs on the full object.
+#'   genes within groups before merging and ranking them. When \code{NULL} and
+#'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
+#'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
 #' @param rare_feature_method Optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
 #'   \code{"none"}, \code{"gini"}, \code{"local_hvg"},
@@ -959,6 +960,10 @@ sn_run_cluster <- function(object,
     }
     check_installed("harmony")
     if (verbose) .sn_log_info("[sn_run_cluster] Starting integration for batch = '{batch}'.")
+  }
+
+  if (is_null(hvg_group_by) && !is_null(batch)) {
+    hvg_group_by <- batch
   }
 
   if (verbose) {
