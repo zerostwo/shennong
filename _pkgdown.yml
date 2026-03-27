@@ -45,6 +45,7 @@ reference:
       - shennong_gene_annotations
       - shennong_signature_catalog
       - sn_load_data
+      - sn_list_input_dirs
       - sn_read
       - sn_write
       - sn_add_data_from_anndata
@@ -57,6 +58,7 @@ reference:
       - sn_score_cell_cycle
       - sn_filter_genes
       - sn_filter_cells
+      - sn_assess_qc
       - sn_find_doublets
       - sn_remove_ambient_contamination
   - title: Clustering and Integration
