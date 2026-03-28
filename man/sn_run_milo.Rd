@@ -24,6 +24,8 @@ sn_run_milo(
   fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
+  store_name = NULL,
+  return_object = FALSE,
   return_intermediate = FALSE,
   verbose = TRUE
 )
@@ -79,6 +81,12 @@ neighborhoods with \code{miloR::annotateNhoods()}.}
 
 \item{norm_method}{Normalization method passed to
 \code{miloR::testNhoods()}.}
+
+\item{store_name}{Optional name used under \code{object@misc$milo_results}.
+When supplied, the milo result is stored on the Seurat object.}
+
+\item{return_object}{Logical; when \code{TRUE} and \code{store_name} is
+supplied, return the updated Seurat object.}
 
 \item{return_intermediate}{Logical; if \code{TRUE}, return a list with the
 DA table, design data, and milo object.}

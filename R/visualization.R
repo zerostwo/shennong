@@ -547,6 +547,104 @@ sn_plot_composition <- function(data,
   .sn_add_discrete_palette(plot, palette = palette, n = n_fill, aesthetic = "fill")
 }
 
+#' Plot miloR neighborhood differential-abundance results
+#'
+#' @param x A milo result data frame, or a Seurat object containing a stored
+#'   milo result.
+#' @param milo_name Name of the stored milo result when \code{x} is a Seurat
+#'   object.
+#' @param annotation_col Optional column used to color points.
+#' @param fdr_col FDR column used on the y-axis. Defaults to \code{"SpatialFDR"}.
+#' @param fdr_cutoff Horizontal significance threshold.
+#' @param logfc_cutoff Optional vertical threshold for effect size.
+#' @param palette Discrete palette used when \code{annotation_col} is supplied.
+#' @param title,x_label,y_label Optional plot labels.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#'
+#' @return A ggplot object.
+#'
+#' @examples
+#' milo_df <- data.frame(
+#'   logFC = c(1.2, -0.8, 0.4),
+#'   SpatialFDR = c(0.01, 0.2, 0.04),
+#'   cell_type = c("T", "B", "Myeloid")
+#' )
+#' sn_plot_milo(milo_df, annotation_col = "cell_type")
+#'
+#' @export
+sn_plot_milo <- function(x,
+                         milo_name = "default",
+                         annotation_col = NULL,
+                         fdr_col = c("SpatialFDR", "FDR"),
+                         fdr_cutoff = 0.1,
+                         logfc_cutoff = NULL,
+                         palette = "Paired",
+                         title = NULL,
+                         x_label = "logFC",
+                         y_label = expression(-log[10]("FDR")),
+                         panel_widths = NULL,
+                         panel_heights = NULL) {
+  if (inherits(x, "Seurat")) {
+    data <- sn_get_milo_result(x, milo_name = milo_name)
+  } else if (is.data.frame(x)) {
+    data <- x
+  } else {
+    stop("`x` must be a milo result data frame or a Seurat object.", call. = FALSE)
+  }
+
+  fdr_col <- fdr_col[fdr_col %in% colnames(data)][1] %||% NULL
+  if (is.null(fdr_col) || !"logFC" %in% colnames(data)) {
+    stop("The milo result must contain `logFC` and one of `SpatialFDR` or `FDR`.", call. = FALSE)
+  }
+
+  data <- as.data.frame(data, stringsAsFactors = FALSE)
+  data$.sn_neg_log10_fdr <- -log10(pmax(data[[fdr_col]], .Machine$double.xmin))
+
+  if (!is.null(annotation_col) && !annotation_col %in% colnames(data)) {
+    stop("Column '", annotation_col, "' was not found in the milo result.", call. = FALSE)
+  }
+
+  if (is.null(annotation_col)) {
+    p <- ggplot2::ggplot(data, ggplot2::aes(x = .data$logFC, y = .data$.sn_neg_log10_fdr)) +
+      ggplot2::geom_point(alpha = 0.8)
+  } else {
+    p <- ggplot2::ggplot(data, ggplot2::aes(
+      x = .data$logFC,
+      y = .data$.sn_neg_log10_fdr,
+      color = .data[[annotation_col]]
+    )) +
+      ggplot2::geom_point(alpha = 0.8)
+  }
+
+  p <- p +
+    ggplot2::geom_hline(yintercept = -log10(fdr_cutoff), linetype = 2, linewidth = 0.3) +
+    ggplot2::labs(
+      x = x_label,
+      y = y_label,
+      title = title
+    )
+
+  if (!is.null(logfc_cutoff)) {
+    p <- p +
+      ggplot2::geom_vline(xintercept = c(-abs(logfc_cutoff), abs(logfc_cutoff)), linetype = 2, linewidth = 0.3)
+  }
+
+  p <- .sn_add_catplot_theme(
+    p,
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights
+  )
+
+  if (!is.null(annotation_col)) {
+    n_col <- length(unique(stats::na.omit(as.character(data[[annotation_col]]))))
+    p <- .sn_add_discrete_palette(p, palette = palette, n = n_col, aesthetic = "color")
+  }
+
+  p
+}
+
 #' Create a dimensionality reduction plot for categorical data
 #'
 #' This function creates a dimensionality reduction plot for categorical data using Seurat and ggplot2. It allows for the selection of the reduction method, grouping, and splitting variables, as well as the visualization of labels, rasterization, and color palette. The sn_plot_dim() function is intended to be used as a wrapper around Seurat's DimPlot() function.

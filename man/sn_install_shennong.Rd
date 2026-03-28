@@ -5,16 +5,18 @@
 \title{Install Shennong from CRAN or GitHub}
 \usage{
 sn_install_shennong(
-  channel = c("auto", "cran", "github"),
+  channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
   github_repo = "zerostwo/shennong",
   github_ref = "main",
+  local_path = NULL,
   repos = getOption("repos"),
   ...
 )
 }
 \arguments{
-\item{channel}{One of \code{"auto"}, \code{"cran"}, or \code{"github"}.}
+\item{channel}{One of \code{"auto"}, \code{"cran"}, \code{"github"}, or
+\code{"local"}.}
 
 \item{package}{Package name. Defaults to \code{"Shennong"}.}
 
@@ -22,20 +24,24 @@ sn_install_shennong(
 
 \item{github_ref}{GitHub ref to install from. Defaults to \code{"main"}.}
 
+\item{local_path}{Local package directory or source tarball used when
+\code{channel = "local"}.}
+
 \item{repos}{CRAN-like repositories used by \code{install.packages()}.}
 
 \item{...}{Additional arguments passed to \code{utils::install.packages()} or
-\code{remotes::install_github()}. For GitHub installs, Shennong defaults to
-\code{dependencies = FALSE} and \code{upgrade = "never"} unless you
-override them explicitly.}
+\code{remotes::install_github()} / \code{remotes::install_local()}. For
+GitHub installs, Shennong defaults to \code{dependencies = FALSE} and
+\code{upgrade = "never"} unless you override them explicitly.}
 }
 \value{
 Invisibly returns the chosen installation channel.
 }
 \description{
 This helper installs the stable CRAN release when available, or the GitHub
-development version when requested. When \code{channel = "auto"}, it prefers CRAN
-and falls back to GitHub if no CRAN release is available.
+development version when requested, or installs from a local source tree or
+tarball. When \code{channel = "auto"}, it prefers CRAN and falls back to GitHub
+if no CRAN release is available.
 }
 \examples{
 \dontrun{

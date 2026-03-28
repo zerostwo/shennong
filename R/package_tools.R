@@ -267,18 +267,22 @@ sn_check_version <- function(
 #' Install Shennong from CRAN or GitHub
 #'
 #' This helper installs the stable CRAN release when available, or the GitHub
-#' development version when requested. When `channel = "auto"`, it prefers CRAN
-#' and falls back to GitHub if no CRAN release is available.
+#' development version when requested, or installs from a local source tree or
+#' tarball. When `channel = "auto"`, it prefers CRAN and falls back to GitHub
+#' if no CRAN release is available.
 #'
-#' @param channel One of \code{"auto"}, \code{"cran"}, or \code{"github"}.
+#' @param channel One of \code{"auto"}, \code{"cran"}, \code{"github"}, or
+#'   \code{"local"}.
 #' @param package Package name. Defaults to \code{"Shennong"}.
 #' @param github_repo GitHub repository in \code{"owner/repo"} format.
 #' @param github_ref GitHub ref to install from. Defaults to \code{"main"}.
+#' @param local_path Local package directory or source tarball used when
+#'   \code{channel = "local"}.
 #' @param repos CRAN-like repositories used by \code{install.packages()}.
 #' @param ... Additional arguments passed to \code{utils::install.packages()} or
-#'   \code{remotes::install_github()}. For GitHub installs, Shennong defaults to
-#'   \code{dependencies = FALSE} and \code{upgrade = "never"} unless you
-#'   override them explicitly.
+#'   \code{remotes::install_github()} / \code{remotes::install_local()}. For
+#'   GitHub installs, Shennong defaults to \code{dependencies = FALSE} and
+#'   \code{upgrade = "never"} unless you override them explicitly.
 #'
 #' @return Invisibly returns the chosen installation channel.
 #'
@@ -289,14 +293,27 @@ sn_check_version <- function(
 #'
 #' @export
 sn_install_shennong <- function(
-  channel = c("auto", "cran", "github"),
+  channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
   github_repo = "zerostwo/shennong",
   github_ref = "main",
+  local_path = NULL,
   repos = getOption("repos"),
   ...
 ) {
   channel <- match.arg(channel)
+  if (identical(channel, "local")) {
+    if (is.null(local_path) || !nzchar(local_path)) {
+      stop("`local_path` must be supplied when `channel = \"local\"`.", call. = FALSE)
+    }
+    check_installed("remotes", reason = "to install Shennong from a local path.")
+    .sn_install_local_release(
+      path = local_path,
+      args = list(...)
+    )
+    return(invisible(channel))
+  }
+
   cran_version <- .sn_get_cran_version(package = package, repos = repos)
   github_version <- .sn_get_github_version(repo = github_repo, ref = github_ref)
   resolved_channel <- .sn_resolve_release_channel(
@@ -331,6 +348,13 @@ sn_install_shennong <- function(
   do.call(
     remotes::install_github,
     c(list(repo = repo, ref = ref), args)
+  )
+}
+
+.sn_install_local_release <- function(path, args = list()) {
+  do.call(
+    remotes::install_local,
+    c(list(path = path), args)
   )
 }
 

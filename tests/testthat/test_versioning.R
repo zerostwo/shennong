@@ -121,3 +121,28 @@ test_that("sn_install_shennong respects explicit GitHub install overrides", {
   expect_true(isTRUE(captured$dependencies))
   expect_equal(captured$upgrade, "always")
 })
+
+test_that("sn_install_shennong supports local installs", {
+  local_mocked_bindings(
+    check_installed = function(...) invisible(TRUE),
+    .env = asNamespace("Shennong")
+  )
+
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_install_local_release = function(path, args = list()) {
+      captured <<- list(path = path, args = args)
+      invisible(TRUE)
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  expect_invisible(
+    Shennong::sn_install_shennong(
+      channel = "local",
+      local_path = "/tmp/Shennong"
+    )
+  )
+
+  expect_equal(captured$path, "/tmp/Shennong")
+})

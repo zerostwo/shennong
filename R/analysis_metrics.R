@@ -1852,6 +1852,10 @@ sn_compare_composition <- function(x,
 #'   \code{miloR::testNhoods()}.
 #' @param norm_method Normalization method passed to
 #'   \code{miloR::testNhoods()}.
+#' @param store_name Optional name used under \code{object@misc$milo_results}.
+#'   When supplied, the milo result is stored on the Seurat object.
+#' @param return_object Logical; when \code{TRUE} and \code{store_name} is
+#'   supplied, return the updated Seurat object.
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
@@ -1891,6 +1895,8 @@ sn_run_milo <- function(x,
                         fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
                         min_mean = 0,
                         norm_method = c("TMM", "RLE", "logMS"),
+                        store_name = NULL,
+                        return_object = FALSE,
                         return_intermediate = FALSE,
                         verbose = TRUE) {
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
@@ -1899,8 +1905,13 @@ sn_run_milo <- function(x,
   stopifnot(is.null(contrast) || (is.character(contrast) && length(contrast) == 2L))
   stopifnot(is.null(covariates) || is.character(covariates))
   stopifnot(is.null(annotation_col) || (is.character(annotation_col) && length(annotation_col) == 1L))
+  stopifnot(is.null(store_name) || (is.character(store_name) && length(store_name) == 1L))
+  stopifnot(is.logical(return_object), length(return_object) == 1L)
   stopifnot(is.logical(return_intermediate), length(return_intermediate) == 1L)
   stopifnot(is.logical(verbose), length(verbose) == 1L)
+  if (isTRUE(return_intermediate) && !is.null(store_name)) {
+    stop("`return_intermediate = TRUE` cannot be combined with `store_name`.", call. = FALSE)
+  }
 
   fdr_weighting <- match.arg(fdr_weighting)
   norm_method <- match.arg(norm_method)
@@ -2021,6 +2032,33 @@ sn_run_milo <- function(x,
   da_table$group_col <- group_col
   da_table$reduction <- reduction
 
+  if (!is.null(store_name)) {
+    stored_result <- sn_store_milo(
+      object = x,
+      result = da_table,
+      store_name = store_name,
+      sample_col = sample_col,
+      group_col = group_col,
+      comparison = da_table$comparison[[1]],
+      reduction = reduction,
+      dims = colnames(metric_input$embeddings),
+      annotation_col = annotation_col,
+      return_object = FALSE
+    )
+
+    if (isTRUE(return_object)) {
+      object <- .sn_store_misc_result(
+        object = x,
+        collection = "milo_results",
+        store_name = store_name,
+        result = stored_result
+      )
+      return(.sn_log_seurat_command(object = object, name = "sn_run_milo"))
+    }
+
+    return(stored_result)
+  }
+
   if (isTRUE(return_intermediate)) {
     return(list(
       table = da_table,
@@ -2030,6 +2068,103 @@ sn_run_milo <- function(x,
   }
 
   da_table
+}
+
+#' Store a miloR differential-abundance result on a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param result A neighborhood-level differential-abundance table.
+#' @param store_name Name used under \code{object@misc$milo_results}.
+#' @param sample_col Sample column used for the design.
+#' @param group_col Group column used for the design.
+#' @param comparison Human-readable comparison label.
+#' @param reduction Reduction used to build the milo neighborhoods.
+#' @param dims Optional embedding dimension names or indices used for milo.
+#' @param annotation_col Optional neighborhood annotation column.
+#' @param return_object If \code{TRUE}, return the updated object.
+#'
+#' @return A \code{Seurat} object or stored-result list.
+#' @export
+sn_store_milo <- function(object,
+                          result,
+                          store_name = "default",
+                          sample_col,
+                          group_col,
+                          comparison = NULL,
+                          reduction = "pca",
+                          dims = NULL,
+                          annotation_col = NULL,
+                          return_object = TRUE) {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  stored_result <- list(
+    schema_version = "1.0.0",
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
+    table = tibble::as_tibble(result),
+    analysis = "milo",
+    method = "miloR",
+    sample_col = sample_col,
+    group_col = group_col,
+    comparison = comparison,
+    reduction = reduction,
+    dims = dims,
+    annotation_col = annotation_col
+  )
+
+  object <- .sn_store_misc_result(
+    object = object,
+    collection = "milo_results",
+    store_name = store_name,
+    result = stored_result
+  )
+
+  if (isTRUE(return_object)) {
+    return(.sn_log_seurat_command(object = object, name = "sn_store_milo"))
+  }
+
+  stored_result
+}
+
+#' Retrieve a stored miloR result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param milo_name Name of the stored milo result.
+#' @param annotation Optional subset of annotation labels to keep.
+#' @param spatial_fdr Optional maximum \code{SpatialFDR} threshold.
+#' @param with_metadata If \code{TRUE}, return the full stored-result list.
+#'
+#' @return A tibble or stored-result list.
+#' @export
+sn_get_milo_result <- function(object,
+                               milo_name = "default",
+                               annotation = NULL,
+                               spatial_fdr = NULL,
+                               with_metadata = FALSE) {
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.")
+  }
+
+  stored <- .sn_get_misc_result(
+    object = object,
+    collection = "milo_results",
+    store_name = milo_name
+  )
+  if (isTRUE(with_metadata)) {
+    return(stored)
+  }
+
+  table <- tibble::as_tibble(stored$table)
+  annotation_col <- stored$annotation_col %||% NULL
+  if (!is.null(annotation) && !is.null(annotation_col) && annotation_col %in% colnames(table)) {
+    table <- dplyr::filter(table, .data[[annotation_col]] %in% annotation)
+  }
+  if (!is.null(spatial_fdr) && "SpatialFDR" %in% colnames(table)) {
+    table <- dplyr::filter(table, .data$SpatialFDR <= spatial_fdr)
+  }
+  table
 }
 
 .sn_qc_assessment_sample_col <- function(object, sample_col = NULL) {

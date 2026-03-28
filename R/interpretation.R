@@ -116,6 +116,7 @@ sn_list_results <- function(object) {
   dplyr::bind_rows(
     .sn_compact_collection_summary(object, "de_results", "de"),
     .sn_compact_collection_summary(object, "deconvolution_results", "deconvolution"),
+    .sn_compact_collection_summary(object, "milo_results", "milo"),
     .sn_compact_collection_summary(object, "enrichment_results", "enrichment"),
     .sn_compact_collection_summary(object, "interpretation_results", "interpretation")
   ) |>
