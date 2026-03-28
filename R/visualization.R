@@ -315,16 +315,19 @@ sn_plot_barplot <- function(data,
     data[[discrete_col]] <- factor(data[[discrete_col]], levels = levels(plot_data[[discrete_col]]))
   }
 
+  mapped_x <- if (summarize && !identical(discrete_col, x_name)) ".sn_center" else x_name
+  mapped_y <- if (summarize && identical(discrete_col, x_name)) ".sn_center" else y_name
+
   if (fill_missing) {
     p <- ggplot2::ggplot(
       data = plot_data,
-      mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})
+      mapping = ggplot2::aes(x = .data[[mapped_x]], y = .data[[mapped_y]])
     ) +
       ggplot2::geom_col()
   } else {
     p <- ggplot2::ggplot(
       data = plot_data,
-      mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
+      mapping = ggplot2::aes(x = .data[[mapped_x]], y = .data[[mapped_y]], fill = .data[[fill_name]])
     ) +
       ggplot2::geom_col()
   }

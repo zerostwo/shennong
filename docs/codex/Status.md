@@ -326,3 +326,5 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Revisit `scDblFinder`-originating warnings in tests; they are upstream warnings today, but some deprecation notices may require argument updates in a future compatibility pass.
 
 - Standardized `sn_install_shennong()` around `source` / `ref` for non-CRAN installs, while preserving compatibility aliases and rejecting conflicting mixed arguments.
+
+- `sn_calculate_composition()` now treats `min_cells` as a threshold on returned composition categories, while `sn_compare_composition()` keeps `min_cells` as a per-sample filter and annotates effect direction through an ordered `change` factor.

@@ -219,3 +219,5 @@ Last updated: 2026-03-25
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
 
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
+
+- Composition filtering and composition comparison need separate thresholds: `sn_calculate_composition()` should filter returned categories by count, while `sn_compare_composition()` should keep `min_cells` as a sample-level replicate filter and expose a simple ordered direction label derived from `log2_fc`.

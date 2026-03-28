@@ -100,6 +100,24 @@ test_that("sn_plot_barplot can summarize repeated observations with error bars a
   expect_s3_class(plot, "ggplot")
 })
 
+test_that("sn_plot_barplot maps summarized bars to the summarized value column", {
+  data <- data.frame(
+    cell_type_level1 = rep(c("Tcell", "Bcell"), each = 3),
+    sample = rep(paste0("S", 1:3), times = 2),
+    proportion = c(40, 45, 50, 20, 25, 30),
+    stringsAsFactors = FALSE
+  )
+
+  plot <- sn_plot_barplot(
+    data,
+    x = cell_type_level1,
+    y = proportion
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_true(".sn_center" %in% colnames(plot$data))
+})
+
 test_that("sn_plot_composition supports default y selection, ordering, and faceting", {
   data <- data.frame(
     cell_type = factor(c("Mono", "Mono", "cDC1", "cDC1", "B", "B"), levels = c("Mono", "cDC1", "B")),

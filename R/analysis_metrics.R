@@ -1370,8 +1370,9 @@ sn_calculate_rogue <- function(
 #' @param group_by Column name or character vector of column names used to
 #'   define groups.
 #' @param variable Column name whose proportions should be calculated.
-#' @param min_cells Minimum number of cells required for a \code{group_by}
-#'   category to be retained. Defaults to \code{20}.
+#' @param min_cells Minimum number of cells required for a returned
+#'   \code{group_by + variable} category to be retained. Defaults to
+#'   \code{20}.
 #' @param measure One of \code{"proportion"}, \code{"count"}, or
 #'   \code{"both"}. Defaults to \code{"proportion"}.
 #' @param additional_cols Optional character vector of additional columns to
@@ -1449,28 +1450,23 @@ sn_calculate_composition <- function(x,
 
   group_levels <- if (is.factor(metadata[[group_by[[1]]]])) levels(metadata[[group_by[[1]]]]) else NULL
 
-  metadata <- metadata |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-    dplyr::mutate(n_cells_group = dplyr::n()) |>
-    dplyr::ungroup() |>
-    dplyr::filter(.data$n_cells_group >= min_cells)
-
-  if (nrow(metadata) == 0) {
-    stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
-  }
-
   composition_full <- metadata |>
     dplyr::filter(
       dplyr::if_all(dplyr::all_of(group_by), ~ !is.na(.x)),
       !is.na(.data[[variable]])
     ) |>
     dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "count") |>
+    dplyr::filter(.data$count >= min_cells) |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
     dplyr::mutate(
       group_total = sum(.data$count),
       proportion = .data$count / .data$group_total * 100
     ) |>
     dplyr::ungroup()
+
+  if (nrow(composition_full) == 0) {
+    stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
+  }
 
   if (!is.null(sort_by)) {
     composition_full <- .sn_sort_discrete_levels(
@@ -1519,6 +1515,11 @@ sn_calculate_composition <- function(x,
     }
 
     additional_data <- metadata |>
+      dplyr::semi_join(
+        composition_full |>
+          dplyr::distinct(dplyr::across(dplyr::all_of(group_by))),
+        by = group_by
+      ) |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
       dplyr::summarise(
         dplyr::across(dplyr::all_of(additional_cols), dplyr::first),
@@ -1680,10 +1681,13 @@ sn_compare_composition <- function(x,
     dplyr::filter(!is.na(.data[[sample_col]]), !is.na(.data[[group_col]])) |>
     dplyr::group_by(.data[[sample_col]]) |>
     dplyr::summarise(
+      .sn_sample_cells = dplyr::n(),
       dplyr::across(dplyr::all_of(unique(c(group_col, additional_cols))), dplyr::first),
       .groups = "drop"
     ) |>
-    dplyr::filter(.data[[group_col]] %in% contrast)
+    dplyr::filter(.data$.sn_sample_cells >= min_cells) |>
+    dplyr::filter(.data[[group_col]] %in% contrast) |>
+    dplyr::select(-".sn_sample_cells")
 
   if (nrow(sample_info) == 0L) {
     stop("No samples remaining for the requested contrast.", call. = FALSE)
@@ -1693,7 +1697,7 @@ sn_compare_composition <- function(x,
     x = metadata[metadata[[sample_col]] %in% sample_info[[sample_col]], , drop = FALSE],
     group_by = sample_col,
     variable = variable,
-    min_cells = min_cells,
+    min_cells = 0,
     measure = "both",
     additional_cols = unique(c(group_col, additional_cols))
   )
@@ -1748,6 +1752,10 @@ sn_compare_composition <- function(x,
   colnames(summary_tbl)[colnames(summary_tbl) == "feature"] <- variable
   summary_tbl$contrast_case <- contrast[[1]]
   summary_tbl$contrast_control <- contrast[[2]]
+  summary_tbl$change <- factor(
+    ifelse(is.na(summary_tbl$log2_fc), NA_character_, ifelse(summary_tbl$log2_fc >= 0, "Increase", "Decrease")),
+    levels = c("Increase", "Decrease")
+  )
   summary_tbl$p_adj <- stats::p.adjust(summary_tbl$p_value, method = adjust_method)
 
   if (return_sample_data) {

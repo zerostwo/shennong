@@ -24,8 +24,9 @@ define groups.}
 
 \item{variable}{Column name whose proportions should be calculated.}
 
-\item{min_cells}{Minimum number of cells required for a \code{group_by}
-category to be retained. Defaults to \code{20}.}
+\item{min_cells}{Minimum number of cells required for a returned
+\code{group_by + variable} category to be retained. Defaults to
+\code{20}.}
 
 \item{measure}{One of \code{"proportion"}, \code{"count"}, or
 \code{"both"}. Defaults to \code{"proportion"}.}

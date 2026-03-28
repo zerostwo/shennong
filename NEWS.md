@@ -32,8 +32,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - `sn_calculate_composition()` now supports multi-column `group_by` values,
   can return proportions, counts, or both through `measure`, preserves factor
-  columns from the source metadata, and can sort a single grouping column by a
-  chosen category level such as WT proportion.
+  columns from the source metadata, filters returned composition categories by
+  `min_cells`, and can sort a single grouping column by a chosen category level
+  such as WT proportion.
 - Visualization helpers now share a common discrete-palette resolver. Named
   palettes such as `\"Paired\"` expand automatically when more categories are
   present than the base palette length, and key plotting helpers now expose
@@ -46,6 +47,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   observations, optional SD/SE error bars, and optional jittered raw points,
   making it suitable for sample-level effect summaries as well as simple
   identity bars.
+- `sn_compare_composition()` now adds a `change` factor with levels
+  `Increase` and `Decrease` derived from the sign of `log2_fc`.
 - `sn_find_doublets()` now skips zero-count and low-feature cells before
   running `scDblFinder()` on corrected layers, records corrected-layer results
   with `_corrected` suffixes, and works with the zero-count flags produced by

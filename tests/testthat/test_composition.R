@@ -22,10 +22,10 @@ test_that("sn_calculate_composition works with data frames", {
   expect_true(all(result$proportion >= 0 & result$proportion <= 100))
 })
 
-test_that("sn_calculate_composition filters groups with fewer cells than min_cells", {
+test_that("sn_calculate_composition filters returned categories with fewer cells than min_cells", {
   small_meta_df <- data.frame(
-    sample = c("A", "A", "B"),
-    ctype = c("Tcell", "Bcell", "Tcell"),
+    sample = c("A", "A", "A", "B", "B", "B"),
+    ctype = c("Tcell", "Tcell", "Bcell", "Tcell", "Tcell", "Myeloid"),
     stringsAsFactors = FALSE
   )
 
@@ -37,6 +37,8 @@ test_that("sn_calculate_composition filters groups with fewer cells than min_cel
   )
 
   expect_equal(nrow(result), 2)
+  expect_true(all(result$ctype == "Tcell"))
+  expect_equal(result$proportion, c(100, 100))
 })
 
 test_that("sn_calculate_composition handles missing columns gracefully", {
@@ -349,7 +351,7 @@ test_that("sn_compare_composition compares sample-level proportions and fills ab
   )
 
   summary_tbl <- comparison$summary
-  expect_true(all(c("cell_type", "difference", "log2_fc", "n_case", "n_control") %in% colnames(summary_tbl)))
+  expect_true(all(c("cell_type", "difference", "log2_fc", "n_case", "n_control", "change") %in% colnames(summary_tbl)))
   expect_equal(
     summary_tbl$mean_case[summary_tbl$cell_type == "Tcell"],
     70
@@ -360,6 +362,15 @@ test_that("sn_compare_composition compares sample-level proportions and fills ab
   )
   expect_true(
     summary_tbl$log2_fc[summary_tbl$cell_type == "Tcell"] > 0
+  )
+  expect_identical(levels(summary_tbl$change), c("Increase", "Decrease"))
+  expect_equal(
+    as.character(summary_tbl$change[summary_tbl$cell_type == "Tcell"]),
+    "Increase"
+  )
+  expect_equal(
+    as.character(summary_tbl$change[summary_tbl$cell_type == "Bcell"]),
+    "Decrease"
   )
 })
 
@@ -420,4 +431,31 @@ test_that("sn_compare_composition rejects non-constant sample group labels", {
     ),
     "not constant within samples"
   )
+})
+
+test_that("sn_compare_composition uses min_cells as a per-sample filter", {
+  meta_df <- data.frame(
+    sample = c(rep("S1", 4), rep("S2", 2), rep("S3", 4), rep("S4", 2)),
+    group = c(rep("case", 6), rep("control", 6)),
+    cell_type = c(
+      "Tcell", "Tcell", "Bcell", "Bcell",
+      "Tcell", "Bcell",
+      "Tcell", "Tcell", "Bcell", "Bcell",
+      "Tcell", "Bcell"
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  comparison <- sn_compare_composition(
+    x = meta_df,
+    sample_col = "sample",
+    group_col = "group",
+    variable = "cell_type",
+    contrast = c("case", "control"),
+    min_cells = 4,
+    test = "none",
+    return_sample_data = TRUE
+  )
+
+  expect_setequal(unique(comparison$sample_data$sample), c("S1", "S3"))
 })
