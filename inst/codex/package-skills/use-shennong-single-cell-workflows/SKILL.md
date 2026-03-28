@@ -55,9 +55,9 @@ single-cell tasks.
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
 5. Use `sn_calculate_composition()`, `sn_compare_composition()`,
-   `sn_plot_composition()`, and `sn_deconvolve_bulk()` for comparative
-   summaries across samples, conditions, annotations, or paired bulk RNA-seq
-   mixtures.
+   `sn_run_milo()`, `sn_plot_composition()`, and `sn_deconvolve_bulk()` for
+   comparative summaries across samples, conditions, annotations, or paired
+   bulk RNA-seq mixtures.
 6. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
 7. Inspect and reuse bundled signatures with `sn_list_signatures()` and

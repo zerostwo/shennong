@@ -165,7 +165,28 @@ composition_comparison <- sn_compare_composition(
 knitr::kable(composition_comparison, digits = 2)
 ```
 
-## 5. Compare continuous scores across groups
+## 5. Test neighborhood abundance shifts with miloR
+
+When the question is not just "does this label's global proportion change?" but
+"which local transcriptional neighborhoods expand or contract between sample
+groups?", use `sn_run_milo()`. This is especially useful when abundance shifts
+cut across coarse cluster labels.
+
+```{r eval = FALSE}
+milo_tbl <- sn_run_milo(
+  seu,
+  sample_col = "sample",
+  group_col = "study",
+  contrast = c("pbmc3k", "pbmc1k"),
+  reduction = "pca",
+  dims = 1:20,
+  annotation_col = "seurat_clusters"
+)
+
+head(milo_tbl)
+```
+
+## 6. Compare continuous scores across groups
 
 Once a grouped table exists, Shennong's plotting helpers can summarize how QC
 or score columns differ by sample or cluster.
@@ -178,7 +199,7 @@ sn_plot_boxplot(score_tbl, x = sample, y = nFeature_RNA)
 sn_plot_boxplot(score_tbl, x = seurat_clusters, y = S.Score)
 ```
 
-## 6. Keep comparative analysis downstream of stable labels
+## 7. Keep comparative analysis downstream of stable labels
 
 Composition and grouped-score analysis become much more interpretable once the
 labels are stable. In practice the recommended order is:

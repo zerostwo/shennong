@@ -21,6 +21,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_compare_composition()` now compares sample-level composition between two
   groups and reports mean proportions, differences, log2 fold changes, and
   optional Wilcoxon/FDR statistics per category.
+- `sn_run_milo()` now provides a Shennong wrapper around miloR for
+  neighborhood-level differential abundance testing between two sample groups
+  from a Seurat embedding.
 - `sn_list_palettes()` and `sn_get_palette()` now expose the package palette
   registry as programmable helpers, while `show_all_palettes()` remains as a
   print-oriented compatibility wrapper.

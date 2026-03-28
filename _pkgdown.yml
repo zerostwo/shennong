@@ -92,6 +92,7 @@ reference:
     contents:
       - sn_calculate_composition
       - sn_compare_composition
+      - sn_run_milo
       - sn_deconvolve_bulk
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution

@@ -1760,6 +1760,278 @@ sn_compare_composition <- function(x,
   summary_tbl
 }
 
+.sn_prepare_sample_design <- function(metadata,
+                                      sample_col,
+                                      group_col,
+                                      covariates = NULL,
+                                      contrast = NULL) {
+  design_cols <- unique(c(sample_col, group_col, covariates))
+  missing_cols <- setdiff(design_cols, colnames(metadata))
+  if (length(missing_cols) > 0L) {
+    stop("Missing required design columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  for (col in unique(c(group_col, covariates))) {
+    .sn_validate_constant_within_sample(
+      metadata = metadata,
+      sample_col = sample_col,
+      group_col = col
+    )
+  }
+
+  design_df <- metadata |>
+    dplyr::filter(!is.na(.data[[sample_col]]), !is.na(.data[[group_col]])) |>
+    dplyr::group_by(.data[[sample_col]]) |>
+    dplyr::summarise(
+      dplyr::across(dplyr::all_of(unique(c(group_col, covariates))), dplyr::first),
+      .groups = "drop"
+    ) |>
+    as.data.frame(stringsAsFactors = FALSE)
+
+  if (!is.null(contrast)) {
+    design_df <- design_df[design_df[[group_col]] %in% contrast, , drop = FALSE]
+    if (length(unique(as.character(design_df[[group_col]]))) != 2L) {
+      stop("The requested `contrast` must retain exactly two groups in the design data.", call. = FALSE)
+    }
+    design_df[[group_col]] <- factor(
+      as.character(design_df[[group_col]]),
+      levels = c(contrast[[2]], contrast[[1]])
+    )
+  } else {
+    group_levels <- unique(as.character(design_df[[group_col]]))
+    group_levels <- group_levels[!is.na(group_levels)]
+    if (length(group_levels) != 2L) {
+      stop(
+        "`sn_run_milo()` currently supports two-group comparisons. Supply `contrast = c(case, control)` or subset your data to two groups.",
+        call. = FALSE
+      )
+    }
+    design_df[[group_col]] <- factor(as.character(design_df[[group_col]]), levels = group_levels)
+  }
+
+  rownames(design_df) <- design_df[[sample_col]]
+  design_df
+}
+
+#' Run neighborhood differential abundance testing with miloR
+#'
+#' This wrapper runs the standard miloR neighborhood differential abundance
+#' workflow on a Seurat object using one embedding and one sample-level group
+#' contrast. Cells are grouped into neighborhoods, counted per sample, and then
+#' tested for differential abundance between the two sample groups.
+#'
+#' @param x A Seurat object.
+#' @param sample_col Metadata column defining biological samples.
+#' @param group_col Metadata column defining the sample-level comparison group.
+#' @param contrast Optional character vector of length 2 giving the comparison
+#'   as \code{c(case, control)}. When omitted, \code{group_col} must contain
+#'   exactly two levels in the selected cells.
+#' @param reduction Reduction name used to build neighborhoods. Defaults to
+#'   \code{"pca"}.
+#' @param dims Optional integer vector of embedding dimensions to retain.
+#' @param cells Optional character vector of cells to include.
+#' @param max_cells Optional integer cap used to subsample cells before
+#'   neighborhood construction.
+#' @param stratify_by Optional metadata column used to preserve representation
+#'   during subsampling. Defaults to \code{sample_col}.
+#' @param k Number of neighbors for graph and neighborhood construction.
+#' @param d Number of embedding dimensions passed to miloR. Defaults to the
+#'   selected embedding dimensionality.
+#' @param prop Proportion of cells sampled as neighborhood indices.
+#' @param refined Logical; if \code{TRUE}, use miloR's refined neighborhood
+#'   sampling.
+#' @param refinement_scheme Refinement scheme passed to
+#'   \code{miloR::makeNhoods()}.
+#' @param covariates Optional sample-level covariates added to the DA design
+#'   formula alongside \code{group_col}.
+#' @param annotation_col Optional cell-level metadata column used to annotate
+#'   neighborhoods with \code{miloR::annotateNhoods()}.
+#' @param fdr_weighting FDR weighting strategy passed to
+#'   \code{miloR::testNhoods()}.
+#' @param min_mean Minimum mean count threshold passed to
+#'   \code{miloR::testNhoods()}.
+#' @param norm_method Normalization method passed to
+#'   \code{miloR::testNhoods()}.
+#' @param return_intermediate Logical; if \code{TRUE}, return a list with the
+#'   DA table, design data, and milo object.
+#' @param verbose Logical; if \code{TRUE}, emit progress logs.
+#'
+#' @return By default, a data frame of neighborhood-level DA statistics. When
+#'   \code{return_intermediate = TRUE}, a list with \code{table},
+#'   \code{design_df}, and \code{milo} is returned.
+#'
+#' @examples
+#' \dontrun{
+#' da_tbl <- sn_run_milo(
+#'   seu,
+#'   sample_col = "sample",
+#'   group_col = "condition",
+#'   contrast = c("treated", "control"),
+#'   reduction = "pca"
+#' )
+#' }
+#'
+#' @export
+sn_run_milo <- function(x,
+                        sample_col,
+                        group_col,
+                        contrast = NULL,
+                        reduction = "pca",
+                        dims = NULL,
+                        cells = NULL,
+                        max_cells = NULL,
+                        stratify_by = sample_col,
+                        k = 20,
+                        d = NULL,
+                        prop = 0.1,
+                        refined = TRUE,
+                        refinement_scheme = "reduced_dim",
+                        covariates = NULL,
+                        annotation_col = NULL,
+                        fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
+                        min_mean = 0,
+                        norm_method = c("TMM", "RLE", "logMS"),
+                        return_intermediate = FALSE,
+                        verbose = TRUE) {
+  check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
+  stopifnot(is.character(sample_col), length(sample_col) == 1L)
+  stopifnot(is.character(group_col), length(group_col) == 1L)
+  stopifnot(is.null(contrast) || (is.character(contrast) && length(contrast) == 2L))
+  stopifnot(is.null(covariates) || is.character(covariates))
+  stopifnot(is.null(annotation_col) || (is.character(annotation_col) && length(annotation_col) == 1L))
+  stopifnot(is.logical(return_intermediate), length(return_intermediate) == 1L)
+  stopifnot(is.logical(verbose), length(verbose) == 1L)
+
+  fdr_weighting <- match.arg(fdr_weighting)
+  norm_method <- match.arg(norm_method)
+
+  required_cols <- unique(c(sample_col, group_col, covariates, annotation_col))
+  metric_input <- .sn_prepare_metric_input(
+    x = x,
+    reduction = reduction,
+    dims = dims,
+    cells = cells,
+    max_cells = max_cells,
+    stratify_by = stratify_by,
+    required_cols = required_cols
+  )
+
+  metadata <- metric_input$metadata
+  if (!is.null(contrast)) {
+    metadata <- metadata[metadata[[group_col]] %in% contrast, , drop = FALSE]
+    metric_input$embeddings <- metric_input$embeddings[rownames(metadata), , drop = FALSE]
+    metric_input$cells <- rownames(metadata)
+  }
+
+  if (nrow(metadata) < 2L) {
+    stop("Too few cells remain after filtering to run miloR.", call. = FALSE)
+  }
+
+  design_df <- .sn_prepare_sample_design(
+    metadata = metadata,
+    sample_col = sample_col,
+    group_col = group_col,
+    covariates = covariates,
+    contrast = contrast
+  )
+
+  if (nrow(design_df) < 2L) {
+    stop("At least two samples are required to run neighborhood differential abundance testing.", call. = FALSE)
+  }
+
+  if (is.null(d)) {
+    d <- ncol(metric_input$embeddings)
+  }
+  d <- min(as.integer(d), ncol(metric_input$embeddings))
+  if (d < 1L) {
+    stop("`d` must be at least 1.", call. = FALSE)
+  }
+
+  if (isTRUE(verbose)) {
+    .sn_log_info("Converting the selected cells to a SingleCellExperiment for miloR.")
+  }
+  seu_subset <- x[, metric_input$cells]
+  sce <- Seurat::as.SingleCellExperiment(seu_subset)
+  SingleCellExperiment::reducedDim(sce, "shennong_milo") <- as.matrix(metric_input$embeddings)
+
+  milo_obj <- miloR::Milo(sce)
+
+  if (isTRUE(verbose)) {
+    .sn_log_info("Building the miloR neighborhood graph with k = {k} and d = {d}.")
+  }
+  milo_obj <- miloR::buildGraph(
+    milo_obj,
+    k = k,
+    d = d,
+    reduced.dim = "shennong_milo"
+  )
+
+  if (isTRUE(verbose)) {
+    .sn_log_info("Sampling and refining neighborhoods with prop = {prop}.")
+  }
+  milo_obj <- miloR::makeNhoods(
+    milo_obj,
+    prop = prop,
+    k = k,
+    d = d,
+    refined = refined,
+    reduced_dims = "shennong_milo",
+    refinement_scheme = refinement_scheme
+  )
+
+  if (isTRUE(verbose)) {
+    .sn_log_info("Counting cells per sample across miloR neighborhoods.")
+  }
+  milo_obj <- miloR::countCells(
+    milo_obj,
+    samples = sample_col,
+    meta.data = as.data.frame(SummarizedExperiment::colData(milo_obj))
+  )
+
+  design_terms <- c(covariates, group_col)
+  design_formula <- stats::reformulate(termlabels = design_terms)
+
+  if (isTRUE(verbose)) {
+    .sn_log_info("Testing neighborhoods for differential abundance across `{group_col}`.")
+  }
+  da_table <- miloR::testNhoods(
+    milo_obj,
+    design = design_formula,
+    design.df = design_df,
+    fdr.weighting = fdr_weighting,
+    min.mean = min_mean,
+    norm.method = norm_method
+  )
+
+  if (!is.null(annotation_col)) {
+    if (isTRUE(verbose)) {
+      .sn_log_info("Annotating neighborhoods using `{annotation_col}`.")
+    }
+    da_table <- miloR::annotateNhoods(
+      milo_obj,
+      da.res = da_table,
+      coldata_col = annotation_col
+    )
+  }
+
+  fdr_rank <- if ("SpatialFDR" %in% colnames(da_table)) da_table$SpatialFDR else da_table$FDR
+  da_table <- da_table[order(fdr_rank, da_table$PValue), , drop = FALSE]
+  da_table$comparison <- paste(levels(design_df[[group_col]])[[2]], "vs", levels(design_df[[group_col]])[[1]])
+  da_table$sample_col <- sample_col
+  da_table$group_col <- group_col
+  da_table$reduction <- reduction
+
+  if (isTRUE(return_intermediate)) {
+    return(list(
+      table = da_table,
+      design_df = design_df,
+      milo = milo_obj
+    ))
+  }
+
+  da_table
+}
+
 .sn_qc_assessment_sample_col <- function(object, sample_col = NULL) {
   metadata <- object@meta.data
   if (!is_null(sample_col)) {

@@ -60,6 +60,7 @@ Suggests:
     later,
     lisi,
     limma,
+    miloR,
     msigdbr,
     org.Hs.eg.db,
     org.Mm.eg.db,
