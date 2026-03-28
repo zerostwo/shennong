@@ -144,7 +144,28 @@ or any other metadata column.
 knitr::kable(phase_tbl, digits = 2)
 ```
 
-## 4. Compare continuous scores across groups
+## 4. Compare composition shifts between groups
+
+When replicate samples are available, compare sample-level proportions instead
+of pooling all cells together. `sn_compare_composition()` computes per-sample
+composition first, then reports group means, differences, log2 fold changes,
+and optional Wilcoxon statistics.
+
+```{r}
+composition_comparison <- sn_compare_composition(
+  seu,
+  sample_col = "sample",
+  group_col = "study",
+  variable = "seurat_clusters",
+  contrast = c("pbmc3k", "pbmc1k"),
+  min_cells = 10,
+  test = "none"
+)
+
+knitr::kable(composition_comparison, digits = 2)
+```
+
+## 5. Compare continuous scores across groups
 
 Once a grouped table exists, Shennong's plotting helpers can summarize how QC
 or score columns differ by sample or cluster.
@@ -157,7 +178,7 @@ sn_plot_boxplot(score_tbl, x = sample, y = nFeature_RNA)
 sn_plot_boxplot(score_tbl, x = seurat_clusters, y = S.Score)
 ```
 
-## 5. Keep comparative analysis downstream of stable labels
+## 6. Keep comparative analysis downstream of stable labels
 
 Composition and grouped-score analysis become much more interpretable once the
 labels are stable. In practice the recommended order is:

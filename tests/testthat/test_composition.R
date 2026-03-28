@@ -307,3 +307,117 @@ test_that("sn_calculate_composition validates Seurat/data-frame inputs and addit
     "Missing additional columns"
   )
 })
+
+test_that("sn_compare_composition compares sample-level proportions and fills absent categories with zero", {
+  meta_df <- data.frame(
+    sample = c(
+      rep("S1", 10), rep("S2", 10),
+      rep("S3", 10), rep("S4", 10)
+    ),
+    group = c(
+      rep("case", 20),
+      rep("control", 20)
+    ),
+    cell_type = c(
+      rep(c("Tcell", "Bcell"), c(8, 2)),
+      rep(c("Tcell", "Bcell"), c(6, 4)),
+      rep(c("Tcell", "Bcell"), c(2, 8)),
+      rep("Bcell", 10)
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  comparison <- sn_compare_composition(
+    x = meta_df,
+    sample_col = "sample",
+    group_col = "group",
+    variable = "cell_type",
+    contrast = c("case", "control"),
+    min_cells = 1,
+    test = "none",
+    return_sample_data = TRUE
+  )
+
+  expect_true(all(c("summary", "sample_data") %in% names(comparison)))
+  expect_equal(nrow(comparison$sample_data), 8)
+  expect_equal(
+    comparison$sample_data$proportion[
+      comparison$sample_data$sample == "S4" &
+        comparison$sample_data$cell_type == "Tcell"
+    ],
+    0
+  )
+
+  summary_tbl <- comparison$summary
+  expect_true(all(c("cell_type", "difference", "log2_fc", "n_case", "n_control") %in% colnames(summary_tbl)))
+  expect_equal(
+    summary_tbl$mean_case[summary_tbl$cell_type == "Tcell"],
+    70
+  )
+  expect_equal(
+    summary_tbl$mean_control[summary_tbl$cell_type == "Tcell"],
+    10
+  )
+  expect_true(
+    summary_tbl$log2_fc[summary_tbl$cell_type == "Tcell"] > 0
+  )
+})
+
+test_that("sn_compare_composition can run Wilcoxon testing when replicate samples are available", {
+  meta_df <- data.frame(
+    sample = c(
+      rep("S1", 10), rep("S2", 10), rep("S3", 10),
+      rep("S4", 10), rep("S5", 10), rep("S6", 10)
+    ),
+    group = c(
+      rep("case", 30),
+      rep("control", 30)
+    ),
+    cell_type = c(
+      rep(c("Tcell", "Bcell"), c(9, 1)),
+      rep(c("Tcell", "Bcell"), c(8, 2)),
+      rep(c("Tcell", "Bcell"), c(7, 3)),
+      rep(c("Tcell", "Bcell"), c(2, 8)),
+      rep(c("Tcell", "Bcell"), c(1, 9)),
+      rep(c("Tcell", "Bcell"), c(3, 7))
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  comparison <- sn_compare_composition(
+    x = meta_df,
+    sample_col = "sample",
+    group_col = "group",
+    variable = "cell_type",
+    contrast = c("case", "control"),
+    min_cells = 1,
+    test = "wilcox"
+  )
+
+  expect_true(all(c("p_value", "p_adj") %in% colnames(comparison)))
+  expect_false(any(is.na(comparison$p_value)))
+  expect_true(
+    comparison$p_value[comparison$cell_type == "Tcell"] <= 1
+  )
+})
+
+test_that("sn_compare_composition rejects non-constant sample group labels", {
+  meta_df <- data.frame(
+    sample = c("S1", "S1", "S2", "S2"),
+    group = c("case", "control", "control", "control"),
+    cell_type = c("Tcell", "Bcell", "Tcell", "Bcell"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    sn_compare_composition(
+      x = meta_df,
+      sample_col = "sample",
+      group_col = "group",
+      variable = "cell_type",
+      contrast = c("case", "control"),
+      min_cells = 1
+    ),
+    "not constant within samples"
+  )
+})

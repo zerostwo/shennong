@@ -1532,6 +1532,234 @@ sn_calculate_composition <- function(x,
   composition
 }
 
+.sn_validate_constant_within_sample <- function(metadata, sample_col, group_col) {
+  summary_tbl <- metadata |>
+    dplyr::filter(!is.na(.data[[sample_col]])) |>
+    dplyr::group_by(.data[[sample_col]]) |>
+    dplyr::summarise(
+      n_group = length(unique(.data[[group_col]][!is.na(.data[[group_col]])])),
+      .groups = "drop"
+    )
+
+  if (any(summary_tbl$n_group > 1L)) {
+    stop(
+      "Column `", group_col, "` is not constant within samples defined by `",
+      sample_col, "`. Composition comparisons require one group label per sample.",
+      call. = FALSE
+    )
+  }
+}
+
+.sn_complete_sample_composition <- function(composition, sample_info, sample_col, variable) {
+  variable_levels <- if (is.factor(composition[[variable]])) {
+    levels(composition[[variable]])
+  } else {
+    unique(as.character(composition[[variable]]))
+  }
+
+  full_grid <- merge(
+    sample_info,
+    data.frame(.sn_variable = variable_levels, stringsAsFactors = FALSE),
+    by = NULL
+  )
+  colnames(full_grid)[colnames(full_grid) == ".sn_variable"] <- variable
+
+  merged <- merge(
+    full_grid,
+    as.data.frame(composition),
+    by = c(sample_col, variable, setdiff(colnames(sample_info), sample_col)),
+    all.x = TRUE,
+    sort = FALSE
+  )
+
+  merged$count[is.na(merged$count)] <- 0
+  merged$proportion[is.na(merged$proportion)] <- 0
+  merged
+}
+
+.sn_run_composition_test <- function(values_case, values_control, test = c("wilcox", "none")) {
+  test <- match.arg(test)
+  if (identical(test, "none")) {
+    return(NA_real_)
+  }
+
+  values_case <- values_case[!is.na(values_case)]
+  values_control <- values_control[!is.na(values_control)]
+
+  if (length(values_case) < 2L || length(values_control) < 2L) {
+    return(NA_real_)
+  }
+
+  if (all(values_case == values_case[[1]]) && all(values_control == values_control[[1]]) &&
+      identical(unname(values_case[[1]]), unname(values_control[[1]]))) {
+    return(1)
+  }
+
+  stats::wilcox.test(values_case, values_control, exact = FALSE)$p.value
+}
+
+#' Compare sample-level composition between groups
+#'
+#' Computes sample-level composition for a categorical variable and then compares
+#' the resulting per-sample proportions between two groups. This avoids treating
+#' individual cells as independent replicates and is therefore the recommended
+#' way to estimate composition fold changes and significance when replicate
+#' samples are available.
+#'
+#' @param x A Seurat object or a data frame containing cell-level metadata.
+#' @param sample_col Column defining biological samples.
+#' @param group_col Column defining the group or condition to compare between
+#'   samples.
+#' @param variable Column whose composition should be compared, for example cell
+#'   type or cell-cycle phase.
+#' @param contrast Character vector of length 2 giving the group levels as
+#'   \code{c(case, control)}.
+#' @param min_cells Minimum number of cells required per sample before that
+#'   sample is retained for comparison. Defaults to \code{20}.
+#' @param pseudocount Small value added to group means before computing
+#'   \code{log2_fc}. Defaults to \code{0.5}.
+#' @param test Statistical test to apply to sample-level proportions. One of
+#'   \code{"wilcox"} or \code{"none"}. Defaults to \code{"wilcox"}.
+#' @param adjust_method Multiple-testing correction method passed to
+#'   \code{stats::p.adjust()}. Defaults to \code{"BH"}.
+#' @param additional_cols Optional sample-level columns to carry into the
+#'   intermediate composition table before comparison.
+#' @param return_sample_data Logical; if \code{TRUE}, return both the summary
+#'   table and the completed sample-level composition table.
+#'
+#' @return A data frame with one row per \code{variable} level. When
+#'   \code{return_sample_data = TRUE}, a list with \code{summary} and
+#'   \code{sample_data} is returned.
+#'
+#' @examples
+#' \dontrun{
+#' comparison <- sn_compare_composition(
+#'   seu,
+#'   sample_col = "sample",
+#'   group_col = "condition",
+#'   variable = "cell_type",
+#'   contrast = c("treated", "control")
+#' )
+#' }
+#'
+#' @export
+sn_compare_composition <- function(x,
+                                   sample_col,
+                                   group_col,
+                                   variable,
+                                   contrast,
+                                   min_cells = 20,
+                                   pseudocount = 0.5,
+                                   test = c("wilcox", "none"),
+                                   adjust_method = "BH",
+                                   additional_cols = NULL,
+                                   return_sample_data = FALSE) {
+  stopifnot(is.character(sample_col), length(sample_col) == 1L)
+  stopifnot(is.character(group_col), length(group_col) == 1L)
+  stopifnot(is.character(variable), length(variable) == 1L)
+  stopifnot(is.character(contrast), length(contrast) == 2L)
+  stopifnot(is.numeric(min_cells), length(min_cells) == 1L, min_cells >= 0)
+  stopifnot(is.numeric(pseudocount), length(pseudocount) == 1L, pseudocount >= 0)
+  stopifnot(is.character(adjust_method), length(adjust_method) == 1L)
+  stopifnot(is.logical(return_sample_data), length(return_sample_data) == 1L)
+  if (!is.null(additional_cols)) {
+    stopifnot(is.character(additional_cols))
+  }
+  test <- match.arg(test)
+
+  metadata <- .sn_extract_metric_metadata(x)
+  required_cols <- c(sample_col, group_col, variable)
+  missing_cols <- setdiff(required_cols, colnames(metadata))
+  if (length(missing_cols) > 0L) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  .sn_validate_constant_within_sample(metadata, sample_col = sample_col, group_col = group_col)
+
+  sample_info <- metadata |>
+    dplyr::filter(!is.na(.data[[sample_col]]), !is.na(.data[[group_col]])) |>
+    dplyr::group_by(.data[[sample_col]]) |>
+    dplyr::summarise(
+      dplyr::across(dplyr::all_of(unique(c(group_col, additional_cols))), dplyr::first),
+      .groups = "drop"
+    ) |>
+    dplyr::filter(.data[[group_col]] %in% contrast)
+
+  if (nrow(sample_info) == 0L) {
+    stop("No samples remaining for the requested contrast.", call. = FALSE)
+  }
+
+  composition <- sn_calculate_composition(
+    x = metadata[metadata[[sample_col]] %in% sample_info[[sample_col]], , drop = FALSE],
+    group_by = sample_col,
+    variable = variable,
+    min_cells = min_cells,
+    measure = "both",
+    additional_cols = unique(c(group_col, additional_cols))
+  )
+
+  sample_info <- sample_info[sample_info[[sample_col]] %in% unique(composition[[sample_col]]), , drop = FALSE]
+  if (nrow(sample_info) == 0L) {
+    stop("No samples remaining after filtering by `min_cells`.", call. = FALSE)
+  }
+
+  composition <- composition[composition[[sample_col]] %in% sample_info[[sample_col]], , drop = FALSE]
+  composition_complete <- .sn_complete_sample_composition(
+    composition = composition,
+    sample_info = sample_info,
+    sample_col = sample_col,
+    variable = variable
+  )
+
+  comparison_levels <- if (is.factor(metadata[[variable]])) levels(metadata[[variable]]) else unique(as.character(composition_complete[[variable]]))
+  comparison_levels <- comparison_levels[comparison_levels %in% unique(as.character(composition_complete[[variable]]))]
+
+  summary_tbl <- lapply(comparison_levels, function(current_level) {
+    current_data <- composition_complete[as.character(composition_complete[[variable]]) %in% current_level, , drop = FALSE]
+    case_data <- current_data[current_data[[group_col]] %in% contrast[[1]], , drop = FALSE]
+    control_data <- current_data[current_data[[group_col]] %in% contrast[[2]], , drop = FALSE]
+
+    mean_case <- mean(case_data$proportion, na.rm = TRUE)
+    mean_control <- mean(control_data$proportion, na.rm = TRUE)
+    median_case <- stats::median(case_data$proportion, na.rm = TRUE)
+    median_control <- stats::median(control_data$proportion, na.rm = TRUE)
+    p_value <- .sn_run_composition_test(
+      values_case = case_data$proportion,
+      values_control = control_data$proportion,
+      test = test
+    )
+
+    data.frame(
+      feature = current_level,
+      mean_case = mean_case,
+      mean_control = mean_control,
+      median_case = median_case,
+      median_control = median_control,
+      difference = mean_case - mean_control,
+      log2_fc = log2((mean_case + pseudocount) / (mean_control + pseudocount)),
+      n_case = nrow(case_data),
+      n_control = nrow(control_data),
+      p_value = p_value,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  summary_tbl <- .sn_bind_rows(summary_tbl)
+  colnames(summary_tbl)[colnames(summary_tbl) == "feature"] <- variable
+  summary_tbl$contrast_case <- contrast[[1]]
+  summary_tbl$contrast_control <- contrast[[2]]
+  summary_tbl$p_adj <- stats::p.adjust(summary_tbl$p_value, method = adjust_method)
+
+  if (return_sample_data) {
+    return(list(
+      summary = summary_tbl,
+      sample_data = composition_complete
+    ))
+  }
+
+  summary_tbl
+}
+
 .sn_qc_assessment_sample_col <- function(object, sample_col = NULL) {
   metadata <- object@meta.data
   if (!is_null(sample_col)) {

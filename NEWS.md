@@ -18,6 +18,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_plot_composition()` now provides a composition-focused bar plot helper
   for grouped proportions, counts, QC pass/fail summaries, and similar
   categorical tables.
+- `sn_compare_composition()` now compares sample-level composition between two
+  groups and reports mean proportions, differences, log2 fold changes, and
+  optional Wilcoxon/FDR statistics per category.
 
 ### Changed
 
