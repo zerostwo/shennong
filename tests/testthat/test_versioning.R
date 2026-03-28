@@ -113,11 +113,15 @@ test_that("sn_install_shennong respects explicit GitHub install overrides", {
   expect_invisible(
     Shennong::sn_install_shennong(
       channel = "github",
+      source = "acme/shennong",
+      ref = "dev",
       dependencies = TRUE,
       upgrade = "always"
     )
   )
 
+  expect_equal(captured$repo, "acme/shennong")
+  expect_equal(captured$ref, "dev")
   expect_true(isTRUE(captured$dependencies))
   expect_equal(captured$upgrade, "always")
 })
@@ -140,9 +144,38 @@ test_that("sn_install_shennong supports local installs", {
   expect_invisible(
     Shennong::sn_install_shennong(
       channel = "local",
-      local_path = "/tmp/Shennong"
+      source = "/tmp/Shennong"
     )
   )
 
   expect_equal(captured$path, "/tmp/Shennong")
+})
+
+test_that("sn_install_shennong rejects conflicting source arguments", {
+  expect_error(
+    Shennong::sn_install_shennong(
+      channel = "github",
+      source = "acme/shennong",
+      github_repo = "zerostwo/shennong"
+    ),
+    "conflicting values"
+  )
+
+  expect_error(
+    Shennong::sn_install_shennong(
+      channel = "local",
+      source = "/tmp/new",
+      local_path = "/tmp/old"
+    ),
+    "conflicting values"
+  )
+
+  expect_error(
+    Shennong::sn_install_shennong(
+      channel = "github",
+      ref = "dev",
+      github_ref = "main-release"
+    ),
+    "conflicting values"
+  )
 })

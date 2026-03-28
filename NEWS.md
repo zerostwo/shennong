@@ -63,6 +63,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `R CMD check --no-manual` in one local pre-push command.
 - Internal DE result storage now reuses the shared misc-result helper instead
   of maintaining a second collection-specific implementation.
+- `sn_install_shennong()` now prefers unified `source` / `ref` arguments for
+  GitHub and local installs while keeping `github_repo`, `github_ref`, and
+  `local_path` as compatibility aliases.
 
 ### Fixed
 

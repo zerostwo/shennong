@@ -217,3 +217,5 @@ Last updated: 2026-03-25
 - Palette management should be usable both interactively and programmatically. Printing helpers such as `show_all_palettes()` remain for discovery, but scripts should use `sn_list_palettes()` and `sn_get_palette()` as the stable API surface.
 - Discrete and continuous palette resolution should follow one registry and one direction convention. Shennong now treats `sn_get_palette()` as the common palette API and keeps plot helpers thin wrappers around shared palette resolvers instead of mixing manual/discrete and distiller/continuous code paths.
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
+
+- Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.

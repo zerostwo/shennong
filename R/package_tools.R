@@ -264,7 +264,7 @@ sn_check_version <- function(
   invisible(result)
 }
 
-#' Install Shennong from CRAN or GitHub
+#' Install Shennong from CRAN, GitHub, or a local source
 #'
 #' This helper installs the stable CRAN release when available, or the GitHub
 #' development version when requested, or installs from a local source tree or
@@ -274,10 +274,18 @@ sn_check_version <- function(
 #' @param channel One of \code{"auto"}, \code{"cran"}, \code{"github"}, or
 #'   \code{"local"}.
 #' @param package Package name. Defaults to \code{"Shennong"}.
+#' @param source Generic installation source. For \code{channel = "github"},
+#'   this should be an \code{"owner/repo"} string. For \code{channel = "local"},
+#'   this should be a local package directory or source tarball path. This is
+#'   the preferred source argument for non-CRAN installs.
+#' @param ref Generic ref argument. Used for \code{channel = "github"} and
+#'   preferred over \code{github_ref}.
 #' @param github_repo GitHub repository in \code{"owner/repo"} format.
+#'   Deprecated in favor of \code{source}.
 #' @param github_ref GitHub ref to install from. Defaults to \code{"main"}.
+#'   Deprecated in favor of \code{ref}.
 #' @param local_path Local package directory or source tarball used when
-#'   \code{channel = "local"}.
+#'   \code{channel = "local"}. Deprecated in favor of \code{source}.
 #' @param repos CRAN-like repositories used by \code{install.packages()}.
 #' @param ... Additional arguments passed to \code{utils::install.packages()} or
 #'   \code{remotes::install_github()} / \code{remotes::install_local()}. For
@@ -289,33 +297,54 @@ sn_check_version <- function(
 #' @examples
 #' \dontrun{
 #' sn_install_shennong(channel = "github")
+#' sn_install_shennong(channel = "github", source = "zerostwo/shennong", ref = "main")
+#' sn_install_shennong(channel = "local", source = "~/personal/packages/shennong")
 #' }
 #'
 #' @export
 sn_install_shennong <- function(
   channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
+  source = NULL,
+  ref = NULL,
   github_repo = "zerostwo/shennong",
   github_ref = "main",
   local_path = NULL,
   repos = getOption("repos"),
   ...
 ) {
+  github_repo_supplied <- !missing(github_repo)
+  github_ref_supplied <- !missing(github_ref)
+  local_path_supplied <- !missing(local_path)
   channel <- match.arg(channel)
+  source <- .sn_resolve_install_source(
+    channel = channel,
+    source = source,
+    github_repo = github_repo,
+    local_path = local_path,
+    github_repo_supplied = github_repo_supplied,
+    local_path_supplied = local_path_supplied
+  )
+  ref <- .sn_resolve_install_ref(
+    ref = ref,
+    github_ref = github_ref,
+    github_ref_supplied = github_ref_supplied
+  )
+
   if (identical(channel, "local")) {
-    if (is.null(local_path) || !nzchar(local_path)) {
-      stop("`local_path` must be supplied when `channel = \"local\"`.", call. = FALSE)
+    if (is.null(source) || !nzchar(source)) {
+      stop("`source` (or `local_path`) must be supplied when `channel = \"local\"`.", call. = FALSE)
     }
     check_installed("remotes", reason = "to install Shennong from a local path.")
     .sn_install_local_release(
-      path = local_path,
+      path = source,
       args = list(...)
     )
     return(invisible(channel))
   }
 
   cran_version <- .sn_get_cran_version(package = package, repos = repos)
-  github_version <- .sn_get_github_version(repo = github_repo, ref = github_ref)
+  github_version <- .sn_get_github_version(repo = source, ref = ref)
   resolved_channel <- .sn_resolve_release_channel(
     channel = channel,
     cran_version = cran_version,
@@ -337,11 +366,54 @@ sn_install_shennong <- function(
   }
 
   .sn_install_github_release(
-    repo = github_repo,
-    ref = github_ref,
+    repo = source,
+    ref = ref,
     args = github_args
   )
   invisible(resolved_channel)
+}
+
+.sn_resolve_install_source <- function(
+  channel,
+  source = NULL,
+  github_repo = NULL,
+  local_path = NULL,
+  github_repo_supplied = FALSE,
+  local_path_supplied = FALSE
+) {
+  legacy_source <- switch(
+    channel,
+    auto = github_repo,
+    cran = github_repo,
+    github = github_repo,
+    local = local_path,
+    NULL
+  )
+  legacy_supplied <- switch(
+    channel,
+    auto = github_repo_supplied,
+    cran = github_repo_supplied,
+    github = github_repo_supplied,
+    local = local_path_supplied,
+    FALSE
+  )
+
+  if (!is.null(source) && isTRUE(legacy_supplied) && !identical(source, legacy_source)) {
+    stop(
+      "Do not supply conflicting values through `source` and legacy install arguments.",
+      call. = FALSE
+    )
+  }
+
+  source %||% legacy_source
+}
+
+.sn_resolve_install_ref <- function(ref = NULL, github_ref = "main", github_ref_supplied = FALSE) {
+  if (!is.null(ref) && isTRUE(github_ref_supplied) && !identical(ref, github_ref)) {
+    stop("Do not supply conflicting values through `ref` and `github_ref`.", call. = FALSE)
+  }
+
+  ref %||% github_ref
 }
 
 .sn_install_github_release <- function(repo, ref, args = list()) {

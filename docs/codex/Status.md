@@ -324,3 +324,5 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Decide whether `sn_remove_ambient_contamination()` should also gain an explicit input `assay`/`layer` pair for Seurat objects, matching the newer downstream layer-aware APIs.
 - Add deeper coverage for enrichment, DE, CellTypist, and other heavyweight optional integrations when stable fixtures are available.
 - Revisit `scDblFinder`-originating warnings in tests; they are upstream warnings today, but some deprecation notices may require argument updates in a future compatibility pass.
+
+- Standardized `sn_install_shennong()` around `source` / `ref` for non-CRAN installs, while preserving compatibility aliases and rejecting conflicting mixed arguments.
