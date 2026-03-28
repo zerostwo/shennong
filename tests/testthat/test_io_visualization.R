@@ -78,6 +78,28 @@ test_that("sn_plot_barplot sorts the discrete axis and works without fill", {
   expect_identical(levels(plot$data$cell_type), c("Bcell", "Mono", "Tcell"))
 })
 
+test_that("sn_plot_barplot can summarize repeated observations with error bars and points", {
+  data <- data.frame(
+    group = rep(c("A", "B"), each = 4),
+    sample = rep(paste0("S", 1:4), times = 2),
+    value = c(1, 2, 3, 4, 2, 3, 4, 5),
+    subtype = rep(c("x", "y"), times = 4),
+    stringsAsFactors = FALSE
+  )
+
+  plot <- sn_plot_barplot(
+    data,
+    x = group,
+    y = value,
+    fill = subtype,
+    stat = "auto",
+    errorbar = "se",
+    show_points = TRUE
+  )
+
+  expect_s3_class(plot, "ggplot")
+})
+
 test_that("sn_plot_composition supports default y selection, ordering, and faceting", {
   data <- data.frame(
     cell_type = factor(c("Mono", "Mono", "cDC1", "cDC1", "B", "B"), levels = c("Mono", "cDC1", "B")),

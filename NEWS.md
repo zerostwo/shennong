@@ -39,6 +39,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `sn_get_palette(..., palette_type = "continuous")`, and expression-oriented
   plotting functions now apply continuous palettes through the shared internal
   resolver instead of separate ad hoc `scale_*_distiller()` logic.
+- `sn_plot_barplot()` now supports automatic summary bars for repeated
+  observations, optional SD/SE error bars, and optional jittered raw points,
+  making it suitable for sample-level effect summaries as well as simple
+  identity bars.
 - `sn_find_doublets()` now skips zero-count and low-feature cells before
   running `scDblFinder()` on corrected layers, records corrected-layer results
   with `_corrected` suffixes, and works with the zero-count flags produced by

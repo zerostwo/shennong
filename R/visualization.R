@@ -126,6 +126,41 @@
   p + ggplot2::scale_color_gradientn(colours = values, guide = guide)
 }
 
+.sn_barplot_summary <- function(data,
+                                discrete_col,
+                                value_col,
+                                fill_col = NULL,
+                                summary_fun = c("mean", "median"),
+                                errorbar = c("none", "sd", "se")) {
+  summary_fun <- match.arg(summary_fun)
+  errorbar <- match.arg(errorbar)
+
+  group_cols <- c(discrete_col, fill_col)
+  split_data <- split(data, interaction(data[group_cols], drop = TRUE, lex.order = TRUE))
+
+  summary_rows <- lapply(split_data, function(current) {
+    values <- current[[value_col]]
+    values <- values[!is.na(values)]
+    n <- length(values)
+    center <- if (identical(summary_fun, "median")) stats::median(values) else mean(values)
+    spread <- switch(
+      errorbar,
+      none = NA_real_,
+      sd = if (n > 1L) stats::sd(values) else 0,
+      se = if (n > 1L) stats::sd(values) / sqrt(n) else 0
+    )
+
+    row <- current[1, group_cols, drop = FALSE]
+    row$.sn_center <- center
+    row$.sn_n <- n
+    row$.sn_ymin <- center - spread
+    row$.sn_ymax <- center + spread
+    row
+  })
+
+  .sn_bind_rows(summary_rows)
+}
+
 #' Create a boxplot from a data frame
 #'
 #' @param data A data frame.
@@ -178,6 +213,17 @@ sn_plot_boxplot <- function(data,
 #' @param fill Optional column mapped to the fill aesthetic.
 #' @param sort_by Optional column used to sort the discrete axis.
 #' @param sort_desc Logical; if \code{TRUE}, sort in descending order.
+#' @param stat One of \code{"auto"}, \code{"identity"}, or \code{"summary"}.
+#'   \code{"auto"} summarizes repeated observations per bar and otherwise keeps
+#'   the input rows as-is.
+#' @param summary_fun Summary function used when \code{stat = "summary"} or
+#'   when \code{stat = "auto"} detects repeated observations. One of
+#'   \code{"mean"} or \code{"median"}.
+#' @param errorbar One of \code{"none"}, \code{"sd"}, or \code{"se"}.
+#' @param show_points Logical; if \code{TRUE}, overlay raw observations as
+#'   jittered points when bars are summarized.
+#' @param point_alpha Alpha for overlaid points.
+#' @param jitter_width,jitter_height Jitter distances for overlaid points.
 #' @param palette Discrete palette used when \code{fill} is supplied.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
@@ -197,6 +243,13 @@ sn_plot_barplot <- function(data,
                             fill = NULL,
                             sort_by = NULL,
                             sort_desc = FALSE,
+                            stat = c("auto", "identity", "summary"),
+                            summary_fun = c("mean", "median"),
+                            errorbar = c("none", "sd", "se"),
+                            show_points = FALSE,
+                            point_alpha = 0.7,
+                            jitter_width = 0.15,
+                            jitter_height = 0.05,
                             palette = "Paired",
                             panel_widths = NULL,
                             panel_heights = NULL,
@@ -204,6 +257,10 @@ sn_plot_barplot <- function(data,
                             y_label = NULL,
                             title = NULL,
                             angle_x = 0) {
+  stat <- match.arg(stat)
+  summary_fun <- match.arg(summary_fun)
+  errorbar <- match.arg(errorbar)
+
   x_name <- rlang::as_name(rlang::ensym(x))
   y_name <- rlang::as_name(rlang::ensym(y))
   fill_quo <- rlang::enquo(fill)
@@ -216,35 +273,115 @@ sn_plot_barplot <- function(data,
   } else if (is.character(data[[y_name]]) || is.factor(data[[y_name]])) {
     discrete_col <- y_name
   }
+  if (is.null(discrete_col)) {
+    stop("`sn_plot_barplot()` requires either `x` or `y` to be discrete.", call. = FALSE)
+  }
+  value_col <- if (identical(discrete_col, x_name)) y_name else x_name
+  group_cols <- c(discrete_col, fill_name)
+  n_per_bar <- table(interaction(data[group_cols], drop = TRUE, lex.order = TRUE))
+  summarize <- identical(stat, "summary") || (identical(stat, "auto") && any(n_per_bar > 1L))
+
+  plot_data <- if (summarize) {
+    .sn_barplot_summary(
+      data = data,
+      discrete_col = discrete_col,
+      value_col = value_col,
+      fill_col = fill_name,
+      summary_fun = summary_fun,
+      errorbar = errorbar
+    )
+  } else {
+    data
+  }
 
   if (!is.null(sort_by)) {
-    if (is.null(discrete_col)) {
-      stop("`sort_by` requires either `x` or `y` to be a discrete column.", call. = FALSE)
-    }
-    if (!sort_by %in% colnames(data)) {
+    sort_metric <- if (summarize && identical(sort_by, value_col)) ".sn_center" else sort_by
+    if (!sort_metric %in% colnames(plot_data)) {
       stop("Column '", sort_by, "' was not found in `data`.", call. = FALSE)
     }
-    data <- .sn_sort_discrete_levels(
-      data = data,
+    plot_data <- .sn_sort_discrete_levels(
+      data = plot_data,
       level_col = discrete_col,
-      metric_col = sort_by,
+      metric_col = sort_metric,
       decreasing = sort_desc,
-      fallback_levels = if (is.factor(data[[discrete_col]])) levels(data[[discrete_col]]) else unique(as.character(data[[discrete_col]]))
+      fallback_levels = if (is.factor(plot_data[[discrete_col]])) levels(plot_data[[discrete_col]]) else unique(as.character(plot_data[[discrete_col]]))
     )
+    if (!summarize) {
+      data[[discrete_col]] <- factor(data[[discrete_col]], levels = levels(plot_data[[discrete_col]]))
+    }
+  }
+
+  if (summarize && !is.null(sort_by)) {
+    data[[discrete_col]] <- factor(data[[discrete_col]], levels = levels(plot_data[[discrete_col]]))
   }
 
   if (fill_missing) {
     p <- ggplot2::ggplot(
-      data = data,
+      data = plot_data,
       mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})
     ) +
       ggplot2::geom_col()
   } else {
     p <- ggplot2::ggplot(
-      data = data,
+      data = plot_data,
       mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
     ) +
       ggplot2::geom_col()
+  }
+
+  discrete_is_x <- identical(discrete_col, x_name)
+  if (summarize && !identical(errorbar, "none")) {
+    if (discrete_is_x) {
+      p <- p + ggplot2::geom_errorbar(
+        data = plot_data,
+        mapping = if (fill_missing) {
+          ggplot2::aes(x = .data[[x_name]], ymin = .data$.sn_ymin, ymax = .data$.sn_ymax)
+        } else {
+          ggplot2::aes(x = .data[[x_name]], ymin = .data$.sn_ymin, ymax = .data$.sn_ymax, group = .data[[fill_name]])
+        },
+        width = 0.2
+      )
+    } else {
+      p <- p + ggplot2::geom_errorbarh(
+        data = plot_data,
+        mapping = if (fill_missing) {
+          ggplot2::aes(y = .data[[y_name]], xmin = .data$.sn_ymin, xmax = .data$.sn_ymax)
+        } else {
+          ggplot2::aes(y = .data[[y_name]], xmin = .data$.sn_ymin, xmax = .data$.sn_ymax, group = .data[[fill_name]])
+        },
+        height = 0.2
+      )
+    }
+  }
+
+  if (summarize && isTRUE(show_points)) {
+    if (discrete_is_x) {
+      p <- p + ggplot2::geom_jitter(
+        data = data,
+        mapping = if (fill_missing) {
+          ggplot2::aes(x = .data[[x_name]], y = .data[[y_name]])
+        } else {
+          ggplot2::aes(x = .data[[x_name]], y = .data[[y_name]], color = .data[[fill_name]])
+        },
+        width = jitter_width,
+        height = jitter_height,
+        alpha = point_alpha,
+        inherit.aes = FALSE
+      )
+    } else {
+      p <- p + ggplot2::geom_jitter(
+        data = data,
+        mapping = if (fill_missing) {
+          ggplot2::aes(x = .data[[x_name]], y = .data[[y_name]])
+        } else {
+          ggplot2::aes(x = .data[[x_name]], y = .data[[y_name]], color = .data[[fill_name]])
+        },
+        width = jitter_height,
+        height = jitter_width,
+        alpha = point_alpha,
+        inherit.aes = FALSE
+      )
+    }
   }
 
   p <- .sn_add_catplot_theme(
@@ -264,8 +401,12 @@ sn_plot_barplot <- function(data,
     return(p)
   }
 
-  n_fill <- length(unique(stats::na.omit(as.character(data[[fill_name]]))))
-  .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "fill")
+  n_fill <- length(unique(stats::na.omit(as.character(plot_data[[fill_name]]))))
+  p <- .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "fill")
+  if (summarize && isTRUE(show_points)) {
+    p <- .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "color")
+  }
+  p
 }
 
 #' Plot grouped composition-style bar charts

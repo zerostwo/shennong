@@ -11,6 +11,13 @@ sn_plot_barplot(
   fill = NULL,
   sort_by = NULL,
   sort_desc = FALSE,
+  stat = c("auto", "identity", "summary"),
+  summary_fun = c("mean", "median"),
+  errorbar = c("none", "sd", "se"),
+  show_points = FALSE,
+  point_alpha = 0.7,
+  jitter_width = 0.15,
+  jitter_height = 0.05,
   palette = "Paired",
   panel_widths = NULL,
   panel_heights = NULL,
@@ -30,6 +37,23 @@ sn_plot_barplot(
 \item{sort_by}{Optional column used to sort the discrete axis.}
 
 \item{sort_desc}{Logical; if \code{TRUE}, sort in descending order.}
+
+\item{stat}{One of \code{"auto"}, \code{"identity"}, or \code{"summary"}.
+\code{"auto"} summarizes repeated observations per bar and otherwise keeps
+the input rows as-is.}
+
+\item{summary_fun}{Summary function used when \code{stat = "summary"} or
+when \code{stat = "auto"} detects repeated observations. One of
+\code{"mean"} or \code{"median"}.}
+
+\item{errorbar}{One of \code{"none"}, \code{"sd"}, or \code{"se"}.}
+
+\item{show_points}{Logical; if \code{TRUE}, overlay raw observations as
+jittered points when bars are summarized.}
+
+\item{point_alpha}{Alpha for overlaid points.}
+
+\item{jitter_width, jitter_height}{Jitter distances for overlaid points.}
 
 \item{palette}{Discrete palette used when \code{fill} is supplied.}
 

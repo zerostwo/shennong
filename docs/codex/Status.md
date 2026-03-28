@@ -314,6 +314,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Standardized discrete palette handling across plotting helpers so string palettes such as `Paired` work consistently for both fill and color scales, including automatic interpolation when the number of categories exceeds the base palette length. The main plot helpers also now share panel-size and axis-label options.
 - Added user-facing palette discovery and retrieval helpers, `sn_list_palettes()` and `sn_get_palette()`, so scripts can reuse the same palette resolution logic as the plotting helpers instead of relying on printed output only.
 - Extended palette normalization to continuous color scales as well, so `sn_plot_feature()` and `sn_plot_dot()` now consume the same palette registry and direction semantics as the discrete plotting helpers.
+- Expanded `sn_plot_barplot()` from a thin `geom_col()` wrapper into a more generally useful grouped-summary plot helper with automatic repeated-observation summarization, optional SD/SE error bars, and optional jittered raw points.
 
 ## Remaining High-Priority Work
 
