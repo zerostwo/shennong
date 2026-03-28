@@ -124,6 +124,8 @@ reference:
       - sn_plot_boxplot
       - sn_plot_barplot
       - sn_plot_composition
+      - sn_list_palettes
+      - sn_get_palette
       - show_all_palettes
   - title: Utilities and Project Setup
     contents:

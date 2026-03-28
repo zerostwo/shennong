@@ -870,6 +870,66 @@ palette_db$XuPan2024 <- c(
 
 #' List available color palettes
 #'
+#' Returns the built-in Shennong palettes together with the available
+#' `RColorBrewer` palettes.
+#'
+#' @return A data frame with palette names, source, and maximum native size.
+#'
+#' @examples
+#' sn_list_palettes()
+#'
+#' @export
+sn_list_palettes <- function() {
+  shennong_tbl <- data.frame(
+    name = names(palette_db),
+    source = "shennong",
+    max_n = vapply(palette_db, length, integer(1)),
+    stringsAsFactors = FALSE
+  )
+
+  brewer_tbl <- data.frame(
+    name = row.names(RColorBrewer::brewer.pal.info),
+    source = "RColorBrewer",
+    max_n = RColorBrewer::brewer.pal.info$maxcolors,
+    stringsAsFactors = FALSE
+  )
+
+  rbind(shennong_tbl, brewer_tbl)
+}
+
+#' Resolve a palette into explicit colors
+#'
+#' @param palette Palette name or explicit character vector of colors.
+#' @param n Number of colors to return. When omitted, the palette's native
+#'   length is returned.
+#'
+#' @return A character vector of hex colors.
+#'
+#' @examples
+#' sn_get_palette("Paired", n = 14)
+#'
+#' @export
+sn_get_palette <- function(palette = "Paired", n = NULL) {
+  if (is.null(n)) {
+    if (length(palette) > 1L) {
+      n <- length(palette)
+    } else if (length(palette) == 1L && palette %in% names(palette_db)) {
+      n <- length(palette_db[[palette]])
+    } else if (length(palette) == 1L && palette %in% row.names(RColorBrewer::brewer.pal.info)) {
+      n <- RColorBrewer::brewer.pal.info[palette, "maxcolors"]
+    } else {
+      stop(
+        "Palette not found. Use `sn_list_palettes()` to see available palette names.",
+        call. = FALSE
+      )
+    }
+  }
+
+  .sn_resolve_discrete_palette(palette = palette, n = n)
+}
+
+#' Print available color palettes
+#'
 #' Prints the built-in Shennong palettes and the names of available
 #' `RColorBrewer` palettes.
 #'
@@ -880,12 +940,13 @@ palette_db$XuPan2024 <- c(
 #'
 #' @export
 show_all_palettes <- function() {
-  # Collection from paper
+  palette_tbl <- sn_list_palettes()
+
   cat("Collection from paper\n")
-  print(names(palette_db))
-  # RColorBrewer
+  print(palette_tbl$name[palette_tbl$source == "shennong"])
   cat("RColorBrewer\n")
-  print(row.names(RColorBrewer::brewer.pal.info))
+  print(palette_tbl$name[palette_tbl$source == "RColorBrewer"])
+  invisible(NULL)
 }
 
 .all_palettes <- c(names(palette_db), row.names(RColorBrewer::brewer.pal.info))

@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{show_all_palettes}
 \alias{show_all_palettes}
-\title{List available color palettes}
+\title{Print available color palettes}
 \usage{
 show_all_palettes()
 }

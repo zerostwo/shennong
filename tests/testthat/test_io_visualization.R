@@ -178,6 +178,22 @@ test_that("show_all_palettes prints without error", {
   expect_no_error(show_all_palettes())
 })
 
+test_that("palette helpers list and resolve palettes", {
+  palette_tbl <- sn_list_palettes()
+
+  expect_s3_class(palette_tbl, "data.frame")
+  expect_true(all(c("name", "source", "max_n") %in% colnames(palette_tbl)))
+  expect_true("Paired" %in% palette_tbl$name)
+  expect_true("ZhangJian2024" %in% palette_tbl$name)
+
+  paired <- sn_get_palette("Paired", n = 14)
+  expect_length(paired, 14)
+  expect_true(all(nzchar(paired)))
+
+  custom <- sn_get_palette(c("#111111", "#222222", "#333333"))
+  expect_identical(custom, c("#111111", "#222222", "#333333"))
+})
+
 test_that("sn_add_data_from_anndata adds metadata and embeddings", {
   skip_if_not_installed("Seurat")
 
