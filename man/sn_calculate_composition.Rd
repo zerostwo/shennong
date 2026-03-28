@@ -10,7 +10,10 @@ sn_calculate_composition(
   variable,
   min_cells = 20,
   measure = c("proportion", "count", "both"),
-  additional_cols = NULL
+  additional_cols = NULL,
+  sort_by = NULL,
+  sort_value = NULL,
+  sort_desc = FALSE
 )
 }
 \arguments{
@@ -29,6 +32,16 @@ category to be retained. Defaults to \code{20}.}
 
 \item{additional_cols}{Optional character vector of additional columns to
 carry into the output.}
+
+\item{sort_by}{Optional summary column used to order the primary
+\code{group_by} column in the returned table. One of \code{NULL},
+\code{"proportion"}, \code{"count"}, or \code{"group_total"}.
+Sorting is only applied when \code{group_by} has length 1.}
+
+\item{sort_value}{Optional level of \code{variable} used for sorting when
+\code{sort_by} is supplied. Defaults to the first observed level.}
+
+\item{sort_desc}{Logical; if \code{TRUE}, sort in descending order.}
 }
 \value{
 A data frame with per-group proportions.

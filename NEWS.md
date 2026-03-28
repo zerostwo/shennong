@@ -15,11 +15,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `object@misc$qc_assessments`.
 - `sn_list_input_dirs()` now scans a root directory for recognized single-cell
   input folders such as 10x, 10x spatial, STARsolo, and BPCells layouts.
+- `sn_plot_composition()` now provides a composition-focused bar plot helper
+  for grouped proportions, counts, QC pass/fail summaries, and similar
+  categorical tables.
 
 ### Changed
 
-- `sn_calculate_composition()` now supports multi-column `group_by` values and
-  can return proportions, counts, or both through `measure`.
+- `sn_calculate_composition()` now supports multi-column `group_by` values,
+  can return proportions, counts, or both through `measure`, preserves factor
+  columns from the source metadata, and can sort a single grouping column by a
+  chosen category level such as WT proportion.
 - `sn_find_doublets()` now skips zero-count and low-feature cells before
   running `scDblFinder()` on corrected layers, records corrected-layer results
   with `_corrected` suffixes, and works with the zero-count flags produced by

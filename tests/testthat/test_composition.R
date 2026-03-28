@@ -239,6 +239,48 @@ test_that("sn_calculate_composition supports Seurat-object metadata directly", {
   )
 })
 
+test_that("sn_calculate_composition preserves factor columns and can sort groups", {
+  meta_df <- data.frame(
+    cell_type = factor(c("cDC1", "cDC1", "Mono", "Mono", "B", "B"), levels = c("Mono", "cDC1", "B")),
+    Mutation = factor(c("WT", "PPP2R1A", "WT", "WT", "PPP2R1A", "PPP2R1A"), levels = c("WT", "PPP2R1A")),
+    stringsAsFactors = TRUE
+  )
+
+  result <- sn_calculate_composition(
+    x = meta_df,
+    group_by = "cell_type",
+    variable = "Mutation",
+    min_cells = 1,
+    sort_by = "proportion",
+    sort_value = "WT"
+  )
+
+  expect_true(is.factor(result$cell_type))
+  expect_true(is.factor(result$Mutation))
+  expect_identical(levels(result$Mutation), c("WT", "PPP2R1A"))
+  expect_identical(levels(result$cell_type), c("B", "cDC1", "Mono"))
+})
+
+test_that("sn_calculate_composition rejects sorting for multi-column grouping", {
+  meta_df <- data.frame(
+    sample = c("A", "A", "B", "B"),
+    cell_type = c("Tcell", "Bcell", "Tcell", "Bcell"),
+    Phase = c("G1", "S", "G1", "S"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    sn_calculate_composition(
+      x = meta_df,
+      group_by = c("sample", "cell_type"),
+      variable = "Phase",
+      min_cells = 1,
+      sort_by = "proportion"
+    ),
+    "`sort_by` is only supported"
+  )
+})
+
 test_that("sn_calculate_composition validates Seurat/data-frame inputs and additional columns", {
   expect_error(
     sn_calculate_composition(

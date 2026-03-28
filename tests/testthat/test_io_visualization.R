@@ -60,6 +60,26 @@ test_that("plot helpers return ggplot objects", {
   expect_s3_class(sn_plot_barplot(data, x = group, y = value, fill = fill_group), "ggplot")
 })
 
+test_that("sn_plot_composition supports default y selection, ordering, and faceting", {
+  data <- data.frame(
+    cell_type = factor(c("Mono", "Mono", "cDC1", "cDC1", "B", "B"), levels = c("Mono", "cDC1", "B")),
+    Mutation = factor(c("WT", "PPP2R1A", "WT", "PPP2R1A", "WT", "PPP2R1A"), levels = c("WT", "PPP2R1A")),
+    study = c("A", "A", "A", "A", "B", "B"),
+    proportion = c(80, 20, 60, 40, 10, 90)
+  )
+
+  plot <- sn_plot_composition(
+    data,
+    x = cell_type,
+    fill = Mutation,
+    facet_col = study,
+    order_value = "WT"
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_identical(levels(plot$data$cell_type), c("B", "cDC1", "Mono"))
+})
+
 test_that("Seurat plotting helpers return ggplot objects", {
   skip_if_not_installed("Seurat")
 

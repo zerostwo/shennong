@@ -1376,6 +1376,13 @@ sn_calculate_rogue <- function(
 #'   \code{"both"}. Defaults to \code{"proportion"}.
 #' @param additional_cols Optional character vector of additional columns to
 #'   carry into the output.
+#' @param sort_by Optional summary column used to order the primary
+#'   \code{group_by} column in the returned table. One of \code{NULL},
+#'   \code{"proportion"}, \code{"count"}, or \code{"group_total"}.
+#'   Sorting is only applied when \code{group_by} has length 1.
+#' @param sort_value Optional level of \code{variable} used for sorting when
+#'   \code{sort_by} is supplied. Defaults to the first observed level.
+#' @param sort_desc Logical; if \code{TRUE}, sort in descending order.
 #'
 #' @return A data frame with per-group proportions.
 #'
@@ -1400,14 +1407,31 @@ sn_calculate_rogue <- function(
 #' }
 #'
 #' @export
-sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, measure = c("proportion", "count", "both"), additional_cols = NULL) {
+sn_calculate_composition <- function(x,
+                                     group_by,
+                                     variable,
+                                     min_cells = 20,
+                                     measure = c("proportion", "count", "both"),
+                                     additional_cols = NULL,
+                                     sort_by = NULL,
+                                     sort_value = NULL,
+                                     sort_desc = FALSE) {
   stopifnot(is.character(group_by), length(group_by) >= 1)
   stopifnot(is.character(variable), length(variable) == 1)
   stopifnot(is.numeric(min_cells), length(min_cells) == 1, min_cells >= 0)
+  stopifnot(is.null(sort_by) || (is.character(sort_by) && length(sort_by) == 1))
+  stopifnot(is.null(sort_value) || length(sort_value) == 1)
+  stopifnot(is.logical(sort_desc), length(sort_desc) == 1)
   if (!is.null(additional_cols)) {
     stopifnot(is.character(additional_cols))
   }
   measure <- match.arg(measure)
+  if (!is.null(sort_by)) {
+    sort_by <- match.arg(sort_by, choices = c("proportion", "count", "group_total"))
+    if (length(group_by) != 1L) {
+      stop("`sort_by` is only supported when `group_by` contains a single column.", call. = FALSE)
+    }
+  }
 
   metadata <- .sn_extract_metric_metadata(x)
 
@@ -1423,10 +1447,9 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, meas
     }
   }
 
-  character_cols <- unique(c(group_by, variable, additional_cols))
+  group_levels <- if (is.factor(metadata[[group_by[[1]]]])) levels(metadata[[group_by[[1]]]]) else NULL
 
   metadata <- metadata |>
-    dplyr::mutate(dplyr::across(dplyr::all_of(character_cols), as.character)) |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
     dplyr::mutate(n_cells_group = dplyr::n()) |>
     dplyr::ungroup() |>
@@ -1436,7 +1459,7 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, meas
     stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
   }
 
-  composition <- metadata |>
+  composition_full <- metadata |>
     dplyr::filter(
       dplyr::if_all(dplyr::all_of(group_by), ~ !is.na(.x)),
       !is.na(.data[[variable]])
@@ -1449,13 +1472,25 @@ sn_calculate_composition <- function(x, group_by, variable, min_cells = 20, meas
     ) |>
     dplyr::ungroup()
 
+  if (!is.null(sort_by)) {
+    composition_full <- .sn_sort_discrete_levels(
+      data = composition_full,
+      level_col = group_by[[1]],
+      metric_col = sort_by,
+      within_col = variable,
+      within_value = sort_value,
+      decreasing = sort_desc,
+      fallback_levels = group_levels
+    )
+  }
+
   composition <- switch(
     measure,
-    proportion = composition |>
+    proportion = composition_full |>
       dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "proportion"),
-    count = composition |>
+    count = composition_full |>
       dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "count"),
-    both = composition |>
+    both = composition_full |>
       dplyr::select(dplyr::all_of(group_by), dplyr::all_of(variable), "count", "group_total", "proportion")
   )
 

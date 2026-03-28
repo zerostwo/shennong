@@ -307,6 +307,9 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Fixed the `sn_deconvolve_bulk()` example so the `cibersortx` dry-run example path supplies placeholder credentials during checks.
 - Added the missing GitHub-hosted optional packages (`BayesPrism`, `CIARA`, `CellSIUS`, `EDGE`, `FiRE`, `GapClust`) to `DESCRIPTION`/CI installation paths so Actions can satisfy the same optional backends referenced in package code and examples.
 - Qualified the remaining `setNames()` call under `stats::setNames()` so `R CMD check` no longer reports a global-function note in the rare-cell workflow.
+- `sn_calculate_composition()` now preserves factor columns from source metadata and can order a single grouping column by a chosen category level, reducing the amount of manual post-processing needed before plotting.
+- Added `sn_plot_composition()` as a higher-level plotting helper for stacked composition-style bar charts so users no longer need to rebuild the same `ggplot2::geom_col()` pattern for composition, QC status, or similar categorical summaries.
+- Removed a duplicate DE-specific misc-storage helper and now route DE result persistence through the shared `.sn_store_misc_result()` path used by other stored-result workflows.
 
 ## Remaining High-Priority Work
 

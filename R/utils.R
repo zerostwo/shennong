@@ -99,6 +99,63 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   .sn_log("error", ..., .envir = .envir)
 }
 
+.sn_sort_discrete_levels <- function(data,
+                                     level_col,
+                                     metric_col,
+                                     within_col = NULL,
+                                     within_value = NULL,
+                                     decreasing = FALSE,
+                                     fallback_levels = NULL) {
+  stopifnot(is.data.frame(data))
+  stopifnot(is.character(level_col), length(level_col) == 1L, level_col %in% colnames(data))
+  stopifnot(is.character(metric_col), length(metric_col) == 1L, metric_col %in% colnames(data))
+
+  sort_data <- data
+
+  if (!is.null(within_col)) {
+    stopifnot(
+      is.character(within_col),
+      length(within_col) == 1L,
+      within_col %in% colnames(data)
+    )
+
+    if (is.null(within_value)) {
+      within_candidates <- unique(sort_data[[within_col]])
+      within_candidates <- within_candidates[!is.na(within_candidates)]
+      if (length(within_candidates) == 0L) {
+        return(data)
+      }
+      within_value <- within_candidates[[1]]
+    }
+
+    sort_data <- sort_data[sort_data[[within_col]] %in% within_value, , drop = FALSE]
+  }
+
+  if (nrow(sort_data) == 0L) {
+    return(data)
+  }
+
+  summary_vec <- tapply(
+    sort_data[[metric_col]],
+    INDEX = as.character(sort_data[[level_col]]),
+    FUN = sum,
+    na.rm = TRUE
+  )
+  if (!is.null(fallback_levels)) {
+    missing_levels <- setdiff(as.character(fallback_levels), names(summary_vec))
+    if (length(missing_levels) > 0L) {
+      zero_vec <- stats::setNames(rep(0, length(missing_levels)), missing_levels)
+      summary_vec <- c(summary_vec, zero_vec)
+    }
+  }
+  summary_vec <- sort(summary_vec, decreasing = isTRUE(decreasing))
+
+  ordered_levels <- names(summary_vec)
+
+  data[[level_col]] <- factor(data[[level_col]], levels = unique(ordered_levels))
+  data
+}
+
 .sn_is_iterable_matrix <- function(x) {
   inherits(x, "IterableMatrix") || inherits(x, "MatrixDir") || inherits(x, "RenameDims")
 }

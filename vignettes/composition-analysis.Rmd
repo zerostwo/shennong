@@ -102,14 +102,36 @@ knitr::kable(composition_tbl, digits = 2)
 
 ## 2. Plot proportions across groups
 
-The returned composition table can be fed directly into `sn_plot_barplot()`.
+The returned composition table can be plotted directly with
+`sn_plot_composition()`. It automatically uses the `proportion` column when
+present and can order the x-axis by one fill category.
 
 ```{r}
-sn_plot_barplot(
+sn_plot_composition(
   composition_tbl,
   x = sample,
-  y = proportion,
   fill = seurat_clusters
+)
+```
+
+When ordering matters, request it during composition summarization or at plot
+time. This is useful for comparisons such as mutation fractions across cell
+types.
+
+```{r}
+phase_tbl_ordered <- sn_calculate_composition(
+  seu,
+  group_by = "sample",
+  variable = "Phase",
+  min_cells = 10,
+  sort_by = "proportion",
+  sort_value = "G1"
+)
+
+sn_plot_composition(
+  phase_tbl_ordered,
+  x = sample,
+  fill = Phase
 )
 ```
 

@@ -122,6 +122,7 @@ reference:
       - sn_plot_dot
       - sn_plot_boxplot
       - sn_plot_barplot
+      - sn_plot_composition
       - show_all_palettes
   - title: Utilities and Project Setup
     contents:

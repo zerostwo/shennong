@@ -58,6 +58,143 @@ sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
     ggplot2::geom_col()
 }
 
+#' Plot grouped composition-style bar charts
+#'
+#' This helper is designed for stacked or dodged categorical bar plots such as
+#' cell composition, QC pass/fail summaries, doublet-class proportions, or
+#' other grouped category tables produced by Shennong.
+#'
+#' @param data A data frame.
+#' @param x Column mapped to the x-axis.
+#' @param y Column mapped to the y-axis. If omitted, \code{proportion} is used
+#'   when present, otherwise \code{count}.
+#' @param fill Column mapped to the fill aesthetic.
+#' @param facet_row,facet_col Optional columns used for faceting.
+#' @param position One of \code{"stack"}, \code{"fill"}, or \code{"dodge"}.
+#' @param order_by Optional y-column used to reorder the x-axis. Defaults to the
+#'   selected \code{y} column.
+#' @param order_value Optional level of \code{fill} used when ordering x-axis
+#'   levels.
+#' @param order_desc Logical; if \code{TRUE}, order x-axis levels in descending
+#'   order.
+#' @param palette Optional named or unnamed vector passed to
+#'   \code{ggplot2::scale_fill_manual()}.
+#' @param angle_x Rotation angle for x-axis labels.
+#' @param show_legend Logical; if \code{FALSE}, hide the legend.
+#' @param title Optional plot title.
+#' @param x_label,y_label Optional axis labels.
+#'
+#' @return A ggplot object.
+#'
+#' @examples
+#' plot_data <- data.frame(
+#'   sample = c("A", "A", "B", "B"),
+#'   cell_type = c("T", "B", "T", "B"),
+#'   proportion = c(60, 40, 30, 70)
+#' )
+#' sn_plot_composition(
+#'   plot_data,
+#'   x = sample,
+#'   fill = cell_type
+#' )
+#'
+#' @export
+sn_plot_composition <- function(data,
+                                x,
+                                y = NULL,
+                                fill,
+                                facet_row = NULL,
+                                facet_col = NULL,
+                                position = c("stack", "fill", "dodge"),
+                                order_by = NULL,
+                                order_value = NULL,
+                                order_desc = FALSE,
+                                palette = NULL,
+                                angle_x = 45,
+                                show_legend = TRUE,
+                                title = NULL,
+                                x_label = NULL,
+                                y_label = NULL) {
+  stopifnot(is.data.frame(data))
+  position <- match.arg(position)
+
+  x_sym <- rlang::ensym(x)
+  fill_sym <- rlang::ensym(fill)
+  x_name <- rlang::as_name(x_sym)
+  fill_name <- rlang::as_name(fill_sym)
+
+  y_quo <- rlang::enquo(y)
+  if (rlang::quo_is_missing(y_quo) || rlang::quo_is_null(y_quo)) {
+    if ("proportion" %in% colnames(data)) {
+      y_name <- "proportion"
+    } else if ("count" %in% colnames(data)) {
+      y_name <- "count"
+    } else {
+      stop("`y` must be supplied when `data` does not contain `proportion` or `count`.", call. = FALSE)
+    }
+  } else {
+    y_name <- rlang::as_name(rlang::ensym(y))
+  }
+
+  if (!y_name %in% colnames(data)) {
+    stop("Column '", y_name, "' was not found in `data`.", call. = FALSE)
+  }
+  if (!is.null(order_by) && !order_by %in% colnames(data)) {
+    stop("Column '", order_by, "' was not found in `data`.", call. = FALSE)
+  }
+
+  if (!is.null(order_by) || !is.null(order_value)) {
+    data <- .sn_sort_discrete_levels(
+      data = data,
+      level_col = x_name,
+      metric_col = order_by %||% y_name,
+      within_col = fill_name,
+      within_value = order_value,
+      decreasing = order_desc,
+      fallback_levels = if (is.factor(data[[x_name]])) levels(data[[x_name]]) else unique(as.character(data[[x_name]]))
+    )
+  }
+
+  plot <- ggplot2::ggplot(
+    data = data,
+    mapping = ggplot2::aes(
+      x = !!x_sym,
+      y = !!rlang::sym(y_name),
+      fill = !!fill_sym
+    )
+  ) +
+    ggplot2::geom_col(position = position) +
+    ggplot2::scale_y_continuous(expand = c(0, 0)) +
+    labs(
+      x = x_label %||% x_name,
+      y = y_label %||% if (identical(y_name, "proportion")) "Proportion (%)" else y_name,
+      title = title
+    )
+
+  plot <- .sn_add_catplot_theme(
+    plot,
+    show_title = if (is.null(title)) "none" else "y"
+  ) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = angle_x, hjust = 1),
+      legend.position = if (isTRUE(show_legend)) "right" else "none"
+    )
+
+  facet_row_quo <- rlang::enquo(facet_row)
+  facet_col_quo <- rlang::enquo(facet_col)
+  if (!rlang::quo_is_missing(facet_row_quo) || !rlang::quo_is_missing(facet_col_quo)) {
+    row_vars <- if (!rlang::quo_is_missing(facet_row_quo) && !rlang::quo_is_null(facet_row_quo)) ggplot2::vars(!!facet_row_quo) else NULL
+    col_vars <- if (!rlang::quo_is_missing(facet_col_quo) && !rlang::quo_is_null(facet_col_quo)) ggplot2::vars(!!facet_col_quo) else NULL
+    plot <- plot + ggplot2::facet_grid(rows = row_vars, cols = col_vars)
+  }
+
+  if (!is.null(palette)) {
+    plot <- plot + ggplot2::scale_fill_manual(values = palette)
+  }
+
+  plot
+}
+
 #' Create a dimensionality reduction plot for categorical data
 #'
 #' This function creates a dimensionality reduction plot for categorical data using Seurat and ggplot2. It allows for the selection of the reduction method, grouping, and splitting variables, as well as the visualization of labels, rasterization, and color palette. The sn_plot_dim() function is intended to be used as a wrapper around Seurat's DimPlot() function.
