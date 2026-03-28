@@ -131,7 +131,10 @@ test_that("Seurat plotting helpers return ggplot objects", {
     Seurat::RunUMAP(object, dims = 1:5, n.neighbors = 5, verbose = FALSE)
   )
 
-  expect_s3_class(sn_plot_feature(object, features = "CD3D", reduction = "umap"), "ggplot")
+  expect_s3_class(
+    sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1),
+    "ggplot"
+  )
   expect_s3_class(
     suppressWarnings(
       sn_plot_violin(object, features = c("CD3D", "LYZ"), group_by = "group")
@@ -157,7 +160,9 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
       features = "top_markers",
       de_name = "celltype_markers",
       n = 2,
-      marker_groups = "Tcell"
+      marker_groups = "Tcell",
+      palette = "RdBu",
+      direction = -1
     )
   )
 
@@ -189,6 +194,10 @@ test_that("palette helpers list and resolve palettes", {
   paired <- sn_get_palette("Paired", n = 14)
   expect_length(paired, 14)
   expect_true(all(nzchar(paired)))
+
+  rd_bu <- sn_get_palette("RdBu", palette_type = "continuous", n = 32, direction = -1)
+  expect_length(rd_bu, 32)
+  expect_true(all(nzchar(rd_bu)))
 
   custom <- sn_get_palette(c("#111111", "#222222", "#333333"))
   expect_identical(custom, c("#111111", "#222222", "#333333"))

@@ -35,6 +35,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   palettes such as `\"Paired\"` expand automatically when more categories are
   present than the base palette length, and key plotting helpers now expose
   `panel_widths` / `panel_heights` plus consistent axis-label handling.
+- Continuous-color helpers now use the same palette registry through
+  `sn_get_palette(..., palette_type = "continuous")`, and expression-oriented
+  plotting functions now apply continuous palettes through the shared internal
+  resolver instead of separate ad hoc `scale_*_distiller()` logic.
 - `sn_find_doublets()` now skips zero-count and low-feature cells before
   running `scDblFinder()` on corrected layers, records corrected-layer results
   with `_corrected` suffixes, and works with the zero-count flags produced by

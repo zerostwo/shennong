@@ -24,6 +24,7 @@ sn_plot_dot(
   scale_min = NA,
   scale_max = NA,
   palette = "RdBu",
+  direction = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   title = NULL,
@@ -73,7 +74,10 @@ sn_plot_dot(
 
 \item{scale_max}{The maximum value for the dot size scale. Defaults to NA.}
 
-\item{palette}{The diverging palette used for the color scale.}
+\item{palette}{The palette used for the continuous color scale.}
+
+\item{direction}{Direction for the continuous palette. Use \code{1} for the
+default order and \code{-1} to reverse it.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

@@ -7,7 +7,8 @@
 sn_list_palettes()
 }
 \value{
-A data frame with palette names, source, and maximum native size.
+A data frame with palette names, source, palette type, maximum native
+size, and whether each palette supports discrete and continuous use.
 }
 \description{
 Returns the built-in Shennong palettes together with the available

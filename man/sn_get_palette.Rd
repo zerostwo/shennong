@@ -4,13 +4,25 @@
 \alias{sn_get_palette}
 \title{Resolve a palette into explicit colors}
 \usage{
-sn_get_palette(palette = "Paired", n = NULL)
+sn_get_palette(
+  palette = "Paired",
+  n = NULL,
+  palette_type = c("auto", "discrete", "continuous"),
+  direction = 1
+)
 }
 \arguments{
 \item{palette}{Palette name or explicit character vector of colors.}
 
 \item{n}{Number of colors to return. When omitted, the palette's native
-length is returned.}
+length is returned for discrete use and \code{256} colors are returned for
+continuous use.}
+
+\item{palette_type}{One of \code{"auto"}, \code{"discrete"}, or
+\code{"continuous"}. Defaults to \code{"auto"}.}
+
+\item{direction}{Direction for ordered palettes. Use \code{1} for the
+default order and \code{-1} to reverse it.}
 }
 \value{
 A character vector of hex colors.
@@ -20,5 +32,6 @@ Resolve a palette into explicit colors
 }
 \examples{
 sn_get_palette("Paired", n = 14)
+sn_get_palette("RdBu", palette_type = "continuous", direction = -1)
 
 }

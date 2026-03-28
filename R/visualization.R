@@ -29,8 +29,33 @@
   p + ggplot2::theme_minimal(base_size = 11)
 }
 
-.sn_resolve_discrete_palette <- function(palette = "Paired", n) {
+.sn_palette_metadata <- function() {
+  shennong_tbl <- data.frame(
+    name = names(palette_db),
+    source = "shennong",
+    palette_type = "custom",
+    max_n = vapply(palette_db, length, integer(1)),
+    supports_discrete = TRUE,
+    supports_continuous = TRUE,
+    stringsAsFactors = FALSE
+  )
+
+  brewer_tbl <- data.frame(
+    name = row.names(RColorBrewer::brewer.pal.info),
+    source = "RColorBrewer",
+    palette_type = as.character(RColorBrewer::brewer.pal.info$category),
+    max_n = RColorBrewer::brewer.pal.info$maxcolors,
+    supports_discrete = TRUE,
+    supports_continuous = TRUE,
+    stringsAsFactors = FALSE
+  )
+
+  rbind(shennong_tbl, brewer_tbl)
+}
+
+.sn_resolve_palette_values <- function(palette = "Paired", n, direction = 1) {
   stopifnot(is.numeric(n), length(n) == 1L, n >= 0)
+  stopifnot(direction %in% c(-1, 1))
 
   if (n == 0L) {
     return(character(0))
@@ -56,7 +81,19 @@
     values <- values[seq_len(n)]
   }
 
-  unname(values)
+  values <- unname(values)
+  if (identical(direction, -1)) {
+    values <- rev(values)
+  }
+  values
+}
+
+.sn_resolve_discrete_palette <- function(palette = "Paired", n) {
+  .sn_resolve_palette_values(palette = palette, n = n, direction = 1)
+}
+
+.sn_resolve_continuous_palette <- function(palette = "YlOrRd", n = 256, direction = 1) {
+  .sn_resolve_palette_values(palette = palette, n = n, direction = direction)
 }
 
 .sn_add_discrete_palette <- function(p, palette = "Paired", n, aesthetic = c("fill", "color")) {
@@ -68,6 +105,25 @@
   }
 
   p + ggplot2::scale_color_manual(values = values)
+}
+
+.sn_add_continuous_palette <- function(p,
+                                       palette = "YlOrRd",
+                                       direction = 1,
+                                       aesthetic = c("color", "fill"),
+                                       guide = "colourbar") {
+  aesthetic <- match.arg(aesthetic)
+  values <- .sn_resolve_continuous_palette(
+    palette = palette,
+    n = 256,
+    direction = direction
+  )
+
+  if (identical(aesthetic, "fill")) {
+    return(p + ggplot2::scale_fill_gradientn(colours = values, guide = guide))
+  }
+
+  p + ggplot2::scale_color_gradientn(colours = values, guide = guide)
 }
 
 #' Create a boxplot from a data frame
@@ -624,7 +680,9 @@ sn_plot_violin <- function(object,
 #' @param scale_by The variable to scale the dot size by. Defaults to "radius".
 #' @param scale_min The minimum value for the dot size scale. Defaults to NA.
 #' @param scale_max The maximum value for the dot size scale. Defaults to NA.
-#' @param palette The diverging palette used for the color scale.
+#' @param palette The palette used for the continuous color scale.
+#' @param direction Direction for the continuous palette. Use \code{1} for the
+#'   default order and \code{-1} to reverse it.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param title Optional plot title.
@@ -632,7 +690,7 @@ sn_plot_violin <- function(object,
 #'
 #' @return A ggplot2 object.
 #'
-#' @importFrom ggplot2 coord_fixed guides theme element_text margin scale_color_distiller scale_y_discrete guide_axis guide_legend guide_colorbar
+#' @importFrom ggplot2 coord_fixed guides theme element_text margin scale_y_discrete guide_axis guide_legend guide_colorbar
 #'
 #' @examples
 #' \dontrun{
@@ -659,6 +717,7 @@ sn_plot_dot <- function(x,
                         scale_min = NA,
                         scale_max = NA,
                         palette = "RdBu",
+                        direction = 1,
                         panel_widths = NULL,
                         panel_heights = NULL,
                         title = NULL,
@@ -723,8 +782,13 @@ sn_plot_dot <- function(x,
       y = y_label %||% NULL,
       title = title
     ) +
-    scale_color_distiller(palette = palette) +
     scale_y_discrete(limits = rev)
+  p <- .sn_add_continuous_palette(
+    p,
+    palette = palette,
+    direction = direction,
+    aesthetic = "color"
+  )
   return(p)
 }
 
@@ -757,7 +821,7 @@ sn_plot_dot <- function(x,
 #'
 #' @return A ggplot2 object.
 #'
-#' @importFrom ggplot2 labs scale_color_distiller guides
+#' @importFrom ggplot2 labs guides
 #' @importFrom ggplot2 theme element_blank element_text margin
 #'
 #' @examples
@@ -824,8 +888,12 @@ sn_plot_feature <-
       )
 
     if (!is_null(palette)) {
-      p <-
-        p + scale_color_distiller(palette = palette, direction = direction)
+      p <- .sn_add_continuous_palette(
+        p,
+        palette = palette,
+        direction = direction,
+        aesthetic = "color"
+      )
     }
     if (!is_null(legend_title)) {
       p <- p + guides(color = guide_colorbar(title = legend_title))
@@ -873,46 +941,51 @@ palette_db$XuPan2024 <- c(
 #' Returns the built-in Shennong palettes together with the available
 #' `RColorBrewer` palettes.
 #'
-#' @return A data frame with palette names, source, and maximum native size.
+#' @return A data frame with palette names, source, palette type, maximum native
+#'   size, and whether each palette supports discrete and continuous use.
 #'
 #' @examples
 #' sn_list_palettes()
 #'
 #' @export
 sn_list_palettes <- function() {
-  shennong_tbl <- data.frame(
-    name = names(palette_db),
-    source = "shennong",
-    max_n = vapply(palette_db, length, integer(1)),
-    stringsAsFactors = FALSE
-  )
-
-  brewer_tbl <- data.frame(
-    name = row.names(RColorBrewer::brewer.pal.info),
-    source = "RColorBrewer",
-    max_n = RColorBrewer::brewer.pal.info$maxcolors,
-    stringsAsFactors = FALSE
-  )
-
-  rbind(shennong_tbl, brewer_tbl)
+  .sn_palette_metadata()
 }
 
 #' Resolve a palette into explicit colors
 #'
 #' @param palette Palette name or explicit character vector of colors.
 #' @param n Number of colors to return. When omitted, the palette's native
-#'   length is returned.
+#'   length is returned for discrete use and \code{256} colors are returned for
+#'   continuous use.
+#' @param palette_type One of \code{"auto"}, \code{"discrete"}, or
+#'   \code{"continuous"}. Defaults to \code{"auto"}.
+#' @param direction Direction for ordered palettes. Use \code{1} for the
+#'   default order and \code{-1} to reverse it.
 #'
 #' @return A character vector of hex colors.
 #'
 #' @examples
 #' sn_get_palette("Paired", n = 14)
+#' sn_get_palette("RdBu", palette_type = "continuous", direction = -1)
 #'
 #' @export
-sn_get_palette <- function(palette = "Paired", n = NULL) {
+sn_get_palette <- function(palette = "Paired",
+                           n = NULL,
+                           palette_type = c("auto", "discrete", "continuous"),
+                           direction = 1) {
+  palette_type <- match.arg(palette_type)
+  stopifnot(direction %in% c(-1, 1))
+
+  if (identical(palette_type, "auto")) {
+    palette_type <- "discrete"
+  }
+
   if (is.null(n)) {
     if (length(palette) > 1L) {
       n <- length(palette)
+    } else if (identical(palette_type, "continuous")) {
+      n <- 256L
     } else if (length(palette) == 1L && palette %in% names(palette_db)) {
       n <- length(palette_db[[palette]])
     } else if (length(palette) == 1L && palette %in% row.names(RColorBrewer::brewer.pal.info)) {
@@ -923,6 +996,10 @@ sn_get_palette <- function(palette = "Paired", n = NULL) {
         call. = FALSE
       )
     }
+  }
+
+  if (identical(palette_type, "continuous")) {
+    return(.sn_resolve_continuous_palette(palette = palette, n = n, direction = direction))
   }
 
   .sn_resolve_discrete_palette(palette = palette, n = n)
