@@ -311,6 +311,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Added `sn_plot_composition()` as a higher-level plotting helper for stacked composition-style bar charts so users no longer need to rebuild the same `ggplot2::geom_col()` pattern for composition, QC status, or similar categorical summaries.
 - Removed a duplicate DE-specific misc-storage helper and now route DE result persistence through the shared `.sn_store_misc_result()` path used by other stored-result workflows.
 - Added `sn_compare_composition()` for the statistically correct replicate-aware composition workflow: compute sample-level proportions first, then estimate group differences, log2 fold changes, and optional Wilcoxon/FDR summaries per category.
+- Standardized discrete palette handling across plotting helpers so string palettes such as `Paired` work consistently for both fill and color scales, including automatic interpolation when the number of categories exceeds the base palette length. The main plot helpers also now share panel-size and axis-label options.
 
 ## Remaining High-Priority Work
 

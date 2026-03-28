@@ -14,7 +14,12 @@ sn_plot_violin(
   show_legend = FALSE,
   angle_x = 0,
   palette = "Paired",
-  aspect_ratio = 0.5
+  aspect_ratio = 0.5,
+  panel_widths = NULL,
+  panel_heights = NULL,
+  x_label = NULL,
+  y_label = NULL,
+  title = NULL
 )
 }
 \arguments{
@@ -37,6 +42,11 @@ sn_plot_violin(
 \item{palette}{The color palette to use. Defaults to \code{"Paired"}.}
 
 \item{aspect_ratio}{The aspect ratio of the plot. Defaults to 0.5.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
+
+\item{x_label, y_label, title}{Optional plot labels.}
 }
 \value{
 A ggplot2 object.

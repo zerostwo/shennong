@@ -1,5 +1,10 @@
 # Internal helper to apply the optional catplot theme when available.
-.sn_add_catplot_theme <- function(p, aspect_ratio = NULL, show_title = NULL) {
+.sn_add_catplot_theme <- function(p,
+                                  aspect_ratio = NULL,
+                                  show_title = NULL,
+                                  panel_widths = NULL,
+                                  panel_heights = NULL,
+                                  x_text_angle = NULL) {
   if (rlang::is_installed("catplot")) {
     args <- list()
     if (!is_null(aspect_ratio)) {
@@ -8,11 +13,61 @@
     if (!is_null(show_title)) {
       args$show_title <- show_title
     }
+    if (!is_null(panel_widths)) {
+      args$panel_widths <- panel_widths
+    }
+    if (!is_null(panel_heights)) {
+      args$panel_heights <- panel_heights
+    }
+    if (!is_null(x_text_angle)) {
+      args$x_text_angle <- x_text_angle
+    }
     cat_theme <- do.call(catplot::theme_cat, args)
     return(p + cat_theme)
   }
 
   p + ggplot2::theme_minimal(base_size = 11)
+}
+
+.sn_resolve_discrete_palette <- function(palette = "Paired", n) {
+  stopifnot(is.numeric(n), length(n) == 1L, n >= 0)
+
+  if (n == 0L) {
+    return(character(0))
+  }
+
+  if (length(palette) > 1L) {
+    values <- unname(palette)
+  } else if (length(palette) == 1L && palette %in% names(palette_db)) {
+    values <- palette_db[[palette]]
+  } else if (length(palette) == 1L && palette %in% row.names(RColorBrewer::brewer.pal.info)) {
+    brewer_max <- RColorBrewer::brewer.pal.info[palette, "maxcolors"]
+    values <- RColorBrewer::brewer.pal(min(max(3, n), brewer_max), palette)
+  } else {
+    stop(
+      "Palette not found. Use `show_all_palettes()` to see available palette names.",
+      call. = FALSE
+    )
+  }
+
+  if (n > length(values)) {
+    values <- grDevices::colorRampPalette(values)(n)
+  } else {
+    values <- values[seq_len(n)]
+  }
+
+  unname(values)
+}
+
+.sn_add_discrete_palette <- function(p, palette = "Paired", n, aesthetic = c("fill", "color")) {
+  aesthetic <- match.arg(aesthetic)
+  values <- .sn_resolve_discrete_palette(palette = palette, n = n)
+
+  if (identical(aesthetic, "fill")) {
+    return(p + ggplot2::scale_fill_manual(values = values))
+  }
+
+  p + ggplot2::scale_color_manual(values = values)
 }
 
 #' Create a boxplot from a data frame
@@ -27,13 +82,37 @@
 #' sn_plot_boxplot(mtcars, x = cyl, y = mpg)
 #'
 #' @export
-sn_plot_boxplot <- function(data, x, y, sort = FALSE) {
-  ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})) +
+sn_plot_boxplot <- function(data,
+                            x,
+                            y,
+                            sort = FALSE,
+                            panel_widths = NULL,
+                            panel_heights = NULL,
+                            x_label = NULL,
+                            y_label = NULL,
+                            title = NULL,
+                            angle_x = 0) {
+  p <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})) +
     ggplot2::geom_boxplot(
       outlier.shape = NA,
       staplewidth = 0.2,
       fatten = 1
     )
+
+  p <- .sn_add_catplot_theme(
+    p,
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights,
+    x_text_angle = angle_x
+  ) +
+    ggplot2::labs(
+      x = x_label %||% rlang::as_name(rlang::ensym(x)),
+      y = y_label %||% rlang::as_name(rlang::ensym(y)),
+      title = title
+    )
+
+  p
 }
 
 #' Create a bar plot from a data frame
@@ -50,12 +129,39 @@ sn_plot_boxplot <- function(data, x, y, sort = FALSE) {
 #' sn_plot_barplot(plot_data, x = group, y = value, fill = type)
 #'
 #' @export
-sn_plot_barplot <- function(data, x, y, fill, sort_by = NULL) {
-  ggplot2::ggplot(
+sn_plot_barplot <- function(data,
+                            x,
+                            y,
+                            fill,
+                            sort_by = NULL,
+                            palette = "Paired",
+                            panel_widths = NULL,
+                            panel_heights = NULL,
+                            x_label = NULL,
+                            y_label = NULL,
+                            title = NULL,
+                            angle_x = 0) {
+  p <- ggplot2::ggplot(
     data = data,
     mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
   ) +
     ggplot2::geom_col()
+
+  n_fill <- length(unique(stats::na.omit(as.character(data[[rlang::as_name(rlang::ensym(fill))]]))))
+  p <- .sn_add_catplot_theme(
+    p,
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights,
+    x_text_angle = angle_x
+  ) +
+    ggplot2::labs(
+      x = x_label %||% rlang::as_name(rlang::ensym(x)),
+      y = y_label %||% rlang::as_name(rlang::ensym(y)),
+      title = title
+    )
+
+  .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "fill")
 }
 
 #' Plot grouped composition-style bar charts
@@ -109,12 +215,14 @@ sn_plot_composition <- function(data,
                                 order_by = NULL,
                                 order_value = NULL,
                                 order_desc = FALSE,
-                                palette = NULL,
+                                palette = "Paired",
                                 angle_x = 45,
                                 show_legend = TRUE,
                                 title = NULL,
                                 x_label = NULL,
-                                y_label = NULL) {
+                                y_label = NULL,
+                                panel_widths = NULL,
+                                panel_heights = NULL) {
   stopifnot(is.data.frame(data))
   position <- match.arg(position)
 
@@ -173,10 +281,12 @@ sn_plot_composition <- function(data,
 
   plot <- .sn_add_catplot_theme(
     plot,
-    show_title = if (is.null(title)) "none" else "y"
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights,
+    x_text_angle = angle_x
   ) +
     ggplot2::theme(
-      axis.text.x = ggplot2::element_text(angle = angle_x, hjust = 1),
       legend.position = if (isTRUE(show_legend)) "right" else "none"
     )
 
@@ -188,11 +298,8 @@ sn_plot_composition <- function(data,
     plot <- plot + ggplot2::facet_grid(rows = row_vars, cols = col_vars)
   }
 
-  if (!is.null(palette)) {
-    plot <- plot + ggplot2::scale_fill_manual(values = palette)
-  }
-
-  plot
+  n_fill <- length(unique(stats::na.omit(as.character(data[[fill_name]]))))
+  .sn_add_discrete_palette(plot, palette = palette, n = n_fill, aesthetic = "fill")
 }
 
 #' Create a dimensionality reduction plot for categorical data
@@ -229,6 +336,8 @@ sn_plot_composition <- function(data,
 #' @param show_border Logical value indicating whether to show the panel and axis borders on the plot. Default is TRUE.
 #' @param title The title for the plot. Default is NULL.
 #' @param palette The color palette to use for the plot. Default is "Paired".
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
 #' @param ... Additional parameters to be passed to the DimPlot() function in Seurat.
 #' @return A ggplot2 object containing the dimensionality reduction plot.
 #'
@@ -279,6 +388,8 @@ sn_plot_dim <- function(
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
+  panel_widths = NULL,
+  panel_heights = NULL,
   ...
 ) {
   p <- Seurat::DimPlot(
@@ -322,7 +433,12 @@ sn_plot_dim <- function(
   y <- ifelse(reduction == "tsne", "tSNE 2",
     paste0(stringr::str_to_upper(reduction), " 2")
   )
-  p <- .sn_add_catplot_theme(p, aspect_ratio = 1) +
+  p <- .sn_add_catplot_theme(
+    p,
+    aspect_ratio = 1,
+    panel_widths = panel_widths,
+    panel_heights = panel_heights
+  ) +
     theme(legend.margin = margin(l = -8)) +
     labs(
       x = x,
@@ -330,7 +446,7 @@ sn_plot_dim <- function(
       title = title
     )
 
-  p <- add_palette(p = p, palette = palette, n = n)
+  p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
 
 
   if (!show_axis) {
@@ -362,6 +478,9 @@ sn_plot_dim <- function(
 #' @param angle_x The angle of the x-axis labels. Defaults to 0.
 #' @param palette The color palette to use. Defaults to \code{"Paired"}.
 #' @param aspect_ratio The aspect ratio of the plot. Defaults to 0.5.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#' @param x_label,y_label,title Optional plot labels.
 #'
 #' @return A ggplot2 object.
 #'
@@ -384,7 +503,12 @@ sn_plot_violin <- function(object,
                            show_legend = FALSE,
                            angle_x = 0,
                            palette = "Paired",
-                           aspect_ratio = 0.5) {
+                           aspect_ratio = 0.5,
+                           panel_widths = NULL,
+                           panel_heights = NULL,
+                           x_label = NULL,
+                           y_label = NULL,
+                           title = NULL) {
   p <- Seurat::VlnPlot(
     object = object,
     features = features,
@@ -399,19 +523,25 @@ sn_plot_violin <- function(object,
   object[["ident"]] <- Seurat::Idents(object = object)
   group_by <- group_by %||% "ident"
   n <- length(table(object[[group_by]]))
-  if (n > 12) {
-    values <- colorRampPalette(brewer.pal(12, palette))(n)
-  } else {
-    values <- brewer.pal(n, palette)
-  }
-  p <- .sn_add_catplot_theme(p, aspect_ratio = aspect_ratio) +
+  p <- .sn_add_catplot_theme(
+    p,
+    aspect_ratio = aspect_ratio,
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights,
+    x_text_angle = angle_x
+  ) +
     theme(
-      axis.title.x = element_blank(),
       legend.margin = margin(l = -8)
     ) +
     ggplot2::scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     guides(x = guide_axis(angle = angle_x)) +
-    scale_fill_manual(values = values)
+    ggplot2::labs(
+      x = x_label %||% NULL,
+      y = y_label %||% NULL,
+      title = title
+    )
+  p <- .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "fill")
   return(p)
 }
 
@@ -495,6 +625,10 @@ sn_plot_violin <- function(object,
 #' @param scale_min The minimum value for the dot size scale. Defaults to NA.
 #' @param scale_max The maximum value for the dot size scale. Defaults to NA.
 #' @param palette The diverging palette used for the color scale.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#' @param title Optional plot title.
+#' @param x_label,y_label Optional axis labels.
 #'
 #' @return A ggplot2 object.
 #'
@@ -524,7 +658,12 @@ sn_plot_dot <- function(x,
                         scale_by = "radius",
                         scale_min = NA,
                         scale_max = NA,
-                        palette = "RdBu") {
+                        palette = "RdBu",
+                        panel_widths = NULL,
+                        panel_heights = NULL,
+                        title = NULL,
+                        x_label = NULL,
+                        y_label = NULL) {
   feature_info <- .sn_resolve_dotplot_features(
     object = x,
     features = features,
@@ -564,15 +703,25 @@ sn_plot_dot <- function(x,
         )
       )
   )
-  p <- .sn_add_catplot_theme(p, aspect_ratio = NULL, show_title = "none") +
+  p <- .sn_add_catplot_theme(
+    p,
+    aspect_ratio = NULL,
+    show_title = "both",
+    panel_widths = panel_widths,
+    panel_heights = panel_heights
+  ) +
     theme(
       axis.text.x = element_text(face = "italic"),
-      axis.title = element_blank(),
       legend.margin = margin(l = -8),
       panel.grid = ggplot2::element_line(
         colour = "lightgrey",
         linewidth = 0.2 / 1.07
       )
+    ) +
+    labs(
+      x = x_label %||% NULL,
+      y = y_label %||% NULL,
+      title = title
     ) +
     scale_color_distiller(palette = palette) +
     scale_y_discrete(limits = rev)
@@ -601,6 +750,9 @@ sn_plot_dot <- function(x,
 #' @param show_border A logical value specifying whether to show the plot border. Defaults to TRUE.
 #' @param palette A character string specifying the color palette to use. Defaults to "YlOrRd".
 #' @param direction A numeric value specifying the direction of the color palette. Defaults to 1.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#' @param x_label,y_label Optional axis labels.
 #' @param ... Additional parameters to pass to FeaturePlot.
 #'
 #' @return A ggplot2 object.
@@ -633,6 +785,10 @@ sn_plot_feature <-
            show_border = TRUE,
            palette = "YlOrRd",
            direction = 1,
+           panel_widths = NULL,
+           panel_heights = NULL,
+           x_label = NULL,
+           y_label = NULL,
            ...) {
     p <- Seurat::FeaturePlot(
       object = object,
@@ -653,11 +809,17 @@ sn_plot_feature <-
     reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
     object[["ident"]] <- Seurat::Idents(object = object)
     title <- title %||% features
-    p <- .sn_add_catplot_theme(p, aspect_ratio = 1) +
+    p <- .sn_add_catplot_theme(
+      p,
+      aspect_ratio = 1,
+      show_title = "both",
+      panel_widths = panel_widths,
+      panel_heights = panel_heights
+    ) +
       theme(legend.margin = margin(l = -8)) +
       labs(
-        x = paste0(stringr::str_to_upper(reduction), " 1"),
-        y = paste0(stringr::str_to_upper(reduction), " 2"),
+        x = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
+        y = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),
         title = title
       )
 
@@ -685,26 +847,7 @@ sn_plot_feature <-
 
 
 add_palette <- function(p, palette, n) {
-  if (length(palette) > 1) {
-    values <- palette
-  } else if (length(palette) == 1 &&
-    palette %in% names(palette_db)) {
-    values <- palette_db[[palette]]
-  } else if (length(palette) == 1 &&
-    palette %in% row.names(RColorBrewer::brewer.pal.info)) {
-    values <- brewer.pal(12, palette)
-  } else {
-    stop(
-      "Palette not found, Please check the name of the palette use `show_all_palettes()` to see all available palettes"
-    )
-  }
-
-  if (n > length(values)) {
-    values <- colorRampPalette(values)(n)
-  } else {
-    values <- values[1:n]
-  }
-  p <- p + scale_color_manual(values = values)
+  .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "color")
 }
 
 

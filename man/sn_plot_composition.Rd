@@ -15,12 +15,14 @@ sn_plot_composition(
   order_by = NULL,
   order_value = NULL,
   order_desc = FALSE,
-  palette = NULL,
+  palette = "Paired",
   angle_x = 45,
   show_legend = TRUE,
   title = NULL,
   x_label = NULL,
-  y_label = NULL
+  y_label = NULL,
+  panel_widths = NULL,
+  panel_heights = NULL
 )
 }
 \arguments{

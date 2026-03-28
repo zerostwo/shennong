@@ -4,7 +4,20 @@
 \alias{sn_plot_barplot}
 \title{Create a bar plot from a data frame}
 \usage{
-sn_plot_barplot(data, x, y, fill, sort_by = NULL)
+sn_plot_barplot(
+  data,
+  x,
+  y,
+  fill,
+  sort_by = NULL,
+  palette = "Paired",
+  panel_widths = NULL,
+  panel_heights = NULL,
+  x_label = NULL,
+  y_label = NULL,
+  title = NULL,
+  angle_x = 0
+)
 }
 \arguments{
 \item{data}{A data frame.}

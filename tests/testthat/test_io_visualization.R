@@ -80,6 +80,30 @@ test_that("sn_plot_composition supports default y selection, ordering, and facet
   expect_identical(levels(plot$data$cell_type), c("B", "cDC1", "Mono"))
 })
 
+test_that("sn_plot_composition resolves named palettes and keeps axis labels", {
+  data <- expand.grid(
+    Mutation = c("WT", "PPP2R1A"),
+    cell_type_level1 = paste0("type", seq_len(11)),
+    stringsAsFactors = FALSE
+  )
+  data$proportion <- seq_len(nrow(data))
+
+  plot <- sn_plot_composition(
+    data,
+    x = Mutation,
+    y = proportion,
+    fill = cell_type_level1,
+    y_label = "Proportion (%)",
+    palette = "Paired",
+    panel_widths = 160,
+    panel_heights = 80
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_identical(plot$labels$y, "Proportion (%)")
+  expect_true(length(plot$scales$scales) >= 2)
+})
+
 test_that("Seurat plotting helpers return ggplot objects", {
   skip_if_not_installed("Seurat")
 

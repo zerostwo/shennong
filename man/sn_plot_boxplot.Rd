@@ -4,7 +4,18 @@
 \alias{sn_plot_boxplot}
 \title{Create a boxplot from a data frame}
 \usage{
-sn_plot_boxplot(data, x, y, sort = FALSE)
+sn_plot_boxplot(
+  data,
+  x,
+  y,
+  sort = FALSE,
+  panel_widths = NULL,
+  panel_heights = NULL,
+  x_label = NULL,
+  y_label = NULL,
+  title = NULL,
+  angle_x = 0
+)
 }
 \arguments{
 \item{data}{A data frame.}

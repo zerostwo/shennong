@@ -35,6 +35,8 @@ sn_plot_dim(
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
+  panel_widths = NULL,
+  panel_heights = NULL,
   ...
 )
 }
@@ -98,6 +100,9 @@ sn_plot_dim(
 \item{title}{The title for the plot. Default is NULL.}
 
 \item{palette}{The color palette to use for the plot. Default is "Paired".}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
 
 \item{...}{Additional parameters to be passed to the DimPlot() function in Seurat.}
 }

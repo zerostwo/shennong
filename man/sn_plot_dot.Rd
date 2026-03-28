@@ -23,7 +23,12 @@ sn_plot_dot(
   scale_by = "radius",
   scale_min = NA,
   scale_max = NA,
-  palette = "RdBu"
+  palette = "RdBu",
+  panel_widths = NULL,
+  panel_heights = NULL,
+  title = NULL,
+  x_label = NULL,
+  y_label = NULL
 )
 }
 \arguments{
@@ -69,6 +74,13 @@ sn_plot_dot(
 \item{scale_max}{The maximum value for the dot size scale. Defaults to NA.}
 
 \item{palette}{The diverging palette used for the color scale.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
+
+\item{title}{Optional plot title.}
+
+\item{x_label, y_label}{Optional axis labels.}
 }
 \value{
 A ggplot2 object.

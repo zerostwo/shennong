@@ -28,6 +28,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   can return proportions, counts, or both through `measure`, preserves factor
   columns from the source metadata, and can sort a single grouping column by a
   chosen category level such as WT proportion.
+- Visualization helpers now share a common discrete-palette resolver. Named
+  palettes such as `\"Paired\"` expand automatically when more categories are
+  present than the base palette length, and key plotting helpers now expose
+  `panel_widths` / `panel_heights` plus consistent axis-label handling.
 - `sn_find_doublets()` now skips zero-count and low-feature cells before
   running `scDblFinder()` on corrected layers, records corrected-layer results
   with `_corrected` suffixes, and works with the zero-count flags produced by

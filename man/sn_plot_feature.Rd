@@ -23,6 +23,10 @@ sn_plot_feature(
   show_border = TRUE,
   palette = "YlOrRd",
   direction = 1,
+  panel_widths = NULL,
+  panel_heights = NULL,
+  x_label = NULL,
+  y_label = NULL,
   ...
 )
 }
@@ -62,6 +66,11 @@ sn_plot_feature(
 \item{palette}{A character string specifying the color palette to use. Defaults to "YlOrRd".}
 
 \item{direction}{A numeric value specifying the direction of the color palette. Defaults to 1.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
+
+\item{x_label, y_label}{Optional axis labels.}
 
 \item{...}{Additional parameters to pass to FeaturePlot.}
 }
