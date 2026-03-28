@@ -175,8 +175,14 @@ sn_plot_boxplot <- function(data,
 #'
 #' @param data A data frame.
 #' @param x,y Columns mapped to the x- and y-axes.
-#' @param fill Column mapped to the fill aesthetic.
-#' @param sort_by Currently reserved for future sorting support.
+#' @param fill Optional column mapped to the fill aesthetic.
+#' @param sort_by Optional column used to sort the discrete axis.
+#' @param sort_desc Logical; if \code{TRUE}, sort in descending order.
+#' @param palette Discrete palette used when \code{fill} is supplied.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#' @param x_label,y_label,title Optional plot labels.
+#' @param angle_x Rotation angle for x-axis text.
 #'
 #' @return A ggplot object.
 #'
@@ -188,8 +194,9 @@ sn_plot_boxplot <- function(data,
 sn_plot_barplot <- function(data,
                             x,
                             y,
-                            fill,
+                            fill = NULL,
                             sort_by = NULL,
+                            sort_desc = FALSE,
                             palette = "Paired",
                             panel_widths = NULL,
                             panel_heights = NULL,
@@ -197,13 +204,49 @@ sn_plot_barplot <- function(data,
                             y_label = NULL,
                             title = NULL,
                             angle_x = 0) {
-  p <- ggplot2::ggplot(
-    data = data,
-    mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
-  ) +
-    ggplot2::geom_col()
+  x_name <- rlang::as_name(rlang::ensym(x))
+  y_name <- rlang::as_name(rlang::ensym(y))
+  fill_quo <- rlang::enquo(fill)
+  fill_missing <- rlang::quo_is_missing(fill_quo) || rlang::quo_is_null(fill_quo)
+  fill_name <- if (!fill_missing) rlang::as_name(rlang::ensym(fill)) else NULL
 
-  n_fill <- length(unique(stats::na.omit(as.character(data[[rlang::as_name(rlang::ensym(fill))]]))))
+  discrete_col <- NULL
+  if (is.character(data[[x_name]]) || is.factor(data[[x_name]])) {
+    discrete_col <- x_name
+  } else if (is.character(data[[y_name]]) || is.factor(data[[y_name]])) {
+    discrete_col <- y_name
+  }
+
+  if (!is.null(sort_by)) {
+    if (is.null(discrete_col)) {
+      stop("`sort_by` requires either `x` or `y` to be a discrete column.", call. = FALSE)
+    }
+    if (!sort_by %in% colnames(data)) {
+      stop("Column '", sort_by, "' was not found in `data`.", call. = FALSE)
+    }
+    data <- .sn_sort_discrete_levels(
+      data = data,
+      level_col = discrete_col,
+      metric_col = sort_by,
+      decreasing = sort_desc,
+      fallback_levels = if (is.factor(data[[discrete_col]])) levels(data[[discrete_col]]) else unique(as.character(data[[discrete_col]]))
+    )
+  }
+
+  if (fill_missing) {
+    p <- ggplot2::ggplot(
+      data = data,
+      mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})
+    ) +
+      ggplot2::geom_col()
+  } else {
+    p <- ggplot2::ggplot(
+      data = data,
+      mapping = ggplot2::aes(x = {{ x }}, y = {{ y }}, fill = {{ fill }})
+    ) +
+      ggplot2::geom_col()
+  }
+
   p <- .sn_add_catplot_theme(
     p,
     show_title = "both",
@@ -217,6 +260,11 @@ sn_plot_barplot <- function(data,
       title = title
     )
 
+  if (fill_missing) {
+    return(p)
+  }
+
+  n_fill <- length(unique(stats::na.omit(as.character(data[[fill_name]]))))
   .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "fill")
 }
 

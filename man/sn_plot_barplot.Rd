@@ -8,8 +8,9 @@ sn_plot_barplot(
   data,
   x,
   y,
-  fill,
+  fill = NULL,
   sort_by = NULL,
+  sort_desc = FALSE,
   palette = "Paired",
   panel_widths = NULL,
   panel_heights = NULL,
@@ -24,9 +25,20 @@ sn_plot_barplot(
 
 \item{x, y}{Columns mapped to the x- and y-axes.}
 
-\item{fill}{Column mapped to the fill aesthetic.}
+\item{fill}{Optional column mapped to the fill aesthetic.}
 
-\item{sort_by}{Currently reserved for future sorting support.}
+\item{sort_by}{Optional column used to sort the discrete axis.}
+
+\item{sort_desc}{Logical; if \code{TRUE}, sort in descending order.}
+
+\item{palette}{Discrete palette used when \code{fill} is supplied.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
+
+\item{x_label, y_label, title}{Optional plot labels.}
+
+\item{angle_x}{Rotation angle for x-axis text.}
 }
 \value{
 A ggplot object.

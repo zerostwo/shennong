@@ -60,6 +60,24 @@ test_that("plot helpers return ggplot objects", {
   expect_s3_class(sn_plot_barplot(data, x = group, y = value, fill = fill_group), "ggplot")
 })
 
+test_that("sn_plot_barplot sorts the discrete axis and works without fill", {
+  data <- data.frame(
+    cell_type = factor(c("Tcell", "Bcell", "Mono"), levels = c("Mono", "Tcell", "Bcell")),
+    log2_fc = c(1.5, -0.2, 0.7),
+    stringsAsFactors = TRUE
+  )
+
+  plot <- sn_plot_barplot(
+    data,
+    x = log2_fc,
+    y = cell_type,
+    sort_by = "log2_fc"
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_identical(levels(plot$data$cell_type), c("Bcell", "Mono", "Tcell"))
+})
+
 test_that("sn_plot_composition supports default y selection, ordering, and faceting", {
   data <- data.frame(
     cell_type = factor(c("Mono", "Mono", "cDC1", "cDC1", "B", "B"), levels = c("Mono", "cDC1", "B")),
