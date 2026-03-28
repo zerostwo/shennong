@@ -26,8 +26,9 @@ Rscript scripts/check-prepush.R --filter="utils|de_enrich"
 ```
 
 This runs documentation refresh, an optional targeted test pass, the full test
-suite, `R CMD build`, and `R CMD check --no-manual` in one command. Use
-`--help` to see the available `--skip-*` options.
+suite, `R CMD build`, `R CMD check --no-manual`, and pkgdown reference-index
+validation in one command. Use `--help` to see the available `--skip-*`
+options.
 
 ## Documentation
 
@@ -35,6 +36,8 @@ suite, `R CMD build`, and `R CMD check --no-manual` in one command. Use
 - Edit `README.Rmd`, then rebuild `README.md`.
 - Keep vignette chunks safe for package checks. Heavy or networked workflows
   must be guarded.
+- When you add a new exported function, update `_pkgdown.yml` in the same
+  change set so the reference index remains complete.
 
 ## Testing
 

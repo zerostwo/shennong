@@ -93,6 +93,8 @@ reference:
       - sn_calculate_composition
       - sn_compare_composition
       - sn_run_milo
+      - sn_store_milo
+      - sn_get_milo_result
       - sn_deconvolve_bulk
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution
@@ -125,6 +127,7 @@ reference:
       - sn_plot_boxplot
       - sn_plot_barplot
       - sn_plot_composition
+      - sn_plot_milo
       - sn_list_palettes
       - sn_get_palette
       - show_all_palettes

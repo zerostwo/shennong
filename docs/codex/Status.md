@@ -328,3 +328,4 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Standardized `sn_install_shennong()` around `source` / `ref` for non-CRAN installs, while preserving compatibility aliases and rejecting conflicting mixed arguments.
 
 - `sn_calculate_composition()` now treats `min_cells` as a threshold on returned composition categories, while `sn_compare_composition()` keeps `min_cells` as a per-sample filter and annotates effect direction through an ordered `change` factor.
+- Added pkgdown reference-index validation to `scripts/check-prepush.R` and documented that new exported functions must be added to `_pkgdown.yml` in the same change set.

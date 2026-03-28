@@ -221,3 +221,4 @@ Last updated: 2026-03-25
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
 
 - Composition filtering and composition comparison need separate thresholds: `sn_calculate_composition()` should filter returned categories by count, while `sn_compare_composition()` should keep `min_cells` as a sample-level replicate filter and expose a simple ordered direction label derived from `log2_fc`.
+- Any new exported function must update `_pkgdown.yml` in the same change set. Pkgdown reference-index omissions are now a known recurring failure mode, so local pre-push validation should include `pkgdown::build_reference_index()`.

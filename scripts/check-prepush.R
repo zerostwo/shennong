@@ -26,6 +26,7 @@ args <- commandArgs(trailingOnly = TRUE)
       "  --skip-tests           Skip all testthat runs.",
       "  --skip-build           Skip R CMD build.",
       "  --skip-check           Skip R CMD check --no-manual.",
+      "  --skip-pkgdown         Skip pkgdown reference-index validation.",
       "  --help                 Show this message.",
       sep = "\n"
     ),
@@ -43,6 +44,7 @@ skip_document <- .parse_flag("skip-document")
 skip_tests <- .parse_flag("skip-tests")
 skip_build <- .parse_flag("skip-build")
 skip_check <- .parse_flag("skip-check")
+skip_pkgdown <- .parse_flag("skip-pkgdown")
 
 run_step <- function(label, expr) {
   message("==> ", label)
@@ -107,6 +109,15 @@ if (!skip_check) {
       stop("Tarball not found. Run the build step before check.", call. = FALSE)
     }
     run_cmd(c("CMD", "check", "--no-manual", basename(tarball)))
+  })
+}
+
+if (!skip_pkgdown) {
+  run_step("Validating pkgdown reference index", {
+    if (!requireNamespace("pkgdown", quietly = TRUE)) {
+      stop("`pkgdown` must be installed to validate the reference index.", call. = FALSE)
+    }
+    pkgdown::build_reference_index()
   })
 }
 
