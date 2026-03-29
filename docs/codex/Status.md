@@ -107,10 +107,16 @@ Last updated: 2026-03-25
 
 - Fixed the failing `R CMD check` example/doc issues in the interpretation layer by regenerating `man/` from the current roxygen source. `sn_list_results()` examples now normalize before requesting the `data` layer, and the `background` / `output_format` arguments are documented again for the interpretation-writing wrappers.
 - Reworked the packaged project-template scaffold so empty analysis directories are created from an explicit `inst/codex/project-template/directories.txt` manifest instead of hidden `.gitkeep` files. This removes the package hidden-file NOTE while preserving initialized-project directory creation.
-- Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_codex_project()` now scaffolds user projects from the packaged template assets.
+- Refactored the Codex architecture into a clean package-vs-project split. The package root remains an R package, shipped initialized-project governance now lives under `inst/codex/project-template/`, shipped package-usage skills now live under `inst/codex/package-skills/`, and `sn_initialize_project()` now scaffolds user projects from the packaged template assets.
 - Expanded the test suite around Seurat object state, stored-result contracts, IO dispatch, packaged project scaffolding, and metrics/clustering integrations. Local `covr::package_coverage()` now reaches 70.30%, up from the high-60s baseline during this task.
 - Replaced the runtime `SignatuR` dependency with a bundled `shennong_signature_catalog` dataset stored under `data/` and rebuilt directly from the upstream `SignatuR` dataset during development. Signature retrieval is now package-stable, tree-structured, and no longer depends on opaque `sysdata` storage.
 - Added signature-management interfaces for package maintenance: `sn_list_signatures()`, `sn_add_signature()`, `sn_update_signature()`, and `sn_delete_signature()`. They now operate on the packaged snapshot and `data-raw/build_shennong_signatures.R` rebuilds that snapshot directly from `SignatuR`.
+
+## 2026-03-28
+
+- Consolidated project initialization around `sn_initialize_project()` as the
+  only public entry point.
+- Expanded the shipped project scaffold so initialized analysis repositories now include a generated project `.Rproj` file and a repository `.gitignore` in addition to the existing governance and analysis directories.
 
 ## 2026-03-19
 

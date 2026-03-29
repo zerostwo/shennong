@@ -27,7 +27,8 @@ README, memory, and config files.}
 governance template. Defaults to \code{TRUE}.}
 
 \item{overwrite}{Whether to replace existing managed files copied from the
-template. Defaults to \code{FALSE}.}
+template. Defaults to \code{FALSE}. Managed files include the generated
+project \code{.gitignore} and \code{.Rproj} file.}
 }
 \value{
 Invisibly returns a named list containing the initialized project
@@ -50,5 +51,6 @@ created <- sn_initialize_project(
   overwrite = TRUE
 )
 file.exists(created$readme)
-file.exists(created$agents_md)
+file.exists(created$gitignore)
+file.exists(created$rproj)
 }

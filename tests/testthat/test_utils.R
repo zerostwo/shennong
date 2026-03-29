@@ -19,7 +19,11 @@ make_split_layer_object <- function() {
   object2 <- make_utils_test_object(seed = 12, prefix = "splitb", n_genes = 8, n_cells = 4)
   object2 <- object2[c(1:6, 8), ]
 
-  merge(x = object1, y = object2, add.cell.ids = c("splita", "splitb"))
+  getFromNamespace("merge.Seurat", ns = "SeuratObject")(
+    x = object1,
+    y = object2,
+    add.cell.ids = c("splita", "splitb")
+  )
 }
 
 test_that("sn_check_file reports missing files without stopping when requested", {

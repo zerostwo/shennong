@@ -1,0 +1,20 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+
+# Local credentials and machine-specific overrides
+.Renviron
+.env
+.env.*
+config/local.yaml
+
+# Local package/build artifacts
+*.tar.gz
+*.Rcheck/
+
+# Large or transient analysis state
+data/raw/
+data/processed/
+runs/

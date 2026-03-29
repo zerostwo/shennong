@@ -253,6 +253,10 @@ test_that("palette helpers list and resolve palettes", {
   expect_length(paired, 14)
   expect_true(all(nzchar(paired)))
 
+  paired_native <- sn_get_palette("Paired", n = 12)
+  expect_identical(toupper(paired_native[[11]]), "#ECD577")
+  expect_false("#FFFF99" %in% toupper(paired_native))
+
   rd_bu <- sn_get_palette("RdBu", palette_type = "continuous", n = 32, direction = -1)
   expect_length(rd_bu, 32)
   expect_true(all(nzchar(rd_bu)))

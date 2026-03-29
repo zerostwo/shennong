@@ -264,17 +264,19 @@ High-level helpers such as `sn_write_results()` can return prompts directly.
 
 For longer-running projects, it helps to initialize a governed analysis
 repository rather than improvising the folder structure. The packaged project
-template used by `sn_initialize_codex_project()` creates `AGENTS.md`,
-`memory/`, `docs/standards/`, `skills/`, `config/`, `data/`, `scripts/`,
-`notebooks/`, `runs/`, and `results/`.
+template used by `sn_initialize_project(with_agent = TRUE)` creates
+`AGENTS.md`, `.gitignore`, a project `.Rproj`, `memory/`,
+`docs/standards/`, `skills/`, `config/`, `data/`, `scripts/`, `notebooks/`,
+`runs/`, and `results/`.
 
 ```{r}
 codex_project <- file.path(tempdir(), "shennong-codex-project")
 
-created <- sn_initialize_codex_project(
+created <- sn_initialize_project(
   path = codex_project,
   project_name = "PBMC interpretation pilot",
   objective = "Build a reproducible PBMC interpretation workflow with Shennong.",
+  with_agent = TRUE,
   overwrite = TRUE
 )
 

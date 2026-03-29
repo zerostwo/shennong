@@ -25,15 +25,21 @@ make_de_test_object <- function() {
   counts[rownames(counts) %in% "LYZ", cell_type == "Bcell"] <-
     counts[rownames(counts) %in% "LYZ", cell_type == "Bcell"] + 4
 
-  object <- sn_initialize_seurat_object(
-    x = Matrix::Matrix(counts, sparse = TRUE),
-    species = "human",
+  object <- SeuratObject::CreateSeuratObject(
+    counts = Matrix::Matrix(counts, sparse = TRUE),
     project = "de-test"
   )
-  object$sample <- sample
-  object$condition <- condition
-  object$cell_type <- cell_type
-  Seurat::Idents(object) <- object$cell_type
+  Seurat::Misc(object = object, slot = "species") <- "human"
+  object <- Seurat::AddMetaData(
+    object = object,
+    metadata = data.frame(
+      sample = sample,
+      condition = condition,
+      cell_type = cell_type,
+      row.names = colnames(object)
+    )
+  )
+  object <- Seurat::SetIdent(object = object, value = "cell_type")
   object <- Seurat::NormalizeData(object, verbose = FALSE)
   object
 }

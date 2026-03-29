@@ -15,6 +15,8 @@ runs, promoted derived data, and exported results.
 ## Key Governance Files
 
 - `AGENTS.md`
+- `.gitignore`
+- `{{rproj_file}}`
 - `docs/standards/BioinformaticsAnalysisConventions.md`
 - `memory/Decisions.md`
 - `memory/Plan.md`
@@ -38,5 +40,6 @@ runs, promoted derived data, and exported results.
 ## Notes
 
 - Put durable tool and reference locations in `config/default.yaml`.
+- Open `{{rproj_file}}` in RStudio if you want a project-local IDE session.
 - Update project memory after meaningful work.
 - Use project skills in `skills/` for repeatable governance actions.

@@ -52,20 +52,19 @@ test_that("sn_load_data downloads missing files into the cache and returns the p
   dir.create(save_dir)
 
   downloaded <- NULL
-  local_mocked_bindings(
+  path <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "pbmc3k",
+      matrix_type = "filtered",
+      save_dir = save_dir,
+      return_object = FALSE
+    ),
     .sn_download_example_file = function(url, destfile) {
       downloaded <<- list(url = url, destfile = destfile)
       file.create(destfile)
       invisible(destfile)
     },
-    .env = asNamespace("Shennong")
-  )
-
-  path <- sn_load_data(
-    dataset = "pbmc3k",
-    matrix_type = "filtered",
-    save_dir = save_dir,
-    return_object = FALSE
+    .package = "Shennong"
   )
 
   expect_true(file.exists(path))
@@ -84,7 +83,13 @@ test_that("sn_load_data returns raw matrices through sn_read without Seurat init
   local_h5 <- file.path(save_dir, "pbmc1k_raw_feature_bc_matrix.h5")
   file.create(local_h5)
 
-  local_mocked_bindings(
+  returned <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "pbmc1k",
+      matrix_type = "raw",
+      save_dir = save_dir,
+      return_object = TRUE
+    ),
     sn_read = function(path, ...) {
       expect_equal(path, local_h5)
       counts
@@ -92,14 +97,7 @@ test_that("sn_load_data returns raw matrices through sn_read without Seurat init
     sn_initialize_seurat_object = function(...) {
       stop("filtered initialization should not be used for raw matrices")
     },
-    .env = asNamespace("Shennong")
-  )
-
-  returned <- sn_load_data(
-    dataset = "pbmc1k",
-    matrix_type = "raw",
-    save_dir = save_dir,
-    return_object = TRUE
+    .package = "Shennong"
   )
 
   expect_s4_class(returned, "dgCMatrix")
@@ -119,7 +117,12 @@ test_that("sn_load_data initializes filtered matrices with the resolved species"
 
   captured <- NULL
   sentinel <- list(kind = "seurat-object")
-  local_mocked_bindings(
+  returned <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "pbmc8k",
+      save_dir = save_dir,
+      return_object = TRUE
+    ),
     sn_read = function(path, ...) {
       expect_equal(path, local_h5)
       counts
@@ -128,13 +131,7 @@ test_that("sn_load_data initializes filtered matrices with the resolved species"
       captured <<- list(x = x, species = species)
       sentinel
     },
-    .env = asNamespace("Shennong")
-  )
-
-  returned <- sn_load_data(
-    dataset = "pbmc8k",
-    save_dir = save_dir,
-    return_object = TRUE
+    .package = "Shennong"
   )
 
   expect_identical(returned, sentinel)

@@ -16,7 +16,7 @@
       "                                           |___/ ",
       "",
       "Shennong is ready.",
-      "Try `sn_list_results()`, `sn_list_palettes()`, or `sn_initialize_codex_project()`.",
+      "Try `sn_list_results()`, `sn_list_palettes()`, or `sn_initialize_project()`.",
       sep = "\n"
     )
   )

@@ -35,6 +35,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   columns from the source metadata, filters returned composition categories by
   `min_cells`, and can sort a single grouping column by a chosen category level
   such as WT proportion.
+- `sn_initialize_project()` is now the single project bootstrap entry point. It
+  now also writes a repository `.gitignore` plus a generated project `.Rproj`
+  file into initialized analysis repositories.
+- The built-in `Paired` discrete palette is now overridden by Shennong so its
+  brightest yellow swatch uses `#ECD577` instead of Brewer's `#FFFF99`.
 - Visualization helpers now share a common discrete-palette resolver. Named
   palettes such as `\"Paired\"` expand automatically when more categories are
   present than the base palette length, and key plotting helpers now expose
@@ -113,8 +118,8 @@ Released 2026-03-25.
   `limma` in addition to `DESeq2` and `edgeR`.
 - `sn_find_de()` now supports marker discovery with `COSGR` when the optional
   GitHub package is installed.
-- `sn_initialize_codex_project()` now scaffolds user analysis repositories from
-  the shipped `inst/codex/project-template/` assets, creating a governed
+- `sn_initialize_project()` now scaffolds user analysis repositories from the
+  shipped `inst/codex/project-template/` assets, creating a governed
   project layout with `AGENTS.md`, `memory/`, `docs/standards/`, `skills/`,
   `config/`, `data/`, `scripts/`, `notebooks/`, `runs/`, and `results/`.
 - `sn_initialize_project()` is now a convenience wrapper over the packaged

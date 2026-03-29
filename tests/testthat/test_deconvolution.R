@@ -5,9 +5,18 @@ make_deconvolution_object <- function() {
   counts <- matrix(rpois(30 * 18, lambda = 3), nrow = 30, ncol = 18)
   rownames(counts) <- paste0("gene", seq_len(30))
   colnames(counts) <- paste0("cell", seq_len(18))
-  object <- sn_initialize_seurat_object(counts, project = "deconv")
-  object$cell_type <- rep(c("Tcell", "Bcell", "Mono"), each = 6)
-  object$cell_state <- rep(c("T1", "T2", "B1", "B2", "M1", "M2"), each = 3)
+  object <- SeuratObject::CreateSeuratObject(
+    counts = Matrix::Matrix(counts, sparse = TRUE),
+    project = "deconv"
+  )
+  object <- Seurat::AddMetaData(
+    object = object,
+    metadata = data.frame(
+      cell_type = rep(c("Tcell", "Bcell", "Mono"), each = 6),
+      cell_state = rep(c("T1", "T2", "B1", "B2", "M1", "M2"), each = 3),
+      row.names = colnames(object)
+    )
+  )
   object
 }
 

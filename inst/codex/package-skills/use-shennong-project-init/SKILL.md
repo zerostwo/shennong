@@ -29,8 +29,8 @@ package assets.
 
 ## Rules
 
-- use `sn_initialize_codex_project()` or `sn_initialize_project()` rather than
-  recreating the project structure manually when Shennong is available
+- use `sn_initialize_project()` rather than recreating the project structure
+  manually when Shennong is available
 - distinguish package assets from initialized project files
 - do not confuse package skills with project governance skills
 - once the project is initialized, follow the created `AGENTS.md`,
@@ -41,7 +41,7 @@ package assets.
 1. Confirm that `Shennong` is installed.
 2. Use `sn_get_codex_skill_path(component = "project_template")` if the
    packaged project template path is needed.
-3. Initialize the project with `sn_initialize_codex_project()`.
+3. Initialize the project with `sn_initialize_project(with_agent = TRUE)`.
 4. After initialization, follow the created `AGENTS.md` and `memory/`.
 
 ## Common Mistakes
@@ -55,10 +55,11 @@ package assets.
 ```r
 library(Shennong)
 
-sn_initialize_codex_project(
+sn_initialize_project(
   path = "analysis-project",
   project_name = "PBMC pilot",
   objective = "Build a reproducible PBMC analysis workflow.",
+  with_agent = TRUE,
   overwrite = TRUE
 )
 ```

@@ -23,16 +23,22 @@ make_interpretation_base_object <- function() {
   counts[rownames(counts) %in% c("MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"), bcell_control] <-
     counts[rownames(counts) %in% c("MS4A1", "CD79A", "HLA-DRA", "HLA-DPA1"), bcell_control] + 8
 
-  object <- sn_initialize_seurat_object(
-    x = Matrix::Matrix(counts, sparse = TRUE),
-    species = NULL,
+  object <- SeuratObject::CreateSeuratObject(
+    counts = Matrix::Matrix(counts, sparse = TRUE),
     project = "interpretation-test"
   )
-  object$sample <- sample
-  object$condition <- condition
-  object$cell_type <- cell_type
-  Seurat::Idents(object) <- object$cell_type
-  Seurat::NormalizeData(object, verbose = FALSE)
+  object <- Seurat::AddMetaData(
+    object = object,
+    metadata = data.frame(
+      sample = sample,
+      condition = condition,
+      cell_type = cell_type,
+      row.names = colnames(object)
+    )
+  )
+  object <- Seurat::SetIdent(object = object, value = "cell_type")
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  object
 }
 
 make_interpretation_object <- function() {

@@ -77,6 +77,8 @@ test_that("sn_initialize_project writes the base analysis scaffold without gover
   expect_true(dir.exists(created$results_tables))
   expect_true(dir.exists(created$results_reports))
   expect_true(file.exists(created$readme))
+  expect_true(file.exists(created$gitignore))
+  expect_true(file.exists(created$rproj))
   expect_true(file.exists(created$config_default))
   expect_false("agents_md" %in% names(created))
   expect_false(file.exists(file.path(project_root, "AGENTS.md")))
@@ -84,8 +86,13 @@ test_that("sn_initialize_project writes the base analysis scaffold without gover
   expect_false(dir.exists(file.path(project_root, "skills")))
 
   readme_text <- readLines(created$readme, warn = FALSE)
+  gitignore_text <- readLines(created$gitignore, warn = FALSE)
+  rproj_text <- readLines(created$rproj, warn = FALSE)
   expect_true(any(grepl("Tumor atlas", readme_text, fixed = TRUE)))
+  expect_true(any(grepl(basename(created$rproj), readme_text, fixed = TRUE)))
   expect_true(any(grepl("config/default.yaml", readme_text, fixed = TRUE)))
+  expect_true(any(grepl("^\\.Rproj\\.user/$", gitignore_text)))
+  expect_true(any(grepl("^Version: 1\\.0$", rproj_text)))
 })
 
 test_that("sn_initialize_project writes the agent memory scaffold when enabled", {
@@ -106,6 +113,8 @@ test_that("sn_initialize_project writes the agent memory scaffold when enabled",
   expect_true(file.exists(created$memory_decisions))
   expect_true(file.exists(created$conventions))
   expect_true(file.exists(file.path(created$skills, "update-project-memory", "SKILL.md")))
+  expect_true(file.exists(created$gitignore))
+  expect_true(file.exists(created$rproj))
   expect_true(file.exists(created$config_default))
 
   agents_text <- readLines(created$agents_md, warn = FALSE)
@@ -116,18 +125,6 @@ test_that("sn_initialize_project writes the agent memory scaffold when enabled",
   expect_true(any(grepl("config/default.yaml", agents_text, fixed = TRUE)))
   expect_true(any(grepl("Build a reproducible tumor atlas workflow with Shennong.", prompt_text, fixed = TRUE)))
   expect_true(any(grepl("cellranger_path", config_text, fixed = TRUE)))
-})
-
-test_that("sn_initialize_codex_project scaffolds the full packaged project template", {
-  project_root <- tempfile("codex-project-")
-
-  created <- sn_initialize_codex_project(path = project_root, overwrite = FALSE)
-
-  expect_true(file.exists(created$agents_md))
-  expect_true(file.exists(created$memory_prompt))
-  expect_true(file.exists(file.path(created$skills, "create-analysis-run", "SKILL.md")))
-  expect_true(dir.exists(file.path(project_root, "results", "figures")))
-  expect_true(dir.exists(file.path(project_root, "scripts")))
 })
 
 test_that("project template initialization respects overwrite and governance skip rules", {

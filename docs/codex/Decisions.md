@@ -139,7 +139,8 @@ Last updated: 2026-03-25
 
 - The package root must remain a standard R package repository. Analysis-project governance directories such as `memory/`, `runs/`, `results/`, and raw/processed project data directories belong only in initialized user projects, not in the package root.
 - Initialized-project governance is now shipped under `inst/codex/project-template/`. Package-usage skills are now shipped under `inst/codex/package-skills/`. Maintainership docs remain under `docs/codex/`.
-- `sn_initialize_codex_project()` is the package entry point that materializes the shipped project template into a user project. `sn_initialize_project()` remains as a convenience wrapper.
+- The shipped project template should expose one canonical initializer:
+  `sn_initialize_project()`.
 - Empty directories inside the shipped project template should be created from an explicit manifest (`inst/codex/project-template/directories.txt`), not hidden `.gitkeep` placeholders. This keeps the scaffold maintainable while avoiding hidden-file notes in `R CMD check`.
 - Coverage expansion should prioritize durable, stateful behavior over superficial line hits. For this pass, the preferred targets were Seurat layer/state helpers, stored-result contracts in `object@misc`, packaged project scaffolding, IO dispatch paths, and external-tool integration seams such as CellTypist.
 - Signature retrieval should not depend on an optional upstream package at runtime. Shennong now ships a meaningful `shennong_signature_catalog` dataset under `data/`, rebuilt directly from the upstream `SignatuR` dataset during development, and user-facing docs should describe bundled signature paths rather than `SignatuR` installation requirements.
@@ -204,7 +205,9 @@ Last updated: 2026-03-25
 - pkgdown is part of the delivery surface, not just a derived artifact. After changing user-facing functionality, the site must be rebuilt locally to verify that the rendered reference and articles reflect the new behavior before the task is considered complete.
 - Release notes are also part of the delivery contract. Any user-facing feature change must update `NEWS.md` in the same change set as the code, tests, pkgdown articles, and shipped skill references.
 - Signature retrieval should be runtime-stable. Shennong now ships its own internal signature snapshot generated directly from `SignatuR` during development, and `sn_get_signatures()` reads that bundled data instead of the user's installed `SignatuR` package.
-- End-user projects need a package-level way to bootstrap a governed analysis repository from packaged assets. Shennong now exposes `sn_initialize_codex_project()` for the full project template and retains `sn_initialize_project()` as a wrapper for convenience.
+- End-user projects need a package-level way to bootstrap a governed analysis
+  repository from packaged assets. Shennong exposes
+  `sn_initialize_project()` as that entry point.
 - Package examples must be check-safe even when they exercise credentialed integrations. The `sn_deconvolve_bulk(method = "cibersortx", cibersortx_dry_run = TRUE)` example now passes explicit placeholder credentials so dry-run validation stays local and deterministic.
 - CI should install only the validated optional packages that are actually exercised in that workflow. Generic check and coverage jobs should not attempt to solve rare-cell or deconvolution backends that are only runtime-optional and are guarded by `check_installed()` / `check_installed_github()`.
 - `sn_install_shennong(channel = "github")` should default to a conservative install path (`dependencies = FALSE`, `upgrade = "never"`) so end users can install the package even when some runtime-optional GitHub backends are temporarily unavailable upstream.
@@ -217,6 +220,12 @@ Last updated: 2026-03-25
 - Palette management should be usable both interactively and programmatically. Printing helpers such as `show_all_palettes()` remain for discovery, but scripts should use `sn_list_palettes()` and `sn_get_palette()` as the stable API surface.
 - Discrete and continuous palette resolution should follow one registry and one direction convention. Shennong now treats `sn_get_palette()` as the common palette API and keeps plot helpers thin wrappers around shared palette resolvers instead of mixing manual/discrete and distiller/continuous code paths.
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
+
+## 2026-03-28
+
+- Project scaffolding should present one clear public entry point:
+  `sn_initialize_project()`.
+- Initialized analysis repositories should feel ready for immediate GitHub and RStudio use. The scaffold now includes a generated `<project>.Rproj` file plus a repository `.gitignore` alongside the existing governance template.
 
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
 

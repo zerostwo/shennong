@@ -104,7 +104,8 @@ sn_install_codex_skill <- function(
 #' @param with_agent Logical; if \code{TRUE}, materialize the full Codex-facing
 #'   governance template. Defaults to \code{TRUE}.
 #' @param overwrite Whether to replace existing managed files copied from the
-#'   template. Defaults to \code{FALSE}.
+#'   template. Defaults to \code{FALSE}. Managed files include the generated
+#'   project \code{.gitignore} and \code{.Rproj} file.
 #'
 #' @return Invisibly returns a named list containing the initialized project
 #'   directory plus the main created directory and file paths.
@@ -119,7 +120,8 @@ sn_install_codex_skill <- function(
 #'   overwrite = TRUE
 #' )
 #' file.exists(created$readme)
-#' file.exists(created$agents_md)
+#' file.exists(created$gitignore)
+#' file.exists(created$rproj)
 #' @export
 sn_initialize_project <- function(
   path = ".",
@@ -129,11 +131,12 @@ sn_initialize_project <- function(
   overwrite = FALSE
 ) {
   if (isTRUE(with_agent)) {
-    return(sn_initialize_codex_project(
+    return(.sn_initialize_from_project_template(
       path = path,
       project_name = project_name,
       objective = objective,
-      overwrite = overwrite
+      overwrite = overwrite,
+      include_governance = TRUE
     ))
   }
 
@@ -143,42 +146,6 @@ sn_initialize_project <- function(
     objective = objective,
     overwrite = overwrite,
     include_governance = FALSE
-  )
-}
-
-#' Initialize Codex-style project guidance for a Shennong analysis
-#'
-#' This helper scaffolds a governed analysis project from the packaged
-#' \code{inst/codex/project-template/} assets.
-#'
-#' @inheritParams sn_initialize_project
-#'
-#' @return Invisibly returns the same structure as
-#'   \code{\link{sn_initialize_project}()}.
-#'
-#' @examples
-#' project_dir <- file.path(tempdir(), "codex-analysis-project")
-#' created <- sn_initialize_codex_project(
-#'   path = project_dir,
-#'   project_name = "PBMC pilot study",
-#'   objective = "Build a reproducible Shennong-based PBMC analysis workflow.",
-#'   overwrite = TRUE
-#' )
-#' file.exists(created$agents)
-#' file.exists(created$prompt)
-#' @export
-sn_initialize_codex_project <- function(
-  path = ".",
-  project_name = NULL,
-  objective = "Build a reproducible Shennong-based single-cell analysis workflow for this project.",
-  overwrite = FALSE
-) {
-  .sn_initialize_from_project_template(
-    path = path,
-    project_name = project_name,
-    objective = objective,
-    overwrite = overwrite,
-    include_governance = TRUE
   )
 }
 
@@ -618,6 +585,8 @@ sn_install_shennong <- function(
     "AGENTS.md",
     "README.md",
     "directories.txt",
+    "gitignore.template",
+    "project.Rproj.template",
     file.path("memory", "Decisions.md"),
     file.path("memory", "Plan.md"),
     file.path("memory", "Prompt.md"),
@@ -681,6 +650,22 @@ sn_install_shennong <- function(
   any(vapply(patterns, function(pattern) grepl(pattern, relative_path), logical(1)))
 }
 
+.sn_project_rproj_filename <- function(project_dir) {
+  paste0(basename(project_dir), ".Rproj")
+}
+
+.sn_project_template_destination_path <- function(relative_path, project_dir) {
+  if (identical(relative_path, "gitignore.template")) {
+    return(".gitignore")
+  }
+
+  if (identical(relative_path, "project.Rproj.template")) {
+    return(.sn_project_rproj_filename(project_dir))
+  }
+
+  relative_path
+}
+
 .sn_initialize_from_project_template <- function(
   path = ".",
   project_name = NULL,
@@ -718,13 +703,15 @@ sn_install_shennong <- function(
   context <- list(
     project_name = project_name,
     objective = objective,
-    date = as.character(Sys.Date())
+    date = as.character(Sys.Date()),
+    rproj_file = .sn_project_rproj_filename(project_dir)
   )
   text_files <- .sn_project_template_text_files()
 
   for (relative_path in rel_files) {
     source_path <- file.path(template_dir, relative_path)
-    dest_path <- file.path(project_dir, relative_path)
+    dest_relative_path <- .sn_project_template_destination_path(relative_path, project_dir)
+    dest_path <- file.path(project_dir, dest_relative_path)
     dest_parent <- dirname(dest_path)
     if (!dir.exists(dest_parent)) {
       dir.create(dest_parent, recursive = TRUE, showWarnings = FALSE)
@@ -748,6 +735,8 @@ sn_install_shennong <- function(
   out <- list(
     project_dir = project_dir,
     readme = file.path(project_dir, "README.md"),
+    gitignore = file.path(project_dir, ".gitignore"),
+    rproj = file.path(project_dir, .sn_project_rproj_filename(project_dir)),
     config = file.path(project_dir, "config"),
     config_default = file.path(project_dir, "config", "default.yaml"),
     data = file.path(project_dir, "data"),

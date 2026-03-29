@@ -1211,6 +1211,12 @@ add_palette <- function(p, palette, n) {
 
 palette_db <- vector("list")
 
+palette_db$Paired <- c(
+  "#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C",
+  "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00",
+  "#CAB2D6", "#6A3D9A", "#ECD577", "#B15928"
+)
+
 palette_db$ZhangJian2024 <- c(
   "#efcec9", "#ff8c72", "#23676e",
   "#fd70a9", "#aa96c0", "#4194d0",
