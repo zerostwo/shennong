@@ -10,6 +10,7 @@ sn_plot_boxplot(
   x,
   y,
   sort = FALSE,
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -32,6 +33,12 @@ sn_plot_boxplot(
 - sort:
 
   Currently reserved for future sorting support.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. When used together with `panel_widths` or
+  `panel_heights`, Shennong derives the missing panel dimension
+  automatically.
 
 - panel_widths, panel_heights:
 

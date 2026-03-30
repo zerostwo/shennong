@@ -75,6 +75,7 @@ other grouped category tables produced by Shennong.</p>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  x_label <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  aspect_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -143,6 +144,12 @@ order.</p></dd>
 
 <dt id="arg-x-label-y-label">x_label, y_label<a class="anchor" aria-label="anchor" href="#arg-x-label-y-label"></a></dt>
 <dd><p>Optional axis labels.</p></dd>
+
+
+<dt id="arg-aspect-ratio">aspect_ratio<a class="anchor" aria-label="anchor" href="#arg-aspect-ratio"></a></dt>
+<dd><p>Optional panel aspect ratio. When used together with
+<code>panel_widths</code> or <code>panel_heights</code>, Shennong derives the missing
+panel dimension automatically.</p></dd>
 
 
 <dt id="arg-panel-widths-panel-heights">panel_widths, panel_heights<a class="anchor" aria-label="anchor" href="#arg-panel-widths-panel-heights"></a></dt>

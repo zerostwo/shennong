@@ -62,6 +62,10 @@
 <span>  pt_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  slot <span class="op">=</span> <span class="st">"data"</span>,</span>
 <span>  max_cutoff <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"expression"</span>, <span class="st">"density"</span><span class="op">)</span>,</span>
+<span>  density_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wkde"</span>, <span class="st">"ks"</span><span class="op">)</span>,</span>
+<span>  density_adjust <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  density_style <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"galaxy"</span>, <span class="st">"plain"</span><span class="op">)</span>,</span>
 <span>  raster <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -71,6 +75,10 @@
 <span>  show_border <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"YlOrRd"</span>,</span>
 <span>  direction <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  legend_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text"</span>, <span class="st">"numeric"</span><span class="op">)</span>,</span>
+<span>  keep_scale <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"all"</span>, <span class="st">"feature"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>  collect_legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  aspect_ratio <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  x_label <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -121,6 +129,27 @@ cells.</p></dd>
 <dd><p>A numeric value specifying the maximum expression cutoff. Defaults to NA.</p></dd>
 
 
+<dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
+<dd><p>One of <code>"expression"</code> or <code>"density"</code>. Density mode
+computes a Nebulosa-style weighted feature density over the selected
+embedding and renders it with a galaxy-like theme by default.</p></dd>
+
+
+<dt id="arg-density-method">density_method<a class="anchor" aria-label="anchor" href="#arg-density-method"></a></dt>
+<dd><p>Density estimator used when <code>mode = "density"</code>.
+One of <code>"wkde"</code> or <code>"ks"</code>. Defaults to <code>"wkde"</code>.</p></dd>
+
+
+<dt id="arg-density-adjust">density_adjust<a class="anchor" aria-label="anchor" href="#arg-density-adjust"></a></dt>
+<dd><p>Bandwidth adjustment forwarded to the density
+estimator when <code>mode = "density"</code>. Larger values smooth more.</p></dd>
+
+
+<dt id="arg-density-style">density_style<a class="anchor" aria-label="anchor" href="#arg-density-style"></a></dt>
+<dd><p>One of <code>"galaxy"</code> or <code>"plain"</code>. Defaults to
+<code>"galaxy"</code>.</p></dd>
+
+
 <dt id="arg-raster">raster<a class="anchor" aria-label="anchor" href="#arg-raster"></a></dt>
 <dd><p>A logical value specifying whether to use raster graphics. Defaults to TRUE.</p></dd>
 
@@ -155,6 +184,29 @@ cells.</p></dd>
 
 <dt id="arg-direction">direction<a class="anchor" aria-label="anchor" href="#arg-direction"></a></dt>
 <dd><p>A numeric value specifying the direction of the color palette. Defaults to 1.</p></dd>
+
+
+<dt id="arg-legend-labels">legend_labels<a class="anchor" aria-label="anchor" href="#arg-legend-labels"></a></dt>
+<dd><p>One of <code>"text"</code> to show <code>"Min"</code> /
+<code>"Max"</code> at the colorbar ends or <code>"numeric"</code> to show numeric
+break labels. Defaults to <code>"text"</code>.</p></dd>
+
+
+<dt id="arg-keep-scale">keep_scale<a class="anchor" aria-label="anchor" href="#arg-keep-scale"></a></dt>
+<dd><p>Passed to Seurat's <code>FeaturePlot(keep.scale = ...)</code>.
+Defaults to <code>"all"</code> so multi-feature plots share one comparable
+color scale and can collect a single legend.</p></dd>
+
+
+<dt id="arg-collect-legend">collect_legend<a class="anchor" aria-label="anchor" href="#arg-collect-legend"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, collect a shared legend for
+patchwork multi-feature plots. Defaults to <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-aspect-ratio">aspect_ratio<a class="anchor" aria-label="anchor" href="#arg-aspect-ratio"></a></dt>
+<dd><p>Optional panel aspect ratio. Defaults to <code>1</code>. When
+used together with <code>panel_widths</code> or <code>panel_heights</code>, Shennong
+derives the missing panel dimension automatically.</p></dd>
 
 
 <dt id="arg-panel-widths-panel-heights">panel_widths, panel_heights<a class="anchor" aria-label="anchor" href="#arg-panel-widths-panel-heights"></a></dt>

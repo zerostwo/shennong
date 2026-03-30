@@ -41,6 +41,7 @@ sn_plot_dim(
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
+  aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   ...
@@ -178,6 +179,12 @@ sn_plot_dim(
 - palette:
 
   The color palette to use for the plot. Default is "Paired".
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. Defaults to `1`. When used together with
+  `panel_widths` or `panel_heights`, Shennong derives the missing panel
+  dimension automatically.
 
 - panel_widths, panel_heights:
 

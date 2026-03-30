@@ -103,12 +103,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_de(obj, de_name = "celltype_markers", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-03-30 08:34:37] Initializing Seurat object for project: Shennong.
-#> INFO [2026-03-30 08:34:37] Running QC metrics for human.
-#> INFO [2026-03-30 08:34:37] Seurat object initialization complete.
-#> INFO [2026-03-30 08:34:38] [sn_interpret_de] Starting interpretation workflow.
-#> INFO [2026-03-30 08:34:38] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
-#> INFO [2026-03-30 08:34:38] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.0s).
-#> INFO [2026-03-30 08:34:38] [sn_interpret_de] Prompt prepared (total elapsed 0.0s).
+#> INFO [2026-03-30 22:14:07] Initializing Seurat object for project: Shennong.
+#> INFO [2026-03-30 22:14:07] Running QC metrics for human.
+#> INFO [2026-03-30 22:14:07] Seurat object initialization complete.
+#> INFO [2026-03-30 22:14:07] [sn_interpret_de] Starting interpretation workflow.
+#> INFO [2026-03-30 22:14:07] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
+#> INFO [2026-03-30 22:14:07] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.0s).
+#> INFO [2026-03-30 22:14:07] [sn_interpret_de] Prompt prepared (total elapsed 0.0s).
 #> [1] "de"
 ```

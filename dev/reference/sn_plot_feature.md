@@ -16,6 +16,10 @@ sn_plot_feature(
   pt_size = NULL,
   slot = "data",
   max_cutoff = NA,
+  mode = c("expression", "density"),
+  density_method = c("wkde", "ks"),
+  density_adjust = 1,
+  density_style = c("galaxy", "plain"),
   raster = TRUE,
   seed = 717,
   title = NULL,
@@ -25,6 +29,10 @@ sn_plot_feature(
   show_border = TRUE,
   palette = "YlOrRd",
   direction = 1,
+  legend_labels = c("text", "numeric"),
+  keep_scale = c("all", "feature", "none"),
+  collect_legend = TRUE,
+  aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -78,6 +86,26 @@ sn_plot_feature(
   A numeric value specifying the maximum expression cutoff. Defaults to
   NA.
 
+- mode:
+
+  One of `"expression"` or `"density"`. Density mode computes a
+  Nebulosa-style weighted feature density over the selected embedding
+  and renders it with a galaxy-like theme by default.
+
+- density_method:
+
+  Density estimator used when `mode = "density"`. One of `"wkde"` or
+  `"ks"`. Defaults to `"wkde"`.
+
+- density_adjust:
+
+  Bandwidth adjustment forwarded to the density estimator when
+  `mode = "density"`. Larger values smooth more.
+
+- density_style:
+
+  One of `"galaxy"` or `"plain"`. Defaults to `"galaxy"`.
+
 - raster:
 
   A logical value specifying whether to use raster graphics. Defaults to
@@ -119,6 +147,28 @@ sn_plot_feature(
 
   A numeric value specifying the direction of the color palette.
   Defaults to 1.
+
+- legend_labels:
+
+  One of `"text"` to show `"Min"` / `"Max"` at the colorbar ends or
+  `"numeric"` to show numeric break labels. Defaults to `"text"`.
+
+- keep_scale:
+
+  Passed to Seurat's `FeaturePlot(keep.scale = ...)`. Defaults to
+  `"all"` so multi-feature plots share one comparable color scale and
+  can collect a single legend.
+
+- collect_legend:
+
+  Logical; when `TRUE`, collect a shared legend for patchwork
+  multi-feature plots. Defaults to `TRUE`.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. Defaults to `1`. When used together with
+  `panel_widths` or `panel_heights`, Shennong derives the missing panel
+  dimension automatically.
 
 - panel_widths, panel_heights:
 

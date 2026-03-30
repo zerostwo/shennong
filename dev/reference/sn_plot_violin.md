@@ -66,7 +66,9 @@ sn_plot_violin(
 
 - aspect_ratio:
 
-  The aspect ratio of the plot. Defaults to 0.5.
+  The aspect ratio of the plot. Defaults to 0.5. When used together with
+  `panel_widths` or `panel_heights`, Shennong derives the missing panel
+  dimension automatically.
 
 - panel_widths, panel_heights:
 

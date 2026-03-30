@@ -75,6 +75,7 @@
 <span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>,</span>
 <span>  zscore_legend_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text"</span>, <span class="st">"numeric"</span><span class="op">)</span>,</span>
 <span>  legend_position <span class="op">=</span> <span class="st">"right"</span>,</span>
+<span>  aspect_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -185,6 +186,12 @@ numeric values.</p></dd>
 <dd><p>Legend position passed to <code>theme()</code>. Defaults to
 <code>"right"</code> and works together with <code><a href="https://rdrr.io/pkg/catplot/man/theme_cat.html" class="external-link">catplot::theme_cat()</a></code> when
 available.</p></dd>
+
+
+<dt id="arg-aspect-ratio">aspect_ratio<a class="anchor" aria-label="anchor" href="#arg-aspect-ratio"></a></dt>
+<dd><p>Optional panel aspect ratio. When used together with
+<code>panel_widths</code> or <code>panel_heights</code>, Shennong derives the missing
+panel dimension automatically.</p></dd>
 
 
 <dt id="arg-panel-widths-panel-heights">panel_widths, panel_heights<a class="anchor" aria-label="anchor" href="#arg-panel-widths-panel-heights"></a></dt>

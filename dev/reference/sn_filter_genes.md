@@ -100,5 +100,5 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     gene_class = "coding"
   )
 }
-#> WARN [2026-03-30 08:34:32] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped.
+#> WARN [2026-03-30 22:14:01] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped.
 ```

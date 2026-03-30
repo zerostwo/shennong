@@ -20,6 +20,7 @@ sn_plot_barplot(
   jitter_width = 0.15,
   jitter_height = 0.05,
   palette = "Paired",
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -82,6 +83,12 @@ sn_plot_barplot(
 - palette:
 
   Discrete palette used when `fill` is supplied.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. When used together with `panel_widths` or
+  `panel_heights`, Shennong derives the missing panel dimension
+  automatically.
 
 - panel_widths, panel_heights:
 

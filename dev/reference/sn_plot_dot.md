@@ -29,6 +29,7 @@ sn_plot_dot(
   direction = -1,
   zscore_legend_labels = c("text", "numeric"),
   legend_position = "right",
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   title = NULL,
@@ -139,6 +140,12 @@ sn_plot_dot(
   together with
   [`catplot::theme_cat()`](https://rdrr.io/pkg/catplot/man/theme_cat.html)
   when available.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. When used together with `panel_widths` or
+  `panel_heights`, Shennong derives the missing panel dimension
+  automatically.
 
 - panel_widths, panel_heights:
 

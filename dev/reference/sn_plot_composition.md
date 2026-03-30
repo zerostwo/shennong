@@ -24,6 +24,7 @@ sn_plot_composition(
   title = NULL,
   x_label = NULL,
   y_label = NULL,
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL
 )
@@ -89,6 +90,12 @@ sn_plot_composition(
 - x_label, y_label:
 
   Optional axis labels.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. When used together with `panel_widths` or
+  `panel_heights`, Shennong derives the missing panel dimension
+  automatically.
 
 - panel_widths, panel_heights:
 

@@ -42,7 +42,7 @@ head(deps)
 #> 5 CIARA        recommended Suggests    CRAN    NA     FALSE     NA     
 #> 6 COSG         recommended Suggests    GitHub  genec… TRUE      1.0.0  
 subset(deps, !installed & requirement == "recommended")
-#> # A tibble: 13 × 7
+#> # A tibble: 16 × 7
 #>    package      requirement declared_in source remote installed version
 #>    <chr>        <chr>       <chr>       <chr>  <chr>  <lgl>     <chr>  
 #>  1 BPCells      recommended Suggests    GitHub bnprk… FALSE     NA     
@@ -50,12 +50,15 @@ subset(deps, !installed & requirement == "recommended")
 #>  3 BiocManager  recommended Suggests    CRAN   NA     FALSE     NA     
 #>  4 CIARA        recommended Suggests    CRAN   NA     FALSE     NA     
 #>  5 GapClust     recommended Suggests    GitHub fabot… FALSE     NA     
-#>  6 ROGUE        recommended Suggests    GitHub Pauli… FALSE     NA     
-#>  7 SoupX        recommended Suggests    CRAN   NA     FALSE     NA     
-#>  8 ellmer       recommended Suggests    CRAN   NA     FALSE     NA     
-#>  9 glmGamPoi    recommended Suggests    Bioco… NA     FALSE     NA     
-#> 10 miloR        recommended Suggests    Bioco… NA     FALSE     NA     
-#> 11 msigdbr      recommended Suggests    CRAN   NA     FALSE     NA     
-#> 12 org.Mm.eg.db recommended Suggests    Bioco… NA     FALSE     NA     
-#> 13 remotes      recommended Suggests    CRAN   NA     FALSE     NA     
+#>  6 Nebulosa     recommended Suggests    CRAN   NA     FALSE     NA     
+#>  7 ROGUE        recommended Suggests    GitHub Pauli… FALSE     NA     
+#>  8 SoupX        recommended Suggests    CRAN   NA     FALSE     NA     
+#>  9 ellmer       recommended Suggests    CRAN   NA     FALSE     NA     
+#> 10 glmGamPoi    recommended Suggests    Bioco… NA     FALSE     NA     
+#> 11 ks           recommended Suggests    CRAN   NA     FALSE     NA     
+#> 12 miloR        recommended Suggests    Bioco… NA     FALSE     NA     
+#> 13 msigdbr      recommended Suggests    CRAN   NA     FALSE     NA     
+#> 14 org.Mm.eg.db recommended Suggests    Bioco… NA     FALSE     NA     
+#> 15 remotes      recommended Suggests    CRAN   NA     FALSE     NA     
+#> 16 shadowtext   recommended Suggests    CRAN   NA     FALSE     NA     
 ```

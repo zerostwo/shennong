@@ -16,6 +16,7 @@ sn_plot_milo(
   title = NULL,
   x_label = "logFC",
   y_label = expression(-log[10]("FDR")),
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL
 )
@@ -55,6 +56,12 @@ sn_plot_milo(
 - title, x_label, y_label:
 
   Optional plot labels.
+
+- aspect_ratio:
+
+  Optional panel aspect ratio. When used together with `panel_widths` or
+  `panel_heights`, Shennong derives the missing panel dimension
+  automatically.
 
 - panel_widths, panel_heights:
 

@@ -31,6 +31,16 @@ sn_run_llm(
 
   Optional model identifier passed through to the provider.
 
+- structured_type:
+
+  Optional structured-output schema or type object forwarded to
+  providers that support typed responses.
+
+- tools:
+
+  Optional list of tool definitions forwarded to providers that support
+  tool registration or tool calling.
+
 - ...:
 
   Additional arguments passed to `provider`.
