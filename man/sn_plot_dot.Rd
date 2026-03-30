@@ -24,7 +24,9 @@ sn_plot_dot(
   scale_min = NA,
   scale_max = NA,
   palette = "RdBu",
-  direction = 1,
+  direction = -1,
+  zscore_legend_labels = c("text", "numeric"),
+  legend_position = "right",
   panel_widths = NULL,
   panel_heights = NULL,
   title = NULL,
@@ -77,7 +79,17 @@ sn_plot_dot(
 \item{palette}{The palette used for the continuous color scale.}
 
 \item{direction}{Direction for the continuous palette. Use \code{1} for the
-default order and \code{-1} to reverse it.}
+default order and \code{-1} to reverse it. Defaults to \code{-1} for
+\code{sn_plot_dot()} so higher expression is mapped to warmer colors when
+using palettes such as \code{"RdBu"}.}
+
+\item{zscore_legend_labels}{One of \code{"text"} to display \code{"Min"}
+and \code{"Max"} on the Z-score colorbar or \code{"numeric"} to retain
+numeric values.}
+
+\item{legend_position}{Legend position passed to \code{theme()}. Defaults to
+\code{"right"} and works together with \code{catplot::theme_cat()} when
+available.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

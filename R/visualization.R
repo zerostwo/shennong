@@ -1,4 +1,6 @@
 # Internal helper to apply the optional catplot theme when available.
+.sn_ggplot_pt <- 2.845276
+
 .sn_add_catplot_theme <- function(p,
                                   aspect_ratio = NULL,
                                   show_title = NULL,
@@ -29,14 +31,45 @@
   p + ggplot2::theme_minimal(base_size = 11)
 }
 
+.sn_auto_point_size <- function(object,
+                                pt_size = NULL) {
+  if (!is.null(pt_size) && !is.na(pt_size)) {
+    return(pt_size)
+  }
+
+  n_cells <- ncol(object)
+  if (n_cells <= 500) {
+    return(1.2)
+  }
+  if (n_cells <= 2000) {
+    return(0.8)
+  }
+  if (n_cells <= 10000) {
+    return(0.5)
+  }
+  if (n_cells <= 50000) {
+    return(0.25)
+  }
+  0.1
+}
+
 .sn_palette_metadata <- function() {
+  palette_source <- unname(palette_source_db[names(palette_db)])
+  palette_source[is.na(palette_source)] <- "shennong"
+  preview <- vapply(
+    palette_db,
+    FUN = function(values) paste(utils::head(values, 6), collapse = " "),
+    FUN.VALUE = character(1)
+  )
+
   shennong_tbl <- data.frame(
     name = names(palette_db),
-    source = "shennong",
+    source = palette_source,
     palette_type = "custom",
     max_n = vapply(palette_db, length, integer(1)),
     supports_discrete = TRUE,
     supports_continuous = TRUE,
+    preview = unname(preview),
     stringsAsFactors = FALSE
   )
 
@@ -47,10 +80,72 @@
     max_n = RColorBrewer::brewer.pal.info$maxcolors,
     supports_discrete = TRUE,
     supports_continuous = TRUE,
+    preview = vapply(
+      row.names(RColorBrewer::brewer.pal.info),
+      FUN = function(name) paste(RColorBrewer::brewer.pal(RColorBrewer::brewer.pal.info[name, "maxcolors"], name), collapse = " "),
+      FUN.VALUE = character(1)
+    ),
     stringsAsFactors = FALSE
   )
 
   rbind(shennong_tbl, brewer_tbl)
+}
+
+.sn_palette_plot_data <- function(palette_tbl) {
+  if (nrow(palette_tbl) == 0) {
+    return(data.frame())
+  }
+
+  rows <- lapply(seq_len(nrow(palette_tbl)), function(i) {
+    palette_name <- palette_tbl$name[[i]]
+    display_name <- paste0(palette_tbl$name[[i]], "  [", palette_tbl$source[[i]], "]")
+    values <- .sn_resolve_discrete_palette(palette_name, n = palette_tbl$max_n[[i]])
+    data.frame(
+      name = palette_name,
+      display_name = display_name,
+      source = palette_tbl$source[[i]],
+      palette_type = palette_tbl$palette_type[[i]],
+      idx = seq_along(values),
+      color = values,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  out <- do.call(rbind, rows)
+  ordering <- rev(unique(out$display_name))
+  out$display_name <- factor(out$display_name, levels = ordering)
+  out
+}
+
+.sn_plot_palette_catalog <- function(palette_tbl) {
+  plot_data <- .sn_palette_plot_data(palette_tbl)
+  if (nrow(plot_data) == 0) {
+    return(NULL)
+  }
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$idx, y = .data$display_name, fill = .data$color)) +
+    ggplot2::geom_tile(width = 0.95, height = 0.8) +
+    ggplot2::geom_text(
+      data = unique(plot_data[c("display_name", "palette_type")]),
+      mapping = ggplot2::aes(x = 0.35, y = .data$display_name, label = .data$display_name),
+      inherit.aes = FALSE,
+      hjust = 0,
+      size = 3.2
+    ) +
+    ggplot2::facet_grid(.data$palette_type ~ ., scales = "free_y", space = "free_y") +
+    ggplot2::scale_fill_identity() +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.02))) +
+    ggplot2::labs(x = NULL, y = NULL, title = "Shennong Palette Catalog") +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      panel.grid = ggplot2::element_blank(),
+      axis.text = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      strip.text.y = ggplot2::element_text(angle = 0, face = "bold"),
+      plot.title = ggplot2::element_text(face = "bold"),
+      plot.margin = ggplot2::margin(5.5, 18, 5.5, 5.5)
+    ) +
+    ggplot2::coord_cartesian(clip = "off")
 }
 
 .sn_resolve_palette_values <- function(palette = "Paired", n, direction = 1) {
@@ -70,7 +165,7 @@
     values <- RColorBrewer::brewer.pal(min(max(3, n), brewer_max), palette)
   } else {
     stop(
-      "Palette not found. Use `show_all_palettes()` to see available palette names.",
+      "Palette not found. Use `sn_list_palettes()` to see available palette names.",
       call. = FALSE
     )
   }
@@ -166,6 +261,10 @@
 #' @param data A data frame.
 #' @param x,y Columns mapped to the x- and y-axes.
 #' @param sort Currently reserved for future sorting support.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
+#' @param x_label,y_label,title Optional plot labels.
+#' @param angle_x Rotation angle for x-axis text.
 #'
 #' @return A ggplot object.
 #'
@@ -437,6 +536,8 @@ sn_plot_barplot <- function(data,
 #' @param show_legend Logical; if \code{FALSE}, hide the legend.
 #' @param title Optional plot title.
 #' @param x_label,y_label Optional axis labels.
+#' @param panel_widths,panel_heights Optional panel size arguments forwarded to
+#'   \code{catplot::theme_cat()} when available.
 #'
 #' @return A ggplot object.
 #'
@@ -656,7 +757,8 @@ sn_plot_milo <- function(x,
 #' @param dims The dimensions to plot. Default is c(1, 2).
 #' @param cells The cells to plot. Default is NULL.
 #' @param cols The columns to plot. Default is NULL.
-#' @param pt_size The size of the points on the plot. Default is 1.
+#' @param pt_size The size of the points on the plot. When \code{NULL},
+#'   Shennong chooses a value automatically based on the number of cells.
 #' @param reduction The dimensionality reduction method. Default is NULL.
 #' @param group_by The variable to group data by. Default is NULL.
 #' @param split_by The variable to split data by. Default is NULL.
@@ -678,7 +780,7 @@ sn_plot_milo <- function(x,
 #' @param raster Logical value indicating whether to use rasterization for improved performance. Default is TRUE.
 #' @param raster_dpi The DPI to use for rasterization. Default is c(512, 512).
 #' @param show_legend Logical value indicating whether to show the legend on the plot. Default is TRUE.
-#' @param show_axis Logical value indicating whether to show the axis on the plot. Default is TRUE.
+#' @param show_axis Logical value indicating whether to show the axis on the plot. Default is FALSE.
 #' @param show_border Logical value indicating whether to show the panel and axis borders on the plot. Default is TRUE.
 #' @param title The title for the plot. Default is NULL.
 #' @param palette The color palette to use for the plot. Default is "Paired".
@@ -708,7 +810,7 @@ sn_plot_dim <- function(
   dims = c(1, 2),
   cells = NULL,
   cols = NULL,
-  pt_size = 2,
+  pt_size = NULL,
   reduction = NULL,
   group_by = NULL,
   split_by = NULL,
@@ -730,7 +832,7 @@ sn_plot_dim <- function(
   raster = TRUE,
   raster_dpi = c(512, 512),
   show_legend = TRUE,
-  show_axis = TRUE,
+  show_axis = FALSE,
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
@@ -738,6 +840,7 @@ sn_plot_dim <- function(
   panel_heights = NULL,
   ...
 ) {
+  pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
   p <- Seurat::DimPlot(
     object = object,
     dims = dims,
@@ -797,6 +900,7 @@ sn_plot_dim <- function(
 
   if (!show_axis) {
     p <- p + theme(
+      axis.title = element_blank(),
       axis.text = element_blank(),
       axis.ticks = element_blank()
     )
@@ -972,7 +1076,15 @@ sn_plot_violin <- function(object,
 #' @param scale_max The maximum value for the dot size scale. Defaults to NA.
 #' @param palette The palette used for the continuous color scale.
 #' @param direction Direction for the continuous palette. Use \code{1} for the
-#'   default order and \code{-1} to reverse it.
+#'   default order and \code{-1} to reverse it. Defaults to \code{-1} for
+#'   \code{sn_plot_dot()} so higher expression is mapped to warmer colors when
+#'   using palettes such as \code{"RdBu"}.
+#' @param zscore_legend_labels One of \code{"text"} to display \code{"Min"}
+#'   and \code{"Max"} on the Z-score colorbar or \code{"numeric"} to retain
+#'   numeric values.
+#' @param legend_position Legend position passed to \code{theme()}. Defaults to
+#'   \code{"right"} and works together with \code{catplot::theme_cat()} when
+#'   available.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param title Optional plot title.
@@ -1007,12 +1119,15 @@ sn_plot_dot <- function(x,
                         scale_min = NA,
                         scale_max = NA,
                         palette = "RdBu",
-                        direction = 1,
+                        direction = -1,
+                        zscore_legend_labels = c("text", "numeric"),
+                        legend_position = "right",
                         panel_widths = NULL,
                         panel_heights = NULL,
                         title = NULL,
                         x_label = NULL,
                         y_label = NULL) {
+  zscore_legend_labels <- match.arg(zscore_legend_labels)
   feature_info <- .sn_resolve_dotplot_features(
     object = x,
     features = features,
@@ -1022,6 +1137,8 @@ sn_plot_dot <- function(x,
   )
   features <- feature_info$features
   group_by <- group_by %||% feature_info$group_by
+  color_breaks <- if (identical(zscore_legend_labels, "text")) c(col_min, col_max) else ggplot2::waiver()
+  color_labels <- if (identical(zscore_legend_labels, "text")) c("Min", "Max") else ggplot2::waiver()
   p <- suppressMessages(
     Seurat::DotPlot(
       object = x,
@@ -1035,49 +1152,76 @@ sn_plot_dot <- function(x,
       group.by = group_by,
       split.by = split_by,
       cluster.idents = cluster_idents,
-      scale = TRUE,
+      scale = scale,
       scale.by = scale_by,
       scale.min = scale_min,
       scale.max = scale_max
     ) + coord_fixed() +
       guides(
         x = guide_axis(angle = 90),
-        size = guide_legend(title = "Percent (%)"),
+        size = guide_legend(
+          title = "Percent (%)",
+          order = 2,
+          override.aes = list(
+            shape = 21,
+            colour = "black",
+            fill = NA,
+            stroke = 0.4,
+            alpha = 1
+          )
+        ),
         color = guide_colorbar(
           title = "Z score",
+          order = 1,
           frame.colour = "black",
           frame.linewidth = 0.2,
           ticks.colour = "black",
-          ticks.linewidth = 0.2
+          ticks.linewidth = 0.5 / .sn_ggplot_pt
         )
       )
   )
-  p <- .sn_add_catplot_theme(
-    p,
-    aspect_ratio = NULL,
-    show_title = "both",
-    panel_widths = panel_widths,
-    panel_heights = panel_heights
-  ) +
-    theme(
-      axis.text.x = element_text(face = "italic"),
-      legend.margin = margin(l = -8),
-      panel.grid = ggplot2::element_line(
-        colour = "lightgrey",
-        linewidth = 0.2 / 1.07
+  p <- suppressWarnings(
+    .sn_add_catplot_theme(
+      p,
+      aspect_ratio = NULL,
+      show_title = "both",
+      panel_widths = panel_widths,
+      panel_heights = panel_heights
+    ) +
+      theme(
+        axis.text.x = element_text(face = "italic"),
+        legend.margin = margin(l = -8),
+        legend.position = legend_position,
+        panel.grid = ggplot2::element_line(
+          colour = "lightgrey",
+          linewidth = 0.2 / 1.07
+        )
+      ) +
+      labs(
+        x = x_label %||% NULL,
+        y = y_label %||% NULL,
+        color = "Z score",
+        size = "Percent (%)",
+        title = title
+      ) +
+      scale_y_discrete(limits = rev) +
+      ggplot2::scale_color_gradientn(
+        colours = .sn_resolve_continuous_palette(
+          palette = palette,
+          n = 256L,
+          direction = direction
+        ),
+        guide = guide_colorbar(
+          title = "Z score",
+          order = 1,
+          frame.colour = "black",
+          frame.linewidth = 0.2,
+          ticks.colour = "black",
+          ticks.linewidth = 0.5 / .sn_ggplot_pt
+        ),
+        breaks = color_breaks,
+        labels = color_labels
       )
-    ) +
-    labs(
-      x = x_label %||% NULL,
-      y = y_label %||% NULL,
-      title = title
-    ) +
-    scale_y_discrete(limits = rev)
-  p <- .sn_add_continuous_palette(
-    p,
-    palette = palette,
-    direction = direction,
-    aesthetic = "color"
   )
   return(p)
 }
@@ -1092,7 +1236,9 @@ sn_plot_dot <- function(x,
 #' @param label A character vector specifying the labels to use for each cell group. Defaults to label.
 #' @param split_by A character vector specifying the cell groups to split the plot by. Defaults to NULL.
 #' @param label_size A numeric value specifying the size of the labels. Defaults to 8 * 0.36.
-#' @param pt_size A numeric value specifying the size of the points. Defaults to 1.
+#' @param pt_size A numeric value specifying the size of the points. When
+#'   \code{NULL}, Shennong chooses a value automatically based on the number of
+#'   cells.
 #' @param slot A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".
 #' @param max_cutoff A numeric value specifying the maximum expression cutoff. Defaults to NA.
 #' @param raster A logical value specifying whether to use raster graphics. Defaults to TRUE.
@@ -1100,7 +1246,7 @@ sn_plot_dot <- function(x,
 #' @param title A character string specifying the plot title. Defaults to NULL.
 #' @param legend_title A character string specifying the legend title. Defaults to NULL.
 #' @param show_legend A logical value specifying whether to show the legend. Defaults to TRUE.
-#' @param show_axis A logical value specifying whether to show the plot axis. Defaults to TRUE.
+#' @param show_axis A logical value specifying whether to show the plot axis. Defaults to FALSE.
 #' @param show_border A logical value specifying whether to show the plot border. Defaults to TRUE.
 #' @param palette A character string specifying the color palette to use. Defaults to "YlOrRd".
 #' @param direction A numeric value specifying the direction of the color palette. Defaults to 1.
@@ -1127,7 +1273,7 @@ sn_plot_feature <-
            label = label,
            split_by = NULL,
            label_size = 8 * 0.36,
-           pt_size = 1,
+           pt_size = NULL,
            slot = "data",
            max_cutoff = NA,
            raster = TRUE,
@@ -1135,7 +1281,7 @@ sn_plot_feature <-
            title = NULL,
            legend_title = NULL,
            show_legend = TRUE,
-           show_axis = TRUE,
+           show_axis = FALSE,
            show_border = TRUE,
            palette = "YlOrRd",
            direction = 1,
@@ -1144,6 +1290,7 @@ sn_plot_feature <-
            x_label = NULL,
            y_label = NULL,
            ...) {
+    pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
     p <- Seurat::FeaturePlot(
       object = object,
       features = features,
@@ -1190,6 +1337,7 @@ sn_plot_feature <-
     }
     if (!show_axis) {
       p <- p + theme(
+        axis.title = element_blank(),
         axis.text = element_blank(),
         axis.ticks = element_blank()
       )
@@ -1210,6 +1358,7 @@ add_palette <- function(p, palette, n) {
 
 
 palette_db <- vector("list")
+palette_source_db <- c()
 
 palette_db$Paired <- c(
   "#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C",
@@ -1231,21 +1380,63 @@ palette_db$XuPan2024 <- c(
   "#af8e87", "#8ca287", "#f1be94", "#bc966d", "#a5beba", "#de9590", "#a3b8c5"
 )
 
+palette_db$OkabeIto <- c(
+  "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
+  "#D55E00", "#CC79A7", "#999999", "#000000"
+)
+
+palette_source_db[names(palette_db)] <- c("shennong", "shennong", "shennong", "ggokabeito")
+
 
 #' List available color palettes
 #'
 #' Returns the built-in Shennong palettes together with the available
-#' `RColorBrewer` palettes.
+#' `RColorBrewer` palettes. By default it prints a swatch-style plot and
+#' invisibly returns the underlying metadata data frame.
 #'
-#' @return A data frame with palette names, source, palette type, maximum native
-#'   size, and whether each palette supports discrete and continuous use.
+#' @param display One of \code{"plot"}, \code{"preview"}, \code{"table"}, or
+#'   \code{"none"}. Defaults to \code{"plot"}.
+#' @param source Optional source filter such as \code{"shennong"},
+#'   \code{"ggokabeito"}, or \code{"RColorBrewer"}.
+#' @param palette_type Optional palette-type filter.
+#'
+#' @return Invisibly returns a data frame with palette names, source, palette
+#'   type, maximum native size, preview colors, and whether each palette
+#'   supports discrete and continuous use.
 #'
 #' @examples
 #' sn_list_palettes()
+#' sn_list_palettes(source = "ggokabeito", display = "table")
 #'
 #' @export
-sn_list_palettes <- function() {
-  .sn_palette_metadata()
+sn_list_palettes <- function(display = c("plot", "preview", "table", "none"),
+                             source = NULL,
+                             palette_type = NULL) {
+  display <- match.arg(display)
+  palette_tbl <- .sn_palette_metadata()
+
+  if (!is.null(source)) {
+    palette_tbl <- palette_tbl[palette_tbl$source %in% source, , drop = FALSE]
+  }
+  if (!is.null(palette_type)) {
+    palette_tbl <- palette_tbl[palette_tbl$palette_type %in% palette_type, , drop = FALSE]
+  }
+
+  if (identical(display, "plot")) {
+    palette_plot <- .sn_plot_palette_catalog(palette_tbl)
+    if (!is.null(palette_plot)) {
+      print(palette_plot)
+    }
+  } else if (identical(display, "preview")) {
+    print(
+      palette_tbl[, c("name", "source", "palette_type", "max_n", "preview"), drop = FALSE],
+      row.names = FALSE
+    )
+  } else if (identical(display, "table")) {
+    print(palette_tbl, row.names = FALSE)
+  }
+
+  invisible(palette_tbl)
 }
 
 #' Resolve a palette into explicit colors
@@ -1299,27 +1490,6 @@ sn_get_palette <- function(palette = "Paired",
   }
 
   .sn_resolve_discrete_palette(palette = palette, n = n)
-}
-
-#' Print available color palettes
-#'
-#' Prints the built-in Shennong palettes and the names of available
-#' `RColorBrewer` palettes.
-#'
-#' @return Invisibly returns `NULL`.
-#'
-#' @examples
-#' show_all_palettes()
-#'
-#' @export
-show_all_palettes <- function() {
-  palette_tbl <- sn_list_palettes()
-
-  cat("Collection from paper\n")
-  print(palette_tbl$name[palette_tbl$source == "shennong"])
-  cat("RColorBrewer\n")
-  print(palette_tbl$name[palette_tbl$source == "RColorBrewer"])
-  invisible(NULL)
 }
 
 .all_palettes <- c(names(palette_db), row.names(RColorBrewer::brewer.pal.info))

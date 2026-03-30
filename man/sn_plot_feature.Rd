@@ -11,7 +11,7 @@ sn_plot_feature(
   label = label,
   split_by = NULL,
   label_size = 8 * 0.36,
-  pt_size = 1,
+  pt_size = NULL,
   slot = "data",
   max_cutoff = NA,
   raster = TRUE,
@@ -19,7 +19,7 @@ sn_plot_feature(
   title = NULL,
   legend_title = NULL,
   show_legend = TRUE,
-  show_axis = TRUE,
+  show_axis = FALSE,
   show_border = TRUE,
   palette = "YlOrRd",
   direction = 1,
@@ -43,7 +43,9 @@ sn_plot_feature(
 
 \item{label_size}{A numeric value specifying the size of the labels. Defaults to 8 * 0.36.}
 
-\item{pt_size}{A numeric value specifying the size of the points. Defaults to 1.}
+\item{pt_size}{A numeric value specifying the size of the points. When
+\code{NULL}, Shennong chooses a value automatically based on the number of
+cells.}
 
 \item{slot}{A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".}
 
@@ -59,7 +61,7 @@ sn_plot_feature(
 
 \item{show_legend}{A logical value specifying whether to show the legend. Defaults to TRUE.}
 
-\item{show_axis}{A logical value specifying whether to show the plot axis. Defaults to TRUE.}
+\item{show_axis}{A logical value specifying whether to show the plot axis. Defaults to FALSE.}
 
 \item{show_border}{A logical value specifying whether to show the plot border. Defaults to TRUE.}
 

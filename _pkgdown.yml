@@ -45,7 +45,7 @@ reference:
       - shennong_gene_annotations
       - shennong_signature_catalog
       - sn_load_data
-      - sn_list_input_dirs
+      - sn_list_10x_paths
       - sn_read
       - sn_write
       - sn_add_data_from_anndata
@@ -111,6 +111,13 @@ reference:
       - sn_prepare_enrichment_evidence
       - sn_prepare_results_evidence
       - sn_build_prompt
+      - sn_configure_llm_provider
+      - sn_list_llm_providers
+      - sn_get_llm_provider
+      - sn_test_llm_provider
+      - sn_make_openai_provider
+      - sn_make_ellmer_provider
+      - sn_make_sub2api_provider
       - sn_run_llm
       - sn_interpret_annotation
       - sn_interpret_de
@@ -130,14 +137,14 @@ reference:
       - sn_plot_milo
       - sn_list_palettes
       - sn_get_palette
-      - show_all_palettes
   - title: Utilities and Project Setup
     contents:
       - sn_check_version
       - sn_install_shennong
       - sn_check_file
       - sn_get_codex_skill_path
+      - sn_list_dependencies
+      - sn_install_dependencies
       - sn_initialize_project
-      - sn_initialize_codex_project
       - sn_install_codex_skill
       - sn_set_path

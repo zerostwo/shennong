@@ -8,7 +8,10 @@ sn_prepare_annotation_evidence(
   object,
   de_name,
   cluster_col = "seurat_clusters",
-  n_markers = 10
+  n_markers = 10,
+  enrichment_name = NULL,
+  n_terms = 5,
+  include_qc = TRUE
 )
 }
 \arguments{
@@ -19,6 +22,16 @@ sn_prepare_annotation_evidence(
 \item{cluster_col}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of top markers to retain per cluster.}
+
+\item{enrichment_name}{Optional stored enrichment result used to add
+cluster-level functional evidence to the annotation prompt.}
+
+\item{n_terms}{Number of enrichment terms to retain per cluster when
+\code{enrichment_name} is supplied.}
+
+\item{include_qc}{Logical; whether to attach cluster-level QC summaries such
+as mitochondrial burden, failed-QC fractions, and doublet fractions when
+available in metadata.}
 }
 \value{
 A structured list ready for prompt construction.

@@ -189,10 +189,16 @@ test_that("Seurat plotting helpers return ggplot objects", {
     Seurat::RunUMAP(object, dims = 1:5, n.neighbors = 5, verbose = FALSE)
   )
 
-  expect_s3_class(
-    sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1),
-    "ggplot"
-  )
+  feature_plot <- sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1)
+  dim_plot <- sn_plot_dim(object, reduction = "umap", group_by = "group")
+
+  expect_s3_class(feature_plot, "ggplot")
+  expect_s3_class(dim_plot, "ggplot")
+  expect_s3_class(feature_plot$theme$axis.text, "element_blank")
+  expect_s3_class(feature_plot$theme$axis.title, "element_blank")
+  expect_s3_class(dim_plot$theme$axis.text, "element_blank")
+  expect_s3_class(dim_plot$theme$axis.title, "element_blank")
+  expect_gt(Shennong:::.sn_auto_point_size(object, NULL), 0)
   expect_s3_class(
     suppressWarnings(
       sn_plot_violin(object, features = c("CD3D", "LYZ"), group_by = "group")
@@ -220,13 +226,20 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
       n = 2,
       marker_groups = "Tcell",
       palette = "RdBu",
-      direction = -1
+      legend_position = "top",
+      zscore_legend_labels = "text"
     )
   )
+  color_scale <- Filter(function(scale) "colour" %in% scale$aesthetics, plot$scales$scales)[[1]]
 
   expect_equal(feature_info$group_by, "cell_type")
   expect_length(feature_info$features, 2)
   expect_s3_class(plot, "ggplot")
+  expect_equal(plot$theme$legend.position, "top")
+  expect_equal(plot$labels$colour, "Z score")
+  expect_equal(plot$labels$size, "Percent (%)")
+  expect_equal(color_scale$breaks, c(-2.5, 2.5))
+  expect_equal(color_scale$labels, c("Min", "Max"))
   expect_error(
     Shennong:::.sn_resolve_dotplot_features(
       object = object,
@@ -237,17 +250,20 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
   )
 })
 
-test_that("show_all_palettes prints without error", {
-  expect_no_error(show_all_palettes())
-})
-
 test_that("palette helpers list and resolve palettes", {
-  palette_tbl <- sn_list_palettes()
+  expect_no_error(sn_list_palettes())
+  expect_no_error(sn_list_palettes(display = "plot", source = "ggokabeito"))
+  palette_tbl <- sn_list_palettes(display = "none")
 
   expect_s3_class(palette_tbl, "data.frame")
-  expect_true(all(c("name", "source", "max_n") %in% colnames(palette_tbl)))
+  expect_true(all(c("name", "source", "max_n", "preview") %in% colnames(palette_tbl)))
   expect_true("Paired" %in% palette_tbl$name)
   expect_true("ZhangJian2024" %in% palette_tbl$name)
+  expect_true("OkabeIto" %in% palette_tbl$name)
+  expect_equal(
+    palette_tbl$source[match("OkabeIto", palette_tbl$name)],
+    "ggokabeito"
+  )
 
   paired <- sn_get_palette("Paired", n = 14)
   expect_length(paired, 14)
@@ -260,6 +276,10 @@ test_that("palette helpers list and resolve palettes", {
   rd_bu <- sn_get_palette("RdBu", palette_type = "continuous", n = 32, direction = -1)
   expect_length(rd_bu, 32)
   expect_true(all(nzchar(rd_bu)))
+
+  okabe <- sn_get_palette("OkabeIto")
+  expect_identical(okabe[[1]], "#E69F00")
+  expect_identical(okabe[[9]], "#000000")
 
   custom <- sn_get_palette(c("#111111", "#222222", "#333333"))
   expect_identical(custom, c("#111111", "#222222", "#333333"))

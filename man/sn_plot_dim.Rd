@@ -9,7 +9,7 @@ sn_plot_dim(
   dims = c(1, 2),
   cells = NULL,
   cols = NULL,
-  pt_size = 2,
+  pt_size = NULL,
   reduction = NULL,
   group_by = NULL,
   split_by = NULL,
@@ -31,7 +31,7 @@ sn_plot_dim(
   raster = TRUE,
   raster_dpi = c(512, 512),
   show_legend = TRUE,
-  show_axis = TRUE,
+  show_axis = FALSE,
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
@@ -49,7 +49,8 @@ sn_plot_dim(
 
 \item{cols}{The columns to plot. Default is NULL.}
 
-\item{pt_size}{The size of the points on the plot. Default is 1.}
+\item{pt_size}{The size of the points on the plot. When \code{NULL},
+Shennong chooses a value automatically based on the number of cells.}
 
 \item{reduction}{The dimensionality reduction method. Default is NULL.}
 
@@ -93,7 +94,7 @@ sn_plot_dim(
 
 \item{show_legend}{Logical value indicating whether to show the legend on the plot. Default is TRUE.}
 
-\item{show_axis}{Logical value indicating whether to show the axis on the plot. Default is TRUE.}
+\item{show_axis}{Logical value indicating whether to show the axis on the plot. Default is FALSE.}
 
 \item{show_border}{Logical value indicating whether to show the panel and axis borders on the plot. Default is TRUE.}
 

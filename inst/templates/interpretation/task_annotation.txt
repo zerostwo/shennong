@@ -1,5 +1,7 @@
-Interpret cluster-level marker evidence to support cell type annotation.
-For each cluster, identify the most plausible cell type or state.
-Explicitly cite the top markers that support the label and mention conflicting markers when relevant.
-Flag ambiguous clusters and suggest additional markers or orthogonal checks that would improve confidence.
-Return one concise cluster-by-cluster annotation table followed by a short narrative summary.
+Interpret cluster-level evidence to support cell type annotation.
+For each cluster, integrate marker genes, pathway/function evidence, reference predictions, and QC-related caveats when available.
+For each cluster, identify the most plausible cell type or state, plus any strong alternative labels.
+Explicitly cite the top markers and functional terms that support the label and mention conflicting evidence when relevant.
+Assess whether the cluster may reflect contamination, low-quality cells, doublets, proliferating cells, or transitional/intermediate states.
+Use calibrated confidence labels (high, medium, low) and avoid overclaiming when the evidence is mixed.
+Return structured JSON matching the requested schema, followed by a concise narrative summary only if requested.

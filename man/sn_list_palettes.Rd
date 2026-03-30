@@ -4,17 +4,33 @@
 \alias{sn_list_palettes}
 \title{List available color palettes}
 \usage{
-sn_list_palettes()
+sn_list_palettes(
+  display = c("plot", "preview", "table", "none"),
+  source = NULL,
+  palette_type = NULL
+)
+}
+\arguments{
+\item{display}{One of \code{"plot"}, \code{"preview"}, \code{"table"}, or
+\code{"none"}. Defaults to \code{"plot"}.}
+
+\item{source}{Optional source filter such as \code{"shennong"},
+\code{"ggokabeito"}, or \code{"RColorBrewer"}.}
+
+\item{palette_type}{Optional palette-type filter.}
 }
 \value{
-A data frame with palette names, source, palette type, maximum native
-size, and whether each palette supports discrete and continuous use.
+Invisibly returns a data frame with palette names, source, palette
+type, maximum native size, preview colors, and whether each palette
+supports discrete and continuous use.
 }
 \description{
 Returns the built-in Shennong palettes together with the available
-\code{RColorBrewer} palettes.
+\code{RColorBrewer} palettes. By default it prints a swatch-style plot and
+invisibly returns the underlying metadata data frame.
 }
 \examples{
 sn_list_palettes()
+sn_list_palettes(source = "ggokabeito", display = "table")
 
 }

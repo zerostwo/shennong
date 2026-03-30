@@ -50,6 +50,7 @@ Suggests:
     data.table,
     DESeq2,
     edgeR,
+    ellmer,
     GapClust,
     ggrastr,
     glmGamPoi,

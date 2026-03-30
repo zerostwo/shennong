@@ -509,6 +509,58 @@ test_that("sn_remove_ambient_contamination requires raw counts for SoupX", {
   )
 })
 
+test_that("sn_remove_ambient_contamination reuses stored raw paths from initialization metadata", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(100 * 20, lambda = 3), nrow = 100, ncol = 20), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(100))
+  colnames(counts) <- paste0("cell", seq_len(20))
+  raw_counts <- counts + 1
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "stored-raw")
+  raw_dir <- tempfile("raw-feature-")
+  dir.create(raw_dir)
+  Seurat::Misc(object, "input_source") <- list(
+    type = "10x_outs",
+    raw_path = raw_dir
+  )
+
+  captured <- NULL
+  corrected <- with_mocked_bindings(
+    sn_remove_ambient_contamination(
+      x = object,
+      method = "soupx",
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    .sn_resolve_counts_input = function(x, arg = "x") {
+      if (inherits(x, "Seurat")) {
+        return(list(object = x, counts = counts))
+      }
+      if (identical(x, raw_dir)) {
+        return(list(object = NULL, counts = raw_counts))
+      }
+      stop("unexpected input")
+    },
+    .sn_remove_ambient_soupx = function(x_info, raw_info, ...) {
+      captured <<- list(
+        x_counts = x_info$counts,
+        raw_counts = raw_info$counts
+      )
+      list(
+        counts = x_info$counts,
+        metadata = NULL,
+        zero_cells = character(0),
+        removed_cells = character(0)
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_equal(as.matrix(corrected), as.matrix(counts))
+  expect_equal(as.matrix(captured$x_counts), as.matrix(counts))
+  expect_equal(as.matrix(captured$raw_counts), as.matrix(raw_counts))
+})
+
 test_that("sn_remove_ambient_contamination supports decontX on matrices", {
   skip_if_not_installed("celda")
   skip_if_not_installed("SingleCellExperiment")

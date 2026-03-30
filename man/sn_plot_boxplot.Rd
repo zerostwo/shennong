@@ -23,6 +23,13 @@ sn_plot_boxplot(
 \item{x, y}{Columns mapped to the x- and y-axes.}
 
 \item{sort}{Currently reserved for future sorting support.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
+
+\item{x_label, y_label, title}{Optional plot labels.}
+
+\item{angle_x}{Rotation angle for x-axis text.}
 }
 \value{
 A ggplot object.

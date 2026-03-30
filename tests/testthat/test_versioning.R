@@ -179,3 +179,89 @@ test_that("sn_install_shennong rejects conflicting source arguments", {
     "conflicting values"
   )
 })
+
+test_that("sn_list_dependencies reports declared package metadata", {
+  deps <- Shennong::sn_list_dependencies()
+
+  expect_s3_class(deps, "tbl_df")
+  expect_true(all(c(
+    "package", "requirement", "declared_in", "source",
+    "remote", "installed", "version"
+  ) %in% colnames(deps)))
+  expect_true("cluster" %in% deps$package)
+  expect_true("Seurat" %in% deps$package)
+  expect_equal(
+    deps$requirement[deps$package == "cluster"][[1]],
+    "required"
+  )
+  expect_equal(
+    deps$declared_in[deps$package == "Seurat"][[1]],
+    "Suggests"
+  )
+  expect_equal(
+    deps$source[deps$package == "harmony"][[1]],
+    "GitHub"
+  )
+})
+
+test_that("sn_install_dependencies dispatches installs by declared source", {
+  fake_deps <- data.frame(
+    package = c("cli", "scran", "harmony"),
+    requirement = c("required", "recommended", "recommended"),
+    declared_in = c("Imports", "Suggests", "Suggests"),
+    source = c("CRAN", "Bioconductor", "GitHub"),
+    remote = c(NA_character_, NA_character_, "immunogenomics/harmony@harmony2"),
+    installed = c(FALSE, FALSE, FALSE),
+    version = c(NA_character_, NA_character_, NA_character_),
+    stringsAsFactors = FALSE
+  )
+
+  captured <- list(cran = NULL, bioc = NULL, github = NULL)
+  local_mocked_bindings(
+    .sn_dependency_table = function() fake_deps,
+    .sn_install_cran_packages = function(packages, repos = getOption("repos"), ...) {
+      captured$cran <<- packages
+      invisible(packages)
+    },
+    .sn_install_bioc_packages = function(packages, ask = interactive(), update = FALSE, repos = getOption("repos"), ...) {
+      captured$bioc <<- packages
+      invisible(packages)
+    },
+    .sn_install_github_packages = function(remotes, upgrade = FALSE, repos = getOption("repos"), ...) {
+      captured$github <<- remotes
+      invisible(remotes)
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  expect_invisible(
+    Shennong::sn_install_dependencies()
+  )
+
+  expect_equal(captured$cran, "cli")
+  expect_equal(captured$bioc, "scran")
+  expect_equal(captured$github, "immunogenomics/harmony@harmony2")
+})
+
+test_that("sn_install_dependencies validates requested package names", {
+  local_mocked_bindings(
+    .sn_dependency_table = function() {
+      data.frame(
+        package = "cli",
+        requirement = "required",
+        declared_in = "Imports",
+        source = "CRAN",
+        remote = NA_character_,
+        installed = FALSE,
+        version = NA_character_,
+        stringsAsFactors = FALSE
+      )
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  expect_error(
+    Shennong::sn_install_dependencies(packages = "not_real_pkg"),
+    "Unknown package"
+  )
+})

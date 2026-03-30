@@ -252,7 +252,7 @@ test_that("sn_enrich validates object type and GSEA input contracts", {
       database = "GOBP",
       return_object = TRUE
     ),
-    "source_de_name"
+    "no stored DE results"
   )
 
   expect_error(
@@ -527,14 +527,20 @@ test_that("sn_enrich helper utilities normalize labels and resolve inputs consis
 
   object <- make_de_test_object()
   object@misc$de_results <- list(
-    markers = list(table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")))
+    markers = list(
+      table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")),
+      analysis = "markers",
+      created_at = "2026-03-29 00:00:00 UTC"
+    )
   )
 
   resolved <- Shennong:::.sn_enrich_resolve_input(object, source_de_name = "markers")
+  resolved_default <- Shennong:::.sn_enrich_resolve_input(object)
   passthrough <- Shennong:::.sn_enrich_resolve_input(c("CD3D", "MS4A1"))
 
   expect_true(is.data.frame(resolved$input))
   expect_identical(resolved$object, object)
+  expect_equal(resolved_default$source_de_name, "markers")
   expect_equal(passthrough$input, c("CD3D", "MS4A1"))
   expect_null(passthrough$object)
   expect_error(
@@ -550,6 +556,59 @@ test_that("sn_enrich helper utilities normalize labels and resolve inputs consis
     Shennong:::.sn_enrich_output_label("C2:CP:REACTOME"),
     "C2_CP_REACTOME"
   )
+})
+
+test_that("sn_enrich prefers stored default DE results on Seurat objects", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_de_test_object()
+  object@misc$de_results <- list(
+    default = list(
+      table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")),
+      analysis = "markers",
+      created_at = "2026-03-29 00:00:00 UTC"
+    ),
+    older = list(
+      table = data.frame(gene = c("LYZ", "S100A8"), cluster = c("M", "M")),
+      analysis = "markers",
+      created_at = "2026-03-28 00:00:00 UTC"
+    )
+  )
+
+  resolved <- Shennong:::.sn_enrich_resolve_input(object)
+
+  expect_equal(resolved$source_de_name, "default")
+  expect_equal(resolved$input$gene, c("CD3D", "MS4A1"))
+})
+
+test_that("sn_enrich caches msigdbr term tables within a session", {
+  calls <- 0L
+  rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms), envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms)
+
+  first <- with_mocked_bindings(
+    Shennong:::.sn_enrich_get_msigdb_terms("human", "H"),
+    msigdbr = function(...) {
+      calls <<- calls + 1L
+      data.frame(
+        gs_name = "HALLMARK_TNFA_SIGNALING_VIA_NFKB",
+        gs_description = "demo",
+        gene_symbol = c("CD3D", "CD3E"),
+        stringsAsFactors = FALSE
+      )
+    },
+    .package = "msigdbr"
+  )
+  second <- with_mocked_bindings(
+    Shennong:::.sn_enrich_get_msigdb_terms("human", "H"),
+    msigdbr = function(...) {
+      calls <<- calls + 1L
+      stop("cache miss")
+    },
+    .package = "msigdbr"
+  )
+
+  expect_equal(calls, 1L)
+  expect_equal(first, second)
 })
 
 test_that("sn_enrich gene resolvers deduplicate ORA and GSEA inputs meaningfully", {
@@ -582,6 +641,36 @@ test_that("sn_enrich gene resolvers deduplicate ORA and GSEA inputs meaningfully
     ),
     "must be numeric"
   )
+})
+
+test_that("sn_enrich caches symbol-to-ENTREZ mappings within a session", {
+  calls <- 0L
+  rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$symbol_to_entrez), envir = Shennong:::.sn_enrichment_cache_env$symbol_to_entrez)
+
+  first <- with_mocked_bindings(
+    Shennong:::.sn_enrich_symbol_to_entrez(c("CD3E", "CD3D"), "org.Hs.eg.db"),
+    bitr = function(geneID, ...) {
+      calls <<- calls + 1L
+      data.frame(
+        SYMBOL = geneID,
+        ENTREZID = seq_along(geneID),
+        stringsAsFactors = FALSE
+      )
+    },
+    .package = "clusterProfiler"
+  )
+  second <- with_mocked_bindings(
+    Shennong:::.sn_enrich_symbol_to_entrez(c("CD3D", "CD3E"), "org.Hs.eg.db"),
+    bitr = function(...) {
+      calls <<- calls + 1L
+      stop("cache miss")
+    },
+    .package = "clusterProfiler"
+  )
+
+  expect_equal(calls, 1L)
+  expect_equal(first$SYMBOL, c("CD3D", "CD3E"))
+  expect_equal(second$SYMBOL, c("CD3D", "CD3E"))
 })
 
 test_that("sn_enrich p-value filtering handles compareCluster and passthrough objects", {

@@ -183,7 +183,10 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' This function creates a Seurat object from counts (and optional metadata),
 #' then calculates common QC metrics such as mitochondrial and ribosomal gene
 #' percentages when `species` is supplied. Currently supports human and mouse
-#' patterns for these gene sets.
+#' patterns for these gene sets. When `x` points to a 10x Genomics `outs`
+#' directory, the function automatically reads the filtered matrix and stores
+#' discovered source metadata such as the raw matrix path and
+#' `metrics_summary.csv` contents in `Seurat::Misc(object, "input_source")`.
 #'
 #' @param x A matrix, data.frame, sparse matrix, or path to counts data.
 #' @param metadata Optional metadata (data.frame or similar) to add to the Seurat object.
@@ -223,10 +226,24 @@ sn_initialize_seurat_object <- function(
   # -- Logging
   .sn_log_info("Initializing Seurat object for project: {project}.")
 
+  source_info <- NULL
+  inherited_sample_name <- NULL
   if (inherits(x, what = c("Matrix", "matrix", "data.frame", "MatrixDir"))) {
     counts <- x
   } else {
-    counts <- sn_read(path = x)
+    if (is.character(x) && length(x) == 1L) {
+      inherited_sample_name <- names(x)[[1]] %||% NULL
+      if (!is.null(inherited_sample_name) && !nzchar(inherited_sample_name)) {
+        inherited_sample_name <- NULL
+      }
+    }
+    source_info <- .sn_detect_10x_outs_source(x)
+    read_path <- source_info$filtered_path %||% x
+    counts <- sn_read(path = read_path)
+  }
+
+  if (is_null(sample_name)) {
+    sample_name <- inherited_sample_name %||% source_info$sample_name %||% NULL
   }
 
   counts <- .sn_as_sparse_matrix(counts)
@@ -287,6 +304,10 @@ sn_initialize_seurat_object <- function(
     } else {
       .sn_log_warn("Unsupported species for QC metrics; skipping QC calculation.")
     }
+  }
+
+  if (!is_null(source_info)) {
+    Seurat::Misc(object = seurat_obj, slot = "input_source") <- source_info
   }
 
   .sn_log_info("Seurat object initialization complete.")
@@ -1125,6 +1146,99 @@ sn_find_doublets <- function(
   stop(glue("`{arg}` must be a Seurat object, matrix-like object, or path."))
 }
 
+.sn_parse_10x_metrics_summary <- function(path) {
+  if (is_null(path) || !file.exists(path)) {
+    return(NULL)
+  }
+
+  metrics <- utils::read.csv(path, check.names = FALSE, stringsAsFactors = FALSE)
+  if (nrow(metrics) == 0) {
+    return(NULL)
+  }
+  metrics
+}
+
+.sn_locate_10x_outs_paths <- function(path) {
+  if (!is.character(path) || length(path) != 1 || is.na(path) || !dir.exists(path)) {
+    return(NULL)
+  }
+
+  normalized_path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  candidates <- c(
+    normalized_path,
+    file.path(normalized_path, "outs")
+  )
+  candidates <- unique(candidates[dir.exists(candidates)])
+
+  for (candidate in candidates) {
+    filtered_dir <- file.path(candidate, "filtered_feature_bc_matrix")
+    filtered_h5 <- file.path(candidate, "filtered_feature_bc_matrix.h5")
+    raw_dir <- file.path(candidate, "raw_feature_bc_matrix")
+    raw_h5 <- file.path(candidate, "raw_feature_bc_matrix.h5")
+    metrics_csv <- file.path(candidate, "metrics_summary.csv")
+    web_summary <- file.path(candidate, "web_summary.html")
+
+    has_filtered <- dir.exists(filtered_dir) || file.exists(filtered_h5)
+    if (!has_filtered) {
+      next
+    }
+
+    sample_name <- if (identical(basename(candidate), "outs")) {
+      basename(dirname(candidate))
+    } else {
+      basename(candidate)
+    }
+
+    return(list(
+      sample_name = sample_name,
+      outs_path = candidate,
+      filtered_path = if (dir.exists(filtered_dir)) filtered_dir else if (file.exists(filtered_h5)) filtered_h5 else NULL,
+      raw_path = if (dir.exists(raw_dir)) raw_dir else if (file.exists(raw_h5)) raw_h5 else NULL,
+      metrics_path = if (file.exists(metrics_csv)) metrics_csv else NULL,
+      web_summary_path = if (file.exists(web_summary)) web_summary else NULL
+    ))
+  }
+
+  NULL
+}
+
+.sn_detect_10x_outs_source <- function(path) {
+  outs_info <- .sn_locate_10x_outs_paths(path)
+  if (is_null(outs_info)) {
+    return(NULL)
+  }
+
+  metrics <- .sn_parse_10x_metrics_summary(outs_info$metrics_path)
+
+  list(
+    type = "10x_outs",
+    sample_name = outs_info$sample_name %||% NULL,
+    outs_path = outs_info$outs_path,
+    filtered_path = outs_info$filtered_path,
+    raw_path = outs_info$raw_path,
+    metrics_path = outs_info$metrics_path,
+    web_summary_path = outs_info$web_summary_path,
+    metrics = metrics
+  )
+}
+
+.sn_resolve_stored_raw_input <- function(object, method, verbose = FALSE) {
+  if (is_null(object) || !inherits(object, "Seurat")) {
+    return(NULL)
+  }
+
+  source_info <- Seurat::Misc(object, slot = "input_source")
+  raw_path <- source_info$raw_path %||% NULL
+  if (is_null(raw_path) || !file.exists(raw_path)) {
+    return(NULL)
+  }
+
+  .sn_log_info(
+    "No `raw` argument supplied; using the stored raw matrix at '{raw_path}' for `{method}`."
+  )
+  .sn_resolve_counts_input(raw_path, arg = "raw")
+}
+
 .sn_restore_count_shape <- function(original_counts, corrected_counts) {
   if (identical(rownames(original_counts), rownames(corrected_counts)) &&
       identical(colnames(original_counts), colnames(corrected_counts))) {
@@ -1370,11 +1484,14 @@ sn_find_doublets <- function(
 #'
 #' This function provides a unified interface for ambient RNA correction using
 #' either \code{SoupX} or \code{decontX}. The input can be a Seurat object, a
-#' count matrix-like object, or a path that \code{sn_read()} can import.
+#' count matrix-like object, or a path that \code{sn_read()} can import. When a
+#' Seurat object was initialized from a detected 10x `outs` directory, stored
+#' raw matrix metadata is reused automatically if \code{raw = NULL}.
 #'
 #' @param x A Seurat object, count matrix-like object, or path to filtered data.
-#' @param raw Optional raw/background counts. Required for \code{method = "soupx"}.
-#'   If supplied for \code{decontx}, it is used as the background matrix.
+#' @param raw Optional raw/background counts. Required for \code{method = "soupx"}
+#'   unless recoverable from stored initialization metadata. If supplied for
+#'   \code{decontx}, it is used as the background matrix.
 #' @param method One of \code{"decontx"} or \code{"soupx"}.
 #' @param cluster Optional cluster labels. This can be a vector with one value
 #'   per cell, or a metadata column name when \code{x} is a Seurat object. If
@@ -1428,6 +1545,13 @@ sn_remove_ambient_contamination <- function(
   method <- match.arg(method)
   x_info <- .sn_resolve_counts_input(x, arg = "x")
   raw_info <- if (is_null(raw)) NULL else .sn_resolve_counts_input(raw, arg = "raw")
+  if (is_null(raw_info)) {
+    raw_info <- .sn_resolve_stored_raw_input(
+      object = x_info$object,
+      method = method,
+      verbose = verbose
+    )
+  }
 
   out <- switch(
     method,

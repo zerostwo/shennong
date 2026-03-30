@@ -41,45 +41,76 @@ test_that("io helper functions detect urls and infer formats from files and dire
   expect_null(Shennong:::.guess_dir_format(unknown_dir))
 })
 
-test_that("sn_list_input_dirs finds matching input directories", {
+test_that("sn_list_10x_paths finds detected outs and selected 10x assets", {
   root <- tempfile("inputs-")
   dir.create(root)
 
-  tenx_dir <- file.path(root, "sample1")
-  dir.create(tenx_dir)
-  file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
+  outs_dir <- file.path(root, "sample1", "outs")
+  dir.create(file.path(outs_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
+  dir.create(file.path(outs_dir, "raw_feature_bc_matrix"), recursive = TRUE)
+  file.create(file.path(outs_dir, "metrics_summary.csv"))
 
-  nested_root <- file.path(root, "nested")
-  dir.create(nested_root)
-  starsolo_dir <- file.path(nested_root, "sample2")
-  dir.create(starsolo_dir)
-  file.create(file.path(starsolo_dir, c("matrix.mtx", "barcodes.tsv", "features.tsv")))
+  h5_outs_dir <- file.path(root, "sample2", "outs")
+  dir.create(h5_outs_dir, recursive = TRUE)
+  file.create(file.path(h5_outs_dir, "filtered_feature_bc_matrix.h5"))
+  file.create(file.path(h5_outs_dir, "raw_feature_bc_matrix.h5"))
 
-  spatial_dir <- file.path(root, "spatial")
-  dir.create(spatial_dir)
-  file.create(file.path(spatial_dir, "filtered_feature_bc_matrix.h5"))
+  outs_paths <- sn_list_10x_paths(root)
 
   expect_equal(
-    normalizePath(sn_list_input_dirs(root), winslash = "/", mustWork = TRUE),
-    normalizePath(tenx_dir, winslash = "/", mustWork = TRUE)
+    sort(normalizePath(unname(outs_paths), winslash = "/", mustWork = TRUE)),
+    sort(normalizePath(c(outs_dir, h5_outs_dir), winslash = "/", mustWork = TRUE))
+  )
+  expect_equal(sort(names(outs_paths)), c("sample1", "sample2"))
+
+  expect_equal(
+    sort(normalizePath(
+      unname(sn_list_10x_paths(root, path_type = "filtered")),
+      winslash = "/",
+      mustWork = TRUE
+    )),
+    sort(normalizePath(
+      c(
+        file.path(outs_dir, "filtered_feature_bc_matrix"),
+        file.path(h5_outs_dir, "filtered_feature_bc_matrix.h5")
+      ),
+      winslash = "/",
+      mustWork = TRUE
+    ))
   )
 
   expect_equal(
     sort(normalizePath(
-      sn_list_input_dirs(root, format = c("10x", "starsolo")),
+      unname(sn_list_10x_paths(root, path_type = "raw")),
       winslash = "/",
       mustWork = TRUE
     )),
-    sort(normalizePath(c(tenx_dir, starsolo_dir), winslash = "/", mustWork = TRUE))
+    sort(normalizePath(
+      c(
+        file.path(outs_dir, "raw_feature_bc_matrix"),
+        file.path(h5_outs_dir, "raw_feature_bc_matrix.h5")
+      ),
+      winslash = "/",
+      mustWork = TRUE
+    ))
   )
 
   expect_equal(
     sort(normalizePath(
-      sn_list_input_dirs(root, recursive = FALSE, format = c("10x", "10x_spatial")),
+      unname(sn_list_10x_paths(root, recursive = FALSE, include_root = FALSE)),
       winslash = "/",
       mustWork = TRUE
     )),
-    sort(normalizePath(c(spatial_dir, tenx_dir), winslash = "/", mustWork = TRUE))
+    sort(normalizePath(c(outs_dir, h5_outs_dir), winslash = "/", mustWork = TRUE))
+  )
+
+  expect_equal(
+    normalizePath(
+      unname(sn_list_10x_paths(root, path_type = "metrics")),
+      winslash = "/",
+      mustWork = TRUE
+    ),
+    normalizePath(file.path(outs_dir, "metrics_summary.csv"), winslash = "/", mustWork = TRUE)
   )
 })
 

@@ -9,10 +9,17 @@ sn_interpret_annotation(
   de_name,
   cluster_col = "seurat_clusters",
   n_markers = 10,
+  enrichment_name = NULL,
+  n_terms = 5,
+  include_qc = TRUE,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
+  include_json_schema = TRUE,
+  apply_metadata = TRUE,
+  metadata_prefix = "sn_annotation",
+  label_style = c("title", "snake", "asis"),
   return_prompt = FALSE,
   store_name = "default",
   return_object = TRUE,
@@ -28,15 +35,39 @@ sn_interpret_annotation(
 
 \item{n_markers}{Number of top markers per cluster.}
 
+\item{enrichment_name}{Optional stored enrichment result used to add
+cluster-level functional evidence.}
+
+\item{n_terms}{Number of enrichment terms per cluster when
+\code{enrichment_name} is supplied.}
+
+\item{include_qc}{Logical; whether to include cluster-level QC summaries in
+the evidence bundle.}
+
 \item{background}{Optional study-specific background information to provide
 additional interpretation context.}
 
 \item{output_format}{One of \code{"llm"} for a model-ready prompt bundle or
 \code{"human"} for a human-readable summary.}
 
-\item{provider}{Optional model provider function.}
+\item{provider}{Optional model provider function. When left \code{NULL},
+Shennong will try to use the default provider configured under
+\code{~/.shennong}.}
 
 \item{model}{Optional model identifier.}
+
+\item{include_json_schema}{Logical; whether to request structured JSON output
+from the provider. Defaults to \code{TRUE} for annotation workflows.}
+
+\item{apply_metadata}{Logical; if \code{TRUE} and a structured annotation
+response is returned, map the cluster labels back onto each cell in the
+Seurat metadata.}
+
+\item{metadata_prefix}{Prefix used for metadata columns written back to the
+Seurat object when \code{apply_metadata = TRUE}.}
+
+\item{label_style}{Naming style used to normalize returned cell-type labels.
+One of \code{"title"}, \code{"snake"}, or \code{"asis"}.}
 
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}

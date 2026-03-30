@@ -1,3 +1,14 @@
+.sn_enrichment_cache_env <- local({
+  env <- new.env(parent = emptyenv())
+  env$msigdb_terms <- new.env(parent = emptyenv())
+  env$symbol_to_entrez <- new.env(parent = emptyenv())
+  env
+})
+
+.sn_enrich_cache_key <- function(...) {
+  paste(vapply(list(...), as.character, character(1)), collapse = "::")
+}
+
 .sn_enrich_parse_msigdb_database <- function(database,
                                              collection = NULL,
                                              subcollection = NULL) {
@@ -32,6 +43,15 @@
 }
 
 .sn_enrich_get_msigdb_terms <- function(species, collection, subcollection = NULL) {
+  cache_key <- .sn_enrich_cache_key(
+    species,
+    toupper(collection),
+    toupper(subcollection %||% "")
+  )
+  if (exists(cache_key, envir = .sn_enrichment_cache_env$msigdb_terms, inherits = FALSE)) {
+    return(get(cache_key, envir = .sn_enrichment_cache_env$msigdb_terms, inherits = FALSE))
+  }
+
   msig_args <- list(
     species = species,
     collection = collection
@@ -49,13 +69,15 @@
     )
   }
 
-  msigdbr_tbl |>
+  out <- msigdbr_tbl |>
     dplyr::transmute(
       term = .data$gs_name,
       description = .data$gs_description,
       gene = .data$gene_symbol
     ) |>
     dplyr::distinct()
+  assign(cache_key, out, envir = .sn_enrichment_cache_env$msigdb_terms)
+  out
 }
 
 .sn_enrich_normalize_database_labels <- function(database) {
@@ -88,25 +110,55 @@
 .sn_enrich_resolve_input <- function(x,
                                      source_de_name = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(source_de_name) || !nzchar(source_de_name)) {
-      stop(
-        "When `x` is a Seurat object, `source_de_name` must identify the stored DE result to enrich.",
-        call. = FALSE
-      )
-    }
     de_results <- x@misc$de_results %||% list()
+    if (length(de_results) == 0L) {
+      stop("When `x` is a Seurat object, no stored DE results were found in `x@misc$de_results`.", call. = FALSE)
+    }
+
+    if (is_null(source_de_name) || !nzchar(source_de_name)) {
+      available_names <- names(de_results)
+      marker_names <- available_names[vapply(
+        de_results,
+        function(entry) identical(entry$analysis %||% NULL, "markers"),
+        logical(1)
+      )]
+      latest_name <- function(candidates) {
+        if (length(candidates) == 0L) {
+          return(NULL)
+        }
+        created_at <- vapply(
+          candidates,
+          function(candidate) de_results[[candidate]]$created_at %||% "",
+          character(1)
+        )
+        candidates[[order(created_at, decreasing = TRUE, na.last = TRUE)[[1]]]]
+      }
+
+      source_de_name <- if ("default" %in% available_names) {
+        "default"
+      } else if (length(available_names) == 1L) {
+        available_names[[1]]
+      } else {
+        latest_name(marker_names) %||% latest_name(available_names)
+      }
+
+      .sn_log_info("`source_de_name` was not supplied; using stored DE result '{source_de_name}'.")
+    }
+
     if (!source_de_name %in% names(de_results)) {
       stop(glue("Stored DE result '{source_de_name}' was not found in `x@misc$de_results`."), call. = FALSE)
     }
     return(list(
       input = de_results[[source_de_name]]$table,
-      object = x
+      object = x,
+      source_de_name = source_de_name
     ))
   }
 
   list(
     input = x,
-    object = NULL
+    object = NULL,
+    source_de_name = source_de_name
   )
 }
 
@@ -226,6 +278,31 @@
   stats::setNames(as.character(store_name), databases)
 }
 
+.sn_enrich_symbol_to_entrez <- function(genes, org_db) {
+  genes <- unique(as.character(genes))
+  genes <- genes[!is.na(genes) & nzchar(genes)]
+  if (length(genes) == 0) {
+    return(data.frame(SYMBOL = character(0), ENTREZID = character(0), stringsAsFactors = FALSE))
+  }
+
+  cache_key <- .sn_enrich_cache_key(
+    org_db,
+    paste(sort(genes), collapse = "|")
+  )
+  if (exists(cache_key, envir = .sn_enrichment_cache_env$symbol_to_entrez, inherits = FALSE)) {
+    return(get(cache_key, envir = .sn_enrichment_cache_env$symbol_to_entrez, inherits = FALSE))
+  }
+
+  out <- clusterProfiler::bitr(
+    geneID = genes,
+    fromType = "SYMBOL",
+    toType = "ENTREZID",
+    OrgDb = org_db
+  )
+  assign(cache_key, out, envir = .sn_enrichment_cache_env$symbol_to_entrez)
+  out
+}
+
 #' Run gene set enrichment analysis
 #'
 #' Runs GO, KEGG, or MSigDB enrichment using \pkg{clusterProfiler}. It supports
@@ -298,6 +375,7 @@ sn_enrich <- function(
   )
   input <- resolved$input
   object <- resolved$object
+  source_de_name <- resolved$source_de_name %||% source_de_name
 
   species <- species %||% if (!is_null(object)) tryCatch(sn_get_species(object), error = function(...) NULL) else NULL
   species <- species %||% "human"
@@ -391,11 +469,9 @@ sn_enrich <- function(
 
     if (identical(current_database, "KEGG")) {
       if (identical(analysis, "gsea")) {
-        gid <- clusterProfiler::bitr(
-          geneID = names(gene_list),
-          fromType = "SYMBOL",
-          toType = "ENTREZID",
-          OrgDb = org_db
+        gid <- .sn_enrich_symbol_to_entrez(
+          genes = names(gene_list),
+          org_db = org_db
         )
         kegg_gene_list <- gene_list[gid$SYMBOL]
         names(kegg_gene_list) <- gid$ENTREZID
@@ -406,11 +482,9 @@ sn_enrich <- function(
           pvalueCutoff = 1
         )
       } else if (is_null(mapping)) {
-        gid <- clusterProfiler::bitr(
-          geneID = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
-          fromType = "SYMBOL",
-          toType = "ENTREZID",
-          OrgDb = org_db
+        gid <- .sn_enrich_symbol_to_entrez(
+          genes = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
+          org_db = org_db
         )
         result <- clusterProfiler::enrichKEGG(
           gene = gid$ENTREZID,
@@ -420,11 +494,9 @@ sn_enrich <- function(
         )
       } else {
         gene_ids <- unique(as.character(input[[mapping$gene_col]]))
-        gid <- clusterProfiler::bitr(
-          geneID = gene_ids,
-          fromType = "SYMBOL",
-          toType = "ENTREZID",
-          OrgDb = org_db
+        gid <- .sn_enrich_symbol_to_entrez(
+          genes = gene_ids,
+          org_db = org_db
         )
         kegg_input <- dplyr::full_join(
           x = as.data.frame(input),

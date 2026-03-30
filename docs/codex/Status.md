@@ -1,6 +1,48 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-25
+Last updated: 2026-03-29
+
+## 2026-03-29
+
+- Extended `sn_initialize_seurat_object()` so path inputs that point at a
+  typical 10x Genomics `outs/` directory now resolve to the filtered matrix
+  automatically and persist source metadata under
+  `Seurat::Misc(object, "input_source")`, including any discovered raw matrix
+  path and parsed `metrics_summary.csv` content.
+- Extended `sn_remove_ambient_contamination()` so Seurat objects initialized
+  from recognized 10x `outs/` inputs can automatically recover the stored raw
+  matrix path when `raw = NULL`, allowing SoupX or decontX background-aware
+  runs without making the caller repeat the raw path manually.
+- Replaced the generic `sn_list_input_dirs()` helper with the more specific
+  `sn_list_10x_paths()`. It now defaults to returning detected `outs/`
+  directories and can also return filtered/raw matrix locations, H5 files, or
+  `metrics_summary.csv` paths for downstream workflow automation.
+- Added simple in-session caching for repeated `sn_enrich()` support lookups:
+  MSigDB term-table downloads and SYMBOL-to-ENTREZ conversions are now reused
+  across repeated calls instead of recomputed every time.
+- Extended the interpretation layer so `sn_interpret_annotation()` can combine
+  marker evidence with stored cluster-level enrichment summaries and available
+  QC/doublet metadata, request structured JSON annotations, and map parsed
+  cluster labels plus confidence/risk flags back onto Seurat metadata.
+- Added `sn_make_sub2api_provider()` as a small OpenAI-compatible provider
+  wrapper for external chat-completions endpoints such as Sub2API.
+- Added local LLM provider configuration under `~/.shennong`. Shennong now
+  exposes `sn_configure_llm_provider()`, `sn_list_llm_providers()`,
+  `sn_get_llm_provider()`, and `sn_test_llm_provider()` to register reusable
+  endpoints, inspect the active default provider, validate connectivity, and
+  persist request history under `~/.shennong/llm-history/`.
+- Added `sn_make_openai_provider()` for native OpenAI-style `responses` and
+  `chat_completions` APIs plus `sn_make_ellmer_provider()` for an optional
+  `ellmer` transport backend. High-level interpretation helpers now fall back
+  to the configured default provider when no explicit provider function is
+  supplied.
+- Refined workflow automation around 10x inputs and plotting ergonomics.
+  `sn_list_10x_paths()` now returns named vectors keyed by inferred sample
+  names, `sn_initialize_seurat_object()` can inherit `sample_name` from those
+  names when the caller leaves it `NULL`, and `sn_plot_dim()` /
+  `sn_plot_feature()` now share automatic point sizing with axes hidden by
+  default. `sn_plot_dot()` also now exposes more opinionated legend defaults
+  for Z-score and percent guides.
 
 ## 2026-03-25
 
@@ -117,6 +159,9 @@ Last updated: 2026-03-25
 - Consolidated project initialization around `sn_initialize_project()` as the
   only public entry point.
 - Expanded the shipped project scaffold so initialized analysis repositories now include a generated project `.Rproj` file and a repository `.gitignore` in addition to the existing governance and analysis directories.
+- Added dependency-management helpers so users can list Shennong's required and
+  recommended R packages with installation status and install the missing ones
+  in one step across CRAN, Bioconductor, and GitHub sources.
 
 ## 2026-03-19
 

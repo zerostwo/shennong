@@ -7,14 +7,32 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_list_dependencies()` now reports the package's required and recommended
+  R package surface with install status and expected source, and
+  `sn_install_dependencies()` can install missing CRAN, Bioconductor, and
+  GitHub dependencies in one step.
+- `sn_list_10x_paths()` now scans a root directory for 10x Genomics outputs
+  and can return `outs/` directories, filtered matrix paths, raw matrix paths,
+  H5 files, or `metrics_summary.csv` paths. The default now returns `outs/`
+  paths so the result can be passed directly to `sn_initialize_seurat_object()`.
+  Returned vectors are now named with inferred sample identifiers.
+- `sn_make_sub2api_provider()` now creates an OpenAI-compatible provider
+  wrapper for interpretation workflows, suitable for Sub2API-style chat
+  endpoints.
+- Shennong now supports reusable local LLM-provider configuration under
+  `~/.shennong`: `sn_configure_llm_provider()`,
+  `sn_list_llm_providers()`, `sn_get_llm_provider()`, and
+  `sn_test_llm_provider()` can register, inspect, reuse, and validate default
+  model endpoints for interpretation workflows. A new
+  `sn_make_openai_provider()` helper supports both OpenAI-style `responses`
+  and `chat_completions` APIs, and `sn_make_ellmer_provider()` adds an
+  optional `ellmer` backend.
 - `sn_assess_qc()` now summarizes overall and per-sample QC status, reports
   current QC risk signals such as failed-QC fractions, doublet rates, and
   decontamination zero-count rates, and can compare a filtered object against a
   pre-filter reference to quantify low-quality-cell removal, doublet removal,
   and clean-cell retention. Reports can be stored under
   `object@misc$qc_assessments`.
-- `sn_list_input_dirs()` now scans a root directory for recognized single-cell
-  input folders such as 10x, 10x spatial, STARsolo, and BPCells layouts.
 - `sn_plot_composition()` now provides a composition-focused bar plot helper
   for grouped proportions, counts, QC pass/fail summaries, and similar
   categorical tables.
@@ -25,11 +43,29 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   neighborhood-level differential abundance testing between two sample groups
   from a Seurat embedding.
 - `sn_list_palettes()` and `sn_get_palette()` now expose the package palette
-  registry as programmable helpers, while `show_all_palettes()` remains as a
-  print-oriented compatibility wrapper.
+  registry directly, and `sn_list_palettes()` now includes preview-oriented
+  display output plus the `OkabeIto` palette from `ggokabeito`.
 
 ### Changed
 
+- `sn_initialize_seurat_object()` now recognizes typical 10x Genomics `outs/`
+  directories, reads the filtered matrix automatically, and stores discovered
+  source metadata such as `raw_feature_bc_matrix` paths and
+  `metrics_summary.csv` contents in `Seurat::Misc(object, "input_source")`.
+  `sn_remove_ambient_contamination()` now reuses that stored raw path
+  automatically when the selected method can use background droplets and the
+  caller leaves `raw = NULL`. When `sample_name = NULL` and the input path is a
+  named 10x path, the inferred sample identifier is now written into
+  `meta.data$sample` automatically.
+- `sn_enrich()` now reuses in-session caches for repeated MSigDB term-table
+  loads and repeated SYMBOL-to-ENTREZ conversions, which reduces repeated
+  overhead during enrichment-heavy test and analysis sessions.
+- `sn_interpret_annotation()` now supports cluster-level functional evidence
+  through `enrichment_name`, can incorporate cluster QC summaries into the
+  prompt, requests structured annotation JSON by default, stores the parsed
+  cluster annotation table, can map normalized cell-type labels plus
+  confidence/risk fields back onto Seurat metadata, and now falls back to the
+  locally configured default provider when `provider = NULL`.
 - `sn_calculate_composition()` now supports multi-column `group_by` values,
   can return proportions, counts, or both through `measure`, preserves factor
   columns from the source metadata, filters returned composition categories by
@@ -44,6 +80,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   palettes such as `\"Paired\"` expand automatically when more categories are
   present than the base palette length, and key plotting helpers now expose
   `panel_widths` / `panel_heights` plus consistent axis-label handling.
+- `sn_plot_dim()` and `sn_plot_feature()` now default to hiding coordinate
+  axes, choose point sizes automatically when `pt_size = NULL`, and keep a
+  shared point-size heuristic for small versus large datasets. `sn_plot_dot()`
+  now defaults to a warmer-high / cooler-low color direction, keeps the
+  Z-score legend ahead of the percent legend, supports `Min`/`Max` legend
+  labels, uses hollow black-edged percent legend dots, accepts
+  `legend_position`, and uses thicker black colorbar ticks.
 - Continuous-color helpers now use the same palette registry through
   `sn_get_palette(..., palette_type = "continuous")`, and expression-oriented
   plotting functions now apply continuous palettes through the shared internal
@@ -81,7 +124,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `utils` tests no longer depend on implicit species inference or non-returned
   normalization calls.
 - Fixed pkgdown reference indexing so new helpers such as `sn_assess_qc()` and
-  `sn_list_input_dirs()` are included in the generated site configuration.
+  `sn_list_10x_paths()` are included in the generated site configuration.
 
 # Version 0.1.2
 

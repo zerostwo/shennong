@@ -61,47 +61,48 @@ sn_read <- function(path,
   x
 }
 
-#' List 10x-formatted input directories under a root folder
+#' List detected 10x Genomics output paths under a root folder
 #'
-#' This helper scans a root directory and returns the subdirectories that look
-#' like 10x Genomics matrix folders based on the same directory-format
-#' detection used by [sn_read()]. By default it searches recursively and
-#' returns only standard 10x matrix directories, not STARsolo, BPCells, or
-#' spatial bundles.
+#' This helper scans a root directory for typical 10x Genomics \code{outs/}
+#' layouts and returns one selected path per detected sample. By default it
+#' returns the \code{outs/} directory itself so the output can be passed
+#' directly to [sn_initialize_seurat_object()]. The \code{path_type} argument
+#' can instead return the filtered matrix path, raw matrix path, H5 files, or
+#' \code{metrics_summary.csv} file.
 #'
 #' @param path Root directory to scan.
 #' @param recursive Logical; if \code{TRUE}, scan subdirectories recursively.
 #'   Defaults to \code{TRUE}.
 #' @param include_root Logical; if \code{TRUE}, also test \code{path} itself.
 #'   Defaults to \code{TRUE}.
-#' @param format One or more directory formats to match. Defaults to
-#'   \code{"10x"}. Supported values are \code{"10x"}, \code{"10x_spatial"},
-#'   \code{"starsolo"}, and \code{"bpcells"}.
+#' @param path_type Which detected 10x path to return. Defaults to
+#'   \code{"outs"}. Supported values are \code{"outs"}, \code{"filtered"},
+#'   \code{"raw"}, \code{"filtered_h5"}, \code{"raw_h5"}, and
+#'   \code{"metrics"}.
 #'
-#' @return A character vector of matching directory paths.
+#' @return A named character vector of matching paths, where names are inferred
+#'   sample identifiers.
 #'
 #' @examples
 #' root <- tempfile("tenx-root-")
 #' dir.create(root)
-#' tenx_dir <- file.path(root, "sample1")
-#' dir.create(tenx_dir)
-#' file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
-#' sn_list_input_dirs(root)
+#' sample_dir <- file.path(root, "sample1", "outs")
+#' dir.create(file.path(sample_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
+#' dir.create(file.path(sample_dir, "raw_feature_bc_matrix"), recursive = TRUE)
+#' file.create(file.path(sample_dir, "metrics_summary.csv"))
+#' sn_list_10x_paths(root)
+#' sn_list_10x_paths(root, path_type = "filtered")
 #'
 #' @export
-sn_list_input_dirs <- function(path,
-                               recursive = TRUE,
-                               include_root = TRUE,
-                               format = "10x") {
+sn_list_10x_paths <- function(path,
+                              recursive = TRUE,
+                              include_root = TRUE,
+                              path_type = c("outs", "filtered", "raw", "filtered_h5", "raw_h5", "metrics")) {
   if (!dir.exists(path)) {
     stop("`path` must be an existing directory.", call. = FALSE)
   }
 
-  format <- unique(match.arg(
-    format,
-    choices = c("10x", "10x_spatial", "starsolo", "bpcells"),
-    several.ok = TRUE
-  ))
+  path_type <- match.arg(path_type)
 
   candidates <- if (isTRUE(recursive)) {
     list.dirs(path = path, recursive = TRUE, full.names = TRUE)
@@ -113,14 +114,44 @@ sn_list_input_dirs <- function(path,
     candidates <- setdiff(candidates, normalizePath(path, winslash = "/", mustWork = TRUE))
   }
 
-  detected <- vapply(
-    candidates,
-    FUN = function(dir_path) .guess_dir_format(dir_path) %||% NA_character_,
+  resolved <- lapply(candidates, .sn_locate_10x_outs_paths)
+  resolved <- resolved[!vapply(resolved, is.null, logical(1))]
+  if (length(resolved) == 0) {
+    return(character(0))
+  }
+
+  outs_paths <- vapply(resolved, `[[`, character(1), "outs_path")
+  resolved <- resolved[!duplicated(outs_paths)]
+
+  selected <- vapply(
+    resolved,
+    FUN = function(info) .sn_select_10x_path(info, path_type = path_type) %||% NA_character_,
     FUN.VALUE = character(1),
     USE.NAMES = FALSE
   )
-  matched <- candidates[detected %in% format]
-  unname(matched)
+  keep <- !is.na(selected)
+  selected <- selected[keep]
+  sample_names <- vapply(
+    resolved[keep],
+    FUN = function(info) info$sample_name %||% basename(info$outs_path),
+    FUN.VALUE = character(1),
+    USE.NAMES = FALSE
+  )
+  names(selected) <- sample_names
+  selected
+}
+
+.sn_select_10x_path <- function(info, path_type = c("outs", "filtered", "raw", "filtered_h5", "raw_h5", "metrics")) {
+  path_type <- match.arg(path_type)
+
+  switch(path_type,
+    outs = info$outs_path %||% NULL,
+    filtered = info$filtered_path %||% NULL,
+    raw = info$raw_path %||% NULL,
+    filtered_h5 = if (!is_null(info$filtered_path) && file.exists(info$filtered_path) && !dir.exists(info$filtered_path)) info$filtered_path else NULL,
+    raw_h5 = if (!is_null(info$raw_path) && file.exists(info$raw_path) && !dir.exists(info$raw_path)) info$raw_path else NULL,
+    metrics = info$metrics_path %||% NULL
+  )
 }
 
 .sn_is_url <- function(path) {

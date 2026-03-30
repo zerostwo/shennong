@@ -54,7 +54,10 @@ A \code{Seurat} object with optional QC metadata in its meta.data slot.
 This function creates a Seurat object from counts (and optional metadata),
 then calculates common QC metrics such as mitochondrial and ribosomal gene
 percentages when \code{species} is supplied. Currently supports human and mouse
-patterns for these gene sets.
+patterns for these gene sets. When \code{x} points to a 10x Genomics \code{outs}
+directory, the function automatically reads the filtered matrix and stores
+discovered source metadata such as the raw matrix path and
+\code{metrics_summary.csv} contents in \code{Seurat::Misc(object, "input_source")}.
 }
 \examples{
 \dontrun{

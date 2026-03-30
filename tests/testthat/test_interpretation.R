@@ -57,6 +57,7 @@ make_interpretation_object <- function() {
   )
 
   enrich_tbl <- tibble::tibble(
+    Cluster = c("Tcell", "Bcell"),
     ID = c("GO:00001", "GO:00002"),
     Description = c("T cell activation", "B cell receptor signaling"),
     NES = c(2.1, 1.8),
@@ -124,12 +125,18 @@ test_that("annotation and DE evidence helpers return structured outputs", {
   skip_if_not_installed("Seurat")
 
   object <- make_interpretation_object()
+  object$percent.mt <- ifelse(object$cell_type == "Tcell", 4, 18)
+  object$nCount_RNA_qc <- ifelse(object$cell_type == "Tcell", "Passed", "Failed")
+  object$scDblFinder.class <- ifelse(object$cell_type == "Tcell", "singlet", "doublet")
 
   annotation_evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
     cluster_col = "cell_type",
-    n_markers = 3
+    n_markers = 3,
+    enrichment_name = "celltype_gsea",
+    n_terms = 2,
+    include_qc = TRUE
   )
   de_evidence <- sn_prepare_de_evidence(
     object = object,
@@ -139,6 +146,8 @@ test_that("annotation and DE evidence helpers return structured outputs", {
 
   expect_equal(annotation_evidence$task, "annotation")
   expect_true(all(c("cluster", "n_cells", "top_markers") %in% colnames(annotation_evidence$cluster_summary)))
+  expect_true("top_functions" %in% colnames(annotation_evidence$cluster_summary))
+  expect_true("doublet_fraction" %in% colnames(annotation_evidence$qc_summary))
   expect_equal(de_evidence$task, "de")
   expect_true("top_markers" %in% names(de_evidence))
 })
@@ -258,6 +267,237 @@ test_that("high-level interpretation helpers can return prompts or store provide
   expect_true("interpretation_results" %in% names(object@misc))
   expect_true("annotation_note" %in% names(object@misc$interpretation_results))
   expect_match(object@misc$interpretation_results$annotation_note$response$text, "demo-model")
+})
+
+test_that("structured annotation responses are normalized and written back to metadata", {
+  skip_if_not_installed("Seurat")
+
+  provider <- function(messages, model = NULL, ...) {
+    list(text = paste(
+      '{"cluster_annotations":[',
+      '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":["cytotoxic t cell"],',
+      '"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
+      '"note":"marker and pathway support a T-cell identity","recommended_checks":["confirm IL7R and LTB"]},',
+      '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphocyte","confidence":"medium","status":"possible_contamination","alternatives":["plasma cell"],',
+      '"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":["contamination"],',
+      '"note":"mixed B-cell and stress-like signals","recommended_checks":["inspect percent.mt and doublet score"]}',
+      '],"narrative_summary":"demo summary"}'
+    ))
+  }
+
+  object <- make_interpretation_object()
+  object$percent.mt <- ifelse(object$cell_type == "Tcell", 4, 22)
+  object$nCount_RNA_qc <- ifelse(object$cell_type == "Tcell", "Passed", "Failed")
+  object$scDblFinder.class <- ifelse(object$cell_type == "Tcell", "singlet", "doublet")
+
+  object <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    enrichment_name = "celltype_gsea",
+    cluster_col = "cell_type",
+    provider = provider,
+    model = "demo-model",
+    store_name = "annotation_structured",
+    metadata_prefix = "shennong_celltype",
+    return_object = TRUE
+  )
+
+  stored <- sn_get_interpretation_result(object, "annotation_structured")
+  expect_true(is.data.frame(stored$annotation_table))
+  expect_true(all(c("cluster", "primary_label", "confidence", "status") %in% colnames(stored$annotation_table)))
+  expect_equal(stored$narrative_summary, "demo summary")
+  expect_true(all(c(
+    "shennong_celltype_label",
+    "shennong_celltype_broad_label",
+    "shennong_celltype_confidence",
+    "shennong_celltype_status",
+    "shennong_celltype_risk_flags"
+  ) %in% colnames(object[[]])))
+  expect_equal(unique(stats::na.omit(as.character(object$shennong_celltype_label))), c("Activated T Cell", "B Cell"))
+  expect_true("possible_contamination" %in% unique(stats::na.omit(as.character(object$shennong_celltype_status))))
+})
+
+test_that("sn_make_sub2api_provider formats OpenAI-compatible chat requests", {
+  provider <- sn_make_sub2api_provider(
+    api_key = "demo-key",
+    base_url = "https://example.invalid/v1/chat/completions",
+    model = "demo-model",
+    temperature = 0.1
+  )
+
+  captured <- NULL
+  response <- with_mocked_bindings(
+    provider(messages = list(list(role = "user", content = "hello"))),
+    curl_fetch_memory = function(url, handle) {
+      captured <<- list(url = url, handle = handle)
+      list(
+        content = charToRaw('{"model":"demo-model","choices":[{"message":{"content":"mock text"}}]}')
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+
+  expect_equal(response$text, "mock text")
+  expect_equal(captured$url, "https://example.invalid/v1/chat/completions")
+  expect_match(captured$handle$postfields, '"model":"demo-model"')
+  expect_match(captured$handle$postfields, '"temperature":0.1')
+})
+
+test_that("sn_make_openai_provider supports responses API payloads", {
+  provider <- sn_make_openai_provider(
+    api_key = "demo-key",
+    base_url = "https://example.invalid",
+    model = "gpt-5.4",
+    wire_api = "responses",
+    reasoning_effort = "high",
+    disable_response_storage = TRUE
+  )
+
+  captured <- NULL
+  response <- with_mocked_bindings(
+    provider(messages = list(list(role = "user", content = "hello"))),
+    curl_fetch_memory = function(url, handle) {
+      captured <<- list(url = url, handle = handle)
+      list(
+        content = charToRaw('{"model":"gpt-5.4","output":[{"type":"reasoning","summary":[]},{"type":"message","content":[{"type":"output_text","text":"OK"}]}]}')
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+
+  expect_equal(response$text, "OK")
+  expect_equal(captured$url, "https://example.invalid/v1/responses")
+  expect_match(captured$handle$postfields, '"store":false')
+  expect_match(captured$handle$postfields, '"reasoning"')
+  expect_true(any(grepl("^x-api-key:", captured$handle$httpheader)))
+})
+
+test_that("local LLM provider config can be listed, resolved, and tested", {
+  cfg_dir <- tempfile("shennong-llm-config-")
+
+  sn_configure_llm_provider(
+    name = "catplot",
+    base_url = "https://api.catplot.org",
+    api_key = "demo-key",
+    default_model = "gpt-5.4",
+    review_model = "gpt-5.4",
+    reasoning_effort = "xhigh",
+    wire_api = "responses",
+    enable_history = TRUE,
+    config_dir = cfg_dir
+  )
+
+  providers <- sn_list_llm_providers(config_dir = cfg_dir)
+  expect_equal(nrow(providers), 1)
+  expect_true(providers$is_default[[1]])
+  expect_equal(providers$base_url[[1]], "https://api.catplot.org/v1")
+  expect_equal(providers$wire_api[[1]], "responses")
+
+  captured <- NULL
+  provider <- with_mocked_bindings(
+    sn_get_llm_provider(config_dir = cfg_dir),
+    curl_fetch_memory = function(url, handle) {
+      captured <<- list(url = url, handle = handle)
+      list(
+        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+
+  response <- with_mocked_bindings(
+    provider(messages = list(list(role = "user", content = "Reply with exactly OK."))),
+    curl_fetch_memory = function(url, handle) {
+      captured <<- list(url = url, handle = handle)
+      list(
+        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+
+  expect_equal(response$text, "OK")
+  expect_equal(captured$url, "https://api.catplot.org/v1/responses")
+
+  test_result <- with_mocked_bindings(
+    sn_test_llm_provider(config_dir = cfg_dir),
+    curl_fetch_memory = function(url, handle) {
+      list(
+        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+  expect_true(test_result$ok[[1]])
+  expect_equal(test_result$text[[1]], "OK")
+
+  history_files <- list.files(file.path(cfg_dir, "llm-history"), full.names = TRUE)
+  expect_gte(length(history_files), 1)
+})
+
+test_that("sn_interpret_annotation falls back to the configured default provider", {
+  skip_if_not_installed("Seurat")
+
+  home_root <- tempfile("shennong-home-")
+  cfg_dir <- file.path(home_root, ".shennong")
+  sn_configure_llm_provider(
+    name = "catplot",
+    base_url = "https://api.catplot.org",
+    api_key = "demo-key",
+    default_model = "gpt-5.4",
+    reasoning_effort = "xhigh",
+    wire_api = "responses",
+    config_dir = cfg_dir
+  )
+
+  old_home <- Sys.getenv("HOME", unset = "")
+  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
+  Sys.setenv(HOME = home_root)
+
+  object <- make_interpretation_object()
+  object$percent.mt <- ifelse(object$cell_type == "Tcell", 4, 22)
+  object$nCount_RNA_qc <- ifelse(object$cell_type == "Tcell", "Passed", "Failed")
+  object$scDblFinder.class <- ifelse(object$cell_type == "Tcell", "singlet", "doublet")
+
+  object <- with_mocked_bindings(
+    sn_interpret_annotation(
+      object = object,
+      de_name = "celltype_markers",
+      enrichment_name = "celltype_gsea",
+      cluster_col = "cell_type",
+      store_name = "annotation_structured_default",
+      metadata_prefix = "shennong_celltype",
+      return_object = TRUE
+    ),
+    curl_fetch_memory = function(url, handle) {
+      payload <- list(
+        model = "gpt-5.4",
+        output_text = paste(
+          '{"cluster_annotations":[',
+          '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":["cytotoxic t cell"],',
+          '"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
+          '"note":"marker and pathway support a T-cell identity","recommended_checks":["confirm IL7R and LTB"]},',
+          '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphocyte","confidence":"medium","status":"possible_contamination","alternatives":["plasma cell"],',
+          '"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":["contamination"],',
+          '"note":"mixed B-cell and stress-like signals","recommended_checks":["inspect percent.mt and doublet score"]}',
+          '],"narrative_summary":"demo summary"}'
+        )
+      )
+      list(
+        content = charToRaw(jsonlite::toJSON(payload, auto_unbox = TRUE))
+      )
+    },
+    new_handle = function(...) list(...),
+    .package = "curl"
+  )
+
+  expect_true("annotation_structured_default" %in% names(object@misc$interpretation_results))
+  expect_true("shennong_celltype_label" %in% colnames(object[[]]))
 })
 
 test_that("misc-result helpers create collections and report missing stored results", {

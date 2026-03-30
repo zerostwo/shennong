@@ -33,6 +33,38 @@ test_that("sn_initialize_seurat_object accepts base matrices and adds metadata",
   expect_true("sn_initialize_seurat_object" %in% names(object@commands))
 })
 
+test_that("sn_initialize_seurat_object inherits sample name from named 10x paths", {
+  skip_if_not_installed("Seurat")
+
+  root <- tempfile("inputs-")
+  dir.create(root)
+  outs_dir <- file.path(root, "sampleA", "outs")
+  dir.create(file.path(outs_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
+  dir.create(file.path(outs_dir, "raw_feature_bc_matrix"), recursive = TRUE)
+  writeLines(
+    c(
+      "%%MatrixMarket matrix coordinate integer general",
+      "%",
+      "2 2 2",
+      "1 1 5",
+      "2 2 3"
+    ),
+    file.path(outs_dir, "filtered_feature_bc_matrix", "matrix.mtx")
+  )
+  writeLines(c("cell1", "cell2"), file.path(outs_dir, "filtered_feature_bc_matrix", "barcodes.tsv"))
+  writeLines(c("gene1\tgene1\tGene Expression", "gene2\tgene2\tGene Expression"), file.path(outs_dir, "filtered_feature_bc_matrix", "features.tsv"))
+
+  tenx_paths <- sn_list_10x_paths(root)
+  object <- sn_initialize_seurat_object(
+    x = tenx_paths[1],
+    project = "prep-named-path",
+    species = "human"
+  )
+
+  expect_equal(unique(as.character(object$sample)), "sampleA")
+  expect_equal(Seurat::Misc(object, "input_source")$sample_name, "sampleA")
+})
+
 test_that("sn_initialize_seurat_object infers species and computes QC metrics", {
   skip_if_not_installed("Seurat")
 
@@ -459,6 +491,60 @@ test_that("sn_filter_cells validates the filtering method", {
     ),
     "must be one of"
   )
+})
+
+test_that("sn_initialize_seurat_object records 10x outs source metadata", {
+  skip_if_not_installed("Seurat")
+
+  sample_dir <- tempfile("tenx-sample-")
+  outs_dir <- file.path(sample_dir, "outs")
+  filtered_dir <- file.path(outs_dir, "filtered_feature_bc_matrix")
+  raw_dir <- file.path(outs_dir, "raw_feature_bc_matrix")
+  dir.create(filtered_dir, recursive = TRUE)
+  dir.create(raw_dir, recursive = TRUE)
+  utils::write.csv(
+    data.frame(
+      `Estimated Number of Cells` = 1234,
+      `Median Genes per Cell` = 567,
+      check.names = FALSE
+    ),
+    file.path(outs_dir, "metrics_summary.csv"),
+    row.names = FALSE
+  )
+
+  counts <- Matrix::Matrix(
+    matrix(1:12, nrow = 3, dimnames = list(paste0("gene", 1:3), paste0("cell", 1:4))),
+    sparse = TRUE
+  )
+
+  object <- with_mocked_bindings(
+    sn_initialize_seurat_object(x = outs_dir, project = "tenx-outs"),
+    sn_read = function(path, ...) {
+      expect_equal(
+        normalizePath(path, winslash = "/", mustWork = TRUE),
+        normalizePath(filtered_dir, winslash = "/", mustWork = TRUE)
+      )
+      counts
+    },
+    .package = "Shennong"
+  )
+
+  source_info <- Seurat::Misc(object, "input_source")
+  expect_equal(source_info$type, "10x_outs")
+  expect_equal(
+    normalizePath(source_info$outs_path, winslash = "/", mustWork = TRUE),
+    normalizePath(outs_dir, winslash = "/", mustWork = TRUE)
+  )
+  expect_equal(
+    normalizePath(source_info$filtered_path, winslash = "/", mustWork = TRUE),
+    normalizePath(filtered_dir, winslash = "/", mustWork = TRUE)
+  )
+  expect_equal(
+    normalizePath(source_info$raw_path, winslash = "/", mustWork = TRUE),
+    normalizePath(raw_dir, winslash = "/", mustWork = TRUE)
+  )
+  expect_s3_class(source_info$metrics, "data.frame")
+  expect_equal(source_info$metrics$`Estimated Number of Cells`, 1234)
 })
 
 test_that("sn_filter_genes accepts large plotting thresholds without NA counts", {

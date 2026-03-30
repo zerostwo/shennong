@@ -149,6 +149,118 @@ sn_initialize_project <- function(
   )
 }
 
+#' List Shennong runtime and recommended R package dependencies
+#'
+#' This helper reads the package dependency declaration and returns a tidy table
+#' covering required imports plus recommended optional packages from
+#' \code{Suggests}. It also annotates the expected installation source, GitHub
+#' remote when relevant, and whether each package is already installed.
+#'
+#' @param scope One of \code{"all"}, \code{"required"}, or
+#'   \code{"recommended"}.
+#'
+#' @return A tibble with package names, requirement class, declared field,
+#'   expected source, GitHub remote when relevant, and installed-version
+#'   metadata.
+#'
+#' @examples
+#' deps <- sn_list_dependencies()
+#' head(deps)
+#' subset(deps, !installed & requirement == "recommended")
+#' @export
+sn_list_dependencies <- function(scope = c("all", "required", "recommended")) {
+  scope <- match.arg(scope)
+  deps <- .sn_dependency_table()
+
+  if (identical(scope, "required")) {
+    deps <- deps[deps$requirement == "required", , drop = FALSE]
+  } else if (identical(scope, "recommended")) {
+    deps <- deps[deps$requirement == "recommended", , drop = FALSE]
+  }
+
+  tibble::as_tibble(deps)
+}
+
+#' Install missing Shennong dependencies in one step
+#'
+#' This helper installs missing required and/or recommended packages using the
+#' declared source for each dependency. CRAN packages are installed with
+#' \code{install.packages()}, Bioconductor packages with
+#' \code{BiocManager::install()}, and GitHub packages with
+#' \code{remotes::install_github()}.
+#'
+#' @param scope One of \code{"all"}, \code{"required"}, or
+#'   \code{"recommended"}.
+#' @param packages Optional character vector restricting installation to a
+#'   subset of packages returned by \code{sn_list_dependencies()}.
+#' @param missing_only Logical; when \code{TRUE} (default), install only missing
+#'   packages.
+#' @param repos CRAN-like repositories used for CRAN installs and bootstrap
+#'   installation of helper installers such as \pkg{BiocManager} and
+#'   \pkg{remotes}.
+#' @param ask Passed to \code{BiocManager::install()}. Defaults to interactive
+#'   behavior.
+#' @param upgrade Logical; when \code{TRUE}, allow updating already installed
+#'   GitHub and Bioconductor packages during installation.
+#' @param ... Additional arguments forwarded to the underlying installer calls.
+#'
+#' @return Invisibly returns the refreshed dependency table from
+#'   \code{\link{sn_list_dependencies}()} after installation.
+#'
+#' @examples
+#' \dontrun{
+#' sn_install_dependencies(scope = "required")
+#' sn_install_dependencies(packages = c("Seurat", "clusterProfiler"))
+#' }
+#' @export
+sn_install_dependencies <- function(scope = c("all", "required", "recommended"),
+                                    packages = NULL,
+                                    missing_only = TRUE,
+                                    repos = getOption("repos"),
+                                    ask = interactive(),
+                                    upgrade = FALSE,
+                                    ...) {
+  scope <- match.arg(scope)
+  deps <- .sn_dependency_table()
+
+  if (identical(scope, "required")) {
+    deps <- deps[deps$requirement == "required", , drop = FALSE]
+  } else if (identical(scope, "recommended")) {
+    deps <- deps[deps$requirement == "recommended", , drop = FALSE]
+  }
+
+  if (!is.null(packages)) {
+    unknown <- setdiff(packages, deps$package)
+    if (length(unknown) > 0) {
+      stop(
+        "Unknown package(s): ", paste(unknown, collapse = ", "),
+        ". Use `sn_list_dependencies()` to see supported names.",
+        call. = FALSE
+      )
+    }
+    deps <- deps[deps$package %in% packages, , drop = FALSE]
+  }
+
+  if (isTRUE(missing_only)) {
+    deps <- deps[!deps$installed, , drop = FALSE]
+  }
+
+  if (nrow(deps) == 0) {
+    .sn_log_info("No dependency installation is required for the selected scope.")
+    return(invisible(sn_list_dependencies(scope = "all")))
+  }
+
+  cran_pkgs <- deps$package[deps$source == "CRAN"]
+  bioc_pkgs <- deps$package[deps$source == "Bioconductor"]
+  github_remotes <- deps$remote[deps$source == "GitHub"]
+
+  .sn_install_cran_packages(packages = cran_pkgs, repos = repos, ...)
+  .sn_install_bioc_packages(packages = bioc_pkgs, ask = ask, update = upgrade, repos = repos, ...)
+  .sn_install_github_packages(remotes = github_remotes, upgrade = upgrade, repos = repos, ...)
+
+  invisible(sn_list_dependencies(scope = "all"))
+}
+
 #' Check whether Shennong is up to date
 #'
 #' This helper compares the installed package version against the latest
@@ -395,6 +507,161 @@ sn_install_shennong <- function(
     remotes::install_local,
     c(list(path = path), args)
   )
+}
+
+.sn_description_root <- function() {
+  namespace_path <- .sn_namespace_path()
+  if (nzchar(namespace_path) && file.exists(file.path(namespace_path, "DESCRIPTION"))) {
+    return(namespace_path)
+  }
+
+  system_path <- system.file(package = "Shennong")
+  if (nzchar(system_path) && file.exists(file.path(system_path, "DESCRIPTION"))) {
+    return(system_path)
+  }
+
+  getwd()
+}
+
+.sn_read_package_description <- function() {
+  desc_path <- file.path(.sn_description_root(), "DESCRIPTION")
+  if (!file.exists(desc_path)) {
+    stop("Could not locate the package DESCRIPTION file.", call. = FALSE)
+  }
+
+  as.list(read.dcf(desc_path, all = TRUE)[1, , drop = FALSE])
+}
+
+.sn_split_description_packages <- function(field_value) {
+  if (is.null(field_value) || !nzchar(field_value)) {
+    return(character(0))
+  }
+
+  entries <- trimws(unlist(strsplit(field_value, ",", fixed = TRUE), use.names = FALSE))
+  entries <- entries[nzchar(entries)]
+  entries <- sub("\\s*\\(.*\\)$", "", entries)
+  entries <- trimws(entries)
+  entries[entries != "R"]
+}
+
+.sn_dependency_source_overrides <- function() {
+  data.frame(
+    package = c(
+      "BayesPrism", "BPCells", "COSG", "GapClust",
+      "ROGUE", "SignatuR", "catplot", "harmony", "lisi"
+    ),
+    source = rep("GitHub", 9),
+    remote = c(
+      "Danko-Lab/BayesPrism/BayesPrism",
+      "bnprks/BPCells/r",
+      "genecell/COSGR",
+      "fabotao/GapClust",
+      "PaulingLiu/ROGUE",
+      "carmonalab/SignatuR",
+      "catplot/catplot",
+      "immunogenomics/harmony@harmony2",
+      "immunogenomics/lisi"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+.sn_bioconductor_packages <- function() {
+  c(
+    "anndataR", "BayesPrism", "BiocParallel", "celda", "clusterProfiler",
+    "DESeq2", "edgeR", "glmGamPoi", "miloR", "org.Hs.eg.db",
+    "org.Mm.eg.db", "rhdf5", "rtracklayer", "scDblFinder", "scran",
+    "SingleCellExperiment", "SummarizedExperiment", "limma"
+  )
+}
+
+.sn_dependency_table <- function() {
+  desc <- .sn_read_package_description()
+  required <- .sn_split_description_packages(desc$Imports)
+  recommended <- .sn_split_description_packages(desc$Suggests)
+  pkg_names <- c(required, recommended)
+  declared_in <- c(rep("Imports", length(required)), rep("Suggests", length(recommended)))
+  requirement <- c(rep("required", length(required)), rep("recommended", length(recommended)))
+
+  deps <- data.frame(
+    package = pkg_names,
+    requirement = requirement,
+    declared_in = declared_in,
+    stringsAsFactors = FALSE
+  )
+  deps <- deps[!duplicated(deps$package), , drop = FALSE]
+
+  overrides <- .sn_dependency_source_overrides()
+  deps$source <- ifelse(deps$package %in% .sn_bioconductor_packages(), "Bioconductor", "CRAN")
+  deps$remote <- NA_character_
+
+  matched_override <- match(deps$package, overrides$package)
+  has_override <- !is.na(matched_override)
+  deps$source[has_override] <- overrides$source[matched_override[has_override]]
+  deps$remote[has_override] <- overrides$remote[matched_override[has_override]]
+
+  deps$installed <- vapply(deps$package, rlang::is_installed, logical(1))
+  deps$version <- vapply(
+    seq_len(nrow(deps)),
+    function(i) {
+      if (!deps$installed[[i]]) {
+        return(NA_character_)
+      }
+      as.character(utils::packageVersion(deps$package[[i]]))
+    },
+    character(1)
+  )
+
+  deps[order(deps$requirement, deps$package), , drop = FALSE]
+}
+
+.sn_install_cran_packages <- function(packages, repos = getOption("repos"), ...) {
+  packages <- unique(stats::na.omit(packages))
+  if (length(packages) == 0) {
+    return(invisible(NULL))
+  }
+
+  utils::install.packages(packages, repos = repos, ...)
+  invisible(packages)
+}
+
+.sn_install_bioc_packages <- function(packages,
+                                      ask = interactive(),
+                                      update = FALSE,
+                                      repos = getOption("repos"),
+                                      ...) {
+  packages <- unique(stats::na.omit(packages))
+  if (length(packages) == 0) {
+    return(invisible(NULL))
+  }
+
+  if (!rlang::is_installed("BiocManager")) {
+    utils::install.packages("BiocManager", repos = repos)
+  }
+
+  BiocManager::install(packages, ask = ask, update = update, ...)
+  invisible(packages)
+}
+
+.sn_install_github_packages <- function(remotes,
+                                        upgrade = FALSE,
+                                        repos = getOption("repos"),
+                                        ...) {
+  remotes <- unique(stats::na.omit(remotes))
+  if (length(remotes) == 0) {
+    return(invisible(NULL))
+  }
+
+  if (!rlang::is_installed("remotes")) {
+    utils::install.packages("remotes", repos = repos)
+  }
+
+  upgrade_policy <- if (isTRUE(upgrade)) "always" else "never"
+  for (remote in remotes) {
+    remotes::install_github(remote, upgrade = upgrade_policy, dependencies = FALSE, ...)
+  }
+
+  invisible(remotes)
 }
 
 .sn_get_installed_version <- function(package = "Shennong") {

@@ -58,6 +58,9 @@ order.}
 \item{title}{Optional plot title.}
 
 \item{x_label, y_label}{Optional axis labels.}
+
+\item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
+\code{catplot::theme_cat()} when available.}
 }
 \value{
 A ggplot object.

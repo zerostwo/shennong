@@ -19,8 +19,9 @@ sn_remove_ambient_contamination(
 \arguments{
 \item{x}{A Seurat object, count matrix-like object, or path to filtered data.}
 
-\item{raw}{Optional raw/background counts. Required for \code{method = "soupx"}.
-If supplied for \code{decontx}, it is used as the background matrix.}
+\item{raw}{Optional raw/background counts. Required for \code{method = "soupx"}
+unless recoverable from stored initialization metadata. If supplied for
+\code{decontx}, it is used as the background matrix.}
 
 \item{method}{One of \code{"decontx"} or \code{"soupx"}.}
 
@@ -54,7 +55,9 @@ decontX-based Seurat returns, the \code{decontX_contamination} and
 \description{
 This function provides a unified interface for ambient RNA correction using
 either \code{SoupX} or \code{decontX}. The input can be a Seurat object, a
-count matrix-like object, or a path that \code{sn_read()} can import.
+count matrix-like object, or a path that \code{sn_read()} can import. When a
+Seurat object was initialized from a detected 10x \code{outs} directory, stored
+raw matrix metadata is reused automatically if \code{raw = NULL}.
 }
 \examples{
 \dontrun{

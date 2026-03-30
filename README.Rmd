@@ -31,6 +31,16 @@ install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
 
+List Shennong's required and recommended R packages, then install the missing
+ones in one step:
+
+```r
+deps <- sn_list_dependencies()
+deps
+
+sn_install_dependencies(scope = "required")
+```
+
 ## What Shennong Covers
 
 - Seurat object initialization and QC-aware preprocessing

@@ -1,6 +1,49 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-25
+Last updated: 2026-03-29
+
+## 2026-03-29
+
+- When Shennong initializes a Seurat object from a recognized 10x Genomics
+  `outs/` directory, it should retain that provenance on the object instead of
+  treating the input as an anonymous count matrix. Storing the discovered
+  filtered/raw paths and metrics summary under `Seurat::Misc(object,
+  "input_source")` keeps ambient-RNA correction and downstream reporting
+  ergonomic without introducing new user-facing mandatory arguments.
+- The public path-discovery helper should match the dominant workflow instead
+  of exposing a broad but vague directory scanner. Shennong now uses a
+  10x-specific `sn_list_10x_paths()` entry point that defaults to returning
+  `outs/` directories, with opt-in selection of filtered/raw/H5/metrics assets
+  for downstream automation.
+- Repeated enrichment support lookups should be cached within an R session.
+  MSigDB term tables and SYMBOL-to-ENTREZ mappings are deterministic for a
+  given input set and package state, so caching them reduces avoidable latency
+  in test suites and interactive enrichment workflows without changing results.
+- Annotation-oriented LLM workflows should be structured, not free-form. When
+  Shennong asks a provider to annotate clusters, it should request a stable
+  JSON schema, normalize returned cell-type names into one user-selected style,
+  and, when possible, map the parsed cluster-level labels back onto each cell's
+  metadata for downstream filtering and plotting.
+- Local LLM-provider configuration should live under `~/.shennong` rather than
+  requiring users to hand-edit package code or keep all endpoint details in
+  transient environment state. This keeps API hosts, default models, optional
+  history, and Shennong-specific defaults discoverable while still allowing
+  secrets to come either from that local config or from an environment
+  variable.
+- `ellmer` should be supported as an optional backend, not as the only LLM
+  transport. Shennong now keeps a native HTTP client for OpenAI-style
+  `responses` compatibility, while exposing an `ellmer` adapter for users who
+  prefer its chatbot abstraction and ecosystem integration.
+- 10x path-discovery helpers should return workflow-ready sample labels instead
+  of anonymous path vectors. Shennong now infers sample names from the
+  directory structure and carries those names into Seurat initialization when
+  `sample_name = NULL`, reducing repetitive manual sample annotation in common
+  multi-sample 10x workflows.
+- Embedding-style plots should optimize first for readability on small
+  datasets. `sn_plot_dim()` and `sn_plot_feature()` now hide coordinate axes by
+  default and use shared automatic point sizes unless the caller overrides
+  `pt_size`, while `sn_plot_dot()` uses a more opinionated legend layout and
+  colorbar styling tuned for publication-oriented defaults.
 
 ## 2026-03-25
 
@@ -226,6 +269,11 @@ Last updated: 2026-03-25
 - Project scaffolding should present one clear public entry point:
   `sn_initialize_project()`.
 - Initialized analysis repositories should feel ready for immediate GitHub and RStudio use. The scaffold now includes a generated `<project>.Rproj` file plus a repository `.gitignore` alongside the existing governance template.
+- Dependency discovery and installation should be package-driven rather than
+  buried in `DESCRIPTION` or scattered across workflow docs. Shennong now
+  exposes `sn_list_dependencies()` for inspection and
+  `sn_install_dependencies()` for one-click installation of missing CRAN,
+  Bioconductor, and GitHub dependencies.
 
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
 
