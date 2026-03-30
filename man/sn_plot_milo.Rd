@@ -15,6 +15,7 @@ sn_plot_milo(
   title = NULL,
   x_label = "logFC",
   y_label = expression(-log[10]("FDR")),
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL
 )
@@ -37,6 +38,10 @@ object.}
 \item{palette}{Discrete palette used when \code{annotation_col} is supplied.}
 
 \item{title, x_label, y_label}{Optional plot labels.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. When used together with
+\code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

@@ -1109,7 +1109,15 @@ sn_find_doublets <- function(
     score_col <- paste0(score_col, "_corrected")
   }
 
-  class_values <- rep(NA_character_, ncol(object))
+  .sn_format_doublet_classes <- function(values, unresolved = "unresolved") {
+    values <- as.character(values)
+    values[is.na(values) | !nzchar(values)] <- unresolved
+    preferred_levels <- c("singlet", "doublet")
+    other_levels <- setdiff(unique(values), preferred_levels)
+    factor(values, levels = c(preferred_levels, sort(other_levels)))
+  }
+
+  class_values <- rep("unresolved", ncol(object))
   names(class_values) <- colnames(object)
   class_values[keep_cells] <- as.character(sce$scDblFinder.class)
 
@@ -1117,7 +1125,7 @@ sn_find_doublets <- function(
   names(score_values) <- colnames(object)
   score_values[keep_cells] <- as.numeric(sce$scDblFinder.score)
 
-  object[[class_col]] <- class_values[colnames(object)]
+  object[[class_col]] <- .sn_format_doublet_classes(class_values[colnames(object)])
   object[[score_col]] <- score_values[colnames(object)]
 
   .sn_log_info("Doublet detection complete.")

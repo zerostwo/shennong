@@ -9,6 +9,7 @@ sn_plot_boxplot(
   x,
   y,
   sort = FALSE,
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -23,6 +24,10 @@ sn_plot_boxplot(
 \item{x, y}{Columns mapped to the x- and y-axes.}
 
 \item{sort}{Currently reserved for future sorting support.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. When used together with
+\code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

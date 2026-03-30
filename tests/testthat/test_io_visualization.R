@@ -190,14 +190,40 @@ test_that("Seurat plotting helpers return ggplot objects", {
   )
 
   feature_plot <- sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1)
+  multi_feature_plot <- sn_plot_feature(object, features = c("CD3D", "LYZ"), reduction = "umap", palette = "RdBu")
   dim_plot <- sn_plot_dim(object, reduction = "umap", group_by = "group")
+  dim_plot_repel <- sn_plot_dim(object, reduction = "umap", group_by = "group", label = TRUE, repel = TRUE)
+  dim_plot_panel_widths <- sn_plot_dim(object, reduction = "umap", group_by = "group", panel_widths = 80)
+  dim_plot_no_aspect <- sn_plot_dim(object, reduction = "umap", group_by = "group", panel_widths = 80, aspect_ratio = NULL)
+  feature_color_scale <- Filter(function(scale) "colour" %in% scale$aesthetics, feature_plot$scales$scales)[[1]]
 
   expect_s3_class(feature_plot, "ggplot")
+  expect_s3_class(multi_feature_plot, "ggplot")
   expect_s3_class(dim_plot, "ggplot")
+  expect_s3_class(dim_plot_repel, "ggplot")
+  expect_s3_class(dim_plot_panel_widths, "ggplot")
+  expect_s3_class(dim_plot_no_aspect, "ggplot")
   expect_s3_class(feature_plot$theme$axis.text, "element_blank")
   expect_s3_class(feature_plot$theme$axis.title, "element_blank")
   expect_s3_class(dim_plot$theme$axis.text, "element_blank")
   expect_s3_class(dim_plot$theme$axis.title, "element_blank")
+  expect_equal(feature_color_scale$labels[[1]], "Min")
+  expect_equal(tail(feature_color_scale$labels, 1), "Max")
+  expect_gt(length(feature_color_scale$breaks), 2)
+  expect_true(is.language(feature_plot$labels$title))
+  multi_feature_scales <- lapply(
+    multi_feature_plot$patches$plots,
+    function(plot) Filter(function(scale) "colour" %in% scale$aesthetics, plot$scales$scales)
+  )
+  expect_true(all(vapply(multi_feature_scales, length, integer(1)) >= 1L))
+  expect_equal(length(multi_feature_plot$guides$guides), 1)
+  expect_identical(class(dim_plot_repel$layers[[2]]$geom)[[1]], "GeomShadowText")
+  expect_equal(as.numeric(dim_plot$theme$legend.text$margin[[4]]), -4)
+  expect_true(all(vapply(
+    c(list(multi_feature_plot), multi_feature_plot$patches$plots),
+    function(plot) is.language(plot$labels$title),
+    logical(1)
+  )))
   expect_gt(Shennong:::.sn_auto_point_size(object, NULL), 0)
   expect_s3_class(
     suppressWarnings(
@@ -205,6 +231,20 @@ test_that("Seurat plotting helpers return ggplot objects", {
     ),
     "ggplot"
   )
+  if (requireNamespace("Nebulosa", quietly = TRUE)) {
+    density_plot <- sn_plot_feature(
+      object,
+      features = c("CD3D", "LYZ"),
+      reduction = "umap",
+      mode = "density"
+    )
+    density_scale <- Filter(function(scale) "fill" %in% scale$aesthetics, density_plot$patches$plots[[1]]$scales$scales)[[1]]
+    expect_s3_class(density_plot, "ggplot")
+    expect_equal(density_plot$patches$layout$guides, "collect")
+    expect_equal(density_scale$labels[[1]], "Min")
+    expect_equal(tail(density_scale$labels, 1), "Max")
+    expect_identical(density_plot$theme$plot.background$fill, "#030711")
+  }
 })
 
 test_that("sn_plot_dot can reuse stored top markers from object@misc", {
@@ -238,8 +278,14 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
   expect_equal(plot$theme$legend.position, "top")
   expect_equal(plot$labels$colour, "Z score")
   expect_equal(plot$labels$size, "Percent (%)")
-  expect_equal(color_scale$breaks, c(-2.5, 2.5))
-  expect_equal(color_scale$labels, c("Min", "Max"))
+  expect_equal(color_scale$breaks[[1]], -2.5)
+  expect_equal(tail(color_scale$breaks, 1), 2.5)
+  expect_equal(color_scale$labels[[1]], "Min")
+  expect_equal(tail(color_scale$labels, 1), "Max")
+  expect_gt(length(color_scale$breaks), 2)
+  expect_equal(color_scale$limits, c(-2.5, 2.5))
+  expect_equal(as.numeric(color_scale$guide$params$theme$legend.key.width), 8)
+  expect_equal(as.numeric(color_scale$guide$params$theme$legend.key.height), 32)
   expect_error(
     Shennong:::.sn_resolve_dotplot_features(
       object = object,
@@ -260,9 +306,14 @@ test_that("palette helpers list and resolve palettes", {
   expect_true("Paired" %in% palette_tbl$name)
   expect_true("ZhangJian2024" %in% palette_tbl$name)
   expect_true("OkabeIto" %in% palette_tbl$name)
+  expect_true("viridis" %in% palette_tbl$name)
   expect_equal(
     palette_tbl$source[match("OkabeIto", palette_tbl$name)],
     "ggokabeito"
+  )
+  expect_equal(
+    palette_tbl$source[match("viridis", palette_tbl$name)],
+    "viridis"
   )
 
   paired <- sn_get_palette("Paired", n = 14)
@@ -280,6 +331,10 @@ test_that("palette helpers list and resolve palettes", {
   okabe <- sn_get_palette("OkabeIto")
   expect_identical(okabe[[1]], "#E69F00")
   expect_identical(okabe[[9]], "#000000")
+
+  viridis <- sn_get_palette("viridis", n = 8)
+  expect_length(viridis, 8)
+  expect_true(all(nzchar(viridis)))
 
   custom <- sn_get_palette(c("#111111", "#222222", "#333333"))
   expect_identical(custom, c("#111111", "#222222", "#333333"))

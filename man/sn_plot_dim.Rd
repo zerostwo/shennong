@@ -35,6 +35,7 @@ sn_plot_dim(
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
+  aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   ...
@@ -101,6 +102,10 @@ Shennong chooses a value automatically based on the number of cells.}
 \item{title}{The title for the plot. Default is NULL.}
 
 \item{palette}{The color palette to use for the plot. Default is "Paired".}
+
+\item{aspect_ratio}{Optional panel aspect ratio. Defaults to \code{1}. When
+used together with \code{panel_widths} or \code{panel_heights}, Shennong
+derives the missing panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

@@ -21,6 +21,12 @@ returns text or a list containing \code{text}.}
 
 \item{model}{Optional model identifier passed through to the provider.}
 
+\item{structured_type}{Optional structured-output schema or type object
+forwarded to providers that support typed responses.}
+
+\item{tools}{Optional list of tool definitions forwarded to providers that
+support tool registration or tool calling.}
+
 \item{...}{Additional arguments passed to \code{provider}.}
 }
 \value{

@@ -63,6 +63,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- `sn_list_palettes()` now renders palette names and swatches without overlap
+  in plot mode and includes built-in viridis-family palettes in the shared
+  palette registry. `sn_plot_dim()`, `sn_plot_feature()`, and the other
+  `sn_plot_*()` wrappers now reconcile `aspect_ratio` with `panel_widths` /
+  `panel_heights` automatically instead of erroring when fixed panel sizes are
+  requested, and Seurat reduction plots now apply axis hiding more reliably
+  while `sn_plot_dim(label = TRUE)` adds a white halo behind labels for better
+  legibility. `sn_plot_feature()` now also supports
+  `mode = "density"` for Nebulosa-style embedding density maps with a
+  galaxy-like default theme and shared colorbar collection across multi-feature
+  plots. `sn_find_doublets()` now records skipped cells as
+  `unresolved` instead of `NA` in the stored class column and orders doublet
+  classes as `singlet`, `doublet`, then other levels.
 - `sn_initialize_seurat_object()` now recognizes typical 10x Genomics `outs/`
   directories, reads the filtered matrix automatically, and stores discovered
   source metadata such as `raw_feature_bc_matrix` paths and

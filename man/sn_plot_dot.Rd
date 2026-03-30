@@ -27,6 +27,7 @@ sn_plot_dot(
   direction = -1,
   zscore_legend_labels = c("text", "numeric"),
   legend_position = "right",
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   title = NULL,
@@ -90,6 +91,10 @@ numeric values.}
 \item{legend_position}{Legend position passed to \code{theme()}. Defaults to
 \code{"right"} and works together with \code{catplot::theme_cat()} when
 available.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. When used together with
+\code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

@@ -41,7 +41,9 @@ sn_plot_violin(
 
 \item{palette}{The color palette to use. Defaults to \code{"Paired"}.}
 
-\item{aspect_ratio}{The aspect ratio of the plot. Defaults to 0.5.}
+\item{aspect_ratio}{The aspect ratio of the plot. Defaults to 0.5. When used
+together with \code{panel_widths} or \code{panel_heights}, Shennong
+derives the missing panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

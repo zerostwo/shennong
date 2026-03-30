@@ -14,6 +14,10 @@ sn_plot_feature(
   pt_size = NULL,
   slot = "data",
   max_cutoff = NA,
+  mode = c("expression", "density"),
+  density_method = c("wkde", "ks"),
+  density_adjust = 1,
+  density_style = c("galaxy", "plain"),
   raster = TRUE,
   seed = 717,
   title = NULL,
@@ -23,6 +27,10 @@ sn_plot_feature(
   show_border = TRUE,
   palette = "YlOrRd",
   direction = 1,
+  legend_labels = c("text", "numeric"),
+  keep_scale = c("all", "feature", "none"),
+  collect_legend = TRUE,
+  aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -51,6 +59,19 @@ cells.}
 
 \item{max_cutoff}{A numeric value specifying the maximum expression cutoff. Defaults to NA.}
 
+\item{mode}{One of \code{"expression"} or \code{"density"}. Density mode
+computes a Nebulosa-style weighted feature density over the selected
+embedding and renders it with a galaxy-like theme by default.}
+
+\item{density_method}{Density estimator used when \code{mode = "density"}.
+One of \code{"wkde"} or \code{"ks"}. Defaults to \code{"wkde"}.}
+
+\item{density_adjust}{Bandwidth adjustment forwarded to the density
+estimator when \code{mode = "density"}. Larger values smooth more.}
+
+\item{density_style}{One of \code{"galaxy"} or \code{"plain"}. Defaults to
+\code{"galaxy"}.}
+
 \item{raster}{A logical value specifying whether to use raster graphics. Defaults to TRUE.}
 
 \item{seed}{An integer value specifying the random seed. Defaults to 717.}
@@ -68,6 +89,21 @@ cells.}
 \item{palette}{A character string specifying the color palette to use. Defaults to "YlOrRd".}
 
 \item{direction}{A numeric value specifying the direction of the color palette. Defaults to 1.}
+
+\item{legend_labels}{One of \code{"text"} to show \code{"Min"} /
+\code{"Max"} at the colorbar ends or \code{"numeric"} to show numeric
+break labels. Defaults to \code{"text"}.}
+
+\item{keep_scale}{Passed to Seurat's \code{FeaturePlot(keep.scale = ...)}.
+Defaults to \code{"all"} so multi-feature plots share one comparable
+color scale and can collect a single legend.}
+
+\item{collect_legend}{Logical; when \code{TRUE}, collect a shared legend for
+patchwork multi-feature plots. Defaults to \code{TRUE}.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. Defaults to \code{1}. When
+used together with \code{panel_widths} or \code{panel_heights}, Shennong
+derives the missing panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

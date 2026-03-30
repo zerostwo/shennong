@@ -1,6 +1,179 @@
 # Internal helper to apply the optional catplot theme when available.
 .sn_ggplot_pt <- 2.845276
 
+.sn_nebulosa_internal <- function(name) {
+  check_installed("Nebulosa", reason = "to compute Nebulosa-style density plots.")
+  get(name, envir = asNamespace("Nebulosa"), inherits = FALSE)
+}
+
+.sn_apply_plot_component <- function(p, component, recurse_patchwork = TRUE) {
+  if (inherits(p, "patchwork") && isTRUE(recurse_patchwork)) {
+    return(p & component)
+  }
+
+  p + component
+}
+
+.sn_map_plot_leaves <- function(p, fn) {
+  if (inherits(p, "patchwork")) {
+    p <- fn(p)
+    if (length(p$patches$plots) > 0) {
+      p$patches$plots <- lapply(p$patches$plots, .sn_map_plot_leaves, fn = fn)
+    }
+    return(p)
+  }
+
+  if (inherits(p, "ggplot")) {
+    return(fn(p))
+  }
+
+  p
+}
+
+.sn_apply_scale_to_plot <- function(p, scale) {
+  if (inherits(p, "patchwork")) {
+    if (length(p$patches$plots) > 0) {
+      p$patches$plots <- lapply(p$patches$plots, .sn_apply_scale_to_plot, scale = scale)
+    }
+    return(p + scale)
+  }
+
+  p + scale
+}
+
+.sn_hide_plot_axes <- function(p) {
+  p <- .sn_apply_plot_component(p, Seurat::NoAxes())
+  .sn_apply_plot_component(
+    p,
+    ggplot2::theme(
+      axis.title = ggplot2::element_blank(),
+      axis.text = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank()
+    ),
+    recurse_patchwork = FALSE
+  )
+}
+
+.sn_colorbar_guide <- function(title = NULL,
+                               order = 1,
+                               width_pt = 8,
+                               height_pt = 32) {
+  ggplot2::guide_colorbar(
+    title = title,
+    order = order,
+    theme = ggplot2::theme(
+      legend.key.width = grid::unit(width_pt, "pt"),
+      legend.key.height = grid::unit(height_pt, "pt"),
+      legend.frame = ggplot2::element_rect(colour = "black", linewidth = 0.2),
+      legend.axis.line = ggplot2::element_line(
+        colour = "black",
+        linewidth = 0.5 / .sn_ggplot_pt
+      )
+    )
+  )
+}
+
+.sn_compact_legend_theme <- function() {
+  ggplot2::theme(
+    legend.text = ggplot2::element_text(margin = ggplot2::margin(l = -4)),
+    legend.spacing.x = grid::unit(0, "pt"),
+    legend.key.spacing.x = grid::unit(0, "pt")
+  )
+}
+
+.sn_colorbar_breaks_labels <- function(limits,
+                                       label_mode = c("text", "numeric"),
+                                       n_ticks = 5) {
+  label_mode <- match.arg(label_mode)
+  stopifnot(length(limits) == 2L, is.numeric(limits), !anyNA(limits))
+
+  if (identical(limits[[1]], limits[[2]])) {
+    breaks <- limits[[1]]
+  } else {
+    breaks <- pretty(limits, n = n_ticks)
+    breaks <- breaks[breaks >= limits[[1]] & breaks <= limits[[2]]]
+    if (length(breaks) < 2L) {
+      breaks <- seq(limits[[1]], limits[[2]], length.out = max(2L, n_ticks))
+    }
+    breaks[[1]] <- limits[[1]]
+    breaks[[length(breaks)]] <- limits[[2]]
+    breaks <- unique(breaks)
+  }
+
+  labels <- if (identical(label_mode, "text")) {
+    out <- rep("", length(breaks))
+    out[[1]] <- "Min"
+    out[[length(out)]] <- "Max"
+    out
+  } else {
+    scales::label_number()(breaks)
+  }
+
+  list(breaks = breaks, labels = labels)
+}
+
+.sn_feature_limits <- function(object,
+                               features,
+                               slot = "data",
+                               max_cutoff = NA,
+                               cells = NULL) {
+  data <- SeuratObject::FetchData(
+    object = object,
+    vars = features,
+    cells = cells,
+    layer = slot
+  )
+
+  values <- unlist(data[features], use.names = FALSE)
+  if (length(values) == 0L) {
+    return(c(0, 0))
+  }
+
+  values <- values[is.finite(values)]
+  if (length(values) == 0L) {
+    return(c(0, 0))
+  }
+
+  upper <- suppressWarnings(Seurat::SetQuantile(cutoff = max_cutoff, data = values))
+  if (is.na(upper)) {
+    upper <- max(values)
+  }
+
+  c(min(values), upper)
+}
+
+.sn_resolve_catplot_dimensions <- function(aspect_ratio = NULL,
+                                           panel_widths = NULL,
+                                           panel_heights = NULL) {
+  out <- list(
+    aspect_ratio = aspect_ratio,
+    panel_widths = panel_widths,
+    panel_heights = panel_heights
+  )
+
+  if (is_null(aspect_ratio)) {
+    return(out)
+  }
+
+  if (!is_null(panel_widths) && is_null(panel_heights)) {
+    out$panel_heights <- panel_widths * aspect_ratio
+    out$aspect_ratio <- NULL
+    return(out)
+  }
+
+  if (!is_null(panel_heights) && is_null(panel_widths) && !identical(aspect_ratio, 0)) {
+    out$panel_widths <- panel_heights / aspect_ratio
+    out$aspect_ratio <- NULL
+    return(out)
+  }
+
+  if (!is_null(panel_widths) && !is_null(panel_heights)) {
+    out$aspect_ratio <- NULL
+  }
+
+  out
+}
+
 .sn_add_catplot_theme <- function(p,
                                   aspect_ratio = NULL,
                                   show_title = NULL,
@@ -8,27 +181,33 @@
                                   panel_heights = NULL,
                                   x_text_angle = NULL) {
   if (rlang::is_installed("catplot")) {
+    size_args <- .sn_resolve_catplot_dimensions(
+      aspect_ratio = aspect_ratio,
+      panel_widths = panel_widths,
+      panel_heights = panel_heights
+    )
     args <- list()
-    if (!is_null(aspect_ratio)) {
-      args$aspect_ratio <- aspect_ratio
+    if (!is_null(size_args$aspect_ratio)) {
+      args$aspect_ratio <- size_args$aspect_ratio
     }
     if (!is_null(show_title)) {
       args$show_title <- show_title
     }
-    if (!is_null(panel_widths)) {
-      args$panel_widths <- panel_widths
+    if (!is_null(size_args$panel_widths)) {
+      args$panel_widths <- size_args$panel_widths
     }
-    if (!is_null(panel_heights)) {
-      args$panel_heights <- panel_heights
+    if (!is_null(size_args$panel_heights)) {
+      args$panel_heights <- size_args$panel_heights
     }
     if (!is_null(x_text_angle)) {
       args$x_text_angle <- x_text_angle
     }
     cat_theme <- do.call(catplot::theme_cat, args)
-    return(p + cat_theme)
+    return(.sn_apply_plot_component(p, cat_theme) + .sn_compact_legend_theme())
   }
 
-  p + ggplot2::theme_minimal(base_size = 11)
+  .sn_apply_plot_component(p, ggplot2::theme_minimal(base_size = 11)) +
+    .sn_compact_legend_theme()
 }
 
 .sn_auto_point_size <- function(object,
@@ -39,21 +218,42 @@
 
   n_cells <- ncol(object)
   if (n_cells <= 500) {
-    return(1.2)
+    return(1.2*3)
   }
   if (n_cells <= 2000) {
-    return(0.8)
+    return(0.8*3)
   }
   if (n_cells <= 10000) {
-    return(0.5)
+    return(0.5*3)
   }
   if (n_cells <= 50000) {
-    return(0.25)
+    return(0.25*3)
   }
-  0.1
+  0.1*3
 }
 
 .sn_palette_metadata <- function() {
+  viridis_lookup <- c(
+    viridis = "Viridis",
+    plasma = "Plasma",
+    inferno = "Inferno",
+    cividis = "Cividis"
+  )
+  viridis_tbl <- data.frame(
+    name = names(viridis_lookup),
+    source = "viridis",
+    palette_type = "sequential",
+    max_n = 8L,
+    supports_discrete = TRUE,
+    supports_continuous = TRUE,
+    preview = vapply(
+      names(viridis_lookup),
+      FUN = function(name) paste(grDevices::hcl.colors(6, palette = viridis_lookup[[name]]), collapse = " "),
+      FUN.VALUE = character(1)
+    ),
+    stringsAsFactors = FALSE
+  )
+
   palette_source <- unname(palette_source_db[names(palette_db)])
   palette_source[is.na(palette_source)] <- "shennong"
   preview <- vapply(
@@ -88,7 +288,7 @@
     stringsAsFactors = FALSE
   )
 
-  rbind(shennong_tbl, brewer_tbl)
+  rbind(shennong_tbl, viridis_tbl, brewer_tbl)
 }
 
 .sn_palette_plot_data <- function(palette_tbl) {
@@ -100,12 +300,15 @@
     palette_name <- palette_tbl$name[[i]]
     display_name <- paste0(palette_tbl$name[[i]], "  [", palette_tbl$source[[i]], "]")
     values <- .sn_resolve_discrete_palette(palette_name, n = palette_tbl$max_n[[i]])
+    label_pad <- max(4, ceiling(nchar(display_name) / 5))
     data.frame(
       name = palette_name,
       display_name = display_name,
       source = palette_tbl$source[[i]],
       palette_type = palette_tbl$palette_type[[i]],
       idx = seq_along(values),
+      swatch_x = seq_along(values) + label_pad,
+      label_x = 0.5,
       color = values,
       stringsAsFactors = FALSE
     )
@@ -123,18 +326,21 @@
     return(NULL)
   }
 
-  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$idx, y = .data$display_name, fill = .data$color)) +
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$swatch_x, y = .data$display_name, fill = .data$color)) +
     ggplot2::geom_tile(width = 0.95, height = 0.8) +
     ggplot2::geom_text(
       data = unique(plot_data[c("display_name", "palette_type")]),
-      mapping = ggplot2::aes(x = 0.35, y = .data$display_name, label = .data$display_name),
+      mapping = ggplot2::aes(x = 0.5, y = .data$display_name, label = .data$display_name),
       inherit.aes = FALSE,
       hjust = 0,
       size = 3.2
     ) +
     ggplot2::facet_grid(.data$palette_type ~ ., scales = "free_y", space = "free_y") +
     ggplot2::scale_fill_identity() +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.02))) +
+    ggplot2::scale_x_continuous(
+      expand = ggplot2::expansion(mult = c(0, 0.02)),
+      breaks = NULL
+    ) +
     ggplot2::labs(x = NULL, y = NULL, title = "Shennong Palette Catalog") +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
@@ -160,6 +366,14 @@
     values <- unname(palette)
   } else if (length(palette) == 1L && palette %in% names(palette_db)) {
     values <- palette_db[[palette]]
+  } else if (length(palette) == 1L && palette %in% c("viridis", "plasma", "inferno", "cividis")) {
+    viridis_lookup <- c(
+      viridis = "Viridis",
+      plasma = "Plasma",
+      inferno = "Inferno",
+      cividis = "Cividis"
+    )
+    values <- grDevices::hcl.colors(n, palette = viridis_lookup[[palette]])
   } else if (length(palette) == 1L && palette %in% row.names(RColorBrewer::brewer.pal.info)) {
     brewer_max <- RColorBrewer::brewer.pal.info[palette, "maxcolors"]
     values <- RColorBrewer::brewer.pal(min(max(3, n), brewer_max), palette)
@@ -206,7 +420,10 @@
                                        palette = "YlOrRd",
                                        direction = 1,
                                        aesthetic = c("color", "fill"),
-                                       guide = "colourbar") {
+                                       guide = "colourbar",
+                                       limits = NULL,
+                                       breaks = ggplot2::waiver(),
+                                       labels = ggplot2::waiver()) {
   aesthetic <- match.arg(aesthetic)
   values <- .sn_resolve_continuous_palette(
     palette = palette,
@@ -215,10 +432,323 @@
   )
 
   if (identical(aesthetic, "fill")) {
-    return(p + ggplot2::scale_fill_gradientn(colours = values, guide = guide))
+    return(.sn_apply_scale_to_plot(
+      p,
+      ggplot2::scale_fill_gradientn(
+        colours = values,
+        guide = guide,
+        limits = limits,
+        breaks = breaks,
+        labels = labels
+      )
+    ))
   }
 
-  p + ggplot2::scale_color_gradientn(colours = values, guide = guide)
+  .sn_apply_scale_to_plot(
+    p,
+    ggplot2::scale_color_gradientn(
+      colours = values,
+      guide = guide,
+      limits = limits,
+      breaks = breaks,
+      labels = labels
+    )
+  )
+}
+
+.sn_set_feature_titles_italic <- function(p, feature_titles) {
+  idx <- 0L
+  .sn_map_plot_leaves(p, function(plot) {
+    idx <<- idx + 1L
+    if (idx <= length(feature_titles)) {
+      plot$labels$title <- bquote(italic(.(feature_titles[[idx]])))
+    }
+    plot
+  })
+}
+
+.sn_add_repel_label_halo <- function(plot,
+                                     label_layer,
+                                     label_color = "black",
+                                     label_size) {
+  built <- ggplot2::ggplot_build(plot)
+  label_data <- built$data[[label_layer]]
+  if (nrow(label_data) == 0) {
+    return(plot)
+  }
+
+  base_size <- unique(label_data$size)[1] %||% label_size
+  halo_data <- data.frame(
+    x = label_data$x,
+    y = label_data$y,
+    label = label_data$label,
+    colour = label_data$colour,
+    stringsAsFactors = FALSE
+  )
+
+  plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
+    data = halo_data,
+    mapping = if (identical(label_color, "group")) {
+      ggplot2::aes(x = .data$x, y = .data$y, label = .data$label, colour = .data$colour)
+    } else {
+      ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)
+    },
+    inherit.aes = FALSE,
+    bg.colour = "white",
+    bg.r = 0.16,
+    colour = if (identical(label_color, "group")) NULL else label_color,
+    size = base_size,
+    show.legend = FALSE
+  )
+  plot
+}
+
+.sn_patchwork_leaf_plots <- function(p) {
+  if (!inherits(p, "patchwork")) {
+    return(list(p))
+  }
+
+  first_plot <- p
+  class(first_plot) <- setdiff(class(first_plot), "patchwork")
+  first_plot$patches$plots <- list()
+  first_plot$patches$layout <- NULL
+  first_plot$patches$annotation <- NULL
+
+  c(
+    list(first_plot),
+    unlist(lapply(p$patches$plots, .sn_patchwork_leaf_plots), recursive = FALSE)
+  )
+}
+
+.sn_collect_patchwork_guides <- function(p) {
+  if (!inherits(p, "patchwork")) {
+    return(p)
+  }
+
+  p + patchwork::plot_layout(guides = "collect")
+}
+
+.sn_galaxy_palette <- function(n = 256L, direction = 1) {
+  values <- grDevices::colorRampPalette(c(
+    "#030711", "#0B1F3A", "#1D4E89", "#2E7DAA",
+    "#26A69A", "#FFD166", "#FF9F1C", "#FFF3C4"
+  ))(n)
+  if (identical(direction, -1)) {
+    values <- rev(values)
+  }
+  values
+}
+
+.sn_density_galaxy_theme <- function() {
+  ggplot2::theme(
+    panel.background = ggplot2::element_rect(fill = "#030711", colour = NA),
+    plot.background = ggplot2::element_rect(fill = "#030711", colour = NA),
+    legend.background = ggplot2::element_rect(fill = "#030711", colour = NA),
+    legend.key = ggplot2::element_rect(fill = "#030711", colour = NA),
+    legend.text = ggplot2::element_text(colour = "white", margin = ggplot2::margin(l = -4)),
+    legend.title = ggplot2::element_text(colour = "white"),
+    plot.title = ggplot2::element_text(colour = "white", face = "bold"),
+    axis.text = ggplot2::element_text(colour = "white"),
+    axis.title = ggplot2::element_text(colour = "white"),
+    axis.line = ggplot2::element_line(colour = scales::alpha("white", 0.35)),
+    panel.grid = ggplot2::element_blank()
+  )
+}
+
+.sn_fetch_feature_matrix <- function(object,
+                                     features,
+                                     assay = NULL,
+                                     layer = "data") {
+  metadata <- object[[]]
+  vars <- vector("list", length(features))
+  names(vars) <- features
+  if (!is_null(assay)) {
+    old_assay <- SeuratObject::DefaultAssay(object)
+    on.exit(SeuratObject::DefaultAssay(object) <- old_assay, add = TRUE)
+    SeuratObject::DefaultAssay(object) <- assay
+  }
+
+  for (i in seq_along(features)) {
+    feature <- features[[i]]
+    if (feature %in% colnames(metadata)) {
+      vars[[i]] <- as.numeric(metadata[[feature]])
+    } else {
+      fetched <- SeuratObject::FetchData(
+        object = object,
+        vars = feature,
+        layer = layer
+      )
+      vars[[i]] <- as.numeric(fetched[[feature]])
+    }
+  }
+
+  as.data.frame(vars, check.names = FALSE, stringsAsFactors = FALSE)
+}
+
+.sn_calculate_density <- function(weights,
+                                  embeddings,
+                                  method = c("wkde", "ks"),
+                                  adjust = 1) {
+  method <- match.arg(method)
+  weights <- as.numeric(weights)
+  weights[is.na(weights)] <- 0
+  if (sum(weights) <= 0) {
+    return(rep(0, nrow(embeddings)))
+  }
+
+  get_dens <- .sn_nebulosa_internal("get_dens")
+
+  if (method == "ks") {
+    dens <- ks::kde(embeddings[, c(1, 2), drop = FALSE], w = weights / sum(weights) * length(weights))
+    return(get_dens(embeddings, dens, method))
+  }
+
+  wkde2d <- .sn_nebulosa_internal("wkde2d")
+  dens <- wkde2d(
+    x = embeddings[[1]],
+    y = embeddings[[2]],
+    w = weights / sum(weights) * length(weights),
+    adjust = adjust
+  )
+  get_dens(embeddings, dens, method)
+}
+
+.sn_density_object <- function(weights,
+                               embeddings,
+                               method = c("wkde", "ks"),
+                               adjust = 1) {
+  method <- match.arg(method)
+  weights <- as.numeric(weights)
+  weights[is.na(weights)] <- 0
+  if (sum(weights) <= 0) {
+    return(list(
+      method = method,
+      density = NULL
+    ))
+  }
+
+  calculate_density <- .sn_nebulosa_internal("calculate_density")
+
+  list(
+    method = method,
+    density = calculate_density(
+      w = weights,
+      x = embeddings,
+      method = method,
+      adjust = adjust,
+      map = FALSE
+    )
+  )
+}
+
+.sn_density_grid_df <- function(density_object) {
+  method <- density_object$method
+  dens <- density_object$density
+  if (is.null(dens)) {
+    return(data.frame(x = numeric(0), y = numeric(0), density = numeric(0)))
+  }
+
+  if (identical(method, "ks")) {
+    return(expand.grid(
+      x = dens$eval.points[[1]],
+      y = dens$eval.points[[2]],
+      KEEP.OUT.ATTRS = FALSE
+    ) |>
+      transform(density = as.vector(dens$estimate)))
+  }
+
+  expand.grid(
+    x = dens$x,
+    y = dens$y,
+    KEEP.OUT.ATTRS = FALSE
+  ) |>
+    transform(density = as.vector(dens$z))
+}
+
+.sn_build_density_plot <- function(cell_embeddings,
+                                   density_values,
+                                   density_grid,
+                                   feature_title,
+                                   palette = "galaxy",
+                                   direction = 1,
+                                   title = NULL,
+                                   x_label = NULL,
+                                   y_label = NULL,
+                                   legend_title = "Density",
+                                   galaxy_style = TRUE,
+                                   show_axis = FALSE,
+                                   show_border = TRUE,
+                                   raster = TRUE,
+                                   pt_size = 1,
+                                   limits = NULL,
+                                   breaks = ggplot2::waiver(),
+                                   labels = ggplot2::waiver()) {
+  point_data <- data.frame(
+    dim1 = cell_embeddings[[1]],
+    dim2 = cell_embeddings[[2]],
+    density = density_values
+  )
+
+  p <- ggplot2::ggplot() +
+    ggplot2::geom_raster(
+      data = density_grid,
+      mapping = ggplot2::aes(x = .data$x, y = .data$y, fill = .data$density),
+      interpolate = TRUE
+    ) +
+    ggplot2::geom_point(
+      data = point_data,
+      mapping = ggplot2::aes(x = .data$dim1, y = .data$dim2),
+      colour = scales::alpha("white", 0.75),
+      size = max(0.15, pt_size * 0.45),
+      shape = 16,
+      stroke = 0
+    ) +
+    ggplot2::labs(
+      x = x_label,
+      y = y_label,
+      title = title %||% bquote(italic(.(feature_title))),
+      fill = legend_title
+    )
+
+  if (identical(palette, "galaxy")) {
+    p <- p + ggplot2::scale_fill_viridis_c(
+      option = "magma",
+      direction = direction,
+      limits = limits,
+      breaks = breaks,
+      labels = labels,
+      guide = .sn_colorbar_guide(title = legend_title, order = 1)
+    )
+  } else {
+    p <- .sn_apply_scale_to_plot(
+      p,
+      ggplot2::scale_fill_gradientn(
+        colours = .sn_resolve_continuous_palette(
+          palette = palette,
+          n = 256,
+          direction = direction
+        ),
+        limits = limits,
+        breaks = breaks,
+        labels = labels,
+        guide = .sn_colorbar_guide(title = legend_title, order = 1)
+      )
+    )
+  }
+
+  if (isTRUE(galaxy_style)) {
+    p <- p + .sn_density_galaxy_theme()
+  }
+  if (!show_axis) {
+    p <- .sn_hide_plot_axes(p)
+  }
+  if (!show_border) {
+    p <- .sn_apply_plot_component(p, ggplot2::theme(
+      panel.border = ggplot2::element_blank(),
+      axis.line = ggplot2::element_blank()
+    ))
+  }
+  p
 }
 
 .sn_barplot_summary <- function(data,
@@ -261,6 +791,9 @@
 #' @param data A data frame.
 #' @param x,y Columns mapped to the x- and y-axes.
 #' @param sort Currently reserved for future sorting support.
+#' @param aspect_ratio Optional panel aspect ratio. When used together with
+#'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+#'   panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label,title Optional plot labels.
@@ -276,6 +809,7 @@ sn_plot_boxplot <- function(data,
                             x,
                             y,
                             sort = FALSE,
+                            aspect_ratio = NULL,
                             panel_widths = NULL,
                             panel_heights = NULL,
                             x_label = NULL,
@@ -291,6 +825,7 @@ sn_plot_boxplot <- function(data,
 
   p <- .sn_add_catplot_theme(
     p,
+    aspect_ratio = aspect_ratio,
     show_title = "both",
     panel_widths = panel_widths,
     panel_heights = panel_heights,
@@ -324,6 +859,9 @@ sn_plot_boxplot <- function(data,
 #' @param point_alpha Alpha for overlaid points.
 #' @param jitter_width,jitter_height Jitter distances for overlaid points.
 #' @param palette Discrete palette used when \code{fill} is supplied.
+#' @param aspect_ratio Optional panel aspect ratio. When used together with
+#'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+#'   panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label,title Optional plot labels.
@@ -350,6 +888,7 @@ sn_plot_barplot <- function(data,
                             jitter_width = 0.15,
                             jitter_height = 0.05,
                             palette = "Paired",
+                            aspect_ratio = NULL,
                             panel_widths = NULL,
                             panel_heights = NULL,
                             x_label = NULL,
@@ -488,6 +1027,7 @@ sn_plot_barplot <- function(data,
 
   p <- .sn_add_catplot_theme(
     p,
+    aspect_ratio = aspect_ratio,
     show_title = "both",
     panel_widths = panel_widths,
     panel_heights = panel_heights,
@@ -536,6 +1076,9 @@ sn_plot_barplot <- function(data,
 #' @param show_legend Logical; if \code{FALSE}, hide the legend.
 #' @param title Optional plot title.
 #' @param x_label,y_label Optional axis labels.
+#' @param aspect_ratio Optional panel aspect ratio. When used together with
+#'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+#'   panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #'
@@ -570,6 +1113,7 @@ sn_plot_composition <- function(data,
                                 title = NULL,
                                 x_label = NULL,
                                 y_label = NULL,
+                                aspect_ratio = NULL,
                                 panel_widths = NULL,
                                 panel_heights = NULL) {
   stopifnot(is.data.frame(data))
@@ -630,6 +1174,7 @@ sn_plot_composition <- function(data,
 
   plot <- .sn_add_catplot_theme(
     plot,
+    aspect_ratio = aspect_ratio,
     show_title = "both",
     panel_widths = panel_widths,
     panel_heights = panel_heights,
@@ -663,6 +1208,9 @@ sn_plot_composition <- function(data,
 #' @param logfc_cutoff Optional vertical threshold for effect size.
 #' @param palette Discrete palette used when \code{annotation_col} is supplied.
 #' @param title,x_label,y_label Optional plot labels.
+#' @param aspect_ratio Optional panel aspect ratio. When used together with
+#'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+#'   panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #'
@@ -687,6 +1235,7 @@ sn_plot_milo <- function(x,
                          title = NULL,
                          x_label = "logFC",
                          y_label = expression(-log[10]("FDR")),
+                         aspect_ratio = NULL,
                          panel_widths = NULL,
                          panel_heights = NULL) {
   if (inherits(x, "Seurat")) {
@@ -736,6 +1285,7 @@ sn_plot_milo <- function(x,
 
   p <- .sn_add_catplot_theme(
     p,
+    aspect_ratio = aspect_ratio,
     show_title = "both",
     panel_widths = panel_widths,
     panel_heights = panel_heights
@@ -784,6 +1334,9 @@ sn_plot_milo <- function(x,
 #' @param show_border Logical value indicating whether to show the panel and axis borders on the plot. Default is TRUE.
 #' @param title The title for the plot. Default is NULL.
 #' @param palette The color palette to use for the plot. Default is "Paired".
+#' @param aspect_ratio Optional panel aspect ratio. Defaults to \code{1}. When
+#'   used together with \code{panel_widths} or \code{panel_heights}, Shennong
+#'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param ... Additional parameters to be passed to the DimPlot() function in Seurat.
@@ -836,6 +1389,7 @@ sn_plot_dim <- function(
   show_border = TRUE,
   title = NULL,
   palette = "Paired",
+  aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
   ...
@@ -870,7 +1424,7 @@ sn_plot_dim <- function(
     ...
   )
   if (!show_legend) {
-    p <- p + Seurat::NoLegend()
+    p <- .sn_apply_plot_component(p, Seurat::NoLegend())
   }
   reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
   object[["ident"]] <- Seurat::Idents(object = object)
@@ -884,11 +1438,11 @@ sn_plot_dim <- function(
   )
   p <- .sn_add_catplot_theme(
     p,
-    aspect_ratio = 1,
+    aspect_ratio = aspect_ratio,
     panel_widths = panel_widths,
     panel_heights = panel_heights
-  ) +
-    theme(legend.margin = margin(l = -8)) +
+  )
+  p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = -2))) +
     labs(
       x = x,
       y = y,
@@ -897,19 +1451,57 @@ sn_plot_dim <- function(
 
   p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
 
+  if (isTRUE(label) && !isTRUE(label_box)) {
+    p <- .sn_map_plot_leaves(p, function(plot) {
+      label_layers <- which(vapply(
+        plot$layers,
+        FUN = function(layer) any(grepl("GeomText", class(layer$geom))),
+        FUN.VALUE = logical(1)
+      ))
+      if (length(label_layers) == 0) {
+        return(plot)
+      }
+
+      label_layer <- utils::tail(label_layers, 1)
+      if (isTRUE(repel) && rlang::is_installed("ggrepel")) {
+        return(.sn_add_repel_label_halo(
+          plot = plot,
+          label_layer = label_layer,
+          label_color = label_color,
+          label_size = label_size
+        ))
+      }
+
+      original_layer <- plot$layers[[label_layer]]
+      label_data <- original_layer$data
+      base_size <- original_layer$aes_params$size %||% original_layer$geom_params$size %||% label_size
+
+      plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
+        data = label_data,
+        mapping = original_layer$mapping,
+        inherit.aes = FALSE,
+        bg.colour = "white",
+        bg.r = 0.12,
+        colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
+        size = base_size,
+        show.legend = FALSE
+      )
+
+      if (identical(label_color, "group") && "colour" %in% colnames(label_data)) {
+        plot$layers[[label_layer]]$mapping$colour <- quote(.data$colour)
+      }
+      plot
+    })
+  }
 
   if (!show_axis) {
-    p <- p + theme(
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      axis.ticks = element_blank()
-    )
+    p <- .sn_hide_plot_axes(p)
   }
   if (!show_border) {
-    p <- p + theme(
+    p <- .sn_apply_plot_component(p, theme(
       panel.border = element_blank(),
       axis.line = element_blank()
-    )
+    ))
   }
   return(p)
 }
@@ -927,7 +1519,9 @@ sn_plot_dim <- function(
 #' @param show_legend Whether to show the legend or not. Defaults to FALSE.
 #' @param angle_x The angle of the x-axis labels. Defaults to 0.
 #' @param palette The color palette to use. Defaults to \code{"Paired"}.
-#' @param aspect_ratio The aspect ratio of the plot. Defaults to 0.5.
+#' @param aspect_ratio The aspect ratio of the plot. Defaults to 0.5. When used
+#'   together with \code{panel_widths} or \code{panel_heights}, Shennong
+#'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label,title Optional plot labels.
@@ -968,7 +1562,7 @@ sn_plot_violin <- function(object,
     split.by = split_by
   )
   if (!show_legend) {
-    p <- p + Seurat::NoLegend()
+    p <- .sn_apply_plot_component(p, Seurat::NoLegend())
   }
   object[["ident"]] <- Seurat::Idents(object = object)
   group_by <- group_by %||% "ident"
@@ -980,10 +1574,10 @@ sn_plot_violin <- function(object,
     panel_widths = panel_widths,
     panel_heights = panel_heights,
     x_text_angle = angle_x
-  ) +
-    theme(
+  )
+  p <- .sn_apply_plot_component(p, theme(
       legend.margin = margin(l = -8)
-    ) +
+    )) +
     ggplot2::scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     guides(x = guide_axis(angle = angle_x)) +
     ggplot2::labs(
@@ -1085,6 +1679,9 @@ sn_plot_violin <- function(object,
 #' @param legend_position Legend position passed to \code{theme()}. Defaults to
 #'   \code{"right"} and works together with \code{catplot::theme_cat()} when
 #'   available.
+#' @param aspect_ratio Optional panel aspect ratio. When used together with
+#'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+#'   panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param title Optional plot title.
@@ -1122,6 +1719,7 @@ sn_plot_dot <- function(x,
                         direction = -1,
                         zscore_legend_labels = c("text", "numeric"),
                         legend_position = "right",
+                        aspect_ratio = NULL,
                         panel_widths = NULL,
                         panel_heights = NULL,
                         title = NULL,
@@ -1137,8 +1735,12 @@ sn_plot_dot <- function(x,
   )
   features <- feature_info$features
   group_by <- group_by %||% feature_info$group_by
-  color_breaks <- if (identical(zscore_legend_labels, "text")) c(col_min, col_max) else ggplot2::waiver()
-  color_labels <- if (identical(zscore_legend_labels, "text")) c("Min", "Max") else ggplot2::waiver()
+  colorbar_info <- .sn_colorbar_breaks_labels(
+    limits = c(col_min, col_max),
+    label_mode = if (identical(zscore_legend_labels, "text")) "text" else "numeric"
+  )
+  color_breaks <- colorbar_info$breaks
+  color_labels <- colorbar_info$labels
   p <- suppressMessages(
     Seurat::DotPlot(
       object = x,
@@ -1170,20 +1772,13 @@ sn_plot_dot <- function(x,
             alpha = 1
           )
         ),
-        color = guide_colorbar(
-          title = "Z score",
-          order = 1,
-          frame.colour = "black",
-          frame.linewidth = 0.2,
-          ticks.colour = "black",
-          ticks.linewidth = 0.5 / .sn_ggplot_pt
-        )
+        color = .sn_colorbar_guide(title = "Z score", order = 1)
       )
   )
   p <- suppressWarnings(
     .sn_add_catplot_theme(
       p,
-      aspect_ratio = NULL,
+      aspect_ratio = aspect_ratio,
       show_title = "both",
       panel_widths = panel_widths,
       panel_heights = panel_heights
@@ -1211,14 +1806,8 @@ sn_plot_dot <- function(x,
           n = 256L,
           direction = direction
         ),
-        guide = guide_colorbar(
-          title = "Z score",
-          order = 1,
-          frame.colour = "black",
-          frame.linewidth = 0.2,
-          ticks.colour = "black",
-          ticks.linewidth = 0.5 / .sn_ggplot_pt
-        ),
+        limits = c(col_min, col_max),
+        guide = .sn_colorbar_guide(title = "Z score", order = 1),
         breaks = color_breaks,
         labels = color_labels
       )
@@ -1241,6 +1830,15 @@ sn_plot_dot <- function(x,
 #'   cells.
 #' @param slot A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".
 #' @param max_cutoff A numeric value specifying the maximum expression cutoff. Defaults to NA.
+#' @param mode One of \code{"expression"} or \code{"density"}. Density mode
+#'   computes a Nebulosa-style weighted feature density over the selected
+#'   embedding and renders it with a galaxy-like theme by default.
+#' @param density_method Density estimator used when \code{mode = "density"}.
+#'   One of \code{"wkde"} or \code{"ks"}. Defaults to \code{"wkde"}.
+#' @param density_adjust Bandwidth adjustment forwarded to the density
+#'   estimator when \code{mode = "density"}. Larger values smooth more.
+#' @param density_style One of \code{"galaxy"} or \code{"plain"}. Defaults to
+#'   \code{"galaxy"}.
 #' @param raster A logical value specifying whether to use raster graphics. Defaults to TRUE.
 #' @param seed An integer value specifying the random seed. Defaults to 717.
 #' @param title A character string specifying the plot title. Defaults to NULL.
@@ -1250,6 +1848,17 @@ sn_plot_dot <- function(x,
 #' @param show_border A logical value specifying whether to show the plot border. Defaults to TRUE.
 #' @param palette A character string specifying the color palette to use. Defaults to "YlOrRd".
 #' @param direction A numeric value specifying the direction of the color palette. Defaults to 1.
+#' @param legend_labels One of \code{"text"} to show \code{"Min"} /
+#'   \code{"Max"} at the colorbar ends or \code{"numeric"} to show numeric
+#'   break labels. Defaults to \code{"text"}.
+#' @param keep_scale Passed to Seurat's \code{FeaturePlot(keep.scale = ...)}.
+#'   Defaults to \code{"all"} so multi-feature plots share one comparable
+#'   color scale and can collect a single legend.
+#' @param collect_legend Logical; when \code{TRUE}, collect a shared legend for
+#'   patchwork multi-feature plots. Defaults to \code{TRUE}.
+#' @param aspect_ratio Optional panel aspect ratio. Defaults to \code{1}. When
+#'   used together with \code{panel_widths} or \code{panel_heights}, Shennong
+#'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label Optional axis labels.
@@ -1276,6 +1885,10 @@ sn_plot_feature <-
            pt_size = NULL,
            slot = "data",
            max_cutoff = NA,
+           mode = c("expression", "density"),
+           density_method = c("wkde", "ks"),
+           density_adjust = 1,
+           density_style = c("galaxy", "plain"),
            raster = TRUE,
            seed = 717,
            title = NULL,
@@ -1285,12 +1898,99 @@ sn_plot_feature <-
            show_border = TRUE,
            palette = "YlOrRd",
            direction = 1,
+           legend_labels = c("text", "numeric"),
+           keep_scale = c("all", "feature", "none"),
+           collect_legend = TRUE,
+           aspect_ratio = 1,
            panel_widths = NULL,
            panel_heights = NULL,
            x_label = NULL,
            y_label = NULL,
            ...) {
+    mode <- match.arg(mode)
+    density_method <- match.arg(density_method)
+    density_style <- match.arg(density_style)
+    legend_labels <- match.arg(legend_labels)
+    keep_scale <- match.arg(keep_scale)
     pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
+    reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
+    object[["ident"]] <- Seurat::Idents(object = object)
+
+    if (identical(mode, "density")) {
+      check_installed("Nebulosa", reason = "to compute feature-density plots.")
+      if (identical(density_method, "ks")) {
+        check_installed("ks", reason = "to compute `density_method = \"ks\"` feature-density plots.")
+      }
+
+      embeddings <- as.data.frame(Seurat::Embeddings(object[[reduction]])[, 1:2, drop = FALSE])
+      colnames(embeddings) <- c("dim1", "dim2")
+      feature_titles <- as.character(features)
+      vars <- .sn_fetch_feature_matrix(
+        object = object,
+        features = feature_titles,
+        layer = slot
+      )
+      density_objects <- lapply(
+        feature_titles,
+        function(feature) .sn_density_object(
+          weights = vars[[feature]],
+          embeddings = embeddings,
+          method = density_method,
+          adjust = density_adjust
+        )
+      )
+      density_matrix <- vapply(
+        feature_titles,
+        FUN = function(feature) .sn_calculate_density(
+          weights = vars[[feature]],
+          embeddings = embeddings,
+          method = density_method,
+          adjust = density_adjust
+        ),
+        FUN.VALUE = numeric(nrow(embeddings))
+      )
+      if (is.vector(density_matrix)) {
+        density_matrix <- matrix(density_matrix, ncol = 1, dimnames = list(NULL, feature_titles))
+      }
+      density_limits <- range(density_matrix, finite = TRUE)
+      density_breaks <- .sn_colorbar_breaks_labels(
+        limits = density_limits,
+        label_mode = legend_labels
+      )
+      density_plots <- lapply(seq_along(feature_titles), function(i) {
+        .sn_build_density_plot(
+          cell_embeddings = embeddings,
+          density_values = density_matrix[, i],
+          density_grid = .sn_density_grid_df(density_objects[[i]]),
+          feature_title = feature_titles[[i]],
+          palette = if (identical(density_style, "galaxy")) "galaxy" else palette,
+          direction = direction,
+          title = if (length(feature_titles) == 1L) title else NULL,
+          x_label = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
+          y_label = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),
+          legend_title = legend_title %||% "Density",
+          galaxy_style = identical(density_style, "galaxy"),
+          show_axis = show_axis,
+          show_border = show_border,
+          raster = raster,
+          pt_size = pt_size,
+          limits = density_limits,
+          breaks = density_breaks$breaks,
+          labels = density_breaks$labels
+        )
+      })
+
+      p <- if (length(density_plots) == 1L) {
+        density_plots[[1]]
+      } else {
+        patchwork::wrap_plots(density_plots)
+      }
+      if (isTRUE(collect_legend)) {
+        p <- .sn_collect_patchwork_guides(p)
+      }
+      return(p)
+    }
+
     p <- Seurat::FeaturePlot(
       object = object,
       features = features,
@@ -1302,26 +2002,39 @@ sn_plot_feature <-
       raster = raster,
       order = TRUE,
       max.cutoff = max_cutoff,
+      keep.scale = keep_scale,
       ...
     )
-    if (!show_legend) {
-      p <- p + Seurat::NoLegend()
+    if (inherits(p, "patchwork")) {
+      p <- patchwork::wrap_plots(.sn_patchwork_leaf_plots(p))
     }
-    reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
-    object[["ident"]] <- Seurat::Idents(object = object)
-    title <- title %||% features
+    if (!show_legend) {
+      p <- .sn_apply_plot_component(p, Seurat::NoLegend())
+    }
+    feature_titles <- as.character(features)
+    title_value <- if (!is_null(title)) title else NULL
+    feature_limits <- .sn_feature_limits(
+      object = object,
+      features = feature_titles,
+      slot = slot,
+      max_cutoff = max_cutoff
+    )
+    feature_breaks <- .sn_colorbar_breaks_labels(
+      limits = feature_limits,
+      label_mode = legend_labels
+    )
     p <- .sn_add_catplot_theme(
       p,
-      aspect_ratio = 1,
+      aspect_ratio = aspect_ratio,
       show_title = "both",
       panel_widths = panel_widths,
       panel_heights = panel_heights
-    ) +
-      theme(legend.margin = margin(l = -8)) +
+    )
+    p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = -8))) +
       labs(
         x = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
         y = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),
-        title = title
+        title = title_value
       )
 
     if (!is_null(palette)) {
@@ -1329,24 +2042,30 @@ sn_plot_feature <-
         p,
         palette = palette,
         direction = direction,
-        aesthetic = "color"
+        aesthetic = "color",
+        guide = .sn_colorbar_guide(title = legend_title %||% NULL, order = 1),
+        limits = if (identical(keep_scale, "all")) feature_limits else NULL,
+        breaks = if (identical(keep_scale, "all")) feature_breaks$breaks else ggplot2::waiver(),
+        labels = if (identical(keep_scale, "all")) feature_breaks$labels else ggplot2::waiver()
       )
     }
     if (!is_null(legend_title)) {
-      p <- p + guides(color = guide_colorbar(title = legend_title))
+      p <- p + guides(color = .sn_colorbar_guide(title = legend_title, order = 1))
+    }
+    if (is_null(title)) {
+      p <- .sn_set_feature_titles_italic(p, feature_titles = feature_titles)
+    }
+    if (isTRUE(collect_legend)) {
+      p <- .sn_collect_patchwork_guides(p)
     }
     if (!show_axis) {
-      p <- p + theme(
-        axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank()
-      )
+      p <- .sn_hide_plot_axes(p)
     }
     if (!show_border) {
-      p <- p + theme(
+      p <- .sn_apply_plot_component(p, theme(
         panel.border = element_blank(),
         axis.line = element_blank()
-      )
+      ))
     }
     return(p)
   }

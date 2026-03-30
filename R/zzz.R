@@ -18,7 +18,8 @@
       "Shennong is ready.",
       "Try `sn_list_results()`, `sn_list_palettes()`, or `sn_initialize_project()`.",
       sep = "\n"
-    )
+    ),
+    domain = NA
   )
 
   invisible()

@@ -19,6 +19,7 @@ sn_plot_barplot(
   jitter_width = 0.15,
   jitter_height = 0.05,
   palette = "Paired",
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
   x_label = NULL,
@@ -56,6 +57,10 @@ jittered points when bars are summarized.}
 \item{jitter_width, jitter_height}{Jitter distances for overlaid points.}
 
 \item{palette}{Discrete palette used when \code{fill} is supplied.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. When used together with
+\code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}

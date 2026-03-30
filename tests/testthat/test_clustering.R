@@ -810,10 +810,14 @@ test_that("sn_find_doublets skips zero-count cells in corrected layers", {
   )
 
   expect_true(all(c("scDblFinder.class_corrected", "scDblFinder.score_corrected") %in% colnames(updated[[]])))
-  expect_true(is.na(updated$scDblFinder.class_corrected[[1]]))
+  expect_identical(as.character(updated$scDblFinder.class_corrected[[1]]), "unresolved")
   expect_true(is.na(updated$scDblFinder.score_corrected[[1]]))
   expect_true(all(!is.na(updated$scDblFinder.class_corrected[-1])))
   expect_true(all(!is.na(updated$scDblFinder.score_corrected[-1])))
+  expect_identical(
+    levels(updated$scDblFinder.class_corrected),
+    c("singlet", "doublet", "unresolved")
+  )
 })
 
 test_that("sn_find_doublets skips low-feature cells before running scDblFinder", {
@@ -851,9 +855,13 @@ test_that("sn_find_doublets skips low-feature cells before running scDblFinder",
     ncores = 1
   )
 
-  expect_true(is.na(updated$scDblFinder.class_corrected[[1]]))
+  expect_identical(as.character(updated$scDblFinder.class_corrected[[1]]), "unresolved")
   expect_true(is.na(updated$scDblFinder.score_corrected[[1]]))
   expect_true(all(!is.na(updated$scDblFinder.class_corrected[-1])))
+  expect_identical(
+    levels(updated$scDblFinder.class_corrected),
+    c("singlet", "doublet", "unresolved")
+  )
 })
 
 test_that("sn_run_celltypist adds predicted labels back onto the Seurat object", {

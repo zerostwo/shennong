@@ -1921,7 +1921,7 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
                                       group_col,
                                       feature_col) {
   if (!group_col %in% colnames(table) || !feature_col %in% colnames(table) || nrow(table) == 0L) {
-    return(setNames(numeric(), character()))
+    return(stats::setNames(numeric(), character()))
   }
   freq <- table |>
     dplyr::distinct(dplyr::across(dplyr::all_of(c(group_col, feature_col)))) |>
@@ -3102,6 +3102,10 @@ sn_build_prompt <- function(evidence,
 #' @param provider A user-supplied function that accepts \code{messages} and
 #'   returns text or a list containing \code{text}.
 #' @param model Optional model identifier passed through to the provider.
+#' @param structured_type Optional structured-output schema or type object
+#'   forwarded to providers that support typed responses.
+#' @param tools Optional list of tool definitions forwarded to providers that
+#'   support tool registration or tool calling.
 #' @param ... Additional arguments passed to \code{provider}.
 #' @importFrom utils modifyList
 #'

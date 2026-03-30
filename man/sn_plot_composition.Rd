@@ -21,6 +21,7 @@ sn_plot_composition(
   title = NULL,
   x_label = NULL,
   y_label = NULL,
+  aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL
 )
@@ -58,6 +59,10 @@ order.}
 \item{title}{Optional plot title.}
 
 \item{x_label, y_label}{Optional axis labels.}
+
+\item{aspect_ratio}{Optional panel aspect ratio. When used together with
+\code{panel_widths} or \code{panel_heights}, Shennong derives the missing
+panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}
