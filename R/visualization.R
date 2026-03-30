@@ -486,6 +486,22 @@
     stringsAsFactors = FALSE
   )
 
+  if (!rlang::is_installed("shadowtext")) {
+    plot$layers[[label_layer]] <- ggplot2::geom_text(
+      data = halo_data,
+      mapping = if (identical(label_color, "group")) {
+        ggplot2::aes(x = .data$x, y = .data$y, label = .data$label, colour = .data$colour)
+      } else {
+        ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)
+      },
+      inherit.aes = FALSE,
+      colour = if (identical(label_color, "group")) NULL else label_color,
+      size = base_size,
+      show.legend = FALSE
+    )
+    return(plot)
+  }
+
   plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
     data = halo_data,
     mapping = if (identical(label_color, "group")) {
@@ -1476,16 +1492,27 @@ sn_plot_dim <- function(
       label_data <- original_layer$data
       base_size <- original_layer$aes_params$size %||% original_layer$geom_params$size %||% label_size
 
-      plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
-        data = label_data,
-        mapping = original_layer$mapping,
-        inherit.aes = FALSE,
-        bg.colour = "white",
-        bg.r = 0.12,
-        colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
-        size = base_size,
-        show.legend = FALSE
-      )
+      if (rlang::is_installed("shadowtext")) {
+        plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
+          data = label_data,
+          mapping = original_layer$mapping,
+          inherit.aes = FALSE,
+          bg.colour = "white",
+          bg.r = 0.12,
+          colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
+          size = base_size,
+          show.legend = FALSE
+        )
+      } else {
+        plot$layers[[label_layer]] <- ggplot2::geom_text(
+          data = label_data,
+          mapping = original_layer$mapping,
+          inherit.aes = FALSE,
+          colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
+          size = base_size,
+          show.legend = FALSE
+        )
+      }
 
       if (identical(label_color, "group") && "colour" %in% colnames(label_data)) {
         plot$layers[[label_layer]]$mapping$colour <- quote(.data$colour)

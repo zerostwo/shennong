@@ -217,7 +217,8 @@ test_that("Seurat plotting helpers return ggplot objects", {
   )
   expect_true(all(vapply(multi_feature_scales, length, integer(1)) >= 1L))
   expect_equal(length(multi_feature_plot$guides$guides), 1)
-  expect_identical(class(dim_plot_repel$layers[[2]]$geom)[[1]], "GeomShadowText")
+  expected_geom <- if (rlang::is_installed("shadowtext")) "GeomShadowText" else "GeomText"
+  expect_identical(class(dim_plot_repel$layers[[2]]$geom)[[1]], expected_geom)
   expect_equal(as.numeric(dim_plot$theme$legend.text$margin[[4]]), -4)
   expect_true(all(vapply(
     c(list(multi_feature_plot), multi_feature_plot$patches$plots),
