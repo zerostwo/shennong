@@ -73,7 +73,8 @@ sn_read(tmp)
 \seealso{
 \code{\link[=sn_write]{sn_write()}}
 
-\code{\link[clusterProfiler:reexports]{clusterProfiler::read.gmt()}}
+The original \code{read.gmt()} implementation in the \code{clusterProfiler}
+package.
 }
 \author{
 Yu Guangchuang (original implementation)

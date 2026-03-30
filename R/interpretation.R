@@ -1218,7 +1218,9 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 }
 
 .sn_annotation_structured_type <- function() {
-  check_installed("ellmer")
+  if (!requireNamespace("ellmer", quietly = TRUE)) {
+    return(NULL)
+  }
 
   ellmer::type_object(
     "Structured cluster annotation result.",

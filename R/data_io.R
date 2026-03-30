@@ -315,7 +315,8 @@ sn_list_10x_paths <- function(path,
 #' https://github.com/YuLab-SMU/clusterProfiler
 #'
 #' @return A data.frame with two columns: `term` and `gene`.
-#' @seealso [clusterProfiler::read.gmt()]
+#' @seealso The original `read.gmt()` implementation in the `clusterProfiler`
+#'   package.
 #' @author Yu Guangchuang (original implementation)
 #' @rdname sn_read
 #' @export

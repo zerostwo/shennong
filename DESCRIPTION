@@ -82,6 +82,7 @@ Suggests:
     SingleCellExperiment,
     SummarizedExperiment,
     SoupX,
+    tidytemplate,
     testthat (>= 3.0.0)
 Remotes:
     github::genecell/COSGR,
@@ -90,7 +91,8 @@ Remotes:
     github::carmonalab/SignatuR,
     github::catplot/catplot,
     github::immunogenomics/harmony@harmony2,
-    github::immunogenomics/lisi
+    github::immunogenomics/lisi,
+    github::tidyverse/tidytemplate
 VignetteBuilder: knitr
 Config/Needs/website: tidyverse/tidytemplate
 Config/testthat/edition: 3
