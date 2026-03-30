@@ -284,21 +284,25 @@
   if (length(genes) == 0) {
     return(data.frame(SYMBOL = character(0), ENTREZID = character(0), stringsAsFactors = FALSE))
   }
+  genes_sorted <- sort(genes)
 
   cache_key <- .sn_enrich_cache_key(
     org_db,
-    paste(sort(genes), collapse = "|")
+    paste(genes_sorted, collapse = "|")
   )
   if (exists(cache_key, envir = .sn_enrichment_cache_env$symbol_to_entrez, inherits = FALSE)) {
     return(get(cache_key, envir = .sn_enrichment_cache_env$symbol_to_entrez, inherits = FALSE))
   }
 
   out <- clusterProfiler::bitr(
-    geneID = genes,
+    geneID = genes_sorted,
     fromType = "SYMBOL",
     toType = "ENTREZID",
     OrgDb = org_db
   )
+  if (nrow(out) > 0L && "SYMBOL" %in% colnames(out)) {
+    out <- out[order(match(out$SYMBOL, genes_sorted)), , drop = FALSE]
+  }
   assign(cache_key, out, envir = .sn_enrichment_cache_env$symbol_to_entrez)
   out
 }
