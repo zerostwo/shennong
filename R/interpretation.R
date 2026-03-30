@@ -1324,6 +1324,7 @@ sn_build_prompt <- function(evidence,
 #'   returns text or a list containing \code{text}.
 #' @param model Optional model identifier passed through to the provider.
 #' @param ... Additional arguments passed to \code{provider}.
+#' @importFrom utils modifyList
 #'
 #' @return A list containing at least \code{text}.
 #'

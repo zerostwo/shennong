@@ -582,6 +582,7 @@ test_that("sn_enrich prefers stored default DE results on Seurat objects", {
 })
 
 test_that("sn_enrich caches msigdbr term tables within a session", {
+  skip_if_not_installed("msigdbr")
   calls <- 0L
   rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms), envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms)
 

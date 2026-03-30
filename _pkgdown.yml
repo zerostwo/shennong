@@ -1,13 +1,21 @@
 url: https://songqi.org/shennong
 
 development:
-  mode: auto
+  mode: devel
 
 authors:
   Songqi Duan:
     href: https://songqi.org
 
 home:
+  sidebar:
+    structure:
+      - links
+      - license
+      - community
+      - citation
+      - authors
+      - dev
   links:
     - text: Source code
       href: https://github.com/zerostwo/shennong
@@ -17,6 +25,7 @@ home:
 destination: site
 
 template:
+  package: tidytemplate
   bootstrap: 5
   includes:
     in_header:

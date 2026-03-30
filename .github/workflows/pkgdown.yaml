@@ -30,6 +30,7 @@ jobs:
             any::pkgdown
             any::knitr
             any::rmarkdown
+            github::tidyverse/tidytemplate
             any::Seurat
             any::hdf5r
             github::carmonalab/SignatuR
