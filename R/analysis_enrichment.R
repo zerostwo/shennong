@@ -259,6 +259,17 @@
   result
 }
 
+.sn_enrich_muffle_empty_warning <- function(expr) {
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      if (grepl("No enrichment found", conditionMessage(w), fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+}
+
 .sn_enrich_store_names <- function(store_name, databases) {
   if (length(databases) == 1) {
     return(store_name[[1]])
@@ -439,32 +450,38 @@ sn_enrich <- function(
       )
 
       if (identical(analysis, "gsea")) {
-        result <- clusterProfiler::gseGO(
-          geneList = gene_list,
-          ont = ont,
-          OrgDb = org_db,
-          keyType = "SYMBOL",
-          pvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::gseGO(
+            geneList = gene_list,
+            ont = ont,
+            OrgDb = org_db,
+            keyType = "SYMBOL",
+            pvalueCutoff = 1
+          )
         )
       } else if (is_null(mapping)) {
-        result <- clusterProfiler::enrichGO(
-          gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
-          ont = ont,
-          OrgDb = org_db,
-          keyType = "SYMBOL",
-          pvalueCutoff = 1,
-          qvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::enrichGO(
+            gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
+            ont = ont,
+            OrgDb = org_db,
+            keyType = "SYMBOL",
+            pvalueCutoff = 1,
+            qvalueCutoff = 1
+          )
         )
       } else {
-        result <- clusterProfiler::compareCluster(
-          geneClusters = gene_clusters,
-          fun = "enrichGO",
-          ont = ont,
-          data = input,
-          OrgDb = org_db,
-          keyType = "SYMBOL",
-          pvalueCutoff = 1,
-          qvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::compareCluster(
+            geneClusters = gene_clusters,
+            fun = "enrichGO",
+            ont = ont,
+            data = input,
+            OrgDb = org_db,
+            keyType = "SYMBOL",
+            pvalueCutoff = 1,
+            qvalueCutoff = 1
+          )
         )
       }
 
@@ -480,21 +497,25 @@ sn_enrich <- function(
         kegg_gene_list <- gene_list[gid$SYMBOL]
         names(kegg_gene_list) <- gid$ENTREZID
         kegg_gene_list <- sort(kegg_gene_list, decreasing = TRUE)
-        result <- clusterProfiler::gseKEGG(
-          geneList = kegg_gene_list,
-          organism = organism,
-          pvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::gseKEGG(
+            geneList = kegg_gene_list,
+            organism = organism,
+            pvalueCutoff = 1
+          )
         )
       } else if (is_null(mapping)) {
         gid <- .sn_enrich_symbol_to_entrez(
           genes = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
           org_db = org_db
         )
-        result <- clusterProfiler::enrichKEGG(
-          gene = gid$ENTREZID,
-          organism = organism,
-          pvalueCutoff = 1,
-          qvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::enrichKEGG(
+            gene = gid$ENTREZID,
+            organism = organism,
+            pvalueCutoff = 1,
+            qvalueCutoff = 1
+          )
         )
       } else {
         gene_ids <- unique(as.character(input[[mapping$gene_col]]))
@@ -510,13 +531,15 @@ sn_enrich <- function(
           dplyr::select(-dplyr::all_of(mapping$gene_col)) |>
           dplyr::rename(!!mapping$gene_col := dplyr::all_of("ENTREZID"))
 
-        result <- clusterProfiler::compareCluster(
-          geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
-          data = kegg_input,
-          fun = "enrichKEGG",
-          pvalueCutoff = 1,
-          qvalueCutoff = 1,
-          organism = organism
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::compareCluster(
+            geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
+            data = kegg_input,
+            fun = "enrichKEGG",
+            pvalueCutoff = 1,
+            qvalueCutoff = 1,
+            organism = organism
+          )
         )
       }
 
@@ -541,29 +564,35 @@ sn_enrich <- function(
         dplyr::distinct()
 
       if (identical(analysis, "gsea")) {
-        result <- clusterProfiler::GSEA(
-          geneList = gene_list,
-          TERM2GENE = term2gene,
-          TERM2NAME = term2name,
-          pvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::GSEA(
+            geneList = gene_list,
+            TERM2GENE = term2gene,
+            TERM2NAME = term2name,
+            pvalueCutoff = 1
+          )
         )
       } else if (is_null(mapping)) {
-        result <- clusterProfiler::enricher(
-          gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
-          TERM2GENE = term2gene,
-          TERM2NAME = term2name,
-          pvalueCutoff = 1,
-          qvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::enricher(
+            gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
+            TERM2GENE = term2gene,
+            TERM2NAME = term2name,
+            pvalueCutoff = 1,
+            qvalueCutoff = 1
+          )
         )
       } else {
-        result <- clusterProfiler::compareCluster(
-          geneClusters = gene_clusters,
-          data = input,
-          fun = clusterProfiler::enricher,
-          TERM2GENE = term2gene,
-          TERM2NAME = term2name,
-          pvalueCutoff = 1,
-          qvalueCutoff = 1
+        result <- .sn_enrich_muffle_empty_warning(
+          clusterProfiler::compareCluster(
+            geneClusters = gene_clusters,
+            data = input,
+            fun = clusterProfiler::enricher,
+            TERM2GENE = term2gene,
+            TERM2NAME = term2name,
+            pvalueCutoff = 1,
+            qvalueCutoff = 1
+          )
         )
       }
 

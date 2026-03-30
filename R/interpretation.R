@@ -15,6 +15,60 @@
   collection_data[[store_name]]
 }
 
+.sn_resolve_misc_result_name <- function(object,
+                                         collection,
+                                         store_name = NULL,
+                                         preferred_analysis = NULL,
+                                         arg_name = "store_name") {
+  misc_data <- methods::slot(object, "misc")
+  collection_data <- misc_data[[collection]] %||% list()
+
+  if (!is_null(store_name) && nzchar(store_name)) {
+    if (!store_name %in% names(collection_data)) {
+      stop(glue("No stored result named '{store_name}' was found in `object@misc${collection}`."))
+    }
+    return(store_name)
+  }
+
+  if (length(collection_data) == 0L) {
+    stop(glue("No stored results were found in `object@misc${collection}`; please supply `{arg_name}`."), call. = FALSE)
+  }
+
+  available_names <- names(collection_data)
+  latest_name <- function(candidates) {
+    if (length(candidates) == 0L) {
+      return(NULL)
+    }
+    created_at <- vapply(
+      candidates,
+      function(candidate) collection_data[[candidate]]$created_at %||% "",
+      character(1)
+    )
+    candidates[[order(created_at, decreasing = TRUE, na.last = TRUE)[[1]]]]
+  }
+
+  preferred_names <- if (is_null(preferred_analysis)) {
+    character()
+  } else {
+    available_names[vapply(
+      available_names,
+      function(candidate) identical(collection_data[[candidate]]$analysis %||% NULL, preferred_analysis),
+      logical(1)
+    )]
+  }
+
+  resolved_name <- if ("default" %in% available_names) {
+    "default"
+  } else if (length(available_names) == 1L) {
+    available_names[[1]]
+  } else {
+    latest_name(preferred_names) %||% latest_name(available_names)
+  }
+
+  .sn_log_info("`{arg_name}` was not supplied; using stored result '{resolved_name}' from `object@misc${collection}`.")
+  resolved_name
+}
+
 .sn_compact_collection_summary <- function(object, collection, type_label) {
   misc_data <- methods::slot(object, "misc")
   collection_data <- misc_data[[collection]] %||% list()
@@ -270,7 +324,18 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 
 .sn_render_prompt_value <- function(x, max_rows = 8) {
   if (is.data.frame(x)) {
-    return(paste(utils::capture.output(print(utils::head(x, max_rows))), collapse = "\n"))
+    rendered <- if (tibble::is_tibble(x)) {
+      if (is.null(max_rows) || is.infinite(max_rows)) {
+        utils::capture.output(print(x, n = Inf, width = Inf))
+      } else {
+        utils::capture.output(print(x, n = max_rows, width = Inf))
+      }
+    } else if (is.null(max_rows) || is.infinite(max_rows)) {
+      utils::capture.output(print(x))
+    } else {
+      utils::capture.output(print(utils::head(x, max_rows)))
+    }
+    return(paste(rendered, collapse = "\n"))
   }
 
   if (is.list(x)) {
@@ -301,7 +366,147 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   NULL
 }
 
+.sn_http_content_type <- function(headers_text) {
+  if (!is.character(headers_text) || length(headers_text) != 1L || is.na(headers_text)) {
+    return(NA_character_)
+  }
+  match <- stringr::str_match(
+    headers_text,
+    "(?im)^content-type:\\s*([^;\\r\\n]+)"
+  )[, 2]
+  match %||% NA_character_
+}
+
+.sn_http_body_preview <- function(body_text, max_chars = 200) {
+  if (!is.character(body_text) || length(body_text) != 1L || is.na(body_text) || !nzchar(body_text)) {
+    return("")
+  }
+  preview <- stringr::str_squish(body_text)
+  if (nchar(preview) > max_chars) {
+    preview <- paste0(substr(preview, 1, max_chars), "...")
+  }
+  preview
+}
+
+.sn_is_probably_html <- function(body_text, content_type = NA_character_) {
+  if (is.character(content_type) && length(content_type) == 1L && grepl("html", content_type, ignore.case = TRUE)) {
+    return(TRUE)
+  }
+  if (!is.character(body_text) || length(body_text) != 1L || is.na(body_text)) {
+    return(FALSE)
+  }
+  grepl("^\\s*<!DOCTYPE html|^\\s*<html\\b", body_text, ignore.case = TRUE)
+}
+
+.sn_parse_openai_http_response <- function(response,
+                                           endpoint,
+                                           wire_api,
+                                           resolved_model) {
+  status_code <- response$status_code %||% 200L
+  headers_text <- tryCatch(rawToChar(response$headers), error = function(...) "")
+  body_text <- tryCatch(rawToChar(response$content), error = function(...) "")
+  content_type <- .sn_http_content_type(headers_text)
+  preview <- .sn_http_body_preview(body_text)
+
+  if (status_code >= 500L) {
+    return(list(
+      ok = FALSE,
+      retryable = TRUE,
+      message = glue(
+        "OpenAI-style endpoint '{endpoint}' returned HTTP {status_code}. ",
+        "Body preview: {preview}"
+      )
+    ))
+  }
+
+  if (.sn_is_probably_html(body_text = body_text, content_type = content_type)) {
+    return(list(
+      ok = FALSE,
+      retryable = TRUE,
+      message = glue(
+        "OpenAI-style endpoint '{endpoint}' returned HTML instead of JSON",
+        if (!is.na(content_type) && nzchar(content_type)) glue(" (content-type: {content_type})") else "",
+        ". This usually means the base URL is wrong or the upstream gateway returned an error page. ",
+        "Body preview: {preview}"
+      )
+    ))
+  }
+
+  parsed <- tryCatch(
+    jsonlite::fromJSON(body_text, simplifyVector = FALSE),
+    error = identity
+  )
+  if (inherits(parsed, "error")) {
+    return(list(
+      ok = FALSE,
+      retryable = TRUE,
+      message = glue(
+        "Failed to parse JSON from '{endpoint}'",
+        if (!is.na(content_type) && nzchar(content_type)) glue(" (content-type: {content_type})") else "",
+        ": {conditionMessage(parsed)}. Body preview: {preview}"
+      )
+    ))
+  }
+
+  text <- .sn_text_scalar(.sn_extract_openai_response_text(parsed = parsed, wire_api = wire_api))
+  if (is.null(text)) {
+    return(list(
+      ok = FALSE,
+      retryable = FALSE,
+      message = glue("OpenAI-style response from '{endpoint}' did not contain extractable text.")
+    ))
+  }
+
+  list(
+    ok = TRUE,
+    retryable = FALSE,
+    parsed = parsed,
+    text = text,
+    model = parsed$model %||% resolved_model
+  )
+}
+
 .sn_parse_annotation_response <- function(response) {
+  if (is.list(response) && !is.null(response$structured)) {
+    parsed <- response$structured
+    annotations <- parsed$cluster_annotations %||% parsed$annotations %||% NULL
+    if (is.null(annotations)) {
+      return(NULL)
+    }
+
+    annotation_tbl <- tibble::as_tibble(annotations)
+    if (!"cluster" %in% colnames(annotation_tbl)) {
+      return(NULL)
+    }
+
+    for (col_name in intersect(c("risk_flags", "alternatives", "supporting_markers", "supporting_functions", "recommended_checks"), colnames(annotation_tbl))) {
+      annotation_tbl[[col_name]] <- vapply(annotation_tbl[[col_name]], function(x) {
+        if (is.null(x) || (length(x) == 1L && is.na(x))) {
+          return(NA_character_)
+        }
+        if (is.list(x)) {
+          x <- unlist(x, recursive = TRUE, use.names = FALSE)
+        }
+        x <- as.character(x)
+        x <- x[!is.na(x) & nzchar(x)]
+        if (length(x) == 0L) {
+          return(NA_character_)
+        }
+        paste(x, collapse = "; ")
+      }, character(1))
+    }
+
+    for (col_name in intersect(c("cluster", "primary_label", "broad_label", "confidence", "status", "note"), colnames(annotation_tbl))) {
+      annotation_tbl[[col_name]] <- as.character(annotation_tbl[[col_name]])
+    }
+
+    return(list(
+      table = annotation_tbl,
+      narrative = parsed$narrative_summary %||% parsed$summary %||% NULL,
+      raw = parsed
+    ))
+  }
+
   text <- response$text %||% NULL
   json_text <- .sn_extract_json_text(text)
   if (is.null(json_text)) {
@@ -402,7 +607,8 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 .sn_apply_annotation_metadata <- function(object,
                                           annotation_tbl,
                                           cluster_col,
-                                          metadata_prefix = "sn_annotation") {
+                                          metadata_prefix = "sn_annotation",
+                                          metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags")) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
@@ -434,9 +640,17 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
     note = paste0(metadata_prefix, "_note"),
     recommended_checks = paste0(metadata_prefix, "_recommended_checks")
   )
+  metadata_fields <- unique(as.character(metadata_fields %||% character()))
+  metadata_fields <- metadata_fields[nzchar(metadata_fields)]
+  if (length(metadata_fields) > 0L) {
+    unknown_fields <- setdiff(metadata_fields, names(field_map))
+    if (length(unknown_fields) > 0L) {
+      stop(glue("Unsupported `metadata_fields`: {paste(unknown_fields, collapse = ', ')}."), call. = FALSE)
+    }
+  }
 
   metadata_to_add <- data.frame(row.names = colnames(object))
-  for (source_col in names(field_map)) {
+  for (source_col in metadata_fields) {
     if (source_col %in% colnames(merged)) {
       metadata_to_add[[field_map[[source_col]]]] <- merged[colnames(object), source_col, drop = TRUE]
     }
@@ -445,16 +659,621 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   SeuratObject::AddMetaData(object, metadata = metadata_to_add)
 }
 
+.sn_compose_annotation_background <- function(background = NULL,
+                                              label_candidates = NULL) {
+  parts <- character()
+  if (!is_null(background) && nzchar(background)) {
+    parts <- c(parts, as.character(background))
+  }
+  label_candidates <- unique(as.character(label_candidates %||% character()))
+  label_candidates <- label_candidates[nzchar(label_candidates)]
+  if (length(label_candidates) > 0L) {
+    parts <- c(
+      parts,
+      paste0(
+        "Annotation priors / candidate labels: ",
+        paste(label_candidates, collapse = ", "),
+        ". Prefer these labels or closely related broad lineages/states when they are supported by the evidence. ",
+        "If direct marker support is weak, do not force unrelated T-cell or NK-cell labels only because they are common blood populations."
+      )
+    )
+  }
+  prior_notes <- .sn_annotation_domain_priors(
+    background = background,
+    label_candidates = label_candidates
+  )
+  if (length(prior_notes) > 0L) {
+    parts <- c(parts, prior_notes)
+  }
+  if (length(parts) == 0L) {
+    return(NULL)
+  }
+  paste(parts, collapse = "\n")
+}
+
+.sn_annotation_domain_priors <- function(background = NULL,
+                                         label_candidates = NULL) {
+  context_text <- paste(
+    as.character(background %||% ""),
+    paste(as.character(label_candidates %||% character()), collapse = " "),
+    collapse = " "
+  )
+  context_text <- tolower(context_text)
+  notes <- character()
+
+  if (grepl("blood|pbmc|peripheral blood", context_text) &&
+      grepl("(^|[^a-z])ilc([0-9]|[^a-z]|$)|innate lymphoid", context_text)) {
+    notes <- c(
+      notes,
+      paste(
+        "Blood ILC prior:",
+        "KIT-positive IL7R-positive KLRB1-positive helper-like clusters with weak or incomplete RORC-IL23R-NCR2 support",
+        "are more plausibly KIT+ ILC / ILCP-like than mature ILC3.",
+        "Reserve mature ILC3 labels for stronger type-3 programs."
+      )
+    )
+  }
+  if (grepl("tonsil|mucosa|intestinal|ileal|iel|nkp44", context_text)) {
+    notes <- c(
+      notes,
+      paste(
+        "Mucosal ILC3 prior:",
+        "RORC-IL23R-AHR with KIT and especially NCR2/NKp44 support can justify ILC3-like labels in tonsil or intestinal samples,",
+        "provided the cluster is not dominated by strong cytotoxic NK programs."
+      )
+    )
+  }
+
+  notes <- c(
+    notes,
+    paste(
+      "Mixed-lineage prior:",
+      "when strong TCR genes and strong NK cytotoxic genes coexist, consider T/NK mixed, contamination, or transitional states before forcing a pure T-cell or NK label."
+    ),
+    paste(
+      "Contamination prior:",
+      "when hemoglobin or erythroid genes dominate, label erythroid contamination explicitly rather than generic contamination."
+    )
+  )
+
+  unique(notes[nzchar(notes)])
+}
+
+.sn_annotation_label_family <- function(label) {
+  label <- tolower(as.character(label %||% ""))
+  if (!nzchar(label)) {
+    return(NA_character_)
+  }
+  if (grepl("erythroid|hemoglobin|epithelial|contamination", label)) {
+    return("contamination")
+  }
+  if (grepl("innate lymphoid|(^|[^a-z])ilc([0-9]|[^a-z]|$)|kit\\+ ilc|ilc precursor", label)) {
+    return("ilc")
+  }
+  if (grepl("mast|basophil", label)) {
+    return("mast_basophil")
+  }
+  if (grepl("cytotoxic t/nk", label)) {
+    return("cytotoxic_mixed")
+  }
+  if (grepl("(^|[^a-z])(t cell|t-cell|cd4|cd8)([^a-z]|$)", label)) {
+    return("t")
+  }
+  if (grepl("(^|[^a-z])(nk|natural killer|cytotoxic lymphocyte)([^a-z]|$)", label)) {
+    return("nk")
+  }
+  if (grepl("b cell|b-cell|plasma", label)) {
+    return("b")
+  }
+  if (grepl("dendritic|apc|myeloid|monocyte", label)) {
+    return("apc")
+  }
+  NA_character_
+}
+
+.sn_annotation_hint_family <- function(hint) {
+  .sn_annotation_label_family(hint)
+}
+
+.sn_annotation_broad_label_from_family <- function(family) {
+  switch(
+    family %||% "",
+    ilc = "Innate Lymphoid",
+    t = "Lymphoid",
+    nk = "Lymphoid",
+    cytotoxic_mixed = "Lymphoid",
+    b = "Lymphoid",
+    apc = "Myeloid/APC",
+    mast_basophil = "Mast/Basophil",
+    contamination = "Contamination",
+    NA_character_
+  )
+}
+
+.sn_annotation_has_ilc_prior <- function(label_candidates = NULL,
+                                         background = NULL) {
+  candidate_text <- paste(as.character(label_candidates %||% character()), collapse = " ")
+  background_text <- paste(as.character(background %||% character()), collapse = " ")
+  grepl("(^|[^a-z])ilc([0-9]|[^a-z]|$)|innate lymphoid", paste(candidate_text, background_text), ignore.case = TRUE)
+}
+
+.sn_sort_annotation_subset <- function(tbl, clusters) {
+  tbl <- tibble::as_tibble(tbl)
+  if (nrow(tbl) == 0L || !"cluster" %in% colnames(tbl)) {
+    return(tbl)
+  }
+  clusters <- unique(as.character(clusters))
+  tbl$cluster <- as.character(tbl$cluster)
+  tbl <- tbl[tbl$cluster %in% clusters, , drop = FALSE]
+  tbl$..cluster_order <- match(tbl$cluster, clusters)
+  tbl <- tbl[order(tbl$..cluster_order, tbl$cluster), , drop = FALSE]
+  dplyr::select(tbl, -dplyr::any_of("..cluster_order"))
+}
+
+.sn_subset_annotation_evidence <- function(evidence,
+                                           clusters) {
+  clusters <- unique(as.character(clusters %||% character()))
+  if (length(clusters) == 0L) {
+    return(evidence)
+  }
+
+  out <- evidence
+  for (name in c(
+    "cluster_summary",
+    "top_marker_table",
+    "enrichment_summary",
+    "qc_summary",
+    "lineage_hints",
+    "canonical_marker_snapshot",
+    "geometry_summary"
+  )) {
+    value <- out[[name]]
+    if (is.data.frame(value) && "cluster" %in% colnames(value)) {
+      out[[name]] <- .sn_sort_annotation_subset(value, clusters = clusters)
+    }
+  }
+  out$focus_clusters <- clusters
+  out
+}
+
+.sn_prepare_annotation_compact_evidence <- function(evidence,
+                                                    clusters = NULL,
+                                                    include_marker_table = FALSE,
+                                                    include_enrichment_table = FALSE,
+                                                    include_qc = TRUE,
+                                                    include_canonical_snapshot = FALSE,
+                                                    include_geometry = TRUE) {
+  compact <- .sn_subset_annotation_evidence(evidence, clusters = clusters)
+  keep_cols <- c(
+    "cluster", "n_cells", "fraction",
+    grep("_distribution$", colnames(compact$cluster_summary %||% tibble::tibble()), value = TRUE),
+    grep("(_predicted_labels|_majority_voting)$", colnames(compact$cluster_summary %||% tibble::tibble()), value = TRUE),
+    "top_markers", "top_functions",
+    "heuristic_hint", "heuristic_rationale", "heuristic_top_signatures",
+    if (isTRUE(include_geometry)) "nearest_clusters",
+    if (isTRUE(include_qc)) c(
+      "median_nFeature_RNA", "median_nCount_RNA",
+      grep("^median_percent\\.", colnames(compact$cluster_summary %||% tibble::tibble()), value = TRUE),
+      "max_failed_qc_fraction", "doublet_fraction", "max_zero_count_fraction"
+    )
+  )
+  keep_cols <- unique(stats::na.omit(unlist(keep_cols)))
+  keep_cols <- intersect(keep_cols, colnames(compact$cluster_summary %||% tibble::tibble()))
+  if (length(keep_cols) > 0L) {
+    compact$cluster_summary <- dplyr::select(compact$cluster_summary, dplyr::all_of(keep_cols))
+  }
+
+  if (!isTRUE(include_marker_table)) {
+    compact$top_marker_table <- tibble::tibble()
+  }
+  if (!isTRUE(include_enrichment_table)) {
+    compact$enrichment_summary <- tibble::tibble()
+  }
+  if (!isTRUE(include_qc)) {
+    compact$qc_summary <- tibble::tibble()
+  }
+  if (!isTRUE(include_canonical_snapshot)) {
+    compact$canonical_marker_snapshot <- tibble::tibble()
+  }
+  if (!isTRUE(include_geometry)) {
+    compact$geometry_summary <- tibble::tibble()
+    compact$geometry_reduction <- NULL
+  }
+  compact
+}
+
+.sn_prepare_annotation_focus_clusters <- function(evidence,
+                                                  broad_table = NULL,
+                                                  label_candidates = NULL,
+                                                  background = NULL,
+                                                  max_clusters = 8L) {
+  cluster_summary <- tibble::as_tibble(evidence$cluster_summary %||% tibble::tibble())
+  if (nrow(cluster_summary) == 0L || !"cluster" %in% colnames(cluster_summary)) {
+    return(character())
+  }
+  cluster_summary$cluster <- as.character(cluster_summary$cluster)
+
+  broad_table <- tibble::as_tibble(broad_table %||% tibble::tibble())
+  if (nrow(broad_table) > 0L && "cluster" %in% colnames(broad_table)) {
+    broad_table$cluster <- as.character(broad_table$cluster)
+    broad_keep <- intersect(c("cluster", "primary_label", "broad_label", "confidence", "status"), colnames(broad_table))
+    broad_join <- broad_table[, broad_keep, drop = FALSE]
+    rename_map <- c(
+      cluster = "cluster",
+      primary_label = "broad_pass_primary_label",
+      broad_label = "broad_pass_broad_label",
+      confidence = "broad_pass_confidence",
+      status = "broad_pass_status"
+    )
+    colnames(broad_join) <- unname(rename_map[colnames(broad_join)])
+    cluster_summary <- dplyr::left_join(
+      cluster_summary,
+      broad_join,
+      by = "cluster"
+    )
+  }
+
+  has_ilc_prior <- .sn_annotation_has_ilc_prior(
+    label_candidates = label_candidates,
+    background = background
+  )
+  predicted_family <- vapply(
+    cluster_summary$broad_pass_primary_label %||% rep(NA_character_, nrow(cluster_summary)),
+    .sn_annotation_label_family,
+    character(1)
+  )
+  heuristic_family <- vapply(
+    cluster_summary$heuristic_hint %||% rep(NA_character_, nrow(cluster_summary)),
+    .sn_annotation_hint_family,
+    character(1)
+  )
+  low_confidence <- tolower(cluster_summary$broad_pass_confidence %||% rep("", nrow(cluster_summary))) %in% c("", "low", "medium")
+  non_confident <- tolower(cluster_summary$broad_pass_status %||% rep("", nrow(cluster_summary))) != "confident"
+  ambiguous_family <- predicted_family %in% c("ilc", "t", "nk", "cytotoxic_mixed", "mast_basophil") |
+    heuristic_family %in% c("ilc", "t", "nk", "cytotoxic_mixed", "mast_basophil")
+  transitional_hint <- grepl(
+    "mixed|transition|ilc3|erythroid",
+    cluster_summary$heuristic_hint %||% "",
+    ignore.case = TRUE
+  )
+  heuristic_conflict <- !is.na(predicted_family) & !is.na(heuristic_family) &
+    predicted_family != heuristic_family &
+    predicted_family %in% c("ilc", "t", "nk", "cytotoxic_mixed") &
+    heuristic_family %in% c("ilc", "t", "nk", "cytotoxic_mixed")
+
+  focus_flag <- low_confidence | non_confident | ambiguous_family | heuristic_conflict | transitional_hint
+  if (isTRUE(has_ilc_prior)) {
+    focus_flag <- focus_flag | grepl(
+      "ILC|innate lymphoid|KIT\\+",
+      cluster_summary$heuristic_hint %||% "",
+      ignore.case = TRUE
+    )
+  }
+
+  cluster_summary$..focus_priority <- 0
+  cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(heuristic_conflict, 4, 0)
+  cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(transitional_hint, 3, 0)
+  cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(low_confidence, 3, 0)
+  cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(non_confident, 2, 0)
+  cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(
+    heuristic_family %in% c("ilc", "t", "nk", "cytotoxic_mixed", "mast_basophil"),
+    1,
+    0
+  )
+  if (isTRUE(has_ilc_prior)) {
+    cluster_summary$..focus_priority <- cluster_summary$..focus_priority + ifelse(
+      grepl("ILC|innate lymphoid|KIT\\+", cluster_summary$heuristic_hint %||% "", ignore.case = TRUE),
+      2,
+      0
+    )
+  }
+
+  ranked_focus <- cluster_summary[focus_flag, , drop = FALSE]
+  if (nrow(ranked_focus) == 0L) {
+    return(character())
+  }
+  ranked_focus$..n_cells <- suppressWarnings(as.numeric(ranked_focus$n_cells %||% NA_real_))
+  ranked_focus <- ranked_focus[order(-ranked_focus$..focus_priority, -ranked_focus$..n_cells, ranked_focus$cluster), , drop = FALSE]
+  focus <- unique(as.character(stats::na.omit(ranked_focus$cluster)))
+  if (length(focus) > max_clusters) {
+    focus <- utils::head(focus, max_clusters)
+  }
+  focus
+}
+
+.sn_split_annotation_focus_batches <- function(clusters,
+                                               batch_size = 4L) {
+  clusters <- unique(as.character(clusters %||% character()))
+  if (length(clusters) == 0L) {
+    return(list())
+  }
+  split(clusters, ceiling(seq_along(clusters) / max(1L, as.integer(batch_size))))
+}
+
+.sn_make_annotation_evidence_tool <- function(evidence) {
+  if (!requireNamespace("ellmer", quietly = TRUE)) {
+    return(NULL)
+  }
+
+  ellmer::tool(
+    function(cluster_ids) {
+      cluster_ids <- unique(as.character(cluster_ids %||% character()))
+      if (length(cluster_ids) == 0L) {
+        return(list(message = "No cluster IDs requested."))
+      }
+      .sn_prepare_annotation_compact_evidence(
+        evidence = evidence,
+        clusters = cluster_ids,
+        include_marker_table = TRUE,
+        include_enrichment_table = TRUE,
+        include_qc = TRUE,
+        include_canonical_snapshot = TRUE,
+        include_geometry = !is.null(evidence$geometry_reduction)
+      )
+    },
+    name = "lookup_cluster_annotation_evidence",
+    description = paste(
+      "Retrieve detailed Shennong evidence for one or more clusters, including",
+      "specific markers, canonical marker snapshots, functional terms, QC, and geometry summaries."
+    ),
+    arguments = list(
+      cluster_ids = ellmer::type_array(
+        ellmer::type_string("Cluster identifier."),
+        description = "One or more cluster IDs to inspect."
+      )
+    )
+  )
+}
+
+.sn_build_annotation_stage_background <- function(background,
+                                                  label_candidates = NULL,
+                                                  stage = c("single_pass", "broad_pass", "focused_analysis", "focused_refinement"),
+                                                  broad_pass_table = NULL,
+                                                  focus_clusters = NULL) {
+  stage <- match.arg(stage)
+  stage_note <- switch(
+    stage,
+    single_pass = NULL,
+    broad_pass = paste(
+      "Annotation stage: broad pass.",
+      "First assign the broadest defensible lineage or state for every cluster.",
+      "Prefer lineage/state labels over over-specific subtypes when direct canonical support is limited."
+    ),
+    focused_analysis = paste(
+      "Annotation stage: focused analysis.",
+      "Compare the listed focus clusters and summarize the most discriminative lineage programs, conflicts, and caveats.",
+      "Do not emit final JSON labels in this stage; produce only a concise comparison note."
+    ),
+    focused_refinement = paste(
+      "Annotation stage: focused refinement.",
+      "Reassess only the listed focus clusters by comparing them against each other.",
+      "Use canonical marker differences to refine ILC-related, T-cell, NK-like, or mast/basophil-like identities.",
+      "If subtype evidence is still weak, keep a conservative ILC-like or lineage-level label."
+    )
+  )
+
+  parts <- c(background, stage_note)
+  if (identical(stage, "focused_refinement") && length(focus_clusters %||% character()) > 0L) {
+    parts <- c(parts, paste0("Focus clusters: ", paste(unique(as.character(focus_clusters)), collapse = ", "), "."))
+  }
+  if (identical(stage, "focused_refinement") && is.data.frame(broad_pass_table) && nrow(broad_pass_table) > 0L) {
+    compact_broad <- broad_pass_table
+    keep_cols <- intersect(c("cluster", "primary_label", "broad_label", "confidence", "status"), colnames(compact_broad))
+    compact_broad <- compact_broad[, keep_cols, drop = FALSE]
+    parts <- c(
+      parts,
+      paste(
+        "Broad-pass annotations to refine:",
+        .sn_render_prompt_value(compact_broad, max_rows = 200L)
+      )
+    )
+  }
+
+  .sn_compose_annotation_background(
+    background = paste(parts[nzchar(parts %||% "")], collapse = "\n"),
+    label_candidates = label_candidates
+  )
+}
+
+.sn_reconcile_annotation_table <- function(annotation_tbl,
+                                           evidence,
+                                           label_candidates = NULL,
+                                           background = NULL) {
+  annotation_tbl <- tibble::as_tibble(annotation_tbl)
+  if (nrow(annotation_tbl) == 0L || !"cluster" %in% colnames(annotation_tbl)) {
+    return(annotation_tbl)
+  }
+
+  hints <- tibble::as_tibble(evidence$lineage_hints %||% tibble::tibble())
+  if (nrow(hints) == 0L || !"cluster" %in% colnames(hints)) {
+    return(annotation_tbl)
+  }
+  hints$cluster <- as.character(hints$cluster)
+  annotation_tbl$cluster <- as.character(annotation_tbl$cluster)
+  annotation_tbl <- dplyr::left_join(annotation_tbl, hints, by = "cluster")
+
+  has_ilc_prior <- .sn_annotation_has_ilc_prior(
+    label_candidates = label_candidates,
+    background = background
+  )
+
+  for (i in seq_len(nrow(annotation_tbl))) {
+    predicted_family <- .sn_annotation_label_family(annotation_tbl$primary_label[[i]])
+    heuristic_hint <- annotation_tbl$heuristic_hint[[i]] %||% NA_character_
+    heuristic_family <- .sn_annotation_hint_family(heuristic_hint)
+    confidence <- tolower(annotation_tbl$confidence[[i]] %||% "")
+    status <- tolower(annotation_tbl$status[[i]] %||% "")
+
+    if (is.na(heuristic_family) || is.na(predicted_family)) {
+      next
+    }
+    relaxed_conflict <- predicted_family != heuristic_family &&
+      confidence %in% c("", "low", "medium") &&
+      status %in% c("", "ambiguous", "possible_transition", "possible_contamination", "possible_low_quality")
+
+    if (isTRUE(has_ilc_prior) &&
+        heuristic_family == "ilc" &&
+        predicted_family %in% c("t", "nk", "cytotoxic_mixed", "mast_basophil") &&
+        relaxed_conflict) {
+      annotation_tbl$status[[i]] <- "ambiguous"
+      alternatives <- trimws(unlist(strsplit(annotation_tbl$alternatives[[i]] %||% "", ";", fixed = TRUE)))
+      alternatives <- unique(c(alternatives, heuristic_hint))
+      alternatives <- alternatives[nzchar(alternatives)]
+      if (length(alternatives) > 0L) {
+        annotation_tbl$alternatives[[i]] <- paste(alternatives, collapse = "; ")
+      }
+      note_text <- trimws(annotation_tbl$note[[i]] %||% "")
+      reconcile_note <- paste(
+        "Canonical lineage guardrail suggests an ILC-like alternative that should be reviewed against the model label.",
+        "The automatic result was not force-overwritten."
+      )
+      annotation_tbl$note[[i]] <- paste(c(note_text, reconcile_note)[nzchar(c(note_text, reconcile_note))], collapse = " ")
+    }
+  }
+
+  dplyr::select(annotation_tbl, -dplyr::any_of(c("heuristic_hint", "heuristic_rationale", "heuristic_top_signatures")))
+}
+
+.sn_default_llm_api_key <- function() {
+  key <- Sys.getenv("OPENAI_API_KEY", unset = "")
+  key
+}
+
+.sn_default_llm_base_url <- function() {
+  base_url <- Sys.getenv("OPENAI_BASE_URL", unset = "")
+  if (!nzchar(base_url)) {
+    base_url <- "https://api.openai.com/v1"
+  }
+  base_url
+}
+
+.sn_default_llm_model <- function() {
+  model <- Sys.getenv("OPENAI_MODEL", unset = "")
+  if (!nzchar(model)) {
+    model <- "gpt-4.1"
+  }
+  model
+}
+
+.sn_default_reasoning_effort <- function() {
+  effort <- Sys.getenv("OPENAI_REASONING_EFFORT", unset = "")
+  if (!nzchar(effort)) {
+    return(NULL)
+  }
+  effort
+}
+
+.sn_guess_provider_type <- function(base_url) {
+  if (grepl("^https://api\\.openai\\.com(/|$)", base_url)) {
+    return("openai")
+  }
+  "openai_compatible"
+}
+
+.sn_is_retryable_llm_error <- function(message) {
+  if (!is.character(message) || length(message) != 1L || is.na(message)) {
+    return(FALSE)
+  }
+  grepl(
+    "lexical error|invalid char in json text|<!DOCTYPE html>|<html|502|503|504|gateway|temporar|timeout|timed out|connection reset",
+    message,
+    ignore.case = TRUE
+  )
+}
+
+.sn_harden_llm_error <- function(message) {
+  if (!is.character(message) || length(message) != 1L || is.na(message) || !nzchar(message)) {
+    return("LLM request failed.")
+  }
+  if (.sn_is_retryable_llm_error(message)) {
+    return(paste(
+      "LLM request failed because the upstream provider returned an HTML/error page or another non-JSON proxy response.",
+      "This is common with third-party proxy endpoints such as Sub2API when authentication, gateway routing, or temporary upstream health is unstable.",
+      "Check the endpoint and credentials, then retry."
+    ))
+  }
+  message
+}
+
+.sn_get_default_ellmer_provider <- function() {
+  sn_make_ellmer_provider(
+    api_key = .sn_default_llm_api_key(),
+    base_url = .sn_default_llm_base_url(),
+    model = .sn_default_llm_model(),
+    provider_type = .sn_guess_provider_type(.sn_default_llm_base_url()),
+    reasoning_effort = .sn_default_reasoning_effort()
+  )
+}
+
 .sn_annotation_json_schema_text <- function() {
   paste(
     "Return valid JSON with keys `cluster_annotations` and `narrative_summary`.",
     "`cluster_annotations` must be an array of objects with:",
-    "`cluster`, `primary_label`, `broad_label`, `confidence`, `status`,",
-    "`alternatives`, `supporting_markers`, `supporting_functions`, `risk_flags`,",
-    "`note`, and `recommended_checks`.",
+    "`cluster`, `primary_label`, `broad_label`, `confidence`, and `status`.",
+    "Optional fields may include `alternatives`, `supporting_markers`, `supporting_functions`, `risk_flags`, `note`, and `recommended_checks`.",
     "`confidence` should use one of: high, medium, low.",
     "`status` should use one of: confident, ambiguous, possible_contamination, possible_low_quality, possible_transition.",
     "`risk_flags` should be an array that may include: contamination, low_quality, transitional_state, doublet_like, proliferating_state."
+  )
+}
+
+.sn_annotation_structured_type <- function() {
+  check_installed("ellmer")
+
+  ellmer::type_object(
+    "Structured cluster annotation result.",
+    cluster_annotations = ellmer::type_array(
+      ellmer::type_object(
+        "One annotation record per cluster.",
+        cluster = ellmer::type_string("Cluster identifier."),
+        primary_label = ellmer::type_string("Most plausible cell type or state label."),
+        broad_label = ellmer::type_string("Broader lineage or family label."),
+        confidence = ellmer::type_enum(
+          c("high", "medium", "low"),
+          "Calibrated confidence label."
+        ),
+        status = ellmer::type_enum(
+          c("confident", "ambiguous", "possible_contamination", "possible_low_quality", "possible_transition"),
+          "Annotation status."
+        ),
+        alternatives = ellmer::type_array(
+          ellmer::type_string("Alternative plausible label."),
+          description = "Alternative labels when ambiguity remains.",
+          required = FALSE
+        ),
+        supporting_markers = ellmer::type_array(
+          ellmer::type_string("Marker gene supporting the annotation."),
+          description = "Directly supportive marker genes.",
+          required = FALSE
+        ),
+        supporting_functions = ellmer::type_array(
+          ellmer::type_string("Functional term supporting the annotation."),
+          description = "Directly supportive pathways or biological processes.",
+          required = FALSE
+        ),
+        risk_flags = ellmer::type_array(
+          ellmer::type_enum(
+            c("contamination", "low_quality", "transitional_state", "doublet_like", "proliferating_state")
+          ),
+          description = "Risk flags or caveats.",
+          required = FALSE
+        ),
+        note = ellmer::type_string(
+          "Brief cluster-level rationale.",
+          required = FALSE
+        ),
+        recommended_checks = ellmer::type_array(
+          ellmer::type_string("Suggested manual follow-up check."),
+          description = "Suggested validation checks.",
+          required = FALSE
+        )
+      ),
+      description = "Array of cluster annotation records."
+    ),
+    narrative_summary = ellmer::type_string(
+      "Optional concise narrative summary across all clusters.",
+      required = FALSE
+    )
   )
 }
 
@@ -475,6 +1294,40 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   }
 
   paste(utils::capture.output(print(utils::head(x, max_rows))), collapse = "\n")
+}
+
+.sn_render_evidence_markdown <- function(x, max_rows = 8) {
+  if (is.data.frame(x)) {
+    table_text <- .sn_render_table_markdown(x, max_rows = max_rows)
+    return(table_text %||% "_No rows available._")
+  }
+
+  if (is.list(x)) {
+    sections <- unlist(lapply(names(x), function(current_name) {
+      current_value <- x[[current_name]]
+      c(
+        paste0("### ", current_name),
+        .sn_render_evidence_markdown(current_value, max_rows = max_rows)
+      )
+    }), use.names = FALSE)
+    return(paste(sections, collapse = "\n\n"))
+  }
+
+  value <- .sn_render_prompt_value(x, max_rows = max_rows)
+  if (!nzchar(value)) {
+    return("_No value available._")
+  }
+  paste0("```text\n", value, "\n```")
+}
+
+.sn_compose_background_parts <- function(...) {
+  parts <- unlist(list(...), recursive = FALSE, use.names = FALSE)
+  parts <- as.character(parts)
+  parts <- parts[!is.na(parts) & nzchar(parts)]
+  if (length(parts) == 0L) {
+    return(NULL)
+  }
+  paste(parts, collapse = "\n\n")
 }
 
 .sn_interpretation_task_instructions <- function(task, evidence) {
@@ -536,6 +1389,91 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   )
 }
 
+.sn_interpret_elapsed_text <- function(started_at) {
+  if (is.null(started_at)) {
+    return(NA_character_)
+  }
+  elapsed <- as.numeric(difftime(Sys.time(), started_at, units = "secs"))
+  paste0(formatC(elapsed, format = "f", digits = 1), "s")
+}
+
+.sn_interpret_progress_start <- function(task,
+                                         enabled = interactive(),
+                                         total_steps = 5L) {
+  label <- switch(
+    task,
+    interpret_annotation = "sn_interpret_annotation",
+    interpret_de = "sn_interpret_de",
+    interpret_enrichment = "sn_interpret_enrichment",
+    write_results = "sn_write_results",
+    write_figure_legend = "sn_write_figure_legend",
+    write_presentation_summary = "sn_write_presentation_summary",
+    task
+  )
+
+  state <- list(
+    enabled = isTRUE(enabled),
+    task = task,
+    label = label,
+    started_at = Sys.time(),
+    step = 0L,
+    total_steps = as.integer(total_steps),
+    cli_id = NULL
+  )
+
+  if (isTRUE(state$enabled) && requireNamespace("cli", quietly = TRUE)) {
+    state$cli_id <- tryCatch(
+      cli::cli_progress_bar(
+        name = label,
+        total = state$total_steps,
+        clear = FALSE
+      ),
+      error = function(...) NULL
+    )
+  }
+
+  .sn_log_info("[{label}] Starting interpretation workflow.")
+  state
+}
+
+.sn_interpret_progress_step <- function(state, status) {
+  if (is.null(state)) {
+    return(state)
+  }
+  state$step <- min(state$total_steps, state$step + 1L)
+  elapsed <- .sn_interpret_elapsed_text(state$started_at)
+  if (!is.null(state$cli_id) && requireNamespace("cli", quietly = TRUE)) {
+    update_result <- tryCatch(
+      cli::cli_progress_update(
+        id = state$cli_id,
+        set = state$step,
+        status = status
+      ),
+      error = identity
+    )
+    if (inherits(update_result, "error")) {
+      state$cli_id <- NULL
+    }
+  }
+  .sn_log_info("[{state$label}] Step {state$step}/{state$total_steps}: {status} (elapsed {elapsed}).")
+  state
+}
+
+.sn_interpret_progress_done <- function(state, status = "Completed") {
+  if (is.null(state)) {
+    return(invisible(NULL))
+  }
+  elapsed <- .sn_interpret_elapsed_text(state$started_at)
+  if (!is.null(state$cli_id) && requireNamespace("cli", quietly = TRUE)) {
+    tryCatch(
+      cli::cli_progress_done(id = state$cli_id),
+      error = function(...) invisible(NULL)
+    )
+  }
+  .sn_log_info("[{state$label}] {status} (total elapsed {elapsed}).")
+  invisible(NULL)
+}
+
 .sn_finish_interpretation <- function(object,
                                       task,
                                       evidence,
@@ -545,35 +1483,44 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
                                       store_name = "default",
                                       cluster_col = NULL,
                                       metadata_prefix = "sn_annotation",
+                                      metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags"),
                                       label_style = c("title", "snake", "asis"),
                                       apply_metadata = FALSE,
                                       return_prompt = FALSE,
                                       return_object = TRUE,
+                                      progress_state = NULL,
                                       ...) {
   label_style <- match.arg(label_style)
   if (return_prompt || identical(prompt$output_format, "human")) {
+    .sn_interpret_progress_done(progress_state, status = "Prompt prepared")
     return(prompt)
   }
 
   if (is_null(provider)) {
     provider <- tryCatch(
-      sn_get_llm_provider(),
+      .sn_get_default_ellmer_provider(),
       error = function(...) NULL
     )
   }
   if (is_null(provider)) {
-    stop("`provider` must be supplied unless `return_prompt = TRUE`, or you must configure a default provider under `~/.shennong`.", call. = FALSE)
+    stop(
+      "`provider` must be supplied unless `return_prompt = TRUE`, or ellmer-compatible credentials must be available via environment variables.",
+      call. = FALSE
+    )
   }
 
+  progress_state <- .sn_interpret_progress_step(progress_state, "Waiting for LLM response")
   response <- sn_run_llm(
     messages = prompt$messages,
     provider = provider,
     model = model,
+    structured_type = if (identical(task, "interpret_annotation")) .sn_annotation_structured_type() else NULL,
     ...
   )
 
   parsed_annotation <- NULL
   if (identical(task, "interpret_annotation")) {
+    progress_state <- .sn_interpret_progress_step(progress_state, "Parsing structured annotation")
     parsed_annotation <- .sn_parse_annotation_response(response)
     if (!is.null(parsed_annotation)) {
       parsed_annotation$table <- .sn_normalize_annotation_table(
@@ -585,12 +1532,14 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
           object = object,
           annotation_tbl = parsed_annotation$table,
           cluster_col = cluster_col,
-          metadata_prefix = metadata_prefix
+          metadata_prefix = metadata_prefix,
+          metadata_fields = metadata_fields
         )
       }
     }
   }
 
+  progress_state <- .sn_interpret_progress_step(progress_state, "Storing interpretation result")
   interpretation_result <- list(
     schema_version = "1.0.0",
     package_version = as.character(utils::packageVersion("Shennong")),
@@ -613,10 +1562,322 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   )
 
   if (return_object) {
+    .sn_interpret_progress_done(progress_state)
     return(.sn_log_seurat_command(object = object, name = paste0("sn_", task)))
   }
 
+  .sn_interpret_progress_done(progress_state)
   response
+}
+
+.sn_merge_annotation_tables <- function(base_tbl, update_tbl) {
+  base_tbl <- tibble::as_tibble(base_tbl)
+  update_tbl <- tibble::as_tibble(update_tbl)
+  if (nrow(base_tbl) == 0L) {
+    return(update_tbl)
+  }
+  if (nrow(update_tbl) == 0L || !"cluster" %in% colnames(update_tbl)) {
+    return(base_tbl)
+  }
+
+  base_tbl$cluster <- as.character(base_tbl$cluster)
+  update_tbl$cluster <- as.character(update_tbl$cluster)
+  extra_cols <- setdiff(colnames(update_tbl), colnames(base_tbl))
+  for (col_name in extra_cols) {
+    base_tbl[[col_name]] <- NA
+  }
+  base_tbl <- base_tbl[, union(colnames(base_tbl), colnames(update_tbl)), drop = FALSE]
+  keep_base <- !base_tbl$cluster %in% update_tbl$cluster
+  merged <- dplyr::bind_rows(base_tbl[keep_base, , drop = FALSE], update_tbl)
+  .sn_sort_annotation_subset(merged, clusters = unique(c(base_tbl$cluster, update_tbl$cluster)))
+}
+
+.sn_finish_annotation_agentic <- function(object,
+                                          evidence,
+                                          broad_prompt,
+                                          provider = NULL,
+                                          model = NULL,
+                                          store_name = "default",
+                                          cluster_col = "seurat_clusters",
+                                          metadata_prefix = "sn_annotation",
+                                          metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags"),
+                                          label_style = c("title", "snake", "asis"),
+                                          apply_metadata = FALSE,
+                                          label_candidates = NULL,
+                                          background = NULL,
+                                          return_prompt = FALSE,
+                                          return_object = TRUE,
+                                          progress_state = NULL,
+                                          ...) {
+  label_style <- match.arg(label_style)
+  if (return_prompt || identical(broad_prompt$output_format, "human")) {
+    .sn_interpret_progress_done(progress_state, status = "Prompt prepared")
+    return(list(
+      output_format = broad_prompt$output_format,
+      task = "annotation",
+      annotation_mode = "agentic",
+      broad_prompt = broad_prompt,
+      focused_prompt = NULL,
+      note = "Focused refinement prompt is generated after the broad-pass structured response is available.",
+      evidence = evidence
+    ))
+  }
+
+  if (is_null(provider)) {
+    provider <- tryCatch(
+      .sn_get_default_ellmer_provider(),
+      error = function(...) NULL
+    )
+  }
+  if (is_null(provider)) {
+    stop(
+      "`provider` must be supplied unless `return_prompt = TRUE`, or ellmer-compatible credentials must be available via environment variables.",
+      call. = FALSE
+    )
+  }
+
+  workflow <- list(
+    annotation_mode = "agentic",
+    broad_pass = list(
+      prompt = broad_prompt,
+      evidence = broad_prompt$evidence %||% NULL
+    )
+  )
+
+  progress_state <- .sn_interpret_progress_step(progress_state, "Waiting for broad-pass annotation")
+  broad_response <- sn_run_llm(
+    messages = broad_prompt$messages,
+    provider = provider,
+    model = model,
+    structured_type = .sn_annotation_structured_type(),
+    ...
+  )
+  workflow$broad_pass$response <- broad_response
+
+  progress_state <- .sn_interpret_progress_step(progress_state, "Parsing broad-pass annotation")
+  broad_parsed <- .sn_parse_annotation_response(broad_response)
+  if (is.null(broad_parsed) || is.null(broad_parsed$table) || nrow(broad_parsed$table) == 0L) {
+    stop(
+      "Agentic annotation requires a structured JSON response in the broad-pass stage, but the provider output could not be parsed.",
+      call. = FALSE
+    )
+  }
+  broad_parsed$table <- .sn_normalize_annotation_table(
+    broad_parsed$table,
+    label_style = label_style
+  )
+  workflow$broad_pass$annotation_table <- broad_parsed$table
+  workflow$broad_pass$narrative_summary <- broad_parsed$narrative %||% NULL
+
+  focus_clusters <- .sn_prepare_annotation_focus_clusters(
+    evidence = evidence,
+    broad_table = broad_parsed$table,
+    label_candidates = label_candidates,
+    background = background
+  )
+  workflow$focus_clusters <- focus_clusters
+
+  final_table <- broad_parsed$table
+  final_narrative <- broad_parsed$narrative %||% NULL
+  focused_prompt <- NULL
+  analysis_note <- NULL
+
+  if (length(focus_clusters) > 0L) {
+    progress_state <- .sn_interpret_progress_step(progress_state, "Running focused comparison analysis")
+    analysis_tool <- .sn_make_annotation_evidence_tool(evidence)
+    analysis_prompt <- sn_build_prompt(
+      evidence = .sn_prepare_annotation_compact_evidence(
+        evidence = evidence,
+        clusters = focus_clusters,
+        include_marker_table = FALSE,
+        include_enrichment_table = FALSE,
+        include_qc = TRUE,
+        include_canonical_snapshot = TRUE,
+        include_geometry = !is.null(evidence$geometry_reduction)
+      ),
+      task = "annotation",
+      audience = "scientist",
+      style = "focused cluster comparison note",
+      background = paste(
+        .sn_build_annotation_stage_background(
+          background = background,
+          label_candidates = label_candidates,
+          stage = "focused_analysis",
+          broad_pass_table = broad_parsed$table,
+          focus_clusters = focus_clusters
+        ),
+        "Use the evidence lookup tool when you need richer per-cluster details before forming the refinement summary.",
+        "Do not return JSON here; return only a concise comparison note that highlights the most discriminative lineage programs and likely failure modes.",
+        sep = "\n"
+      ),
+      output_format = "llm",
+      include_json_schema = FALSE
+    )
+    workflow$analysis_pass <- list(
+      prompt = analysis_prompt,
+      focus_clusters = focus_clusters
+    )
+    analysis_response <- tryCatch(
+      sn_run_llm(
+        messages = analysis_prompt$messages,
+        provider = provider,
+        model = model,
+        tools = Filter(Negate(is.null), list(analysis_tool)),
+        ...
+      ),
+      error = identity
+    )
+    workflow$analysis_pass$response <- analysis_response
+    if (!inherits(analysis_response, "error")) {
+      analysis_note <- analysis_response$text %||% NULL
+      workflow$analysis_pass$text <- analysis_note
+    } else {
+      workflow$analysis_pass$error <- conditionMessage(analysis_response)
+    }
+
+    focus_batches <- .sn_split_annotation_focus_batches(focus_clusters, batch_size = 4L)
+    workflow$focused_passes <- vector("list", length(focus_batches))
+
+    for (batch_idx in seq_along(focus_batches)) {
+      current_batch <- focus_batches[[batch_idx]]
+      progress_state <- .sn_interpret_progress_step(
+        progress_state,
+        paste0("Building focused refinement prompt (batch ", batch_idx, "/", length(focus_batches), ")")
+      )
+      focused_evidence <- .sn_prepare_annotation_compact_evidence(
+        evidence = evidence,
+        clusters = current_batch,
+        include_marker_table = TRUE,
+        include_enrichment_table = TRUE,
+        include_qc = TRUE,
+        include_canonical_snapshot = TRUE,
+        include_geometry = !is.null(evidence$geometry_reduction)
+      )
+      focused_prompt <- sn_build_prompt(
+        evidence = focused_evidence,
+        task = "annotation",
+        audience = "scientist",
+        style = "cell type annotation refinement",
+        background = .sn_compose_background_parts(
+          .sn_build_annotation_stage_background(
+            background = background,
+            label_candidates = label_candidates,
+            stage = "focused_refinement",
+            broad_pass_table = broad_parsed$table,
+            focus_clusters = current_batch
+          ),
+          if (!is.null(analysis_note) && nzchar(analysis_note)) {
+            paste0("Tool-assisted comparison note:\n", analysis_note)
+          } else {
+            NULL
+          }
+        ),
+        output_format = "llm",
+        include_json_schema = TRUE
+      )
+      workflow$focused_passes[[batch_idx]] <- list(
+        batch = current_batch,
+        prompt = focused_prompt,
+        evidence = focused_evidence
+      )
+
+      progress_state <- .sn_interpret_progress_step(
+        progress_state,
+        paste0("Waiting for focused refinement annotation (batch ", batch_idx, "/", length(focus_batches), ")")
+      )
+      focused_response <- tryCatch(
+        sn_run_llm(
+          messages = focused_prompt$messages,
+          provider = provider,
+          model = model,
+          structured_type = .sn_annotation_structured_type(),
+          ...
+        ),
+        error = identity
+      )
+      workflow$focused_passes[[batch_idx]]$response <- focused_response
+      if (inherits(focused_response, "error")) {
+        workflow$focused_passes[[batch_idx]]$error <- conditionMessage(focused_response)
+        next
+      }
+
+      focused_parsed <- .sn_parse_annotation_response(focused_response)
+      if (!is.null(focused_parsed) && !is.null(focused_parsed$table) && nrow(focused_parsed$table) > 0L) {
+        focused_parsed$table <- .sn_normalize_annotation_table(
+          focused_parsed$table,
+          label_style = label_style
+        )
+        workflow$focused_passes[[batch_idx]]$annotation_table <- focused_parsed$table
+        workflow$focused_passes[[batch_idx]]$narrative_summary <- focused_parsed$narrative %||% NULL
+        final_table <- .sn_merge_annotation_tables(
+          base_tbl = final_table,
+          update_tbl = focused_parsed$table
+        )
+        final_narrative <- focused_parsed$narrative %||% final_narrative
+      }
+    }
+
+    if (length(workflow$focused_passes) == 1L) {
+      workflow$focused_pass <- workflow$focused_passes[[1]]
+    }
+  }
+
+  final_table <- .sn_reconcile_annotation_table(
+    annotation_tbl = final_table,
+    evidence = evidence,
+    label_candidates = label_candidates,
+    background = background
+  )
+  final_table <- .sn_normalize_annotation_table(final_table, label_style = label_style)
+
+  if (isTRUE(apply_metadata) && !is.null(cluster_col)) {
+    object <- .sn_apply_annotation_metadata(
+      object = object,
+      annotation_tbl = final_table,
+      cluster_col = cluster_col,
+      metadata_prefix = metadata_prefix,
+      metadata_fields = metadata_fields
+    )
+  }
+
+  progress_state <- .sn_interpret_progress_step(progress_state, "Storing interpretation result")
+  interpretation_result <- list(
+    schema_version = "1.0.0",
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
+    task = "interpret_annotation",
+    annotation_mode = "agentic",
+    evidence = evidence,
+    prompt = broad_prompt,
+    response = broad_response,
+    model_info = list(model = model),
+    annotation_table = final_table,
+    narrative_summary = final_narrative,
+    metadata_prefix = if (isTRUE(apply_metadata)) metadata_prefix else NULL,
+    workflow = workflow
+  )
+
+  object <- .sn_store_misc_result(
+    object = object,
+    collection = "interpretation_results",
+    store_name = store_name,
+    result = interpretation_result
+  )
+
+  if (return_object) {
+    .sn_interpret_progress_done(progress_state)
+    return(.sn_log_seurat_command(object = object, name = "sn_interpret_annotation"))
+  }
+
+  .sn_interpret_progress_done(progress_state)
+  list(
+    text = final_narrative %||% broad_response$text %||% "",
+    model = model,
+    raw = workflow,
+    annotation_table = final_table,
+    broad_prompt = broad_prompt,
+    focused_prompt = focused_prompt
+  )
 }
 
 .sn_prepare_cluster_summary <- function(object, cluster_col = "seurat_clusters") {
@@ -648,20 +1909,39 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   tibble::as_tibble(summary)
 }
 
-.sn_prepare_marker_summary <- function(de_result, n_markers = 10) {
+.sn_marker_logfc_col <- function(marker_table, rank_col = NULL) {
+  candidates <- c(rank_col, "avg_log2FC", "avg_logFC", "log2FoldChange", "logFC")
+  candidates <- unique(stats::na.omit(candidates))
+  candidates[candidates %in% colnames(marker_table)][1] %||% NULL
+}
+
+.sn_specificity_frequency <- function(table,
+                                      group_col,
+                                      feature_col) {
+  if (!group_col %in% colnames(table) || !feature_col %in% colnames(table) || nrow(table) == 0L) {
+    return(setNames(numeric(), character()))
+  }
+  freq <- table |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(group_col, feature_col)))) |>
+    dplyr::count(dplyr::across(dplyr::all_of(feature_col)), name = ".specificity_freq")
+  stats::setNames(freq$.specificity_freq, freq[[feature_col]])
+}
+
+.sn_prepare_marker_candidates <- function(de_result,
+                                          positive_only = TRUE) {
   marker_table <- de_result$table
   group_col <- de_result$group_col
   rank_col <- de_result$rank_col
   p_col <- de_result$p_col
 
   if (nrow(marker_table) == 0) {
-    return(tibble::tibble(cluster = character(), top_markers = character()))
+    return(tibble::tibble())
   }
   if (is_null(group_col) || !group_col %in% colnames(marker_table)) {
-    return(tibble::tibble(cluster = character(), top_markers = character()))
+    return(tibble::tibble())
   }
   if (is_null(rank_col) || !rank_col %in% colnames(marker_table)) {
-    return(tibble::tibble(cluster = character(), top_markers = character()))
+    return(tibble::tibble())
   }
 
   working <- tibble::as_tibble(marker_table)
@@ -672,44 +1952,96 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
     working <- tibble::as_tibble(marker_table)
   }
 
-  ranking <- working[[rank_col]]
-  if (!identical(de_result$analysis, "markers")) {
-    ranking <- abs(ranking)
+  logfc_col <- .sn_marker_logfc_col(working, rank_col = rank_col)
+  if (isTRUE(positive_only) && !is.null(logfc_col)) {
+    positive <- !is.na(working[[logfc_col]]) & working[[logfc_col]] > 0
+    if (any(positive)) {
+      working <- working[positive, , drop = FALSE]
+    }
+  }
+  if (nrow(working) == 0) {
+    return(tibble::tibble())
+  }
+
+  ranking <- abs(working[[rank_col]])
+  if (identical(de_result$analysis, "markers") && !is.null(logfc_col)) {
+    ranking <- pmax(working[[logfc_col]], 0)
   }
   working$..ranking_value <- ranking
+  working$..specificity_freq <- .sn_specificity_frequency(
+    table = working,
+    group_col = group_col,
+    feature_col = "gene"
+  )[as.character(working$gene)] %||% rep(NA_real_, nrow(working))
+  working$..specificity_freq[is.na(working$..specificity_freq)] <- Inf
+  working
+}
 
-  top_markers <- working |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
-    dplyr::slice_max(order_by = .data$..ranking_value, n = n_markers, with_ties = FALSE) |>
-    dplyr::summarise(
-      top_markers = .sn_compact_value(.data$gene, max_items = n_markers),
-      .groups = "drop"
-    ) |>
+.sn_prepare_marker_summary <- function(de_result,
+                                       n_markers = 10,
+                                       selection = c("specific", "top")) {
+  selection <- match.arg(selection)
+  working <- .sn_prepare_marker_candidates(
+    de_result = de_result,
+    positive_only = identical(de_result$analysis, "markers")
+  )
+  group_col <- de_result$group_col
+
+  if (nrow(working) == 0L) {
+    return(tibble::tibble(cluster = character(), top_markers = character()))
+  }
+
+  top_markers <- if (identical(selection, "specific")) {
+    working |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::arrange(.data$..specificity_freq, dplyr::desc(.data$..ranking_value), .by_group = TRUE) |>
+      dplyr::slice_head(n = n_markers) |>
+      dplyr::summarise(
+        top_markers = .sn_compact_value(.data$gene, max_items = n_markers),
+        .groups = "drop"
+      )
+  } else {
+    working |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::slice_max(order_by = .data$..ranking_value, n = n_markers, with_ties = FALSE) |>
+      dplyr::summarise(
+        top_markers = .sn_compact_value(.data$gene, max_items = n_markers),
+        .groups = "drop"
+      )
+  } |>
     dplyr::rename(cluster = dplyr::all_of(group_col))
 
   tibble::as_tibble(top_markers)
 }
 
-.sn_prepare_marker_table <- function(de_result, n_markers = 10) {
-  marker_table <- tibble::as_tibble(de_result$table)
+.sn_prepare_marker_table <- function(de_result,
+                                     n_markers = 10,
+                                     selection = c("specific", "top")) {
+  selection <- match.arg(selection)
+  marker_table <- .sn_prepare_marker_candidates(
+    de_result = de_result,
+    positive_only = identical(de_result$analysis, "markers")
+  )
   group_col <- de_result$group_col
-  rank_col <- de_result$rank_col
 
   if (nrow(marker_table) == 0 || is_null(group_col) || !group_col %in% colnames(marker_table)) {
     return(tibble::tibble())
   }
 
-  ranking <- if (!is_null(rank_col) && rank_col %in% colnames(marker_table)) {
-    if (identical(de_result$analysis, "markers")) marker_table[[rank_col]] else abs(marker_table[[rank_col]])
+  ordered <- if (identical(selection, "specific")) {
+    marker_table |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::arrange(.data$..specificity_freq, dplyr::desc(.data$..ranking_value), .by_group = TRUE) |>
+      dplyr::slice_head(n = n_markers) |>
+      dplyr::ungroup()
   } else {
-    rep(0, nrow(marker_table))
+    marker_table |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::slice_max(order_by = .data$..ranking_value, n = n_markers, with_ties = FALSE) |>
+      dplyr::ungroup()
   }
-  marker_table$..ranking_value <- ranking
 
-  marker_table |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
-    dplyr::slice_max(order_by = .data$..ranking_value, n = n_markers, with_ties = FALSE) |>
-    dplyr::ungroup()
+  dplyr::select(ordered, -dplyr::any_of(c("..ranking_value", "..specificity_freq")))
 }
 
 .sn_prepare_prediction_summary <- function(object, cluster_col = "seurat_clusters") {
@@ -780,7 +2112,9 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 
 .sn_prepare_cluster_enrichment_summary <- function(object,
                                                   enrichment_name,
-                                                  n_terms = 5) {
+                                                  n_terms = 5,
+                                                  selection = c("specific", "top")) {
+  selection <- match.arg(selection)
   if (is.null(enrichment_name)) {
     return(tibble::tibble())
   }
@@ -798,22 +2132,371 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
     return(tibble::tibble())
   }
 
-  if (is.null(rank_col)) {
-    ordered <- table
+  working <- table
+  if (!is.null(rank_col) && rank_col %in% c("NES")) {
+    positive <- !is.na(working[[rank_col]]) & working[[rank_col]] > 0
+    if (any(positive)) {
+      working <- working[positive, , drop = FALSE]
+    }
+  }
+  if (nrow(working) == 0L) {
+    working <- table
+  }
+  working$..rank_value <- if (is.null(rank_col)) {
+    0
   } else if (rank_col %in% c("p.adjust", "pvalue")) {
-    ordered <- table[order(table[[rank_col]], decreasing = FALSE), , drop = FALSE]
+    -log10(pmax(working[[rank_col]], .Machine$double.xmin))
   } else {
-    ordered <- table[order(abs(table[[rank_col]]), decreasing = TRUE), , drop = FALSE]
+    abs(working[[rank_col]])
+  }
+  working$..specificity_freq <- .sn_specificity_frequency(
+    table = working,
+    group_col = group_col,
+    feature_col = term_col
+  )[as.character(working[[term_col]])] %||% rep(NA_real_, nrow(working))
+  working$..specificity_freq[is.na(working$..specificity_freq)] <- Inf
+
+  ordered <- if (identical(selection, "specific")) {
+    working |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::arrange(.data$..specificity_freq, dplyr::desc(.data$..rank_value), .by_group = TRUE) |>
+      dplyr::slice_head(n = n_terms)
+  } else if (is.null(rank_col)) {
+    working |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::slice_head(n = n_terms)
+  } else {
+    working |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
+      dplyr::slice_max(order_by = .data$..rank_value, n = n_terms, with_ties = FALSE)
   }
 
   ordered |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
-    dplyr::slice_head(n = n_terms) |>
     dplyr::summarise(
       top_functions = .sn_compact_value(.data[[term_col]], max_items = n_terms),
       .groups = "drop"
     ) |>
     dplyr::rename(cluster = dplyr::all_of(group_col))
+}
+
+.sn_prepare_cluster_geometry_summary <- function(object,
+                                                 cluster_col = "seurat_clusters",
+                                                 reduction = "umap",
+                                                 n_neighbors = 3) {
+  if (is.null(reduction) || !nzchar(reduction)) {
+    return(tibble::tibble())
+  }
+  metadata <- object[[]]
+  if (!cluster_col %in% colnames(metadata)) {
+    stop(glue("Column '{cluster_col}' was not found in metadata."))
+  }
+  reduction_names <- names(object@reductions %||% list())
+  if (!reduction %in% reduction_names) {
+    return(tibble::tibble())
+  }
+  embeddings <- tryCatch(Seurat::Embeddings(object[[reduction]]), error = function(...) NULL)
+  if (is.null(embeddings) || nrow(embeddings) == 0L) {
+    return(tibble::tibble())
+  }
+
+  coords <- tibble::as_tibble(embeddings, rownames = "barcode")
+  coords$cluster <- as.character(metadata[coords$barcode, cluster_col, drop = TRUE])
+  coords <- coords[!is.na(coords$cluster), , drop = FALSE]
+  coord_cols <- setdiff(colnames(coords), c("barcode", "cluster"))
+  if (length(coord_cols) == 0L) {
+    return(tibble::tibble())
+  }
+
+  centroids <- coords |>
+    dplyr::group_by(.data$cluster) |>
+    dplyr::summarise(
+      dplyr::across(dplyr::all_of(coord_cols), ~ mean(.x, na.rm = TRUE)),
+      .groups = "drop"
+    )
+  centroid_mat <- as.matrix(centroids[, coord_cols, drop = FALSE])
+  rownames(centroid_mat) <- centroids$cluster
+  if (nrow(centroid_mat) <= 1L) {
+    return(tibble::tibble(cluster = rownames(centroid_mat), nearest_clusters = NA_character_))
+  }
+
+  dist_mat <- as.matrix(stats::dist(centroid_mat))
+  nearest <- lapply(seq_len(nrow(dist_mat)), function(i) {
+    distances <- dist_mat[i, ]
+    distances <- distances[names(distances) != rownames(dist_mat)[i]]
+    distances <- sort(distances, decreasing = FALSE, na.last = TRUE)
+    if (length(distances) == 0L) {
+      return(NA_character_)
+    }
+    keep <- utils::head(distances, n_neighbors)
+    paste0(names(keep), " (distance=", formatC(unname(keep), format = "f", digits = 2), ")", collapse = "; ")
+  })
+
+  tibble::tibble(
+    cluster = rownames(dist_mat),
+    nearest_clusters = unlist(nearest, use.names = FALSE),
+    geometry_reduction = reduction
+  )
+}
+
+.sn_annotation_signature_catalog <- function(species = NULL) {
+  list(
+    ilc2 = c("IL7R", "KLRB1", "RORA", "GATA3", "PTGDR2", "HPGDS", "IL1RL1", "IL17RB"),
+    kit_ilc = c("KIT", "IL1R1", "IL7R", "KLRB1", "RORA", "AHR", "TOX2"),
+    ilc3 = c("RORC", "IL23R", "AHR", "KIT", "KLRB1", "NCR2"),
+    t_cell = c("CD3D", "CD3E", "TRAC", "CD2", "CD5", "CD6", "LTB"),
+    nk_cytotoxic = c("NKG7", "GNLY", "PRF1", "KLRD1", "NCR1", "FCGR3A", "TYROBP", "CST7"),
+    b_cell = c("MS4A1", "CD79A", "CD79B", "CD74", "HLA-DRA", "HLA-DPA1"),
+    dendritic_apc = c("FCER1A", "CD1C", "CLEC10A", "HLA-DRA", "CST3", "ZBTB46", "CLEC9A"),
+    mast_basophil = c("KIT", "IL1R1", "MS4A2", "CCR3", "IL3RA", "GATA2", "HDC", "CLC", "TPSAB1", "TPSB2"),
+    epithelial_contam = c("KRT8", "KRT18", "KRT19", "EPCAM", "CLDN3", "CEACAM6", "KRT17", "FXYD3", "TFF1"),
+    erythroid_contam = c("HBB", "HBA1", "HBA2", "HBD", "HBM", "AHSP", "KLF1", "CA1", "CA2", "ALAS2", "BLVRB")
+  )
+}
+
+.sn_select_annotation_hint <- function(score_row,
+                                       marker_support = character(),
+                                       feature_values = numeric()) {
+  score_row <- sort(score_row, decreasing = TRUE, na.last = TRUE)
+  top_name <- names(score_row)[1] %||% NA_character_
+  top_value <- unname(score_row[1] %||% NA_real_)
+  second_value <- unname(score_row[2] %||% NA_real_)
+  margin <- top_value - (second_value %||% 0)
+  support_text <- paste(marker_support, collapse = ", ")
+  feature_values <- feature_values %||% numeric()
+  fv <- function(name) {
+    if (is.null(names(feature_values)) || !name %in% names(feature_values)) {
+      return(0)
+    }
+    value <- feature_values[name][[1]]
+    if (is.na(value)) 0 else value
+  }
+  t_cell_signal <- max(fv("CD3D"), fv("CD3E"), fv("TRAC"), fv("CD2"), fv("CD5"), fv("CD6"))
+  nk_signal <- max(fv("NKG7"), fv("GNLY"), fv("PRF1"), fv("KLRD1"), fv("NCR1"))
+  b_cell_signal <- max(fv("MS4A1"), fv("CD79A"), fv("CD79B"), fv("CD74"))
+  epithelial_signal <- max(fv("KRT8"), fv("KRT18"), fv("KRT19"), fv("EPCAM"), fv("CLDN3"), fv("CEACAM6"))
+  erythroid_signal <- max(fv("HBB"), fv("HBA1"), fv("HBA2"), fv("HBD"), fv("HBM"), fv("AHSP"), fv("KLF1"), fv("CA1"), fv("CA2"))
+  ilc3_signal <- max(fv("RORC"), fv("IL23R"), fv("AHR"), fv("NCR2"))
+
+  if (is.na(top_name) || is.na(top_value)) {
+    return(list(
+      hint = NA_character_,
+      rationale = NA_character_
+    ))
+  }
+
+  if (fv("HPGDS") >= 0.05 || fv("PTGDR2") >= 0.05 ||
+      (fv("RORA") >= 8 && fv("IL7R") >= 5 && fv("GATA3") >= 4 && t_cell_signal < 1.5 && nk_signal < 1.5) ||
+      length(intersect(marker_support, c("HPGDS", "PTGDR2", "RORA", "GATA3", "IL7R", "KLRB1"))) >= 2L) {
+    return(list(
+      hint = "ILC2-like",
+      rationale = paste0("Canonical ILC2 program is strongest", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if ((fv("KIT") >= 1 || fv("IL1R1") >= 0.5) &&
+      fv("IL7R") >= 4 &&
+      t_cell_signal < 2 &&
+      nk_signal < 2.5) {
+    return(list(
+      hint = "KIT+ ILC-like / ILC precursor-like",
+      rationale = paste0("KIT-associated innate lymphoid program is strongest", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (epithelial_signal >= 2 && epithelial_signal > max(t_cell_signal, nk_signal)) {
+    return(list(
+      hint = "Epithelial contamination-like",
+      rationale = paste0("Non-hematopoietic epithelial markers dominate", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (erythroid_signal >= 2 && erythroid_signal > max(t_cell_signal, nk_signal, epithelial_signal)) {
+    return(list(
+      hint = "Erythroid contamination-like",
+      rationale = paste0("Hemoglobin/erythroid markers dominate", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (length(intersect(marker_support, c("MS4A1", "CD79A", "CD79B", "CD74"))) >= 2L) {
+    return(list(
+      hint = "B-cell-like",
+      rationale = paste0("Canonical B-cell markers appear among the most specific markers", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (t_cell_signal >= 2.5 && nk_signal < 2) {
+    return(list(
+      hint = "T-cell-like",
+      rationale = paste0("Canonical T-cell markers dominate", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (b_cell_signal >= 2 && t_cell_signal < 2 && nk_signal < 2) {
+    return(list(
+      hint = "B-cell-like",
+      rationale = paste0("Canonical B-cell markers dominate", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (ilc3_signal >= 1.5 && nk_signal >= 2 && t_cell_signal < 2.5) {
+    return(list(
+      hint = "NK/ILC3 transitional-like",
+      rationale = paste0("Type-3 ILC and cytotoxic NK-like programs coexist", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (nk_signal >= 2 && t_cell_signal >= 2) {
+    return(list(
+      hint = "T/NK mixed lymphoid-like",
+      rationale = paste0("Both T-cell receptor and cytotoxic/NK programs are substantial", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (nk_signal >= 2.5 && t_cell_signal < 2) {
+    return(list(
+      hint = "NK/cytotoxic lymphocyte-like",
+      rationale = paste0("Canonical cytotoxic/NK markers dominate", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (identical(top_name, "b_cell") && margin >= 0.1) {
+    return(list(
+      hint = "B-cell-like",
+      rationale = paste0("Canonical B-cell program dominates", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (identical(top_name, "dendritic_apc") && margin >= 0.1) {
+    return(list(
+      hint = "Dendritic/APC-like",
+      rationale = paste0("Antigen-presenting cell program dominates", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+  if (identical(top_name, "ilc3") && top_value >= 0.75) {
+    if (fv("RORC") >= 0.15 || fv("IL23R") >= 0.15 || fv("AHR") >= 1.5) {
+      return(list(
+        hint = "ILC3-like",
+        rationale = paste0("Canonical ILC3-associated markers are enriched", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+      ))
+    }
+  }
+  if (identical(top_name, "mast_basophil") && top_value >= 0.75) {
+    return(list(
+      hint = "Mast/basophil-like",
+      rationale = paste0("KIT or basophil/mast-cell program is prominent", if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+    ))
+  }
+
+  list(
+    hint = paste0(top_name, "-like"),
+    rationale = paste0("Top canonical program is ", gsub("_", " ", top_name), if (nzchar(support_text)) paste0(" (", support_text, ")") else ".")
+  )
+}
+
+.sn_prepare_annotation_lineage_hints <- function(object,
+                                                 cluster_col = "seurat_clusters",
+                                                 top_marker_table = tibble::tibble(),
+                                                 species = NULL) {
+  signatures <- .sn_annotation_signature_catalog(species = species)
+  signature_genes <- unique(unlist(signatures, use.names = FALSE))
+  available_genes <- intersect(signature_genes, rownames(object))
+  if (length(available_genes) == 0L || !cluster_col %in% colnames(object[[]])) {
+    return(tibble::tibble())
+  }
+
+  avg_expr <- Seurat::AverageExpression(
+    object,
+    assays = Seurat::DefaultAssay(object),
+    group.by = cluster_col,
+    features = available_genes,
+    return.seurat = FALSE
+  )[[Seurat::DefaultAssay(object)]]
+  avg_expr <- as.matrix(avg_expr)
+  if (nrow(avg_expr) == 0L || ncol(avg_expr) == 0L) {
+    return(tibble::tibble())
+  }
+  cluster_levels <- unique(as.character(object[[cluster_col]][, 1]))
+  prefixed_levels <- paste0("g", cluster_levels)
+  if (all(colnames(avg_expr) %in% prefixed_levels)) {
+    colnames(avg_expr) <- sub("^g", "", colnames(avg_expr))
+  }
+
+  score_mat <- sapply(signatures, function(genes) {
+    present <- intersect(genes, rownames(avg_expr))
+    if (length(present) == 0L) {
+      rep(NA_real_, ncol(avg_expr))
+    } else {
+      colMeans(avg_expr[present, , drop = FALSE], na.rm = TRUE)
+    }
+  })
+  if (is.null(dim(score_mat))) {
+    score_mat <- matrix(score_mat, ncol = 1)
+  }
+  rownames(score_mat) <- colnames(avg_expr)
+  score_tbl <- as.data.frame(score_mat, check.names = FALSE) |>
+    tibble::rownames_to_column("cluster")
+
+  top_marker_table <- tibble::as_tibble(top_marker_table)
+  support_lookup <- if (nrow(top_marker_table) > 0 && all(c("cluster", "gene") %in% colnames(top_marker_table))) {
+    split(as.character(top_marker_table$gene), as.character(top_marker_table$cluster))
+  } else {
+    list()
+  }
+
+  hint_rows <- lapply(seq_len(nrow(score_tbl)), function(i) {
+    cluster <- as.character(score_tbl$cluster[[i]])
+    row_scores <- unlist(score_tbl[i, setdiff(colnames(score_tbl), "cluster"), drop = TRUE], use.names = TRUE)
+    expr_values <- avg_expr[, cluster, drop = TRUE]
+    marker_support <- support_lookup[[cluster]] %||% character()
+    selected <- .sn_select_annotation_hint(
+      score_row = row_scores,
+      marker_support = marker_support,
+      feature_values = expr_values
+    )
+    top_scores <- sort(row_scores, decreasing = TRUE, na.last = TRUE)
+    top_scores <- utils::head(top_scores, 3)
+    tibble::tibble(
+      cluster = cluster,
+      heuristic_hint = selected$hint,
+      heuristic_rationale = selected$rationale,
+      heuristic_top_signatures = paste0(
+        names(top_scores),
+        "=",
+        formatC(unname(top_scores), format = "f", digits = 2),
+        collapse = "; "
+      )
+    )
+  })
+
+  dplyr::bind_rows(hint_rows)
+}
+
+.sn_prepare_annotation_canonical_snapshot <- function(object,
+                                                      cluster_col = "seurat_clusters",
+                                                      species = NULL) {
+  signatures <- .sn_annotation_signature_catalog(species = species)
+  snapshot_genes <- unique(unlist(signatures[c(
+    "ilc2", "kit_ilc", "ilc3", "t_cell", "b_cell", "dendritic_apc",
+    "nk_cytotoxic", "mast_basophil", "epithelial_contam", "erythroid_contam"
+  )], use.names = FALSE))
+  available_genes <- intersect(snapshot_genes, rownames(object))
+  if (length(available_genes) == 0L || !cluster_col %in% colnames(object[[]])) {
+    return(tibble::tibble())
+  }
+
+  avg_expr <- Seurat::AverageExpression(
+    object,
+    assays = Seurat::DefaultAssay(object),
+    group.by = cluster_col,
+    features = available_genes,
+    return.seurat = FALSE
+  )[[Seurat::DefaultAssay(object)]]
+  avg_expr <- as.matrix(avg_expr)
+  if (nrow(avg_expr) == 0L || ncol(avg_expr) == 0L) {
+    return(tibble::tibble())
+  }
+
+  cluster_levels <- unique(as.character(object[[cluster_col]][, 1]))
+  prefixed_levels <- paste0("g", cluster_levels)
+  if (all(colnames(avg_expr) %in% prefixed_levels)) {
+    colnames(avg_expr) <- sub("^g", "", colnames(avg_expr))
+  }
+
+  snapshot <- as.data.frame(t(avg_expr), check.names = FALSE)
+  snapshot$cluster <- rownames(snapshot)
+  snapshot <- tibble::as_tibble(snapshot[, c("cluster", setdiff(colnames(snapshot), "cluster")), drop = FALSE])
+  numeric_cols <- setdiff(colnames(snapshot), "cluster")
+  snapshot[numeric_cols] <- lapply(snapshot[numeric_cols], function(x) round(as.numeric(x), 3))
+  snapshot
 }
 
 #' Store an enrichment result on a Seurat object
@@ -902,16 +2585,32 @@ sn_store_enrichment <- function(object,
 #' Prepare cluster-annotation evidence from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Name of a stored marker result in \code{object@misc$de_results}.
+#' @param de_name Optional stored marker-result name in
+#'   \code{object@misc$de_results}. When omitted, Shennong prefers
+#'   \code{"default"}, then a single available result, and otherwise the most
+#'   recent marker result.
 #' @param cluster_col Metadata column containing cluster labels.
 #' @param n_markers Number of top markers to retain per cluster.
+#' @param marker_selection How to choose marker genes for annotation evidence:
+#'   \code{"specific"} prefers genes that are relatively unique to one cluster,
+#'   while \code{"top"} keeps the raw top-ranked genes.
 #' @param enrichment_name Optional stored enrichment result used to add
 #'   cluster-level functional evidence to the annotation prompt.
 #' @param n_terms Number of enrichment terms to retain per cluster when
 #'   \code{enrichment_name} is supplied.
+#' @param enrichment_selection How to choose pathway/function terms for
+#'   annotation evidence: \code{"specific"} prefers terms concentrated in fewer
+#'   clusters, while \code{"top"} keeps the raw top-ranked terms.
 #' @param include_qc Logical; whether to attach cluster-level QC summaries such
 #'   as mitochondrial burden, failed-QC fractions, and doublet fractions when
 #'   available in metadata.
+#' @param reduction Optional dimensional reduction name used to summarize
+#'   cluster neighborhood geometry, for example \code{"umap"}. Use
+#'   \code{NULL} to disable geometry evidence.
+#' @param n_neighbor_clusters Number of nearest clusters to report from the
+#'   reduction centroid distances.
+#'   Canonical lineage heuristic hints derived from known marker programs are
+#'   included automatically when the required genes are present.
 #'
 #' @return A structured list ready for prompt construction.
 #'
@@ -944,31 +2643,70 @@ sn_store_enrichment <- function(object,
 #' }
 #' @export
 sn_prepare_annotation_evidence <- function(object,
-                                           de_name,
+                                           de_name = NULL,
                                            cluster_col = "seurat_clusters",
                                            n_markers = 10,
+                                           marker_selection = c("specific", "top"),
                                            enrichment_name = NULL,
                                            n_terms = 5,
-                                           include_qc = TRUE) {
+                                           enrichment_selection = c("specific", "top"),
+                                           include_qc = TRUE,
+                                           reduction = "umap",
+                                           n_neighbor_clusters = 3) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
+  marker_selection <- match.arg(marker_selection)
+  enrichment_selection <- match.arg(enrichment_selection)
 
+  de_name <- .sn_resolve_misc_result_name(
+    object = object,
+    collection = "de_results",
+    store_name = de_name,
+    preferred_analysis = "markers",
+    arg_name = "de_name"
+  )
   de_result <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
   cluster_summary <- .sn_prepare_cluster_summary(object = object, cluster_col = cluster_col)
-  marker_summary <- .sn_prepare_marker_summary(de_result = de_result, n_markers = n_markers)
-  marker_table <- .sn_prepare_marker_table(de_result = de_result, n_markers = n_markers)
+  marker_summary <- .sn_prepare_marker_summary(
+    de_result = de_result,
+    n_markers = n_markers,
+    selection = marker_selection
+  )
+  marker_table <- .sn_prepare_marker_table(
+    de_result = de_result,
+    n_markers = n_markers,
+    selection = marker_selection
+  )
   prediction_summary <- .sn_prepare_prediction_summary(object = object, cluster_col = cluster_col)
   enrichment_summary <- .sn_prepare_cluster_enrichment_summary(
     object = object,
     enrichment_name = enrichment_name,
-    n_terms = n_terms
+    n_terms = n_terms,
+    selection = enrichment_selection
   )
   qc_summary <- if (isTRUE(include_qc)) {
     .sn_prepare_annotation_qc_summary(object = object, cluster_col = cluster_col)
   } else {
     tibble::tibble()
   }
+  lineage_hints <- .sn_prepare_annotation_lineage_hints(
+    object = object,
+    cluster_col = cluster_col,
+    top_marker_table = marker_table,
+    species = tryCatch(sn_get_species(object), error = function(...) NULL)
+  )
+  canonical_marker_snapshot <- .sn_prepare_annotation_canonical_snapshot(
+    object = object,
+    cluster_col = cluster_col,
+    species = tryCatch(sn_get_species(object), error = function(...) NULL)
+  )
+  geometry_summary <- .sn_prepare_cluster_geometry_summary(
+    object = object,
+    cluster_col = cluster_col,
+    reduction = reduction,
+    n_neighbors = n_neighbor_clusters
+  )
 
   merged_summary <- dplyr::left_join(cluster_summary, marker_summary, by = "cluster")
   if (nrow(prediction_summary) > 0) {
@@ -981,6 +2719,13 @@ sn_prepare_annotation_evidence <- function(object,
     qc_join <- dplyr::select(qc_summary, -dplyr::any_of("n_cells"))
     merged_summary <- dplyr::left_join(merged_summary, qc_join, by = "cluster")
   }
+  if (nrow(lineage_hints) > 0) {
+    merged_summary <- dplyr::left_join(merged_summary, lineage_hints, by = "cluster")
+  }
+  if (nrow(geometry_summary) > 0) {
+    geometry_join <- dplyr::select(geometry_summary, -dplyr::any_of("geometry_reduction"))
+    merged_summary <- dplyr::left_join(merged_summary, geometry_join, by = "cluster")
+  }
 
   list(
     task = "annotation",
@@ -989,10 +2734,16 @@ sn_prepare_annotation_evidence <- function(object,
     source_enrichment_name = enrichment_name,
     analysis_method = de_result$method,
     species = tryCatch(sn_get_species(object), error = function(...) NULL),
+    marker_selection = marker_selection,
+    enrichment_selection = enrichment_selection,
+    geometry_reduction = if (nrow(geometry_summary) > 0) reduction else NULL,
     cluster_summary = merged_summary,
     top_marker_table = marker_table,
     enrichment_summary = enrichment_summary,
     qc_summary = qc_summary,
+    lineage_hints = lineage_hints,
+    canonical_marker_snapshot = canonical_marker_snapshot,
+    geometry_summary = geometry_summary,
     caveats = character()
   )
 }
@@ -1267,6 +3018,11 @@ sn_build_prompt <- function(evidence,
   output_format <- match.arg(output_format)
 
   instruction <- .sn_interpretation_task_instructions(task = task, evidence = evidence)
+  evidence_max_rows <- if (identical(task, "annotation")) {
+    200L
+  } else {
+    8L
+  }
 
   if (identical(output_format, "human")) {
     return(.sn_human_readable_prompt(
@@ -1282,7 +3038,7 @@ sn_build_prompt <- function(evidence,
     collapse = " "
   )
 
-  style_line <- if (!is_null(style)) paste0("Target style: ", style, ".") else ""
+  style_line <- if (!is_null(style)) paste0("- Target style: ", style) else NULL
   json_line <- if (isTRUE(include_json_schema)) {
     if (identical(task, "annotation")) {
       .sn_annotation_json_schema_text()
@@ -1290,22 +3046,43 @@ sn_build_prompt <- function(evidence,
       "Return a structured JSON object followed by a brief narrative explanation."
     }
   } else {
-    ""
+    NULL
   }
-  background_line <- if (!is_null(background) && nzchar(background)) paste0("Background context:\n", background) else ""
-
-  user_prompt <- paste(
-    paste0("Task: ", task, "."),
-    paste0("Audience: ", audience, "."),
-    paste0("Language: ", language, "."),
-    style_line,
-    paste0("Task instructions: ", instruction),
-    background_line,
-    json_line,
-    "Evidence:",
-    .sn_render_prompt_value(evidence),
-    sep = "\n\n"
+  metadata_lines <- c(
+    paste0("- Task: ", task),
+    paste0("- Audience: ", audience),
+    paste0("- Language: ", language),
+    style_line
   )
+
+  user_sections <- c(
+    "# Interpretation Request",
+    "## Task Metadata",
+    paste(metadata_lines[nzchar(metadata_lines)], collapse = "\n"),
+    "## Task Instructions",
+    instruction
+  )
+
+  if (!is_null(background) && nzchar(background)) {
+    user_sections <- c(
+      user_sections,
+      "## Background Context",
+      as.character(background)
+    )
+  }
+  if (!is_null(json_line) && nzchar(json_line)) {
+    user_sections <- c(
+      user_sections,
+      "## Output Contract",
+      json_line
+    )
+  }
+  user_sections <- c(
+    user_sections,
+    "## Evidence",
+    .sn_render_evidence_markdown(evidence, max_rows = evidence_max_rows)
+  )
+  user_prompt <- paste(user_sections, collapse = "\n\n")
 
   list(
     output_format = output_format,
@@ -1337,62 +3114,39 @@ sn_build_prompt <- function(evidence,
 #'   provider = provider
 #' )
 #' @export
-sn_run_llm <- function(messages, provider, model = NULL, ...) {
+sn_run_llm <- function(messages, provider, model = NULL, structured_type = NULL, tools = NULL, ...) {
   if (!is.function(provider)) {
     stop("`provider` must be a function.")
   }
 
-  response <- provider(messages = messages, model = model, ...)
+  provider_args <- list(
+    messages = messages,
+    model = model,
+    structured_type = structured_type,
+    tools = tools,
+    ...
+  )
+  provider_formals <- names(formals(provider) %||% alist(... = ))
+  if (!"..." %in% provider_formals) {
+    provider_args <- provider_args[intersect(names(provider_args), provider_formals)]
+  }
+
+  response <- do.call(provider, provider_args)
   if (is.character(response) && length(response) == 1) {
     return(list(text = response, model = model))
   }
-  if (is.list(response) && "text" %in% names(response)) {
+  if (is.list(response) && any(c("text", "structured") %in% names(response))) {
+    if (!"text" %in% names(response) && "structured" %in% names(response)) {
+      response$text <- tryCatch(
+        jsonlite::toJSON(response$structured, auto_unbox = TRUE, null = "null", dataframe = "rows"),
+        error = function(...) NULL
+      )
+    }
     response$text <- .sn_text_scalar(response$text)
     return(response)
   }
 
-  stop("`provider` must return either a single string or a list containing `text`.")
-}
-
-# Keep local provider configuration under ~/.shennong so package workflows can
-# reuse a default endpoint without forcing users to edit .Renviron by hand.
-.sn_llm_config_default <- function() {
-  list(
-    schema_version = "1.0.0",
-    updated_at = NULL,
-    default_provider = NULL,
-    providers = list()
-  )
-}
-
-.sn_llm_root_dir <- function(config_dir = "~/.shennong", create = TRUE) {
-  path <- path.expand(config_dir)
-  if (create && !dir.exists(path)) {
-    dir.create(path, recursive = TRUE, showWarnings = FALSE)
-  }
-  path
-}
-
-.sn_llm_config_path <- function(config_dir = "~/.shennong") {
-  file.path(.sn_llm_root_dir(config_dir = config_dir), "llm-providers.json")
-}
-
-.sn_llm_history_dir <- function(config_dir = "~/.shennong", create = TRUE) {
-  path <- file.path(.sn_llm_root_dir(config_dir = config_dir, create = create), "llm-history")
-  if (create && !dir.exists(path)) {
-    dir.create(path, recursive = TRUE, showWarnings = FALSE)
-  }
-  path
-}
-
-.sn_coerce_named_list <- function(x) {
-  if (is.null(x)) {
-    return(list())
-  }
-  if (is.list(x) && !is.data.frame(x)) {
-    return(x)
-  }
-  as.list(x)
+  stop("`provider` must return either a single string or a list containing `text` and/or `structured`.")
 }
 
 .sn_text_scalar <- function(x) {
@@ -1411,37 +3165,6 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
   as.character(values[[1]])
 }
 
-.sn_read_llm_config <- function(config_dir = "~/.shennong") {
-  path <- .sn_llm_config_path(config_dir = config_dir)
-  if (!file.exists(path)) {
-    return(.sn_llm_config_default())
-  }
-
-  parsed <- tryCatch(
-    jsonlite::fromJSON(path, simplifyVector = FALSE),
-    error = function(...) .sn_llm_config_default()
-  )
-  parsed <- modifyList(.sn_llm_config_default(), parsed)
-  parsed$providers <- .sn_coerce_named_list(parsed$providers)
-  parsed
-}
-
-.sn_write_llm_config <- function(config,
-                                 config_dir = "~/.shennong") {
-  path <- .sn_llm_config_path(config_dir = config_dir)
-  config <- modifyList(.sn_llm_config_default(), config)
-  config$providers <- .sn_coerce_named_list(config$providers)
-  config$updated_at <- format(Sys.time(), tz = "UTC", usetz = TRUE)
-
-  writeLines(
-    jsonlite::toJSON(config, auto_unbox = TRUE, pretty = TRUE, null = "null"),
-    con = path,
-    useBytes = TRUE
-  )
-  suppressWarnings(Sys.chmod(path, mode = "600"))
-  invisible(path)
-}
-
 .sn_format_openai_base_url <- function(base_url,
                                        require_v1 = TRUE) {
   if (!nzchar(base_url)) {
@@ -1456,17 +3179,6 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
     return(paste0(base_url, "/v1"))
   }
   base_url
-}
-
-.sn_openai_endpoint <- function(base_url,
-                                wire_api = c("responses", "chat_completions")) {
-  wire_api <- match.arg(wire_api)
-  formatted_base <- .sn_format_openai_base_url(base_url)
-  suffix <- if (identical(wire_api, "responses")) "responses" else "chat/completions"
-  if (grepl(paste0("/", suffix, "$"), formatted_base, fixed = FALSE)) {
-    return(formatted_base)
-  }
-  paste0(formatted_base, "/", suffix)
 }
 
 .sn_extract_openai_response_text <- function(parsed,
@@ -1522,407 +3234,24 @@ sn_run_llm <- function(messages, provider, model = NULL, ...) {
     NULL
 }
 
-.sn_record_llm_history <- function(provider_name,
-                                   base_url,
-                                   wire_api,
-                                   backend,
-                                   messages,
-                                   response,
-                                   requested_model = NULL,
-                                   config_dir = "~/.shennong") {
-  history_dir <- .sn_llm_history_dir(config_dir = config_dir)
-  stamp <- format(Sys.time(), "%Y%m%dT%H%M%S", tz = "UTC")
-  history_path <- file.path(
-    history_dir,
-    paste0(stamp, "-", sprintf("%06d", sample.int(999999, 1)), ".json")
-  )
-  payload <- list(
-    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
-    provider_name = provider_name,
-    base_url = base_url,
-    wire_api = wire_api,
-    backend = backend,
-    requested_model = requested_model,
-    resolved_model = response$model %||% requested_model,
-    messages = messages,
-    response = response
-  )
-  writeLines(
-    jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
-    con = history_path,
-    useBytes = TRUE
-  )
-  suppressWarnings(Sys.chmod(history_path, mode = "600"))
-  invisible(history_path)
-}
-
-.sn_wrap_provider_with_history <- function(provider,
-                                           provider_name,
-                                           base_url,
-                                           wire_api,
-                                           backend,
-                                           config_dir = "~/.shennong",
-                                           history = TRUE) {
-  force(provider)
-  force(provider_name)
-  force(base_url)
-  force(wire_api)
-  force(backend)
-  force(config_dir)
-  force(history)
-
-  function(messages, model = NULL, ...) {
-    response <- provider(messages = messages, model = model, ...)
-    if (isTRUE(history)) {
-      .sn_record_llm_history(
-        provider_name = provider_name,
-        base_url = base_url,
-        wire_api = wire_api,
-        backend = backend,
-        messages = messages,
-        response = response,
-        requested_model = model,
-        config_dir = config_dir
-      )
-    }
-    response
-  }
-}
-
-.sn_resolve_llm_provider_record <- function(name = NULL,
-                                            config_dir = "~/.shennong") {
-  config <- .sn_read_llm_config(config_dir = config_dir)
-  providers <- config$providers %||% list()
-
-  if (length(providers) == 0L) {
-    stop("No LLM providers are configured under `~/.shennong`.", call. = FALSE)
-  }
-
-  selected_name <- name %||% config$default_provider
-  if (is.null(selected_name) || !nzchar(selected_name)) {
-    stop("No default LLM provider is configured.", call. = FALSE)
-  }
-  if (!selected_name %in% names(providers)) {
-    stop(glue("Provider '{selected_name}' was not found in the local Shennong config."), call. = FALSE)
-  }
-
-  record <- providers[[selected_name]]
-  record$name <- selected_name
-  record
-}
-
-#' Configure a reusable local LLM provider for Shennong
-#'
-#' Stores provider metadata under \code{~/.shennong/llm-providers.json} so
-#' Shennong interpretation helpers can reuse a default endpoint without forcing
-#' every call site to pass an explicit provider function.
-#'
-#' @param name Provider name used in the local registry.
-#' @param base_url Base URL of the upstream API. A bare host like
-#'   \code{"https://api.catplot.org"} is accepted.
-#' @param api_key API key to store in the local provider config. If omitted,
-#'   Shennong will fall back to \code{Sys.getenv(api_key_env)} at runtime.
-#' @param api_key_env Environment variable name used as a fallback secret source.
-#' @param provider_type Provider family. Currently \code{"openai_compatible"}
-#'   and \code{"openai"} are supported.
-#' @param wire_api Upstream API style: \code{"responses"} or
-#'   \code{"chat_completions"}.
-#' @param default_model Default model used when no explicit \code{model} is
-#'   supplied.
-#' @param review_model Optional second model name kept for local bookkeeping.
-#' @param reasoning_effort Optional reasoning level stored alongside the
-#'   provider config.
-#' @param backend_preference Preferred Shennong backend. Use
-#'   \code{"native"} for the built-in HTTP client or \code{"ellmer"} for the
-#'   optional \pkg{ellmer}-backed adapter.
-#' @param disable_response_storage Logical; if \code{TRUE}, disable provider-side
-#'   response storage when the upstream API supports it.
-#' @param enable_history Logical; whether configured providers should write call
-#'   history into \code{~/.shennong/llm-history/}.
-#' @param set_default Logical; whether to mark this provider as the default one.
-#' @param supports_websockets Logical flag stored for user inspection.
-#' @param requires_openai_auth Logical flag stored for user inspection.
-#' @param config_dir Local Shennong config root.
-#'
-#' @return Invisibly returns the updated provider table.
-#'
-#' @examples
-#' cfg_dir <- tempfile("shennong-config-")
-#' sn_configure_llm_provider(
-#'   name = "demo",
-#'   base_url = "https://example.invalid",
-#'   api_key = "demo-key",
-#'   default_model = "gpt-4.1",
-#'   config_dir = cfg_dir
-#' )
-#' sn_list_llm_providers(config_dir = cfg_dir)
-#' @export
-sn_configure_llm_provider <- function(name = "default",
-                                      base_url,
-                                      api_key = NULL,
-                                      api_key_env = "OPENAI_API_KEY",
-                                      provider_type = c("openai_compatible", "openai"),
-                                      wire_api = c("responses", "chat_completions"),
-                                      default_model = NULL,
-                                      review_model = NULL,
-                                      reasoning_effort = NULL,
-                                      backend_preference = c("native", "ellmer", "auto"),
-                                      disable_response_storage = TRUE,
-                                      enable_history = TRUE,
-                                      set_default = TRUE,
-                                      supports_websockets = FALSE,
-                                      requires_openai_auth = TRUE,
-                                      config_dir = "~/.shennong") {
-  provider_type <- match.arg(provider_type)
-  wire_api <- match.arg(wire_api)
-  backend_preference <- match.arg(backend_preference)
-
-  if (!nzchar(name)) {
-    stop("`name` must be a non-empty provider name.", call. = FALSE)
-  }
-
-  config <- .sn_read_llm_config(config_dir = config_dir)
-  providers <- config$providers %||% list()
-  providers[[name]] <- list(
-    provider_type = provider_type,
-    base_url = .sn_format_openai_base_url(base_url, require_v1 = TRUE),
-    api_key = if (!is.null(api_key) && nzchar(api_key)) api_key else NULL,
-    api_key_env = api_key_env,
-    wire_api = wire_api,
-    default_model = default_model,
-    review_model = review_model,
-    reasoning_effort = reasoning_effort,
-    backend_preference = backend_preference,
-    disable_response_storage = isTRUE(disable_response_storage),
-    enable_history = isTRUE(enable_history),
-    supports_websockets = isTRUE(supports_websockets),
-    requires_openai_auth = isTRUE(requires_openai_auth)
-  )
-
-  config$providers <- providers
-  if (isTRUE(set_default) || is.null(config$default_provider)) {
-    config$default_provider <- name
-  }
-  .sn_write_llm_config(config = config, config_dir = config_dir)
-  invisible(sn_list_llm_providers(config_dir = config_dir))
-}
-
-#' List locally configured LLM providers
-#'
-#' @param config_dir Local Shennong config root.
-#'
-#' @return A tibble with one row per configured provider.
-#'
-#' @examples
-#' cfg_dir <- tempfile("shennong-config-")
-#' sn_configure_llm_provider(
-#'   name = "demo",
-#'   base_url = "https://example.invalid",
-#'   api_key = "demo-key",
-#'   default_model = "gpt-4.1",
-#'   config_dir = cfg_dir
-#' )
-#' sn_list_llm_providers(config_dir = cfg_dir)
-#' @export
-sn_list_llm_providers <- function(config_dir = "~/.shennong") {
-  config <- .sn_read_llm_config(config_dir = config_dir)
-  providers <- config$providers %||% list()
-  provider_names <- names(providers)
-
-  if (length(provider_names) == 0L) {
-    return(tibble::tibble(
-      name = character(0),
-      is_default = logical(0),
-      provider_type = character(0),
-      backend_preference = character(0),
-      base_url = character(0),
-      wire_api = character(0),
-      default_model = character(0),
-      review_model = character(0),
-      reasoning_effort = character(0),
-      history_enabled = logical(0),
-      response_storage_disabled = logical(0),
-      api_key_source = character(0)
-    ))
-  }
-
-  tibble::tibble(
-    name = provider_names,
-    is_default = provider_names %in% (config$default_provider %||% ""),
-    provider_type = vapply(provider_names, function(x) providers[[x]]$provider_type %||% NA_character_, character(1)),
-    backend_preference = vapply(provider_names, function(x) providers[[x]]$backend_preference %||% "native", character(1)),
-    base_url = vapply(provider_names, function(x) providers[[x]]$base_url %||% NA_character_, character(1)),
-    wire_api = vapply(provider_names, function(x) providers[[x]]$wire_api %||% NA_character_, character(1)),
-    default_model = vapply(provider_names, function(x) providers[[x]]$default_model %||% NA_character_, character(1)),
-    review_model = vapply(provider_names, function(x) providers[[x]]$review_model %||% NA_character_, character(1)),
-    reasoning_effort = vapply(provider_names, function(x) providers[[x]]$reasoning_effort %||% NA_character_, character(1)),
-    history_enabled = vapply(provider_names, function(x) isTRUE(providers[[x]]$enable_history), logical(1)),
-    response_storage_disabled = vapply(provider_names, function(x) isTRUE(providers[[x]]$disable_response_storage), logical(1)),
-    api_key_source = vapply(
-      provider_names,
-      function(x) if (!is.null(providers[[x]]$api_key) && nzchar(providers[[x]]$api_key)) "config" else providers[[x]]$api_key_env %||% "unset",
-      character(1)
-    )
-  )
-}
-
-#' Create an OpenAI-style provider for Shennong interpretation helpers
-#'
-#' @param api_key API key.
-#' @param base_url Base URL of the API.
-#' @param model Default model identifier used when no explicit model is
-#'   supplied.
-#' @param wire_api Upstream API style: \code{"responses"} or
-#'   \code{"chat_completions"}.
-#' @param reasoning_effort Optional reasoning effort sent with the request.
-#' @param temperature Optional temperature. For the responses API this is only
-#'   included when supplied.
-#' @param disable_response_storage Logical; if \code{TRUE}, request that the
-#'   upstream API does not retain the response.
-#'
-#' @return A provider function suitable for \code{sn_run_llm()}.
-#'
-#' @examples
-#' \dontrun{
-#' provider <- sn_make_openai_provider(
-#'   api_key = Sys.getenv("OPENAI_API_KEY"),
-#'   base_url = "https://api.openai.com/v1",
-#'   model = "gpt-4.1",
-#'   wire_api = "responses"
-#' )
-#' }
-#' @export
-sn_make_openai_provider <- function(api_key = Sys.getenv("OPENAI_API_KEY"),
-                                    base_url = Sys.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-                                    model = Sys.getenv("OPENAI_MODEL", "gpt-4.1"),
-                                    wire_api = c("responses", "chat_completions"),
-                                    reasoning_effort = NULL,
-                                    temperature = NULL,
-                                    disable_response_storage = TRUE) {
-  wire_api <- match.arg(wire_api)
-
-  if (!nzchar(api_key)) {
-    stop("`api_key` is required. Set `OPENAI_API_KEY` or pass it explicitly.", call. = FALSE)
-  }
-
-  endpoint <- .sn_openai_endpoint(base_url = base_url, wire_api = wire_api)
-  default_model <- model
-
-  function(messages, model = NULL, ...) {
-    resolved_model <- model %||% default_model
-    extra_args <- list(...)
-
-    payload <- if (identical(wire_api, "responses")) {
-      base_payload <- list(
-        model = resolved_model,
-        input = lapply(messages, function(message) {
-          list(
-            role = message$role,
-            content = list(list(
-              type = "input_text",
-              text = as.character(message$content %||% "")
-            ))
-          )
-        })
-      )
-      if (!is.null(reasoning_effort) && nzchar(reasoning_effort)) {
-        base_payload$reasoning <- list(effort = reasoning_effort)
-      }
-      if (!is.null(temperature)) {
-        base_payload$temperature <- temperature
-      }
-      if (isTRUE(disable_response_storage)) {
-        base_payload$store <- FALSE
-      }
-      modifyList(base_payload, extra_args)
-    } else {
-      base_payload <- list(
-        model = resolved_model,
-        messages = messages
-      )
-      if (!is.null(temperature)) {
-        base_payload$temperature <- temperature
-      }
-      modifyList(base_payload, extra_args)
-    }
-
-    response <- curl::curl_fetch_memory(
-      url = endpoint,
-      handle = curl::new_handle(
-        post = TRUE,
-        postfields = jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null"),
-        httpheader = c(
-          "Content-Type: application/json",
-          paste("Authorization: Bearer", api_key),
-          paste("x-api-key:", api_key)
-        )
-      )
-    )
-
-    parsed <- jsonlite::fromJSON(rawToChar(response$content), simplifyVector = FALSE)
-    text <- .sn_text_scalar(.sn_extract_openai_response_text(parsed = parsed, wire_api = wire_api))
-    if (is.null(text)) {
-      stop(glue("OpenAI-style response from '{endpoint}' did not contain extractable text."), call. = FALSE)
-    }
-
-    list(
-      text = text,
-      model = parsed$model %||% resolved_model,
-      raw = parsed
-    )
-  }
-}
-
-#' Create a Sub2API-compatible chat provider for Shennong interpretation helpers
-#'
-#' This helper returns a provider function suitable for \code{sn_run_llm()} and
-#' the high-level \code{sn_interpret_*()} wrappers. It assumes an
-#' OpenAI-compatible chat-completions endpoint such as Sub2API's proxy layer.
-#'
-#' @param api_key API key. Defaults to \code{Sys.getenv("SUB2API_API_KEY")}.
-#' @param base_url Chat-completions endpoint URL. Defaults to
-#'   \code{Sys.getenv("SUB2API_BASE_URL", "https://api.sub2api.com/v1/chat/completions")}.
-#' @param model Default model identifier used when the caller does not supply
-#'   one.
-#' @param temperature Sampling temperature.
-#'
-#' @return A provider function that can be passed to \code{sn_run_llm()} or
-#'   \code{sn_interpret_annotation()}.
-#'
-#' @examples
-#' \dontrun{
-#' provider <- sn_make_sub2api_provider()
-#' response <- sn_run_llm(
-#'   messages = list(list(role = "user", content = "Say hello.")),
-#'   provider = provider
-#' )
-#' }
-#' @export
-sn_make_sub2api_provider <- function(api_key = Sys.getenv("SUB2API_API_KEY"),
-                                     base_url = Sys.getenv("SUB2API_BASE_URL", "https://api.sub2api.com/v1/chat/completions"),
-                                     model = Sys.getenv("SUB2API_MODEL", "gpt-4o-mini"),
-                                     temperature = 0.2) {
-  sn_make_openai_provider(
-    api_key = api_key,
-    base_url = base_url,
-    model = model,
-    wire_api = "chat_completions",
-    temperature = temperature
-  )
-}
-
 #' Create an \pkg{ellmer}-backed provider for Shennong interpretation helpers
 #'
 #' This adapter is useful when you want to manage transport, streaming, or
 #' future structured-output features through \pkg{ellmer} while keeping
 #' Shennong's interpretation API unchanged.
 #'
-#' @param api_key API key. Defaults to \code{Sys.getenv("OPENAI_API_KEY")}.
-#' @param base_url Base URL of the API.
+#' @param api_key API key. Defaults to \code{OPENAI_API_KEY}.
+#' @param base_url Base URL of the API. Defaults to \code{OPENAI_BASE_URL},
+#'   then \code{"https://api.openai.com/v1"}.
 #' @param model Default model identifier.
 #' @param provider_type One of \code{"openai_compatible"} or \code{"openai"}.
 #' @param echo Echo mode forwarded to \pkg{ellmer}.
+#' @param reasoning_effort Optional reasoning effort forwarded to compatible
+#'   GPT-5 chat-completions providers.
 #' @param api_args Optional named list appended to each API request.
+#' @param retries Number of retry attempts for retryable upstream proxy / HTML
+#'   response failures.
+#' @param retry_delay_sec Delay between retry attempts in seconds.
 #'
 #' @return A provider function suitable for \code{sn_run_llm()}.
 #'
@@ -1935,26 +3264,31 @@ sn_make_sub2api_provider <- function(api_key = Sys.getenv("SUB2API_API_KEY"),
 #' )
 #' }
 #' @export
-sn_make_ellmer_provider <- function(api_key = Sys.getenv("OPENAI_API_KEY"),
-                                    base_url,
+sn_make_ellmer_provider <- function(api_key = .sn_default_llm_api_key(),
+                                    base_url = .sn_default_llm_base_url(),
                                     model = NULL,
                                     provider_type = c("openai_compatible", "openai"),
                                     echo = c("none", "output", "all"),
-                                    api_args = list()) {
+                                    reasoning_effort = NULL,
+                                    api_args = list(),
+                                    retries = 2L,
+                                    retry_delay_sec = 1) {
   provider_type <- match.arg(provider_type)
   echo <- match.arg(echo)
 
-  if (!requireNamespace("ellmer", quietly = TRUE)) {
-    stop("Package `ellmer` is required for `sn_make_ellmer_provider()`. Install it first.", call. = FALSE)
-  }
+  check_installed("ellmer")
   if (!nzchar(api_key)) {
     stop("`api_key` is required. Set `OPENAI_API_KEY` or pass it explicitly.", call. = FALSE)
   }
 
   default_model <- model
   formatted_base <- .sn_format_openai_base_url(base_url)
+  provider_api_args <- api_args
+  if (!is.null(reasoning_effort) && nzchar(reasoning_effort)) {
+    provider_api_args$reasoning_effort <- reasoning_effort
+  }
 
-  function(messages, model = NULL, ...) {
+  function(messages, model = NULL, structured_type = NULL, tools = NULL, ...) {
     system_messages <- vapply(
       Filter(function(message) identical(message$role, "system"), messages),
       function(message) as.character(message$content %||% ""),
@@ -1976,119 +3310,84 @@ sn_make_ellmer_provider <- function(api_key = Sys.getenv("OPENAI_API_KEY"),
     )
 
     credentials <- function() api_key
-    chat <- if (identical(provider_type, "openai")) {
-      ellmer::chat_openai(
-        system_prompt = system_prompt,
-        base_url = formatted_base,
-        credentials = credentials,
-        model = model %||% default_model,
-        api_args = modifyList(api_args, list(...)),
-        echo = echo
-      )
-    } else {
-      ellmer::chat_openai_compatible(
-        base_url = formatted_base,
-        name = "Shennong provider",
-        system_prompt = system_prompt,
-        credentials = credentials,
-        model = model %||% default_model,
-        api_args = modifyList(api_args, list(...)),
-        echo = echo
-      )
+    attempts <- max(1L, as.integer(retries %||% 1L))
+    last_error <- NULL
+
+    for (attempt in seq_len(attempts)) {
+      result <- tryCatch({
+        chat <- if (identical(provider_type, "openai")) {
+          ellmer::chat_openai(
+            system_prompt = system_prompt,
+            base_url = formatted_base,
+            credentials = credentials,
+            model = model %||% default_model,
+            api_args = modifyList(provider_api_args, list(...)),
+            echo = echo
+          )
+        } else {
+          ellmer::chat_openai_compatible(
+            base_url = formatted_base,
+            name = "Shennong provider",
+            system_prompt = system_prompt,
+            credentials = credentials,
+            model = model %||% default_model,
+            api_args = modifyList(provider_api_args, list(...)),
+            echo = echo
+          )
+        }
+
+        if (length(tools %||% list()) > 0L && is.null(structured_type)) {
+          for (current_tool in tools) {
+            chat$register_tool(current_tool)
+          }
+        }
+
+        if (!is.null(structured_type)) {
+          structured <- chat$chat_structured(
+            prompt_text,
+            type = structured_type,
+            echo = echo
+          )
+          return(list(
+            text = jsonlite::toJSON(structured, auto_unbox = TRUE, null = "null", dataframe = "rows"),
+            structured = structured,
+            model = model %||% default_model,
+            raw = NULL
+          ))
+        }
+
+        text <- chat$chat(prompt_text)
+        list(
+          text = as.character(text),
+          model = model %||% default_model,
+          raw = NULL
+        )
+      }, error = identity)
+
+      if (!inherits(result, "error")) {
+        return(result)
+      }
+
+      last_error <- result
+      if (attempt < attempts && .sn_is_retryable_llm_error(conditionMessage(result))) {
+        Sys.sleep(retry_delay_sec)
+        next
+      }
+      break
     }
 
-    text <- chat$chat(prompt_text)
-    list(
-      text = as.character(text),
-      model = model %||% default_model,
-      raw = NULL
-    )
+    stop(.sn_harden_llm_error(conditionMessage(last_error)), call. = FALSE)
   }
 }
 
-#' Construct a provider from local Shennong LLM configuration
+#' Test whether an ellmer-backed LLM provider is reachable and usable
 #'
-#' @param name Optional provider name. Defaults to the configured default
-#'   provider.
-#' @param backend Backend to use: \code{"auto"}, \code{"native"}, or
-#'   \code{"ellmer"}.
-#' @param config_dir Local Shennong config root.
-#'
-#' @return A provider function suitable for \code{sn_run_llm()}.
-#'
-#' @examples
-#' cfg_dir <- tempfile("shennong-config-")
-#' sn_configure_llm_provider(
-#'   name = "demo",
-#'   base_url = "https://example.invalid",
-#'   api_key = "demo-key",
-#'   default_model = "gpt-4.1",
-#'   config_dir = cfg_dir
-#' )
-#' provider <- sn_get_llm_provider(config_dir = cfg_dir)
-#' @export
-sn_get_llm_provider <- function(name = NULL,
-                                backend = c("auto", "native", "ellmer"),
-                                config_dir = "~/.shennong") {
-  backend <- match.arg(backend)
-  record <- .sn_resolve_llm_provider_record(name = name, config_dir = config_dir)
-
-  resolved_backend <- if (identical(backend, "auto")) {
-    preference <- record$backend_preference %||% "native"
-    if (identical(preference, "ellmer") && requireNamespace("ellmer", quietly = TRUE)) {
-      "ellmer"
-    } else {
-      "native"
-    }
-  } else {
-    backend
-  }
-
-  api_key <- record$api_key %||% Sys.getenv(record$api_key_env %||% "OPENAI_API_KEY")
-  if (!nzchar(api_key)) {
-    stop(glue("Provider '{record$name}' does not have an API key in config and `{record$api_key_env %||% 'OPENAI_API_KEY'}` is empty."), call. = FALSE)
-  }
-
-  provider <- if (identical(resolved_backend, "ellmer")) {
-    sn_make_ellmer_provider(
-      api_key = api_key,
-      base_url = record$base_url,
-      model = record$default_model %||% NULL,
-      provider_type = record$provider_type %||% "openai_compatible"
-    )
-  } else {
-    sn_make_openai_provider(
-      api_key = api_key,
-      base_url = record$base_url,
-      model = record$default_model %||% "gpt-4.1",
-      wire_api = record$wire_api %||% "responses",
-      reasoning_effort = record$reasoning_effort %||% NULL,
-      disable_response_storage = isTRUE(record$disable_response_storage)
-    )
-  }
-
-  .sn_wrap_provider_with_history(
-    provider = provider,
-    provider_name = record$name,
-    base_url = record$base_url,
-    wire_api = record$wire_api %||% "responses",
-    backend = resolved_backend,
-    config_dir = config_dir,
-    history = isTRUE(record$enable_history)
-  )
-}
-
-#' Test whether a configured LLM provider is reachable and usable
-#'
-#' @param name Optional provider name. Defaults to the configured default
-#'   provider.
+#' @param name Optional label used in the returned summary table.
 #' @param model Optional override model used for the test request.
 #' @param prompt Prompt used for the connectivity check.
-#' @param backend Backend to use: \code{"auto"}, \code{"native"}, or
-#'   \code{"ellmer"}.
-#' @param config_dir Local Shennong config root.
-#' @param provider Optional provider function. When supplied, Shennong skips the
-#'   config lookup and tests this function directly.
+#' @param provider Optional provider function. When supplied, Shennong tests
+#'   this function directly; otherwise it builds an ellmer-backed provider from
+#'   environment variables.
 #'
 #' @return A one-row tibble summarizing the result.
 #'
@@ -2099,16 +3398,9 @@ sn_get_llm_provider <- function(name = NULL,
 sn_test_llm_provider <- function(name = NULL,
                                  model = NULL,
                                  prompt = "Reply with exactly OK.",
-                                 backend = c("auto", "native", "ellmer"),
-                                 config_dir = "~/.shennong",
                                  provider = NULL) {
-  backend <- match.arg(backend)
-  provider_name <- name %||% .sn_read_llm_config(config_dir = config_dir)$default_provider %||% "manual"
-  provider <- provider %||% sn_get_llm_provider(
-    name = name,
-    backend = backend,
-    config_dir = config_dir
-  )
+  provider_name <- name %||% "ellmer"
+  provider <- provider %||% .sn_get_default_ellmer_provider()
 
   started_at <- Sys.time()
   result <- tryCatch(
@@ -2145,23 +3437,45 @@ sn_test_llm_provider <- function(name = NULL,
 #' Interpret cluster markers for cell-type annotation
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Name of a stored marker result.
+#' @param de_name Optional stored marker-result name. When omitted, Shennong
+#'   prefers \code{"default"}, then a single available result, and otherwise
+#'   the most recent marker result.
 #' @param cluster_col Metadata column containing cluster labels.
 #' @param n_markers Number of top markers per cluster.
+#' @param marker_selection How to choose marker genes for annotation evidence:
+#'   \code{"specific"} prefers genes that are relatively unique to one cluster,
+#'   while \code{"top"} keeps the raw top-ranked genes.
 #' @param enrichment_name Optional stored enrichment result used to add
 #'   cluster-level functional evidence.
 #' @param n_terms Number of enrichment terms per cluster when
 #'   \code{enrichment_name} is supplied.
+#' @param enrichment_selection How to choose pathway/function terms for
+#'   annotation evidence: \code{"specific"} prefers terms concentrated in fewer
+#'   clusters, while \code{"top"} keeps the raw top-ranked terms.
 #' @param include_qc Logical; whether to include cluster-level QC summaries in
 #'   the evidence bundle.
+#' @param reduction Optional dimensional reduction name used to summarize
+#'   cluster neighborhood geometry, for example \code{"umap"}. Use
+#'   \code{NULL} to disable geometry evidence.
+#' @param n_neighbor_clusters Number of nearest clusters to report from the
+#'   reduction centroid distances.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
+#' @param annotation_mode Annotation workflow mode. \code{"single_pass"} sends
+#'   one compact prompt. \code{"agentic"} runs a broad-pass annotation followed
+#'   by a focused refinement pass on ambiguous or ILC-relevant clusters, then
+#'   reconciles the result against canonical lineage hints.
 #' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
 #'   \code{"human"} for a human-readable summary.
 #' @param provider Optional model provider function. When left \code{NULL},
-#'   Shennong will try to use the default provider configured under
-#'   \code{~/.shennong}.
+#'   Shennong will try to construct an \pkg{ellmer}-backed provider from
+#'   \code{OPENAI_API_KEY} plus optional \code{OPENAI_BASE_URL} and
+#'   \code{OPENAI_MODEL} environment variables.
 #' @param model Optional model identifier.
+#' @param reasoning_effort Optional reasoning effort forwarded to compatible
+#'   GPT-5 chat-completions providers, for example \code{"minimal"},
+#'   \code{"low"}, \code{"medium"}, \code{"high"}, or \code{"xhigh"} when the
+#'   upstream endpoint supports it.
 #' @param include_json_schema Logical; whether to request structured JSON output
 #'   from the provider. Defaults to \code{TRUE} for annotation workflows.
 #' @param apply_metadata Logical; if \code{TRUE} and a structured annotation
@@ -2169,12 +3483,24 @@ sn_test_llm_provider <- function(name = NULL,
 #'   Seurat metadata.
 #' @param metadata_prefix Prefix used for metadata columns written back to the
 #'   Seurat object when \code{apply_metadata = TRUE}.
+#' @param metadata_fields Annotation fields to write back into Seurat metadata
+#'   when \code{apply_metadata = TRUE}. Defaults to core fields only:
+#'   \code{primary_label}, \code{broad_label}, \code{confidence},
+#'   \code{status}, and \code{risk_flags}. Detailed evidence remains in the
+#'   stored interpretation table under \code{object@misc}.
+#' @param label_candidates Optional vector of candidate cell-type labels or
+#'   broad lineages that should be treated as annotation priors for sorted or
+#'   enriched datasets. These are injected into the prompt as constraints, but
+#'   the model may still return a broader label when evidence is weak.
 #' @param label_style Naming style used to normalize returned cell-type labels.
 #'   One of \code{"title"}, \code{"snake"}, or \code{"asis"}.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2209,41 +3535,114 @@ sn_test_llm_provider <- function(name = NULL,
 #' }
 #' @export
 sn_interpret_annotation <- function(object,
-                                    de_name,
+                                    de_name = NULL,
                                     cluster_col = "seurat_clusters",
                                     n_markers = 10,
+                                    marker_selection = c("specific", "top"),
                                     enrichment_name = NULL,
                                     n_terms = 5,
+                                    enrichment_selection = c("specific", "top"),
                                     include_qc = TRUE,
+                                    reduction = "umap",
+                                    n_neighbor_clusters = 3,
                                     background = NULL,
+                                    annotation_mode = c("single_pass", "agentic"),
                                     output_format = c("llm", "human"),
                                     provider = NULL,
                                     model = NULL,
+                                    reasoning_effort = NULL,
                                     include_json_schema = TRUE,
                                     apply_metadata = TRUE,
                                     metadata_prefix = "sn_annotation",
+                                    metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags"),
+                                    label_candidates = NULL,
                                     label_style = c("title", "snake", "asis"),
                                     return_prompt = FALSE,
                                     store_name = "default",
                                     return_object = TRUE,
+                                    show_progress = interactive(),
                                     ...) {
   output_format <- match.arg(output_format)
+  marker_selection <- match.arg(marker_selection)
+  enrichment_selection <- match.arg(enrichment_selection)
   label_style <- match.arg(label_style)
+  annotation_mode <- match.arg(annotation_mode)
+  progress_state <- .sn_interpret_progress_start(
+    task = "interpret_annotation",
+    enabled = show_progress,
+    total_steps = if (identical(annotation_mode, "agentic")) 8L else 5L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing annotation evidence")
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = de_name,
     cluster_col = cluster_col,
     n_markers = n_markers,
+    marker_selection = marker_selection,
     enrichment_name = enrichment_name,
     n_terms = n_terms,
-    include_qc = include_qc
+    enrichment_selection = enrichment_selection,
+    include_qc = include_qc,
+    reduction = reduction,
+    n_neighbor_clusters = n_neighbor_clusters
   )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building annotation prompt")
+
+  if (identical(annotation_mode, "agentic")) {
+    broad_evidence <- .sn_prepare_annotation_compact_evidence(
+      evidence = evidence,
+      include_marker_table = FALSE,
+      include_enrichment_table = FALSE,
+      include_qc = include_qc,
+      include_canonical_snapshot = FALSE,
+      include_geometry = !is.null(reduction)
+    )
+    broad_prompt <- sn_build_prompt(
+      evidence = broad_evidence,
+      task = "annotation",
+      audience = "scientist",
+      style = "broad cell type annotation",
+      background = .sn_build_annotation_stage_background(
+        background = background,
+        label_candidates = label_candidates,
+        stage = "broad_pass"
+      ),
+      output_format = output_format,
+      include_json_schema = include_json_schema
+    )
+
+    return(.sn_finish_annotation_agentic(
+      object = object,
+      evidence = evidence,
+      broad_prompt = broad_prompt,
+      provider = provider,
+      model = model,
+      store_name = store_name,
+      cluster_col = cluster_col,
+      metadata_prefix = metadata_prefix,
+      metadata_fields = metadata_fields,
+      label_style = label_style,
+      apply_metadata = apply_metadata,
+      label_candidates = label_candidates,
+      background = background,
+      return_prompt = return_prompt,
+      return_object = return_object,
+      progress_state = progress_state,
+      reasoning_effort = reasoning_effort,
+      ...
+    ))
+  }
+
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "annotation",
     audience = "scientist",
     style = "cell type annotation",
-    background = background,
+    background = .sn_build_annotation_stage_background(
+      background = background,
+      label_candidates = label_candidates,
+      stage = "single_pass"
+    ),
     output_format = output_format,
     include_json_schema = include_json_schema
   )
@@ -2258,10 +3657,13 @@ sn_interpret_annotation <- function(object,
     store_name = store_name,
     cluster_col = cluster_col,
     metadata_prefix = metadata_prefix,
+    metadata_fields = metadata_fields,
     label_style = label_style,
     apply_metadata = apply_metadata,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
+    reasoning_effort = reasoning_effort,
     ...
   )
 }
@@ -2281,6 +3683,9 @@ sn_interpret_annotation <- function(object,
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2319,9 +3724,17 @@ sn_interpret_de <- function(object,
                             return_prompt = FALSE,
                             store_name = "default",
                             return_object = TRUE,
+                            show_progress = interactive(),
                             ...) {
   output_format <- match.arg(output_format)
+  progress_state <- .sn_interpret_progress_start(
+    task = "interpret_de",
+    enabled = show_progress,
+    total_steps = 4L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing DE evidence")
   evidence <- sn_prepare_de_evidence(object = object, de_name = de_name, n_genes = n_genes)
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building interpretation prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "de",
@@ -2341,6 +3754,7 @@ sn_interpret_de <- function(object,
     store_name = store_name,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
     ...
   )
 }
@@ -2360,6 +3774,9 @@ sn_interpret_de <- function(object,
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2396,13 +3813,21 @@ sn_interpret_enrichment <- function(object,
                                     return_prompt = FALSE,
                                     store_name = "default",
                                     return_object = TRUE,
+                                    show_progress = interactive(),
                                     ...) {
   output_format <- match.arg(output_format)
+  progress_state <- .sn_interpret_progress_start(
+    task = "interpret_enrichment",
+    enabled = show_progress,
+    total_steps = 4L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing enrichment evidence")
   evidence <- sn_prepare_enrichment_evidence(
     object = object,
     enrichment_name = enrichment_name,
     n_terms = n_terms
   )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building interpretation prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "enrichment",
@@ -2422,6 +3847,7 @@ sn_interpret_enrichment <- function(object,
     store_name = store_name,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
     ...
   )
 }
@@ -2443,6 +3869,9 @@ sn_interpret_enrichment <- function(object,
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2490,8 +3919,15 @@ sn_write_results <- function(object,
                              return_prompt = FALSE,
                              store_name = "default",
                              return_object = TRUE,
+                             show_progress = interactive(),
                              ...) {
   output_format <- match.arg(output_format)
+  progress_state <- .sn_interpret_progress_start(
+    task = "write_results",
+    enabled = show_progress,
+    total_steps = 4L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing results evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
@@ -2499,6 +3935,7 @@ sn_write_results <- function(object,
     enrichment_name = enrichment_name,
     cluster_col = cluster_col
   )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building writing prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "results",
@@ -2518,6 +3955,7 @@ sn_write_results <- function(object,
     store_name = store_name,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
     ...
   )
 }
@@ -2538,6 +3976,9 @@ sn_write_results <- function(object,
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2578,14 +4019,22 @@ sn_write_figure_legend <- function(object,
                                    return_prompt = FALSE,
                                    store_name = "default",
                                    return_object = TRUE,
+                                   show_progress = interactive(),
                                    ...) {
   output_format <- match.arg(output_format)
+  progress_state <- .sn_interpret_progress_start(
+    task = "write_figure_legend",
+    enabled = show_progress,
+    total_steps = 4L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing legend evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
     enrichment_name = enrichment_name,
     cluster_col = cluster_col
   )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building legend prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "figure_legend",
@@ -2605,6 +4054,7 @@ sn_write_figure_legend <- function(object,
     store_name = store_name,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
     ...
   )
 }
@@ -2626,6 +4076,9 @@ sn_write_figure_legend <- function(object,
 #'   the provider.
 #' @param store_name Name used under \code{object@misc$interpretation_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
+#' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
+#'   and, when \pkg{cli} is available, a console progress bar while waiting for
+#'   the LLM response.
 #' @param ... Additional arguments forwarded to \code{provider}.
 #'
 #' @return A prompt bundle, response, or updated \code{Seurat} object.
@@ -2667,8 +4120,15 @@ sn_write_presentation_summary <- function(object,
                                           return_prompt = FALSE,
                                           store_name = "default",
                                           return_object = TRUE,
+                                          show_progress = interactive(),
                                           ...) {
   output_format <- match.arg(output_format)
+  progress_state <- .sn_interpret_progress_start(
+    task = "write_presentation_summary",
+    enabled = show_progress,
+    total_steps = 4L
+  )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Preparing presentation evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
     cluster_de_name = cluster_de_name,
@@ -2676,6 +4136,7 @@ sn_write_presentation_summary <- function(object,
     enrichment_name = enrichment_name,
     cluster_col = cluster_col
   )
+  progress_state <- .sn_interpret_progress_step(progress_state, "Building presentation prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
     task = "presentation_summary",
@@ -2695,6 +4156,7 @@ sn_write_presentation_summary <- function(object,
     store_name = store_name,
     return_prompt = return_prompt,
     return_object = return_object,
+    progress_state = progress_state,
     ...
   )
 }

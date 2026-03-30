@@ -5,18 +5,22 @@
 \title{Create an \pkg{ellmer}-backed provider for Shennong interpretation helpers}
 \usage{
 sn_make_ellmer_provider(
-  api_key = Sys.getenv("OPENAI_API_KEY"),
-  base_url,
+  api_key = .sn_default_llm_api_key(),
+  base_url = .sn_default_llm_base_url(),
   model = NULL,
   provider_type = c("openai_compatible", "openai"),
   echo = c("none", "output", "all"),
-  api_args = list()
+  reasoning_effort = NULL,
+  api_args = list(),
+  retries = 2L,
+  retry_delay_sec = 1
 )
 }
 \arguments{
-\item{api_key}{API key. Defaults to \code{Sys.getenv("OPENAI_API_KEY")}.}
+\item{api_key}{API key. Defaults to \code{OPENAI_API_KEY}.}
 
-\item{base_url}{Base URL of the API.}
+\item{base_url}{Base URL of the API. Defaults to \code{OPENAI_BASE_URL},
+then \code{"https://api.openai.com/v1"}.}
 
 \item{model}{Default model identifier.}
 
@@ -24,7 +28,15 @@ sn_make_ellmer_provider(
 
 \item{echo}{Echo mode forwarded to \pkg{ellmer}.}
 
+\item{reasoning_effort}{Optional reasoning effort forwarded to compatible
+GPT-5 chat-completions providers.}
+
 \item{api_args}{Optional named list appended to each API request.}
+
+\item{retries}{Number of retry attempts for retryable upstream proxy / HTML
+response failures.}
+
+\item{retry_delay_sec}{Delay between retry attempts in seconds.}
 }
 \value{
 A provider function suitable for \code{sn_run_llm()}.

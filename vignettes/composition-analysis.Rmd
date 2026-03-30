@@ -68,7 +68,10 @@ pbmc_comp <- suppressWarnings(
   )
 )
 pbmc_comp$sample <- pbmc_small@meta.data[colnames(pbmc_comp), "sample"]
+pbmc_comp$study <- pbmc_small@meta.data[colnames(pbmc_comp), "source_dataset"]
+pbmc_comp$cell_type <- paste0("cluster_", as.character(pbmc_comp$seurat_clusters))
 pbmc_comp <- sn_score_cell_cycle(pbmc_comp, species = "human")
+seu <- pbmc_comp
 
 composition_tbl <- sn_calculate_composition(
   pbmc_comp,

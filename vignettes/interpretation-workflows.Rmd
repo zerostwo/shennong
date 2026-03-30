@@ -40,6 +40,23 @@ The workflow below demonstrates:
 - prompt generation with `sn_build_prompt()`
 - provider-based interpretation with `sn_interpret_annotation()`
 
+When a Seurat object already contains stored marker results,
+`sn_interpret_annotation()` can now resolve `de_name` automatically. It
+prefers a stored `default` result, then a single available result, and
+otherwise the most recent marker result. Passing `de_name` explicitly is still
+recommended when your object carries multiple marker tables that represent
+different biological questions.
+For annotation tasks, Shennong now includes the full cluster evidence table in
+the model-facing prompt instead of truncating the prompt to the first eight
+rows, so larger clustering results are annotated more completely.
+It can also prefer cluster-specific markers/pathways over generic top-ranked
+features, summarize nearest-cluster geometry from reductions such as UMAP, and
+explicitly pass `reasoning_effort` through compatible GPT-5 chat-completions
+providers. When the provider is built with `sn_make_ellmer_provider()`,
+annotation now uses `ellmer::chat_structured()` for the final label table and
+can insert a tool-assisted focused-comparison step in `annotation_mode =
+"agentic"` before the final refinement pass.
+
 ```{r setup}
 library(Shennong)
 library(dplyr)
@@ -167,42 +184,44 @@ results_prompt <- sn_write_results(
 
 mock_provider <- function(messages, model = NULL, ...) {
   list(
-    text = paste0(
-      '{"cluster_annotations":[',
-      '{"cluster":"0","primary_label":"T Cell","broad_label":"Lymphocyte","confidence":"high","status":"confident",',
-      '"alternatives":["Activated T Cell"],"supporting_markers":["CD3D","TRAC"],',
-      '"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
-      '"note":"Canonical T-cell markers dominate this cluster.","recommended_checks":["Inspect IL7R and LTB"]}',
-      '],"narrative_summary":"Mock structured annotation generated for the vignette."}'
+    structured = list(
+      cluster_annotations = tibble::tibble(
+        cluster = "0",
+        primary_label = "T Cell",
+        broad_label = "Lymphocyte",
+        confidence = "high",
+        status = "confident",
+        alternatives = I(list("Activated T Cell")),
+        supporting_markers = I(list(c("CD3D", "TRAC"))),
+        supporting_functions = I(list("T cell activation")),
+        risk_flags = I(list("transitional_state")),
+        note = "Canonical T-cell markers dominate this cluster.",
+        recommended_checks = I(list("Inspect IL7R and LTB"))
+      ),
+      narrative_summary = "Mock structured annotation generated for the vignette."
     )
   )
 }
-
-cfg_dir <- file.path(tempdir(), ".shennong")
-sn_configure_llm_provider(
-  name = "demo-local",
-  base_url = "https://api.example.invalid",
-  api_key = "demo-key",
-  default_model = "gpt-5.4",
-  wire_api = "responses",
-  config_dir = cfg_dir
-)
-
-knitr::kable(sn_list_llm_providers(config_dir = cfg_dir))
 
 sn_test_llm_provider(provider = mock_provider)
 
 pbmc_interpreted <- sn_interpret_annotation(
   object = pbmc,
-  de_name = "cluster_markers",
   enrichment_name = "cluster0_gsea",
   cluster_col = "seurat_clusters",
   n_markers = 5,
+  marker_selection = "specific",
+  enrichment_selection = "specific",
+  annotation_mode = "agentic",
+  reduction = "umap",
+  n_neighbor_clusters = 2,
   provider = mock_provider,
   model = "demo-model",
+  reasoning_effort = "medium",
   store_name = "cluster_annotation_note",
   metadata_prefix = "shennong_celltype",
-  return_object = TRUE
+  return_object = TRUE,
+  show_progress = TRUE
 )
 
 annotation_response <- pbmc_interpreted@misc$interpretation_results$cluster_annotation_note$response$text
@@ -262,7 +281,9 @@ knitr::kable(result_index)
 
 `sn_prepare_*_evidence()` turns stored outputs into compact, reusable evidence
 bundles. These are the objects that can later be turned into prompts or passed
-into writing helpers.
+into writing helpers. For annotation workflows, this now includes a
+`canonical_marker_snapshot` table that can be used to compare lineage-defining
+markers across clusters during focused refinement.
 
 ```{r}
 knitr::kable(annotation_evidence$cluster_summary)
@@ -328,11 +349,11 @@ If you provide a function that accepts `messages` and returns text, the same
 high-level helpers can store the generated interpretation back into the Seurat
 object.
 
-For repeated interactive work, you can also register a reusable default
-provider under `~/.shennong` and then let `sn_interpret_annotation()` resolve
- it automatically when `provider = NULL`. Shennong stores provider metadata in
- `~/.shennong/llm-providers.json` and, for configured providers, request
- history in `~/.shennong/llm-history/`.
+For live model calls, the recommended path is now `ellmer`. You can either
+pass an explicit provider returned by `sn_make_ellmer_provider()` or rely on
+environment variables such as `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and
+`OPENAI_MODEL` so the high-level helpers can construct an `ellmer` provider
+directly.
 
 ```{r}
 annotation_response

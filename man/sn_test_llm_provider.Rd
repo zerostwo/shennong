@@ -2,38 +2,31 @@
 % Please edit documentation in R/interpretation.R
 \name{sn_test_llm_provider}
 \alias{sn_test_llm_provider}
-\title{Test whether a configured LLM provider is reachable and usable}
+\title{Test whether an ellmer-backed LLM provider is reachable and usable}
 \usage{
 sn_test_llm_provider(
   name = NULL,
   model = NULL,
   prompt = "Reply with exactly OK.",
-  backend = c("auto", "native", "ellmer"),
-  config_dir = "~/.shennong",
   provider = NULL
 )
 }
 \arguments{
-\item{name}{Optional provider name. Defaults to the configured default
-provider.}
+\item{name}{Optional label used in the returned summary table.}
 
 \item{model}{Optional override model used for the test request.}
 
 \item{prompt}{Prompt used for the connectivity check.}
 
-\item{backend}{Backend to use: \code{"auto"}, \code{"native"}, or
-\code{"ellmer"}.}
-
-\item{config_dir}{Local Shennong config root.}
-
-\item{provider}{Optional provider function. When supplied, Shennong skips the
-config lookup and tests this function directly.}
+\item{provider}{Optional provider function. When supplied, Shennong tests
+this function directly; otherwise it builds an ellmer-backed provider from
+environment variables.}
 }
 \value{
 A one-row tibble summarizing the result.
 }
 \description{
-Test whether a configured LLM provider is reachable and usable
+Test whether an ellmer-backed LLM provider is reachable and usable
 }
 \examples{
 test_provider <- function(messages, model = NULL, ...) list(text = "OK", model = model \%||\% "demo")

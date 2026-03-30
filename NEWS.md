@@ -16,17 +16,32 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   H5 files, or `metrics_summary.csv` paths. The default now returns `outs/`
   paths so the result can be passed directly to `sn_initialize_seurat_object()`.
   Returned vectors are now named with inferred sample identifiers.
-- `sn_make_sub2api_provider()` now creates an OpenAI-compatible provider
-  wrapper for interpretation workflows, suitable for Sub2API-style chat
-  endpoints.
-- Shennong now supports reusable local LLM-provider configuration under
-  `~/.shennong`: `sn_configure_llm_provider()`,
-  `sn_list_llm_providers()`, `sn_get_llm_provider()`, and
-  `sn_test_llm_provider()` can register, inspect, reuse, and validate default
-  model endpoints for interpretation workflows. A new
-  `sn_make_openai_provider()` helper supports both OpenAI-style `responses`
-  and `chat_completions` APIs, and `sn_make_ellmer_provider()` adds an
-  optional `ellmer` backend.
+- `sn_interpret_annotation()` now accepts `label_candidates` so sorted or
+  enriched datasets can constrain annotation toward expected cell-type spaces
+  such as `ILC1` / `ILC2` / `ILC3` instead of relying only on free-text
+  background notes.
+- `sn_interpret_annotation()` now supports `annotation_mode = "agentic"` for
+  a two-stage workflow: broad lineage/state annotation followed by focused
+  refinement on ambiguous or lineage-sensitive clusters. Annotation evidence
+  now also exposes a `canonical_marker_snapshot` table so prompts can compare
+  lineage-defining markers across clusters without relying only on top-ranked
+  DE hits. The `ellmer` path now also uses native structured output for the
+  final annotation table and can run a tool-assisted focused-comparison step
+  before the refinement pass.
+- Annotation heuristics and prompt priors are now more robust for ILC-rich
+  datasets: blood ILC workflows now bias `KIT+ ILCP-like` over premature
+  mature `ILC3` calls when the type-3 program is incomplete, mixed `T/NK` and
+  `NK/ILC3` transitional states are called out more explicitly, and dominant
+  hemoglobin programs can now surface as `erythroid contamination`.
+- `sn_interpret_annotation()` and `sn_prepare_annotation_evidence()` now
+  support `marker_selection = "specific"` and
+  `enrichment_selection = "specific"` so annotation evidence can prefer
+  cluster-restricted marker genes and pathway terms over generic top-ranked
+  features.
+- Annotation evidence now adds concise canonical lineage heuristic hints from
+  known marker programs so the LLM can use deterministic guardrails such as
+  `ILC2-like`, `KIT+ ILC-like`, `T-cell-like`, or `B-cell-like` when those
+  programs are clearly supported.
 - `sn_assess_qc()` now summarizes overall and per-sample QC status, reports
   current QC risk signals such as failed-QC fractions, doublet rates, and
   decontamination zero-count rates, and can compare a filtered object against a
@@ -64,8 +79,34 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   through `enrichment_name`, can incorporate cluster QC summaries into the
   prompt, requests structured annotation JSON by default, stores the parsed
   cluster annotation table, can map normalized cell-type labels plus
-  confidence/risk fields back onto Seurat metadata, and now falls back to the
-  locally configured default provider when `provider = NULL`.
+  confidence/risk fields back onto Seurat metadata, and now defaults to an
+  `ellmer`-backed provider path rather than Shennong-managed local provider
+  config. It also now resolves `de_name` automatically when omitted,
+  preferring a stored `default` marker result, then a single available DE
+  result, and otherwise the most recent marker result. Annotation prompts now
+  include the full cluster evidence table instead of truncating at eight rows,
+  request one record per cluster, use more conservative evidence-grounded
+  label selection, can inject candidate-label priors for sorted datasets, and
+  can attach cluster-neighborhood geometry from reductions such as UMAP.
+  Prompt assembly is now more explicitly markdown-structured, which keeps the
+  system/task/evidence sections easier to iterate on as prompt templates.
+  `sn_interpret_de()`, `sn_interpret_enrichment()`, `sn_write_results()`,
+  `sn_write_figure_legend()`, and `sn_write_presentation_summary()` now share
+  the same step-wise progress logging and elapsed-time reporting surface.
+- LLM-provider integration is now centered on `ellmer`. The old
+  `sn_configure_llm_provider()`, `sn_list_llm_providers()`,
+  `sn_get_llm_provider()`, `sn_make_openai_provider()`, and
+  `sn_make_sub2api_provider()` compatibility shims have been removed, along
+  with the legacy `~/.shennong` provider/history workflow. The supported entry
+  point is now `sn_make_ellmer_provider()`, which can explicitly forward
+  `reasoning_effort` to compatible GPT-5 chat-completions endpoints. Default
+  environment-variable discovery is now limited to `OPENAI_*`; the temporary
+  `SUB2API_*` compatibility path has been removed.
+- Annotation metadata write-back is now lean by default. High-level
+  interpretation writes only the core fields needed for visualization and
+  grouping (`label`, `broad_label`, `confidence`, `status`, `risk_flags`)
+  into Seurat metadata, while detailed supporting markers/functions/notes stay
+  in the stored interpretation result table under `object@misc`.
 - `sn_calculate_composition()` now supports multi-column `group_by` values,
   can return proportions, counts, or both through `measure`, preserves factor
   columns from the source metadata, filters returned composition categories by

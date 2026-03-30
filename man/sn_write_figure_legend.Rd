@@ -16,6 +16,7 @@ sn_write_figure_legend(
   return_prompt = FALSE,
   store_name = "default",
   return_object = TRUE,
+  show_progress = interactive(),
   ...
 )
 }
@@ -44,6 +45,10 @@ the provider.}
 \item{store_name}{Name used under \code{object@misc$interpretation_results}.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
+
+\item{show_progress}{Logical; if \code{TRUE}, emit step-wise progress logs
+and, when \pkg{cli} is available, a console progress bar while waiting for
+the LLM response.}
 
 \item{...}{Additional arguments forwarded to \code{provider}.}
 }

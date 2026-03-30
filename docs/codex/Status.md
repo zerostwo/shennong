@@ -1,6 +1,25 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-29
+Last updated: 2026-03-30
+
+## 2026-03-30
+
+- Tightened the `ellmer` integration so annotation now prefers native
+  structured output (`chat_structured()`) instead of relying only on
+  prompt-level JSON text generation and post hoc parsing.
+- Removed the last temporary `SUB2API_*` environment-variable fallbacks from
+  the LLM setup path. `sn_make_ellmer_provider()` and the default provider
+  resolver now look only at `OPENAI_*`.
+- Added a tool-assisted focused-comparison stage inside agentic annotation.
+  When `sn_interpret_annotation(annotation_mode = "agentic")` narrows down
+  ambiguous clusters, the `ellmer` provider can now expose a cluster-evidence
+  lookup tool before the final structured refinement pass.
+- Reworked model-facing prompt assembly into clearer markdown sections for
+  task metadata, instructions, background context, output contract, and
+  evidence, matching the prompt-file guidance from `ellmer`.
+- Hardened the test suite against cross-test cache pollution in MSigDB-backed
+  enrichment tests by clearing the in-session term cache before real Hallmark
+  and subcollection runs.
 
 ## 2026-03-29
 
@@ -24,18 +43,50 @@ Last updated: 2026-03-29
   marker evidence with stored cluster-level enrichment summaries and available
   QC/doublet metadata, request structured JSON annotations, and map parsed
   cluster labels plus confidence/risk flags back onto Seurat metadata.
-- Added `sn_make_sub2api_provider()` as a small OpenAI-compatible provider
-  wrapper for external chat-completions endpoints such as Sub2API.
-- Added local LLM provider configuration under `~/.shennong`. Shennong now
-  exposes `sn_configure_llm_provider()`, `sn_list_llm_providers()`,
-  `sn_get_llm_provider()`, and `sn_test_llm_provider()` to register reusable
-  endpoints, inspect the active default provider, validate connectivity, and
-  persist request history under `~/.shennong/llm-history/`.
-- Added `sn_make_openai_provider()` for native OpenAI-style `responses` and
-  `chat_completions` APIs plus `sn_make_ellmer_provider()` for an optional
-  `ellmer` transport backend. High-level interpretation helpers now fall back
-  to the configured default provider when no explicit provider function is
-  supplied.
+- Re-centered the LLM integration on `ellmer`. High-level interpretation
+  helpers now default to an `ellmer` provider built from environment
+  variables instead of Shennong-managed local provider config under
+  `~/.shennong`.
+- Removed the old local provider registry and history workflow
+  (`sn_configure_llm_provider()`, `sn_list_llm_providers()`,
+  `sn_get_llm_provider()`, `sn_make_openai_provider()`,
+  `sn_make_sub2api_provider()`, and the `~/.shennong/llm-providers.json` /
+  `llm-history/` files). `sn_make_ellmer_provider()` is now the only
+  supported provider constructor.
+- Relaxed the cluster-annotation entry point so `sn_interpret_annotation()`
+  and `sn_prepare_annotation_evidence()` can omit `de_name`. They now reuse
+  the same stored-DE defaulting rules as `sn_enrich()`: prefer `default`,
+  then a single available result, otherwise the most recent marker result.
+- Fixed annotation-prompt completeness and tightened the default annotation
+  instructions. Cluster-annotation prompts now include full cluster evidence
+  tables instead of truncating at eight rows, and the shipped prompt template
+  now explicitly requires one annotation per cluster plus more conservative,
+  evidence-grounded label selection.
+- Added `label_candidates` to `sn_interpret_annotation()` so sorted or
+  enriched datasets can constrain the annotation search space. This is
+  intended for cases such as blood ILC-sorted data where marker-only prompts
+  can otherwise drift toward common T-cell or NK labels.
+- Tightened annotation guardrails for common benchmark failure modes:
+  `KIT+ ILCP-like` vs incomplete blood `ILC3`, mixed `T/NK` states,
+  `NK/ILC3` transitional states, and `erythroid contamination`.
+- Added more evidence-shaping controls for annotation quality:
+  `marker_selection = "specific"` and `enrichment_selection = "specific"`
+  now prefer cluster-restricted markers and pathways, optional reduction
+  geometry can summarize nearest neighboring clusters, and GPT-5
+  `reasoning_effort` can be forwarded explicitly through `ellmer`.
+- Added an `annotation_mode = "agentic"` path to `sn_interpret_annotation()`.
+  It now supports a broad-pass prompt followed by a focused refinement pass on
+  ambiguous or lineage-sensitive clusters, using a canonical-marker snapshot
+  to compare clusters without hard-coding subtype scores.
+- Reduced annotation metadata write-back to core fields only by default:
+  label, broad label, confidence, status, and risk flags. Detailed supporting
+  markers, functions, and notes now stay in the stored interpretation table
+  under `object@misc$interpretation_results`.
+- Extended the shared interpretation progress surface across
+  `sn_interpret_de()`, `sn_interpret_enrichment()`, `sn_write_results()`,
+  `sn_write_figure_legend()`, and `sn_write_presentation_summary()` so they
+  emit consistent stage logs and elapsed-time updates while waiting for the
+  LLM.
 - Refined workflow automation around 10x inputs and plotting ergonomics.
   `sn_list_10x_paths()` now returns named vectors keyed by inferred sample
   names, `sn_initialize_seurat_object()` can inherit `sample_name` from those

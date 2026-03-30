@@ -1,6 +1,25 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-29
+Last updated: 2026-03-30
+
+## 2026-03-30
+
+- Shennong should use `ellmer`'s native structured-output surface when the
+  task contract is inherently tabular. Cluster annotation now prefers
+  `chat_structured()` with an explicit schema and only falls back to text JSON
+  parsing when the provider does not expose structured data directly.
+- Shennong should not keep temporary proxy-specific environment-variable
+  branches once the backend is standardized. The LLM setup path now recognizes
+  only `OPENAI_*`, leaving provider-specific gateway handling to the explicit
+  `base_url` passed into `sn_make_ellmer_provider()`.
+- Prompt templates should stay in files and be assembled into explicit
+  markdown sections rather than one long concatenated blob. This keeps the
+  interpretation layer closer to `ellmer`'s prompt-design guidance and makes
+  future prompt iteration easier to review.
+- Tool calling should be applied narrowly as a workflow primitive, not as a
+  replacement for annotation logic. The current use is a focused
+  cluster-evidence lookup step in agentic annotation before the final
+  structured refinement pass.
 
 ## 2026-03-29
 
@@ -24,16 +43,44 @@ Last updated: 2026-03-29
   JSON schema, normalize returned cell-type names into one user-selected style,
   and, when possible, map the parsed cluster-level labels back onto each cell's
   metadata for downstream filtering and plotting.
-- Local LLM-provider configuration should live under `~/.shennong` rather than
-  requiring users to hand-edit package code or keep all endpoint details in
-  transient environment state. This keeps API hosts, default models, optional
-  history, and Shennong-specific defaults discoverable while still allowing
-  secrets to come either from that local config or from an environment
-  variable.
-- `ellmer` should be supported as an optional backend, not as the only LLM
-  transport. Shennong now keeps a native HTTP client for OpenAI-style
-  `responses` compatibility, while exposing an `ellmer` adapter for users who
-  prefer its chatbot abstraction and ecosystem integration.
+- Interpretation helpers should follow the same stored-result ergonomics as
+  enrichment helpers. When annotation workflows need a stored marker table and
+  the caller omits `de_name`, Shennong should prefer the stored `default`
+  result, then a single available DE result, and otherwise the most recent
+  marker result rather than failing on a missing required argument.
+- Cluster annotation prompts should optimize first for evidence completeness,
+  then for brevity. Shennong now allows annotation prompts to include the full
+  cluster evidence table instead of a generic eight-row preview so LLM-based
+  annotation cannot silently drop later clusters in larger Seurat objects.
+- Shennong should not maintain its own persistent LLM provider registry or
+  request-history layer when `ellmer` already owns transport, credentials, and
+  provider semantics. High-level interpretation now uses `ellmer` as the only
+  supported backend and no longer depends on `~/.shennong` provider files.
+- Annotation improvements should stay at the level of comparative evidence and
+  canonical lineage guardrails rather than a hand-maintained subtype score
+  table. The current guardrails now explicitly cover `KIT+ ILCP-like` versus
+  mature `ILC3` in blood, mixed `T/NK` states, `NK/ILC3` transitional states,
+  and `erythroid contamination`, but they do so through marker-program priors
+  and context-sensitive prompt guidance rather than a closed manual label map.
+- Sorted or enriched single-cell datasets need explicit annotation priors. For
+  cases such as blood ILC-sorted data, Shennong now exposes
+  `label_candidates` so prompts can constrain the plausible label space
+  without forcing a hard whitelist.
+- Annotation evidence should favor specificity over raw rank when possible.
+  Shennong now allows marker and enrichment summaries to prefer
+  cluster-restricted signals and to attach reduction-neighborhood summaries as
+  supporting evidence, while keeping geometry subordinate to marker evidence.
+- Annotation logic should encode an evidence-comparison workflow, not a
+  hand-maintained subtype scorecard. Shennong now keeps only broad lineage
+  guardrails and moves accuracy improvements into a staged `agentic`
+  annotation workflow that compares clusters against each other, reuses
+  canonical-marker snapshots, and asks the model to refine ambiguous clusters
+  in a second pass.
+- Seurat metadata should stay compact and plot-oriented. Cluster-level
+  annotation evidence such as supporting markers/functions, notes, and
+  recommended checks now remains in the stored interpretation table by
+  default, while metadata only receives the core fields needed for grouping
+  and visualization.
 - 10x path-discovery helpers should return workflow-ready sample labels instead
   of anonymous path vectors. Shennong now infers sample names from the
   directory structure and carries those names into Seurat initialization when

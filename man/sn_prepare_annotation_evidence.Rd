@@ -6,22 +6,33 @@
 \usage{
 sn_prepare_annotation_evidence(
   object,
-  de_name,
+  de_name = NULL,
   cluster_col = "seurat_clusters",
   n_markers = 10,
+  marker_selection = c("specific", "top"),
   enrichment_name = NULL,
   n_terms = 5,
-  include_qc = TRUE
+  enrichment_selection = c("specific", "top"),
+  include_qc = TRUE,
+  reduction = "umap",
+  n_neighbor_clusters = 3
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Name of a stored marker result in \code{object@misc$de_results}.}
+\item{de_name}{Optional stored marker-result name in
+\code{object@misc$de_results}. When omitted, Shennong prefers
+\code{"default"}, then a single available result, and otherwise the most
+recent marker result.}
 
 \item{cluster_col}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of top markers to retain per cluster.}
+
+\item{marker_selection}{How to choose marker genes for annotation evidence:
+\code{"specific"} prefers genes that are relatively unique to one cluster,
+while \code{"top"} keeps the raw top-ranked genes.}
 
 \item{enrichment_name}{Optional stored enrichment result used to add
 cluster-level functional evidence to the annotation prompt.}
@@ -29,9 +40,22 @@ cluster-level functional evidence to the annotation prompt.}
 \item{n_terms}{Number of enrichment terms to retain per cluster when
 \code{enrichment_name} is supplied.}
 
+\item{enrichment_selection}{How to choose pathway/function terms for
+annotation evidence: \code{"specific"} prefers terms concentrated in fewer
+clusters, while \code{"top"} keeps the raw top-ranked terms.}
+
 \item{include_qc}{Logical; whether to attach cluster-level QC summaries such
 as mitochondrial burden, failed-QC fractions, and doublet fractions when
 available in metadata.}
+
+\item{reduction}{Optional dimensional reduction name used to summarize
+cluster neighborhood geometry, for example \code{"umap"}. Use
+\code{NULL} to disable geometry evidence.}
+
+\item{n_neighbor_clusters}{Number of nearest clusters to report from the
+reduction centroid distances.
+Canonical lineage heuristic hints derived from known marker programs are
+included automatically when the required genes are present.}
 }
 \value{
 A structured list ready for prompt construction.

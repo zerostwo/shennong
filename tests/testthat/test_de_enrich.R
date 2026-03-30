@@ -645,6 +645,8 @@ test_that("sn_enrich gene resolvers deduplicate ORA and GSEA inputs meaningfully
 })
 
 test_that("sn_enrich caches symbol-to-ENTREZ mappings within a session", {
+  skip_if_not_installed("clusterProfiler")
+
   calls <- 0L
   rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$symbol_to_entrez), envir = Shennong:::.sn_enrichment_cache_env$symbol_to_entrez)
 
@@ -675,6 +677,8 @@ test_that("sn_enrich caches symbol-to-ENTREZ mappings within a session", {
 })
 
 test_that("sn_enrich p-value filtering handles compareCluster and passthrough objects", {
+  skip_if_not_installed("clusterProfiler")
+
   compare_result <- methods::new(
     "compareClusterResult",
     compareClusterResult = data.frame(
@@ -705,6 +709,7 @@ test_that("sn_enrich p-value filtering handles compareCluster and passthrough ob
 test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("msigdbr")
+  rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms), envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms)
 
   grouped_genes <- tibble::tibble(
     gene = c(
@@ -734,6 +739,7 @@ test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {
 test_that("sn_enrich supports msigdbr subcollections via database strings", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("msigdbr")
+  rm(list = ls(envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms), envir = Shennong:::.sn_enrichment_cache_env$msigdb_terms)
 
   genes <- c("CD3D", "CD3E", "TRAC", "LCK", "LAT", "ZAP70")
 

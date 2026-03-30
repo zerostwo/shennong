@@ -6,34 +6,50 @@
 \usage{
 sn_interpret_annotation(
   object,
-  de_name,
+  de_name = NULL,
   cluster_col = "seurat_clusters",
   n_markers = 10,
+  marker_selection = c("specific", "top"),
   enrichment_name = NULL,
   n_terms = 5,
+  enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
+  reduction = "umap",
+  n_neighbor_clusters = 3,
   background = NULL,
+  annotation_mode = c("single_pass", "agentic"),
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
+  reasoning_effort = NULL,
   include_json_schema = TRUE,
   apply_metadata = TRUE,
   metadata_prefix = "sn_annotation",
+  metadata_fields = c("primary_label", "broad_label", "confidence", "status",
+    "risk_flags"),
+  label_candidates = NULL,
   label_style = c("title", "snake", "asis"),
   return_prompt = FALSE,
   store_name = "default",
   return_object = TRUE,
+  show_progress = interactive(),
   ...
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Name of a stored marker result.}
+\item{de_name}{Optional stored marker-result name. When omitted, Shennong
+prefers \code{"default"}, then a single available result, and otherwise
+the most recent marker result.}
 
 \item{cluster_col}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of top markers per cluster.}
+
+\item{marker_selection}{How to choose marker genes for annotation evidence:
+\code{"specific"} prefers genes that are relatively unique to one cluster,
+while \code{"top"} keeps the raw top-ranked genes.}
 
 \item{enrichment_name}{Optional stored enrichment result used to add
 cluster-level functional evidence.}
@@ -41,20 +57,42 @@ cluster-level functional evidence.}
 \item{n_terms}{Number of enrichment terms per cluster when
 \code{enrichment_name} is supplied.}
 
+\item{enrichment_selection}{How to choose pathway/function terms for
+annotation evidence: \code{"specific"} prefers terms concentrated in fewer
+clusters, while \code{"top"} keeps the raw top-ranked terms.}
+
 \item{include_qc}{Logical; whether to include cluster-level QC summaries in
 the evidence bundle.}
 
+\item{reduction}{Optional dimensional reduction name used to summarize
+cluster neighborhood geometry, for example \code{"umap"}. Use
+\code{NULL} to disable geometry evidence.}
+
+\item{n_neighbor_clusters}{Number of nearest clusters to report from the
+reduction centroid distances.}
+
 \item{background}{Optional study-specific background information to provide
 additional interpretation context.}
+
+\item{annotation_mode}{Annotation workflow mode. \code{"single_pass"} sends
+one compact prompt. \code{"agentic"} runs a broad-pass annotation followed
+by a focused refinement pass on ambiguous or ILC-relevant clusters, then
+reconciles the result against canonical lineage hints.}
 
 \item{output_format}{One of \code{"llm"} for a model-ready prompt bundle or
 \code{"human"} for a human-readable summary.}
 
 \item{provider}{Optional model provider function. When left \code{NULL},
-Shennong will try to use the default provider configured under
-\code{~/.shennong}.}
+Shennong will try to construct an \pkg{ellmer}-backed provider from
+\code{OPENAI_API_KEY} plus optional \code{OPENAI_BASE_URL} and
+\code{OPENAI_MODEL} environment variables.}
 
 \item{model}{Optional model identifier.}
+
+\item{reasoning_effort}{Optional reasoning effort forwarded to compatible
+GPT-5 chat-completions providers, for example \code{"minimal"},
+\code{"low"}, \code{"medium"}, \code{"high"}, or \code{"xhigh"} when the
+upstream endpoint supports it.}
 
 \item{include_json_schema}{Logical; whether to request structured JSON output
 from the provider. Defaults to \code{TRUE} for annotation workflows.}
@@ -66,6 +104,17 @@ Seurat metadata.}
 \item{metadata_prefix}{Prefix used for metadata columns written back to the
 Seurat object when \code{apply_metadata = TRUE}.}
 
+\item{metadata_fields}{Annotation fields to write back into Seurat metadata
+when \code{apply_metadata = TRUE}. Defaults to core fields only:
+\code{primary_label}, \code{broad_label}, \code{confidence},
+\code{status}, and \code{risk_flags}. Detailed evidence remains in the
+stored interpretation table under \code{object@misc}.}
+
+\item{label_candidates}{Optional vector of candidate cell-type labels or
+broad lineages that should be treated as annotation priors for sorted or
+enriched datasets. These are injected into the prompt as constraints, but
+the model may still return a broader label when evidence is weak.}
+
 \item{label_style}{Naming style used to normalize returned cell-type labels.
 One of \code{"title"}, \code{"snake"}, or \code{"asis"}.}
 
@@ -75,6 +124,10 @@ the provider.}
 \item{store_name}{Name used under \code{object@misc$interpretation_results}.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
+
+\item{show_progress}{Logical; if \code{TRUE}, emit step-wise progress logs
+and, when \pkg{cli} is available, a console progress bar while waiting for
+the LLM response.}
 
 \item{...}{Additional arguments forwarded to \code{provider}.}
 }

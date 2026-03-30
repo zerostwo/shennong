@@ -4,7 +4,14 @@
 \alias{sn_run_llm}
 \title{Run an LLM provider on a prepared message list}
 \usage{
-sn_run_llm(messages, provider, model = NULL, ...)
+sn_run_llm(
+  messages,
+  provider,
+  model = NULL,
+  structured_type = NULL,
+  tools = NULL,
+  ...
+)
 }
 \arguments{
 \item{messages}{A message list, typically from \code{sn_build_prompt()}.}

@@ -1,5 +1,6 @@
 .Rproj.user
 .Rhistory
+.Renviron
 docs/*
 !docs/codex/
 !docs/codex/**
@@ -7,5 +8,6 @@ site/
 inst/doc
 dev
 README.html
+tests/testthat/Rplots.pdf
 *.tar.gz
 *.Rcheck/

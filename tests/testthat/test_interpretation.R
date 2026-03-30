@@ -152,6 +152,36 @@ test_that("annotation and DE evidence helpers return structured outputs", {
   expect_true("top_markers" %in% names(de_evidence))
 })
 
+test_that("annotation evidence and interpretation resolve a default marker result when de_name is omitted", {
+  skip_if_not_installed("Seurat")
+
+  provider <- function(messages, model = NULL, ...) {
+    list(
+      text = '{"cluster_annotations":[{"cluster":"Tcell","primary_label":"T cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":[],"supporting_markers":["CD3D"],"supporting_functions":["T cell activation"],"risk_flags":[],"note":"marker support","recommended_checks":[]}],"narrative_summary":"demo"}'
+    )
+  }
+
+  object <- make_interpretation_object()
+
+  evidence <- sn_prepare_annotation_evidence(
+    object = object,
+    cluster_col = "cell_type",
+    n_markers = 3
+  )
+  expect_equal(evidence$source_de_name, "celltype_markers")
+
+  object <- sn_interpret_annotation(
+    object = object,
+    cluster_col = "cell_type",
+    provider = provider,
+    store_name = "annotation_default_de",
+    return_object = TRUE
+  )
+
+  stored <- sn_get_interpretation_result(object, "annotation_default_de")
+  expect_equal(stored$evidence$source_de_name, "celltype_markers")
+})
+
 test_that("enrichment and results evidence helpers work from stored results", {
   skip_if_not_installed("Seurat")
 
@@ -199,7 +229,34 @@ test_that("sn_build_prompt creates a prompt bundle from evidence", {
   expect_equal(prompt$task, "annotation")
   expect_true(all(c("system", "user", "messages") %in% names(prompt)))
   expect_length(prompt$messages, 2)
-  expect_match(prompt$user, "Task instructions")
+  expect_match(prompt$user, "^# Interpretation Request")
+  expect_match(prompt$user, "## Task Instructions")
+  expect_match(prompt$user, "## Evidence")
+})
+
+test_that("annotation prompts include all clusters instead of truncating at eight rows", {
+  evidence <- list(
+    task = "annotation",
+    cluster_summary = tibble::tibble(
+      cluster = as.character(0:11),
+      top_markers = paste0("GENE", 0:11)
+    ),
+    top_marker_table = tibble::tibble(
+      cluster = rep(as.character(0:11), each = 2),
+      gene = paste0("GENE", seq_len(24)),
+      avg_log2FC = seq_len(24)
+    )
+  )
+
+  prompt <- sn_build_prompt(
+    evidence = evidence,
+    task = "annotation",
+    style = "cell type annotation",
+    audience = "scientist"
+  )
+
+  expect_match(prompt$user, "\\b11\\b")
+  expect_match(prompt$user, "GENE24")
 })
 
 test_that("sn_build_prompt supports human-readable output with background context", {
@@ -313,151 +370,189 @@ test_that("structured annotation responses are normalized and written back to me
     "shennong_celltype_status",
     "shennong_celltype_risk_flags"
   ) %in% colnames(object[[]])))
+  expect_false(any(c(
+    "shennong_celltype_supporting_markers",
+    "shennong_celltype_supporting_functions",
+    "shennong_celltype_note",
+    "shennong_celltype_recommended_checks"
+  ) %in% colnames(object[[]])))
   expect_equal(unique(stats::na.omit(as.character(object$shennong_celltype_label))), c("Activated T Cell", "B Cell"))
   expect_true("possible_contamination" %in% unique(stats::na.omit(as.character(object$shennong_celltype_status))))
 })
 
-test_that("sn_make_sub2api_provider formats OpenAI-compatible chat requests", {
-  provider <- sn_make_sub2api_provider(
-    api_key = "demo-key",
-    base_url = "https://example.invalid/v1/chat/completions",
-    model = "demo-model",
-    temperature = 0.1
+test_that("structured annotation parsing works from ellmer-native structured payloads", {
+  response <- list(
+    structured = list(
+      cluster_annotations = tibble::tibble(
+        cluster = c("0", "1"),
+        primary_label = c("ILC2-like", "KIT+ ILC-like / ILCP-like"),
+        broad_label = c("Innate lymphoid", "Innate lymphoid"),
+        confidence = c("high", "medium"),
+        status = c("confident", "ambiguous"),
+        risk_flags = I(list(character(), c("transitional_state"))),
+        supporting_markers = I(list(c("RORA", "GATA3"), c("KIT", "IL7R"))),
+        note = c("type 2 program", "precursor-like state")
+      ),
+      narrative_summary = "demo structured summary"
+    )
   )
 
-  captured <- NULL
-  response <- with_mocked_bindings(
-    provider(messages = list(list(role = "user", content = "hello"))),
-    curl_fetch_memory = function(url, handle) {
-      captured <<- list(url = url, handle = handle)
-      list(
-        content = charToRaw('{"model":"demo-model","choices":[{"message":{"content":"mock text"}}]}')
-      )
-    },
-    new_handle = function(...) list(...),
-    .package = "curl"
-  )
+  parsed <- .sn_parse_annotation_response(response)
 
-  expect_equal(response$text, "mock text")
-  expect_equal(captured$url, "https://example.invalid/v1/chat/completions")
-  expect_match(captured$handle$postfields, '"model":"demo-model"')
-  expect_match(captured$handle$postfields, '"temperature":0.1')
+  expect_true(is.data.frame(parsed$table))
+  expect_equal(parsed$narrative, "demo structured summary")
+  expect_equal(parsed$table$cluster, c("0", "1"))
+  expect_equal(parsed$table$supporting_markers[[2]], "KIT; IL7R")
 })
 
-test_that("sn_make_openai_provider supports responses API payloads", {
-  provider <- sn_make_openai_provider(
-    api_key = "demo-key",
-    base_url = "https://example.invalid",
-    model = "gpt-5.4",
-    wire_api = "responses",
-    reasoning_effort = "high",
-    disable_response_storage = TRUE
+test_that("sn_make_ellmer_provider retries retryable proxy errors", {
+  skip_if_not_installed("ellmer")
+
+  attempts <- 0
+  mock_chat <- list(
+    chat = function(prompt_text) {
+      attempts <<- attempts + 1
+      if (attempts == 1) {
+        stop("lexical error: invalid char in json text. <!DOCTYPE html>")
+      }
+      "OK"
+    }
   )
 
-  captured <- NULL
-  response <- with_mocked_bindings(
-    provider(messages = list(list(role = "user", content = "hello"))),
-    curl_fetch_memory = function(url, handle) {
-      captured <<- list(url = url, handle = handle)
-      list(
-        content = charToRaw('{"model":"gpt-5.4","output":[{"type":"reasoning","summary":[]},{"type":"message","content":[{"type":"output_text","text":"OK"}]}]}')
-      )
-    },
-    new_handle = function(...) list(...),
-    .package = "curl"
-  )
-
-  expect_equal(response$text, "OK")
-  expect_equal(captured$url, "https://example.invalid/v1/responses")
-  expect_match(captured$handle$postfields, '"store":false')
-  expect_match(captured$handle$postfields, '"reasoning"')
-  expect_true(any(grepl("^x-api-key:", captured$handle$httpheader)))
-})
-
-test_that("local LLM provider config can be listed, resolved, and tested", {
-  cfg_dir <- tempfile("shennong-llm-config-")
-
-  sn_configure_llm_provider(
-    name = "catplot",
-    base_url = "https://api.catplot.org",
-    api_key = "demo-key",
-    default_model = "gpt-5.4",
-    review_model = "gpt-5.4",
-    reasoning_effort = "xhigh",
-    wire_api = "responses",
-    enable_history = TRUE,
-    config_dir = cfg_dir
-  )
-
-  providers <- sn_list_llm_providers(config_dir = cfg_dir)
-  expect_equal(nrow(providers), 1)
-  expect_true(providers$is_default[[1]])
-  expect_equal(providers$base_url[[1]], "https://api.catplot.org/v1")
-  expect_equal(providers$wire_api[[1]], "responses")
-
-  captured <- NULL
   provider <- with_mocked_bindings(
-    sn_get_llm_provider(config_dir = cfg_dir),
-    curl_fetch_memory = function(url, handle) {
-      captured <<- list(url = url, handle = handle)
-      list(
-        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
-      )
-    },
-    new_handle = function(...) list(...),
-    .package = "curl"
+    sn_make_ellmer_provider(
+      api_key = "demo-key",
+      base_url = "https://example.invalid/v1",
+      model = "demo-model",
+      retries = 2,
+      retry_delay_sec = 0
+    ),
+    chat_openai_compatible = function(...) mock_chat,
+    .package = "ellmer"
   )
 
   response <- with_mocked_bindings(
-    provider(messages = list(list(role = "user", content = "Reply with exactly OK."))),
-    curl_fetch_memory = function(url, handle) {
-      captured <<- list(url = url, handle = handle)
-      list(
-        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
-      )
-    },
-    new_handle = function(...) list(...),
-    .package = "curl"
+    provider(messages = list(list(role = "user", content = "hello"))),
+    chat_openai_compatible = function(...) mock_chat,
+    .package = "ellmer"
   )
 
   expect_equal(response$text, "OK")
-  expect_equal(captured$url, "https://api.catplot.org/v1/responses")
-
-  test_result <- with_mocked_bindings(
-    sn_test_llm_provider(config_dir = cfg_dir),
-    curl_fetch_memory = function(url, handle) {
-      list(
-        content = charToRaw('{"model":"gpt-5.4","output_text":"OK"}')
-      )
-    },
-    new_handle = function(...) list(...),
-    .package = "curl"
-  )
-  expect_true(test_result$ok[[1]])
-  expect_equal(test_result$text[[1]], "OK")
-
-  history_files <- list.files(file.path(cfg_dir, "llm-history"), full.names = TRUE)
-  expect_gte(length(history_files), 1)
+  expect_equal(attempts, 2)
 })
 
-test_that("sn_interpret_annotation falls back to the configured default provider", {
-  skip_if_not_installed("Seurat")
+test_that("sn_make_ellmer_provider forwards reasoning_effort to ellmer api_args", {
+  skip_if_not_installed("ellmer")
 
-  home_root <- tempfile("shennong-home-")
-  cfg_dir <- file.path(home_root, ".shennong")
-  sn_configure_llm_provider(
-    name = "catplot",
-    base_url = "https://api.catplot.org",
-    api_key = "demo-key",
-    default_model = "gpt-5.4",
-    reasoning_effort = "xhigh",
-    wire_api = "responses",
-    config_dir = cfg_dir
+  captured <- NULL
+  mock_chat <- list(
+    chat = function(prompt_text) {
+      "OK"
+    }
   )
 
-  old_home <- Sys.getenv("HOME", unset = "")
-  on.exit(Sys.setenv(HOME = old_home), add = TRUE)
-  Sys.setenv(HOME = home_root)
+  provider <- with_mocked_bindings(
+    sn_make_ellmer_provider(
+      api_key = "demo-key",
+      base_url = "https://example.invalid/v1",
+      model = "demo-model",
+      reasoning_effort = "high",
+      retries = 1
+    ),
+    chat_openai_compatible = function(...) {
+      captured <<- list(...)
+      mock_chat
+    },
+    .package = "ellmer"
+  )
+
+  response <- with_mocked_bindings(
+    provider(messages = list(list(role = "user", content = "hello"))),
+    chat_openai_compatible = function(...) {
+      captured <<- list(...)
+      mock_chat
+    },
+    .package = "ellmer"
+  )
+
+  expect_equal(response$text, "OK")
+  expect_equal(captured$api_args$reasoning_effort, "high")
+})
+
+test_that("sn_make_ellmer_provider uses ellmer structured output and registers tools", {
+  skip_if_not_installed("ellmer")
+
+  captured <- list()
+  mock_chat <- list(
+    register_tool = function(tool_def) {
+      captured$tools <<- c(captured$tools %||% list(), list(tool_def))
+      invisible(NULL)
+    },
+    chat = function(prompt_text) {
+      captured$chat_prompt <<- prompt_text
+      "comparison summary"
+    },
+    chat_structured = function(prompt_text, type, echo = "none", convert = TRUE) {
+      captured$structured_prompt <<- prompt_text
+      captured$structured_type <<- type
+      list(
+        cluster_annotations = tibble::tibble(
+          cluster = "0",
+          primary_label = "ILC2-like",
+          broad_label = "Innate lymphoid",
+          confidence = "high",
+          status = "confident"
+        ),
+        narrative_summary = "summary"
+      )
+    }
+  )
+
+  provider <- with_mocked_bindings(
+    sn_make_ellmer_provider(
+      api_key = "demo-key",
+      base_url = "https://example.invalid/v1",
+      model = "demo-model",
+      retries = 1
+    ),
+    chat_openai_compatible = function(...) mock_chat,
+    .package = "ellmer"
+  )
+
+  tool_def <- ellmer::tool(
+    function(cluster_ids) cluster_ids,
+    name = "lookup_cluster_annotation_evidence",
+    description = "demo tool",
+    arguments = list(
+      cluster_ids = ellmer::type_array(ellmer::type_string("cluster id"))
+    )
+  )
+
+  tool_response <- with_mocked_bindings(
+    provider(
+      messages = list(list(role = "user", content = "hello")),
+      tools = list(tool_def)
+    ),
+    chat_openai_compatible = function(...) mock_chat,
+    .package = "ellmer"
+  )
+  structured_response <- with_mocked_bindings(
+    provider(
+      messages = list(list(role = "user", content = "hello")),
+      structured_type = .sn_annotation_structured_type()
+    ),
+    chat_openai_compatible = function(...) mock_chat,
+    .package = "ellmer"
+  )
+
+  expect_equal(tool_response$text, "comparison summary")
+  expect_length(captured$tools, 1)
+  expect_true(!is.null(structured_response$structured))
+  expect_match(structured_response$text, "cluster_annotations")
+})
+
+test_that("sn_interpret_annotation falls back to the default ellmer provider path", {
+  skip_if_not_installed("Seurat")
 
   object <- make_interpretation_object()
   object$percent.mt <- ifelse(object$cell_type == "Tcell", 4, 22)
@@ -474,30 +569,78 @@ test_that("sn_interpret_annotation falls back to the configured default provider
       metadata_prefix = "shennong_celltype",
       return_object = TRUE
     ),
-    curl_fetch_memory = function(url, handle) {
-      payload <- list(
-        model = "gpt-5.4",
-        output_text = paste(
-          '{"cluster_annotations":[',
-          '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":["cytotoxic t cell"],',
-          '"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
-          '"note":"marker and pathway support a T-cell identity","recommended_checks":["confirm IL7R and LTB"]},',
-          '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphocyte","confidence":"medium","status":"possible_contamination","alternatives":["plasma cell"],',
-          '"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":["contamination"],',
-          '"note":"mixed B-cell and stress-like signals","recommended_checks":["inspect percent.mt and doublet score"]}',
-          '],"narrative_summary":"demo summary"}'
-        )
-      )
-      list(
-        content = charToRaw(jsonlite::toJSON(payload, auto_unbox = TRUE))
-      )
+    .sn_get_default_ellmer_provider = function() function(messages, model = NULL, ...) {
+      list(text = paste(
+        '{"cluster_annotations":[',
+        '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":["cytotoxic t cell"],',
+        '"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
+        '"note":"marker and pathway support a T-cell identity","recommended_checks":["confirm IL7R and LTB"]},',
+        '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphocyte","confidence":"medium","status":"possible_contamination","alternatives":["plasma cell"],',
+        '"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":["contamination"],',
+        '"note":"mixed B-cell and stress-like signals","recommended_checks":["inspect percent.mt and doublet score"]}',
+        '],"narrative_summary":"demo summary"}'
+      ))
     },
-    new_handle = function(...) list(...),
-    .package = "curl"
+    .package = "Shennong"
   )
 
   expect_true("annotation_structured_default" %in% names(object@misc$interpretation_results))
   expect_true("shennong_celltype_label" %in% colnames(object[[]]))
+})
+
+test_that("annotation prompt can include candidate labels for sorted datasets", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+
+  prompt <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    background = "Blood ILC-sorted dataset.",
+    label_candidates = c("ILC1", "ILC2", "ILC3", "NK", "T cell"),
+    return_prompt = TRUE
+  )
+
+  expect_match(prompt$user, "Annotation priors / candidate labels")
+  expect_match(prompt$user, "ILC1")
+  expect_match(prompt$user, "do not force unrelated T-cell or NK-cell labels")
+})
+
+test_that("annotation metadata_fields can opt into detailed metadata columns", {
+  skip_if_not_installed("Seurat")
+
+  provider <- function(messages, model = NULL, ...) {
+    list(text = paste(
+      '{"cluster_annotations":[',
+      '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphocyte","confidence":"high","status":"confident","alternatives":["cytotoxic t cell"],',
+      '"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":["transitional_state"],',
+      '"note":"marker and pathway support a T-cell identity","recommended_checks":["confirm IL7R and LTB"]},',
+      '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphocyte","confidence":"medium","status":"possible_contamination","alternatives":["plasma cell"],',
+      '"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":["contamination"],',
+      '"note":"mixed B-cell and stress-like signals","recommended_checks":["inspect percent.mt and doublet score"]}',
+      '],"narrative_summary":"demo summary"}'
+    ))
+  }
+
+  object <- make_interpretation_object()
+  object <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    provider = provider,
+    metadata_prefix = "custom_ann",
+    metadata_fields = c("primary_label", "confidence", "supporting_markers"),
+    store_name = "annotation_custom_metadata",
+    return_object = TRUE
+  )
+
+  expect_true(all(c(
+    "custom_ann_label",
+    "custom_ann_confidence",
+    "custom_ann_supporting_markers"
+  ) %in% colnames(object[[]])))
+  expect_false("custom_ann_broad_label" %in% colnames(object[[]]))
 })
 
 test_that("misc-result helpers create collections and report missing stored results", {
@@ -527,6 +670,22 @@ test_that("misc-result helpers create collections and report missing stored resu
     ),
     "No stored result named 'missing'"
   )
+})
+
+test_that("annotation default DE-name resolution prefers the default stored result", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  object@misc$de_results$default <- object@misc$de_results$celltype_markers
+
+  resolved <- Shennong:::.sn_resolve_misc_result_name(
+    object = object,
+    collection = "de_results",
+    preferred_analysis = "markers",
+    arg_name = "de_name"
+  )
+
+  expect_equal(resolved, "default")
 })
 
 test_that("stored-result retrieval supports filtering, ranking, and metadata return", {
@@ -630,4 +789,195 @@ test_that("cluster, marker, and prediction summaries keep object-derived structu
   expect_equal(nrow(marker_table), 4)
   expect_true(all(c("cluster", "celltypist_predicted_labels", "ref_majority_voting") %in% colnames(prediction_summary)))
   expect_true(all(grepl("\\(40 cells\\)", prediction_summary$celltypist_predicted_labels)))
+})
+
+test_that("specific marker selection prefers cluster-restricted markers over shared top hits", {
+  de_result <- list(
+    table = tibble::tibble(
+      cluster = c("A", "A", "B", "B"),
+      gene = c("SHARED", "A_SPEC", "SHARED", "B_SPEC"),
+      avg_log2FC = c(6, 5, 6, 5),
+      p_val_adj = c(1e-6, 1e-6, 1e-6, 1e-6)
+    ),
+    group_col = "cluster",
+    rank_col = "avg_log2FC",
+    p_col = "p_val_adj",
+    p_val_cutoff = 0.05,
+    analysis = "markers"
+  )
+
+  top_summary <- Shennong:::.sn_prepare_marker_summary(de_result, n_markers = 1, selection = "top")
+  specific_summary <- Shennong:::.sn_prepare_marker_summary(de_result, n_markers = 1, selection = "specific")
+
+  expect_equal(top_summary$top_markers, c("SHARED", "SHARED"))
+  expect_equal(specific_summary$top_markers, c("A_SPEC", "B_SPEC"))
+})
+
+test_that("annotation evidence can include cluster neighborhood geometry", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  embeddings <- matrix(
+    c(
+      rnorm(40, mean = 0, sd = 0.1),
+      rnorm(40, mean = 0, sd = 0.1),
+      rnorm(40, mean = 3, sd = 0.1),
+      rnorm(40, mean = 0, sd = 0.1)
+    ),
+    ncol = 2
+  )
+  rownames(embeddings) <- colnames(object)
+  colnames(embeddings) <- c("UMAP_1", "UMAP_2")
+  object[["umap"]] <- SeuratObject::CreateDimReducObject(
+    embeddings = embeddings,
+    key = "UMAP_",
+    assay = Seurat::DefaultAssay(object)
+  )
+
+  evidence <- sn_prepare_annotation_evidence(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    reduction = "umap",
+    n_neighbor_clusters = 1
+  )
+
+  expect_true("geometry_summary" %in% names(evidence))
+  expect_equal(nrow(evidence$geometry_summary), 2)
+  expect_true("nearest_clusters" %in% colnames(evidence$cluster_summary))
+  expect_true(any(grepl("Tcell|Bcell", evidence$geometry_summary$nearest_clusters)))
+})
+
+test_that("annotation evidence adds canonical lineage heuristic hints", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  evidence <- sn_prepare_annotation_evidence(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    marker_selection = "specific",
+    reduction = NULL
+  )
+
+  expect_true("lineage_hints" %in% names(evidence))
+  expect_true(all(c("heuristic_hint", "heuristic_top_signatures") %in% colnames(evidence$lineage_hints)))
+  expect_true(all(c("heuristic_hint", "heuristic_rationale") %in% colnames(evidence$cluster_summary)))
+  expect_true(any(grepl("T-cell-like", evidence$lineage_hints$heuristic_hint)))
+  expect_true(any(grepl("B-cell-like", evidence$lineage_hints$heuristic_hint)))
+})
+
+test_that("annotation evidence exposes a canonical marker snapshot", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  evidence <- sn_prepare_annotation_evidence(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    marker_selection = "specific",
+    reduction = NULL
+  )
+
+  expect_true("canonical_marker_snapshot" %in% names(evidence))
+  expect_true(all(c("cluster", "CD3D", "MS4A1") %in% colnames(evidence$canonical_marker_snapshot)))
+})
+
+test_that("annotation heuristics identify erythroid contamination and mixed transitional states", {
+  erythroid_hint <- .sn_select_annotation_hint(
+    score_row = c(erythroid_contam = 3, nk_cytotoxic = 0.2),
+    marker_support = c("HBB", "AHSP", "HBA1"),
+    feature_values = c(HBB = 8, AHSP = 6, HBA1 = 7, HBA2 = 5, KLF1 = 4)
+  )
+  mixed_hint <- .sn_select_annotation_hint(
+    score_row = c(t_cell = 2.5, nk_cytotoxic = 2.7, ilc3 = 1.4),
+    marker_support = c("CD3E", "TRAC", "NKG7", "GNLY"),
+    feature_values = c(CD3E = 3.2, TRAC = 2.9, NKG7 = 4.1, GNLY = 5.3, KLRD1 = 2.4)
+  )
+  transitional_hint <- .sn_select_annotation_hint(
+    score_row = c(ilc3 = 2.8, nk_cytotoxic = 2.6, t_cell = 0.6),
+    marker_support = c("IL23R", "RORC", "NCR2", "NKG7", "GNLY"),
+    feature_values = c(IL23R = 2.4, RORC = 1.2, AHR = 1.8, NCR2 = 1.7, NKG7 = 3.5, GNLY = 3.8)
+  )
+
+  expect_equal(erythroid_hint$hint, "Erythroid contamination-like")
+  expect_equal(mixed_hint$hint, "T/NK mixed lymphoid-like")
+  expect_equal(transitional_hint$hint, "NK/ILC3 transitional-like")
+})
+
+test_that("annotation background injects blood ILC and contamination priors", {
+  background <- .sn_compose_annotation_background(
+    background = "This is blood ILC-sorted single-cell RNA-seq data.",
+    label_candidates = c("ILC1", "ILC2", "ILC3", "NK", "T cell")
+  )
+
+  expect_match(background, "Blood ILC prior", fixed = TRUE)
+  expect_match(background, "ILCP-like", fixed = TRUE)
+  expect_match(background, "erythroid contamination", ignore.case = TRUE)
+})
+
+test_that("sn_interpret_annotation agentic mode performs a focused refinement pass", {
+  skip_if_not_installed("Seurat")
+
+  calls <- character()
+  provider <- function(messages, model = NULL, ...) {
+    prompt_text <- paste(vapply(messages, function(x) x$content, character(1)), collapse = "\n\n")
+    if (grepl("Annotation stage: broad pass", prompt_text, fixed = TRUE)) {
+      calls <<- c(calls, "broad")
+      return(list(text = paste(
+        '{"cluster_annotations":[',
+        '{"cluster":"Tcell","primary_label":"lymphoid lineage","broad_label":"lymphoid","confidence":"low","status":"ambiguous","alternatives":[],"supporting_markers":["CD3D"],"supporting_functions":[],"risk_flags":[],"note":"broad pass","recommended_checks":[]},',
+        '{"cluster":"Bcell","primary_label":"lymphoid lineage","broad_label":"lymphoid","confidence":"low","status":"ambiguous","alternatives":[],"supporting_markers":["MS4A1"],"supporting_functions":[],"risk_flags":[],"note":"broad pass","recommended_checks":[]}',
+        '],"narrative_summary":"broad"}'
+      )))
+    }
+    if (grepl("Annotation stage: focused refinement", prompt_text, fixed = TRUE)) {
+      calls <<- c(calls, "focused")
+      expect_match(prompt_text, "canonical_marker_snapshot")
+      return(list(text = paste(
+        '{"cluster_annotations":[',
+        '{"cluster":"Tcell","primary_label":"activated t cell","broad_label":"lymphoid","confidence":"high","status":"confident","alternatives":[],"supporting_markers":["CD3D","TRAC"],"supporting_functions":["T cell activation"],"risk_flags":[],"note":"focused pass","recommended_checks":[]},',
+        '{"cluster":"Bcell","primary_label":"b cell","broad_label":"lymphoid","confidence":"high","status":"confident","alternatives":[],"supporting_markers":["MS4A1","CD79A"],"supporting_functions":["B cell receptor signaling"],"risk_flags":[],"note":"focused pass","recommended_checks":[]}',
+        '],"narrative_summary":"focused"}'
+      )))
+    }
+    stop("Unexpected prompt")
+  }
+
+  object <- make_interpretation_object()
+  object <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    annotation_mode = "agentic",
+    provider = provider,
+    store_name = "annotation_agentic",
+    metadata_prefix = "agentic_ann",
+    return_object = TRUE,
+    show_progress = FALSE
+  )
+
+  stored <- sn_get_interpretation_result(object, "annotation_agentic")
+  expect_equal(calls, c("broad", "focused"))
+  expect_equal(stored$annotation_mode, "agentic")
+  expect_equal(stored$narrative_summary, "focused")
+  expect_equal(sort(stored$workflow$focus_clusters), c("Bcell", "Tcell"))
+  expect_equal(unique(stats::na.omit(as.character(object$agentic_ann_label))), c("Activated T Cell", "B Cell"))
+})
+
+test_that("agentic annotation can return its staged prompt bundle", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_interpretation_object()
+  prompt <- sn_interpret_annotation(
+    object = object,
+    de_name = "celltype_markers",
+    cluster_col = "cell_type",
+    annotation_mode = "agentic",
+    return_prompt = TRUE
+  )
+
+  expect_equal(prompt$annotation_mode, "agentic")
+  expect_true(is.list(prompt$broad_prompt))
+  expect_match(prompt$note, "Focused refinement prompt")
 })

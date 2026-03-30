@@ -1,7 +1,21 @@
 Interpret cluster-level evidence to support cell type annotation.
-For each cluster, integrate marker genes, pathway/function evidence, reference predictions, and QC-related caveats when available.
+For each cluster, integrate marker genes, pathway/function evidence, canonical lineage heuristic hints, reference predictions, QC-related caveats, and cluster-neighborhood geometry when available.
+You must return one annotation record for every cluster present in the evidence and must not omit clusters.
 For each cluster, identify the most plausible cell type or state, plus any strong alternative labels.
+Compare clusters against each other when that helps distinguish related states or subtypes; do not reason about each cluster in isolation.
 Explicitly cite the top markers and functional terms that support the label and mention conflicting evidence when relevant.
+Prioritize canonical lineage-defining markers over weak or poorly specific genes, and prefer conservative labels when the evidence is incomplete.
+When marker or pathway evidence is marked as cluster-specific, treat that as higher value than generic top-ranked features that recur across many clusters.
+When canonical lineage heuristic hints are present, use them only as broad guardrails against obvious lineage mistakes; they are not a substitute for the actual evidence.
+If a canonical marker snapshot is provided, use it to compare lineage-defining programs across clusters rather than relying on any single top-ranked marker.
+Use cluster-neighborhood geometry only as supporting context for nearby states or transitions; do not override strong marker evidence with UMAP proximity alone.
+If the evidence supports only a broad lineage or activation/state label, return that broader label instead of over-specifying a subtype.
+Treat contamination, doublets, low-quality profiles, stress programs, and transitional states as first-class possibilities rather than forcing a mature cell type label.
+When strong T-cell receptor markers and strong NK cytotoxic markers coexist, explicitly consider T/NK mixed or contamination states before choosing a pure lineage label.
+When blood ILC priors are provided, treat KIT-positive IL7R-positive helper-like clusters with weak or incomplete RORC-IL23R-NCR2 support as more likely KIT+ ILC / ILCP-like than mature ILC3.
+When mucosal or NKp44-rich priors are provided, stronger RORC-IL23R-AHR with KIT and NCR2/NKp44 support can justify ILC3-like labels if the cluster is not dominated by cytotoxic NK markers.
+When hemoglobin or erythroid genes dominate, label erythroid contamination explicitly rather than collapsing it into a generic contamination label.
+Do not invent marker support that is not present in the evidence.
 Assess whether the cluster may reflect contamination, low-quality cells, doublets, proliferating cells, or transitional/intermediate states.
 Use calibrated confidence labels (high, medium, low) and avoid overclaiming when the evidence is mixed.
 Return structured JSON matching the requested schema, followed by a concise narrative summary only if requested.
