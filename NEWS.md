@@ -76,6 +76,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   plots. `sn_find_doublets()` now records skipped cells as
   `unresolved` instead of `NA` in the stored class column and orders doublet
   classes as `singlet`, `doublet`, then other levels.
+- `sn_initialize_seurat_object()` now accepts the named character vectors
+  returned by `sn_list_10x_paths()` and imports all detected 10x samples in one
+  call, returning a named list of Seurat objects. Annotation-aware
+  `sn_filter_genes()` warnings now report example unmatched feature names, and
+  `sn_plot_*()` legends use safer non-negative spacing so legend text does not
+  overlap plotted panels.
 - `sn_initialize_seurat_object()` now recognizes typical 10x Genomics `outs/`
   directories, reads the filtered matrix automatically, and stores discovered
   source metadata such as `raw_feature_bc_matrix` paths and

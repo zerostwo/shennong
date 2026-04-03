@@ -9,7 +9,7 @@ description: Use when working with Shennong preprocessing, clustering, different
 
 Teach the agent how to use Shennong workflows for preprocessing, clustering,
 differential expression, enrichment, bulk deconvolution, and related
-single-cell tasks.
+single-cell tasks. This skill is the main entry point for package usage.
 
 ## When To Use
 
@@ -32,8 +32,15 @@ single-cell tasks.
 - prefer Shennong exported APIs when they already expose the needed capability
 - keep the main object as a Seurat object unless another return type is required
 - respect strict `sn_verb_noun` naming conventions
+- use the shared package API and workflow references instead of inventing
+  partial wrapper logic
 - if work is happening inside an initialized project, also respect the project
   `AGENTS.md`, `memory/`, and `docs/standards/`
+
+## References
+
+- `../_shared/references/package_api_map.md`
+- `../_shared/references/workflow_recipes.md`
 
 ## Procedure
 
@@ -63,6 +70,9 @@ single-cell tasks.
 7. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
+8. When the correct entry point is unclear, read
+   `../_shared/references/package_api_map.md` and choose the exported `sn_*`
+   function that matches the task instead of falling back to raw Seurat calls.
 
 ## Common Mistakes
 
@@ -79,6 +89,11 @@ single-cell tasks.
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
+- `sn_enrich(x = object, source_de_name = "cluster_markers")`
+- `sn_calculate_composition()`
+- `sn_run_milo()`
+- `sn_plot_dim()`
+- `sn_plot_feature()`
 - `sn_deconvolve_bulk(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

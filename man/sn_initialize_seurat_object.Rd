@@ -21,7 +21,8 @@ sn_initialize_seurat_object(
 )
 }
 \arguments{
-\item{x}{A matrix, data.frame, sparse matrix, or path to counts data.}
+\item{x}{A matrix, data.frame, sparse matrix, path to counts data, or a
+character vector of multiple 10x paths.}
 
 \item{metadata}{Optional metadata (data.frame or similar) to add to the Seurat object.}
 
@@ -58,6 +59,9 @@ patterns for these gene sets. When \code{x} points to a 10x Genomics \code{outs}
 directory, the function automatically reads the filtered matrix and stores
 discovered source metadata such as the raw matrix path and
 \code{metrics_summary.csv} contents in \code{Seurat::Misc(object, "input_source")}.
+When \code{x} is a character vector of multiple detected 10x paths, such as the
+output of \code{\link[=sn_list_10x_paths]{sn_list_10x_paths()}}, the function returns a named list of Seurat
+objects and imports each path in one call.
 }
 \examples{
 \dontrun{

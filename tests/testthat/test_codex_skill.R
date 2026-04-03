@@ -27,6 +27,8 @@ test_that("sn_install_codex_skill installs packaged usage skills into a target d
   expect_true(all(dir.exists(installed)))
   expect_true(file.exists(file.path(target_root, "use-shennong-project-init", "SKILL.md")))
   expect_true(file.exists(file.path(target_root, "manage-shennong-results", "SKILL.md")))
+  expect_true(file.exists(file.path(target_root, "_shared", "references", "package_api_map.md")))
+  expect_true(file.exists(file.path(target_root, "_shared", "references", "workflow_recipes.md")))
 })
 
 test_that("sn_install_codex_skill can install both package and project skills", {

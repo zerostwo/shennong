@@ -33,8 +33,16 @@ package assets.
   manually when Shennong is available
 - distinguish package assets from initialized project files
 - do not confuse package skills with project governance skills
+- use `sn_get_codex_skill_path()` or `sn_install_codex_skill()` when the task
+  is to locate or install shipped package assets rather than initialize a
+  project
 - once the project is initialized, follow the created `AGENTS.md`,
   `memory/`, and `docs/standards/BioinformaticsAnalysisConventions.md`
+
+## References
+
+- `../_shared/references/package_api_map.md`
+- `../_shared/references/workflow_recipes.md`
 
 ## Procedure
 
@@ -42,7 +50,9 @@ package assets.
 2. Use `sn_get_codex_skill_path(component = "project_template")` if the
    packaged project template path is needed.
 3. Initialize the project with `sn_initialize_project(with_agent = TRUE)`.
-4. After initialization, follow the created `AGENTS.md` and `memory/`.
+4. Use `sn_install_codex_skill()` when the user needs the shipped package
+   skills copied into a local agent skill directory.
+5. After initialization, follow the created `AGENTS.md` and `memory/`.
 
 ## Common Mistakes
 

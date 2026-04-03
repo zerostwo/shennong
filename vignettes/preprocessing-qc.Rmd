@@ -80,6 +80,10 @@ pbmc_init <- sn_initialize_seurat_object(
 )
 pbmc_init <- Seurat::AddMetaData(pbmc_init, metadata = meta_tbl)
 
+# For multiple 10x samples on disk, one-shot import is also supported:
+# tenx_paths <- sn_list_10x_paths("data/")
+# pbmc_list <- sn_initialize_seurat_object(x = tenx_paths, species = "human")
+
 pbmc_cells <- suppressWarnings(
   sn_filter_cells(
     pbmc_init,

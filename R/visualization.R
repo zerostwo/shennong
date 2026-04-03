@@ -75,9 +75,10 @@
 
 .sn_compact_legend_theme <- function() {
   ggplot2::theme(
-    legend.text = ggplot2::element_text(margin = ggplot2::margin(l = -4)),
-    legend.spacing.x = grid::unit(0, "pt"),
-    legend.key.spacing.x = grid::unit(0, "pt")
+    legend.text = ggplot2::element_text(margin = ggplot2::margin(l = 2)),
+    legend.spacing.x = grid::unit(2, "pt"),
+    legend.key.spacing.x = grid::unit(2, "pt"),
+    legend.margin = ggplot2::margin(2, 6, 2, 2)
   )
 }
 
@@ -561,7 +562,7 @@
     plot.background = ggplot2::element_rect(fill = "#030711", colour = NA),
     legend.background = ggplot2::element_rect(fill = "#030711", colour = NA),
     legend.key = ggplot2::element_rect(fill = "#030711", colour = NA),
-    legend.text = ggplot2::element_text(colour = "white", margin = ggplot2::margin(l = -4)),
+    legend.text = ggplot2::element_text(colour = "white", margin = ggplot2::margin(l = 2)),
     legend.title = ggplot2::element_text(colour = "white"),
     plot.title = ggplot2::element_text(colour = "white", face = "bold"),
     axis.text = ggplot2::element_text(colour = "white"),
@@ -1458,7 +1459,7 @@ sn_plot_dim <- function(
     panel_widths = panel_widths,
     panel_heights = panel_heights
   )
-  p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = -2))) +
+  p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = 2, r = 6))) +
     labs(
       x = x,
       y = y,
@@ -1603,7 +1604,7 @@ sn_plot_violin <- function(object,
     x_text_angle = angle_x
   )
   p <- .sn_apply_plot_component(p, theme(
-      legend.margin = margin(l = -8)
+      legend.margin = margin(l = 2, r = 6)
     )) +
     ggplot2::scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     guides(x = guide_axis(angle = angle_x)) +
@@ -1812,7 +1813,7 @@ sn_plot_dot <- function(x,
     ) +
       theme(
         axis.text.x = element_text(face = "italic"),
-        legend.margin = margin(l = -8),
+        legend.margin = margin(l = 2, r = 6),
         legend.position = legend_position,
         panel.grid = ggplot2::element_line(
           colour = "lightgrey",
@@ -2057,7 +2058,7 @@ sn_plot_feature <-
       panel_widths = panel_widths,
       panel_heights = panel_heights
     )
-    p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = -8))) +
+    p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = 2, r = 6))) +
       labs(
         x = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
         y = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),

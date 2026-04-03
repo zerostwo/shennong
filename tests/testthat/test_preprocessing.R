@@ -65,6 +65,53 @@ test_that("sn_initialize_seurat_object inherits sample name from named 10x paths
   expect_equal(Seurat::Misc(object, "input_source")$sample_name, "sampleA")
 })
 
+test_that("sn_initialize_seurat_object accepts multiple 10x paths from sn_list_10x_paths", {
+  skip_if_not_installed("Seurat")
+
+  root <- tempfile("inputs-multi-")
+  dir.create(root)
+
+  write_tenx_sample <- function(sample_name, entries) {
+    outs_dir <- file.path(root, sample_name, "outs")
+    dir.create(file.path(outs_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
+    writeLines(
+      c(
+        "%%MatrixMarket matrix coordinate integer general",
+        "%",
+        "2 2 2",
+        entries[[1]],
+        entries[[2]]
+      ),
+      file.path(outs_dir, "filtered_feature_bc_matrix", "matrix.mtx")
+    )
+    writeLines(
+      c("cell1", "cell2"),
+      file.path(outs_dir, "filtered_feature_bc_matrix", "barcodes.tsv")
+    )
+    writeLines(
+      c("gene1\tgene1\tGene Expression", "gene2\tgene2\tGene Expression"),
+      file.path(outs_dir, "filtered_feature_bc_matrix", "features.tsv")
+    )
+  }
+
+  write_tenx_sample("sampleA", c("1 1 5", "2 2 3"))
+  write_tenx_sample("sampleB", c("1 2 4", "2 1 2"))
+
+  tenx_paths <- sn_list_10x_paths(root)
+  objects <- sn_initialize_seurat_object(
+    x = tenx_paths,
+    project = "prep-multi",
+    species = "human"
+  )
+
+  expect_type(objects, "list")
+  expect_length(objects, 2)
+  expect_named(objects, c("sampleA", "sampleB"))
+  expect_s4_class(objects[[1]], "Seurat")
+  expect_equal(unique(as.character(objects$sampleA$sample)), "sampleA")
+  expect_equal(unique(as.character(objects$sampleB$sample)), "sampleB")
+})
+
 test_that("sn_initialize_seurat_object infers species and computes QC metrics", {
   skip_if_not_installed("Seurat")
 

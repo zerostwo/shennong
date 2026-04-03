@@ -32,8 +32,15 @@ interpretation layer.
 - use stored results rather than recomputing upstream analyses unnecessarily
 - separate evidence from inference
 - keep interpretation provider-agnostic at the package boundary
+- if the right interpretation helper is unclear, consult the shared package
+  API map before composing raw prompt logic
 - if the interpretation belongs to a governed project, update `memory/Status.md`
   or `memory/Decisions.md` when the result changes durable project knowledge
+
+## References
+
+- `../_shared/references/package_api_map.md`
+- `../_shared/references/workflow_recipes.md`
 
 ## Procedure
 
@@ -41,6 +48,11 @@ interpretation layer.
 2. Retrieve them with the corresponding `sn_get_*_result()` helper.
 3. Build or run the interpretation layer with `sn_build_prompt()` or
    `sn_interpret_*()`.
+4. Use `sn_prepare_annotation_evidence()`, `sn_prepare_de_evidence()`,
+   `sn_prepare_enrichment_evidence()`, or `sn_prepare_results_evidence()` to
+   keep evidence assembly explicit.
+5. Use `sn_make_ellmer_provider()` and `sn_test_llm_provider()` when a live
+   provider call is actually needed.
 
 ## Common Mistakes
 
@@ -51,5 +63,11 @@ interpretation layer.
 ## Examples
 
 - `sn_prepare_annotation_evidence()`
+- `sn_prepare_results_evidence()`
 - `sn_build_prompt()`
 - `sn_interpret_annotation()`
+- `sn_interpret_de()`
+- `sn_interpret_enrichment()`
+- `sn_write_results()`
+- `sn_write_figure_legend()`
+- `sn_write_presentation_summary()`

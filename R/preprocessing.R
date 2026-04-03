@@ -187,8 +187,12 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' directory, the function automatically reads the filtered matrix and stores
 #' discovered source metadata such as the raw matrix path and
 #' `metrics_summary.csv` contents in `Seurat::Misc(object, "input_source")`.
+#' When `x` is a character vector of multiple detected 10x paths, such as the
+#' output of [sn_list_10x_paths()], the function returns a named list of Seurat
+#' objects and imports each path in one call.
 #'
-#' @param x A matrix, data.frame, sparse matrix, or path to counts data.
+#' @param x A matrix, data.frame, sparse matrix, path to counts data, or a
+#'   character vector of multiple 10x paths.
 #' @param metadata Optional metadata (data.frame or similar) to add to the Seurat object.
 #' @param names_field Passed to \code{SeuratObject::CreateSeuratObject}, indicating how to parse cell names.
 #' @param names_delim Passed to \code{SeuratObject::CreateSeuratObject}, indicating the delimiter for cell names.
@@ -223,6 +227,62 @@ sn_initialize_seurat_object <- function(
   standardize_gene_symbols = FALSE,
   is_gene_id = FALSE, ...
 ) {
+  if (is.character(x) && length(x) > 1L) {
+    if (!is_null(metadata) && !is.list(metadata)) {
+      stop(
+        "When `x` contains multiple paths, `metadata` must be NULL or a list parallel to `x`.",
+        call. = FALSE
+      )
+    }
+
+    .resolve_parallel_arg <- function(value, i, default = NULL) {
+      if (is.null(value)) {
+        return(default)
+      }
+      if (length(value) == 1L) {
+        return(value[[1]])
+      }
+      value[[i]]
+    }
+
+    object_list <- lapply(seq_along(x), function(i) {
+      sample_i <- .resolve_parallel_arg(sample_name, i, default = names(x)[[i]] %||% NULL)
+      metadata_i <- if (is.list(metadata)) metadata[[i]] else NULL
+      sn_initialize_seurat_object(
+        x = x[[i]],
+        metadata = metadata_i,
+        names_field = names_field,
+        names_delim = names_delim,
+        project = .resolve_parallel_arg(project, i, default = project),
+        min_cells = .resolve_parallel_arg(min_cells, i, default = min_cells),
+        min_features = .resolve_parallel_arg(min_features, i, default = min_features),
+        sample_name = sample_i,
+        study = .resolve_parallel_arg(study, i, default = study),
+        species = .resolve_parallel_arg(species, i, default = species),
+        standardize_gene_symbols = .resolve_parallel_arg(
+          standardize_gene_symbols,
+          i,
+          default = standardize_gene_symbols
+        ),
+        is_gene_id = .resolve_parallel_arg(is_gene_id, i, default = is_gene_id),
+        ...
+      )
+    })
+
+    list_names <- names(x)
+    if (is.null(list_names) || any(!nzchar(list_names))) {
+      fallback_names <- vapply(
+        object_list,
+        FUN = function(object) unique(as.character(object$sample))[[1]] %||% "",
+        FUN.VALUE = character(1)
+      )
+      fallback_names[!nzchar(fallback_names)] <- paste0("sample_", seq_along(object_list))[!nzchar(fallback_names)]
+      list_names <- fallback_names
+    }
+    names(object_list) <- list_names
+    return(object_list)
+  }
+
   # -- Logging
   .sn_log_info("Initializing Seurat object for project: {project}.")
 
@@ -756,9 +816,15 @@ sn_filter_genes <- function(x,
       annotations <- .sn_match_gene_annotations(rownames(x), species = species)
 
       if (any(!annotations$matched)) {
+        unmatched_features <- utils::head(rownames(x)[!annotations$matched], 10)
+        unmatched_msg <- if (length(unmatched_features) > 0) {
+          paste0(" Examples: ", paste(unmatched_features, collapse = ", "), ".")
+        } else {
+          ""
+        }
         .sn_log_warn(
           "Annotation-based gene filtering could not match {sum(!annotations$matched)} features for species '{species}'. ",
-          "Those unmatched features will be dropped."
+          "Those unmatched features will be dropped.{unmatched_msg}"
         )
       }
 
