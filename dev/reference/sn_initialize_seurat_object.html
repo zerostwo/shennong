@@ -5,13 +5,19 @@ percentages when species is supplied. Currently supports human and mouse
 patterns for these gene sets. When x points to a 10x Genomics outs
 directory, the function automatically reads the filtered matrix and stores
 discovered source metadata such as the raw matrix path and
-metrics_summary.csv contents in Seurat::Misc(object, "input_source").'><meta property="og:description" content='This function creates a Seurat object from counts (and optional metadata),
+metrics_summary.csv contents in Seurat::Misc(object, "input_source").
+When x is a character vector of multiple detected 10x paths, such as the
+output of sn_list_10x_paths(), the function returns a named list of Seurat
+objects and imports each path in one call.'><meta property="og:description" content='This function creates a Seurat object from counts (and optional metadata),
 then calculates common QC metrics such as mitochondrial and ribosomal gene
 percentages when species is supplied. Currently supports human and mouse
 patterns for these gene sets. When x points to a 10x Genomics outs
 directory, the function automatically reads the filtered matrix and stores
 discovered source metadata such as the raw matrix path and
-metrics_summary.csv contents in Seurat::Misc(object, "input_source").'><meta name="robots" content="noindex"><script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script></head><body>
+metrics_summary.csv contents in Seurat::Misc(object, "input_source").
+When x is a character vector of multiple detected 10x paths, such as the
+output of sn_list_10x_paths(), the function returns a named list of Seurat
+objects and imports each path in one call.'><meta name="robots" content="noindex"><script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script></head><body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
@@ -65,7 +71,10 @@ percentages when <code>species</code> is supplied. Currently supports human and 
 patterns for these gene sets. When <code>x</code> points to a 10x Genomics <code>outs</code>
 directory, the function automatically reads the filtered matrix and stores
 discovered source metadata such as the raw matrix path and
-<code>metrics_summary.csv</code> contents in <code>Seurat::Misc(object, "input_source")</code>.</p>
+<code>metrics_summary.csv</code> contents in <code>Seurat::Misc(object, "input_source")</code>.
+When <code>x</code> is a character vector of multiple detected 10x paths, such as the
+output of <code><a href="sn_list_10x_paths.html">sn_list_10x_paths()</a></code>, the function returns a named list of Seurat
+objects and imports each path in one call.</p>
     </div>
 
     <div class="section level2">
@@ -92,7 +101,8 @@ discovered source metadata such as the raw matrix path and
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A matrix, data.frame, sparse matrix, or path to counts data.</p></dd>
+<dd><p>A matrix, data.frame, sparse matrix, path to counts data, or a
+character vector of multiple 10x paths.</p></dd>
 
 
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>

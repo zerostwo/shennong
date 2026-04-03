@@ -7,7 +7,11 @@ supports human and mouse patterns for these gene sets. When `x` points
 to a 10x Genomics `outs` directory, the function automatically reads the
 filtered matrix and stores discovered source metadata such as the raw
 matrix path and `metrics_summary.csv` contents in
-`Seurat::Misc(object, "input_source")`.
+`Seurat::Misc(object, "input_source")`. When `x` is a character vector
+of multiple detected 10x paths, such as the output of
+[`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md),
+the function returns a named list of Seurat objects and imports each
+path in one call.
 
 ## Usage
 
@@ -33,7 +37,8 @@ sn_initialize_seurat_object(
 
 - x:
 
-  A matrix, data.frame, sparse matrix, or path to counts data.
+  A matrix, data.frame, sparse matrix, path to counts data, or a
+  character vector of multiple 10x paths.
 
 - metadata:
 

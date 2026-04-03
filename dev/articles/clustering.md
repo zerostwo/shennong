@@ -345,7 +345,7 @@ sessioninfo::session_info()
 #>  collate  C.UTF-8
 #>  ctype    C.UTF-8
 #>  tz       UTC
-#>  date     2026-03-30
+#>  date     2026-04-03
 #>  pandoc   3.1.11 @ /opt/hostedtoolcache/pandoc/3.1.11/x64/ (via rmarkdown)
 #>  quarto   NA
 #> 
@@ -461,7 +461,7 @@ sessioninfo::session_info()
 #>  plyr                1.8.9    2023-10-02 [1] CRAN (R 4.5.3)
 #>  png                 0.1-9    2026-03-15 [1] CRAN (R 4.5.3)
 #>  polyclip            1.10-7   2024-07-23 [1] CRAN (R 4.5.3)
-#>  progressr           0.18.0   2025-11-06 [1] CRAN (R 4.5.3)
+#>  progressr           0.19.0   2026-03-31 [1] CRAN (R 4.5.3)
 #>  promises            1.5.0    2025-11-01 [1] CRAN (R 4.5.3)
 #>  purrr               1.2.1    2026-01-09 [1] CRAN (R 4.5.3)
 #>  qvalue              2.42.0   2025-10-29 [1] Bioconduc~
@@ -497,7 +497,7 @@ sessioninfo::session_info()
 #>  sessioninfo         1.2.3    2025-02-05 [1] any (@1.2.3)
 #>  Seurat            * 5.4.0    2025-12-14 [1] any (@5.4.0)
 #>  SeuratObject      * 5.3.0    2025-12-12 [1] CRAN (R 4.5.3)
-#>  Shennong          * 0.1.3    2026-03-30 [1] local
+#>  Shennong          * 0.1.3    2026-04-03 [1] local
 #>  shiny               1.13.0   2026-02-20 [1] CRAN (R 4.5.3)
 #>  sp                * 2.2-1    2026-02-13 [1] CRAN (R 4.5.3)
 #>  spam                2.11-3   2026-01-08 [1] CRAN (R 4.5.3)
