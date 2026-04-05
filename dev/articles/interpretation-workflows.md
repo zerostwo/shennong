@@ -114,9 +114,9 @@ knitr::kable(result_index)
 
 | collection             | type           | name                    | analysis | method | created_at              | n_rows | source          |
 |:-----------------------|:---------------|:------------------------|:---------|:-------|:------------------------|-------:|:----------------|
-| de_results             | de             | cluster_markers         | markers  | wilcox | 2026-04-03 06:38:17 UTC |  17203 | NA              |
-| enrichment_results     | enrichment     | cluster0_gsea           | gsea     | NA     | 2026-04-03 06:38:50 UTC |   2646 | cluster_markers |
-| interpretation_results | interpretation | cluster_annotation_note | NA       | NA     | 2026-04-03 06:38:52 UTC |      0 | NA              |
+| de_results             | de             | cluster_markers         | markers  | wilcox | 2026-04-05 05:48:09 UTC |  17203 | NA              |
+| enrichment_results     | enrichment     | cluster0_gsea           | gsea     | NA     | 2026-04-05 05:48:43 UTC |   2646 | cluster_markers |
+| interpretation_results | interpretation | cluster_annotation_note | NA       | NA     | 2026-04-05 05:48:45 UTC |      0 | NA              |
 
 ## Prepare structured evidence
 
@@ -216,36 +216,36 @@ knitr::kable(
 
 | file             | path                                                                                       |
 |:-----------------|:-------------------------------------------------------------------------------------------|
-| readme           | /tmp/RtmpddTd9t/shennong-codex-project/README.md                                           |
-| gitignore        | /tmp/RtmpddTd9t/shennong-codex-project/.gitignore                                          |
-| rproj            | /tmp/RtmpddTd9t/shennong-codex-project/shennong-codex-project.Rproj                        |
-| config           | /tmp/RtmpddTd9t/shennong-codex-project/config                                              |
-| config_default   | /tmp/RtmpddTd9t/shennong-codex-project/config/default.yaml                                 |
-| data             | /tmp/RtmpddTd9t/shennong-codex-project/data                                                |
-| data_raw         | /tmp/RtmpddTd9t/shennong-codex-project/data/raw                                            |
-| data_processed   | /tmp/RtmpddTd9t/shennong-codex-project/data/processed                                      |
-| data_metadata    | /tmp/RtmpddTd9t/shennong-codex-project/data/metadata                                       |
-| scripts          | /tmp/RtmpddTd9t/shennong-codex-project/scripts                                             |
-| notebooks        | /tmp/RtmpddTd9t/shennong-codex-project/notebooks                                           |
-| runs             | /tmp/RtmpddTd9t/shennong-codex-project/runs                                                |
-| results          | /tmp/RtmpddTd9t/shennong-codex-project/results                                             |
-| results_figures  | /tmp/RtmpddTd9t/shennong-codex-project/results/figures                                     |
-| results_tables   | /tmp/RtmpddTd9t/shennong-codex-project/results/tables                                      |
-| results_reports  | /tmp/RtmpddTd9t/shennong-codex-project/results/reports                                     |
-| agents_md        | /tmp/RtmpddTd9t/shennong-codex-project/AGENTS.md                                           |
-| agents           | /tmp/RtmpddTd9t/shennong-codex-project/AGENTS.md                                           |
-| memory           | /tmp/RtmpddTd9t/shennong-codex-project/memory                                              |
-| memory_decisions | /tmp/RtmpddTd9t/shennong-codex-project/memory/Decisions.md                                 |
-| decisions        | /tmp/RtmpddTd9t/shennong-codex-project/memory/Decisions.md                                 |
-| memory_plan      | /tmp/RtmpddTd9t/shennong-codex-project/memory/Plan.md                                      |
-| plan             | /tmp/RtmpddTd9t/shennong-codex-project/memory/Plan.md                                      |
-| memory_prompt    | /tmp/RtmpddTd9t/shennong-codex-project/memory/Prompt.md                                    |
-| prompt           | /tmp/RtmpddTd9t/shennong-codex-project/memory/Prompt.md                                    |
-| memory_status    | /tmp/RtmpddTd9t/shennong-codex-project/memory/Status.md                                    |
-| status           | /tmp/RtmpddTd9t/shennong-codex-project/memory/Status.md                                    |
-| standards        | /tmp/RtmpddTd9t/shennong-codex-project/docs/standards                                      |
-| conventions      | /tmp/RtmpddTd9t/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md |
-| skills           | /tmp/RtmpddTd9t/shennong-codex-project/skills                                              |
+| readme           | /tmp/Rtmp9kqABV/shennong-codex-project/README.md                                           |
+| gitignore        | /tmp/Rtmp9kqABV/shennong-codex-project/.gitignore                                          |
+| rproj            | /tmp/Rtmp9kqABV/shennong-codex-project/shennong-codex-project.Rproj                        |
+| config           | /tmp/Rtmp9kqABV/shennong-codex-project/config                                              |
+| config_default   | /tmp/Rtmp9kqABV/shennong-codex-project/config/default.yaml                                 |
+| data             | /tmp/Rtmp9kqABV/shennong-codex-project/data                                                |
+| data_raw         | /tmp/Rtmp9kqABV/shennong-codex-project/data/raw                                            |
+| data_processed   | /tmp/Rtmp9kqABV/shennong-codex-project/data/processed                                      |
+| data_metadata    | /tmp/Rtmp9kqABV/shennong-codex-project/data/metadata                                       |
+| scripts          | /tmp/Rtmp9kqABV/shennong-codex-project/scripts                                             |
+| notebooks        | /tmp/Rtmp9kqABV/shennong-codex-project/notebooks                                           |
+| runs             | /tmp/Rtmp9kqABV/shennong-codex-project/runs                                                |
+| results          | /tmp/Rtmp9kqABV/shennong-codex-project/results                                             |
+| results_figures  | /tmp/Rtmp9kqABV/shennong-codex-project/results/figures                                     |
+| results_tables   | /tmp/Rtmp9kqABV/shennong-codex-project/results/tables                                      |
+| results_reports  | /tmp/Rtmp9kqABV/shennong-codex-project/results/reports                                     |
+| agents_md        | /tmp/Rtmp9kqABV/shennong-codex-project/AGENTS.md                                           |
+| agents           | /tmp/Rtmp9kqABV/shennong-codex-project/AGENTS.md                                           |
+| memory           | /tmp/Rtmp9kqABV/shennong-codex-project/memory                                              |
+| memory_decisions | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Decisions.md                                 |
+| decisions        | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Decisions.md                                 |
+| memory_plan      | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Plan.md                                      |
+| plan             | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Plan.md                                      |
+| memory_prompt    | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Prompt.md                                    |
+| prompt           | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Prompt.md                                    |
+| memory_status    | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Status.md                                    |
+| status           | /tmp/Rtmp9kqABV/shennong-codex-project/memory/Status.md                                    |
+| standards        | /tmp/Rtmp9kqABV/shennong-codex-project/docs/standards                                      |
+| conventions      | /tmp/Rtmp9kqABV/shennong-codex-project/docs/standards/BioinformaticsAnalysisConventions.md |
+| skills           | /tmp/Rtmp9kqABV/shennong-codex-project/skills                                              |
 
 The initialized project keeps durable operating rules in `AGENTS.md`,
 project state in `memory/`, enforceable directory and naming rules in

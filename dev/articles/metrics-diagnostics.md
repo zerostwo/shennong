@@ -36,12 +36,12 @@ knitr::kable(summary_tbl, digits = 3)
 
 | metric                       | category      | score | scaled_score | n_cells | source                    | note                  |
 |:-----------------------------|:--------------|------:|-------------:|--------:|:--------------------------|:----------------------|
-| batch_silhouette             | batch_removal | 0.264 |        0.736 |     200 | harmony + seurat_clusters |                       |
-| batch_lisi                   | batch_removal | 1.567 |        0.567 |     200 | harmony                   |                       |
-| cluster_batch_entropy        | batch_removal | 0.737 |        0.737 |     200 | seurat_clusters vs sample |                       |
-| pcr_batch                    | batch_removal | 0.013 |        0.828 |     200 | harmony vs pca            |                       |
+| batch_silhouette             | batch_removal | 0.210 |        0.790 |     200 | harmony + seurat_clusters |                       |
+| batch_lisi                   | batch_removal | 1.604 |        0.604 |     200 | harmony                   |                       |
+| cluster_batch_entropy        | batch_removal | 0.822 |        0.822 |     200 | seurat_clusters vs sample |                       |
+| pcr_batch                    | batch_removal | 0.012 |        0.839 |     200 | harmony vs pca            |                       |
 | well_resolved_group_fraction | structure     | 1.000 |        1.000 |     200 | seurat_clusters           | 4 rare groups flagged |
-| overall_integration_score    | aggregate     | 0.814 |        0.814 |     200 | 0.4 batch + 0.6 biology   |                       |
+| overall_integration_score    | aggregate     | 0.829 |        0.829 |     200 | 0.4 batch + 0.6 biology   |                       |
 
 ## Inspect local sample mixing with LISI
 
@@ -57,16 +57,16 @@ if (!is.null(batch_lisi)) {
 
 | cell_id                   | sample |
 |:--------------------------|-------:|
-| pbmc1k_ACGTTCCGTGGGTCAA-1 |  1.952 |
+| pbmc1k_ACGTTCCGTGGGTCAA-1 |  1.943 |
 | pbmc1k_GGACGTCGTTCAACGT-1 |  1.802 |
-| pbmc1k_CCAATTTCATTCGATG-1 |  1.774 |
-| pbmc1k_TTTCCTCTCCTACACC-1 |  1.585 |
-| pbmc1k_GGGTTATCAGCCATTA-1 |  1.100 |
-| pbmc1k_CCGCAAGCATTCAGGT-1 |  1.708 |
-| pbmc1k_AGGACGAAGATTAGTG-1 |  1.479 |
-| pbmc1k_GTAGAGGCAACTTCTT-1 |  1.337 |
-| pbmc1k_TTCACGCGTTAAGTCC-1 |  1.996 |
-| pbmc1k_GTCATGAAGACTCATC-1 |  1.576 |
+| pbmc1k_CCAATTTCATTCGATG-1 |  1.795 |
+| pbmc1k_TTTCCTCTCCTACACC-1 |  1.521 |
+| pbmc1k_GGGTTATCAGCCATTA-1 |  1.101 |
+| pbmc1k_CCGCAAGCATTCAGGT-1 |  1.936 |
+| pbmc1k_AGGACGAAGATTAGTG-1 |  1.470 |
+| pbmc1k_GTAGAGGCAACTTCTT-1 |  1.351 |
+| pbmc1k_TTCACGCGTTAAGTCC-1 |  1.993 |
+| pbmc1k_GTCATGAAGACTCATC-1 |  1.607 |
 
 ## Surface rare or difficult groups
 
@@ -80,11 +80,11 @@ knitr::kable(challenging_tbl, digits = 3)
 
 | seurat_clusters | n_cells | fraction_cells | median_neighbor_purity | mean_neighbor_purity | graph_connectivity | mean_silhouette | separation_score | challenge_score | rare_group | challenging_group |
 |:----------------|--------:|---------------:|-----------------------:|---------------------:|-------------------:|----------------:|-----------------:|----------------:|:-----------|:------------------|
-| 2               |      33 |          0.165 |                  0.905 |                0.836 |                  1 |           0.065 |            0.812 |           0.188 | TRUE       | FALSE             |
-| 4               |      26 |          0.130 |                  0.849 |                0.799 |                  1 |           0.191 |            0.815 |           0.185 | TRUE       | FALSE             |
-| 1               |      46 |          0.230 |                  1.000 |                0.994 |                  1 |           0.184 |            0.864 |           0.136 | TRUE       | FALSE             |
-| 0               |      67 |          0.335 |                  0.957 |                0.888 |                  1 |           0.366 |            0.880 |           0.120 | FALSE      | FALSE             |
-| 3               |      28 |          0.140 |                  1.000 |                0.980 |                  1 |           0.377 |            0.896 |           0.104 | TRUE       | FALSE             |
+| 2               |      45 |          0.225 |                  0.879 |                0.843 |                  1 |          -0.013 |            0.791 |           0.209 | TRUE       | FALSE             |
+| 4               |      26 |          0.130 |                  0.871 |                0.811 |                  1 |           0.180 |            0.820 |           0.180 | TRUE       | FALSE             |
+| 1               |      46 |          0.230 |                  1.000 |                0.995 |                  1 |           0.178 |            0.863 |           0.137 | TRUE       | FALSE             |
+| 0               |      55 |          0.275 |                  0.909 |                0.859 |                  1 |           0.393 |            0.869 |           0.131 | FALSE      | FALSE             |
+| 3               |      28 |          0.140 |                  1.000 |                0.980 |                  1 |           0.367 |            0.895 |           0.105 | TRUE       | FALSE             |
 
 ## Score candidate rare cells directly
 
@@ -125,11 +125,11 @@ knitr::kable(isolated_tbl, digits = 3)
 
 | seurat_clusters | n_cells | fraction_cells | mean_silhouette | isolated_score | isolated_label |
 |:----------------|--------:|---------------:|----------------:|---------------:|:---------------|
-| 4               |      26 |          0.130 |           0.191 |          0.596 | TRUE           |
-| 3               |      28 |          0.140 |           0.377 |          0.688 | TRUE           |
-| 2               |      33 |          0.165 |           0.065 |          0.532 | TRUE           |
-| 1               |      46 |          0.230 |           0.184 |          0.592 | TRUE           |
-| 0               |      67 |          0.335 |           0.366 |          0.683 | FALSE          |
+| 4               |      26 |          0.130 |           0.180 |          0.590 | TRUE           |
+| 3               |      28 |          0.140 |           0.367 |          0.684 | TRUE           |
+| 2               |      45 |          0.225 |          -0.013 |          0.494 | TRUE           |
+| 1               |      46 |          0.230 |           0.178 |          0.589 | TRUE           |
+| 0               |      55 |          0.275 |           0.393 |          0.697 | FALSE          |
 
 ## Quantify batch mixing inside each cluster
 
@@ -145,8 +145,8 @@ knitr::kable(entropy_tbl, digits = 3)
 |:----------------|--------:|---------:|:---------------|--------:|-------------------:|
 | 1               |      46 |        2 | pbmc3k         |   0.678 |              0.978 |
 | 4               |      26 |        2 | pbmc3k         |   0.690 |              0.996 |
-| 2               |      33 |        2 | pbmc1k         |   0.229 |              0.330 |
-| 0               |      67 |        2 | pbmc3k         |   0.265 |              0.383 |
+| 2               |      45 |        2 | pbmc1k         |   0.580 |              0.837 |
+| 0               |      55 |        2 | pbmc3k         |   0.212 |              0.305 |
 | 3               |      28 |        2 | pbmc3k         |   0.691 |              0.996 |
 
 ## Add supervised metrics when labels are available
