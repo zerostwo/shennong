@@ -114,6 +114,57 @@ test_that("sn_list_10x_paths finds detected outs and selected 10x assets", {
   )
 })
 
+test_that("sn_list_10x_paths deduplicates root and nested outs candidates", {
+  root <- tempfile("single-sample-root-")
+  dir.create(file.path(root, "outs", "filtered_feature_bc_matrix"), recursive = TRUE)
+
+  paths <- sn_list_10x_paths(root, recursive = TRUE, include_root = TRUE)
+
+  expect_length(paths, 1)
+  expect_equal(
+    normalizePath(unname(paths), winslash = "/", mustWork = TRUE),
+    normalizePath(file.path(root, "outs"), winslash = "/", mustWork = TRUE)
+  )
+})
+
+test_that("10x path helpers select h5 assets correctly", {
+  h5_root <- tempfile("tenx-h5-select-")
+  dir.create(file.path(h5_root, "outs"), recursive = TRUE)
+  filtered_h5 <- file.path(h5_root, "outs", "filtered_feature_bc_matrix.h5")
+  raw_h5 <- file.path(h5_root, "outs", "raw_feature_bc_matrix.h5")
+  file.create(filtered_h5)
+  file.create(raw_h5)
+
+  info <- list(
+    outs_path = file.path(h5_root, "outs"),
+    filtered_path = filtered_h5,
+    raw_path = raw_h5,
+    metrics_path = NULL
+  )
+
+  expect_equal(Shennong:::.sn_select_10x_path(info, "outs"), file.path(h5_root, "outs"))
+  expect_equal(Shennong:::.sn_select_10x_path(info, "metrics"), NULL)
+  expect_equal(Shennong:::.sn_select_10x_path(info, "filtered_h5"), filtered_h5)
+  expect_equal(Shennong:::.sn_select_10x_path(info, "raw_h5"), raw_h5)
+})
+
+test_that("10x candidate discovery prefers outs directories during recursive scans", {
+  root <- tempfile("inputs-candidates-")
+  dir.create(root)
+
+  outs_dir <- file.path(root, "sampleA", "outs")
+  dir.create(file.path(outs_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
+
+  nested_noise <- file.path(root, "misc", "deep", "tree")
+  dir.create(nested_noise, recursive = TRUE)
+
+  candidates <- Shennong:::.sn_find_10x_candidates(root, recursive = TRUE, include_root = TRUE)
+
+  expect_true(normalizePath(root, winslash = "/", mustWork = TRUE) %in% normalizePath(candidates, winslash = "/", mustWork = TRUE))
+  expect_true(normalizePath(outs_dir, winslash = "/", mustWork = TRUE) %in% normalizePath(candidates, winslash = "/", mustWork = TRUE))
+  expect_false(normalizePath(nested_noise, winslash = "/", mustWork = TRUE) %in% normalizePath(candidates, winslash = "/", mustWork = TRUE))
+})
+
 test_that("GMT import and custom dispatchers follow the expected IO contracts", {
   gmt_path <- tempfile(fileext = ".gmt")
   writeLines(
@@ -141,6 +192,30 @@ test_that("GMT import and custom dispatchers follow the expected IO contracts", 
     ),
     "Unsupported export format"
   )
+})
+
+test_that("sn_read validates paths and delegates custom readers for inferred formats", {
+  skip_if_not_installed("rio")
+
+  expect_error(
+    sn_read(file.path(tempdir(), "definitely-missing.csv")),
+    "No such path"
+  )
+
+  tenx_dir <- tempfile("tenx-read-")
+  dir.create(tenx_dir)
+  file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
+
+  local_mocked_bindings(
+    .import.rio_10x = function(file, ...) {
+      list(kind = "tenx", path = file)
+    },
+    .env = asNamespace("Shennong")
+  )
+
+  imported <- sn_read(tenx_dir)
+  expect_equal(imported$kind, "tenx")
+  expect_equal(normalizePath(imported$path, winslash = "/", mustWork = TRUE), normalizePath(tenx_dir, winslash = "/", mustWork = TRUE))
 })
 
 test_that("sn_read and sn_write preserve row names and matrix-like tabular inputs", {
@@ -210,6 +285,31 @@ test_that("sn_add_data_from_anndata respects custom reduction keys and logs the 
   expect_true("sn_add_data_from_anndata" %in% names(updated@commands))
 })
 
+test_that("sn_add_data_from_anndata can add metadata without embeddings", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(40, lambda = 3), nrow = 10, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(10))
+  colnames(counts) <- paste0("cell", seq_len(4))
+  object <- sn_initialize_seurat_object(x = counts, project = "ann-meta")
+
+  metadata <- data.frame(
+    sample = c("A", "A", "B", "B"),
+    score = c(1, 2, 3, 4),
+    row.names = colnames(object)
+  )
+  metadata_path <- tempfile(fileext = ".csv")
+  utils::write.csv(metadata, metadata_path)
+
+  updated <- sn_add_data_from_anndata(
+    object = object,
+    metadata_path = metadata_path
+  )
+
+  expect_equal(as.character(updated$sample), metadata$sample)
+  expect_equal(as.numeric(updated$score), metadata$score)
+})
+
 test_that("sn_write supports explicit format selection and custom writer dispatch", {
   skip_if_not_installed("rio")
 
@@ -235,4 +335,38 @@ test_that("sn_write supports explicit format selection and custom writer dispatc
 
   expect_true(dir.exists(bpcells_path))
   expect_true(any(grepl("val$", list.files(bpcells_path))))
+})
+
+test_that("io helpers cover custom source passthrough and non-csv AnnData imports", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("rio")
+
+  local_path <- tempfile(fileext = ".h5ad")
+  file.create(local_path)
+  expect_equal(Shennong:::.sn_download_custom_source(local_path, format = "h5ad"), local_path)
+
+  counts <- Matrix::Matrix(matrix(rpois(40, lambda = 3), nrow = 10, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(10))
+  colnames(counts) <- paste0("cell", seq_len(4))
+  object <- sn_initialize_seurat_object(x = counts, project = "ann-tsv")
+
+  metadata_path <- tempfile(fileext = ".tsv")
+  writeLines(
+    c(
+      "cell\tsample\tscore",
+      "cell1\tA\t1",
+      "cell2\tA\t2",
+      "cell3\tB\t3",
+      "cell4\tB\t4"
+    ),
+    metadata_path
+  )
+
+  updated <- sn_add_data_from_anndata(
+    object = object,
+    metadata_path = metadata_path
+  )
+
+  expect_equal(as.character(updated$sample), c("A", "A", "B", "B"))
+  expect_equal(as.numeric(updated$score), c(1, 2, 3, 4))
 })

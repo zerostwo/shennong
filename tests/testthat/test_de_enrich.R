@@ -706,6 +706,21 @@ test_that("sn_enrich p-value filtering handles compareCluster and passthrough ob
   expect_equal(passthrough, list(a = 1))
 })
 
+test_that("sn_enrich muffles empty-result warnings but preserves other warnings", {
+  expect_warning(
+    Shennong:::.sn_enrich_muffle_empty_warning(
+      warning("Different warning")
+    ),
+    "Different warning"
+  )
+
+  expect_no_warning(
+    Shennong:::.sn_enrich_muffle_empty_warning(
+      warning("No enrichment found for the supplied genes")
+    )
+  )
+})
+
 test_that("sn_enrich supports Hallmark ORA with grouped marker tables", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("msigdbr")

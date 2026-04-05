@@ -383,6 +383,68 @@ test_that("sn_get_species reads stored species and can infer from Seurat object 
   expect_equal(sn_get_species(human_object), "human")
 })
 
+test_that("sn_standardize_gene_symbols converts gene IDs and aggregates duplicates", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  annotations <- Shennong:::.sn_get_gene_annotation_table("human")
+  dup_name <- annotations$gene_name[duplicated(annotations$gene_name)][[1]]
+  dup_rows <- annotations[annotations$gene_name == dup_name, , drop = FALSE]
+  unique_row <- annotations[
+    !duplicated(annotations$gene_name) &
+      !is.na(annotations$gene_name) &
+      nzchar(annotations$gene_name),
+    ,
+    drop = FALSE
+  ][1, , drop = FALSE]
+
+  counts <- Matrix::Matrix(
+    matrix(c(1, 2, 3, 4, 5, 6), nrow = 3, byrow = TRUE),
+    sparse = TRUE
+  )
+  rownames(counts) <- c(dup_rows$gene_id[[1]], dup_rows$gene_id[[2]], unique_row$gene_id[[1]])
+  colnames(counts) <- c("cell1", "cell2")
+
+  standardized <- suppressWarnings(
+    sn_standardize_gene_symbols(
+      counts,
+      species = "human",
+      is_gene_id = TRUE
+    )
+  )
+
+  expect_equal(nrow(standardized), 2)
+  expect_true(dup_name %in% rownames(standardized))
+  expect_true(unique_row$gene_name[[1]] %in% rownames(standardized))
+  expect_equal(as.numeric(standardized[dup_name, ]), c(4, 6))
+
+  object <- sn_initialize_seurat_object(x = counts, project = "gene-standardize", species = "human")
+  standardized_object <- suppressWarnings(sn_standardize_gene_symbols(
+    object,
+    species = "human",
+    is_gene_id = TRUE
+  ))
+
+  expect_true(dup_name %in% rownames(standardized_object))
+  expect_true("sn_standardize_gene_symbols" %in% names(standardized_object@commands))
+})
+
+test_that("sn_score_cell_cycle returns the object unchanged when markers do not overlap", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(1, nrow = 5, ncol = 4), sparse = TRUE)
+  rownames(counts) <- paste0("gene", 1:5)
+  colnames(counts) <- paste0("cell", 1:4)
+
+  object <- sn_initialize_seurat_object(x = counts, project = "cell-cycle-skip", species = "human")
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  updated <- sn_score_cell_cycle(object, species = "human")
+
+  expect_false(any(c("S.Score", "G2M.Score", "Phase") %in% colnames(updated[[]])))
+})
+
 test_that("count-input resolution supports Seurat objects, paths, and matrix-like inputs", {
   skip_if_not_installed("Seurat")
 
@@ -435,6 +497,41 @@ test_that("count-shape restoration preserves the original matrix extent", {
   expect_equal(as.matrix(restored_subset), as.matrix(expected))
   expect_identical(dimnames(restored_subset), dimnames(original_counts))
   expect_identical(restored_same_shape, original_counts)
+})
+
+test_that("10x metric parsing and source detection handle empty and h5-backed outputs", {
+  empty_metrics <- tempfile(fileext = ".csv")
+  file.create(empty_metrics)
+
+  expect_null(Shennong:::.sn_parse_10x_metrics_summary(empty_metrics))
+  expect_null(Shennong:::.sn_parse_10x_metrics_summary(tempfile(fileext = ".csv")))
+
+  sample_root <- tempfile("tenx-h5-")
+  outs_dir <- file.path(sample_root, "outs")
+  dir.create(outs_dir, recursive = TRUE)
+  filtered_h5 <- file.path(outs_dir, "filtered_feature_bc_matrix.h5")
+  raw_h5 <- file.path(outs_dir, "raw_feature_bc_matrix.h5")
+  web_summary <- file.path(outs_dir, "web_summary.html")
+  metrics_csv <- file.path(outs_dir, "metrics_summary.csv")
+  file.create(filtered_h5)
+  file.create(raw_h5)
+  writeLines("<html></html>", web_summary)
+  utils::write.csv(data.frame(metric = "cells", value = 10), metrics_csv, row.names = FALSE)
+
+  source_info <- Shennong:::.sn_detect_10x_outs_source(outs_dir)
+
+  expect_equal(source_info$type, "10x_outs")
+  expect_equal(normalizePath(source_info$filtered_path, winslash = "/", mustWork = TRUE), normalizePath(filtered_h5, winslash = "/", mustWork = TRUE))
+  expect_equal(normalizePath(source_info$raw_path, winslash = "/", mustWork = TRUE), normalizePath(raw_h5, winslash = "/", mustWork = TRUE))
+  expect_equal(normalizePath(source_info$web_summary_path, winslash = "/", mustWork = TRUE), normalizePath(web_summary, winslash = "/", mustWork = TRUE))
+  expect_s3_class(source_info$metrics, "data.frame")
+})
+
+test_that("sn_initialize_seurat_object validates metadata shape for multi-path imports", {
+  expect_error(sn_initialize_seurat_object(
+    x = c(sample1 = "a", sample2 = "b"),
+    metadata = data.frame(a = 1)
+  ))
 })
 
 test_that("ambient-cluster resolution supports metadata columns and explicit vectors", {

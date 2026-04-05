@@ -104,15 +104,11 @@ sn_list_10x_paths <- function(path,
 
   path_type <- match.arg(path_type)
 
-  candidates <- if (isTRUE(recursive)) {
-    list.dirs(path = path, recursive = TRUE, full.names = TRUE)
-  } else {
-    list.dirs(path = path, recursive = FALSE, full.names = TRUE)
-  }
-
-  if (!isTRUE(include_root)) {
-    candidates <- setdiff(candidates, normalizePath(path, winslash = "/", mustWork = TRUE))
-  }
+  candidates <- .sn_find_10x_candidates(
+    path = path,
+    recursive = recursive,
+    include_root = include_root
+  )
 
   resolved <- lapply(candidates, .sn_locate_10x_outs_paths)
   resolved <- resolved[!vapply(resolved, is.null, logical(1))]
@@ -139,6 +135,49 @@ sn_list_10x_paths <- function(path,
   )
   names(selected) <- sample_names
   selected
+}
+
+.sn_find_10x_candidates <- function(path, recursive = TRUE, include_root = TRUE) {
+  normalized_root <- normalizePath(path, winslash = "/", mustWork = TRUE)
+
+  candidates <- if (isTRUE(recursive)) {
+    .sn_find_10x_candidates_recursive(normalized_root)
+  } else {
+    list.dirs(path = normalized_root, recursive = FALSE, full.names = TRUE)
+  }
+
+  if (isTRUE(include_root)) {
+    candidates <- c(normalized_root, candidates)
+  }
+
+  candidates <- unique(candidates[dir.exists(candidates)])
+  if (!isTRUE(include_root)) {
+    candidates <- setdiff(candidates, normalized_root)
+  }
+
+  candidates
+}
+
+.sn_find_10x_candidates_recursive <- function(path) {
+  find_bin <- Sys.which("find")[["find"]]
+  if (.Platform$OS.type == "unix" && nzchar(find_bin)) {
+    find_args <- c(
+      path,
+      "-type", "d",
+      "-name", "outs",
+      "-print"
+    )
+    found <- tryCatch(
+      suppressWarnings(system2(find_bin, args = find_args, stdout = TRUE, stderr = FALSE)),
+      error = function(e) character(0)
+    )
+    found <- found[nzchar(found)]
+    if (length(found) > 0) {
+      return(found)
+    }
+  }
+
+  list.dirs(path = path, recursive = TRUE, full.names = TRUE)
 }
 
 .sn_select_10x_path <- function(info, path_type = c("outs", "filtered", "raw", "filtered_h5", "raw_h5", "metrics")) {

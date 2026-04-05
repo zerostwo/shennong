@@ -228,7 +228,7 @@ sn_initialize_seurat_object <- function(
   is_gene_id = FALSE, ...
 ) {
   if (is.character(x) && length(x) > 1L) {
-    if (!is_null(metadata) && !is.list(metadata)) {
+    if (!is_null(metadata) && (!is.list(metadata) || is.data.frame(metadata))) {
       stop(
         "When `x` contains multiple paths, `metadata` must be NULL or a list parallel to `x`.",
         call. = FALSE
@@ -1225,7 +1225,18 @@ sn_find_doublets <- function(
     return(NULL)
   }
 
-  metrics <- utils::read.csv(path, check.names = FALSE, stringsAsFactors = FALSE)
+  metrics <- tryCatch(
+    utils::read.csv(path, check.names = FALSE, stringsAsFactors = FALSE),
+    error = function(e) {
+      if (grepl("no lines available in input", conditionMessage(e), fixed = TRUE)) {
+        return(NULL)
+      }
+      stop(e)
+    }
+  )
+  if (is_null(metrics)) {
+    return(NULL)
+  }
   if (nrow(metrics) == 0) {
     return(NULL)
   }
