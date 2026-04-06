@@ -149,7 +149,7 @@
     Seurat::VariableFeatures(current_object)
   })
 
-  unique(unlist(local_features, use.names = FALSE))
+  utils::head(unique(unlist(local_features, use.names = FALSE)), nfeatures)
 }
 
 .sn_detect_rare_features_local_markers <- function(object,
@@ -179,7 +179,7 @@
     utils::head(ranked, nfeatures)
   })
 
-  unique(unlist(local_markers, use.names = FALSE))
+  utils::head(unique(unlist(local_markers, use.names = FALSE)), nfeatures)
 }
 
 .sn_detect_rare_features_ciara <- function(object,
@@ -854,14 +854,18 @@ sn_detect_rare_cells <- function(object,
 #'   \code{"none"}, \code{"gini"}, \code{"local_hvg"},
 #'   \code{"local_markers"}, and \code{"ciara"}.
 #' @param rare_feature_group_by Optional metadata column used to define groups
-#'   for rare-group-aware feature extraction. When \code{NULL}, Shennong builds
-#'   a temporary coarse clustering from the base HVGs.
+#'   for rare-group-aware feature extraction in \code{"local_hvg"} and
+#'   \code{"local_markers"} modes. When \code{NULL}, Shennong builds a
+#'   temporary coarse clustering from the base HVGs.
 #' @param rare_feature_n Number of rare-aware features to add per selected
-#'   method.
+#'   method. For example, \code{c("gini", "local_markers")} with
+#'   \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
+#'   before de-duplication.
 #' @param rare_group_max_fraction Maximum cluster fraction used when identifying
-#'   rare groups for rare-aware feature selection.
+#'   rare groups for \code{"local_hvg"} and \code{"local_markers"}.
 #' @param rare_group_max_cells Maximum absolute cluster size used when
-#'   identifying rare groups for rare-aware feature selection.
+#'   identifying rare groups for \code{"local_hvg"} and
+#'   \code{"local_markers"}.
 #' @param rare_gene_max_fraction Maximum expressing-cell fraction used by
 #'   score-based rare-feature methods such as \code{"gini"}.
 #' @param block_genes Either a character vector of predefined bundled signature
@@ -1105,7 +1109,7 @@ sn_run_cluster <- function(object,
       resolution = min(resolution, 0.4),
       verbose = verbose
     )
-    selected_rare_features <- utils::head(rare_feature_info$features, rare_feature_n)
+    selected_rare_features <- rare_feature_info$features
     if (length(selected_rare_features) > 0) {
       hvg <- unique(c(hvg, selected_rare_features))
     }
@@ -1113,7 +1117,8 @@ sn_run_cluster <- function(object,
     object@misc$rare_feature_selection <- list(
       method = rare_feature_method,
       base_hvg_n = nfeatures,
-      rare_feature_n = length(selected_rare_features),
+      rare_feature_n = rare_feature_n,
+      selected_rare_feature_n = length(selected_rare_features),
       selected_features = hvg,
       rare_features = selected_rare_features,
       rare_feature_table = rare_feature_info$metadata,

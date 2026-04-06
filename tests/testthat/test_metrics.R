@@ -263,7 +263,7 @@ test_that("sn_assess_integration aggregates metrics and tolerates missing cluste
   expect_false("cluster_entropy" %in% names(assessment_no_cluster$per_group))
 })
 
-test_that("sn_calculate_rogue returns a score and validates metadata columns", {
+test_that("sn_calculate_rogue returns tidy grouped scores and validates metadata columns", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("ROGUE")
   skip_if_not_installed("tibble")
@@ -271,10 +271,17 @@ test_that("sn_calculate_rogue returns a score and validates metadata columns", {
   library(tibble)
 
   object <- make_metrics_test_object()
-  rogue_score <- sn_calculate_rogue(object, cluster = "cluster_id")
+  rogue_tbl <- sn_calculate_rogue(object, cluster = "cluster_id")
 
-  expect_true(is.numeric(rogue_score))
-  expect_length(rogue_score, 1)
+  expect_s3_class(rogue_tbl, "data.frame")
+  expect_true(all(c("cluster", "rogue", "n_cells") %in% colnames(rogue_tbl)))
+  expect_equal(sort(rogue_tbl$cluster), c("A", "B"))
+  expect_true(all(rogue_tbl$rogue >= 0 & rogue_tbl$rogue <= 1))
+
+  rogue_by_sample <- sn_calculate_rogue(object, cluster = "cluster_id", sample = "sample")
+  expect_s3_class(rogue_by_sample, "data.frame")
+  expect_true(all(c("sample", "cluster", "rogue", "n_cells") %in% colnames(rogue_by_sample)))
+  expect_true(all(rogue_by_sample$rogue >= 0 & rogue_by_sample$rogue <= 1))
   expect_error(
     sn_calculate_rogue(object, cluster = "missing_cluster", sample = "sample"),
     "Specified cluster column not found"
@@ -283,4 +290,28 @@ test_that("sn_calculate_rogue returns a score and validates metadata columns", {
     sn_calculate_rogue(object, cluster = "cluster_id", sample = "missing_sample"),
     "Specified sample column not found"
   )
+})
+
+test_that("sn_sweep_cluster_resolution summarizes clustering metrics across resolutions", {
+  object <- make_structured_metrics_object(with_graph = TRUE)
+
+  sweep <- sn_sweep_cluster_resolution(
+    object,
+    resolutions = c(0.2, 0.4, 0.8),
+    reduction = "harmony",
+    dims = 1:5,
+    metrics = c("n_clusters", "mean_silhouette", "graph_connectivity", "cluster_purity", "clustering_agreement"),
+    label = "cell_type",
+    max_cells = 200
+  )
+
+  expect_s3_class(sweep, "list")
+  expect_s3_class(sweep$summary, "data.frame")
+  expect_equal(sweep$summary$resolution, c(0.2, 0.4, 0.8))
+  expect_true(all(c(
+    "resolution", "n_clusters", "mean_silhouette", "graph_connectivity",
+    "cluster_purity", "ari", "nmi", "composite_score"
+  ) %in% colnames(sweep$summary)))
+  expect_true(sweep$recommended_resolution %in% sweep$summary$resolution)
+  expect_true(sweep$recommended_n_clusters %in% sweep$summary$n_clusters)
 })

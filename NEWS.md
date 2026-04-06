@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_sweep_cluster_resolution()` now provides a formal resolution-sweep
+  interface for empirically comparing candidate cluster counts across Seurat
+  resolutions with metrics such as silhouette width, graph connectivity,
+  cluster purity, clustering agreement, and optional ROGUE summaries.
 - `sn_list_dependencies()` now reports the package's required and recommended
   R package surface with install status and expected source, and
   `sn_install_dependencies()` can install missing CRAN, Bioconductor, and
@@ -63,6 +67,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- `sn_run_cluster()` now applies `rare_feature_n` per selected
+  `rare_feature_method` before de-duplicating the combined rare-aware feature
+  set, matching the documented contract. The stored
+  `object@misc$rare_feature_selection` record now keeps both the requested
+  `rare_feature_n` and the realized `selected_rare_feature_n`. The
+  documentation now also clarifies that `rare_feature_group_by`,
+  `rare_group_max_fraction`, and `rare_group_max_cells` only affect the
+  group-aware rare-feature modes (`local_hvg` / `local_markers`), whereas
+  `rare_gene_max_fraction` is used by score-based modes such as `gini`.
+- `sn_calculate_rogue()` now avoids materializing the full matrix before
+  optional subsampling, skips redundant entropy work when grouped ROGUE scores
+  are requested, and returns tidy per-cluster or per-sample-per-cluster tables
+  when grouping metadata are supplied.
 - `sn_list_palettes()` now renders palette names and swatches without overlap
   in plot mode and includes built-in viridis-family palettes in the shared
   palette registry. `sn_plot_dim()`, `sn_plot_feature()`, and the other

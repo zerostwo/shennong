@@ -5,6 +5,8 @@
 \alias{.export.rio_bpcells}
 \alias{.export.rio_h5ad}
 \alias{.export.rio_h5}
+\alias{.export.rio_qs}
+\alias{.export.rio_qs2}
 \title{Write tabular and bioinformatics file formats}
 \usage{
 sn_write(x, path = NULL, to = NULL, ...)
@@ -14,6 +16,10 @@ sn_write(x, path = NULL, to = NULL, ...)
 .export.rio_h5ad(file, x, mode = "w", ...)
 
 .export.rio_h5(file, x, ...)
+
+.export.rio_qs(file, x, ...)
+
+.export.rio_qs2(file, x, ...)
 }
 \arguments{
 \item{x}{Object to write.}

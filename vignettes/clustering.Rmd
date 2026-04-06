@@ -165,6 +165,13 @@ pbmc_integrated <- suppressWarnings(
   )
 )
 
+When multiple rare-aware methods are requested, `rare_feature_n` applies to
+each method before the combined rare-feature set is de-duplicated and appended
+to the base HVGs. In contrast, `rare_feature_group_by`,
+`rare_group_max_fraction`, and `rare_group_max_cells` only affect the
+group-aware modes (`"local_hvg"` and `"local_markers"`), whereas
+`rare_gene_max_fraction` is only used by score-based modes such as `"gini"`.
+
 rare_detection <- sn_detect_rare_cells(
   pbmc_integrated,
   method = "gini",

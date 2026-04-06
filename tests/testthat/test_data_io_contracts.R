@@ -370,3 +370,31 @@ test_that("io helpers cover custom source passthrough and non-csv AnnData import
   expect_equal(as.character(updated$sample), c("A", "A", "B", "B"))
   expect_equal(as.numeric(updated$score), c(1, 2, 3, 4))
 })
+
+test_that("sn_read and sn_write support qs and qs2 serialized objects", {
+  skip_if_not_installed("rio")
+
+  expect_true(Shennong:::.sn_is_custom_format("qs"))
+  expect_true(Shennong:::.sn_is_custom_format("qs2"))
+
+  if (requireNamespace("qs", quietly = TRUE)) {
+    qs_path <- tempfile(fileext = ".qs")
+    payload <- list(a = 1:3, b = data.frame(label = c("x", "y"), value = c(2, 4)))
+    sn_write(payload, qs_path)
+    restored <- sn_read(qs_path)
+    expect_equal(restored, payload)
+  }
+
+  if (requireNamespace("qs2", quietly = TRUE)) {
+    qs2_path <- tempfile(fileext = ".qs2")
+    payload2 <- list(alpha = letters[1:4], beta = matrix(1:6, nrow = 2))
+    sn_write(payload2, qs2_path)
+    restored2 <- sn_read(qs2_path)
+    expect_equal(restored2, payload2)
+  } else {
+    expect_error(
+      Shennong:::.import.rio_qs2(tempfile(fileext = ".qs2")),
+      "qs2"
+    )
+  }
+})

@@ -57,17 +57,21 @@ to the base HVG set before PCA/clustering. Supported values are
 \code{"local_markers"}, and \code{"ciara"}.}
 
 \item{rare_feature_group_by}{Optional metadata column used to define groups
-for rare-group-aware feature extraction. When \code{NULL}, Shennong builds
-a temporary coarse clustering from the base HVGs.}
+for rare-group-aware feature extraction in \code{"local_hvg"} and
+\code{"local_markers"} modes. When \code{NULL}, Shennong builds a
+temporary coarse clustering from the base HVGs.}
 
 \item{rare_feature_n}{Number of rare-aware features to add per selected
-method.}
+method. For example, \code{c("gini", "local_markers")} with
+\code{rare_feature_n = 50} can contribute up to 100 rare-aware features
+before de-duplication.}
 
 \item{rare_group_max_fraction}{Maximum cluster fraction used when identifying
-rare groups for rare-aware feature selection.}
+rare groups for \code{"local_hvg"} and \code{"local_markers"}.}
 
 \item{rare_group_max_cells}{Maximum absolute cluster size used when
-identifying rare groups for rare-aware feature selection.}
+identifying rare groups for \code{"local_hvg"} and
+\code{"local_markers"}.}
 
 \item{rare_gene_max_fraction}{Maximum expressing-cell fraction used by
 score-based rare-feature methods such as \code{"gini"}.}

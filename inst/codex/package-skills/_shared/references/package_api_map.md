@@ -13,8 +13,8 @@ Core object rule:
 
 - `sn_load_data()`: load packaged or remote example datasets
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
-- `sn_read()`: import tabular and bioinformatics formats
-- `sn_write()`: export tabular and supported omics formats
+- `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
+- `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
 
 Datasets:
@@ -40,11 +40,12 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or Harmony integration
+- `sn_run_cluster()`: single-dataset clustering or Harmony integration; rare-aware feature augmentation can combine `gini`, `local_hvg`, `local_markers`, and `ciara`, with `rare_feature_n` applied per selected method before de-duplication
 
 ## Diagnostics and Benchmarking
 
 - `sn_assess_integration()`: aggregate integration quality summary
+- `sn_sweep_cluster_resolution()`: compare candidate Seurat resolutions with cluster-quality diagnostics and a recommended resolution
 - `sn_detect_rare_cells()`: rare-cell diagnostics
 - `sn_calculate_lisi()`: batch mixing and label mixing scores
 - `sn_calculate_silhouette()`: silhouette widths

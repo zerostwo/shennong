@@ -127,6 +127,10 @@ rare_tbl <- sn_detect_rare_cells(
 
 `sn_assess_integration()` is the recommended entry point because it bundles the
 main metrics into one object with summary, per-cell, and per-group outputs.
+When the question is specifically "which Seurat resolution gives the most
+defensible partition?", use `sn_sweep_cluster_resolution()` to compare
+candidate resolutions with silhouette width, graph connectivity, optional
+reference-label agreement, and optional ROGUE support.
 
 ```{r}
 knitr::kable(summary_tbl, digits = 3)

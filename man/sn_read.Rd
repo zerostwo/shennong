@@ -7,6 +7,8 @@
 \alias{.import.rio_starsolo}
 \alias{.import.rio_h5ad}
 \alias{.import.rio_h5}
+\alias{.import.rio_qs}
+\alias{.import.rio_qs2}
 \alias{.import.rio_gmt}
 \title{Read tabular and bioinformatics file formats}
 \usage{
@@ -21,6 +23,10 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 .import.rio_h5ad(file, ...)
 
 .import.rio_h5(file, ...)
+
+.import.rio_qs(file, ...)
+
+.import.rio_qs2(file, ...)
 
 .import.rio_gmt(file, ...)
 }

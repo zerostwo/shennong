@@ -230,7 +230,7 @@ sn_list_10x_paths <- function(path,
 
 .sn_is_custom_format <- function(format) {
   !is_null(format) && format %in% c(
-    "10x", "starsolo", "bpcells", "h5ad", "h5", "gmt", .genomic_exts
+    "10x", "starsolo", "bpcells", "h5ad", "h5", "gmt", "qs", "qs2", .genomic_exts
   )
 }
 
@@ -260,6 +260,8 @@ sn_list_10x_paths <- function(path,
     h5ad = .import.rio_h5ad,
     h5 = .import.rio_h5,
     gmt = .import.rio_gmt,
+    qs = .import.rio_qs,
+    qs2 = .import.rio_qs2,
     NULL
   )
 
@@ -339,6 +341,20 @@ sn_list_10x_paths <- function(path,
   mat <- Seurat::Read10X_h5(file)
 
   return(mat)
+}
+
+#' @rdname sn_read
+#' @export
+.import.rio_qs <- function(file, ...) {
+  check_installed(pkg = "qs", reason = "to read qs files.")
+  qs::qread(file = file, ...)
+}
+
+#' @rdname sn_read
+#' @export
+.import.rio_qs2 <- function(file, ...) {
+  check_installed(pkg = "qs2", reason = "to read qs2 files.")
+  qs2::qs_read(file = file, ...)
 }
 
 #' @title Import GMT files (from clusterProfiler)
@@ -486,6 +502,8 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
     bpcells = .export.rio_bpcells,
     h5ad = .export.rio_h5ad,
     h5 = .export.rio_h5,
+    qs = .export.rio_qs,
+    qs2 = .export.rio_qs2,
     NULL
   )
 
@@ -536,6 +554,20 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   BPCells::write_matrix_10x_hdf5(
     mat = x, path = file, ...
   )
+}
+
+#' @rdname sn_write
+#' @export
+.export.rio_qs <- function(file, x, ...) {
+  check_installed(pkg = "qs", reason = "to write qs files.")
+  qs::qsave(x = x, file = file, ...)
+}
+
+#' @rdname sn_write
+#' @export
+.export.rio_qs2 <- function(file, x, ...) {
+  check_installed(pkg = "qs2", reason = "to write qs2 files.")
+  qs2::qs_save(x = x, file = file, ...)
 }
 
 #' Add metadata and embeddings exported from AnnData

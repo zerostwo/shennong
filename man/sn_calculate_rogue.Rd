@@ -10,7 +10,13 @@ sn_calculate_rogue(
   sample = NULL,
   span = 0.9,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  cells = NULL,
+  max_cells = 3000,
+  stratify_by = sample \%||\% cluster,
+  seed = 717,
+  min_cells = 10,
+  min_genes = 10
 )
 }
 \arguments{
@@ -25,9 +31,30 @@ sn_calculate_rogue(
 \item{assay}{Assay used for ROGUE calculation. Defaults to \code{"RNA"}.}
 
 \item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
+
+\item{cells}{Optional character vector of cell names to include.}
+
+\item{max_cells}{Optional integer cap used to subsample cells before running
+ROGUE. Defaults to \code{3000}.}
+
+\item{stratify_by}{Optional metadata column used to preserve representation
+during subsampling. Defaults to \code{sample} when supplied, otherwise
+\code{cluster}.}
+
+\item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{min_cells}{Minimum cells retained by the upstream
+\code{ROGUE::matr.filter()} step.}
+
+\item{min_genes}{Minimum detected genes retained by the upstream
+\code{ROGUE::matr.filter()} step.}
 }
 \value{
-A data.frame of ROGUE score per cluster/sample or per cluster.
+When neither \code{cluster} nor \code{sample} is supplied, returns a
+single numeric ROGUE score for the selected matrix. When
+\code{cluster} is supplied, returns a data frame with per-cluster ROGUE
+scores. When both \code{cluster} and \code{sample} are supplied, returns a
+tidy data frame with one row per sample-cluster combination.
 }
 \description{
 This function calculates ROGUE score based on Seurat object.

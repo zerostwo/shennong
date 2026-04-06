@@ -1295,8 +1295,23 @@ sn_assess_integration <- function(
 #' @param span The span parameter for rogue estimation.
 #' @param assay Assay used for ROGUE calculation. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
+#' @param cells Optional character vector of cell names to include.
+#' @param max_cells Optional integer cap used to subsample cells before running
+#'   ROGUE. Defaults to \code{3000}.
+#' @param stratify_by Optional metadata column used to preserve representation
+#'   during subsampling. Defaults to \code{sample} when supplied, otherwise
+#'   \code{cluster}.
+#' @param seed Random seed used when \code{max_cells} triggers subsampling.
+#' @param min_cells Minimum cells retained by the upstream
+#'   \code{ROGUE::matr.filter()} step.
+#' @param min_genes Minimum detected genes retained by the upstream
+#'   \code{ROGUE::matr.filter()} step.
 #'
-#' @return A data.frame of ROGUE score per cluster/sample or per cluster.
+#' @return When neither \code{cluster} nor \code{sample} is supplied, returns a
+#'   single numeric ROGUE score for the selected matrix. When
+#'   \code{cluster} is supplied, returns a data frame with per-cluster ROGUE
+#'   scores. When both \code{cluster} and \code{sample} are supplied, returns a
+#'   tidy data frame with one row per sample-cluster combination.
 #'
 #' @examples
 #' \dontrun{
@@ -1312,24 +1327,84 @@ sn_calculate_rogue <- function(
   sample = NULL,
   span = 0.9,
   assay = "RNA",
-  layer = "counts"
+  layer = "counts",
+  cells = NULL,
+  max_cells = 3000,
+  stratify_by = sample %||% cluster,
+  seed = 717,
+  min_cells = 10,
+  min_genes = 10
 ) {
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")
   }
 
-  counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
-  counts <- Matrix::as.matrix(counts)
   metadata <- x@meta.data
+  if (!is_null(cluster) && !cluster %in% colnames(metadata)) {
+    stop("Specified cluster column not found in metadata.")
+  }
+  if (!is_null(sample) && !sample %in% colnames(metadata)) {
+    stop("Specified sample column not found in metadata.")
+  }
+  if (!is.null(stratify_by) && !stratify_by %in% colnames(metadata)) {
+    stop("Missing required columns: ", stratify_by)
+  }
 
-  counts <- ROGUE::matr.filter(counts, min.cells = 10, min.genes = 10)
+  all_cells <- colnames(x)
+  cells_use <- cells %||% all_cells
+  missing_cells <- setdiff(cells_use, all_cells)
+  if (length(missing_cells) > 0) {
+    stop("Unknown cells requested: ", paste(utils::head(missing_cells, 5), collapse = ", "))
+  }
+  cells_use <- intersect(all_cells, cells_use)
+  metadata <- metadata[cells_use, , drop = FALSE]
 
-  .sn_log_info("Calculating ROGUE entropy.")
-  entropy <- ROGUE::SE_fun(counts)
+  if (!is.null(max_cells) && nrow(metadata) > max_cells) {
+    cells_use <- .sn_subsample_metric_cells(
+      cells = rownames(metadata),
+      metadata = metadata,
+      max_cells = max_cells,
+      stratify_by = stratify_by,
+      seed = seed
+    )
+    metadata <- metadata[cells_use, , drop = FALSE]
+  }
 
-  .sn_log_info("Calculating the ROGUE score.")
-  rogue_result <- ROGUE::CalculateRogue(entropy, platform = "UMI")
+  counts <- .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer)
+  counts <- counts[, rownames(metadata), drop = FALSE]
+  counts <- Matrix::as.matrix(counts)
+  counts <- ROGUE::matr.filter(counts, min.cells = min_cells, min.genes = min_genes)
+
+  if (!is_null(cluster) && is_null(sample)) {
+    if (!cluster %in% colnames(metadata)) {
+      stop("Specified cluster column not found in metadata.")
+    }
+    .sn_log_info("Calculating per-cluster ROGUE score.")
+    cluster_labels <- as.character(metadata[colnames(counts), cluster, drop = TRUE])
+    cluster_levels <- unique(cluster_labels)
+
+    rogue_tbl <- lapply(cluster_levels, function(current_cluster) {
+      idx <- which(cluster_labels == current_cluster)
+      current_counts <- counts[, idx, drop = FALSE]
+      current_n_cells <- ncol(current_counts)
+      current_rogue <- .sn_calculate_rogue_single_matrix(
+        counts = current_counts,
+        span = span,
+        min_cells = min_cells,
+        min_genes = min_genes
+      )
+
+      data.frame(
+        cluster = current_cluster,
+        rogue = current_rogue,
+        n_cells = current_n_cells,
+        stringsAsFactors = FALSE
+      )
+    })
+
+    return(.sn_bind_rows(rogue_tbl))
+  }
 
   if (!is_null(cluster) && !is_null(sample)) {
     if (!cluster %in% colnames(metadata)) {
@@ -1339,20 +1414,267 @@ sn_calculate_rogue <- function(
       stop("Specified sample column not found in metadata.")
     }
 
-    rogue_result <- ROGUE::rogue(
-      counts,
-      labels = as.character(metadata[[cluster]]),
-      samples = as.character(metadata[[sample]]),
-      platform = "UMI",
-      span = span
-    )
+    .sn_log_info("Calculating per-sample per-cluster ROGUE score.")
+    cluster_labels <- as.character(metadata[colnames(counts), cluster, drop = TRUE])
+    sample_labels <- as.character(metadata[colnames(counts), sample, drop = TRUE])
+    group_keys <- unique(data.frame(sample = sample_labels, cluster = cluster_labels, stringsAsFactors = FALSE))
 
-    rogue_result <- as.data.frame(rogue_result)
-    rogue_result$cluster <- rownames(rogue_result)
-    rownames(rogue_result) <- NULL
+    rogue_tbl <- lapply(seq_len(nrow(group_keys)), function(i) {
+      current_sample <- group_keys$sample[[i]]
+      current_cluster <- group_keys$cluster[[i]]
+      idx <- which(sample_labels == current_sample & cluster_labels == current_cluster)
+      current_counts <- counts[, idx, drop = FALSE]
+      current_n_cells <- ncol(current_counts)
+      current_rogue <- .sn_calculate_rogue_single_matrix(
+        counts = current_counts,
+        span = span,
+        min_cells = min_cells,
+        min_genes = min_genes
+      )
+
+      data.frame(
+        sample = current_sample,
+        cluster = current_cluster,
+        rogue = current_rogue,
+        n_cells = current_n_cells,
+        stringsAsFactors = FALSE
+      )
+    })
+
+    return(.sn_bind_rows(rogue_tbl))
   }
 
-  rogue_result
+  .sn_log_info("Calculating ROGUE entropy.")
+  .sn_calculate_rogue_single_matrix(
+    counts = counts,
+    span = span,
+    min_cells = min_cells,
+    min_genes = min_genes
+  )
+}
+
+.sn_calculate_rogue_single_matrix <- function(counts,
+                                              span = 0.9,
+                                              min_cells = 10,
+                                              min_genes = 10) {
+  if (ncol(counts) < min_cells || nrow(counts) < min_genes) {
+    return(NA_real_)
+  }
+
+  counts <- ROGUE::matr.filter(counts, min.cells = min_cells, min.genes = min_genes)
+  if (ncol(counts) < min_cells || nrow(counts) == 0) {
+    return(NA_real_)
+  }
+
+  entropy <- ROGUE::SE_fun(counts, span = span)
+  ROGUE::CalculateRogue(entropy, platform = "UMI")
+}
+
+#' Sweep clustering resolutions and summarize cluster-quality diagnostics
+#'
+#' This helper reruns graph clustering across a grid of Seurat resolution
+#' values and evaluates each partition with one or more quality diagnostics.
+#' It is intended to support empirical resolution selection rather than relying
+#' on a fixed default cluster count.
+#'
+#' @param x A Seurat object containing the reduction used for clustering.
+#' @param resolutions Numeric vector of Seurat resolution values to evaluate.
+#' @param reduction Reduction name used for neighbor construction and optional
+#'   silhouette scoring. Defaults to \code{"harmony"} when present, otherwise
+#'   \code{"pca"}.
+#' @param dims Optional integer vector of embedding dimensions used by
+#'   \code{FindNeighbors()}, \code{FindClusters()}, and silhouette scoring.
+#' @param cluster_name Metadata column used to store the temporary cluster
+#'   assignments. Defaults to \code{"seurat_clusters"}.
+#' @param metrics Metrics to calculate for each resolution. Supported values are
+#'   \code{"n_clusters"}, \code{"mean_silhouette"},
+#'   \code{"graph_connectivity"}, \code{"cluster_purity"},
+#'   \code{"clustering_agreement"}, and \code{"rogue"}.
+#' @param label Optional metadata column containing reference labels. Required
+#'   for \code{"cluster_purity"} and \code{"clustering_agreement"}.
+#' @param max_cells Optional integer cap used by expensive embedding-based
+#'   metrics such as silhouette.
+#' @param rogue_max_cells Optional integer cap used by \code{"rogue"}.
+#' @param assay Assay used when \code{"rogue"} is requested.
+#' @param layer Layer used when \code{"rogue"} is requested.
+#' @param neighbor_method Strategy used when graph connectivity must rebuild a
+#'   graph from embeddings.
+#' @param k Number of neighbors used for graph connectivity when rebuilding a
+#'   graph from embeddings.
+#' @param seed Random seed forwarded to Seurat clustering and subsampling.
+#' @param n_trees Number of Annoy trees used by graph connectivity when
+#'   \code{neighbor_method = "annoy"}.
+#'
+#' @return A list with a per-resolution summary table and the recommended
+#'   resolution based on the mean of the available scaled quality metrics.
+#'
+#' @examples
+#' \dontrun{
+#' sweep <- sn_sweep_cluster_resolution(
+#'   pbmc,
+#'   resolutions = seq(0.2, 1.0, by = 0.2),
+#'   reduction = "pca",
+#'   dims = 1:20
+#' )
+#' sweep$summary
+#' sweep$recommended_resolution
+#' }
+#'
+#' @export
+sn_sweep_cluster_resolution <- function(
+  x,
+  resolutions = seq(0.2, 1.2, by = 0.2),
+  reduction = .sn_default_metric_reduction(x),
+  dims = NULL,
+  cluster_name = "seurat_clusters",
+  metrics = c("n_clusters", "mean_silhouette", "graph_connectivity"),
+  label = NULL,
+  max_cells = 3000,
+  rogue_max_cells = max_cells,
+  assay = "RNA",
+  layer = "counts",
+  neighbor_method = c("auto", "graph", "annoy", "exact"),
+  k = 20,
+  seed = 717,
+  n_trees = 50
+) {
+  check_installed("Seurat")
+  if (!inherits(x, "Seurat")) {
+    stop("Input `x` must be a Seurat object.")
+  }
+  neighbor_method <- rlang::arg_match(neighbor_method)
+  metrics <- unique(match.arg(
+    metrics,
+    c("n_clusters", "mean_silhouette", "graph_connectivity", "cluster_purity", "clustering_agreement", "rogue"),
+    several.ok = TRUE
+  ))
+  resolutions <- sort(unique(as.numeric(resolutions)))
+  resolutions <- resolutions[is.finite(resolutions) & resolutions > 0]
+  if (length(resolutions) == 0) {
+    stop("`resolutions` must contain at least one positive numeric value.")
+  }
+  if ((any(metrics %in% c("cluster_purity", "clustering_agreement"))) && is.null(label)) {
+    stop("`label` must be supplied when requesting `cluster_purity` or `clustering_agreement`.")
+  }
+
+  metric_input <- .sn_prepare_metric_input(
+    x = x,
+    reduction = reduction,
+    dims = dims,
+    cells = NULL,
+    max_cells = NULL,
+    stratify_by = NULL,
+    seed = seed,
+    required_cols = label
+  )
+  dims_use <- dims %||% seq_len(ncol(metric_input$embeddings))
+
+  base_object <- x
+  base_object <- Seurat::FindNeighbors(
+    object = base_object,
+    reduction = reduction,
+    dims = dims_use,
+    verbose = FALSE
+  )
+
+  result_rows <- lapply(resolutions, function(current_resolution) {
+    current_object <- Seurat::FindClusters(
+      object = base_object,
+      resolution = current_resolution,
+      random.seed = seed,
+      verbose = FALSE
+    )
+    clusters <- as.character(current_object[[cluster_name, drop = TRUE]])
+    row <- data.frame(
+      resolution = current_resolution,
+      n_clusters = length(unique(clusters)),
+      stringsAsFactors = FALSE
+    )
+
+    if ("mean_silhouette" %in% metrics) {
+      silhouette_tbl <- sn_calculate_silhouette(
+        current_object,
+        label = cluster_name,
+        reduction = reduction,
+        dims = dims_use,
+        max_cells = max_cells,
+        stratify_by = cluster_name,
+        seed = seed
+      )
+      row$mean_silhouette <- mean(silhouette_tbl$silhouette_width, na.rm = TRUE)
+      row$scaled_silhouette <- .sn_scale_silhouette(row$mean_silhouette)
+    }
+
+    if ("graph_connectivity" %in% metrics) {
+      connectivity_tbl <- sn_calculate_graph_connectivity(
+        current_object,
+        label = cluster_name,
+        reduction = reduction,
+        dims = dims_use,
+        k = k,
+        neighbor_method = neighbor_method,
+        max_cells = max_cells,
+        stratify_by = cluster_name,
+        seed = seed,
+        n_trees = n_trees
+      )
+      row$graph_connectivity <- mean(connectivity_tbl$connectivity_score, na.rm = TRUE)
+      row$scaled_graph_connectivity <- row$graph_connectivity
+    }
+
+    if ("cluster_purity" %in% metrics) {
+      purity_tbl <- sn_calculate_cluster_purity(current_object, cluster = cluster_name, label = label)
+      row$cluster_purity <- mean(purity_tbl$purity_score, na.rm = TRUE)
+      row$scaled_cluster_purity <- row$cluster_purity
+    }
+
+    if ("clustering_agreement" %in% metrics) {
+      agreement_tbl <- sn_calculate_clustering_agreement(current_object, cluster = cluster_name, label = label)
+      row$ari <- agreement_tbl$ari
+      row$nmi <- agreement_tbl$nmi
+      row$scaled_ari <- .sn_scale_silhouette(row$ari)
+      row$scaled_nmi <- min(max(row$nmi, 0), 1)
+    }
+
+    if ("rogue" %in% metrics) {
+      rogue_tbl <- sn_calculate_rogue(
+        current_object,
+        cluster = cluster_name,
+        assay = assay,
+        layer = layer,
+        max_cells = rogue_max_cells,
+        stratify_by = cluster_name,
+        seed = seed
+      )
+      row$mean_rogue <- mean(rogue_tbl$rogue, na.rm = TRUE)
+      row$scaled_rogue <- min(max(row$mean_rogue, 0), 1)
+    }
+
+    score_cols <- intersect(
+      c(
+        "scaled_silhouette",
+        "scaled_graph_connectivity",
+        "scaled_cluster_purity",
+        "scaled_ari",
+        "scaled_nmi",
+        "scaled_rogue"
+      ),
+      colnames(row)
+    )
+    row$composite_score <- if (length(score_cols) > 0) mean(unlist(row[score_cols]), na.rm = TRUE) else NA_real_
+    row
+  })
+
+  summary_tbl <- .sn_bind_rows(result_rows)
+  best_idx <- which(summary_tbl$composite_score == max(summary_tbl$composite_score, na.rm = TRUE))
+  best_idx <- best_idx[[1]]
+
+  list(
+    summary = summary_tbl,
+    recommended_resolution = summary_tbl$resolution[[best_idx]],
+    recommended_n_clusters = summary_tbl$n_clusters[[best_idx]]
+  ) |>
+    structure(class = c("sn_cluster_resolution_sweep", "list"))
 }
 
 #' Calculate composition proportions

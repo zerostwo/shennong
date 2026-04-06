@@ -701,6 +701,36 @@ test_that("sn_run_cluster can append rare-aware features before PCA", {
   expect_true(length(Seurat::VariableFeatures(clustered)) >= 40)
 })
 
+test_that("sn_run_cluster applies rare_feature_n per selected method", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 40,
+    rare_feature_method = c("gini", "local_markers"),
+    rare_feature_group_by = "seed_cluster",
+    rare_feature_n = 5,
+    rare_gene_max_fraction = 0.2,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  rare_store <- clustered@misc$rare_feature_selection
+  method_counts <- table(rare_store$rare_feature_table$method)
+
+  expect_equal(rare_store$rare_feature_n, 5)
+  expect_equal(as.integer(method_counts["gini"]), 5)
+  expect_equal(as.integer(method_counts["local_markers"]), 5)
+  expect_lte(length(rare_store$rare_features), 10)
+  expect_gte(length(rare_store$rare_features), 5)
+  expect_equal(rare_store$selected_rare_feature_n, length(rare_store$rare_features))
+  expect_true(any(grepl("^raregene", rare_store$rare_features)))
+})
+
 test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not overlap", {
   skip_if_not_installed("Seurat")
 
