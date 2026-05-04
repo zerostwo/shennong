@@ -383,6 +383,7 @@ Last updated: 2026-05-04
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
 - Observed-over-expected enrichment belongs beside composition summaries rather than as a plotting-only helper. `sn_calculate_roe()` uses the same `group_by` / `variable` contract as `sn_calculate_composition()`, fills absent combinations with zero observed counts, and returns a long audit table by default with matrix output only as an opt-in convenience.
 - Batch-effect diagnostics need a variable-ranking API, not only one-batch-at-a-time PCR scoring. `sn_calculate_variance_explained()` therefore reports weighted embedding variance explained for multiple metadata variables and keeps partial multi-variable scoring explicit because nested variables such as study and platform can be confounded.
+- The pkgdown GitHub Actions workflow should install the optional packages that are actually exercised by evaluated articles. The data IO article runs real `sn_write()` / `sn_read()` examples and the Zenodo dry-run path, so `qs`, `rio`, and `zen4R` are part of the website dependency set even though they remain runtime-optional for the package.
 
 ## 2026-03-28
 

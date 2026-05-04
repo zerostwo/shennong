@@ -33,6 +33,9 @@ jobs:
             github::tidyverse/tidytemplate
             any::Seurat
             any::hdf5r
+            any::qs
+            any::rio
+            any::zen4R
             github::carmonalab/SignatuR
             github::immunogenomics/harmony@harmony2
             any::clusterProfiler
