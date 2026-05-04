@@ -382,6 +382,7 @@ Last updated: 2026-05-04
 - Discrete and continuous palette resolution should follow one registry and one direction convention. Shennong now treats `sn_get_palette()` as the common palette API and keeps plot helpers thin wrappers around shared palette resolvers instead of mixing manual/discrete and distiller/continuous code paths.
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
 - Observed-over-expected enrichment belongs beside composition summaries rather than as a plotting-only helper. `sn_calculate_roe()` uses the same `group_by` / `variable` contract as `sn_calculate_composition()`, fills absent combinations with zero observed counts, and returns a long audit table by default with matrix output only as an opt-in convenience.
+- Batch-effect diagnostics need a variable-ranking API, not only one-batch-at-a-time PCR scoring. `sn_calculate_variance_explained()` therefore reports weighted embedding variance explained for multiple metadata variables and keeps partial multi-variable scoring explicit because nested variables such as study and platform can be confounded.
 
 ## 2026-03-28
 

@@ -198,6 +198,26 @@ pcr <- sn_calculate_pcr_batch(
 pcr
 ```
 
+When several metadata variables might drive the same residual structure, rank
+them directly with variance-explained scoring. Use the single-variable mode for
+a quick screen, then the partial mode when the design is not fully confounded.
+
+```{r variance-explained}
+pbmc$study <- paste0("study_", pbmc$library)
+pbmc$tissue <- "blood"
+pbmc$sample <- rep(paste0("donor_", seq_len(4)), length.out = ncol(pbmc))
+
+variance_drivers <- sn_calculate_variance_explained(
+  pbmc,
+  variables = c("library", "study", "tissue", "sample"),
+  reduction = "pca",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+variance_drivers
+```
+
 ## Flag difficult groups
 
 `sn_identify_challenging_groups()` combines rarity, connectivity, and local

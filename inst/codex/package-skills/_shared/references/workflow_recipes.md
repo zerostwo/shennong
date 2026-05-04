@@ -40,8 +40,11 @@ user request to the right Shennong function family quickly.
    `normalization_method = "sctransform"` only with Harmony when that
    normalization is desired.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
-4. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
-5. Use `sn_transfer_labels()` when labels should be projected from a
+4. Use `sn_calculate_variance_explained(variables = c(...))` to rank platform,
+   study, tissue, sample, or other metadata drivers of residual embedding
+   variation.
+5. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
+6. Use `sn_transfer_labels()` when labels should be projected from a
    reference to a query object. Use the default Seurat backend for anchor
    transfer, or `method = "coralysis"` when the reference was trained and
    stored with Coralysis. Use `method = "scanvi"` or `method = "scarches"`

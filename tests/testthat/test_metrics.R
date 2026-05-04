@@ -151,6 +151,91 @@ test_that("silhouette, connectivity, PCR, and agreement metrics work on structur
   expect_equal(agreement_tbl$nmi, 1)
 })
 
+test_that("sn_calculate_variance_explained ranks metadata drivers of embedding variation", {
+  skip_if_not_installed("Seurat")
+
+  set.seed(42)
+  n_cells <- 80
+  counts <- Matrix::Matrix(
+    matrix(rpois(20 * n_cells, lambda = 2), nrow = 20, ncol = n_cells),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", seq_len(20))
+  colnames(counts) <- paste0("cell", seq_len(n_cells))
+
+  object <- sn_initialize_seurat_object(x = counts, project = "variance-drivers", species = "human")
+  object$platform <- rep(c("10x", "smartseq"), each = n_cells / 2)
+  object$study <- rep(c("s1", "s2"), length.out = n_cells)
+  object$tissue <- rep(c("blood", "tumor"), length.out = n_cells)
+
+  embeddings <- cbind(
+    ifelse(object$platform == "smartseq", 8, 0) + rnorm(n_cells, sd = 0.2),
+    ifelse(object$study == "s2", 2, 0) + rnorm(n_cells, sd = 0.2),
+    rnorm(n_cells, sd = 0.5)
+  )
+  rownames(embeddings) <- colnames(object)
+  colnames(embeddings) <- paste0("PC_", seq_len(ncol(embeddings)))
+  object[["pca"]] <- SeuratObject::CreateDimReducObject(
+    embeddings = embeddings,
+    key = "PC_",
+    assay = "RNA"
+  )
+
+  variance_tbl <- sn_calculate_variance_explained(
+    object,
+    variables = c("platform", "study", "tissue"),
+    reduction = "pca",
+    dims = 1:3
+  )
+
+  expect_s3_class(variance_tbl, "data.frame")
+  expect_true(all(c("variable", "variance_explained", "mean_dim_variance_explained") %in% colnames(variance_tbl)))
+  expect_equal(variance_tbl$variable[[1]], "platform")
+  expect_gt(
+    variance_tbl$variance_explained[variance_tbl$variable == "platform"],
+    variance_tbl$variance_explained[variance_tbl$variable == "tissue"]
+  )
+
+  detailed <- sn_calculate_variance_explained(
+    object,
+    variables = c("platform", "study", "tissue"),
+    reduction = "pca",
+    method = "single",
+    return_dim_data = TRUE
+  )
+  expect_true(all(c("summary", "dim_data") %in% names(detailed)))
+  expect_equal(nrow(detailed$dim_data), 9)
+})
+
+test_that("sn_calculate_variance_explained supports partial models and warns on confounding", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_structured_metrics_object(with_graph = FALSE)
+  object$platform <- object$sample
+
+  expect_warning(
+    partial_tbl <- sn_calculate_variance_explained(
+      object,
+      variables = c("sample", "platform", "cell_type"),
+      reduction = "pca",
+      method = "partial"
+    ),
+    "rank-deficient"
+  )
+
+  expect_s3_class(partial_tbl, "data.frame")
+  expect_true(all(c("sample", "platform", "cell_type") %in% partial_tbl$variable))
+  expect_true(all(partial_tbl$variance_explained >= 0 | is.na(partial_tbl$variance_explained)))
+  expect_error(
+    sn_calculate_variance_explained(
+      object,
+      variables = "missing",
+      reduction = "pca"
+    ),
+    "Missing required columns"
+  )
+})
+
 test_that("isolated-label, purity, and entropy metrics summarize rare labels and cluster mixing", {
   object <- make_structured_metrics_object(with_graph = TRUE)
 

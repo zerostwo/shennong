@@ -90,6 +90,7 @@ reference:
       - sn_calculate_silhouette
       - sn_calculate_graph_connectivity
       - sn_calculate_pcr_batch
+      - sn_calculate_variance_explained
       - sn_calculate_clustering_agreement
       - sn_calculate_isolated_label_score
       - sn_calculate_cluster_purity

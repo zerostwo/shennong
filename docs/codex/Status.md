@@ -497,6 +497,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Extended palette normalization to continuous color scales as well, so `sn_plot_feature()` and `sn_plot_dot()` now consume the same palette registry and direction semantics as the discrete plotting helpers.
 - Expanded `sn_plot_barplot()` from a thin `geom_col()` wrapper into a more generally useful grouped-summary plot helper with automatic repeated-observation summarization, optional SD/SE error bars, and optional jittered raw points.
 - Added `sn_calculate_roe()` for observed-over-expected categorical enrichment from Seurat metadata or data frames, including zero-filled contingency tables and optional matrix output for heatmap-style downstream use.
+- Added `sn_calculate_variance_explained()` for ranking metadata variables by embedding variance explained, including both single-variable screening and partial multi-variable scoring for batch-effect diagnostics.
 
 ## Remaining High-Priority Work
 

@@ -145,6 +145,7 @@ sn_list_10x_paths <- function(path,
     USE.NAMES = FALSE
   )
   names(selected) <- sample_names
+  selected <- selected[order(names(selected), selected)]
   selected
 }
 

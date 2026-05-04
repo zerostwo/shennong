@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_calculate_variance_explained()` now ranks metadata variables such as
+  platform, study, tissue, and sample by weighted embedding variance explained,
+  with single-variable and partial multi-variable modes for batch-effect
+  diagnostics.
 - `sn_calculate_roe()` now computes observed-over-expected enrichment for
   categorical composition tables from Seurat metadata or data frames, with long
   table output by default and optional matrix output for heatmaps.
@@ -317,6 +321,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Fixed `sn_list_10x_paths()` so detected samples are returned in deterministic
+  sample-name order instead of depending on platform-specific filesystem or
+  `find` traversal order.
 - Fixed `sn_standardize_gene_symbols()` so unresolved or ambiguous
   `HGNChelper` suggestions no longer propagate `NA` row names or drop
   otherwise valid original symbols. Truly missing or empty feature names are

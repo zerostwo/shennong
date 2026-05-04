@@ -79,6 +79,7 @@ single-cell tasks. This skill is the main entry point for package usage.
    SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
+   `sn_calculate_variance_explained()`,
    `sn_calculate_isolated_label_score()`, or
    `sn_identify_challenging_groups()` when sample mixing, rare groups,
    isolated labels, or difficult-to-separate populations matter.
@@ -124,6 +125,7 @@ single-cell tasks. This skill is the main entry point for package usage.
 - `sn_transfer_labels()`
 - `sn_simulate(method = "scdesign3")`
 - `sn_assess_integration()`
+- `sn_calculate_variance_explained()`
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`

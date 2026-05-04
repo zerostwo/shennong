@@ -70,6 +70,7 @@ Datasets:
 - `sn_calculate_silhouette()`: silhouette widths
 - `sn_calculate_graph_connectivity()`: graph connectivity
 - `sn_calculate_pcr_batch()`: principal-component batch_by effect score
+- `sn_calculate_variance_explained()`: rank metadata variables by embedding variance explained
 - `sn_calculate_clustering_agreement()`: clustering versus reference agreement
 - `sn_calculate_isolated_label_score()`: isolated-label preservation
 - `sn_calculate_cluster_purity()`: cluster purity

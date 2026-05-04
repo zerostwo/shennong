@@ -374,6 +374,243 @@ sn_calculate_pcr_batch <- function(
   )
 }
 
+#' Rank metadata variables by embedding variance explained
+#'
+#' Quantifies how much variation in a dimensional reduction is explained by one
+#' or more metadata variables. This is useful for identifying whether
+#' \code{platform}, \code{study}, \code{tissue}, \code{sample}, or another
+#' covariate is the dominant driver of residual batch structure.
+#'
+#' Two modes are available. \code{method = "single"} fits one model per
+#' variable and reports the weighted R-squared across the selected dimensions.
+#' \code{method = "partial"} fits all variables together and reports the
+#' incremental variance explained by each variable after the others. Partial
+#' estimates are helpful but can be ambiguous when variables are nested or
+#' confounded, such as one platform per study.
+#'
+#' @param x A Seurat object.
+#' @param variables Character vector of metadata columns to rank.
+#' @param reduction Reduction name used for the score. Defaults to
+#'   \code{"harmony"} when present, otherwise \code{"pca"}.
+#' @param dims Optional integer vector of embedding dimensions to retain.
+#' @param method One of \code{"single"} or \code{"partial"}. Defaults to
+#'   \code{"single"}.
+#' @param cells Optional character vector of cell names to include.
+#' @param max_cells Optional integer cap used to subsample cells before running
+#'   the metric.
+#' @param stratify_by Optional metadata column used to preserve representation
+#'   during subsampling.
+#' @param seed Random seed used when \code{max_cells} triggers subsampling.
+#' @param return_dim_data Logical; if \code{TRUE}, return a list containing the
+#'   summary table and per-dimension results.
+#'
+#' @return A data frame ranked by \code{variance_explained}. When
+#'   \code{return_dim_data = TRUE}, a list with \code{summary} and
+#'   \code{dim_data} is returned.
+#'
+#' @examples
+#' \dontrun{
+#' variance_tbl <- sn_calculate_variance_explained(
+#'   seu,
+#'   variables = c("platform", "study", "tissue", "sample"),
+#'   reduction = "pca",
+#'   dims = 1:30
+#' )
+#' variance_tbl
+#' }
+#'
+#' @export
+sn_calculate_variance_explained <- function(
+  x,
+  variables,
+  reduction = .sn_default_metric_reduction(x),
+  dims = NULL,
+  method = c("single", "partial"),
+  cells = NULL,
+  max_cells = NULL,
+  stratify_by = NULL,
+  seed = 717,
+  return_dim_data = FALSE
+) {
+  stopifnot(is.character(variables), length(variables) >= 1L)
+  stopifnot(is.logical(return_dim_data), length(return_dim_data) == 1L)
+  method <- match.arg(method)
+
+  metric_input <- .sn_prepare_metric_input(
+    x = x,
+    reduction = reduction,
+    dims = dims,
+    cells = cells,
+    max_cells = max_cells,
+    stratify_by = stratify_by,
+    seed = seed,
+    required_cols = variables
+  )
+
+  embeddings <- metric_input$embeddings
+  metadata <- metric_input$metadata[, variables, drop = FALSE]
+  dim_variance <- apply(embeddings, 2, stats::var)
+  total_variance <- sum(dim_variance)
+  if (!is.finite(total_variance) || total_variance <= 0) {
+    stop("The selected embedding dimensions have zero total variance.", call. = FALSE)
+  }
+  dim_weights <- dim_variance / total_variance
+
+  if (identical(method, "partial") && length(variables) > 1L) {
+    .sn_warn_rank_deficient_design(metadata, variables)
+  }
+
+  dim_tbl <- .sn_calculate_variable_variance_by_dim(
+    embeddings = embeddings,
+    metadata = metadata,
+    variables = variables,
+    method = method,
+    dim_weights = dim_weights
+  )
+
+  summary_tbl <- lapply(variables, function(variable) {
+    variable_rows <- dim_tbl[dim_tbl$variable == variable, , drop = FALSE]
+    data.frame(
+      variable = variable,
+      reduction = reduction,
+      method = method,
+      n_cells = nrow(embeddings),
+      n_dims = ncol(embeddings),
+      n_levels = .sn_metric_variable_n_levels(metadata[[variable]]),
+      variance_explained = sum(variable_rows$variance_explained * variable_rows$dim_weight, na.rm = TRUE),
+      mean_dim_variance_explained = mean(variable_rows$variance_explained, na.rm = TRUE),
+      max_dim_variance_explained = max(variable_rows$variance_explained, na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  }) |>
+    .sn_bind_rows()
+
+  summary_tbl <- summary_tbl[order(summary_tbl$variance_explained, decreasing = TRUE), , drop = FALSE]
+  rownames(summary_tbl) <- NULL
+
+  if (return_dim_data) {
+    return(list(
+      summary = summary_tbl,
+      dim_data = dim_tbl
+    ))
+  }
+
+  summary_tbl
+}
+
+.sn_calculate_variable_variance_by_dim <- function(embeddings, metadata, variables, method, dim_weights) {
+  dim_names <- colnames(embeddings) %||% paste0("dim_", seq_len(ncol(embeddings)))
+  dim_tbl <- lapply(seq_len(ncol(embeddings)), function(i) {
+    response <- embeddings[, i]
+    variable_scores <- if (identical(method, "partial")) {
+      .sn_partial_variance_explained(response, metadata, variables)
+    } else {
+      stats::setNames(
+        vapply(variables, function(variable) {
+          .sn_single_variable_r2(response, metadata[[variable]])
+        }, numeric(1)),
+        variables
+      )
+    }
+
+    data.frame(
+      variable = names(variable_scores),
+      dimension = dim_names[[i]],
+      dim_index = i,
+      dim_variance = stats::var(response),
+      dim_weight = dim_weights[[i]],
+      variance_explained = as.numeric(variable_scores),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  .sn_bind_rows(dim_tbl)
+}
+
+.sn_single_variable_r2 <- function(response, variable) {
+  if (.sn_metric_variable_n_levels(variable) < 2L) {
+    return(0)
+  }
+
+  model_data <- data.frame(.sn_response = response, .sn_variable = variable)
+  model <- tryCatch(
+    stats::lm(.sn_response ~ .sn_variable, data = model_data),
+    error = function(e) NULL
+  )
+  if (is.null(model)) {
+    return(NA_real_)
+  }
+
+  r2 <- summary(model)$r.squared
+  if (is.finite(r2)) max(0, min(1, r2)) else NA_real_
+}
+
+.sn_partial_variance_explained <- function(response, metadata, variables) {
+  model_data <- data.frame(.sn_response = response, metadata, check.names = FALSE)
+  full_model <- tryCatch(
+    stats::lm(stats::reformulate(variables, response = ".sn_response"), data = model_data),
+    error = function(e) NULL
+  )
+  if (is.null(full_model)) {
+    return(stats::setNames(rep(NA_real_, length(variables)), variables))
+  }
+
+  full_sse <- stats::deviance(full_model)
+  scores <- vapply(variables, function(variable) {
+    reduced_variables <- setdiff(variables, variable)
+    if (length(reduced_variables) == 0L) {
+      return(.sn_single_variable_r2(response, metadata[[variable]]))
+    }
+    reduced_model <- tryCatch(
+      stats::lm(stats::reformulate(reduced_variables, response = ".sn_response"), data = model_data),
+      error = function(e) NULL
+    )
+    if (is.null(reduced_model)) {
+      return(NA_real_)
+    }
+    reduced_sse <- stats::deviance(reduced_model)
+    if (!is.finite(reduced_sse) || reduced_sse <= 0) {
+      return(0)
+    }
+    partial_r2 <- (reduced_sse - full_sse) / reduced_sse
+    if (is.finite(partial_r2)) max(0, min(1, partial_r2)) else NA_real_
+  }, numeric(1))
+
+  stats::setNames(scores, variables)
+}
+
+.sn_metric_variable_n_levels <- function(variable) {
+  if (is.numeric(variable)) {
+    return(length(unique(variable[is.finite(variable)])))
+  }
+  length(unique(as.character(variable[!is.na(variable)])))
+}
+
+.sn_warn_rank_deficient_design <- function(metadata, variables) {
+  if (length(variables) < 2L) {
+    return(invisible(FALSE))
+  }
+
+  model_data <- data.frame(.sn_response = stats::rnorm(nrow(metadata)), metadata, check.names = FALSE)
+  design <- tryCatch(
+    stats::model.matrix(stats::reformulate(variables, response = ".sn_response"), data = model_data),
+    error = function(e) NULL
+  )
+  if (is.null(design)) {
+    return(invisible(FALSE))
+  }
+
+  if (qr(design)$rank < ncol(design)) {
+    warning(
+      "The metadata design is rank-deficient; partial variance explained may not separate confounded variables.",
+      call. = FALSE
+    )
+    return(invisible(TRUE))
+  }
+
+  invisible(FALSE)
+}
+
 #' Calculate agreement between clusters and reference labels
 #'
 #' The returned table includes both adjusted Rand index (ARI) and normalized
