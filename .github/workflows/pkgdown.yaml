@@ -56,5 +56,14 @@ jobs:
         shell: bash
 
       - name: Build site
-        run: pkgdown::build_site(new_process = FALSE, install = FALSE)
-        shell: Rscript {0}
+        run: |
+          set +e
+          Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)' > pkgdown.log 2>&1
+          status=$?
+          cat pkgdown.log
+          if [ "$status" -ne 0 ]; then
+            tail_msg=$(tail -n 80 pkgdown.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=pkgdown build failed::$tail_msg"
+            exit "$status"
+          fi
+        shell: bash
