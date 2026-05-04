@@ -431,3 +431,12 @@ Current milestone: DE API consolidation and CI deployment hardening
 
 - `sn_calculate_composition()` now treats `min_cells` as a threshold on returned composition categories, while `sn_compare_composition()` keeps `min_cells` as a per-sample filter and annotates effect direction through an ordered `change` factor.
 - Added pkgdown reference-index validation to `scripts/check-prepush.R` and documented that new exported functions must be added to `_pkgdown.yml` in the same change set.
+- Fixed IO contract regressions for named `row_names`, detected 10x spatial directories, existing `SingleCellExperiment` h5ad exports, and `qs2` serialization.
+- Fixed `sn_run_celltypist()` so path inputs return CellTypist prediction tables while Seurat inputs continue to receive metadata writeback.
+- Added `sn_sweep_cluster_resolution()` to `_pkgdown.yml` after the local pkgdown rebuild surfaced it as a blocking missing reference topic.
+- Fixed a malformed hidden code chunk in `vignettes/clustering.Rmd` after pkgdown surfaced it as an article-render blocker.
+- Rewrote the pkgdown article set around a PBMC3k tutorial path, including new data/project and visualization articles plus clearer workflow articles for preprocessing, clustering, diagnostics, markers/pathways, composition, deconvolution, layer-aware analysis, and interpretation.
+- Changed vignette execution policy so website/check builds stay fast by default and heavy PBMC3k workflows run only when `SHENNONG_RUN_VIGNETTES=true`.
+- Extended `sn_run_cluster()` so SCTransform workflows can run Harmony integration when `batch` is supplied.
+- Added `hvg_features` to `sn_run_cluster()` so user-supplied marker genes are validated and merged into the final scaling/PCA feature set alongside internal HVGs and rare-aware features.
+- Fixed `sn_standardize_gene_symbols()` to preserve unresolved valid symbols as their original names instead of returning or propagating `NA` row names.

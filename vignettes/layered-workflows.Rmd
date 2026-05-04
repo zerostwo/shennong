@@ -1,146 +1,161 @@
 ---
-title: "Advanced layer-aware workflow"
+title: "Layer-aware workflows"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Advanced layer-aware workflow}
+  %\VignetteIndexEntry{Layer-aware workflows}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This article demonstrates three Shennong behaviors that are important in
-modern multi-layer Seurat workflows:
+Seurat v5 objects can store multiple assay layers. Shennong exposes `assay` and
+`layer` in the functions where the count source matters, so workflows can use
+raw counts, decontaminated counts, or other matrix layers without rewriting the
+analysis.
 
-- automatic species inference when `species` is not provided
-- running analysis from a non-default count layer
-- storing DE metadata in `object@misc$de_results`
+This article uses PBMC3k and creates a demonstration layer by copying counts.
+In real work, that layer might come from decontX, SoupX, CellBender, or another
+preprocessing tool.
 
-```{r setup}
+## Create a demonstration layer
+
+```{r setup-layer}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
+
+pbmc <- sn_load_data("pbmc3k")
+
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+SeuratObject::LayerData(pbmc, assay = "RNA", layer = "decontaminated_counts") <- counts
+
+SeuratObject::Layers(pbmc[["RNA"]])
 ```
 
-```{r prepare-layered-demo, include = FALSE}
-pbmc <- sn_load_data("pbmc1k")
-counts <- SeuratObject::LayerData(pbmc, layer = "counts")
-inferred_species <- sn_get_species(counts)
+The object still has its original counts. The new layer is simply another input
+matrix that layer-aware Shennong functions can target.
 
-pbmc_inferred <- sn_initialize_seurat_object(
-  x = counts,
-  project = "pbmc1k_inferred"
+## Cluster from a selected layer
+
+`sn_run_cluster()` temporarily uses the requested layer for the workflow and
+restores the original count layer before returning the object.
+
+```{r cluster-layer}
+pbmc_layered <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
 )
 
-SeuratObject::LayerData(pbmc_inferred, layer = "decontaminated_counts") <- counts
-
-pbmc_layered <- suppressWarnings(
-  sn_run_cluster(
-    object = pbmc_inferred,
-    normalization_method = "seurat",
-    layer = "decontaminated_counts",
-    nfeatures = 800,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.5,
-    verbose = FALSE
-  )
-)
-
-pbmc_layered <- suppressWarnings(
-  sn_find_de(
-    pbmc_layered,
-    analysis = "markers",
-    group_by = "seurat_clusters",
-    layer = "data",
-    store_name = "cluster_markers",
-    return_object = TRUE,
-    verbose = FALSE
-  )
-)
-
-de_store <- pbmc_layered@misc$de_results$cluster_markers
-de_summary <- tibble::tibble(
-  field = c(
-    "schema_version", "package_version", "analysis", "group_by",
-    "rank_col", "p_col", "n_genes"
-  ),
-  value = c(
-    de_store$schema_version,
-    de_store$package_version,
-    de_store$analysis,
-    de_store$group_by,
-    de_store$rank_col,
-    de_store$p_col,
-    as.character(de_store$n_genes)
-  )
-)
-```
-
-## Automatic species inference
-
-The count matrix is initialized without an explicit `species` argument, but
-Shennong still infers the species from feature names using `hom_genes` and
-common mitochondrial patterns.
-
-```{r}
-knitr::kable(
-  tibble::tibble(
-    object = c("raw_counts", "pbmc_inferred"),
-    species = c(inferred_species, sn_get_species(pbmc_inferred))
-  )
-)
-```
-
-## Layer-aware clustering
-
-The object below is clustered from the `decontaminated_counts` layer rather
-than the default `counts` layer.
-
-```{r}
 sn_plot_dim(
   pbmc_layered,
   reduction = "umap",
   group_by = "seurat_clusters",
   label = TRUE,
-  show_legend = FALSE,
-  title = "pbmc1k clustered from the decontaminated_counts layer"
+  title = "PBMC3k clustered from decontaminated_counts"
 )
 ```
 
-## Stored differential expression metadata
+## Run DE on the right layer
 
-`sn_find_de(..., return_object = TRUE)` stores both the marker table and the
-analysis metadata required for later reuse in plotting and enrichment.
+Marker and contrast analyses usually use normalized data; pseudobulk analyses
+usually use counts. Shennong keeps that distinction explicit through `layer`.
 
-```{r}
-knitr::kable(de_summary)
-```
+```{r de-layer}
+pbmc_layered <- sn_find_de(
+  object = pbmc_layered,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  assay = "RNA",
+  layer = "data",
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
 
-## Reusing stored markers
-
-```{r}
-sn_plot_dot(
+sn_get_de_result(
   pbmc_layered,
-  features = "top_markers",
   de_name = "cluster_markers",
-  n = 3
+  top_n = 3,
+  with_metadata = TRUE
 )
 ```
+
+The stored metadata records the analysis context, which helps downstream
+plotting and interpretation recover how the result was made.
+
+## Use the same layer in other workflows
+
+Layer selection appears in functions where using the wrong matrix would change
+the answer.
+
+```{r layer-aware-functions, eval = FALSE}
+pbmc_layered <- sn_filter_genes(
+  pbmc_layered,
+  min_cells = 5,
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  species = "human"
+)
+
+pbmc_layered <- sn_run_celltypist(
+  x = pbmc_layered,
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  over_clustering = "seurat_clusters",
+  quiet = TRUE
+)
+
+rogue_tbl <- sn_calculate_rogue(
+  pbmc_layered,
+  cluster = "seurat_clusters",
+  assay = "RNA",
+  layer = "decontaminated_counts"
+)
+```
+
+## Cache layer-aware artifacts
+
+Layer-aware results are still regular Seurat objects and tables, so the same IO
+helpers from the first article apply.
+
+```{r cache-layered}
+outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-layered"))
+
+object_path <- file.path(outdir, "pbmc3k_layered.qs")
+markers_path <- file.path(outdir, "pbmc3k_layered_markers.csv")
+
+sn_write(pbmc_layered, object_path)
+sn_write(
+  sn_get_de_result(pbmc_layered, "cluster_markers", top_n = 5),
+  markers_path
+)
+
+sn_check_file(c(object_path, markers_path))
+```
+
+The main habit is to name the layer in every step where it matters. That makes
+the workflow readable months later and reduces the chance of silently switching
+between raw and corrected matrices.

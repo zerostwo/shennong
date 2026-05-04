@@ -547,11 +547,12 @@ sn_install_shennong <- function(
 .sn_dependency_source_overrides <- function() {
   data.frame(
     package = c(
-      "BayesPrism", "BPCells", "COSG", "GapClust",
-      "ROGUE", "SignatuR", "catplot", "harmony", "lisi"
+      "anndataR", "BayesPrism", "BPCells", "COSG", "GapClust",
+      "ROGUE", "SignatuR", "catplot", "harmony", "lisi", "tidytemplate"
     ),
-    source = rep("GitHub", 9),
+    source = rep("GitHub", 11),
     remote = c(
+      "scverse/anndataR",
       "Danko-Lab/BayesPrism/BayesPrism",
       "bnprks/BPCells/r",
       "genecell/COSGR",
@@ -560,7 +561,8 @@ sn_install_shennong <- function(
       "carmonalab/SignatuR",
       "catplot/catplot",
       "immunogenomics/harmony@harmony2",
-      "immunogenomics/lisi"
+      "immunogenomics/lisi",
+      "tidyverse/tidytemplate"
     ),
     stringsAsFactors = FALSE
   )
@@ -568,10 +570,10 @@ sn_install_shennong <- function(
 
 .sn_bioconductor_packages <- function() {
   c(
-    "anndataR", "BayesPrism", "BiocParallel", "celda", "clusterProfiler",
-    "DESeq2", "edgeR", "glmGamPoi", "miloR", "org.Hs.eg.db",
-    "org.Mm.eg.db", "rhdf5", "rtracklayer", "scDblFinder", "scran",
-    "SingleCellExperiment", "SummarizedExperiment", "limma"
+    "BiocParallel", "celda", "clusterProfiler", "DESeq2", "edgeR",
+    "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "rhdf5",
+    "rtracklayer", "scDblFinder", "scran", "SingleCellExperiment",
+    "SummarizedExperiment", "limma"
   )
 }
 

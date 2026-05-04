@@ -7,6 +7,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_run_cluster()` now accepts `hvg_features`, a user-supplied feature list
+  that is validated against the object and merged with internally selected
+  HVGs and rare-aware features before scaling/PCA. This lets users force rare
+  population marker genes into the clustering feature set when global HVG
+  selection misses them.
 - `sn_sweep_cluster_resolution()` now provides a formal resolution-sweep
   interface for empirically comparing candidate cluster counts across Seurat
   resolutions with metrics such as silhouette width, graph connectivity,
@@ -66,6 +71,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   display output plus the `OkabeIto` palette from `ggokabeito`.
 
 ### Changed
+
+- `sn_list_dependencies()` and `sn_install_dependencies()` now classify `anndataR` and `tidytemplate` as GitHub-hosted optional dependencies instead of routing them through Bioconductor or CRAN, matching the package's declared remote sources and avoiding misleading installation warnings on current R/Bioconductor releases.
+- Reworked the pkgdown article set around a PBMC3k tutorial path, adding
+  explicit data/project and visualization articles and rewriting workflow
+  articles to explain why each Shennong function is used before showing the
+  code. Heavy or credentialed chunks now remain opt-in through
+  `SHENNONG_RUN_VIGNETTES=true` so local website builds stay fast.
+- `sn_run_cluster(normalization_method = "sctransform", batch = ...)` now runs
+  SCTransform followed by Harmony integration instead of rejecting
+  SCTransform-based integration workflows.
 
 - `sn_run_cluster()` now applies `rare_feature_n` per selected
   `rare_feature_method` before de-duplicating the combined rare-aware feature
@@ -197,6 +212,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Fixed `sn_standardize_gene_symbols()` so unresolved or ambiguous
+  `HGNChelper` suggestions no longer propagate `NA` row names or drop
+  otherwise valid original symbols. Truly missing or empty feature names are
+  still removed before duplicate symbols are aggregated.
+- Fixed IO edge cases where `sn_read(row_names = "column")` failed for column
+  names, detected 10x spatial directories were not dispatched to a custom
+  reader, `sn_write()` failed for existing `SingleCellExperiment` h5ad exports,
+  and `qs2` serialization called `qs2::qs_save()` with the wrong argument name.
+- Fixed `sn_run_celltypist()` path inputs so precomputed CellTypist inputs return
+  a prediction table instead of trying to write metadata onto a character path.
+- Fixed the pkgdown reference index by adding the exported
+  `sn_sweep_cluster_resolution()` topic.
+- Fixed a malformed hidden R chunk in the clustering vignette that prevented
+  pkgdown from rendering articles.
 - Fixed local and CI test helpers so Seurat fixtures used in `de_enrich` and
   `utils` tests no longer depend on implicit species inference or non-returned
   normalization calls.

@@ -97,6 +97,7 @@ Remotes:
     github::catplot/catplot,
     github::immunogenomics/harmony@harmony2,
     github::immunogenomics/lisi,
+    github::scverse/anndataR,
     github::tidyverse/tidytemplate
 VignetteBuilder: knitr
 Config/Needs/website: tidyverse/tidytemplate

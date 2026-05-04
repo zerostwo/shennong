@@ -40,7 +40,7 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or Harmony integration; rare-aware feature augmentation can combine `gini`, `local_hvg`, `local_markers`, and `ciara`, with `rare_feature_n` applied per selected method before de-duplication
+- `sn_run_cluster()`: single-dataset clustering or Harmony integration; supports Seurat log-normalization, SCTransform, and SCTransform followed by Harmony when `batch` is supplied. Rare-aware feature augmentation can combine `gini`, `local_hvg`, `local_markers`, and `ciara`, with `rare_feature_n` applied per selected method before de-duplication. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
 
 ## Diagnostics and Benchmarking
 

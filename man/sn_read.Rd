@@ -4,6 +4,7 @@
 \alias{sn_read}
 \alias{.import.rio_bpcells}
 \alias{.import.rio_10x}
+\alias{.import.rio_10x_spatial}
 \alias{.import.rio_starsolo}
 \alias{.import.rio_h5ad}
 \alias{.import.rio_h5}
@@ -17,6 +18,8 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 .import.rio_bpcells(file, ...)
 
 .import.rio_10x(file, ...)
+
+.import.rio_10x_spatial(file, ...)
 
 .import.rio_starsolo(file, ...)
 

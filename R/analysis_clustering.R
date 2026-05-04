@@ -828,6 +828,34 @@ sn_detect_rare_cells <- function(object,
   list(object = object, features = selected)
 }
 
+.sn_resolve_user_hvg_features <- function(features,
+                                          object,
+                                          arg_name = "hvg_features",
+                                          verbose = TRUE) {
+  if (is_null(features)) {
+    return(list(features = character(0), missing = character(0)))
+  }
+  if (!is.character(features)) {
+    stop("`", arg_name, "` must be NULL or a character vector of feature names.", call. = FALSE)
+  }
+
+  features <- unique(features[!is.na(features) & nzchar(features)])
+  if (length(features) == 0L) {
+    return(list(features = character(0), missing = character(0)))
+  }
+
+  present <- intersect(features, rownames(object))
+  missing <- setdiff(features, present)
+  if (length(missing) > 0L && isTRUE(verbose)) {
+    .sn_log_warn(
+      "`{arg_name}` contains {length(missing)} feature(s) not present in the object; ",
+      "ignoring examples: {paste(utils::head(missing, 5), collapse = ', ')}."
+    )
+  }
+
+  list(features = present, missing = missing)
+}
+
 #' Run clustering for a single dataset or Harmony integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
@@ -840,9 +868,14 @@ sn_detect_rare_cells <- function(object,
 #' @param batch A column name in \code{object@meta.data} specifying batch info.
 #'   If \code{NULL}, no integration is performed.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
-#'   \code{"sctransform"}. The SCTransform and scran workflows are currently
-#'   only supported when \code{batch = NULL}.
+#'   \code{"sctransform"}. The scran workflow is currently only supported when
+#'   \code{batch = NULL}. The SCTransform workflow can be combined with Harmony
+#'   integration by supplying \code{batch}.
 #' @param nfeatures Number of variable features to select.
+#' @param hvg_features Optional character vector of user-supplied features to
+#'   force into the feature set used for scaling/PCA. These features are merged
+#'   with internally selected HVGs and any rare-aware features after validating
+#'   that they are present in \code{object}.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
 #' @param hvg_group_by Optional metadata column used to compute highly variable
@@ -911,6 +944,7 @@ sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
                            nfeatures = 3000,
+                           hvg_features = NULL,
                            vars_to_regress = NULL,
                            resolution = 0.8,
                            hvg_group_by = NULL,
@@ -959,8 +993,8 @@ sn_run_cluster <- function(object,
     if (!(batch %in% colnames(object@meta.data))) {
       stop(glue("Batch variable '{batch}' not found in metadata."))
     }
-    if (normalization_method != "seurat") {
-      stop("`normalization_method = \"scran\"` and `\"sctransform\"` are currently only supported when `batch = NULL`.")
+    if (normalization_method == "scran") {
+      stop("`normalization_method = \"scran\"` is currently only supported when `batch = NULL`.")
     }
     check_installed("harmony")
     if (verbose) .sn_log_info("[sn_run_cluster] Starting integration for batch = '{batch}'.")
@@ -973,6 +1007,13 @@ sn_run_cluster <- function(object,
   if (verbose) {
     .sn_log_info("[sn_run_cluster] Normalization method = {normalization_method}; batch = {batch %||% 'none'}.")
   }
+
+  user_hvg_info <- .sn_resolve_user_hvg_features(
+    features = hvg_features,
+    object = object,
+    verbose = verbose
+  )
+  user_hvg <- user_hvg_info$features
 
   predefined_genesets <- c(
     "tcr", "immunoglobulins", "ribo", "mito",
@@ -1023,24 +1064,51 @@ sn_run_cluster <- function(object,
   if (normalization_method == "sctransform") {
     check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
 
-    if (verbose) .sn_log_info("[1/4] Running SCTransform.")
-    object <- Seurat::SCTransform(
+    if (verbose) .sn_log_info("[1/5] Running SCTransform.")
+    sct_args <- list(
       object = object,
       variable.features.n = nfeatures,
       vars.to.regress = vars_to_regress,
       verbose = verbose,
       seed.use = 717
     )
+    if (length(user_hvg) > 0L) {
+      sct_args$return.only.var.genes <- FALSE
+    }
+    object <- do.call(Seurat::SCTransform, sct_args)
+    hvg <- unique(c(Seurat::VariableFeatures(object = object), user_hvg))
+    Seurat::VariableFeatures(object = object) <- hvg
+    object@misc$hvg_selection <- list(
+      method = "sctransform",
+      base_hvg_n = nfeatures,
+      selected_features = hvg,
+      user_features = user_hvg,
+      missing_user_features = user_hvg_info$missing
+    )
 
-    if (verbose) .sn_log_info("[2/4] Running PCA.")
+    if (verbose) .sn_log_info("[2/5] Running PCA.")
     object <- Seurat::RunPCA(
       object,
       npcs = npcs,
+      features = hvg,
       verbose = verbose,
       seed.use = 717
     )
 
-    reduction <- "pca"
+    if (is_null(x = batch)) {
+      reduction <- "pca"
+    } else {
+      if (verbose) .sn_log_info("[3/5] Running Harmony integration.")
+      group_by_vars <- group_by_vars %||% batch
+      object <- harmony::RunHarmony(
+        object = object,
+        group.by.vars = group_by_vars,
+        theta = theta,
+        reduction.use = "pca",
+        verbose = verbose
+      )
+      reduction <- "harmony"
+    }
   } else {
     if (normalization_method == "scran") {
       object <- sn_normalize_data(
@@ -1110,10 +1178,16 @@ sn_run_cluster <- function(object,
       verbose = verbose
     )
     selected_rare_features <- rare_feature_info$features
-    if (length(selected_rare_features) > 0) {
-      hvg <- unique(c(hvg, selected_rare_features))
-    }
+    hvg <- unique(c(hvg, selected_rare_features, user_hvg))
     Seurat::VariableFeatures(object = object) <- hvg
+    object@misc$hvg_selection <- list(
+      method = normalization_method,
+      hvg_group_by = hvg_group_by,
+      base_hvg_n = nfeatures,
+      selected_features = hvg,
+      user_features = user_hvg,
+      missing_user_features = user_hvg_info$missing
+    )
     object@misc$rare_feature_selection <- list(
       method = rare_feature_method,
       base_hvg_n = nfeatures,
@@ -1207,7 +1281,9 @@ sn_run_cluster <- function(object,
 #' @param plot_results Logical. If `TRUE`, plot the prediction results. Defaults to `FALSE`.
 #' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
 #'
-#' @return A Seurat object with three new columns in its metadata: `_predicted_labels`, `_over_clustering`, `_majority_voting`.
+#' @return When \code{x} is a Seurat object, a Seurat object with prediction
+#'   columns added to metadata. When \code{x} is a path, the CellTypist
+#'   prediction table is returned.
 #'
 #' @examples
 #' \dontrun{
@@ -1266,6 +1342,7 @@ sn_run_celltypist <- function(x,
   )
 
   if (inherits(x, "Seurat")) {
+    x_is_seurat <- TRUE
     .sn_log_info("Converting the Seurat object to CellTypist input format.")
     input_data <- file.path(outdir, "counts.csv")
 
@@ -1286,19 +1363,33 @@ sn_run_celltypist <- function(x,
     )
     log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
   } else {
+    x_is_seurat <- FALSE
     input_data <- x
     .sn_log_info("Using the precomputed input matrix: {input_data}.")
   }
 
   over_clustering_path <- NULL
 
-  if (over_clustering != "auto" && over_clustering %in% colnames(x@meta.data)) {
-    .sn_log_info("Using the existing clustering column: {over_clustering}.")
-    over_clustering_path <- file.path(outdir, "over_clustering.txt")
-    writeLines(
-      as.character(x[[over_clustering, drop = TRUE]]),
-      over_clustering_path
-    )
+  if (over_clustering != "auto") {
+    if (isTRUE(x_is_seurat)) {
+      if (over_clustering %in% colnames(x@meta.data)) {
+        .sn_log_info("Using the existing clustering column: {over_clustering}.")
+        over_clustering_path <- file.path(outdir, "over_clustering.txt")
+        writeLines(
+          as.character(x[[over_clustering, drop = TRUE]]),
+          over_clustering_path
+        )
+      } else if (file.exists(over_clustering)) {
+        over_clustering_path <- over_clustering
+      } else {
+        stop(
+          "`over_clustering` must be a metadata column or existing file when `x` is a Seurat object.",
+          call. = FALSE
+        )
+      }
+    } else {
+      over_clustering_path <- over_clustering
+    }
   } else if (over_clustering == "auto") {
     .sn_log_warn("Automatic over-clustering is not implemented yet.")
   }
@@ -1361,6 +1452,12 @@ sn_run_celltypist <- function(x,
     colnames(predicted_labels) <- c(
       paste0(gsub("\\.pkl$", "", model_name), "_predicted_labels")
     )
+  }
+
+  if (!isTRUE(x_is_seurat)) {
+    tictoc::toc()
+    .sn_log_info("CellTypist analysis completed successfully.")
+    return(tibble::as_tibble(predicted_labels, rownames = "cell"))
   }
 
   .sn_log_info("Adding {ncol(predicted_labels)} metadata columns to the Seurat object.")

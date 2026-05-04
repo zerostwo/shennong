@@ -1,208 +1,234 @@
 ---
-title: "Metrics and diagnostics workflow"
+title: "Integration metrics and diagnostics"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Metrics and diagnostics workflow}
+  %\VignetteIndexEntry{Integration metrics and diagnostics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
-
-required_pkgs <- c("Seurat", "harmony")
-run_vignette <- run_vignette && all(vapply(
-  required_pkgs,
-  requireNamespace,
-  quietly = TRUE,
-  FUN.VALUE = logical(1)
-))
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This article focuses on the diagnostic layer that sits after clustering or
-integration. In practice, Shennong metrics fall into three scientific groups:
+Good integration is not just a pretty UMAP. A useful diagnostic layer should
+separate three questions:
 
-- batch removal: LISI, batch silhouette, PCR batch score
-- biological conservation: graph connectivity, isolated-label preservation
-- structure diagnostics: challenging groups, cluster entropy, cluster purity
+- Are technical labels mixed?
+- Are biological labels still separated?
+- Which clusters or groups are difficult enough to inspect manually?
 
-```{r setup}
+Shennong exposes both one-line aggregate diagnostics and individual metrics.
+This article uses PBMC3k and a teaching-only pseudo-batch column.
+
+## Prepare a diagnostic object
+
+```{r setup-object}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
 
-if (!exists("pbmc_small", inherits = FALSE)) {
-  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
-  load(file.path("data", "pbmc_small.rda"))
-}
+pbmc <- sn_load_data("pbmc3k")
+pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
+
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  normalization_method = "seurat",
+  hvg_group_by = "library",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
 ```
 
-```{r prepare-metrics-demo, include = FALSE}
-pbmc_unintegrated <- suppressWarnings(
-  sn_run_cluster(
-    pbmc_small,
-    normalization_method = "seurat",
-    hvg_group_by = "sample",
-    nfeatures = 800,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.4,
-    verbose = FALSE
-  )
-)
+## Start with the aggregate assessment
 
-pbmc_integrated <- suppressWarnings(
-  sn_run_cluster(
-    pbmc_small,
-    batch = "sample",
-    normalization_method = "seurat",
-    hvg_group_by = "sample",
-    nfeatures = 800,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.4,
-    verbose = FALSE
-  )
-)
+`sn_assess_integration()` runs a compact panel of metrics and returns the
+results in predictable sections: `summary`, `per_cell`, `per_group`, and
+`parameters`.
 
-batch_lisi <- tryCatch(
-  sn_calculate_lisi(
-    pbmc_integrated,
-    reduction = "harmony",
-    label = "sample"
-  ),
-  error = function(...) NULL
-)
-
+```{r aggregate-assessment}
 assessment <- sn_assess_integration(
-  pbmc_integrated,
-  batch = "sample",
+  x = pbmc,
+  batch = "library",
   label = "seurat_clusters",
   cluster = "seurat_clusters",
   reduction = "harmony",
-  baseline_reduction = "pca"
+  baseline_reduction = "pca",
+  dims = 1:15,
+  max_cells = 1500
 )
 
-summary_tbl <- assessment$summary |>
-  dplyr::filter(
-    .data$metric %in% c(
-      "batch_silhouette",
-      "batch_lisi",
-      "pcr_batch",
-      "cluster_batch_entropy",
-      "well_resolved_group_fraction",
-      "overall_integration_score"
-    )
-  )
-
-challenging_tbl <- assessment$per_group$challenging_groups
-isolated_tbl <- assessment$per_group$isolated_label_score
-entropy_tbl <- assessment$per_group$cluster_entropy
-rare_tbl <- sn_detect_rare_cells(
-  pbmc_integrated,
-  method = "gini",
-  nfeatures = 100,
-  max_fraction = 0.05
-)
+assessment$summary
+names(assessment$per_group)
 ```
 
-## Run the aggregate assessment first
+Use the wrapper for routine reporting, then call individual metrics when one
+part of the assessment needs more detail.
 
-`sn_assess_integration()` is the recommended entry point because it bundles the
-main metrics into one object with summary, per-cell, and per-group outputs.
-When the question is specifically "which Seurat resolution gives the most
-defensible partition?", use `sn_sweep_cluster_resolution()` to compare
-candidate resolutions with silhouette width, graph connectivity, optional
-reference-label agreement, and optional ROGUE support.
+## Inspect mixing and separation directly
 
-```{r}
-knitr::kable(summary_tbl, digits = 3)
-```
+LISI asks how diverse each cell's local neighborhood is with respect to a
+label. Here the same function can measure library mixing or cluster mixing by
+changing `label`.
 
-## Inspect local sample mixing with LISI
-
-Higher sample LISI indicates better local batch mixing. When `lisi` is
-installed, Shennong stores the per-cell values so you can examine the full
-distribution rather than relying on a single mean.
-
-```{r}
-if (!is.null(batch_lisi)) {
-  knitr::kable(head(batch_lisi, 10), digits = 3)
-}
-```
-
-## Surface rare or difficult groups
-
-The challenging-group summary is useful for small populations that do not form
-an obvious island in UMAP but still look unstable in neighbor structure or
-silhouette space.
-
-```{r}
-knitr::kable(challenging_tbl, digits = 3)
-```
-
-## Score candidate rare cells directly
-
-`sn_detect_rare_cells()` provides a cell-level complement to the group-level
-diagnostics. The native `gini` backend uses rare-gene enrichment to score
-cells, while optional backends such as Python-based scCAD can be used when
-installed locally.
-
-```{r}
-knitr::kable(head(rare_tbl[order(rare_tbl$rare_score, decreasing = TRUE), ], 10), digits = 3)
-```
-
-## Inspect isolated-label preservation
-
-`sn_calculate_isolated_label_score()` and the corresponding table inside
-`sn_assess_integration()` highlight low-frequency labels or clusters that
-remain well-separated after integration.
-
-```{r}
-knitr::kable(isolated_tbl, digits = 3)
-```
-
-## Quantify batch mixing inside each cluster
-
-Cluster entropy is a practical complement to LISI because it answers a simpler
-question: within a given cluster, are the batches actually mixed?
-
-```{r}
-knitr::kable(entropy_tbl, digits = 3)
-```
-
-## Add supervised metrics when labels are available
-
-If you already have a trusted annotation column such as `cell_type`, you can
-extend the same workflow with supervised conservation metrics:
-
-```r
-assessment <- sn_assess_integration(
-  pbmc_integrated,
-  batch = "sample",
-  label = "cell_type",
-  cluster = "seurat_clusters",
+```{r lisi}
+library_lisi <- sn_calculate_lisi(
+  pbmc,
   reduction = "harmony",
-  baseline_reduction = "pca"
+  label = "library",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+cluster_lisi <- sn_calculate_lisi(
+  pbmc,
+  reduction = "harmony",
+  label = "seurat_clusters",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+head(library_lisi)
+head(cluster_lisi)
+```
+
+Silhouette asks whether a label is compact in the embedding. For biological
+labels, high silhouette can be good; for batch labels, high silhouette often
+means residual batch separation.
+
+```{r silhouette}
+cluster_sil <- sn_calculate_silhouette(
+  pbmc,
+  label = "seurat_clusters",
+  reduction = "harmony",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+head(cluster_sil)
+```
+
+Graph connectivity asks whether cells with the same label remain connected in
+the neighbor graph.
+
+```{r graph-connectivity}
+connectivity <- sn_calculate_graph_connectivity(
+  pbmc,
+  label = "seurat_clusters",
+  reduction = "harmony",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+connectivity
+```
+
+## Compare clusters to labels when references exist
+
+When you have a trusted label column, purity, entropy, and clustering agreement
+show how the computed clusters relate to that reference.
+
+```{r supervised-metrics}
+pbmc$coarse_label <- paste0("cluster_", pbmc$seurat_clusters)
+
+sn_calculate_cluster_purity(
+  pbmc,
+  cluster = "seurat_clusters",
+  label = "coarse_label"
+)
+
+sn_calculate_cluster_entropy(
+  pbmc,
+  cluster = "seurat_clusters",
+  label = "coarse_label"
+)
+
+sn_calculate_clustering_agreement(
+  pbmc,
+  cluster = "seurat_clusters",
+  label = "coarse_label"
+)
+
+sn_calculate_isolated_label_score(
+  pbmc,
+  label = "coarse_label",
+  reduction = "harmony",
+  dims = 1:15,
+  max_cells = 1500
 )
 ```
 
-That enables `label_lisi`, ARI/NMI, cluster purity against `cell_type`, and a
-more interpretable isolated-label summary.
+The artificial label above is deliberately simple. In a real workflow, replace
+it with cell-type annotations, reference-mapping labels, or curated manual
+labels.
+
+## Quantify residual batch signal
+
+PCR batch scoring measures how much variation in the embedding is explained by
+batch. Supplying a baseline reduction lets you compare correction against the
+pre-integration PCA space.
+
+```{r pcr-batch}
+pcr <- sn_calculate_pcr_batch(
+  pbmc,
+  batch = "library",
+  reduction = "harmony",
+  baseline_reduction = "pca",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+pcr
+```
+
+## Flag difficult groups
+
+`sn_identify_challenging_groups()` combines rarity, connectivity, and local
+mixing diagnostics to surface groups that deserve manual review. This is useful
+before final annotation.
+
+```{r challenging-groups}
+challenging <- sn_identify_challenging_groups(
+  pbmc,
+  group = "seurat_clusters",
+  reduction = "harmony",
+  dims = 1:15,
+  max_cells = 1500
+)
+
+challenging
+```
+
+ROGUE is an optional cluster-purity diagnostic that depends on the upstream
+`ROGUE` package. Keep it as a targeted check rather than a mandatory build step.
+
+```{r rogue, eval = FALSE}
+rogue_tbl <- sn_calculate_rogue(
+  pbmc,
+  cluster = "seurat_clusters",
+  sample = "library",
+  max_cells = 1500
+)
+
+rogue_tbl
+```
+
+The intended workflow is: use the aggregate table for a quick read, then drill
+into single metrics only when a value changes a downstream decision.

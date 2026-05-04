@@ -1,199 +1,239 @@
 ---
-title: "Annotation, markers, and pathways workflow"
+title: "Markers, signatures, pathways, and annotation"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Annotation, markers, and pathways workflow}
+  %\VignetteIndexEntry{Markers, signatures, pathways, and annotation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
-
-required_pkgs <- c("Seurat", "clusterProfiler", "org.Hs.eg.db")
-run_vignette <- run_vignette && all(vapply(
-  required_pkgs,
-  requireNamespace,
-  quietly = TRUE,
-  FUN.VALUE = logical(1)
-))
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This article covers the main biological-interpretation stage after clustering:
+After clustering, users usually ask three linked questions:
 
-- inspect bundled signatures
-- score marker structure with differential expression
-- visualize top markers
-- run ORA or GSEA with `sn_enrich()`
-- optionally bring in reference-based annotation with `sn_run_celltypist()`
+1. Which genes define each cluster?
+2. Which known signatures or pathways explain those genes?
+3. How can the evidence be reused for plots and annotation?
 
-```{r setup}
+Shennong stores DE and enrichment results on the Seurat object so the same
+tables can feed dot plots, interpretation prompts, and later reports.
+
+## Cluster PBMC3k and find markers
+
+```{r setup-markers}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
 
-if (!exists("pbmc_small", inherits = FALSE)) {
-  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
-  load(file.path("data", "pbmc_small.rda"))
-}
-```
+pbmc <- sn_load_data("pbmc3k")
 
-```{r prepare-annotation-demo, include = FALSE}
-pbmc_clustered <- suppressWarnings(
-  sn_run_cluster(
-    pbmc_small,
-    normalization_method = "seurat",
-    nfeatures = 800,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.4,
-    verbose = FALSE
-  )
-)
-
-signature_tbl <- sn_list_signatures(species = "human")
-stress_genes <- sn_get_signatures(
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
   species = "human",
-  category = c("Programs/HeatShock", "Compartments/Mito")
+  verbose = FALSE
 )
 
-pbmc_clustered <- suppressWarnings(
-  sn_find_de(
-    pbmc_clustered,
-    analysis = "markers",
-    group_by = "seurat_clusters",
-    layer = "data",
-    store_name = "cluster_markers",
-    return_object = TRUE,
-    verbose = FALSE
-  )
+pbmc <- sn_find_de(
+  object = pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  layer = "data",
+  min_pct = 0.25,
+  logfc_threshold = 0.25,
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
 )
+```
 
+The result is stored under `object@misc$de_results`. Retrieve it by name instead
+of relying on a temporary variable from an earlier script.
+
+```{r retrieve-markers}
 marker_tbl <- sn_get_de_result(
-  pbmc_clustered,
+  pbmc,
   de_name = "cluster_markers",
-  top_n = 3
+  top_n = 5
 )
 
-enrichment_object <- tryCatch(
-  sn_enrich(
-    x = pbmc_clustered,
-    source_de_name = "cluster_markers",
-    gene_clusters = gene ~ cluster,
-    database = c("H", "GOBP"),
-    species = "human",
-    pvalue_cutoff = 0.05,
-    store_name = "cluster_pathways",
-    return_object = TRUE
-  ),
-  error = function(...) pbmc_clustered
-)
-
-stored_pathways <- tryCatch(
-  sn_get_enrichment_result(
-    enrichment_object,
-    enrichment_name = "cluster_pathways",
-    top_n = 5
-  ),
-  error = function(...) NULL
-)
+head(marker_tbl)
+names(pbmc@misc$de_results)
 ```
 
-## 1. Start from bundled signatures
+## Plot stored markers without hand-copying gene lists
 
-Bundled signatures provide a stable set of marker programs and technical gene
-sets for filtering, scoring, or interpretation.
+Because the DE result is stored, `sn_plot_dot()` can select top markers per
+cluster directly.
 
-```{r}
-knitr::kable(head(signature_tbl[, c("path", "n_genes")], 8))
-length(stress_genes)
-```
-
-## 2. Find marker genes
-
-Cluster markers are usually the first evidence layer for annotation.
-
-```{r}
-knitr::kable(marker_tbl)
-```
-
-## 3. Visualize top markers
-
-`sn_plot_dot()` can reuse the stored DE result directly, which avoids manual
-gene selection in routine cluster review.
-
-```{r}
+```{r marker-dotplot}
 sn_plot_dot(
-  pbmc_clustered,
+  x = pbmc,
   features = "top_markers",
   de_name = "cluster_markers",
-  n = 3
+  n = 4,
+  group_by = "seurat_clusters",
+  palette = "RdBu",
+  title = "Top PBMC3k markers"
 )
 ```
 
-## 4. Run pathway analysis
+For canonical checks, pass marker genes explicitly.
 
-`sn_enrich()` now supports grouped ORA and ranked GSEA through the same
-`gene_clusters` formula interface. It can also query multiple databases in one
-call.
-
-```{r}
-if (!is.null(stored_pathways)) {
-  knitr::kable(stored_pathways, digits = 4)
-}
+```{r canonical-dotplot}
+sn_plot_dot(
+  x = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "S100A8", "NKG7"),
+  group_by = "seurat_clusters",
+  palette = "Purples",
+  direction = 1,
+  title = "Canonical PBMC markers"
+)
 ```
 
-Grouped ORA uses a categorical right-hand side:
+## Discover and manage bundled signatures
 
-```r
-ora_result <- sn_enrich(
-  x = pbmc_clustered,
+Shennong ships a signature catalog so blocking genes, marker sets, and report
+features do not need to be redefined in every analysis.
+
+```{r signatures}
+signature_index <- sn_list_signatures(species = "human")
+head(signature_index)
+
+immune_signatures <- sn_get_signatures(
+  species = "human",
+  category = c("mito", "ribo")
+)
+
+head(immune_signatures)
+```
+
+Custom signatures can be added, renamed, and deleted through the same API. Use
+a project-specific catalog path when you do not want to modify the package-level
+catalog.
+
+```{r custom-signature, eval = FALSE}
+catalog_path <- "config/signatures/pbmc_signatures.csv"
+
+sn_add_signature(
+  species = "human",
+  path = "custom/t_cell_activation",
+  genes = c("IL7R", "CCR7", "LTB"),
+  catalog_path = catalog_path,
+  source = "project"
+)
+
+sn_update_signature(
+  species = "human",
+  path = "custom/t_cell_activation",
+  rename_to = "custom/naive_t_cell",
+  catalog_path = catalog_path
+)
+
+sn_delete_signature(
+  species = "human",
+  path = "custom/naive_t_cell",
+  catalog_path = catalog_path
+)
+```
+
+## Run enrichment from stored marker results
+
+`sn_enrich()` can accept a gene vector, a ranked vector, a data frame, or a
+Seurat object with stored DE results. For cluster markers, the Seurat-object
+path is the most reproducible because the enrichment knows which DE result it
+came from.
+
+```{r enrich-markers}
+pbmc <- sn_enrich(
+  x = pbmc,
   source_de_name = "cluster_markers",
-  gene_clusters = gene ~ cluster,
-  database = c("H", "C2:CP:REACTOME"),
-  species = "human"
-)
-```
-
-Ranked GSEA uses a numeric right-hand side:
-
-```r
-gsea_result <- sn_enrich(
-  marker_table,
-  gene_clusters = gene ~ avg_log2FC,
+  species = "human",
   database = "GOBP",
-  species = "human"
+  store_name = "cluster_gobp",
+  return_object = TRUE
+)
+
+pathways <- sn_get_enrichment_result(
+  pbmc,
+  enrichment_name = "cluster_gobp",
+  top_n = 5
+)
+
+head(pathways)
+```
+
+If you already have an enrichment table from another tool, store it with
+`sn_store_enrichment()` so the interpretation layer can find it.
+
+```{r store-external-enrichment, eval = FALSE}
+external_terms <- data.frame(
+  cluster = "0",
+  ID = "GO:0006955",
+  Description = "immune response",
+  p.adjust = 0.001,
+  geneID = "IL7R/CCR7/LTB"
+)
+
+pbmc <- sn_store_enrichment(
+  object = pbmc,
+  result = external_terms,
+  store_name = "external_gobp",
+  analysis = "ora",
+  database = "GOBP",
+  species = "human",
+  source_de_name = "cluster_markers",
+  return_object = TRUE
 )
 ```
 
-## 5. Optional reference-based annotation
+## Optional reference annotation with CellTypist
 
-If CellTypist is configured in the local environment, Shennong can add
-reference labels to the Seurat object:
+CellTypist is a Python command-line tool, so Shennong keeps it explicit. When
+the input is a Seurat object, predictions are written back to metadata. When the
+input is a file path, Shennong returns the prediction table because there is no
+object to update.
 
-```r
-pbmc_annotated <- sn_run_celltypist(
-  pbmc_clustered,
-  model = "Immune_All_Low.pkl"
+```{r celltypist-seurat, eval = FALSE}
+pbmc <- sn_run_celltypist(
+  x = pbmc,
+  model = "Immune_All_Low.pkl",
+  over_clustering = "seurat_clusters",
+  majority_voting = TRUE,
+  quiet = TRUE
 )
+
+grep("Immune_All_Low", colnames(pbmc[[]]), value = TRUE)
 ```
 
-That annotation can then be reused as the `label` input for downstream
-integration metrics or cluster summaries.
+```{r celltypist-path, eval = FALSE}
+prediction_tbl <- sn_run_celltypist(
+  x = "pbmc3k_counts.csv",
+  model = "Immune_All_Low.pkl",
+  over_clustering = "obs_cluster",
+  quiet = TRUE
+)
+
+head(prediction_tbl)
+```
+
+The intended pattern is evidence first, label second: markers and pathways are
+computed and stored before automated or LLM-assisted annotation consumes them.

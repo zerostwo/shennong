@@ -16,13 +16,17 @@ user request to the right Shennong function family quickly.
 ## Recipe: Normalize and cluster a single dataset
 
 1. `sn_normalize_data()` when explicit normalization control is needed.
-2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings.
+2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
+   `hvg_features = c(...)` when known rare-population markers should be forced
+   into the PCA feature set.
 3. `sn_plot_dim()` for cluster and metadata visualization.
 
 ## Recipe: Integrate multiple samples
 
 1. Ensure batch metadata are present.
-2. Run `sn_run_cluster(batch = ...)`.
+2. Run `sn_run_cluster(batch = ...)`. Set
+   `normalization_method = "sctransform"` for SCTransform followed by Harmony
+   integration when that normalization is desired.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
 4. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
 

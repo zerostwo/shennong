@@ -54,8 +54,19 @@ sn_read <- function(path,
   x <- do.call(rio::import, args = args)
 
   if (!is_null(x = row_names) && inherits(x, "data.frame")) {
-    rownames(x) <- x[[row_names]]
-    x <- x[, -row_names, drop = FALSE]
+    if (length(row_names) != 1L || !(is.character(row_names) || is.numeric(row_names))) {
+      stop("`row_names` must be a single column name or column index.", call. = FALSE)
+    }
+    row_index <- if (is.character(row_names)) {
+      match(row_names, colnames(x))
+    } else {
+      as.integer(row_names)
+    }
+    if (is.na(row_index) || row_index < 1L || row_index > ncol(x)) {
+      stop("`row_names` must identify a column in the imported data frame.", call. = FALSE)
+    }
+    rownames(x) <- x[[row_index]]
+    x <- x[, -row_index, drop = FALSE]
   }
 
   x
@@ -230,7 +241,7 @@ sn_list_10x_paths <- function(path,
 
 .sn_is_custom_format <- function(format) {
   !is_null(format) && format %in% c(
-    "10x", "starsolo", "bpcells", "h5ad", "h5", "gmt", "qs", "qs2", .genomic_exts
+    "10x", "10x_spatial", "starsolo", "bpcells", "h5ad", "h5", "gmt", "qs", "qs2", .genomic_exts
   )
 }
 
@@ -256,6 +267,7 @@ sn_list_10x_paths <- function(path,
   reader <- switch(format,
     bpcells = .import.rio_bpcells,
     `10x` = .import.rio_10x,
+    `10x_spatial` = .import.rio_10x_spatial,
     starsolo = .import.rio_starsolo,
     h5ad = .import.rio_h5ad,
     h5 = .import.rio_h5,
@@ -314,6 +326,13 @@ sn_list_10x_paths <- function(path,
   mat <- Seurat::Read10X(data.dir = file, ...)
 
   return(mat)
+}
+
+#' @rdname sn_read
+#' @export
+.import.rio_10x_spatial <- function(file, ...) {
+  check_installed(pkg = "Seurat", reason = "to read 10x spatial format files.")
+  Seurat::Load10X_Spatial(data.dir = file, ...)
 }
 
 #' @rdname sn_read
@@ -537,7 +556,10 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
     reason = "to write h5ad files."
   )
   check_installed(pkg = c("SingleCellExperiment", "rhdf5"), reason = "to write h5ad files.")
-  if (!inherits(x = x, what = "SingleCellExperiment")) {
+  if (inherits(x = x, what = "SingleCellExperiment")) {
+    sce <- x
+  } else {
+    check_installed(pkg = "Seurat", reason = "to convert Seurat objects before writing h5ad files.")
     sce <- Seurat::as.SingleCellExperiment(x = x)
   }
   anndataR::write_h5ad(object = sce, path = file, mode = mode, ...)
@@ -567,7 +589,7 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
 #' @export
 .export.rio_qs2 <- function(file, x, ...) {
   check_installed(pkg = "qs2", reason = "to write qs2 files.")
-  qs2::qs_save(x = x, file = file, ...)
+  qs2::qs_save(object = x, file = file, ...)
 }
 
 #' Add metadata and embeddings exported from AnnData

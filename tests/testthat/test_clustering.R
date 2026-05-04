@@ -114,7 +114,7 @@ test_that("sn_run_cluster can return cluster assignments directly and validates 
       dims = 1:10,
       verbose = FALSE
     ),
-    "currently only supported when `batch = NULL`"
+    "`normalization_method = \"scran\"` is currently only supported when `batch = NULL`"
   )
 })
 
@@ -498,6 +498,32 @@ test_that("sn_run_cluster supports the SCTransform workflow for a single dataset
   expect_length(clusters, ncol(object))
 })
 
+test_that("sn_run_cluster supports SCTransform followed by Harmony integration", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("glmGamPoi")
+  skip_if_not_installed("harmony")
+
+  object1 <- make_test_object(seed = 21, prefix = "sctbatch1")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 22, prefix = "sctbatch2")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  clustered <- sn_run_cluster(
+    object = merged,
+    batch = "sample",
+    normalization_method = "sctransform",
+    nfeatures = 50,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("harmony" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+})
+
 test_that("sn_run_cluster integrates batches with harmony", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("harmony")
@@ -699,6 +725,29 @@ test_that("sn_run_cluster can append rare-aware features before PCA", {
   expect_true(length(clustered@misc$rare_feature_selection$rare_features) > 0)
   expect_true(any(grepl("^raregene", clustered@misc$rare_feature_selection$rare_features)))
   expect_true(length(Seurat::VariableFeatures(clustered)) >= 40)
+})
+
+test_that("sn_run_cluster merges user-supplied HVGs into the PCA feature set", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_rare_test_object()
+  user_features <- c("raregene18", "raregene19", "missing_feature")
+
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 40,
+    hvg_features = user_features,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_true(all(c("raregene18", "raregene19") %in% Seurat::VariableFeatures(clustered)))
+  expect_true(all(c("raregene18", "raregene19") %in% rownames(clustered@reductions$pca@feature.loadings)))
+  expect_equal(clustered@misc$hvg_selection$user_features, c("raregene18", "raregene19"))
+  expect_equal(clustered@misc$hvg_selection$missing_user_features, "missing_feature")
 })
 
 test_that("sn_run_cluster applies rare_feature_n per selected method", {
@@ -1230,6 +1279,70 @@ test_that("sn_run_celltypist adds predicted labels back onto the Seurat object",
     as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
     as.matrix(original_counts)
   )
+})
+
+test_that("sn_run_celltypist returns prediction tables for path inputs", {
+  input_data <- tempfile(fileext = ".csv")
+  utils::write.csv(
+    matrix(
+      1:6,
+      nrow = 2,
+      dimnames = list(c("gene1", "gene2"), c("cell1", "cell2", "cell3"))
+    ),
+    input_data
+  )
+
+  fake_celltypist <- tempfile("fake-celltypist-path-")
+  writeLines(
+    c(
+      "#!/usr/bin/env bash",
+      "set -euo pipefail",
+      "outdir=''",
+      "prefix=''",
+      "indata=''",
+      "while [[ $# -gt 0 ]]; do",
+      "  case \"$1\" in",
+      "    --indata) indata=$2; shift 2 ;;",
+      "    --outdir) outdir=$2; shift 2 ;;",
+      "    --prefix) prefix=$2; shift 2 ;;",
+      "    *) shift ;;",
+      "  esac",
+      "done",
+      "python3 - <<'PY' \"$indata\" \"$outdir\" \"$prefix\"",
+      "import csv, os, sys",
+      "indata, outdir, prefix = sys.argv[1:]",
+      "with open(indata, newline='') as handle:",
+      "    reader = csv.reader(handle)",
+      "    header = next(reader)",
+      "cells = header[1:]",
+      "output_path = os.path.join(outdir, prefix + 'predicted_labels.csv')",
+      "with open(output_path, 'w', newline='') as handle:",
+      "    writer = csv.writer(handle)",
+      "    writer.writerow(['', 'predicted_labels'])",
+      "    for i, cell in enumerate(cells):",
+      "        writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell'])",
+      "PY"
+    ),
+    fake_celltypist
+  )
+  Sys.chmod(fake_celltypist, mode = "0755")
+
+  outdir <- tempfile("celltypist-path-out-")
+  dir.create(outdir)
+
+  predicted <- sn_run_celltypist(
+    x = input_data,
+    celltypist = fake_celltypist,
+    model = "Immune_All_Low.pkl",
+    outdir = outdir,
+    majority_voting = FALSE,
+    over_clustering = "obs_cluster",
+    quiet = TRUE
+  )
+
+  expect_s3_class(predicted, "tbl_df")
+  expect_equal(predicted$cell, c("cell1", "cell2", "cell3"))
+  expect_true("Immune_All_Low_predicted_labels" %in% colnames(predicted))
 })
 
 test_that("sn_run_celltypist errors when expected outputs are missing", {

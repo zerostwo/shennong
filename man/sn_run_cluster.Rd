@@ -9,6 +9,7 @@ sn_run_cluster(
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   nfeatures = 3000,
+  hvg_features = NULL,
   vars_to_regress = NULL,
   resolution = 0.8,
   hvg_group_by = NULL,
@@ -37,10 +38,16 @@ sn_run_cluster(
 If \code{NULL}, no integration is performed.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
-\code{"sctransform"}. The SCTransform and scran workflows are currently
-only supported when \code{batch = NULL}.}
+\code{"sctransform"}. The scran workflow is currently only supported when
+\code{batch = NULL}. The SCTransform workflow can be combined with Harmony
+integration by supplying \code{batch}.}
 
 \item{nfeatures}{Number of variable features to select.}
+
+\item{hvg_features}{Optional character vector of user-supplied features to
+force into the feature set used for scaling/PCA. These features are merged
+with internally selected HVGs and any rare-aware features after validating
+that they are present in \code{object}.}
 
 \item{vars_to_regress}{Covariates to regress out in \code{ScaleData}.}
 

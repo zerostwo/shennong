@@ -1,216 +1,212 @@
 ---
-title: "Composition and comparative analysis workflow"
+title: "Composition and differential abundance"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Composition and comparative analysis workflow}
+  %\VignetteIndexEntry{Composition and differential abundance}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
-
-required_pkgs <- c("Seurat")
-run_vignette <- run_vignette && all(vapply(
-  required_pkgs,
-  requireNamespace,
-  quietly = TRUE,
-  FUN.VALUE = logical(1)
-))
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This workflow covers the analysis tasks that happen after clusters or cell
-types already exist and the main question becomes comparative rather than
-structural:
+Composition analysis should not treat every cell as an independent biological
+replicate. Shennong separates cell-level counting from sample-level comparison:
+first compute proportions, then compare replicate samples.
 
-- how cell states are distributed across samples
-- whether cluster proportions shift between groups
-- how QC or score columns differ across categories
+This article uses PBMC3k with teaching-only pseudo samples and conditions.
 
-```{r setup}
+## Prepare cluster labels and sample metadata
+
+```{r setup-composition}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
 
-if (!exists("pbmc_small", inherits = FALSE)) {
-  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
-  load(file.path("data", "pbmc_small.rda"))
-}
+pbmc <- sn_load_data("pbmc3k")
+
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+pbmc$sample <- rep(paste0("donor", 1:6), length.out = ncol(pbmc))
+pbmc$condition <- ifelse(pbmc$sample %in% paste0("donor", 1:3), "control", "stim")
+pbmc$cluster_label <- paste0("cluster_", pbmc$seurat_clusters)
 ```
 
-```{r prepare-composition-demo, include = FALSE}
-pbmc_comp <- suppressWarnings(
-  sn_run_cluster(
-    pbmc_small,
-    normalization_method = "seurat",
-    nfeatures = 800,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.4,
-    verbose = FALSE
-  )
-)
-pbmc_comp$sample <- pbmc_small@meta.data[colnames(pbmc_comp), "sample"]
-pbmc_comp$study <- pbmc_small@meta.data[colnames(pbmc_comp), "source_dataset"]
-pbmc_comp$cell_type <- paste0("cluster_", as.character(pbmc_comp$seurat_clusters))
-pbmc_comp <- sn_score_cell_cycle(pbmc_comp, species = "human")
-seu <- pbmc_comp
+The pseudo labels are only for demonstration. In a real analysis, `sample`
+should be a biological replicate and `condition` should come from experimental
+metadata.
 
-composition_tbl <- sn_calculate_composition(
-  pbmc_comp,
+## Count cells before comparing groups
+
+`sn_calculate_composition()` returns a transparent table with group totals,
+category counts, and percentages.
+
+```{r calculate-composition}
+composition <- sn_calculate_composition(
+  x = pbmc,
   group_by = "sample",
-  variable = "seurat_clusters",
-  min_cells = 0
-)
-
-phase_tbl <- sn_calculate_composition(
-  pbmc_comp,
-  group_by = c("sample", "cell_type"),
-  variable = "Phase",
-  min_cells = 0,
+  variable = "cluster_label",
+  min_cells = 10,
   measure = "both"
 )
 
-score_tbl <- pbmc_comp@meta.data |>
-  dplyr::select(sample, seurat_clusters, S.Score, G2M.Score, nFeature_RNA)
+head(composition)
 ```
 
-## 1. Summarize cell-state proportions
+The denominator is visible in `group_total`, which makes it easy to audit
+whether a proportion is based on enough cells.
 
-`sn_calculate_composition()` is the main helper for grouped proportion
-summaries. The most common pattern is sample-by-cluster composition. When you
-need a nested summary such as phase proportions within each cell type inside
-each sample, pass multiple grouping columns.
-
-```{r}
-knitr::kable(composition_tbl, digits = 2)
-```
-
-## 2. Plot proportions across groups
-
-The returned composition table can be plotted directly with
-`sn_plot_composition()`. It automatically uses the `proportion` column when
-present and can order the x-axis by one fill category.
-
-```{r}
+```{r plot-composition}
 sn_plot_composition(
-  composition_tbl,
+  composition,
   x = sample,
-  fill = seurat_clusters
+  fill = cluster_label,
+  y = proportion,
+  position = "stack",
+  palette = "Paired",
+  title = "PBMC3k cluster composition by pseudo donor"
 )
 ```
 
-When ordering matters, request it during composition summarization or at plot
-time. This is useful for comparisons such as mutation fractions across cell
-types.
+## Compare sample-level proportions
 
-```{r}
-phase_tbl_ordered <- sn_calculate_composition(
-  seu,
-  group_by = "sample",
-  variable = "Phase",
-  min_cells = 10,
-  sort_by = "proportion",
-  sort_value = "G1"
-)
+`sn_compare_composition()` summarizes each sample first, then compares those
+sample-level proportions between conditions. That avoids pseudo-replication.
 
-sn_plot_composition(
-  phase_tbl_ordered,
-  x = sample,
-  fill = Phase
-)
-```
-
-## 3. Compare categorical structure beyond clusters
-
-The same composition helper also works for cell-cycle phase, annotation labels,
-or any other metadata column.
-
-```{r}
-knitr::kable(phase_tbl, digits = 2)
-```
-
-## 4. Compare composition shifts between groups
-
-When replicate samples are available, compare sample-level proportions instead
-of pooling all cells together. `sn_compare_composition()` computes per-sample
-composition first, then reports group means, differences, log2 fold changes,
-and optional Wilcoxon statistics.
-
-```{r}
-composition_comparison <- sn_compare_composition(
-  seu,
+```{r compare-composition}
+comparison <- sn_compare_composition(
+  x = pbmc,
   sample_col = "sample",
-  group_col = "study",
-  variable = "seurat_clusters",
-  contrast = c("pbmc3k", "pbmc1k"),
-  min_cells = 10,
-  test = "none"
+  group_col = "condition",
+  variable = "cluster_label",
+  contrast = c("stim", "control"),
+  min_cells = 20,
+  test = "wilcox"
 )
 
-knitr::kable(composition_comparison, digits = 2)
+comparison
 ```
 
-## 5. Test neighborhood abundance shifts with miloR
+Use the plotting helpers for the summary table when you want a compact
+figure-ready view.
 
-When the question is not just "does this label's global proportion change?" but
-"which local transcriptional neighborhoods expand or contract between sample
-groups?", use `sn_run_milo()`. This is especially useful when abundance shifts
-cut across coarse cluster labels.
+```{r plot-comparison}
+sn_plot_barplot(
+  comparison,
+  x = cluster_label,
+  y = log2_fc,
+  fill = change,
+  stat = "identity",
+  palette = "Set2",
+  angle_x = 45,
+  y_label = "log2 fold-change",
+  title = "Composition shift: stim vs control"
+)
+```
 
-```{r eval = FALSE}
+## Compare continuous metadata with boxplots
+
+Composition is categorical. For continuous per-cell or per-sample summaries,
+summarize to the replicate level first, then plot.
+
+```{r continuous-summaries}
+sample_qc <- pbmc[[]] |>
+  dplyr::group_by(sample, condition) |>
+  dplyr::summarise(
+    median_features = median(nFeature_RNA),
+    median_mito = median(percent.mt),
+    .groups = "drop"
+  )
+
+sn_plot_boxplot(
+  sample_qc,
+  x = condition,
+  y = median_features,
+  y_label = "Median detected genes",
+  title = "QC summary by pseudo condition"
+)
+```
+
+## Local differential abundance with miloR
+
+Global proportions can miss local shifts inside an embedding. `sn_run_milo()`
+wraps the miloR neighborhood workflow for sample-level differential abundance.
+
+```{r run-milo, eval = FALSE}
 milo_tbl <- sn_run_milo(
-  seu,
+  x = pbmc,
   sample_col = "sample",
-  group_col = "study",
-  contrast = c("pbmc3k", "pbmc1k"),
+  group_col = "condition",
+  contrast = c("stim", "control"),
   reduction = "pca",
-  dims = 1:20,
-  annotation_col = "seurat_clusters"
+  dims = 1:15,
+  annotation_col = "cluster_label",
+  max_cells = 1500,
+  store_name = "condition_da",
+  return_object = FALSE
 )
 
 head(milo_tbl)
 ```
 
-## 6. Compare continuous scores across groups
+If a milo result was generated elsewhere, store and retrieve it with the same
+object-level convention used for DE and enrichment.
 
-Once a grouped table exists, Shennong's plotting helpers can summarize how QC
-or score columns differ by sample or cluster.
+```{r store-milo}
+mock_milo <- data.frame(
+  logFC = c(1.1, -0.7, 0.2),
+  SpatialFDR = c(0.03, 0.08, 0.4),
+  cluster_label = c("cluster_0", "cluster_1", "cluster_2")
+)
 
-```{r}
-sn_plot_boxplot(score_tbl, x = sample, y = nFeature_RNA)
+pbmc <- sn_store_milo(
+  object = pbmc,
+  result = mock_milo,
+  store_name = "condition_da",
+  sample_col = "sample",
+  group_col = "condition",
+  comparison = "stim_vs_control",
+  reduction = "pca",
+  annotation_col = "cluster_label",
+  return_object = TRUE
+)
+
+sn_get_milo_result(pbmc, milo_name = "condition_da")
 ```
 
-```{r}
-sn_plot_boxplot(score_tbl, x = seurat_clusters, y = S.Score)
+`sn_plot_milo()` then displays the stored neighborhood-level table.
+
+```{r plot-milo}
+sn_plot_milo(
+  pbmc,
+  milo_name = "condition_da",
+  annotation_col = "cluster_label",
+  title = "Neighborhood differential abundance"
+)
 ```
 
-## 7. Keep comparative analysis downstream of stable labels
-
-Composition and grouped-score analysis become much more interpretable once the
-labels are stable. In practice the recommended order is:
-
-1. preprocessing and QC
-2. clustering or integration
-3. marker or reference-based annotation
-4. composition and grouped comparisons
-
-That order reduces the chance of over-interpreting composition shifts that are
-actually caused by unstable clustering.
+The recommended reporting pattern is to show both global composition and local
+neighborhood abundance when a biological claim depends on changes in cell-state
+frequency.

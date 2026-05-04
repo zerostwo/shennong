@@ -35,14 +35,16 @@ articles:
   - title: Analysis Workflows
     navbar: Articles
     contents:
+      - data-io-projects
       - preprocessing-qc
       - clustering
       - metrics-diagnostics
       - annotation-pathways
+      - visualization
       - composition-analysis
       - bulk-deconvolution
-      - interpretation-workflows
       - layered-workflows
+      - interpretation-workflows
 
 reference:
   - title: Data and Import
@@ -73,6 +75,7 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_sweep_cluster_resolution
   - title: Diagnostics and Benchmarking
     contents:
       - sn_assess_integration

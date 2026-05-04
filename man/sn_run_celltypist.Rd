@@ -63,7 +63,9 @@ sn_run_celltypist(
 \item{quiet}{Logical. If \code{TRUE}, hide the banner and config info from \code{celltypist}. Defaults to \code{FALSE}.}
 }
 \value{
-A Seurat object with three new columns in its metadata: \verb{_predicted_labels}, \verb{_over_clustering}, \verb{_majority_voting}.
+When \code{x} is a Seurat object, a Seurat object with prediction
+columns added to metadata. When \code{x} is a path, the CellTypist
+prediction table is returned.
 }
 \description{
 Run CellTypist for automated cell type annotation

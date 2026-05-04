@@ -28,6 +28,7 @@ test_that("io helper functions detect urls and infer formats from files and dire
   expect_false(Shennong:::.sn_is_url("/tmp/data.tsv"))
   expect_true(Shennong:::.sn_is_custom_format("gmt"))
   expect_true(Shennong:::.sn_is_custom_format("gtf"))
+  expect_true(Shennong:::.sn_is_custom_format("10x_spatial"))
   expect_false(Shennong:::.sn_is_custom_format("csv"))
   expect_equal(Shennong:::.sn_standardize_format("CSV"), "csv")
   expect_equal(Shennong:::.sn_standardize_format(","), ",")
@@ -205,10 +206,16 @@ test_that("sn_read validates paths and delegates custom readers for inferred for
   tenx_dir <- tempfile("tenx-read-")
   dir.create(tenx_dir)
   file.create(file.path(tenx_dir, c("matrix.mtx.gz", "barcodes.tsv.gz", "features.tsv.gz")))
+  spatial_dir <- tempfile("spatial-read-")
+  dir.create(spatial_dir)
+  file.create(file.path(spatial_dir, "filtered_feature_bc_matrix.h5"))
 
   local_mocked_bindings(
     .import.rio_10x = function(file, ...) {
       list(kind = "tenx", path = file)
+    },
+    .import.rio_10x_spatial = function(file, ...) {
+      list(kind = "spatial", path = file)
     },
     .env = asNamespace("Shennong")
   )
@@ -216,6 +223,9 @@ test_that("sn_read validates paths and delegates custom readers for inferred for
   imported <- sn_read(tenx_dir)
   expect_equal(imported$kind, "tenx")
   expect_equal(normalizePath(imported$path, winslash = "/", mustWork = TRUE), normalizePath(tenx_dir, winslash = "/", mustWork = TRUE))
+  imported_spatial <- sn_read(spatial_dir)
+  expect_equal(imported_spatial$kind, "spatial")
+  expect_equal(normalizePath(imported_spatial$path, winslash = "/", mustWork = TRUE), normalizePath(spatial_dir, winslash = "/", mustWork = TRUE))
 })
 
 test_that("sn_read and sn_write preserve row names and matrix-like tabular inputs", {
@@ -228,6 +238,13 @@ test_that("sn_read and sn_write preserve row names and matrix-like tabular input
   read_back <- sn_read(csv_path, row_names = 1)
   expect_equal(rownames(read_back), c("row1", "row2"))
   expect_equal(read_back$value, c(1, 2))
+  read_back_by_name <- sn_read(csv_path, row_names = "id")
+  expect_equal(rownames(read_back_by_name), c("row1", "row2"))
+  expect_equal(read_back_by_name$value, c(1, 2))
+  expect_error(
+    sn_read(csv_path, row_names = "missing_id"),
+    "`row_names` must identify a column"
+  )
 
   matrix_path <- tempfile(fileext = ".csv")
   matrix_input <- matrix(c(1, 2, 3, 4), nrow = 2, dimnames = list(c("g1", "g2"), c("c1", "c2")))
@@ -397,4 +414,19 @@ test_that("sn_read and sn_write support qs and qs2 serialized objects", {
       "qs2"
     )
   }
+})
+
+test_that("h5ad writer accepts existing SingleCellExperiment objects", {
+  skip_if_not_installed("anndataR")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("rhdf5")
+
+  sce <- SingleCellExperiment::SingleCellExperiment(
+    list(counts = matrix(1:6, nrow = 2))
+  )
+  h5ad_path <- tempfile(fileext = ".h5ad")
+
+  sn_write(sce, h5ad_path)
+
+  expect_true(file.exists(h5ad_path))
 })

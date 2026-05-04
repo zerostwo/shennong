@@ -1,0 +1,227 @@
+---
+title: "Visualization with Shennong"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Visualization with Shennong}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  eval = run_vignette
+)
+```
+
+Visualization is a first-class part of Shennong. The plotting helpers wrap the
+common Seurat and ggplot2 patterns used in single-cell reports: automatic point
+sizing, stable palettes, compact panel sizing, rasterized scatter plots for
+large objects, and direct support for stored Shennong results.
+
+This article uses PBMC3k as the running example. The chunks are displayed by
+default and are evaluated only with `SHENNONG_RUN_VIGNETTES=true`.
+
+## Prepare one clustered object
+
+The plot wrappers expect the same Seurat object produced by the analysis
+workflow. For a fast demonstration, this example clusters PBMC3k with fewer PCs
+and variable features than a full analysis.
+
+```{r setup-pbmc3k}
+library(Shennong)
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+
+pbmc <- sn_load_data("pbmc3k")
+
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  npcs = 20,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+```
+
+## Dimensional maps: labels, palettes, and rasterization
+
+`sn_plot_dim()` is the default map for categorical metadata. It hides axes by
+default, chooses a practical point size from the number of cells, and uses a
+named palette registry instead of requiring every script to hand-code colors.
+
+```{r plot-dim}
+sn_plot_dim(
+  object = pbmc,
+  reduction = "umap",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  palette = "Paired",
+  title = "PBMC3k clusters"
+)
+```
+
+When you need colors programmatically, use the same registry directly.
+
+```{r palette-api}
+sn_list_palettes()
+
+cluster_cols <- sn_get_palette(
+  palette = "Paired",
+  n = length(levels(pbmc$seurat_clusters)),
+  palette_type = "discrete"
+)
+
+cluster_cols
+```
+
+## Feature maps: expression and density modes
+
+`sn_plot_feature()` covers standard expression maps and density-style maps. The
+same function handles legends, shared scales, rasterization, and panel sizing.
+
+```{r plot-feature-expression}
+sn_plot_feature(
+  object = pbmc,
+  features = c("IL7R", "MS4A1", "LYZ"),
+  reduction = "umap",
+  mode = "expression",
+  palette = "YlOrRd",
+  title = "Canonical PBMC markers"
+)
+```
+
+Density mode is useful when expression is sparse and you want to emphasize
+where a marker-defined state sits in the embedding.
+
+```{r plot-feature-density, eval = FALSE}
+sn_plot_feature(
+  object = pbmc,
+  features = "IL7R",
+  reduction = "umap",
+  mode = "density",
+  density_style = "galaxy",
+  title = "IL7R density"
+)
+```
+
+## Distribution plots for metadata and scores
+
+Shennong wraps common summary plots so a report can move from cell-level maps to
+sample-level summaries without switching visual grammar.
+
+```{r plot-violin-box}
+pbmc$sample <- rep(paste0("donor", 1:6), length.out = ncol(pbmc))
+pbmc$condition <- ifelse(pbmc$sample %in% paste0("donor", 1:3), "control", "stim")
+
+sn_plot_violin(
+  object = pbmc,
+  features = c("nFeature_RNA", "percent.mt"),
+  group_by = "condition",
+  palette = "Set2"
+)
+
+qc_summary <- pbmc[[]] |>
+  dplyr::group_by(sample, condition) |>
+  dplyr::summarise(
+    median_features = median(nFeature_RNA),
+    median_mito = median(percent.mt),
+    .groups = "drop"
+  )
+
+sn_plot_boxplot(
+  qc_summary,
+  x = condition,
+  y = median_features,
+  y_label = "Median detected genes",
+  panel_widths = 80,
+  panel_heights = 70
+)
+```
+
+## Marker dot plots from stored DE results
+
+The DE workflow can store markers under `object@misc$de_results`. Once stored,
+`sn_plot_dot(features = "top_markers")` can reuse that result directly instead
+of asking users to manually copy marker lists between scripts.
+
+```{r plot-dot}
+pbmc <- sn_find_de(
+  object = pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  layer = "data",
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
+
+sn_plot_dot(
+  x = pbmc,
+  features = "top_markers",
+  de_name = "cluster_markers",
+  group_by = "seurat_clusters",
+  n = 4,
+  palette = "Purples"
+)
+```
+
+## Composition plots for sample-level summaries
+
+`sn_calculate_composition()` creates the table; `sn_plot_composition()` displays
+it. Keeping those steps separate makes the denominator and grouping explicit.
+
+```{r plot-composition}
+composition <- sn_calculate_composition(
+  x = pbmc,
+  group_by = "sample",
+  variable = "seurat_clusters",
+  measure = "both",
+  min_cells = 10
+)
+
+sn_plot_composition(
+  composition,
+  x = sample,
+  fill = seurat_clusters,
+  y = proportion,
+  position = "stack",
+  palette = "Paired"
+)
+```
+
+## Standard ggplot2 still fits
+
+When a plot is not covered by an `sn_plot_*()` wrapper, use plain ggplot2 and
+resolve colors through Shennong. If `catplot` is installed, its compact theme is
+a good final layer for manuscript-style figures.
+
+```{r custom-ggplot}
+condition_cols <- sn_get_palette("Set2", n = 2, palette_type = "discrete")
+names(condition_cols) <- c("control", "stim")
+
+p <- ggplot(qc_summary, aes(x = condition, y = median_mito, fill = condition)) +
+  geom_col(width = 0.7) +
+  scale_fill_manual(values = condition_cols) +
+  labs(x = NULL, y = "Median mitochondrial percent")
+
+if (requireNamespace("catplot", quietly = TRUE)) {
+  p <- p + catplot::theme_cat(panel_widths = 80, panel_heights = 70)
+}
+
+p
+```

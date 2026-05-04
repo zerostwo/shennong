@@ -588,10 +588,17 @@ sn_standardize_gene_symbols <- function(
       .data$Suggested.Symbol
     ))
 
-  # -- Filter out NA suggested symbols
-  valid_idx <- !is_na(check_gene_symbols$Suggested.Symbol)
+  suggested_symbols <- as.character(check_gene_symbols$Suggested.Symbol)
+  original_symbols <- as.character(check_gene_symbols$x)
+  invalid_suggested <- is.na(suggested_symbols) | !nzchar(suggested_symbols)
+  valid_original <- !is.na(original_symbols) & nzchar(original_symbols)
+  suggested_symbols[invalid_suggested & valid_original] <- original_symbols[invalid_suggested & valid_original]
+
+  # -- Filter out truly missing symbols, but preserve valid original names when
+  # HGNChelper has no unambiguous suggestion.
+  valid_idx <- !is.na(suggested_symbols) & nzchar(suggested_symbols)
   counts <- counts[valid_idx, , drop = FALSE]
-  genes <- check_gene_symbols$Suggested.Symbol[valid_idx]
+  genes <- suggested_symbols[valid_idx]
   rownames(counts) <- genes
 
   # -- Aggregate duplicates

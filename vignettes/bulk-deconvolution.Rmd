@@ -1,113 +1,161 @@
 ---
-title: "Bulk Deconvolution Workflow"
+title: "Bulk deconvolution from a PBMC3k reference"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Bulk Deconvolution Workflow}
+  %\VignetteIndexEntry{Bulk deconvolution from a PBMC3k reference}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  eval = run_vignette
 )
+```
+
+Bulk deconvolution starts with one clear contract: a single-cell reference,
+labels on the reference cells, and a bulk matrix with overlapping genes.
+Shennong wraps that contract for CIBERSORTx and BayesPrism while keeping
+credentialed or containerized steps explicit.
+
+This article uses PBMC3k clusters as a teaching reference.
+
+## Build a small reference and mock bulk matrix
+
+```{r setup-deconvolution}
 library(Shennong)
 library(Seurat)
-```
+library(dplyr)
 
-This workflow shows how to combine a single-cell reference with bulk RNA-seq
-mixtures for cell-composition inference.
+pbmc <- sn_load_data("pbmc3k")
 
-Shennong currently supports two backends:
-
-- `BayesPrism` for local Bayesian deconvolution
-- `CIBERSORTx` for local container-based deconvolution
-
-## 1. Build a single-cell reference
-
-```{r}
-data("pbmc_small", package = "Shennong")
-ref <- pbmc_small
-ref$cell_type <- rep(c("T_like", "B_like", "Myeloid_like"), length.out = ncol(ref))
-```
-
-## 2. Create a mock bulk matrix
-
-```{r}
-counts <- SeuratObject::LayerData(ref, assay = "RNA", layer = "counts")
-bulk <- cbind(
-  sample_a = rowSums(counts[, 1:40, drop = FALSE]),
-  sample_b = rowSums(counts[, 41:ncol(counts), drop = FALSE])
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
 )
-bulk[1:5, 1:2]
+
+pbmc$cell_type <- paste0("cluster_", pbmc$seurat_clusters)
+
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+
+bulk <- cbind(
+  bulk_a = Matrix::rowSums(counts[, pbmc$cell_type %in% c("cluster_0", "cluster_1"), drop = FALSE]),
+  bulk_b = Matrix::rowSums(counts[, pbmc$cell_type %in% c("cluster_2", "cluster_3"), drop = FALSE])
+)
 ```
 
-## 3. Prepare a local CIBERSORTx run
+The mock bulk samples are sums of selected single-cell clusters. Real bulk data
+should be normalized and gene-aligned according to the backend requirements.
 
-```{r}
+## Prepare a CIBERSORTx run without launching the container
+
+Use `cibersortx_dry_run = TRUE` to validate exported files and the command
+bundle locally. This is the right mode for examples, tests, and documentation.
+
+```{r cibersortx-dry-run}
 bundle <- sn_deconvolve_bulk(
-  ref,
+  x = pbmc,
   bulk = bulk,
   method = "cibersortx",
   cell_type_col = "cell_type",
-  layer = "counts",
-  outdir = tempdir(),
-  prefix = "pbmc_demo",
-  cibersortx_email = "user@example.org",
-  cibersortx_token = "replace-with-real-token",
+  outdir = file.path(tempdir(), "pbmc3k-cibersortx"),
+  prefix = "pbmc3k_demo",
+  cibersortx_email = "demo@example.org",
+  cibersortx_token = "fake-token",
   cibersortx_dry_run = TRUE,
   return_object = FALSE
 )
 
+names(bundle)
+bundle$command
 bundle$files
-bundle$artifacts$commands
 ```
 
-In `dry_run` mode, Shennong writes the local input files and returns the exact
-container commands. To run CIBERSORTx locally, provide real credentials and set
-`cibersortx_dry_run = FALSE`.
+For an actual CIBERSORTx run, store credentials locally once and omit the
+placeholder values.
 
-```r
-ref <- sn_deconvolve_bulk(
-  ref,
+```{r cibersortx-credentials, eval = FALSE}
+sn_set_cibersortx_credentials(
+  email = Sys.getenv("CIBERSORTX_EMAIL"),
+  token = Sys.getenv("CIBERSORTX_TOKEN")
+)
+
+result <- sn_deconvolve_bulk(
+  x = pbmc,
   bulk = bulk,
   method = "cibersortx",
   cell_type_col = "cell_type",
-  layer = "counts",
-  cibersortx_email = Sys.getenv("SHENNONG_CIBERSORTX_EMAIL"),
-  cibersortx_token = Sys.getenv("SHENNONG_CIBERSORTX_TOKEN"),
-  store_name = "pbmc_cibersortx"
+  outdir = "results/deconvolution/cibersortx",
+  prefix = "pbmc3k"
 )
 ```
 
-If you already have a local `CIBERSORTx_*_Results.txt` file, you can still
-import it directly through `cibersortx_result = ...`.
+## Import or store completed fractions
 
-## 4. Run BayesPrism locally
+When CIBERSORTx has already produced a fraction table, import it through
+`cibersortx_result` or store the table explicitly. Keeping results on the
+reference object makes downstream retrieval predictable.
 
-BayesPrism is an optional GitHub dependency:
+```{r store-result}
+fractions <- data.frame(
+  sample = c("bulk_a", "bulk_b"),
+  cluster_0 = c(0.45, 0.10),
+  cluster_1 = c(0.35, 0.05),
+  cluster_2 = c(0.10, 0.50),
+  cluster_3 = c(0.10, 0.35),
+  check.names = FALSE
+)
 
-```r
-remotes::install_github("Danko-Lab/BayesPrism/BayesPrism")
+pbmc <- sn_store_deconvolution(
+  object = pbmc,
+  result = fractions,
+  store_name = "pbmc3k_mock_bulk",
+  method = "cibersortx",
+  bulk_samples = fractions$sample,
+  reference_label = "cell_type",
+  artifacts = bundle$files,
+  return_object = TRUE
+)
+
+sn_get_deconvolution_result(
+  pbmc,
+  deconvolution_name = "pbmc3k_mock_bulk"
+)
 ```
 
-Then run:
+## BayesPrism is a local optional backend
 
-```r
-ref <- sn_deconvolve_bulk(
-  ref,
+BayesPrism runs inside R and is useful when you want a Bayesian local workflow.
+It is optional because it is much heavier than the dry-run CIBERSORTx export.
+
+```{r bayesprism, eval = FALSE}
+bayesprism_result <- sn_deconvolve_bulk(
+  x = pbmc,
   bulk = bulk,
   method = "bayesprism",
   cell_type_col = "cell_type",
-  layer = "counts",
-  store_name = "pbmc_bayesprism"
+  key = NULL,
+  n_cores = 2,
+  store_name = "pbmc3k_bayesprism"
 )
 ```
 
-## 5. Retrieve stored deconvolution results
-
-```r
-sn_list_results(ref)
-sn_get_deconvolution_result(ref, "pbmc_cibersortx")
-```
+The rule of thumb is: use dry-run mode to verify file contracts, then run the
+backend deliberately in the environment where its dependencies and credentials
+are configured.

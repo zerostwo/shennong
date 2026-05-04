@@ -1,0 +1,186 @@
+---
+title: "Data input, output, and project setup"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data input, output, and project setup}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  eval = run_vignette
+)
+```
+
+Shennong is meant to make the first step of a single-cell project boring:
+find the data, read it with one function, add explicit sample metadata, and
+write reusable artifacts without changing APIs for every file type.
+
+This article uses the package PBMC3k example throughout. To keep package checks
+and website builds fast, code chunks are shown by default and are evaluated only
+when you render with `SHENNONG_RUN_VIGNETTES=true`.
+
+## Start with PBMC3k
+
+The package loader returns a Seurat object by default. If you need the original
+10x H5 path instead, set `return_object = FALSE`; this is useful when you want
+to show exactly what was read from disk.
+
+```{r load-pbmc3k}
+library(Shennong)
+library(Seurat)
+library(dplyr)
+
+pbmc <- sn_load_data(dataset = "pbmc3k")
+
+pbmc_h5 <- sn_load_data(
+  dataset = "pbmc3k",
+  return_object = FALSE
+)
+
+pbmc_h5
+```
+
+## Read once, then initialize with metadata
+
+`sn_read()` handles common tabular files, serialized objects, 10x matrices,
+H5/H5AD, GMT files, and Shennong's custom dispatchers. For a 10x H5 matrix,
+you can read counts directly and then make the metadata decision explicit in
+`sn_initialize_seurat_object()`.
+
+```{r read-and-initialize}
+counts <- sn_read(pbmc_h5)
+
+pbmc <- sn_initialize_seurat_object(
+  x = counts,
+  project = "pbmc3k_demo",
+  sample_name = "pbmc3k",
+  study = "10x_pbmc",
+  species = "human"
+)
+
+pbmc
+```
+
+The important design choice is that provenance is not hidden in the project
+name. `sample_name`, `study`, and `species` are separate inputs, so downstream
+composition, integration, and interpretation steps can reuse them.
+
+```{r inspect-metadata}
+head(pbmc[[]][, c("sample", "study", "nCount_RNA", "nFeature_RNA", "percent.mt")])
+```
+
+## Discover 10x folders before reading them
+
+Real projects often start with several Cell Ranger outputs. `sn_list_10x_paths()`
+scans a directory tree and returns the paths Shennong can feed back into
+`sn_initialize_seurat_object()`.
+
+```{r discover-10x, eval = FALSE}
+tenx_paths <- sn_list_10x_paths(
+  path = "data/cellranger",
+  what = "filtered"
+)
+
+pbmc_samples <- sn_initialize_seurat_object(
+  x = tenx_paths,
+  species = "human",
+  study = "pbmc_atlas"
+)
+```
+
+This pattern keeps import code short while still making the biological metadata
+explicit after discovery.
+
+## Write durable intermediate files
+
+Use `sn_write()` and `sn_read()` together for analysis handoffs. The same API
+works for tables and serialized R objects; Shennong chooses the writer from the
+file extension.
+
+```{r write-read}
+outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-io"))
+
+metadata_path <- file.path(outdir, "pbmc3k_metadata.csv")
+object_path <- file.path(outdir, "pbmc3k_initialized.qs")
+
+sn_write(pbmc[[]], metadata_path)
+sn_write(pbmc, object_path)
+
+sn_check_file(c(metadata_path, object_path))
+
+metadata <- sn_read(metadata_path, row_names = 1)
+pbmc_cached <- sn_read(object_path)
+
+dim(metadata)
+pbmc_cached
+```
+
+`row_names = 1` or `row_names = "cell"` is useful when a CSV carries cell IDs
+as a regular column. This avoids ad hoc `read.csv(..., row.names = ...)` calls
+that are easy to forget in later scripts.
+
+## Add metadata exported from AnnData
+
+When a Python workflow exports AnnData metadata or embeddings, use
+`sn_add_data_from_anndata()` to merge those files back into the Seurat object
+with one explicit import step.
+
+```{r anndata-roundtrip, eval = FALSE}
+pbmc <- sn_add_data_from_anndata(
+  object = pbmc,
+  metadata = "results/scanpy/obs.csv",
+  reductions = c(umap = "results/scanpy/X_umap.csv")
+)
+```
+
+This keeps cross-language handoffs visible in the analysis script instead of
+leaving them as undocumented slot edits.
+
+## Initialize a governed analysis project
+
+For a new analysis repository, `sn_initialize_project()` creates a lightweight
+project scaffold with Shennong/Codex-oriented governance files. Use it when the
+analysis itself needs to be reproducible, not just the R object.
+
+```{r initialize-project, eval = FALSE}
+sn_initialize_project(
+  path = "~/projects/pbmc3k-shennong-demo",
+  project_name = "pbmc3k-shennong-demo"
+)
+```
+
+Before installing optional backends, inspect what Shennong considers required,
+recommended, or optional for your workflow.
+
+```{r dependencies, eval = FALSE}
+sn_check_version()
+
+sn_install_shennong(source = "github", ref = "main")
+
+deps <- sn_list_dependencies()
+dplyr::count(deps, scope, source)
+
+sn_install_dependencies(scope = "recommended")
+```
+
+The package also ships Codex skill assets for Shennong-style analysis projects.
+These helpers expose their installed locations without making users search the
+package directory manually.
+
+```{r codex-assets, eval = FALSE}
+sn_get_codex_skill_path()
+sn_install_codex_skill(destination = ".codex/skills")
+```

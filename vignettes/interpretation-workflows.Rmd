@@ -1,366 +1,260 @@
 ---
-title: "Interpretation and reporting workflow"
+title: "Interpretation and reporting"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Interpretation and reporting workflow}
+  %\VignetteIndexEntry{Interpretation and reporting}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This article shows how the new interpretation layer fits on top of the current
-Shennong analysis workflow. The key idea is that analysis stays deterministic,
-while interpretation reuses stored DE and enrichment results to build evidence
-bundles, prompts, and optional LLM-style summaries.
+Shennong's interpretation layer is intentionally downstream of analysis. It
+does not replace markers, enrichment, QC, or clustering; it packages those
+results into structured evidence, then builds prompts or calls a provider only
+when the user asks.
 
-The workflow below demonstrates:
+This article uses PBMC3k markers as the evidence source. Provider calls are
+shown but not executed by default.
 
-- marker discovery with `sn_find_de()`
-- enrichment storage with `sn_enrich()` / `sn_store_enrichment()`
-- result discovery with `sn_list_results()`
-- direct retrieval with `sn_get_de_result()` and `sn_get_enrichment_result()`
-- evidence preparation for annotation, DE, and writing tasks
-- prompt generation with `sn_build_prompt()`
-- provider-based interpretation with `sn_interpret_annotation()`
+## Create analysis evidence first
 
-When a Seurat object already contains stored marker results,
-`sn_interpret_annotation()` can now resolve `de_name` automatically. It
-prefers a stored `default` result, then a single available result, and
-otherwise the most recent marker result. Passing `de_name` explicitly is still
-recommended when your object carries multiple marker tables that represent
-different biological questions.
-For annotation tasks, Shennong now includes the full cluster evidence table in
-the model-facing prompt instead of truncating the prompt to the first eight
-rows, so larger clustering results are annotated more completely.
-It can also prefer cluster-specific markers/pathways over generic top-ranked
-features, summarize nearest-cluster geometry from reductions such as UMAP, and
-explicitly pass `reasoning_effort` through compatible GPT-5 chat-completions
-providers. When the provider is built with `sn_make_ellmer_provider()`,
-annotation now uses `ellmer::chat_structured()` for the final label table and
-can insert a tool-assisted focused-comparison step in `annotation_mode =
-"agentic"` before the final refinement pass.
-
-```{r setup}
+```{r setup-evidence}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
+
+pbmc <- sn_load_data("pbmc3k")
+
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+pbmc <- sn_find_de(
+  object = pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  layer = "data",
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
 ```
 
-```{r prepare-interpretation-demo, include = FALSE}
-pbmc <- sn_load_data("pbmc1k")
+The interpretation functions expect stored results. That keeps prompts
+reproducible: a report can say which DE result, enrichment result, and cluster
+column were used.
 
-pbmc <- suppressWarnings(
-  sn_run_cluster(
-    object = pbmc,
-    normalization_method = "seurat",
-    species = "human",
-    nfeatures = 800,
-    block_genes = NULL,
-    npcs = 20,
-    dims = 1:15,
-    resolution = 0.5,
-    verbose = FALSE
-  )
-)
+```{r list-stored-results}
+sn_list_results(pbmc)
+```
 
-pbmc <- suppressWarnings(
-  sn_find_de(
-    pbmc,
-    analysis = "markers",
-    group_by = "seurat_clusters",
-    layer = "data",
-    logfc_threshold = 0.25,
-    min_pct = 0.2,
-    store_name = "cluster_markers",
-    return_object = TRUE,
-    verbose = FALSE
-  )
-)
+## Prepare evidence before building prompts
 
-cluster_markers <- sn_get_de_result(
-  pbmc,
-  de_name = "cluster_markers",
-  with_metadata = TRUE
-)$table
+Evidence helpers return ordinary R lists and tables. Inspect them before using
+an LLM; this is the step that keeps interpretation transparent.
 
-cluster_zero_markers <- cluster_markers |>
-  dplyr::filter(.data$cluster == unique(.data$cluster)[1]) |>
-  dplyr::arrange(dplyr::desc(.data$avg_log2FC))
-
-real_enrichment <- tryCatch(
-  sn_enrich(
-    cluster_zero_markers,
-    gene_clusters = gene ~ avg_log2FC,
-    species = "human",
-    database = "GOBP",
-    pvalue_cutoff = 1
-  ),
-  error = function(...) NULL
-)
-
-enrichment_tbl <- if (!is.null(real_enrichment) && nrow(as.data.frame(real_enrichment)) > 0) {
-  as.data.frame(real_enrichment) |>
-    dplyr::select(ID, Description, NES, p.adjust)
-} else {
-  tibble::tibble(
-    ID = c("GO:0006955", "GO:0002250"),
-    Description = c("immune response", "adaptive immune response"),
-    NES = c(1.9, 1.6),
-    p.adjust = c(0.02, 0.05)
-  )
-}
-
-pbmc <- sn_store_enrichment(
-  object = pbmc,
-  result = enrichment_tbl,
-  store_name = "cluster0_gsea",
-  analysis = "gsea",
-  database = "GOBP",
-  species = "human",
-  source_de_name = "cluster_markers",
-  return_object = TRUE
-)
-
+```{r prepare-evidence}
 annotation_evidence <- sn_prepare_annotation_evidence(
   object = pbmc,
   de_name = "cluster_markers",
   cluster_col = "seurat_clusters",
-  n_markers = 5
+  n_markers = 8,
+  include_qc = TRUE,
+  reduction = "umap"
 )
 
 de_evidence <- sn_prepare_de_evidence(
   object = pbmc,
   de_name = "cluster_markers",
-  n_genes = 5
-)
-
-enrichment_evidence <- sn_prepare_enrichment_evidence(
-  object = pbmc,
-  enrichment_name = "cluster0_gsea",
-  n_terms = 5
+  n_genes = 10
 )
 
 results_evidence <- sn_prepare_results_evidence(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  enrichment_name = "cluster0_gsea",
   cluster_col = "seurat_clusters",
-  n_markers = 3,
-  n_terms = 5
+  n_markers = 5
 )
 
+names(annotation_evidence)
+head(annotation_evidence$cluster_summary)
+```
+
+If enrichment has been run, add pathway evidence the same way.
+
+```{r enrichment-evidence, eval = FALSE}
+pbmc <- sn_enrich(
+  x = pbmc,
+  source_de_name = "cluster_markers",
+  species = "human",
+  database = "GOBP",
+  store_name = "cluster_gobp",
+  return_object = TRUE
+)
+
+enrichment_evidence <- sn_prepare_enrichment_evidence(
+  object = pbmc,
+  enrichment_name = "cluster_gobp",
+  n_terms = 8
+)
+```
+
+## Build a prompt without calling a model
+
+`sn_build_prompt()` is useful even when you do not plan to call a model from R.
+It gives you a model-ready or human-readable representation of the exact
+evidence bundle.
+
+```{r build-prompt}
 annotation_prompt <- sn_build_prompt(
   evidence = annotation_evidence,
   task = "annotation",
-  style = "concise annotation note",
-  audience = "scientist"
+  audience = "scientist",
+  language = "en",
+  background = "PBMC3k single-cell RNA-seq clustered with Shennong.",
+  output_format = "llm",
+  include_json_schema = TRUE
 )
 
+names(annotation_prompt)
+annotation_prompt$task
+```
+
+The high-level helper can return the same prompt directly.
+
+```{r interpret-annotation-prompt}
+annotation_prompt <- sn_interpret_annotation(
+  object = pbmc,
+  de_name = "cluster_markers",
+  cluster_col = "seurat_clusters",
+  return_prompt = TRUE,
+  output_format = "llm",
+  background = "Annotate PBMC3k clusters conservatively."
+)
+
+annotation_prompt$task
+```
+
+## Provider calls are opt-in
+
+Shennong uses provider functions at the package boundary. You can create an
+`ellmer` provider from environment variables, test it, then pass it to the
+interpretation helpers.
+
+```{r provider, eval = FALSE}
+provider <- sn_make_ellmer_provider(
+  model = Sys.getenv("OPENAI_MODEL", "gpt-5.1"),
+  reasoning_effort = "medium"
+)
+
+sn_test_llm_provider(provider = provider)
+
+response <- sn_run_llm(
+  messages = annotation_prompt$messages,
+  provider = provider,
+  model = Sys.getenv("OPENAI_MODEL", "gpt-5.1")
+)
+```
+
+## Interpret specific evidence types
+
+The DE and enrichment helpers use the same pattern: return a prompt by default
+for review, or pass a provider to store a response.
+
+```{r interpret-de-enrichment}
+de_prompt <- sn_interpret_de(
+  object = pbmc,
+  de_name = "cluster_markers",
+  n_genes = 10,
+  return_prompt = TRUE,
+  background = "Summarize PBMC3k cluster marker programs."
+)
+
+de_prompt$task
+```
+
+```{r interpret-enrichment, eval = FALSE}
+enrichment_prompt <- sn_interpret_enrichment(
+  object = pbmc,
+  enrichment_name = "cluster_gobp",
+  n_terms = 8,
+  return_prompt = TRUE,
+  background = "Summarize pathway programs by cluster."
+)
+```
+
+## Write results, legends, and presentation summaries
+
+The reporting helpers assemble multiple evidence sources into audience-specific
+outputs. They can return prompts for manual review or store generated responses
+under `object@misc$interpretation_results`.
+
+```{r reporting-prompts}
 results_prompt <- sn_write_results(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  enrichment_name = "cluster0_gsea",
   cluster_col = "seurat_clusters",
-  return_prompt = TRUE
+  return_prompt = TRUE,
+  background = "Write a concise Results paragraph for PBMC3k clustering."
 )
 
-mock_provider <- function(messages, model = NULL, ...) {
-  list(
-    structured = list(
-      cluster_annotations = tibble::tibble(
-        cluster = "0",
-        primary_label = "T Cell",
-        broad_label = "Lymphocyte",
-        confidence = "high",
-        status = "confident",
-        alternatives = I(list("Activated T Cell")),
-        supporting_markers = I(list(c("CD3D", "TRAC"))),
-        supporting_functions = I(list("T cell activation")),
-        risk_flags = I(list("transitional_state")),
-        note = "Canonical T-cell markers dominate this cluster.",
-        recommended_checks = I(list("Inspect IL7R and LTB"))
-      ),
-      narrative_summary = "Mock structured annotation generated for the vignette."
-    )
-  )
-}
-
-sn_test_llm_provider(provider = mock_provider)
-
-pbmc_interpreted <- sn_interpret_annotation(
+legend_prompt <- sn_write_figure_legend(
   object = pbmc,
-  enrichment_name = "cluster0_gsea",
+  cluster_de_name = "cluster_markers",
   cluster_col = "seurat_clusters",
-  n_markers = 5,
-  marker_selection = "specific",
-  enrichment_selection = "specific",
-  annotation_mode = "agentic",
-  reduction = "umap",
-  n_neighbor_clusters = 2,
-  provider = mock_provider,
-  model = "demo-model",
-  reasoning_effort = "medium",
-  store_name = "cluster_annotation_note",
-  metadata_prefix = "shennong_celltype",
-  return_object = TRUE,
-  show_progress = TRUE
+  return_prompt = TRUE,
+  background = "Describe a UMAP and marker dot plot."
 )
 
-annotation_response <- pbmc_interpreted@misc$interpretation_results$cluster_annotation_note$response$text
-annotation_table <- pbmc_interpreted@misc$interpretation_results$cluster_annotation_note$annotation_table
-result_index <- sn_list_results(pbmc_interpreted)
-top_cluster_markers <- sn_get_de_result(
-  pbmc_interpreted,
+summary_prompt <- sn_write_presentation_summary(
+  object = pbmc,
+  cluster_de_name = "cluster_markers",
+  cluster_col = "seurat_clusters",
+  return_prompt = TRUE,
+  background = "Prepare a short collaborator-facing PBMC3k summary."
+)
+
+c(results_prompt$task, legend_prompt$task, summary_prompt$task)
+```
+
+When a provider is used, retrieve stored outputs by name.
+
+```{r retrieve-interpretation, eval = FALSE}
+pbmc <- sn_interpret_de(
+  object = pbmc,
   de_name = "cluster_markers",
-  top_n = 3,
-  groups = unique(cluster_markers$cluster)[1]
-)
-top_pathways <- sn_get_enrichment_result(
-  pbmc_interpreted,
-  enrichment_name = "cluster0_gsea",
-  top_n = 5
-)
-```
-
-## Marker discovery remains the analysis layer
-
-Interpretation starts from stored DE results rather than recomputing
-statistics. Here, `sn_find_de()` has already saved cluster markers into the
-Seurat object, and we retrieve them through `sn_get_de_result()`.
-
-```{r}
-knitr::kable(top_cluster_markers |> dplyr::select(cluster, gene, avg_log2FC, p_val_adj))
-```
-
-## Store enrichment for later interpretation
-
-The interpretation layer expects enrichment results to be stored in the Seurat
-object. `sn_enrich()` can now store them directly when you pass a Seurat object
-through `x` or `object =`, and its `gene_clusters` formula now covers both
-grouped ORA inputs such as `gene ~ cluster` and ranked GSEA inputs such as
-
-When `sn_interpret_annotation()` receives a structured JSON response, it also
-stores the parsed cluster-level annotation table and can map the labels back
-onto each cell's metadata. In the example above, that means columns such as
-`shennong_celltype_label`, `shennong_celltype_confidence`, and
-`shennong_celltype_risk_flags` are available directly in `pbmc_interpreted[[]]`.
-`gene ~ avg_log2FC`.
-
-```{r}
-knitr::kable(top_pathways)
-```
-
-## Discover what is currently stored on the object
-
-Use `sn_list_results()` to see which DE, enrichment, and interpretation
-artifacts are available for reuse.
-
-```{r}
-knitr::kable(result_index)
-```
-
-## Prepare structured evidence
-
-`sn_prepare_*_evidence()` turns stored outputs into compact, reusable evidence
-bundles. These are the objects that can later be turned into prompts or passed
-into writing helpers. For annotation workflows, this now includes a
-`canonical_marker_snapshot` table that can be used to compare lineage-defining
-markers across clusters during focused refinement.
-
-```{r}
-knitr::kable(annotation_evidence$cluster_summary)
-```
-
-```{r}
-knitr::kable(enrichment_evidence$top_terms)
-```
-
-## Build prompts without binding to a specific provider
-
-The first-class package object for the LLM layer is a prompt bundle, not a
-network call. This keeps analysis and interpretation cleanly separated.
-
-```{r}
-cat(substr(annotation_prompt$user, 1, 900))
-```
-
-## Generate manuscript-style prompts
-
-High-level helpers such as `sn_write_results()` can return prompts directly.
-
-## Initialize a Codex-ready analysis project
-
-For longer-running projects, it helps to initialize a governed analysis
-repository rather than improvising the folder structure. The packaged project
-template used by `sn_initialize_project(with_agent = TRUE)` creates
-`AGENTS.md`, `.gitignore`, a project `.Rproj`, `memory/`,
-`docs/standards/`, `skills/`, `config/`, `data/`, `scripts/`, `notebooks/`,
-`runs/`, and `results/`.
-
-```{r}
-codex_project <- file.path(tempdir(), "shennong-codex-project")
-
-created <- sn_initialize_project(
-  path = codex_project,
-  project_name = "PBMC interpretation pilot",
-  objective = "Build a reproducible PBMC interpretation workflow with Shennong.",
-  with_agent = TRUE,
-  overwrite = TRUE
+  provider = provider,
+  store_name = "cluster_marker_summary",
+  return_object = TRUE
 )
 
-knitr::kable(
-  tibble::tibble(
-    file = names(created)[-1],
-    path = unname(unlist(created[-1]))
-  )
+sn_get_interpretation_result(
+  pbmc,
+  interpretation_name = "cluster_marker_summary"
 )
 ```
 
-The initialized project keeps durable operating rules in `AGENTS.md`, project
-state in `memory/`, enforceable directory and naming rules in
-`docs/standards/BioinformaticsAnalysisConventions.md`, and reusable governance
-procedures in `skills/`.
-
-```{r}
-cat(substr(results_prompt$user, 1, 900))
-```
-
-## Plug in a provider when needed
-
-If you provide a function that accepts `messages` and returns text, the same
-high-level helpers can store the generated interpretation back into the Seurat
-object.
-
-For live model calls, the recommended path is now `ellmer`. You can either
-pass an explicit provider returned by `sn_make_ellmer_provider()` or rely on
-environment variables such as `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and
-`OPENAI_MODEL` so the high-level helpers can construct an `ellmer` provider
-directly.
-
-```{r}
-annotation_response
-```
-
-## Interpretation results are stored alongside analysis results
-
-```{r}
-names(pbmc_interpreted@misc$interpretation_results)
-```
+The practical workflow is: compute evidence, inspect evidence, build a prompt,
+then call a provider only when the prompt is good enough to send.

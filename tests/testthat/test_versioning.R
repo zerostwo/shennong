@@ -202,6 +202,22 @@ test_that("sn_list_dependencies reports declared package metadata", {
     deps$source[deps$package == "harmony"][[1]],
     "GitHub"
   )
+  expect_equal(
+    deps$source[deps$package == "anndataR"][[1]],
+    "GitHub"
+  )
+  expect_equal(
+    deps$remote[deps$package == "anndataR"][[1]],
+    "scverse/anndataR"
+  )
+  expect_equal(
+    deps$source[deps$package == "tidytemplate"][[1]],
+    "GitHub"
+  )
+  expect_equal(
+    deps$remote[deps$package == "tidytemplate"][[1]],
+    "tidyverse/tidytemplate"
+  )
 })
 
 test_that("sn_install_dependencies dispatches installs by declared source", {

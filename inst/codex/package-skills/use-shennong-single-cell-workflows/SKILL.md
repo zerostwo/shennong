@@ -49,7 +49,11 @@ single-cell tasks. This skill is the main entry point for package usage.
    `sn_filter_cells()` and `sn_filter_genes()`.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
-2. Run clustering or batch integration with `sn_run_cluster()`.
+2. Run clustering or batch integration with `sn_run_cluster()`. Use
+   `hvg_features = c(...)` when the user has known marker genes that should be
+   forced into the ScaleData/PCA feature set, and use
+   `normalization_method = "sctransform"` with `batch = ...` when an
+   SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
    `sn_calculate_isolated_label_score()`, or

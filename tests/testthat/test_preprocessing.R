@@ -430,6 +430,29 @@ test_that("sn_standardize_gene_symbols converts gene IDs and aggregates duplicat
   expect_true("sn_standardize_gene_symbols" %in% names(standardized_object@commands))
 })
 
+test_that("sn_standardize_gene_symbols preserves unresolved symbols without returning NA row names", {
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  counts <- Matrix::Matrix(
+    matrix(seq_len(8), nrow = 4),
+    sparse = TRUE
+  )
+  rownames(counts) <- c("CD3D", "fakegene1", "1-Mar", "")
+  colnames(counts) <- c("cell1", "cell2")
+
+  standardized <- suppressWarnings(sn_standardize_gene_symbols(
+    counts,
+    species = "human",
+    is_gene_id = FALSE
+  ))
+
+  expect_false(any(is.na(rownames(standardized))))
+  expect_false(any(!nzchar(rownames(standardized))))
+  expect_true("fakegene1" %in% rownames(standardized))
+  expect_true("1-Mar" %in% rownames(standardized))
+})
+
 test_that("sn_score_cell_cycle returns the object unchanged when markers do not overlap", {
   skip_if_not_installed("Seurat")
 

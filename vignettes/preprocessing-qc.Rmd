@@ -1,210 +1,213 @@
 ---
-title: "Preprocessing and QC workflow"
+title: "Preprocessing and QC with PBMC3k"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Preprocessing and QC workflow}
+  %\VignetteIndexEntry{Preprocessing and QC with PBMC3k}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
-
-required_pkgs <- c("Seurat", "SeuratObject")
-run_vignette <- run_vignette && all(vapply(
-  required_pkgs,
-  requireNamespace,
-  quietly = TRUE,
-  FUN.VALUE = logical(1)
-))
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  fig.width = 8,
-  fig.height = 6,
+  fig.width = 7,
+  fig.height = 5,
   eval = run_vignette
 )
 ```
 
-This article covers the first stage of a typical Shennong analysis:
+Preprocessing should answer four questions before clustering:
 
-- constructing a Seurat object
-- inferring species and standardizing feature naming
-- filtering poor-quality cells
-- filtering genes by expression and bundled GENCODE annotations
-- normalizing data
-- adding cell-cycle scores for downstream modeling
+1. What object did we create from the count matrix?
+2. Which low-quality cells were flagged, and why?
+3. Which genes are retained for downstream analysis?
+4. What QC evidence can be stored and revisited later?
 
-The examples use the built-in `pbmc_small` and `pbmc_small_raw` objects so the
-workflow stays check-safe and does not depend on network downloads.
+Shennong keeps those decisions explicit while keeping the code short. The
+examples use PBMC3k and are evaluated only when
+`SHENNONG_RUN_VIGNETTES=true`.
 
-```{r setup}
+## Load PBMC3k and inspect species-aware QC fields
+
+`sn_load_data("pbmc3k")` downloads or reuses the cached 10x H5 file, reads it,
+and initializes a Seurat object with human QC metrics.
+
+```{r load-pbmc3k}
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
 
-if (!exists("pbmc_small", inherits = FALSE)) {
-  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
-  load(file.path("data", "pbmc_small.rda"))
-}
+pbmc <- sn_load_data("pbmc3k")
+pbmc$sample <- "pbmc3k"
 
-if (!exists("pbmc_small_raw", inherits = FALSE)) {
-  try(data("pbmc_small_raw", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small_raw", inherits = FALSE) && file.exists(file.path("data", "pbmc_small_raw.rda"))) {
-  load(file.path("data", "pbmc_small_raw.rda"))
-}
+sn_get_species(pbmc)
+
+head(pbmc[[]][, c("sample", "nCount_RNA", "nFeature_RNA", "percent.mt")])
 ```
 
-```{r prepare-preprocessing-demo, include = FALSE}
-counts <- SeuratObject::LayerData(pbmc_small, layer = "counts")
-meta_cols <- intersect(
-  c("sample", "source_dataset", "source_barcode"),
-  colnames(pbmc_small@meta.data)
-)
-meta_tbl <- pbmc_small@meta.data[, meta_cols, drop = FALSE]
+If you start from a raw matrix instead, the equivalent explicit form is:
 
-pbmc_init <- sn_initialize_seurat_object(
+```{r initialize-from-counts, eval = FALSE}
+counts <- sn_read("pbmc3k_filtered_feature_bc_matrix.h5")
+
+pbmc <- sn_initialize_seurat_object(
   x = counts,
-  project = "pbmc_small_preprocessing"
+  project = "pbmc3k_demo",
+  sample_name = "pbmc3k",
+  study = "10x_pbmc",
+  species = "human"
 )
-pbmc_init <- Seurat::AddMetaData(pbmc_init, metadata = meta_tbl)
+```
 
-# For multiple 10x samples on disk, one-shot import is also supported:
-# tenx_paths <- sn_list_10x_paths("data/")
-# pbmc_list <- sn_initialize_seurat_object(x = tenx_paths, species = "human")
+When gene identifiers or mixed symbol styles are a concern, standardize at
+initialization or call `sn_standardize_gene_symbols()` before downstream
+analysis. If `HGNChelper` cannot provide an unambiguous replacement for an
+otherwise valid symbol, Shennong preserves the original symbol instead of
+returning an `NA` feature name.
 
-pbmc_cells <- suppressWarnings(
-  sn_filter_cells(
-    pbmc_init,
-    features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
-    plot = FALSE
-  )
+```{r standardize-symbols, eval = FALSE}
+pbmc <- sn_standardize_gene_symbols(
+  pbmc,
+  species = "human",
+  is_gene_id = FALSE
+)
+```
+
+## Filter cells with inspectable QC flags
+
+`sn_filter_cells()` uses median absolute deviation thresholds by default. The
+key point is that filtering and flagging are separated: set `filter = FALSE` to
+see which cells would be removed, then set `filter = TRUE` when the rule is
+acceptable.
+
+```{r flag-cells}
+pbmc_flagged <- sn_filter_cells(
+  x = pbmc,
+  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  method = "mad",
+  n = c(5, 5, 3),
+  plot = FALSE,
+  filter = FALSE
 )
 
-pbmc_genes <- suppressWarnings(
-  sn_filter_genes(
-    pbmc_cells,
-    min_cells = 3,
-    gene_class = "coding",
-    plot = FALSE
-  )
+qc_flag_cols <- grep("^qc_", colnames(pbmc_flagged[[]]), value = TRUE)
+head(pbmc_flagged[[]][, qc_flag_cols, drop = FALSE])
+```
+
+Once the flags look sensible, apply the same rule:
+
+```{r filter-cells}
+pbmc_cells <- sn_filter_cells(
+  x = pbmc,
+  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  method = "mad",
+  n = c(5, 5, 3),
+  plot = FALSE,
+  filter = TRUE
 )
 
+c(before = ncol(pbmc), after = ncol(pbmc_cells))
+```
+
+## Filter genes by expression and annotation
+
+`sn_filter_genes()` keeps the threshold and optional annotation rule in one
+place. The expression threshold protects sparse downstream steps, while
+`gene_class = "coding"` can remove noncoding genes when your workflow is
+protein-coding focused.
+
+```{r filter-genes}
+pbmc_genes <- sn_filter_genes(
+  x = pbmc_cells,
+  min_cells = 5,
+  plot = FALSE,
+  filter = TRUE,
+  species = "human",
+  gene_class = "coding"
+)
+
+c(before = nrow(pbmc_cells), after = nrow(pbmc_genes))
+```
+
+## Normalize and add cell-cycle scores
+
+`sn_normalize_data()` and `sn_score_cell_cycle()` keep preprocessing inside the
+same Shennong vocabulary used later by clustering and plotting.
+
+```{r normalize-cycle}
 pbmc_norm <- sn_normalize_data(
-  pbmc_genes,
+  object = pbmc_genes,
   normalization_method = "seurat",
   verbose = FALSE
 )
 
-pbmc_cycle <- sn_score_cell_cycle(pbmc_norm, species = "human")
+pbmc_norm <- sn_score_cell_cycle(pbmc_norm, species = "human")
 
-qc_summary <- tibble::tibble(
-  stage = c("initialized", "cell_filtered", "gene_filtered", "normalized"),
-  cells = c(ncol(pbmc_init), ncol(pbmc_cells), ncol(pbmc_genes), ncol(pbmc_norm)),
-  genes = c(nrow(pbmc_init), nrow(pbmc_cells), nrow(pbmc_genes), nrow(pbmc_norm))
-)
-
-feature_summary <- tibble::tibble(
-  metric = c("species", "median_nFeature", "median_nCount", "median_percent_mt"),
-  value = c(
-    sn_get_species(pbmc_init),
-    round(stats::median(pbmc_cells$nFeature_RNA), 1),
-    round(stats::median(pbmc_cells$nCount_RNA), 1),
-    round(stats::median(pbmc_cells$percent.mt), 2)
-  )
-)
-
-cycle_summary <- pbmc_cycle@meta.data |>
-  dplyr::count(Phase, name = "cells")
+table(pbmc_norm$Phase)
 ```
 
-## 1. Initialize a Seurat object
+## Optional doublet and ambient-RNA correction
 
-Start from a matrix-like object and let Shennong create the Seurat object with
-species-aware QC metadata.
+Doublet detection and ambient correction depend on optional backends. Shennong
+keeps them as explicit steps rather than hiding them in clustering.
 
-```{r}
-knitr::kable(feature_summary)
-```
-
-## 2. Filter poor-quality cells
-
-`sn_filter_cells()` works on standard QC columns such as `nFeature_RNA`,
-`nCount_RNA`, and `percent.mt`. The function can also draw diagnostics, but the
-article disables plotting to keep the rendered workflow compact.
-
-```{r}
-knitr::kable(qc_summary)
-```
-
-## 3. Filter genes with expression and annotation rules
-
-Shennong ships bundled human and mouse GENCODE snapshots. That means
-`sn_filter_genes()` can combine expression thresholds with annotation-aware
-filters such as `gene_class = "coding"` or exact `gene_type` values.
-
-```r
-pbmc_genes <- sn_filter_genes(
-  pbmc_cells,
-  min_cells = 3,
-  gene_class = "coding",
-  plot = FALSE
-)
-```
-
-For finer control you can target exact biotypes:
-
-```r
-pbmc_lnc_only <- sn_filter_genes(
-  pbmc_cells,
-  min_cells = 3,
-  gene_type = c("lncRNA", "antisense"),
-  plot = FALSE
-)
-```
-
-## 4. Normalize and add cell-cycle scores
-
-After QC, normalize the object and add cell-cycle scores if they are useful for
-regression, cluster interpretation, or doublet diagnostics.
-
-```{r}
-knitr::kable(cycle_summary)
-```
-
-## 5. Optional QC extensions
-
-Shennong also exposes heavier QC helpers that are usually run only when the
-analysis requires them:
-
-```r
-# Doublet detection
+```{r doublets, eval = FALSE}
 pbmc_doublets <- sn_find_doublets(pbmc_norm)
-
-# Ambient RNA correction from a raw count matrix
-pbmc_decont <- sn_remove_ambient_contamination(
-  pbmc_norm,
-  raw_counts = pbmc_small_raw
-)
-
-# Summarize current QC status or compare a filtered object against a pre-QC reference
-qc_report <- sn_assess_qc(pbmc_decont, reference = pbmc_norm)
-qc_report$overall
+table(pbmc_doublets$doublet_class)
 ```
 
-## Where this stage leads next
+For ambient RNA, PBMC3k raw counts can be loaded from the same example registry.
+The corrected matrix is written to a new layer by default, so the original
+counts remain inspectable.
 
-Once preprocessing is complete, the usual next step is `sn_run_cluster()` for
-single-sample clustering or Harmony-based integration. The dedicated clustering
-article continues from this point.
+```{r ambient, eval = FALSE}
+pbmc_raw <- sn_load_data("pbmc3k", matrix_type = "raw")
+
+pbmc_decont <- sn_remove_ambient_contamination(
+  x = pbmc_norm,
+  raw = pbmc_raw,
+  method = "decontx",
+  layer = "decontaminated_counts",
+  verbose = FALSE
+)
+```
+
+## Store a QC assessment
+
+`sn_assess_qc()` summarizes the object after filtering and can compare it to
+the pre-filter object. Store the result when you want later reports to recover
+the QC decision without rerunning preprocessing.
+
+```{r assess-qc}
+qc_report <- sn_assess_qc(
+  object = pbmc_norm,
+  reference = pbmc,
+  sample_col = "sample",
+  verbose = FALSE
+)
+
+qc_report$overall
+
+pbmc_norm <- sn_assess_qc(
+  object = pbmc_norm,
+  reference = pbmc,
+  sample_col = "sample",
+  store_name = "pbmc3k_preprocessing",
+  return_object = TRUE,
+  verbose = FALSE
+)
+
+names(pbmc_norm@misc$qc_assessments)
+```
+
+The object is now ready for clustering. The important part is not just that
+cells and genes were filtered, but that the rationale and summary are stored in
+a place downstream code can find.
