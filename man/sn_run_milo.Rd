@@ -6,39 +6,42 @@
 \usage{
 sn_run_milo(
   x,
-  sample_col,
-  group_col,
+  sample_by = NULL,
+  group_by = NULL,
   contrast = NULL,
   reduction = "pca",
   dims = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = sample_col,
+  stratify_by = NULL,
   k = 20,
   d = NULL,
   prop = 0.1,
   refined = TRUE,
   refinement_scheme = "reduced_dim",
   covariates = NULL,
-  annotation_col = NULL,
+  annotation_by = NULL,
   fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
   store_name = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_col = NULL,
+  annotation_col = NULL,
+  group_col = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{sample_col}{Metadata column defining biological samples.}
+\item{sample_by}{Metadata column defining biological samples.}
 
-\item{group_col}{Metadata column defining the sample-level comparison group.}
+\item{group_by}{Metadata column defining the sample-level comparison group.}
 
 \item{contrast}{Optional character vector of length 2 giving the comparison
-as \code{c(case, control)}. When omitted, \code{group_col} must contain
+as \code{c(case, control)}. When omitted, \code{group_by} must contain
 exactly two levels in the selected cells.}
 
 \item{reduction}{Reduction name used to build neighborhoods. Defaults to
@@ -68,9 +71,9 @@ sampling.}
 \code{miloR::makeNhoods()}.}
 
 \item{covariates}{Optional sample-level covariates added to the DA design
-formula alongside \code{group_col}.}
+formula alongside \code{group_by}.}
 
-\item{annotation_col}{Optional cell-level metadata column used to annotate
+\item{annotation_by}{Optional cell-level metadata column used to annotate
 neighborhoods with \code{miloR::annotateNhoods()}.}
 
 \item{fdr_weighting}{FDR weighting strategy passed to
@@ -92,6 +95,12 @@ supplied, return the updated Seurat object.}
 DA table, design data, and milo object.}
 
 \item{verbose}{Logical; if \code{TRUE}, emit progress logs.}
+
+\item{sample_col}{Deprecated alias for \code{sample_by}.}
+
+\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
+
+\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 By default, a data frame of neighborhood-level DA statistics. When
@@ -108,8 +117,8 @@ tested for differential abundance between the two sample groups.
 \dontrun{
 da_tbl <- sn_run_milo(
   seu,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   contrast = c("treated", "control"),
   reduction = "pca"
 )

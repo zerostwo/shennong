@@ -78,6 +78,30 @@ head(composition)
 The denominator is visible in `group_total`, which makes it easy to audit
 whether a proportion is based on enough cells.
 
+Observed-over-expected enrichment is useful when you want to ask which clusters
+are enriched or depleted relative to the full contingency table.
+
+```{r calculate-roe}
+roe <- sn_calculate_roe(
+  x = pbmc,
+  group_by = "condition",
+  variable = "cluster_label"
+)
+
+head(roe)
+```
+
+```{r calculate-roe-matrix}
+roe_matrix <- sn_calculate_roe(
+  x = pbmc,
+  group_by = "condition",
+  variable = "cluster_label",
+  return_matrix = TRUE
+)
+
+roe_matrix[, seq_len(min(4, ncol(roe_matrix))), drop = FALSE]
+```
+
 ```{r plot-composition}
 sn_plot_composition(
   composition,
@@ -98,8 +122,8 @@ sample-level proportions between conditions. That avoids pseudo-replication.
 ```{r compare-composition}
 comparison <- sn_compare_composition(
   x = pbmc,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   variable = "cluster_label",
   contrast = c("stim", "control"),
   min_cells = 20,
@@ -157,12 +181,12 @@ wraps the miloR neighborhood workflow for sample-level differential abundance.
 ```{r run-milo, eval = FALSE}
 milo_tbl <- sn_run_milo(
   x = pbmc,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   contrast = c("stim", "control"),
   reduction = "pca",
   dims = 1:15,
-  annotation_col = "cluster_label",
+  annotation_by = "cluster_label",
   max_cells = 1500,
   store_name = "condition_da",
   return_object = FALSE
@@ -185,11 +209,11 @@ pbmc <- sn_store_milo(
   object = pbmc,
   result = mock_milo,
   store_name = "condition_da",
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   comparison = "stim_vs_control",
   reduction = "pca",
-  annotation_col = "cluster_label",
+  annotation_by = "cluster_label",
   return_object = TRUE
 )
 
@@ -202,7 +226,7 @@ sn_get_milo_result(pbmc, milo_name = "condition_da")
 sn_plot_milo(
   pbmc,
   milo_name = "condition_da",
-  annotation_col = "cluster_label",
+  annotation_by = "cluster_label",
   title = "Neighborhood differential abundance"
 )
 ```

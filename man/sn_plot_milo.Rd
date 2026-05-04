@@ -7,7 +7,7 @@
 sn_plot_milo(
   x,
   milo_name = "default",
-  annotation_col = NULL,
+  annotation_by = NULL,
   fdr_col = c("SpatialFDR", "FDR"),
   fdr_cutoff = 0.1,
   logfc_cutoff = NULL,
@@ -17,7 +17,8 @@ sn_plot_milo(
   y_label = expression(-log[10]("FDR")),
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  annotation_col = NULL
 )
 }
 \arguments{
@@ -27,7 +28,7 @@ milo result.}
 \item{milo_name}{Name of the stored milo result when \code{x} is a Seurat
 object.}
 
-\item{annotation_col}{Optional column used to color points.}
+\item{annotation_by}{Optional column used to color points.}
 
 \item{fdr_col}{FDR column used on the y-axis. Defaults to \code{"SpatialFDR"}.}
 
@@ -35,7 +36,7 @@ object.}
 
 \item{logfc_cutoff}{Optional vertical threshold for effect size.}
 
-\item{palette}{Discrete palette used when \code{annotation_col} is supplied.}
+\item{palette}{Discrete palette used when \code{annotation_by} is supplied.}
 
 \item{title, x_label, y_label}{Optional plot labels.}
 
@@ -45,6 +46,8 @@ panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}
+
+\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
 }
 \value{
 A ggplot object.
@@ -58,6 +61,6 @@ milo_df <- data.frame(
   SpatialFDR = c(0.01, 0.2, 0.04),
   cell_type = c("T", "B", "Myeloid")
 )
-sn_plot_milo(milo_df, annotation_col = "cell_type")
+sn_plot_milo(milo_df, annotation_by = "cell_type")
 
 }

@@ -259,11 +259,13 @@
 #' @param sender,receiver Sender and receiver group labels required by
 #'   \code{method = "nichenetr"}.
 #' @param geneset Receiver gene set of interest for NicheNet. If omitted,
-#'   receiver differential expression is computed from \code{condition_col},
+#'   receiver differential expression is computed from \code{condition_by},
 #'   \code{condition_oi}, and \code{condition_reference}.
 #' @param background_genes Background expressed genes for NicheNet.
-#' @param condition_col,condition_oi,condition_reference Receiver condition
-#'   contrast used to derive \code{geneset} for NicheNet.
+#' @param condition_by Metadata column containing receiver conditions.
+#' @param condition_col Deprecated alias for \code{condition_by}.
+#' @param condition_oi,condition_reference Receiver condition contrast used to
+#'   derive \code{geneset} for NicheNet.
 #' @param ligand_target_matrix,lr_network NicheNet prior matrices/networks.
 #'   These must be supplied for \code{method = "nichenetr"}.
 #' @param expressed_pct Minimum fraction of cells expressing a gene before it
@@ -290,7 +292,7 @@ sn_run_cell_communication <- function(object,
                                       receiver = NULL,
                                       geneset = NULL,
                                       background_genes = NULL,
-                                      condition_col = NULL,
+                                      condition_by = NULL,
                                       condition_oi = NULL,
                                       condition_reference = NULL,
                                       ligand_target_matrix = NULL,
@@ -304,9 +306,11 @@ sn_run_cell_communication <- function(object,
                                       resource = NULL,
                                       store_name = "default",
                                       return_object = TRUE,
+                                      condition_col = NULL,
                                       ...) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
+  condition_by <- .sn_resolve_legacy_arg(condition_by, condition_col, "condition_by", "condition_col")
   if (is.null(group_by) || !group_by %in% colnames(object[[]])) {
     stop("`group_by` must identify a metadata column in `object`.", call. = FALSE)
   }
@@ -334,7 +338,7 @@ sn_run_cell_communication <- function(object,
       receiver = receiver,
       geneset = geneset,
       background_genes = background_genes,
-      condition_col = condition_col,
+      condition_col = condition_by,
       condition_oi = condition_oi,
       condition_reference = condition_reference,
       ligand_target_matrix = ligand_target_matrix,

@@ -79,7 +79,7 @@ an LLM; this is the step that keeps interpretation transparent.
 annotation_evidence <- sn_prepare_annotation_evidence(
   object = pbmc,
   de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   n_markers = 8,
   include_qc = TRUE,
   reduction = "umap"
@@ -94,7 +94,7 @@ de_evidence <- sn_prepare_de_evidence(
 results_evidence <- sn_prepare_results_evidence(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   n_markers = 5
 )
 
@@ -148,7 +148,7 @@ The high-level helper can return the same prompt directly.
 annotation_prompt <- sn_interpret_annotation(
   object = pbmc,
   de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   output_format = "llm",
   background = "Annotate PBMC3k clusters conservatively."
@@ -215,7 +215,7 @@ under `object@misc$interpretation_results`.
 results_prompt <- sn_write_results(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Write a concise Results paragraph for PBMC3k clustering."
 )
@@ -223,7 +223,7 @@ results_prompt <- sn_write_results(
 legend_prompt <- sn_write_figure_legend(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Describe a UMAP and marker dot plot."
 )
@@ -231,7 +231,7 @@ legend_prompt <- sn_write_figure_legend(
 summary_prompt <- sn_write_presentation_summary(
   object = pbmc,
   cluster_de_name = "cluster_markers",
-  cluster_col = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Prepare a short collaborator-facing PBMC3k summary."
 )

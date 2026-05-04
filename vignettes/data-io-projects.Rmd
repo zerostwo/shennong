@@ -36,7 +36,10 @@ when you render with `SHENNONG_RUN_VIGNETTES=true`.
 
 The package loader returns a Seurat object by default. If you need the original
 10x H5 path instead, set `return_object = FALSE`; this is useful when you want
-to show exactly what was read from disk.
+to show exactly what was read from disk. You can also request several example
+datasets at once; filtered matrices are initialized separately and returned as
+one merged Seurat object with the source dataset stored in the `sample`
+metadata column.
 
 ```{r load-pbmc3k}
 library(Shennong)
@@ -51,6 +54,22 @@ pbmc_h5 <- sn_load_data(
 )
 
 pbmc_h5
+
+pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
+table(pbmc_merged$sample)
+```
+
+`sn_load_data()` uses the general Zenodo downloader underneath. Public Zenodo
+records do not need a token; pass `token = ...` only for restricted or private
+records that your account can access.
+
+```{r zenodo-download}
+public_h5 <- sn_download_zenodo(
+  record_id = "14884845",
+  files = "pbmc3k_filtered_feature_bc_matrix.h5"
+)
+
+public_h5
 ```
 
 ## Read once, then initialize with metadata
@@ -116,21 +135,48 @@ outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-io"))
 metadata_path <- file.path(outdir, "pbmc3k_metadata.csv")
 object_path <- file.path(outdir, "pbmc3k_initialized.qs")
 
-sn_write(pbmc[[]], metadata_path)
+metadata_export <- cbind(cell = rownames(pbmc[[]]), pbmc[[]])
+sn_write(metadata_export, metadata_path, row.names = FALSE)
 sn_write(pbmc, object_path)
 
 sn_check_file(c(metadata_path, object_path))
 
-metadata <- sn_read(metadata_path, row_names = 1)
+metadata <- sn_read(metadata_path, row_names = "cell")
 pbmc_cached <- sn_read(object_path)
 
 dim(metadata)
 pbmc_cached
 ```
 
-`row_names = 1` or `row_names = "cell"` is useful when a CSV carries cell IDs
-as a regular column. This avoids ad hoc `read.csv(..., row.names = ...)` calls
-that are easy to forget in later scripts.
+`row_names = "cell"` is useful when a CSV carries cell IDs as a regular
+column. This avoids ad hoc `read.csv(..., row.names = ...)` calls that are easy
+to forget in later scripts.
+
+## Prepare a reusable Zenodo upload
+
+When an intermediate object or reference dataset should be reused by another
+project, upload the exact files and a versioned manifest to Zenodo with
+`sn_upload_zenodo()`. The default is draft-first: inspect the Zenodo draft, then
+rerun with `publish = TRUE` only when the record is ready.
+
+```{r zenodo-dry-run}
+zenodo_plan <- sn_upload_zenodo(
+  files = c(metadata_path, object_path),
+  title = "PBMC3k initialized Shennong example",
+  creators = "Duan, Songqi",
+  version = "2026.05.04",
+  sandbox = TRUE,
+  dry_run = TRUE
+)
+
+zenodo_plan$files[, c("file", "size", "md5")]
+zenodo_plan$manifest_path
+```
+
+In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and remove
+`dry_run = TRUE`. The uploaded `shennong_zenodo_manifest.json` records the
+dataset version, Shennong version, file sizes, and checksums so future analyses
+can verify they are reusing the same data release.
 
 ## Add metadata exported from AnnData
 

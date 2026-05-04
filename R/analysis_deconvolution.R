@@ -13,11 +13,13 @@
 #'   gene-by-cell matrix-like object.
 #' @param bulk A bulk expression matrix-like object.
 #' @param method One of \code{"bayesprism"} or \code{"cibersortx"}.
-#' @param cell_type_col Metadata column containing cell-type labels when
+#' @param cell_type_by Metadata column containing cell-type labels when
 #'   \code{x} is a \code{Seurat} object. If \code{x} is a matrix, supply
 #'   \code{cell_type_labels} instead.
-#' @param cell_state_col Optional metadata column containing cell-state labels.
+#' @param cell_state_by Optional metadata column containing cell-state labels.
 #'   Defaults to \code{cell_type_col}.
+#' @param cell_type_col Deprecated alias for \code{cell_type_by}.
+#' @param cell_state_col Deprecated alias for \code{cell_state_by}.
 #' @param cell_type_labels Optional vector of cell-type labels for matrix
 #'   references.
 #' @param cell_state_labels Optional vector of cell-state labels for matrix
@@ -28,7 +30,7 @@
 #'   \code{"rows"} for the common gene-by-sample layout, \code{"columns"} for
 #'   sample-by-gene input, or \code{"auto"} to infer it from the overlap with
 #'   the reference genes.
-#' @param key Optional malignant-cell label passed to BayesPrism.
+#' @param key Optional malignant-cell label_by passed to BayesPrism.
 #' @param outdir Output directory used by CIBERSORTx file export.
 #' @param prefix Prefix used for exported files and stored result names.
 #' @param store_name Name used under \code{object@misc$deconvolution_results}
@@ -42,8 +44,8 @@
 #' @param cibersortx_container_path Optional Apptainer image path.
 #' @param cibersortx_dry_run If \code{TRUE}, prepare files and return local
 #'   commands without running the container.
-#' @param cibersortx_rmbatch_b_mode Whether to enable B-mode batch correction.
-#' @param cibersortx_rmbatch_s_mode Whether to enable S-mode batch correction.
+#' @param cibersortx_rmbatch_b_mode Whether to enable B-mode batch_by correction.
+#' @param cibersortx_rmbatch_s_mode Whether to enable S-mode batch_by correction.
 #' @param cibersortx_perm Number of permutations used by the fractions module.
 #' @param cibersortx_qn Whether to enable quantile normalization.
 #' @param cibersortx_absolute Whether to enable absolute mode.
@@ -76,7 +78,7 @@
 #'     ref,
 #'     bulk = bulk,
 #'     method = "cibersortx",
-#'     cell_type_col = "cell_type",
+#'     cell_type_by = "cell_type",
 #'     outdir = tempdir(),
 #'     cibersortx_email = "demo@example.org",
 #'     cibersortx_token = "fake-token",
@@ -90,8 +92,8 @@
 sn_deconvolve_bulk <- function(x,
                                bulk,
                                method = c("bayesprism", "cibersortx"),
-                               cell_type_col = NULL,
-                               cell_state_col = NULL,
+                               cell_type_by = NULL,
+                               cell_state_by = NULL,
                                cell_type_labels = NULL,
                                cell_state_labels = NULL,
                                assay = "RNA",
@@ -118,15 +120,19 @@ sn_deconvolve_bulk <- function(x,
                                opt_control = list(),
                                n_cores = 1,
                                update_gibbs = TRUE,
-                               return_object = TRUE) {
+                               return_object = TRUE,
+                               cell_type_col = NULL,
+                               cell_state_col = NULL) {
   method <- match.arg(method)
   bulk_gene_axis <- match.arg(bulk_gene_axis)
   cibersortx_container <- match.arg(cibersortx_container)
+  cell_type_by <- .sn_resolve_legacy_arg(cell_type_by, cell_type_col, "cell_type_by", "cell_type_col")
+  cell_state_by <- .sn_resolve_legacy_arg(cell_state_by, cell_state_col, "cell_state_by", "cell_state_col")
 
   reference_info <- .sn_prepare_deconvolution_reference(
     x = x,
-    cell_type_col = cell_type_col,
-    cell_state_col = cell_state_col,
+    cell_type_col = cell_type_by,
+    cell_state_col = cell_state_by,
     cell_type_labels = cell_type_labels,
     cell_state_labels = cell_state_labels,
     assay = assay,
@@ -324,8 +330,8 @@ sn_set_cibersortx_credentials <- function(email, token) {
 }
 
 .sn_fraction_matrix_to_long <- function(fraction_matrix,
-                                        sample_col = "sample",
-                                        cell_type_col = "cell_type",
+                                        sample_by = "sample",
+                                        cell_type_by = "cell_type",
                                         value_col = "fraction") {
   fraction_matrix <- as.matrix(fraction_matrix)
   sample_names <- rownames(fraction_matrix) %||% paste0("sample_", seq_len(nrow(fraction_matrix)))
@@ -337,7 +343,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
     stringsAsFactors = FALSE
   )
   table$fraction <- as.numeric(fraction_matrix[cbind(match(table$sample, sample_names), match(table$cell_type, cell_types))])
-  names(table) <- c(sample_col, cell_type_col, value_col)
+  names(table) <- c(sample_by, cell_type_by, value_col)
   tibble::as_tibble(table)
 }
 
@@ -452,7 +458,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
                                           refsample = "sample_file_for_cibersort.txt",
                                           sigmatrix = "signature_matrix.txt",
                                           mixture = "mixture_file_for_cibersort.txt",
-                                          label = "shennong",
+                                          label_by = "shennong",
                                           rmbatch_b_mode = FALSE,
                                           rmbatch_s_mode = FALSE,
                                           perm = 0,
@@ -496,7 +502,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
       "--mixture", shQuote(mixture),
       "--sigmatrix", shQuote(sigmatrix),
       "--perm", as.integer(perm),
-      "--label", shQuote(label),
+      "--label", shQuote(label_by),
       "--rmbatchBmode", toupper(as.character(isTRUE(rmbatch_b_mode))),
       "--rmbatchSmode", toupper(as.character(isTRUE(rmbatch_s_mode))),
       "--sourceGEPs", shQuote(sigmatrix),
@@ -573,7 +579,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
     "_file_for_cibersort_inferred_refsample.bm.K", as.integer(k_max), ".txt"
   )
   signature_path <- file.path(outdir, signature_filename)
-  label <- prefix
+  label_by <- prefix
 
   fractions_command <- .sn_create_cibersortx_command(
     input_dir = outdir,
@@ -587,7 +593,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
     refsample = basename(reference_path),
     sigmatrix = basename(signature_path),
     mixture = basename(mixture_path),
-    label = label,
+    label_by = label_by,
     rmbatch_b_mode = rmbatch_b_mode,
     rmbatch_s_mode = rmbatch_s_mode,
     perm = perm,
@@ -601,9 +607,9 @@ sn_set_cibersortx_credentials <- function(email, token) {
   }
 
   default_result_name <- if (isTRUE(rmbatch_b_mode) || isTRUE(rmbatch_s_mode)) {
-    paste0("CIBERSORTx_", label, "_Adjusted.txt")
+    paste0("CIBERSORTx_", label_by, "_Adjusted.txt")
   } else {
-    paste0("CIBERSORTx_", label, "_Results.txt")
+    paste0("CIBERSORTx_", label_by, "_Results.txt")
   }
   result_path <- result_path %||% file.path(outdir, default_result_name)
   imported <- if (!isTRUE(dry_run) && file.exists(result_path)) .sn_import_cibersortx_fractions(result_path = result_path) else NULL
@@ -652,7 +658,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
 #' @param store_name Name used under \code{object@misc$deconvolution_results}.
 #' @param method Deconvolution backend, for example \code{"bayesprism"}.
 #' @param bulk_samples Optional bulk sample identifiers.
-#' @param reference_label Metadata column or label set used as the reference.
+#' @param reference_label Metadata column or label_by set used as the reference.
 #' @param artifacts Optional backend-specific artifacts or file paths.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'

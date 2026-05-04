@@ -6,8 +6,8 @@
 \usage{
 sn_compare_composition(
   x,
-  sample_col,
-  group_col,
+  sample_by = NULL,
+  group_by = NULL,
   variable,
   contrast,
   min_cells = 20,
@@ -15,15 +15,17 @@ sn_compare_composition(
   test = c("wilcox", "none"),
   adjust_method = "BH",
   additional_cols = NULL,
-  return_sample_data = FALSE
+  return_sample_data = FALSE,
+  sample_col = NULL,
+  group_col = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object or a data frame containing cell-level metadata.}
 
-\item{sample_col}{Column defining biological samples.}
+\item{sample_by}{Column defining biological samples.}
 
-\item{group_col}{Column defining the group or condition to compare between
+\item{group_by}{Column defining the group or condition to compare between
 samples.}
 
 \item{variable}{Column whose composition should be compared, for example cell
@@ -49,6 +51,10 @@ intermediate composition table before comparison.}
 
 \item{return_sample_data}{Logical; if \code{TRUE}, return both the summary
 table and the completed sample-level composition table.}
+
+\item{sample_col}{Deprecated alias for \code{sample_by}.}
+
+\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per \code{variable} level. When
@@ -66,8 +72,8 @@ samples are available.
 \dontrun{
 comparison <- sn_compare_composition(
   seu,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   variable = "cell_type",
   contrast = c("treated", "control")
 )

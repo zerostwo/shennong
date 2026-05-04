@@ -1,7 +1,7 @@
 Package: Shennong
 Type: Package
 Title: Toolkit for Interpreting Omics Data
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: c(
     person("Songqi", "Duan", , "duan@songqi.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-0822-5883"))
@@ -98,7 +98,8 @@ Suggests:
     SummarizedExperiment,
     SoupX,
     tidytemplate,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    zen4R
 Remotes:
     github::genecell/COSGR,
     github::PaulingLiu/ROGUE,

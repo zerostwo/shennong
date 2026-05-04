@@ -8,13 +8,16 @@ sn_store_milo(
   object,
   result,
   store_name = "default",
-  sample_col,
-  group_col,
+  sample_by = NULL,
+  group_by = NULL,
   comparison = NULL,
   reduction = "pca",
   dims = NULL,
+  annotation_by = NULL,
+  return_object = TRUE,
+  sample_col = NULL,
   annotation_col = NULL,
-  return_object = TRUE
+  group_col = NULL
 )
 }
 \arguments{
@@ -24,9 +27,9 @@ sn_store_milo(
 
 \item{store_name}{Name used under \code{object@misc$milo_results}.}
 
-\item{sample_col}{Sample column used for the design.}
+\item{sample_by}{Sample column used for the design.}
 
-\item{group_col}{Group column used for the design.}
+\item{group_by}{Group column used for the design.}
 
 \item{comparison}{Human-readable comparison label.}
 
@@ -34,9 +37,15 @@ sn_store_milo(
 
 \item{dims}{Optional embedding dimension names or indices used for milo.}
 
-\item{annotation_col}{Optional neighborhood annotation column.}
+\item{annotation_by}{Optional neighborhood annotation column.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
+
+\item{sample_col}{Deprecated alias for \code{sample_by}.}
+
+\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
+
+\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A \code{Seurat} object or stored-result list.

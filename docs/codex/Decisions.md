@@ -1,6 +1,33 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04
+
+## 2026-05-04
+
+- Public arguments that name metadata columns should prefer the `*_by` family:
+  `group_by`, `sample_by`, `batch_by`, `label_by`, `cluster_by`,
+  `annotation_by`, `condition_by`, `reference_by`, `cell_type_by`, and
+  `cell_state_by`. Older names stay as deprecated aliases when they are
+  already shipped, but new examples and docs should use canonical `*_by`
+  arguments so package-facing workflows remain consistent.
+- Label transfer should expose scANVI/scArches through the existing
+  `sn_transfer_labels()` contract rather than a separate public transfer API.
+  The query receives imported prediction metadata and provenance under
+  `object@misc$label_transfer`, matching the Seurat and Coralysis paths.
+- Reusable data release should flow through a draft-first Zenodo helper instead
+  of ad hoc `zen4R` scripts. `sn_upload_zenodo()` keeps the user interface
+  small, does not publish by default, and always uploads a Shennong manifest
+  with file checksums and dataset version metadata for later reproducibility
+  checks.
+- Reusable data download should be a separate public helper,
+  `sn_download_zenodo()`, because public Zenodo records can be reused without
+  a token while restricted/private records only need an explicit token when
+  access control requires one. Example-data loading should reuse this helper
+  instead of maintaining a separate download path.
+- Credentialed Zenodo validation should create an unpublished draft rather than
+  publishing test data. A successful token smoke test is enough to verify
+  authentication, draft deposition, DOI reservation, file upload, and manifest
+  upload without making the test payload part of the public scholarly record.
 
 ## 2026-05-03
 
@@ -94,7 +121,7 @@ Last updated: 2026-05-03
   marker result rather than failing on a missing required argument.
 - Cluster annotation prompts should optimize first for evidence completeness,
   then for brevity. Shennong now allows annotation prompts to include the full
-  cluster evidence table instead of a generic eight-row preview so LLM-based
+  cluster_by evidence table instead of a generic eight-row preview so LLM-based
   annotation cannot silently drop later clusters in larger Seurat objects.
 - Shennong should not maintain its own persistent LLM provider registry or
   request-history layer when `ellmer` already owns transport, credentials, and
@@ -105,10 +132,10 @@ Last updated: 2026-05-03
   table. The current guardrails now explicitly cover `KIT+ ILCP-like` versus
   mature `ILC3` in blood, mixed `T/NK` states, `NK/ILC3` transitional states,
   and `erythroid contamination`, but they do so through marker-program priors
-  and context-sensitive prompt guidance rather than a closed manual label map.
+  and context-sensitive prompt guidance rather than a closed manual label_by map.
 - Sorted or enriched single-cell datasets need explicit annotation priors. For
   cases such as blood ILC-sorted data, Shennong now exposes
-  `label_candidates` so prompts can constrain the plausible label space
+  `label_candidates` so prompts can constrain the plausible label_by space
   without forcing a hard whitelist.
 - Annotation evidence should favor specificity over raw rank when possible.
   Shennong now allows marker and enrichment summaries to prefer
@@ -293,7 +320,7 @@ Last updated: 2026-05-03
 - `sn_quick_cluster()` will no longer remain as a separate clustering implementation; its non-integration workflow should be absorbed by `sn_run_cluster()`.
 - `sn_load_pbmc()` was retained as a deprecated wrapper around `sn_load_data()` to avoid an unnecessary hard break while still moving the public examples toward the generalized loader.
 - `sn_run_cluster()` now owns both single-dataset clustering and Harmony integration. The integration path was simplified to a shared HVG/PCA workflow before Harmony instead of the previous split/join-plus-`SelectIntegrationFeatures5()` path because the simpler flow validated reliably on real PBMC data.
-- `sn_remove_ambient_contamination()` now uses a common API for SoupX and decontX: shared input coercion, shared optional cluster injection, SoupX-specific `raw` requirement, and Seurat-object round-tripping only when the caller actually supplied a Seurat object.
+- `sn_remove_ambient_contamination()` now uses a common API for SoupX and decontX: shared input coercion, shared optional cluster_by injection, SoupX-specific `raw` requirement, and Seurat-object round-tripping only when the caller actually supplied a Seurat object.
 - `DESCRIPTION` was updated to reflect the packages touched in this task, and the minimum R version was raised to `R (>= 4.1.0)` because the package already uses base pipe syntax.
 - The package README is now maintained through `README.Rmd` and rendered to `README.md`; examples are shown but not executed during README rendering to keep the build stable.
 - The clustering vignette is now guarded by the `SHENNONG_RUN_VIGNETTES` environment variable so package checks remain deterministic while preserving the documented workflow.
@@ -354,6 +381,7 @@ Last updated: 2026-05-03
 - Palette management should be usable both interactively and programmatically. Printing helpers such as `show_all_palettes()` remain for discovery, but scripts should use `sn_list_palettes()` and `sn_get_palette()` as the stable API surface.
 - Discrete and continuous palette resolution should follow one registry and one direction convention. Shennong now treats `sn_get_palette()` as the common palette API and keeps plot helpers thin wrappers around shared palette resolvers instead of mixing manual/discrete and distiller/continuous code paths.
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
+- Observed-over-expected enrichment belongs beside composition summaries rather than as a plotting-only helper. `sn_calculate_roe()` uses the same `group_by` / `variable` contract as `sn_calculate_composition()`, fills absent combinations with zero observed counts, and returns a long audit table by default with matrix output only as an opt-in convenience.
 
 ## 2026-03-28
 
@@ -368,7 +396,7 @@ Last updated: 2026-05-03
 
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
 
-- Composition filtering and composition comparison need separate thresholds: `sn_calculate_composition()` should filter returned categories by count, while `sn_compare_composition()` should keep `min_cells` as a sample-level replicate filter and expose a simple ordered direction label derived from `log2_fc`.
+- Composition filtering and composition comparison need separate thresholds: `sn_calculate_composition()` should filter returned categories by count, while `sn_compare_composition()` should keep `min_cells` as a sample-level replicate filter and expose a simple ordered direction label_by derived from `log2_fc`.
 - Any new exported function must update `_pkgdown.yml` in the same change set. Pkgdown reference-index omissions are now a known recurring failure mode, so local pre-push validation should include `pkgdown::build_reference_index()`.
 - IO helpers should honor their documented contracts across supported custom formats. Named `row_names`, detected 10x spatial directories, existing `SingleCellExperiment` h5ad exports, and current `qs2` save signatures are maintained as regression-tested behavior.
 - `sn_run_celltypist()` has two return modes by input type: Seurat inputs are updated with prediction metadata, while path inputs return the parsed prediction table because there is no Seurat object available for metadata writeback.
@@ -379,10 +407,10 @@ Last updated: 2026-05-03
 - Gene-symbol standardization should never produce `NA` feature names. When `HGNChelper` cannot provide a clean unambiguous replacement but the original symbol is present, preserve the original symbol and only drop truly missing or empty names.
 - Rare-aware feature discovery in `sn_run_cluster()` should stay small and understandable. The clustering wrapper now keeps `gini` for expression-sparsity discovery and `local_markers` for rare-group marker discovery, while removing less common `local_hvg` and PCA-dependent `ciara` modes from this path.
 - Manual and automatic feature priors should meet at one PCA feature set. `hvg_features` remains the explicit user prior, while `rare_feature_method` supplies automatic additions; both are merged with internal HVGs before scaling and PCA.
-- Reference label projection is common enough to deserve a Shennong wrapper. `sn_transfer_labels()` keeps the standard Seurat anchor workflow, uses the query object as the first argument for pipe-friendly calls, and records metadata/provenance in one reproducible call.
+- Reference label_by projection is common enough to deserve a Shennong wrapper. `sn_transfer_labels()` keeps the standard Seurat anchor workflow, uses the query object as the first argument for pipe-friendly calls, and records metadata/provenance in one reproducible call.
 - Coralysis reference mapping belongs in `sn_transfer_labels()` rather than a separate public function. The same query-first API now selects `method = "coralysis"` and expects a Coralysis-trained reference stored in `reference@misc$coralysis`, preserving the object-priority style while using the real Coralysis mapping backend.
 - Simulation should be method-based because scDesign3 is not the only possible backend. `sn_simulate(method = "scdesign3")` is the public entry point, while `sn_simulate_scdesign3()` remains the backend-specific implementation wrapper.
-- Label readability in `sn_plot_dim()` should be controllable. The white label halo/background is now optional through `label_halo`, and repel labels should remain repel-aware instead of being converted to fixed-position shadow text.
+- Label readability in `sn_plot_dim()` should be controllable. The white label_by halo/background is now optional through `label_halo`, and repel labels should remain repel-aware instead of being converted to fixed-position shadow text.
 - Focused marker heatmaps are a first-class visualization helper. `sn_plot_heatmap()` is intentionally gene-list driven and validates/scales the selected features instead of trying to infer markers automatically. It supports both cell-level inspection and group-averaged summaries because users need both raw heterogeneity and compact marker-panel comparisons.
 - Rasterized feature plots should preserve the ordinary ggplot point-size contract. `sn_plot_feature(raster = TRUE)` therefore prefers `ggrastr` post-rasterization when available instead of Seurat's `scattermore` branch, whose `pointsize` units do not match regular `geom_point(size = ...)` closely enough for tiny values such as `pt_size = 0.01`.
 - Communication inference must delegate to real backends rather than improvised ligand-receptor joins. `sn_run_cell_communication()` wraps CellChat, NicheNet, and LIANA, and the NicheNet path requires explicit prior resources so provenance remains clear.

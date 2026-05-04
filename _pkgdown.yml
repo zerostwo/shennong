@@ -56,9 +56,11 @@ reference:
       - shennong_gene_annotations
       - shennong_signature_catalog
       - sn_load_data
+      - sn_download_zenodo
       - sn_list_10x_paths
       - sn_read
       - sn_write
+      - sn_upload_zenodo
       - sn_add_data_from_anndata
   - title: Preprocessing and QC
     contents:
@@ -107,6 +109,7 @@ reference:
   - title: Composition and Comparative Analysis
     contents:
       - sn_calculate_composition
+      - sn_calculate_roe
       - sn_compare_composition
       - sn_run_milo
       - sn_store_milo

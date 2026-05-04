@@ -115,7 +115,7 @@
   )
   object@misc$integration <- list(
     method = "harmony",
-    batch = batch,
+    batch_by = batch,
     group_by_vars = group_by_vars,
     reduction = "harmony",
     input_reduction = reduction,
@@ -195,7 +195,7 @@
   store_sce <- integration_control$store_sce %||% TRUE
   object@misc$integration <- list(
     method = "coralysis",
-    batch = batch,
+    batch_by = batch,
     reduction = "coralysis",
     input_features = feature_set,
     coralysis_dimred = dimred_name,
@@ -255,7 +255,7 @@
   SeuratObject::DefaultAssay(object = object) <- old_default_assay
   object@misc$integration <- list(
     method = method,
-    batch = batch,
+    batch_by = batch,
     reduction = new_reduction,
     input_reduction = reduction
   )
@@ -559,7 +559,7 @@
   }
   object@misc$integration <- list(
     method = method,
-    batch = batch,
+    batch_by = batch,
     reduction = reduction,
     input_features = features,
     run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
@@ -577,16 +577,16 @@
                                      integration_control = list(),
                                      verbose = TRUE) {
   if (identical(method, "scanvi")) {
-    labels_key <- integration_control$labels_key %||% integration_control$label_col %||% NULL
+    labels_key <- integration_control$label_by %||% integration_control$labels_key %||% integration_control$label_col %||% NULL
     if (is.null(labels_key) || !nzchar(labels_key) || !labels_key %in% colnames(object[[]])) {
       stop(
-        "`integration_control$labels_key` must name a metadata column when ",
+        "`integration_control$label_by` must name a metadata column when ",
         "`integration_method = \"scanvi\"`.",
         call. = FALSE
       )
     }
   } else {
-    labels_key <- integration_control$labels_key %||% NULL
+    labels_key <- integration_control$label_by %||% integration_control$labels_key %||% NULL
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
@@ -691,22 +691,24 @@
 #'
 #' @examples
 #' \dontrun{
-#' obj <- sn_run_scvi(obj, batch = "sample_id")
+#' obj <- sn_run_scvi(obj, batch_by = "sample_id")
 #' obj <- sn_run_scanvi(
 #'   obj,
-#'   batch = "sample_id",
-#'   integration_control = list(labels_key = "cell_type")
+#'   batch_by = "sample_id",
+#'   integration_control = list(label_by = "cell_type")
 #' )
 #' }
 #'
 #' @export
 sn_run_scvi <- function(object,
-                        batch,
+                        batch_by = NULL,
                         integration_control = list(),
+                        batch = NULL,
                         ...) {
+  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
   sn_run_cluster(
     object = object,
-    batch = batch,
+    batch_by = batch_by,
     integration_method = "scvi",
     integration_control = integration_control,
     ...
@@ -716,12 +718,14 @@ sn_run_scvi <- function(object,
 #' @rdname sn_run_scvi
 #' @export
 sn_run_scanvi <- function(object,
-                          batch,
+                          batch_by = NULL,
                           integration_control = list(),
+                          batch = NULL,
                           ...) {
+  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
   sn_run_cluster(
     object = object,
-    batch = batch,
+    batch_by = batch_by,
     integration_method = "scanvi",
     integration_control = integration_control,
     ...
@@ -1105,7 +1109,7 @@ sn_run_scanvi <- function(object,
     "        else:",
     "            out.append(str(item))",
     "    return out",
-    "rare_sets = [_to_str_list(cluster) for cluster in result]",
+    "rare_sets = [_to_str_list(cluster) for cluster_by in result]",
     "sub_clusters = [str(x) for x in sub_clusters]",
     "score = [float(x) for x in score]",
     "payload = {",
@@ -1286,8 +1290,9 @@ sn_run_scanvi <- function(object,
 #' @param method Rare-cell method. Supported values are \code{"gini"},
 #'   \code{"sccad"}, \code{"sca"}, \code{"gapclust"}, and
 #'   \code{"challenging_groups"}.
-#' @param group Optional metadata column used with
+#' @param group_by Optional metadata column used with
 #'   \code{method = "challenging_groups"}.
+#' @param group Deprecated alias for \code{group_by}.
 #' @param reduction Reduction used by graph-based methods. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional embedding dimensions to use.
@@ -1329,7 +1334,7 @@ sn_run_scanvi <- function(object,
 #' @export
 sn_detect_rare_cells <- function(object,
                                  method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
-                                 group = NULL,
+                                 group_by = NULL,
                                  reduction = .sn_default_metric_reduction(object),
                                  dims = NULL,
                                  assay = "RNA",
@@ -1351,10 +1356,17 @@ sn_detect_rare_cells <- function(object,
                                  sca_n_comps = 20,
                                  sca_iters = 3,
                                  sca_nbhd_size = 15,
-                                 sca_model = "wilcoxon") {
+                                 sca_model = "wilcoxon",
+                                 group = NULL) {
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.", call. = FALSE)
   }
+  group_by <- .sn_resolve_legacy_arg(
+    value = group_by,
+    legacy = group,
+    value_name = "group_by",
+    legacy_name = "group"
+  )
 
   method <- rlang::arg_match(method)
   expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
@@ -1426,20 +1438,20 @@ sn_detect_rare_cells <- function(object,
     )
     rare_score <- .sn_score_embedding_rarity(sca_embedding, k = k)
   } else {
-    if (is.null(group)) {
-      stop("`group` must be supplied when `method = \"challenging_groups\"`.", call. = FALSE)
+    if (is.null(group_by)) {
+      stop("`group_by` must be supplied when `method = \"challenging_groups\"`.", call. = FALSE)
     }
     group_tbl <- sn_identify_challenging_groups(
       x = object,
-      group = group,
+      group_by = group_by,
       reduction = reduction,
       dims = dims,
       k = k,
       neighbor_method = "auto",
       seed = seed
     )
-    group_scores <- stats::setNames(group_tbl$challenge_score, group_tbl[[group]])
-    rare_score <- unname(group_scores[as.character(object[[group, drop = TRUE]])])
+    group_scores <- stats::setNames(group_tbl$challenge_score, group_tbl[[group_by]])
+    rare_score <- unname(group_scores[as.character(object[[group_by, drop = TRUE]])])
   }
 
   score_threshold <- threshold %||% as.numeric(stats::quantile(rare_score, 0.75, na.rm = TRUE) + 1.5 * stats::IQR(rare_score, na.rm = TRUE))
@@ -1537,18 +1549,21 @@ sn_detect_rare_cells <- function(object,
 #' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
-#' When `batch = NULL`, it performs single-dataset clustering with either the
-#' standard Seurat workflow or an SCTransform workflow. When `batch` is
+#' When `batch_by = NULL`, it performs single-dataset clustering with either the
+#' standard Seurat workflow or an SCTransform workflow. When `batch_by` is
 #' supplied, it performs batch integration followed by clustering and UMAP.
 #'
 #' @param object A \code{Seurat} object.
-#' @param batch A column name in \code{object@meta.data} specifying batch info.
+#' @param batch_by A column name in \code{object@meta.data} specifying batch_by info.
 #'   If \code{NULL}, no integration is performed.
+#' @param batch Deprecated alias for \code{batch_by}.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
-#'   \code{"sctransform"}. The scran workflow is currently only supported when
-#'   \code{batch = NULL}. The SCTransform workflow can currently be combined
-#'   with \code{integration_method = "harmony"} by supplying \code{batch}.
-#' @param integration_method Batch-integration backend used when \code{batch}
+#'   \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
+#'   be followed by any supported \code{integration_method} when
+#'   \code{batch_by} is supplied. The SCTransform workflow can currently be
+#'   combined with \code{integration_method = "harmony"} by supplying
+#'   \code{batch_by}.
+#' @param integration_method Batch-integration backend used when \code{batch_by}
 #'   is supplied. Supported values are \code{"harmony"},
 #'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 #'   \code{"scvi"}, and \code{"scanvi"}.
@@ -1571,7 +1586,7 @@ sn_detect_rare_cells <- function(object,
 #'   \code{manifest_path}, \code{install_pixi}, \code{accelerator},
 #'   \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 #'   \code{model_args}, \code{train_args}, and \code{write_h5ad};
-#'   \code{"scanvi"} additionally requires \code{labels_key} and accepts
+#'   \code{"scanvi"} additionally requires \code{label_by} and accepts
 #'   \code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
 #'   generated directory layout, \code{sn_pixi_config_path()} to inspect the
 #'   bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
@@ -1585,8 +1600,8 @@ sn_detect_rare_cells <- function(object,
 #' @param resolution Resolution parameter for \code{FindClusters}.
 #' @param hvg_group_by Optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. When \code{NULL} and
-#'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
-#'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
+#'   \code{batch_by} is supplied, Shennong reuses \code{batch_by} by default. Use
+#'   \code{NULL} with \code{batch_by = NULL} to compute HVGs on the full object.
 #' @param rare_feature_method Optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
 #'   \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
@@ -1619,11 +1634,11 @@ sn_detect_rare_cells <- function(object,
 #'   from built-in signatures.
 #' @param assay Assay used for clustering. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
-#' @param return_cluster If \code{TRUE}, return only the cluster assignments.
+#' @param return_cluster If \code{TRUE}, return only the cluster_by assignments.
 #' @param verbose Whether to print/log progress messages.
 #'
 #' @return A \code{Seurat} object with clustering results and embeddings, or a
-#'   cluster vector if \code{return_cluster = TRUE}.
+#'   cluster_by vector if \code{return_cluster = TRUE}.
 #'
 #' @examples
 #' \dontrun{
@@ -1635,7 +1650,7 @@ sn_detect_rare_cells <- function(object,
 #'
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
-#'   batch = "sample_id",
+#'   batch_by = "sample_id",
 #'   integration_method = "harmony",
 #'   normalization_method = "seurat",
 #'   hvg_group_by = "sample_id",
@@ -1646,7 +1661,7 @@ sn_detect_rare_cells <- function(object,
 #' }
 #' @export
 sn_run_cluster <- function(object,
-                           batch = NULL,
+                           batch_by = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
                            integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi"),
                            integration_control = list(),
@@ -1671,7 +1686,8 @@ sn_run_cluster <- function(object,
                            assay = "RNA",
                            layer = "counts",
                            return_cluster = FALSE,
-                           verbose = TRUE) {
+                           verbose = TRUE,
+                           batch = NULL) {
   check_installed("Seurat")
   check_installed("HGNChelper")
 
@@ -1684,6 +1700,7 @@ sn_run_cluster <- function(object,
   if (!is.list(integration_control)) {
     stop("`integration_control` must be a named list.", call. = FALSE)
   }
+  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
     c("none", "gini", "local_markers"),
@@ -1707,29 +1724,26 @@ sn_run_cluster <- function(object,
   )
   object <- prepared$object
 
-  if (!is_null(x = batch)) {
-    if (!(batch %in% colnames(object@meta.data))) {
-      stop(glue("Batch variable '{batch}' not found in metadata."))
-    }
-    if (normalization_method == "scran") {
-      stop("`normalization_method = \"scran\"` is currently only supported when `batch = NULL`.")
+  if (!is_null(x = batch_by)) {
+    if (!(batch_by %in% colnames(object@meta.data))) {
+      stop(glue("Batch variable '{batch_by}' not found in metadata."))
     }
     if (normalization_method == "sctransform" && integration_method != "harmony") {
       stop("SCTransform integration is currently supported only with `integration_method = \"harmony\"`.", call. = FALSE)
     }
     if (verbose) {
-      .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch = '{batch}'.")
+      .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch_by = '{batch_by}'.")
     }
   }
 
-  if (is_null(hvg_group_by) && !is_null(batch)) {
-    hvg_group_by <- batch
+  if (is_null(hvg_group_by) && !is_null(batch_by)) {
+    hvg_group_by <- batch_by
   }
 
   if (verbose) {
     .sn_log_info(
       "[sn_run_cluster] Normalization method = {normalization_method}; ",
-      "batch = {batch %||% 'none'}; integration_method = {if (is.null(batch)) 'none' else integration_method}."
+      "batch_by = {batch_by %||% 'none'}; integration_method = {if (is.null(batch_by)) 'none' else integration_method}."
     )
   }
 
@@ -1820,14 +1834,14 @@ sn_run_cluster <- function(object,
       seed.use = 717
     )
 
-    if (is_null(x = batch)) {
+    if (is_null(x = batch_by)) {
       reduction <- "pca"
     } else {
       if (verbose) .sn_log_info("[3/5] Running {integration_method} integration.")
       integration <- .sn_run_batch_integration(
         object = object,
         method = integration_method,
-        batch = batch,
+        batch = batch_by,
         reduction = "pca",
         features = hvg,
         assay = assay,
@@ -1949,14 +1963,14 @@ sn_run_cluster <- function(object,
       seed.use = 717
     )
 
-    if (is_null(x = batch)) {
+    if (is_null(x = batch_by)) {
       reduction <- "pca"
     } else {
       if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
       integration <- .sn_run_batch_integration(
         object = object,
         method = integration_method,
-        batch = batch,
+        batch = batch_by,
         reduction = "pca",
         features = hvg,
         assay = assay,
@@ -2006,6 +2020,123 @@ sn_run_cluster <- function(object,
   Seurat::TransferData(...)
 }
 
+.sn_prepare_label_transfer_name <- function(prefix, cells) {
+  paste0(prefix, "_", .sn_metadata_suffix(cells))
+}
+
+.sn_transfer_labels_scanvi <- function(object,
+                                       reference,
+                                       label_by,
+                                       prediction_prefix,
+                                       assay = NULL,
+                                       batch_by = NULL,
+                                       features = NULL,
+                                       transfer_control = list(),
+                                       return_anchors = FALSE,
+                                       verbose = TRUE,
+                                       method_name = "scanvi") {
+  if (!inherits(reference, "Seurat")) {
+    stop("`reference` must be a Seurat object for scANVI/scArches label_by transfer.", call. = FALSE)
+  }
+  if (!label_by %in% colnames(reference[[]])) {
+    stop(glue("`label_by` column '{label_by}' was not found in `reference` metadata."), call. = FALSE)
+  }
+  if (!is.list(transfer_control)) {
+    stop("`transfer_control` must be a named list.", call. = FALSE)
+  }
+
+  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
+  reference_assay <- transfer_control$reference_assay %||% assay
+  query_assay <- transfer_control$query_assay %||% assay
+  if (!reference_assay %in% names(reference@assays)) {
+    stop(glue("Reference assay '{reference_assay}' was not found."), call. = FALSE)
+  }
+  if (!query_assay %in% names(object@assays)) {
+    stop(glue("Query assay '{query_assay}' was not found."), call. = FALSE)
+  }
+
+  reference_prefix <- transfer_control$reference_prefix %||% "reference"
+  query_prefix <- transfer_control$query_prefix %||% "query"
+  reference_cells <- .sn_prepare_label_transfer_name(reference_prefix, colnames(reference))
+  query_cells <- .sn_prepare_label_transfer_name(query_prefix, colnames(object))
+
+  reference <- Seurat::RenameCells(reference, new.names = reference_cells)
+  object_for_transfer <- Seurat::RenameCells(object, new.names = query_cells)
+  reference$.sn_transfer_role <- "reference"
+  object_for_transfer$.sn_transfer_role <- "query"
+  transfer_label_by <- transfer_control$label_by %||% transfer_control$label_by %||% ".sn_transfer_label"
+  unlabeled_category <- transfer_control$unlabeled_category %||% "Unknown"
+  reference[[transfer_label_by]] <- as.character(reference[[label_by, drop = TRUE]])
+  object_for_transfer[[transfer_label_by]] <- unlabeled_category
+
+  batch_by <- batch_by %||% transfer_control$batch_by %||% ".sn_transfer_batch"
+  if (!batch_by %in% colnames(reference[[]])) {
+    reference[[batch_by]] <- "reference"
+  }
+  if (!batch_by %in% colnames(object_for_transfer[[]])) {
+    object_for_transfer[[batch_by]] <- "query"
+  }
+
+  common_features <- intersect(rownames(reference[[reference_assay]]), rownames(object_for_transfer[[query_assay]]))
+  feature_set <- features %||% common_features
+  feature_set <- intersect(feature_set, common_features)
+  if (length(feature_set) < 2L) {
+    stop("scANVI/scArches label_by transfer requires at least two shared features.", call. = FALSE)
+  }
+
+  old_reference_assay <- SeuratObject::DefaultAssay(reference)
+  old_query_assay <- SeuratObject::DefaultAssay(object_for_transfer)
+  on.exit(SeuratObject::DefaultAssay(reference) <- old_reference_assay, add = TRUE)
+  on.exit(SeuratObject::DefaultAssay(object_for_transfer) <- old_query_assay, add = TRUE)
+  SeuratObject::DefaultAssay(reference) <- reference_assay
+  SeuratObject::DefaultAssay(object_for_transfer) <- query_assay
+  combined <- merge(reference, y = object_for_transfer, merge.data = FALSE)
+  combined_assay <- SeuratObject::DefaultAssay(combined)
+
+  integration_control <- transfer_control
+  integration_control$label_by <- transfer_label_by
+  integration_control$labels_key <- transfer_label_by
+  integration_control$unlabeled_category <- unlabeled_category
+  integration_control$reduction <- integration_control$reduction %||% method_name
+
+  fit <- .sn_run_scvi_integration(
+    object = combined,
+    method = "scanvi",
+    batch = batch_by,
+    features = feature_set,
+    assay = combined_assay,
+    integration_control = integration_control,
+    verbose = verbose
+  )
+  combined <- fit$object
+  prediction_col <- transfer_control$prediction_col %||% "scanvi_prediction"
+  if (!prediction_col %in% colnames(combined[[]])) {
+    stop("scANVI/scArches backend did not return a prediction column.", call. = FALSE)
+  }
+
+  query_predictions <- combined[[prediction_col, drop = TRUE]][query_cells]
+  metadata <- data.frame(row.names = colnames(object))
+  metadata[[paste0(prediction_prefix, "_label")]] <- as.character(query_predictions)
+  object <- Seurat::AddMetaData(object = object, metadata = metadata)
+  object@misc$label_transfer[[prediction_prefix]] <- list(
+    method = method_name,
+    label_by = label_by,
+    label_col = label_by,
+    batch_by = batch_by,
+    transfer_label_by = transfer_label_by,
+    unlabeled_category = unlabeled_category,
+    prediction_columns = colnames(metadata),
+    run_dir = combined@misc$integration$run_dir %||% NULL,
+    output_h5ad = combined@misc$integration$output_h5ad %||% NULL,
+    transfer_control = transfer_control
+  )
+
+  if (isTRUE(return_anchors)) {
+    return(list(query = object, combined = combined, prediction_col = prediction_col))
+  }
+  object
+}
+
 .sn_coralysis_reference_mapping_backend <- function(...) {
   Coralysis::ReferenceMapping(...)
 }
@@ -2044,14 +2175,14 @@ sn_run_cluster <- function(object,
     return(reference)
   }
   if (!inherits(reference, "Seurat")) {
-    stop("`reference` must be a Seurat or SingleCellExperiment object for Coralysis label transfer.", call. = FALSE)
+    stop("`reference` must be a Seurat or SingleCellExperiment object for Coralysis label_by transfer.", call. = FALSE)
   }
   if (inherits(reference@misc$coralysis, "SingleCellExperiment")) {
     return(reference@misc$coralysis)
   }
   stop(
-    "Coralysis label transfer requires a Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
-    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\", ",
+    "Coralysis label_by transfer requires a Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
+    "Run `sn_run_cluster(reference, batch_by = ..., integration_method = \"coralysis\", ",
     "integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE)))` first.",
     call. = FALSE
   )
@@ -2070,7 +2201,7 @@ sn_run_cluster <- function(object,
                                           verbose = TRUE) {
   check_installed("Coralysis")
   if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat query object for Coralysis label transfer.", call. = FALSE)
+    stop("`object` must be a Seurat query object for Coralysis label_by transfer.", call. = FALSE)
   }
   if (!is.list(transfer_control)) {
     stop("`transfer_control` must be a named list.", call. = FALSE)
@@ -2141,20 +2272,25 @@ sn_run_cluster <- function(object,
 #'
 #' \code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
 #' keeps the common path compact: transfer one metadata label, add the predicted
-#' label and confidence score back to the query, and store a small provenance
+#' label_by and confidence score back to the query, and store a small provenance
 #' record in \code{query@misc$label_transfer}. The default \code{method =
 #' "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
 #' \code{TransferData()} workflow. \code{method = "coralysis"} projects the
 #' query onto a Coralysis-trained reference with
-#' \code{Coralysis::ReferenceMapping()}.
+#' \code{Coralysis::ReferenceMapping()}. \code{method = "scanvi"} and
+#' \code{method = "scarches"} use the managed scVI-family pixi backend to train
+#' a semi-supervised scANVI model with reference labels and query cells marked
+#' as unlabeled, then import the predicted query labels.
 #'
 #' @param object A Seurat query object to annotate. This argument comes first
 #'   so the function can be used in pipes.
 #' @param reference A labeled Seurat reference object.
-#' @param label_col Metadata column in \code{reference} to transfer.
+#' @param label_by Metadata column in \code{reference} to transfer.
+#' @param label_col Deprecated alias for \code{label_by}.
 #' @param method Label-transfer backend. \code{"seurat"} uses Seurat anchors;
 #'   \code{"coralysis"} uses \code{Coralysis::ReferenceMapping()} and requires
-#'   a Coralysis-trained reference stored under \code{reference@misc$coralysis}.
+#'   a Coralysis-trained reference stored under \code{reference@misc$coralysis};
+#'   \code{"scanvi"} and \code{"scarches"} use the scVI-family pixi backend.
 #' @param query Deprecated alias for \code{object}; retained for compatibility
 #'   with the old reference-first call style.
 #' @param prediction_prefix Prefix for metadata columns added to
@@ -2174,7 +2310,7 @@ sn_run_cluster <- function(object,
 #' @param reference_reduction Optional reference reduction passed to
 #'   \code{Seurat::FindTransferAnchors()}.
 #' @param features Optional features used to find transfer anchors.
-#' @param dims Dimensions used for anchor scoring and label transfer.
+#' @param dims Dimensions used for anchor scoring and label_by transfer.
 #' @param npcs Number of PCs used by \code{Seurat::FindTransferAnchors()}.
 #' @param k_anchor,k_filter,k_score,k_weight Seurat anchor/weighting
 #'   parameters.
@@ -2185,7 +2321,11 @@ sn_run_cluster <- function(object,
 #'   SingleCellExperiment.
 #' @param transfer_control Optional backend-specific list. For
 #'   \code{method = "coralysis"}, values are forwarded to
-#'   \code{Coralysis::ReferenceMapping()}.
+#'   \code{Coralysis::ReferenceMapping()}. For \code{method = "scanvi"} or
+#'   \code{"scarches"}, common values include \code{batch_by},
+#'   \code{runtime_dir}, \code{pixi_project}, \code{max_epochs},
+#'   \code{scanvi_max_epochs}, \code{accelerator}, \code{mirror}, and
+#'   \code{install_pixi}.
 #' @param verbose Whether to print Seurat progress messages.
 #' @param ... Additional arguments passed to \code{Seurat::FindTransferAnchors()}.
 #'
@@ -2197,15 +2337,15 @@ sn_run_cluster <- function(object,
 #' query <- sn_transfer_labels(
 #'   object = query,
 #'   reference = reference,
-#'   label_col = "cell_type",
+#'   label_by = "cell_type",
 #'   dims = 1:30
 #' )
 #' }
 #' @export
 sn_transfer_labels <- function(object = NULL,
                                reference,
-                               label_col,
-                               method = c("seurat", "coralysis"),
+                               label_by = NULL,
+                               method = c("seurat", "coralysis", "scanvi", "scarches"),
                                query = NULL,
                                prediction_prefix = NULL,
                                normalization_method = "LogNormalize",
@@ -2226,9 +2366,11 @@ sn_transfer_labels <- function(object = NULL,
                                return_anchors = FALSE,
                                transfer_control = list(),
                                verbose = TRUE,
+                               label_col = NULL,
                                ...) {
   check_installed("Seurat")
   method <- match.arg(method)
+  label_by <- .sn_resolve_legacy_arg(label_by, label_col, "label_by", "label_col")
 
   if (is.null(object)) {
     if (is.null(query)) {
@@ -2246,13 +2388,13 @@ sn_transfer_labels <- function(object = NULL,
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat query object.", call. = FALSE)
   }
-  if (!is.character(label_col) || length(label_col) != 1L || !nzchar(label_col)) {
-    stop("`label_col` must be a non-empty metadata column name.", call. = FALSE)
+  if (!is.character(label_by) || length(label_by) != 1L || !nzchar(label_by)) {
+    stop("`label_by` must be a non-empty metadata column name.", call. = FALSE)
   }
   if (
     inherits(reference, "Seurat") &&
-    label_col %in% colnames(object[[]]) &&
-      !label_col %in% colnames(reference[[]])
+    label_by %in% colnames(object[[]]) &&
+      !label_by %in% colnames(reference[[]])
   ) {
     .sn_log_warn("Detected the old positional call order `sn_transfer_labels(reference, query, ...)`; swapping the first two objects. Prefer `sn_transfer_labels(query, reference, ...)`.")
     old_reference <- object
@@ -2260,11 +2402,11 @@ sn_transfer_labels <- function(object = NULL,
     reference <- old_reference
   }
   if (method == "coralysis") {
-    prediction_prefix <- prediction_prefix %||% paste0(label_col, "_coralysis")
+    prediction_prefix <- prediction_prefix %||% paste0(label_by, "_coralysis")
     return(.sn_transfer_labels_coralysis(
       object = object,
       reference = reference,
-      label_col = label_col,
+      label_col = label_by,
       prediction_prefix = prediction_prefix,
       reference_assay = reference_assay,
       query_assay = query_assay,
@@ -2275,14 +2417,30 @@ sn_transfer_labels <- function(object = NULL,
       verbose = verbose
     ))
   }
-
-  if (!label_col %in% colnames(reference[[]])) {
-    stop(glue("`label_col` column '{label_col}' was not found in `reference` metadata."), call. = FALSE)
+  if (method %in% c("scanvi", "scarches")) {
+    prediction_prefix <- prediction_prefix %||% paste0(label_by, "_", method)
+    return(.sn_transfer_labels_scanvi(
+      object = object,
+      reference = reference,
+      label_by = label_by,
+      prediction_prefix = prediction_prefix,
+      assay = query_assay %||% reference_assay,
+      batch_by = transfer_control$batch_by %||% NULL,
+      features = features,
+      transfer_control = transfer_control,
+      return_anchors = return_anchors,
+      verbose = verbose,
+      method_name = method
+    ))
   }
 
-  ref_labels <- reference[[label_col, drop = TRUE]]
+  if (!label_by %in% colnames(reference[[]])) {
+    stop(glue("`label_by` column '{label_by}' was not found in `reference` metadata."), call. = FALSE)
+  }
+
+  ref_labels <- reference[[label_by, drop = TRUE]]
   names(ref_labels) <- colnames(reference)
-  prediction_prefix <- prediction_prefix %||% paste0(label_col, "_transfer")
+  prediction_prefix <- prediction_prefix %||% paste0(label_by, "_transfer")
 
   anchors <- .sn_find_transfer_anchors_backend(
     reference = reference,
@@ -2338,7 +2496,8 @@ sn_transfer_labels <- function(object = NULL,
 
   object <- Seurat::AddMetaData(object, metadata = metadata)
   object@misc$label_transfer[[prediction_prefix]] <- list(
-    label_col = label_col,
+    label_by = label_by,
+    label_col = label_by,
     normalization_method = normalization_method,
     reduction = reduction,
     dims = dims,

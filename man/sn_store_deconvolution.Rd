@@ -26,7 +26,7 @@ sn_store_deconvolution(
 
 \item{bulk_samples}{Optional bulk sample identifiers.}
 
-\item{reference_label}{Metadata column or label set used as the reference.}
+\item{reference_label}{Metadata column or label_by set used as the reference.}
 
 \item{artifacts}{Optional backend-specific artifacts or file paths.}
 

@@ -310,6 +310,148 @@ test_that("sn_calculate_composition validates Seurat/data-frame inputs and addit
   )
 })
 
+test_that("sn_calculate_roe computes observed-over-expected enrichment", {
+  meta_df <- data.frame(
+    group = rep(c("case", "control"), each = 10),
+    cell_type = c(
+      rep(c("Tcell", "Bcell"), c(8, 2)),
+      rep(c("Tcell", "Bcell"), c(2, 8))
+    ),
+    stringsAsFactors = FALSE
+  )
+
+  roe <- sn_calculate_roe(
+    x = meta_df,
+    group_by = "group",
+    variable = "cell_type"
+  )
+
+  expect_s3_class(roe, "data.frame")
+  expect_true(all(c("observed", "expected", "row_total", "col_total", "grand_total", "roe", "log2_roe") %in% colnames(roe)))
+  expect_equal(
+    roe$observed[roe$group == "case" & roe$cell_type == "Tcell"],
+    8
+  )
+  expect_equal(
+    roe$expected[roe$group == "case" & roe$cell_type == "Tcell"],
+    5
+  )
+  expect_equal(
+    roe$roe[roe$group == "case" & roe$cell_type == "Tcell"],
+    1.6
+  )
+  expect_equal(
+    roe$roe[roe$group == "case" & roe$cell_type == "Bcell"],
+    0.4
+  )
+})
+
+test_that("sn_calculate_roe fills absent combinations with zero observed cells", {
+  meta_df <- data.frame(
+    group = c(rep("A", 4), rep("B", 4)),
+    cell_type = c(rep("Tcell", 3), "Bcell", rep("Bcell", 4)),
+    stringsAsFactors = FALSE
+  )
+
+  roe <- sn_calculate_roe(
+    x = meta_df,
+    group_by = "group",
+    variable = "cell_type"
+  )
+
+  expect_equal(
+    roe$observed[roe$group == "B" & roe$cell_type == "Tcell"],
+    0
+  )
+  expect_equal(
+    roe$expected[roe$group == "B" & roe$cell_type == "Tcell"],
+    1.5
+  )
+  expect_equal(
+    roe$roe[roe$group == "B" & roe$cell_type == "Tcell"],
+    0
+  )
+  expect_equal(
+    roe$log2_roe[roe$group == "B" & roe$cell_type == "Tcell"],
+    -Inf
+  )
+})
+
+test_that("sn_calculate_roe can return a matrix and supports multi-column grouping", {
+  meta_df <- data.frame(
+    sample = c("S1", "S1", "S1", "S2", "S2", "S2"),
+    condition = c("case", "case", "case", "control", "control", "control"),
+    cell_type = factor(c("Tcell", "Tcell", "Bcell", "Bcell", "Bcell", "Tcell"), levels = c("Bcell", "Tcell")),
+    stringsAsFactors = TRUE
+  )
+
+  roe <- sn_calculate_roe(
+    x = meta_df,
+    group_by = c("condition", "sample"),
+    variable = "cell_type"
+  )
+  mat <- sn_calculate_roe(
+    x = meta_df,
+    group_by = c("condition", "sample"),
+    variable = "cell_type",
+    return_matrix = TRUE,
+    matrix_value = "observed"
+  )
+
+  expect_true(all(c("condition", "sample", "cell_type", "roe") %in% colnames(roe)))
+  expect_identical(levels(roe$cell_type), c("Bcell", "Tcell"))
+  expect_identical(rownames(mat), c("case|S1", "control|S2"))
+  expect_identical(colnames(mat), c("Bcell", "Tcell"))
+  expect_equal(mat["case|S1", "Tcell"], 2)
+  expect_equal(mat["control|S2", "Bcell"], 2)
+})
+
+test_that("sn_calculate_roe supports Seurat-object metadata directly", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(60, lambda = 2), nrow = 10, ncol = 6), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(10))
+  colnames(counts) <- paste0("cell", seq_len(6))
+
+  object <- sn_initialize_seurat_object(x = counts, project = "roe-seurat")
+  object$condition <- rep(c("ctrl", "stim"), each = 3)
+  object$cell_type <- c("Tcell", "Tcell", "Bcell", "Bcell", "Bcell", "Tcell")
+
+  roe <- sn_calculate_roe(
+    x = object,
+    group_by = "condition",
+    variable = "cell_type"
+  )
+
+  expect_s3_class(roe, "data.frame")
+  expect_equal(sum(roe$observed), ncol(object))
+})
+
+test_that("sn_calculate_roe validates inputs and missing columns", {
+  meta_df <- data.frame(
+    group = c("A", "B"),
+    cell_type = c("Tcell", "Bcell"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    sn_calculate_roe(
+      x = meta_df,
+      group_by = "group",
+      variable = "missing"
+    ),
+    "Missing required columns"
+  )
+  expect_error(
+    sn_calculate_roe(
+      x = meta_df,
+      group_by = "group",
+      variable = "cell_type",
+      pseudocount = -1
+    )
+  )
+})
+
 test_that("sn_compare_composition compares sample-level proportions and fills absent categories with zero", {
   meta_df <- data.frame(
     sample = c(
@@ -331,14 +473,28 @@ test_that("sn_compare_composition compares sample-level proportions and fills ab
 
   comparison <- sn_compare_composition(
     x = meta_df,
-    sample_col = "sample",
-    group_col = "group",
+    sample_by = "sample",
+    group_by = "group",
     variable = "cell_type",
     contrast = c("case", "control"),
     min_cells = 1,
     test = "none",
     return_sample_data = TRUE
   )
+  expect_warning(
+    legacy_comparison <- sn_compare_composition(
+      x = meta_df,
+      sample_by = "sample",
+      group_col = "group",
+      variable = "cell_type",
+      contrast = c("case", "control"),
+      min_cells = 1,
+      test = "none",
+      return_sample_data = TRUE
+    ),
+    "`group_col` is deprecated"
+  )
+  expect_equal(legacy_comparison$summary, comparison$summary)
 
   expect_true(all(c("summary", "sample_data") %in% names(comparison)))
   expect_equal(nrow(comparison$sample_data), 8)
@@ -397,8 +553,8 @@ test_that("sn_compare_composition can run Wilcoxon testing when replicate sample
 
   comparison <- sn_compare_composition(
     x = meta_df,
-    sample_col = "sample",
-    group_col = "group",
+    sample_by = "sample",
+    group_by = "group",
     variable = "cell_type",
     contrast = c("case", "control"),
     min_cells = 1,
@@ -423,8 +579,8 @@ test_that("sn_compare_composition rejects non-constant sample group labels", {
   expect_error(
     sn_compare_composition(
       x = meta_df,
-      sample_col = "sample",
-      group_col = "group",
+      sample_by = "sample",
+      group_by = "group",
       variable = "cell_type",
       contrast = c("case", "control"),
       min_cells = 1
@@ -448,8 +604,8 @@ test_that("sn_compare_composition uses min_cells as a per-sample filter", {
 
   comparison <- sn_compare_composition(
     x = meta_df,
-    sample_col = "sample",
-    group_col = "group",
+    sample_by = "sample",
+    group_by = "group",
     variable = "cell_type",
     contrast = c("case", "control"),
     min_cells = 4,

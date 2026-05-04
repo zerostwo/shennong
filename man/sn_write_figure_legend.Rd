@@ -8,7 +8,7 @@ sn_write_figure_legend(
   object,
   cluster_de_name = NULL,
   enrichment_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
@@ -17,6 +17,7 @@ sn_write_figure_legend(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
+  cluster_col = NULL,
   ...
 )
 }
@@ -27,7 +28,7 @@ sn_write_figure_legend(
 
 \item{enrichment_name}{Optional stored enrichment result.}
 
-\item{cluster_col}{Metadata column containing cluster labels.}
+\item{cluster_by}{Metadata column containing cluster labels.}
 
 \item{background}{Optional study-specific background information to provide
 additional interpretation context.}
@@ -49,6 +50,8 @@ the provider.}
 \item{show_progress}{Logical; if \code{TRUE}, emit step-wise progress logs
 and, when \pkg{cli} is available, a console progress bar while waiting for
 the LLM response.}
+
+\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 
 \item{...}{Additional arguments forwarded to \code{provider}.}
 }

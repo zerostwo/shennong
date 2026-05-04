@@ -8,18 +8,6 @@
   )
 }
 
-.sn_example_remote_url <- function(dataset, matrix_type, zenodo_record) {
-  glue::glue(
-    "https://zenodo.org/records/{zenodo_record}/files/{dataset}_{matrix_type}_feature_bc_matrix.h5"
-  )
-}
-
-.sn_download_example_file <- function(url, destfile) {
-  cli::cli_inform("Fetching {basename(destfile)} from Zenodo cache...")
-  curl::curl_download(url = url, destfile = destfile)
-  invisible(destfile)
-}
-
 #' Load example datasets from Zenodo
 #'
 #' This function downloads (if not already cached) and loads processed
@@ -39,7 +27,7 @@
 #' Users can also choose to only download/cache the data without loading it
 #' into memory.
 #'
-#' @param dataset Character scalar. Which example dataset to load.
+#' @param dataset Character vector. Which example dataset(s) to load.
 #'   Currently one of \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"},
 #'   or \code{"pbmc8k"}. Default: \code{"pbmc3k"}.
 #'
@@ -67,7 +55,16 @@
 #'   \code{sn_initialize_seurat_object()} when constructing Seurat objects
 #'   (i.e. when \code{matrix_type == "filtered"}). Ignored if
 #'   \code{matrix_type == "raw"}. If \code{NULL}, use the dataset default from
-#'   the example-data registry.
+#'   the example-data registry. When loading multiple datasets, supply either
+#'   one species label for all datasets or one label per dataset.
+#'
+#' @param token Optional Zenodo access token. Public example datasets do not
+#'   require a token. Supply this only for restricted/private records.
+#'
+#' @param overwrite Logical. If \code{TRUE}, re-download cached files.
+#'
+#' @param quiet Logical. If \code{TRUE}, suppress Zenodo download progress
+#'   messages.
 #'
 #' @details
 #' All datasets were re-aligned using Cell Ranger v9.0.1 with a custom reference
@@ -100,15 +97,19 @@
 #' \itemize{
 #'   \item If \code{matrix_type == "filtered"}:
 #'         a Seurat object is constructed via
-#'         \code{sn_initialize_seurat_object()}.
+#'         \code{sn_initialize_seurat_object()}. When multiple datasets are
+#'         requested, the per-dataset Seurat objects are merged and each source
+#'         is recorded in the \code{sample} metadata column.
 #'   \item If \code{matrix_type == "raw"}:
 #'         the function returns a sparse count matrix
 #'         (typically a \code{dgCMatrix}), suitable for ambient RNA
-#'         estimation / SoupX workflows.
+#'         estimation / SoupX workflows. When multiple raw datasets are
+#'         requested, the matrices are returned as a named list.
 #' }
 #'
 #' When \code{return_object = FALSE}, no object is constructed;
-#' only the file is ensured to exist locally.
+#' only the file is ensured to exist locally. Multiple datasets return a named
+#' character vector of cached paths.
 #'
 #' @return
 #' One of:
@@ -116,15 +117,17 @@
 #' \itemize{
 #'   \item If \code{matrix_type == "filtered"} and
 #'         \code{return_object = TRUE}:
-#'         a Seurat object.
+#'         a Seurat object. Multiple datasets are returned as one merged Seurat
+#'         object.
 #'
 #'   \item If \code{matrix_type == "raw"} and
 #'         \code{return_object = TRUE}:
-#'         a sparse count matrix (e.g. \code{dgCMatrix}).
+#'         a sparse count matrix (e.g. \code{dgCMatrix}) or, for multiple
+#'         datasets, a named list of sparse count matrices.
 #'
 #'   \item If \code{return_object = FALSE}:
-#'         the local file path to the cached \code{.h5} file,
-#'         returned invisibly.
+#'         the local file path to the cached \code{.h5} file, or a named
+#'         character vector of paths for multiple datasets, returned invisibly.
 #' }
 #'
 #' @examples
@@ -138,7 +141,10 @@
 #' # 3. Only download/cache PBMC8k, don't construct anything in-memory:
 #' sn_load_data(dataset = "pbmc8k", return_object = FALSE)
 #'
-#' # 4. Use a custom cache directory:
+#' # 4. Load and merge multiple filtered PBMC examples:
+#' pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
+#'
+#' # 5. Use a custom cache directory:
 #' pbmc4k <- sn_load_data(
 #'   dataset  = "pbmc4k",
 #'   save_dir = "~/datasets/pbmc_cache"
@@ -153,6 +159,7 @@
 #'
 #' @seealso
 #' \code{\link{sn_initialize_seurat_object}},
+#' \code{\link{sn_download_zenodo}},
 #' \code{\link{sn_write}},
 #' \code{\link{sn_read}}
 #'
@@ -161,39 +168,117 @@ sn_load_data <- function(dataset = "pbmc3k",
                          matrix_type = c("filtered", "raw"),
                          save_dir = "~/.shennong/data",
                          return_object = TRUE,
-                         species = NULL) {
+                         species = NULL,
+                         token = NULL,
+                         overwrite = FALSE,
+                         quiet = FALSE) {
   catalog <- .sn_example_data_catalog()
-  dataset <- arg_match(dataset, values = catalog$dataset)
+  dataset <- .sn_match_example_datasets(dataset = dataset, catalog = catalog)
   matrix_type <- match.arg(matrix_type)
-  dataset_info <- catalog[catalog$dataset == dataset, , drop = FALSE]
-  species <- species %||% dataset_info$species[[1]]
-  zenodo_record <- dataset_info$zenodo_record[[1]]
-
+  species <- .sn_resolve_example_species(species = species, dataset = dataset, catalog = catalog)
   save_dir <- sn_set_path(save_dir)
 
-  local_h5 <- glue("{save_dir}/{dataset}_{matrix_type}_feature_bc_matrix.h5")
-
-  if (!file.exists(local_h5)) {
-    remote_url <- .sn_example_remote_url(
-      dataset = dataset,
-      matrix_type = matrix_type,
-      zenodo_record = zenodo_record
+  local_h5 <- vapply(dataset, function(dataset_name) {
+    dataset_info <- catalog[catalog$dataset == dataset_name, , drop = FALSE]
+    file_name <- paste0(dataset_name, "_", matrix_type, "_feature_bc_matrix.h5")
+    paths <- sn_download_zenodo(
+      record_id = dataset_info$zenodo_record[[1]],
+      files = file_name,
+      save_dir = save_dir,
+      token = token,
+      overwrite = overwrite,
+      quiet = quiet
     )
-    .sn_download_example_file(url = remote_url, destfile = local_h5)
-  }
+    unname(paths[[file_name]])
+  }, character(1), USE.NAMES = TRUE)
 
   if (!return_object) {
+    if (length(local_h5) == 1L) {
+      return(invisible(unname(local_h5)))
+    }
     return(invisible(local_h5))
   }
 
-  counts <- sn_read(local_h5)
+  counts <- lapply(local_h5, sn_read)
 
-  if (matrix_type == "filtered") {
-    return(sn_initialize_seurat_object(
-      x = counts,
-      species = species
-    ))
+  if (matrix_type == "raw") {
+    if (length(counts) == 1L) {
+      return(counts[[1]])
+    }
+    return(counts)
   }
 
-  counts
+  objects <- lapply(seq_along(counts), function(i) {
+    sn_initialize_seurat_object(
+      x = counts[[i]],
+      species = species[[i]],
+      sample_name = names(local_h5)[[i]],
+      project = names(local_h5)[[i]]
+    )
+  })
+  names(objects) <- names(local_h5)
+
+  .sn_merge_example_objects(objects)
+}
+
+.sn_match_example_datasets <- function(dataset, catalog) {
+  if (!is.character(dataset) || length(dataset) == 0L || any(!nzchar(dataset))) {
+    stop("`dataset` must be a non-empty character vector.", call. = FALSE)
+  }
+  invalid <- setdiff(dataset, catalog$dataset)
+  if (length(invalid) > 0L) {
+    stop(
+      "`dataset` must contain only known example datasets: ",
+      paste(catalog$dataset, collapse = ", "),
+      ". Invalid value(s): ",
+      paste(invalid, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  duplicated_dataset <- unique(dataset[duplicated(dataset)])
+  if (length(duplicated_dataset) > 0L) {
+    stop(
+      "`dataset` cannot contain duplicated values: ",
+      paste(duplicated_dataset, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  dataset
+}
+
+.sn_resolve_example_species <- function(species = NULL, dataset, catalog) {
+  dataset_species <- catalog$species[match(dataset, catalog$dataset)]
+  if (is.null(species)) {
+    return(dataset_species)
+  }
+  if (!is.character(species) || length(species) == 0L || any(!nzchar(species))) {
+    stop("`species` must be `NULL`, a character scalar, or a character vector parallel to `dataset`.", call. = FALSE)
+  }
+  if (length(species) == 1L) {
+    return(rep(species, length(dataset)))
+  }
+  if (length(species) != length(dataset)) {
+    stop("`species` must have length 1 or the same length as `dataset`.", call. = FALSE)
+  }
+  species
+}
+
+.sn_merge_example_objects <- function(objects) {
+  if (length(objects) == 1L) {
+    return(objects[[1]])
+  }
+  merged <- merge(
+    x = objects[[1]],
+    y = objects[-1],
+    add.cell.ids = names(objects),
+    project = "Shennong"
+  )
+  Seurat::Misc(merged, "loaded_datasets") <- list(
+    datasets = names(objects),
+    loader = "sn_load_data",
+    merged = TRUE
+  )
+  merged
 }

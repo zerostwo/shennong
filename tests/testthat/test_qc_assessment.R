@@ -26,7 +26,7 @@ make_qc_assessment_object <- function() {
 test_that("sn_assess_qc summarizes current QC status by sample", {
   object <- make_qc_assessment_object()
 
-  report <- sn_assess_qc(object, sample_col = "sample", verbose = FALSE)
+  report <- sn_assess_qc(object, sample_by = "sample", verbose = FALSE)
 
   expect_type(report, "list")
   expect_true(all(c("overall", "by_sample", "messages") %in% names(report)))
@@ -47,7 +47,7 @@ test_that("sn_assess_qc compares filtered objects to a reference and stores repo
   report <- sn_assess_qc(
     object = current,
     reference = reference,
-    sample_col = "sample",
+    sample_by = "sample",
     verbose = FALSE
   )
 
@@ -64,7 +64,7 @@ test_that("sn_assess_qc compares filtered objects to a reference and stores repo
   stored <- sn_assess_qc(
     object = current,
     reference = reference,
-    sample_col = "sample",
+    sample_by = "sample",
     store_name = "post_filter",
     return_object = TRUE,
     verbose = FALSE

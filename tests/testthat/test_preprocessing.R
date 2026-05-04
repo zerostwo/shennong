@@ -430,6 +430,46 @@ test_that("sn_standardize_gene_symbols converts gene IDs and aggregates duplicat
   expect_true("sn_standardize_gene_symbols" %in% names(standardized_object@commands))
 })
 
+test_that("sn_standardize_gene_symbols accepts character vectors", {
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  standardized <- suppressWarnings(sn_standardize_gene_symbols(
+    c("CD3D", "fakegene1", "1-Mar", ""),
+    species = "human",
+    is_gene_id = FALSE
+  ))
+
+  expect_type(standardized, "character")
+  expect_equal(standardized, c("CD3D", "fakegene1", "1-Mar"))
+  expect_false(any(is.na(standardized)))
+  expect_false(any(!nzchar(standardized)))
+})
+
+test_that("sn_standardize_gene_symbols converts gene ID vectors", {
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  annotations <- Shennong:::.sn_get_gene_annotation_table("human")
+  dup_name <- annotations$gene_name[duplicated(annotations$gene_name)][[1]]
+  dup_rows <- annotations[annotations$gene_name == dup_name, , drop = FALSE]
+  unique_row <- annotations[
+    !duplicated(annotations$gene_name) &
+      !is.na(annotations$gene_name) &
+      nzchar(annotations$gene_name),
+    ,
+    drop = FALSE
+  ][1, , drop = FALSE]
+
+  standardized <- suppressWarnings(sn_standardize_gene_symbols(
+    c(dup_rows$gene_id[[1]], dup_rows$gene_id[[2]], unique_row$gene_id[[1]], "missing-id"),
+    species = "human",
+    is_gene_id = TRUE
+  ))
+
+  expect_equal(standardized, c(dup_name, dup_name, unique_row$gene_name[[1]]))
+})
+
 test_that("sn_standardize_gene_symbols preserves unresolved symbols without returning NA row names", {
   skip_if_not_installed("HGNChelper")
   skip_if_not_installed("dplyr")

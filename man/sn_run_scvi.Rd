@@ -5,14 +5,26 @@
 \alias{sn_run_scanvi}
 \title{Run scVI or scANVI integration through Shennong}
 \usage{
-sn_run_scvi(object, batch, integration_control = list(), ...)
+sn_run_scvi(
+  object,
+  batch_by = NULL,
+  integration_control = list(),
+  batch = NULL,
+  ...
+)
 
-sn_run_scanvi(object, batch, integration_control = list(), ...)
+sn_run_scanvi(
+  object,
+  batch_by = NULL,
+  integration_control = list(),
+  batch = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch}{A column name in \code{object@meta.data} specifying batch info.
+\item{batch_by}{A column name in \code{object@meta.data} specifying batch_by info.
 If \code{NULL}, no integration is performed.}
 
 \item{integration_control}{Optional named list of backend-specific
@@ -27,11 +39,13 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{manifest_path}, \code{install_pixi}, \code{accelerator},
 \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 \code{model_args}, \code{train_args}, and \code{write_h5ad};
-\code{"scanvi"} additionally requires \code{labels_key} and accepts
+\code{"scanvi"} additionally requires \code{label_by} and accepts
 \code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
 generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
+
+\item{batch}{Deprecated alias for \code{batch_by}.}
 
 \item{...}{Additional arguments passed to \code{sn_run_cluster()}.}
 }
@@ -46,11 +60,11 @@ and materialized under \code{~/.shennong/pixi/scvi/}.
 }
 \examples{
 \dontrun{
-obj <- sn_run_scvi(obj, batch = "sample_id")
+obj <- sn_run_scvi(obj, batch_by = "sample_id")
 obj <- sn_run_scanvi(
   obj,
-  batch = "sample_id",
-  integration_control = list(labels_key = "cell_type")
+  batch_by = "sample_id",
+  integration_control = list(label_by = "cell_type")
 )
 }
 

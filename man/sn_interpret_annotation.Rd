@@ -7,7 +7,7 @@
 sn_interpret_annotation(
   object,
   de_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
   enrichment_name = NULL,
@@ -33,6 +33,7 @@ sn_interpret_annotation(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
+  cluster_col = NULL,
   ...
 )
 }
@@ -43,7 +44,7 @@ sn_interpret_annotation(
 prefers \code{"default"}, then a single available result, and otherwise
 the most recent marker result.}
 
-\item{cluster_col}{Metadata column containing cluster labels.}
+\item{cluster_by}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of top markers per cluster.}
 
@@ -128,6 +129,8 @@ the provider.}
 \item{show_progress}{Logical; if \code{TRUE}, emit step-wise progress logs
 and, when \pkg{cli} is available, a console progress bar while waiting for
 the LLM response.}
+
+\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 
 \item{...}{Additional arguments forwarded to \code{provider}.}
 }

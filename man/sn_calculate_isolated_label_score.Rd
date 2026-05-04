@@ -6,21 +6,22 @@
 \usage{
 sn_calculate_isolated_label_score(
   x,
-  label,
+  label_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
   cells = NULL,
   max_cells = 3000,
-  stratify_by = label,
+  stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717
+  seed = 717,
+  label = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{label}{Metadata column containing biological labels.}
+\item{label_by}{Metadata column containing biological labels.}
 
 \item{reduction}{Reduction name used to extract embeddings. Defaults to
 \code{"harmony"} when present, otherwise \code{"pca"}.}
@@ -42,10 +43,12 @@ labels.}
 \item{isolated_n}{Absolute cell-count threshold used to flag isolated labels.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
-A data frame with one row per label and columns describing label
-abundance, silhouette separation, and whether the label is considered
+A data frame with one row per label_by and columns describing label
+abundance, silhouette separation, and whether the label_by is considered
 isolated. The attributes \code{overall_score} and \code{isolated_labels}
 summarize the isolated-label subset.
 }
@@ -60,13 +63,13 @@ larger values indicate better preservation.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 isolated_tbl <- sn_calculate_isolated_label_score(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony"
 )
 isolated_tbl

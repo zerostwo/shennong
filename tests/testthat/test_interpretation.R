@@ -99,7 +99,7 @@ test_that("stored-result helpers list and retrieve DE, enrichment, and interpret
   object <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     provider = provider,
     store_name = "annotation_note",
     return_object = TRUE
@@ -132,7 +132,7 @@ test_that("annotation and DE evidence helpers return structured outputs", {
   annotation_evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     n_markers = 3,
     enrichment_name = "celltype_gsea",
     n_terms = 2,
@@ -165,14 +165,14 @@ test_that("annotation evidence and interpretation resolve a default marker resul
 
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     n_markers = 3
   )
   expect_equal(evidence$source_de_name, "celltype_markers")
 
   object <- sn_interpret_annotation(
     object = object,
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     provider = provider,
     store_name = "annotation_default_de",
     return_object = TRUE
@@ -196,7 +196,7 @@ test_that("enrichment and results evidence helpers work from stored results", {
     object = object,
     cluster_de_name = "celltype_markers",
     enrichment_name = "celltype_gsea",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     n_markers = 2,
     n_terms = 1
   )
@@ -215,7 +215,7 @@ test_that("sn_build_prompt creates a prompt bundle from evidence", {
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     n_markers = 3
   )
 
@@ -266,7 +266,7 @@ test_that("sn_build_prompt supports human-readable output with background contex
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     n_markers = 3
   )
 
@@ -295,7 +295,7 @@ test_that("high-level interpretation helpers can return prompts or store provide
     object = object,
     cluster_de_name = "celltype_markers",
     enrichment_name = "celltype_gsea",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     background = "PBMC treatment study",
     return_prompt = TRUE
   )
@@ -304,7 +304,7 @@ test_that("high-level interpretation helpers can return prompts or store provide
   human_prompt <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     background = "PBMC treatment study",
     output_format = "human"
   )
@@ -314,7 +314,7 @@ test_that("high-level interpretation helpers can return prompts or store provide
   object <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     provider = provider,
     model = "demo-model",
     store_name = "annotation_note",
@@ -351,7 +351,7 @@ test_that("structured annotation responses are normalized and written back to me
     object = object,
     de_name = "celltype_markers",
     enrichment_name = "celltype_gsea",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     provider = provider,
     model = "demo-model",
     store_name = "annotation_structured",
@@ -564,7 +564,7 @@ test_that("sn_interpret_annotation falls back to the default ellmer provider pat
       object = object,
       de_name = "celltype_markers",
       enrichment_name = "celltype_gsea",
-      cluster_col = "cell_type",
+      cluster_by = "cell_type",
       store_name = "annotation_structured_default",
       metadata_prefix = "shennong_celltype",
       return_object = TRUE
@@ -596,7 +596,7 @@ test_that("annotation prompt can include candidate labels for sorted datasets", 
   prompt <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     background = "Blood ILC-sorted dataset.",
     label_candidates = c("ILC1", "ILC2", "ILC3", "NK", "T cell"),
     return_prompt = TRUE
@@ -627,7 +627,7 @@ test_that("annotation metadata_fields can opt into detailed metadata columns", {
   object <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     provider = provider,
     metadata_prefix = "custom_ann",
     metadata_fields = c("primary_label", "confidence", "supporting_markers"),
@@ -837,7 +837,7 @@ test_that("annotation evidence can include cluster neighborhood geometry", {
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     reduction = "umap",
     n_neighbor_clusters = 1
   )
@@ -855,7 +855,7 @@ test_that("annotation evidence adds canonical lineage heuristic hints", {
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     marker_selection = "specific",
     reduction = NULL
   )
@@ -874,7 +874,7 @@ test_that("annotation evidence exposes a canonical marker snapshot", {
   evidence <- sn_prepare_annotation_evidence(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     marker_selection = "specific",
     reduction = NULL
   )
@@ -948,7 +948,7 @@ test_that("sn_interpret_annotation agentic mode performs a focused refinement pa
   object <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     annotation_mode = "agentic",
     provider = provider,
     store_name = "annotation_agentic",
@@ -972,7 +972,7 @@ test_that("agentic annotation can return its staged prompt bundle", {
   prompt <- sn_interpret_annotation(
     object = object,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     annotation_mode = "agentic",
     return_prompt = TRUE
   )

@@ -7,12 +7,13 @@
 sn_calculate_lisi(
   x,
   reduction = "pca",
-  label = "sample",
+  label_by = NULL,
   dims = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = label[[1]],
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 )
 }
 \arguments{
@@ -21,7 +22,7 @@ sn_calculate_lisi(
 \item{reduction}{Reduction name used to extract embeddings. Defaults to
 \code{"pca"}.}
 
-\item{label}{Character vector of metadata column names passed to
+\item{label_by}{Character vector of metadata column names passed to
 \code{lisi::compute_lisi()}.}
 
 \item{dims}{Optional integer vector of embedding dimensions to retain.}
@@ -35,29 +36,31 @@ LISI. When \code{NULL}, use all selected cells.}
 during subsampling. Defaults to the first requested \code{label}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per retained cell. The first column is
-\code{cell_id}; each requested label contributes one LISI score column.
+\code{cell_id}; each requested label_by contributes one LISI score column.
 }
 \description{
 This function calculates the Local Inverse Simpson's Index (LISI) for one or
 more metadata labels from a Seurat reduction. It is commonly used to assess
-batch mixing or label separation after integration.
+batch_by mixing or label_by separation after integration.
 }
 \examples{
 \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 lisi_tbl <- sn_calculate_lisi(
   pbmc,
   reduction = "harmony",
-  label = "sample"
+  label_by = "sample"
 )
 head(lisi_tbl)
 }

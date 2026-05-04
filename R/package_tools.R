@@ -761,14 +761,19 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #'   \code{reference_object}.
 #' @param reference_signatures Optional file path or data frame of reference
 #'   cell-state signatures for cell2location.
-#' @param groupby Metadata column used by CellPhoneDB cell groups.
-#' @param batch,labels_key Metadata columns used by scArches/scPoli-style
+#' @param group_by Metadata column used by CellPhoneDB cell groups.
+#' @param groupby Deprecated alias for \code{group_by}.
+#' @param batch_by,label_by Metadata columns used by scArches/scPoli-style
 #'   object workflows.
+#' @param batch Deprecated alias for \code{batch_by}.
+#' @param labels_key Deprecated alias for \code{label_by}.
 #' @param spatial_cols Two metadata columns containing spatial coordinates for
 #'   spatial tools.
-#' @param cell_type_key Reference metadata column containing cell-type labels
+#' @param cell_type_by Reference metadata column containing cell-type labels
 #'   for Tangram projection.
-#' @param cluster_key Metadata column used by Squidpy neighborhood enrichment.
+#' @param cell_type_key Deprecated alias for \code{cell_type_by}.
+#' @param cluster_by Metadata column used by Squidpy neighborhood enrichment.
+#' @param cluster_key Deprecated alias for \code{cluster_by}.
 #' @param method_control Optional named list of backend-specific settings passed
 #'   to the Python runner config.
 #' @param command Command to run inside the selected pixi environment. Defaults
@@ -779,7 +784,8 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #'   \code{"data"} when present and otherwise \code{"counts"}.
 #' @param species Species used to match bundled gene positions when
 #'   \code{gene_order} and \code{gtf_file} are not supplied.
-#' @param reference_key Metadata column containing normal/tumor annotations.
+#' @param reference_by Metadata column containing normal/tumor annotations.
+#' @param reference_key Deprecated alias for \code{reference_by}.
 #' @param reference_cat One or more values in \code{reference_key} denoting
 #'   normal reference cells.
 #' @param gene_order Optional data frame with gene positions. It must contain a
@@ -798,7 +804,8 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' @param run_pca,run_neighbors,run_leiden,run_umap,score Logical flags for
 #'   downstream infercnvpy analysis steps.
 #' @param leiden_resolution Resolution passed to infercnvpy Leiden clustering.
-#' @param cnv_score_groupby Optional grouping column for infercnvpy CNV scores.
+#' @param cnv_score_group_by Optional grouping column for infercnvpy CNV scores.
+#' @param cnv_score_groupby Deprecated alias for \code{cnv_score_group_by}.
 #' @param metadata_prefix Prefix added to imported infercnvpy metadata columns.
 #' @param result_name Name used under \code{object@misc$infercnvpy}.
 #' @param return_object Whether to return the updated object. If \code{FALSE},
@@ -813,13 +820,13 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' sn_run_infercnvpy(args = "--version")
 #' object <- sn_run_infercnvpy(
 #'   object = object,
-#'   reference_key = "cell_type",
+#'   reference_by = "cell_type",
 #'   reference_cat = c("T cell", "Myeloid")
 #' )
 #' spatial <- sn_run_tangram(
 #'   object = spatial,
 #'   reference_object = reference,
-#'   cell_type_key = "cell_type",
+#'   cell_type_by = "cell_type",
 #'   spatial_cols = c("x", "y")
 #' )
 #' }
@@ -830,16 +837,20 @@ sn_run_scarches <- function(object = NULL,
                             args = character(),
                             assay = NULL,
                             layer = NULL,
-                            batch = NULL,
-                            labels_key = NULL,
+                            batch_by = NULL,
+                            label_by = NULL,
                             output_dir = NULL,
                             runtime_dir = NULL,
                             metadata_prefix = "scarches_",
                             result_name = "scarches",
                             return_object = TRUE,
                             method_control = list(),
+                            batch = NULL,
+                            labels_key = NULL,
                             ...) {
   if (!is.null(object)) {
+    batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+    label_by <- .sn_resolve_legacy_arg(label_by, labels_key, "label_by", "labels_key")
     return(.sn_run_python_object_method(
       object = object,
       environment = "scarches",
@@ -852,7 +863,7 @@ sn_run_scarches <- function(object = NULL,
       metadata_prefix = metadata_prefix,
       result_name = result_name,
       return_object = return_object,
-      config = c(list(batch_key = batch, labels_key = labels_key), method_control),
+      config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
       ...
     ))
   }
@@ -866,16 +877,20 @@ sn_run_scpoli <- function(object = NULL,
                           args = character(),
                           assay = NULL,
                           layer = NULL,
-                          batch = NULL,
-                          labels_key = NULL,
+                          batch_by = NULL,
+                          label_by = NULL,
                           output_dir = NULL,
                           runtime_dir = NULL,
                           metadata_prefix = "scpoli_",
                           result_name = "scpoli",
                           return_object = TRUE,
                           method_control = list(),
+                          batch = NULL,
+                          labels_key = NULL,
                           ...) {
   if (!is.null(object)) {
+    batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+    label_by <- .sn_resolve_legacy_arg(label_by, labels_key, "label_by", "labels_key")
     return(.sn_run_python_object_method(
       object = object,
       environment = "scarches",
@@ -888,7 +903,7 @@ sn_run_scpoli <- function(object = NULL,
       metadata_prefix = metadata_prefix,
       result_name = result_name,
       return_object = return_object,
-      config = c(list(batch_key = batch, labels_key = labels_key), method_control),
+      config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
       ...
     ))
   }
@@ -903,7 +918,7 @@ sn_run_infercnvpy <- function(object = NULL,
                               assay = NULL,
                               layer = NULL,
                               species = NULL,
-                              reference_key = NULL,
+                              reference_by = NULL,
                               reference_cat = NULL,
                               gene_order = NULL,
                               gtf_file = NULL,
@@ -926,10 +941,12 @@ sn_run_infercnvpy <- function(object = NULL,
                               run_umap = FALSE,
                               score = TRUE,
                               leiden_resolution = 1,
-                              cnv_score_groupby = NULL,
+                              cnv_score_group_by = NULL,
                               metadata_prefix = "infercnvpy_",
                               result_name = "infercnvpy",
                               return_object = TRUE,
+                              reference_key = NULL,
+                              cnv_score_groupby = NULL,
                               ...) {
   if (is.null(object)) {
     return(sn_call_infercnvpy(command = command, args = args, ...))
@@ -942,13 +959,20 @@ sn_run_infercnvpy <- function(object = NULL,
     )
   }
   gtf_gene_id <- match.arg(gtf_gene_id)
+  reference_by <- .sn_resolve_legacy_arg(reference_by, reference_key, "reference_by", "reference_key")
+  cnv_score_group_by <- .sn_resolve_legacy_arg(
+    value = cnv_score_group_by,
+    legacy = cnv_score_groupby,
+    value_name = "cnv_score_group_by",
+    legacy_name = "cnv_score_groupby"
+  )
 
   .sn_run_infercnvpy_object(
     object = object,
     assay = assay,
     layer = layer,
     species = species,
-    reference_key = reference_key,
+    reference_key = reference_by,
     reference_cat = reference_cat,
     gene_order = gene_order,
     gtf_file = gtf_file,
@@ -971,7 +995,7 @@ sn_run_infercnvpy <- function(object = NULL,
     run_umap = run_umap,
     score = score,
     leiden_resolution = leiden_resolution,
-    cnv_score_groupby = cnv_score_groupby,
+    cnv_score_group_by = cnv_score_group_by,
     metadata_prefix = metadata_prefix,
     result_name = result_name,
     return_object = return_object,
@@ -986,16 +1010,23 @@ sn_run_cellphonedb <- function(object = NULL,
                                args = character(),
                                assay = NULL,
                                layer = "counts",
-                               groupby = NULL,
+                               group_by = NULL,
                                output_dir = NULL,
                                runtime_dir = NULL,
                                result_name = "cellphonedb",
                                return_object = TRUE,
                                method_control = list(),
+                               groupby = NULL,
                                ...) {
   if (!is.null(object)) {
-    if (is.null(groupby) || !nzchar(groupby)) {
-      stop("`groupby` is required for `sn_run_cellphonedb(object = ...)`.", call. = FALSE)
+    group_by <- .sn_resolve_legacy_arg(
+      value = group_by,
+      legacy = groupby,
+      value_name = "group_by",
+      legacy_name = "groupby"
+    )
+    if (is.null(group_by) || !nzchar(group_by)) {
+      stop("`group_by` is required for `sn_run_cellphonedb(object = ...)`.", call. = FALSE)
     }
     return(.sn_run_python_object_method(
       object = object,
@@ -1009,7 +1040,7 @@ sn_run_cellphonedb <- function(object = NULL,
       metadata_prefix = "cellphonedb_",
       result_name = result_name,
       return_object = return_object,
-      config = c(list(groupby = groupby), method_control),
+      config = c(list(groupby = group_by), method_control),
       ...
     ))
   }
@@ -1064,15 +1095,17 @@ sn_run_tangram <- function(object = NULL,
                            reference_assay = NULL,
                            reference_layer = NULL,
                            spatial_cols = NULL,
-                           cell_type_key = NULL,
+                           cell_type_by = NULL,
                            output_dir = NULL,
                            runtime_dir = NULL,
                            metadata_prefix = "tangram_",
                            result_name = "tangram",
                            return_object = TRUE,
                            method_control = list(),
+                           cell_type_key = NULL,
                            ...) {
   if (!is.null(object)) {
+    cell_type_by <- .sn_resolve_legacy_arg(cell_type_by, cell_type_key, "cell_type_by", "cell_type_key")
     if (is.null(reference_object)) {
       stop("`reference_object` is required for `sn_run_tangram(object = ...)`.", call. = FALSE)
     }
@@ -1092,7 +1125,7 @@ sn_run_tangram <- function(object = NULL,
       metadata_prefix = metadata_prefix,
       result_name = result_name,
       return_object = return_object,
-      config = c(list(cell_type_key = cell_type_key), method_control),
+      config = c(list(cell_type_key = cell_type_by), method_control),
       ...
     ))
   }
@@ -1107,15 +1140,17 @@ sn_run_squidpy <- function(object = NULL,
                            assay = NULL,
                            layer = NULL,
                            spatial_cols = NULL,
-                           cluster_key = NULL,
+                           cluster_by = NULL,
                            output_dir = NULL,
                            runtime_dir = NULL,
                            metadata_prefix = "squidpy_",
                            result_name = "squidpy",
                            return_object = TRUE,
                            method_control = list(),
+                           cluster_key = NULL,
                            ...) {
   if (!is.null(object)) {
+    cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_key, "cluster_by", "cluster_key")
     return(.sn_run_python_object_method(
       object = object,
       environment = "squidpy",
@@ -1129,7 +1164,7 @@ sn_run_squidpy <- function(object = NULL,
       metadata_prefix = metadata_prefix,
       result_name = result_name,
       return_object = return_object,
-      config = c(list(cluster_key = cluster_key), method_control),
+      config = c(list(cluster_key = cluster_by), method_control),
       ...
     ))
   }
@@ -1448,6 +1483,7 @@ sn_run_stlearn <- function(object = NULL,
     }
     reduction_name <- paste0(metadata_prefix, tools::file_path_sans_ext(basename(embedding_file)))
     reduction_key <- paste0(gsub("[^A-Za-z0-9]", "", toupper(reduction_name)), "_")
+    colnames(embedding) <- paste0(reduction_key, seq_len(ncol(embedding)))
     object[[reduction_name]] <- Seurat::CreateDimReducObject(
       embeddings = embedding,
       key = reduction_key,
@@ -1516,7 +1552,7 @@ sn_run_stlearn <- function(object = NULL,
                                       run_umap = FALSE,
                                       score = TRUE,
                                       leiden_resolution = 1,
-                                      cnv_score_groupby = NULL,
+                                      cnv_score_group_by = NULL,
                                       metadata_prefix = "infercnvpy_",
                                       result_name = "infercnvpy",
                                       return_object = TRUE,
@@ -1569,7 +1605,7 @@ sn_run_stlearn <- function(object = NULL,
     run_umap = isTRUE(run_umap),
     score = isTRUE(score),
     leiden_resolution = leiden_resolution,
-    cnv_score_groupby = cnv_score_groupby,
+    cnv_score_groupby = cnv_score_group_by,
     write_h5ad = TRUE
   )
   config_path <- .sn_write_json_file(config, file.path(output_dir, "infercnvpy_config.json"))
@@ -1847,6 +1883,7 @@ sn_run_stlearn <- function(object = NULL,
   if (file.exists(pca_path)) {
     pca <- .sn_read_embedding_csv(pca_path, cells = colnames(object))
     reduction_name <- paste0(metadata_prefix, "cnv_pca")
+    colnames(pca) <- paste0("CNVPCA_", seq_len(ncol(pca)))
     object[[reduction_name]] <- Seurat::CreateDimReducObject(
       embeddings = pca,
       key = "CNVPCA_",
@@ -1857,6 +1894,7 @@ sn_run_stlearn <- function(object = NULL,
   if (file.exists(umap_path)) {
     umap <- .sn_read_embedding_csv(umap_path, cells = colnames(object))
     reduction_name <- paste0(metadata_prefix, "cnv_umap")
+    colnames(umap) <- paste0("CNVUMAP_", seq_len(ncol(umap)))
     object[[reduction_name]] <- Seurat::CreateDimReducObject(
       embeddings = umap,
       key = "CNVUMAP_",

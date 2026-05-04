@@ -290,8 +290,9 @@
 #'   each subset, for example per cell type.
 #' @param subset_levels Optional character vector of subset values to analyze.
 #'   Defaults to all observed values in \code{subset_by}.
-#' @param sample_col Metadata column containing sample IDs. Required for
+#' @param sample_by Metadata column containing sample IDs. Required for
 #'   \code{"pseudobulk"} analyses.
+#' @param sample_col Deprecated alias for \code{sample_by}.
 #' @param assay Assay used for DE analysis. Defaults to \code{"RNA"}.
 #' @param layer Assay layer used for DE analysis. Defaults to \code{"data"} for
 #'   marker and contrast analyses and to \code{"counts"} for pseudobulk
@@ -370,7 +371,7 @@ sn_find_de <- function(
   group_by = NULL,
   subset_by = NULL,
   subset_levels = NULL,
-  sample_col = NULL,
+  sample_by = NULL,
   assay = "RNA",
   layer = NULL,
   features = NULL,
@@ -384,14 +385,17 @@ sn_find_de <- function(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  sample_col = NULL,
   ...
 ) {
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
 
+  sample_by <- .sn_resolve_legacy_arg(sample_by, sample_col, "sample_by", "sample_col")
+
   if (is_null(analysis)) {
-    analysis <- if (!is_null(sample_col)) {
+    analysis <- if (!is_null(sample_by)) {
       "pseudobulk"
     } else if (is_null(ident_1) && is_null(ident_2)) {
       "markers"
@@ -414,8 +418,8 @@ sn_find_de <- function(
   result <- NULL
 
   if (analysis == "pseudobulk") {
-    if (is_null(sample_col)) {
-      stop("`sample_col` is required for pseudobulk analyses.")
+    if (is_null(sample_by)) {
+      stop("`sample_by` is required for pseudobulk analyses.")
     }
     pseudobulk_group_by <- group_by
     if (is_null(pseudobulk_group_by)) {
@@ -427,7 +431,7 @@ sn_find_de <- function(
       ident_1 = ident_1,
       ident_2 = ident_2,
       group_by = pseudobulk_group_by,
-      sample_col = sample_col,
+      sample_col = sample_by,
       subset_by = subset_by,
       subset_levels = subset_levels,
       assay = assay,
@@ -537,7 +541,7 @@ sn_find_de <- function(
     ident_1 = ident_1,
     ident_2 = ident_2,
     subset_by = subset_by,
-    sample_col = sample_col,
+    sample_col = sample_by,
     assay = assay,
     layer = layer,
     rank_col = rank_col,

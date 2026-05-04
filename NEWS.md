@@ -7,10 +7,25 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_calculate_roe()` now computes observed-over-expected enrichment for
+  categorical composition tables from Seurat metadata or data frames, with long
+  table output by default and optional matrix output for heatmaps.
 - `sn_transfer_labels()` now wraps reference mapping with a query-first API
   for pipe-friendly workflows. The default Seurat anchor workflow is retained,
   and `method = "coralysis"` now projects queries onto Coralysis-trained
-  references with `Coralysis::ReferenceMapping()`.
+  references with `Coralysis::ReferenceMapping()`. `method = "scanvi"` and
+  `method = "scarches"` now provide semi-supervised scVI-family label transfer
+  through the pixi-managed scverse backend.
+- `sn_upload_zenodo()` now uploads reusable data files to Zenodo through
+  `zen4R`, with a simple draft-first interface and an automatically uploaded
+  Shennong manifest that records dataset version, package version, file sizes,
+  md5 checksums, and sha256 checksums for reproducible reuse.
+- `sn_download_zenodo()` now downloads reusable files from public Zenodo
+  records without requiring a token, with optional token support for
+  restricted records. `sn_load_data()` now uses this download layer and accepts
+  multiple example datasets such as `dataset = c("pbmc1k", "pbmc3k")`; filtered
+  datasets are returned as one merged Seurat object and raw datasets as a named
+  list of sparse matrices.
 - `sn_simulate()` now provides a method-based simulation entry point.
   `method = "scdesign3"` wraps `scDesign3::scdesign3()` for Seurat or
   SingleCellExperiment inputs and can return simulated counts as a Seurat
@@ -37,7 +52,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   scverse runtime under `~/.shennong/pixi/`, run the Python model, import the
   latent representation as a Seurat reduction, and then continue Shennong's
   neighbors/clustering/UMAP workflow. The scANVI path requires
-  `integration_control = list(labels_key = ...)`. Convenience wrappers
+  `integration_control = list(label_by = ...)`. Convenience wrappers
   `sn_run_scvi()` and `sn_run_scanvi()` expose the same workflows directly.
 - New pixi helpers `sn_check_pixi()`, `sn_install_pixi()`,
   `sn_ensure_pixi()`, `sn_pixi_paths()`, `sn_list_pixi_environments()`,
@@ -132,6 +147,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- Standardized public metadata-selector arguments on the `*_by` family across
+  grouping, sample, batch, label, cluster, annotation, condition, reference,
+  and cell-type workflows. Deprecated aliases such as `group`, `group_col`,
+  `sample_col`, `batch`, `label`, `label_col`, `labels_key`,
+  `annotation_col`, `condition_col`, `cluster_col`, `reference_key`,
+  `cell_type_key`, `cell_type_col`, `cell_state_col`, `groupby`, and
+  `cnv_score_groupby` remain available for compatibility.
 - `sn_run_cluster()` now uses a simpler rare-feature interface. The supported
   automatic rare feature methods are `gini` and `local_markers`; less common
   `local_hvg` and `ciara` modes were removed from the clustering wrapper.
@@ -158,7 +180,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   articles to explain why each Shennong function is used before showing the
   code. Heavy or credentialed chunks now remain opt-in through
   `SHENNONG_RUN_VIGNETTES=true` so local website builds stay fast.
-- `sn_run_cluster(normalization_method = "sctransform", batch = ...)` now runs
+- `sn_run_cluster(normalization_method = "sctransform", batch_by = ...)` now runs
   SCTransform followed by Harmony integration instead of rejecting
   SCTransform-based integration workflows.
 
@@ -212,7 +234,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   config. It also now resolves `de_name` automatically when omitted,
   preferring a stored `default` marker result, then a single available DE
   result, and otherwise the most recent marker result. Annotation prompts now
-  include the full cluster evidence table instead of truncating at eight rows,
+  include the full cluster_by evidence table instead of truncating at eight rows,
   request one record per cluster, use more conservative evidence-grounded
   label selection, can inject candidate-label priors for sorted datasets, and
   can attach cluster-neighborhood geometry from reductions such as UMAP.
@@ -278,6 +300,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_run_cluster()` now defaults `hvg_group_by` to the `batch` column when
   batch integration is requested and the user does not explicitly supply a
   separate HVG grouping variable.
+- `sn_standardize_gene_symbols()` now also accepts character vectors of gene
+  symbols or gene IDs and returns the standardized vector directly, while
+  preserving the existing matrix and Seurat-object behavior.
+- `sn_run_cluster(normalization_method = "scran", batch_by = ...)` now runs
+  scran normalization before the selected batch-integration backend instead of
+  rejecting batch workflows.
 - The repository now ships `scripts/check-prepush.R` so maintainers can run
   documentation, targeted tests, the full test suite, `R CMD build`, and
   `R CMD check --no-manual` in one local pre-push command.

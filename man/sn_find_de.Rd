@@ -12,7 +12,7 @@ sn_find_de(
   group_by = NULL,
   subset_by = NULL,
   subset_levels = NULL,
-  sample_col = NULL,
+  sample_by = NULL,
   assay = "RNA",
   layer = NULL,
   features = NULL,
@@ -26,6 +26,7 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  sample_col = NULL,
   ...
 )
 }
@@ -48,7 +49,7 @@ each subset, for example per cell type.}
 \item{subset_levels}{Optional character vector of subset values to analyze.
 Defaults to all observed values in \code{subset_by}.}
 
-\item{sample_col}{Metadata column containing sample IDs. Required for
+\item{sample_by}{Metadata column containing sample IDs. Required for
 \code{"pseudobulk"} analyses.}
 
 \item{assay}{Assay used for DE analysis. Defaults to \code{"RNA"}.}
@@ -84,6 +85,8 @@ pseudobulk profile to be retained.}
 stored DE results. Otherwise return the result table.}
 
 \item{verbose}{Whether to emit progress information.}
+
+\item{sample_col}{Deprecated alias for \code{sample_by}.}
 
 \item{...}{Additional arguments passed through to the selected DE method.}
 }

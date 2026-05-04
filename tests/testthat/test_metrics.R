@@ -101,7 +101,7 @@ test_that("sn_calculate_lisi returns one score per cell from the requested reduc
   skip_if_not_installed("lisi")
 
   object <- make_metrics_test_object()
-  lisi_scores <- sn_calculate_lisi(object, reduction = "pca", label = "sample")
+  lisi_scores <- sn_calculate_lisi(object, reduction = "pca", label_by = "sample")
 
   expect_s3_class(lisi_scores, "data.frame")
   expect_equal(nrow(lisi_scores), ncol(object))
@@ -113,24 +113,24 @@ test_that("silhouette, connectivity, PCR, and agreement metrics work on structur
 
   silhouette_tbl <- sn_calculate_silhouette(
     object,
-    label = "cell_type",
+    label_by = "cell_type",
     reduction = "harmony"
   )
   connectivity_tbl <- sn_calculate_graph_connectivity(
     object,
-    label = "cell_type",
+    label_by = "cell_type",
     reduction = "harmony"
   )
   pcr_tbl <- sn_calculate_pcr_batch(
     object,
-    batch = "sample",
+    batch_by = "sample",
     reduction = "harmony",
     baseline_reduction = "pca"
   )
   agreement_tbl <- sn_calculate_clustering_agreement(
     object,
-    cluster = "seurat_clusters",
-    label = "cell_type"
+    cluster_by = "seurat_clusters",
+    label_by = "cell_type"
   )
 
   expect_s3_class(silhouette_tbl, "data.frame")
@@ -156,20 +156,20 @@ test_that("isolated-label, purity, and entropy metrics summarize rare labels and
 
   isolated_tbl <- sn_calculate_isolated_label_score(
     object,
-    label = "cell_type",
+    label_by = "cell_type",
     reduction = "harmony",
     isolated_fraction = 0.1,
     isolated_n = 15
   )
   purity_tbl <- sn_calculate_cluster_purity(
     object,
-    cluster = "seurat_clusters",
-    label = "cell_type"
+    cluster_by = "seurat_clusters",
+    label_by = "cell_type"
   )
   entropy_tbl <- sn_calculate_cluster_entropy(
     object,
-    cluster = "seurat_clusters",
-    label = "sample"
+    cluster_by = "seurat_clusters",
+    label_by = "sample"
   )
 
   expect_s3_class(isolated_tbl, "data.frame")
@@ -195,18 +195,28 @@ test_that("graph-based diagnostics support annoy and exact fallbacks", {
 
   exact_tbl <- sn_calculate_graph_connectivity(
     object,
-    label = "cell_type",
+    label_by = "cell_type",
     reduction = "harmony",
     neighbor_method = "exact",
     k = 10
   )
   annoy_tbl <- sn_identify_challenging_groups(
     object,
-    group = "cell_type",
+    group_by = "cell_type",
     reduction = "harmony",
     neighbor_method = "annoy",
     challenge_threshold = 0.25,
     k = 10
+  )
+  expect_warning(
+    legacy_tbl <- sn_identify_challenging_groups(
+      object,
+      group = "cell_type",
+      reduction = "harmony",
+      neighbor_method = "exact",
+      k = 10
+    ),
+    "`group` is deprecated"
   )
 
   expect_s3_class(exact_tbl, "data.frame")
@@ -215,6 +225,7 @@ test_that("graph-based diagnostics support annoy and exact fallbacks", {
 
   expect_s3_class(annoy_tbl, "data.frame")
   expect_equal(attr(annoy_tbl, "graph_source"), "annoy")
+  expect_equal(colnames(legacy_tbl), colnames(annoy_tbl))
   expect_true(any(annoy_tbl$rare_group))
   expect_true(any(annoy_tbl$challenging_group))
 })
@@ -225,9 +236,9 @@ test_that("sn_assess_integration aggregates metrics and tolerates missing cluste
   object <- make_structured_metrics_object(with_graph = TRUE)
   assessment <- sn_assess_integration(
     object,
-    batch = "sample",
-    label = "cell_type",
-    cluster = "seurat_clusters",
+    batch_by = "sample",
+    label_by = "cell_type",
+    cluster_by = "seurat_clusters",
     reduction = "harmony",
     baseline_reduction = "pca"
   )
@@ -251,8 +262,8 @@ test_that("sn_assess_integration aggregates metrics and tolerates missing cluste
   object$seurat_clusters <- NULL
   assessment_no_cluster <- sn_assess_integration(
     object,
-    batch = "sample",
-    label = "cell_type",
+    batch_by = "sample",
+    label_by = "cell_type",
     reduction = "harmony",
     baseline_reduction = "pca"
   )
@@ -271,23 +282,23 @@ test_that("sn_calculate_rogue returns tidy grouped scores and validates metadata
   library(tibble)
 
   object <- make_metrics_test_object()
-  rogue_tbl <- sn_calculate_rogue(object, cluster = "cluster_id")
+  rogue_tbl <- sn_calculate_rogue(object, cluster_by = "cluster_id")
 
   expect_s3_class(rogue_tbl, "data.frame")
   expect_true(all(c("cluster", "rogue", "n_cells") %in% colnames(rogue_tbl)))
   expect_equal(sort(rogue_tbl$cluster), c("A", "B"))
   expect_true(all(rogue_tbl$rogue >= 0 & rogue_tbl$rogue <= 1))
 
-  rogue_by_sample <- sn_calculate_rogue(object, cluster = "cluster_id", sample = "sample")
+  rogue_by_sample <- sn_calculate_rogue(object, cluster_by = "cluster_id", sample_by = "sample")
   expect_s3_class(rogue_by_sample, "data.frame")
   expect_true(all(c("sample", "cluster", "rogue", "n_cells") %in% colnames(rogue_by_sample)))
   expect_true(all(rogue_by_sample$rogue >= 0 & rogue_by_sample$rogue <= 1))
   expect_error(
-    sn_calculate_rogue(object, cluster = "missing_cluster", sample = "sample"),
+    sn_calculate_rogue(object, cluster_by = "missing_cluster", sample_by = "sample"),
     "Specified cluster column not found"
   )
   expect_error(
-    sn_calculate_rogue(object, cluster = "cluster_id", sample = "missing_sample"),
+    sn_calculate_rogue(object, cluster_by = "cluster_id", sample_by = "missing_sample"),
     "Specified sample column not found"
   )
 })
@@ -301,7 +312,7 @@ test_that("sn_sweep_cluster_resolution summarizes clustering metrics across reso
     reduction = "harmony",
     dims = 1:5,
     metrics = c("n_clusters", "mean_silhouette", "graph_connectivity", "cluster_purity", "clustering_agreement"),
-    label = "cell_type",
+    label_by = "cell_type",
     max_cells = 200
   )
 

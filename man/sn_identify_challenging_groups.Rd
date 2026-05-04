@@ -6,7 +6,7 @@
 \usage{
 sn_identify_challenging_groups(
   x,
-  group,
+  group_by = NULL,
   graph = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
@@ -14,18 +14,19 @@ sn_identify_challenging_groups(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 3000,
-  stratify_by = group,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  group = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{group}{Metadata column defining the groups to inspect.}
+\item{group_by}{Metadata column defining the groups to inspect.}
 
 \item{graph}{Optional graph name stored in \code{x@graphs}. If \code{NULL},
 the function tries to reuse an existing nearest-neighbor graph and falls
@@ -48,7 +49,7 @@ embeddings. Defaults to \code{"harmony"} when present, otherwise
 the metric.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{group}.}
+during subsampling. Defaults to \code{group_by}.}
 
 \item{rare_fraction}{Fraction-of-cells threshold for flagging rare groups.}
 
@@ -60,6 +61,8 @@ used to flag difficult groups.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
+
+\item{group}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per group and rarity/separation flags.
@@ -75,13 +78,13 @@ visual inspection.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 difficult_tbl <- sn_identify_challenging_groups(
   pbmc,
-  group = "seurat_clusters",
+  group_by = "seurat_clusters",
   reduction = "harmony"
 )
 difficult_tbl

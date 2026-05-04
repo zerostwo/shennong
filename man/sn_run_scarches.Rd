@@ -18,14 +18,16 @@ sn_run_scarches(
   args = character(),
   assay = NULL,
   layer = NULL,
-  batch = NULL,
-  labels_key = NULL,
+  batch_by = NULL,
+  label_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "scarches_",
   result_name = "scarches",
   return_object = TRUE,
   method_control = list(),
+  batch = NULL,
+  labels_key = NULL,
   ...
 )
 
@@ -35,14 +37,16 @@ sn_run_scpoli(
   args = character(),
   assay = NULL,
   layer = NULL,
-  batch = NULL,
-  labels_key = NULL,
+  batch_by = NULL,
+  label_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "scpoli_",
   result_name = "scpoli",
   return_object = TRUE,
   method_control = list(),
+  batch = NULL,
+  labels_key = NULL,
   ...
 )
 
@@ -53,7 +57,7 @@ sn_run_infercnvpy(
   assay = NULL,
   layer = NULL,
   species = NULL,
-  reference_key = NULL,
+  reference_by = NULL,
   reference_cat = NULL,
   gene_order = NULL,
   gtf_file = NULL,
@@ -76,10 +80,12 @@ sn_run_infercnvpy(
   run_umap = FALSE,
   score = TRUE,
   leiden_resolution = 1,
-  cnv_score_groupby = NULL,
+  cnv_score_group_by = NULL,
   metadata_prefix = "infercnvpy_",
   result_name = "infercnvpy",
   return_object = TRUE,
+  reference_key = NULL,
+  cnv_score_groupby = NULL,
   ...
 )
 
@@ -89,12 +95,13 @@ sn_run_cellphonedb(
   args = character(),
   assay = NULL,
   layer = "counts",
-  groupby = NULL,
+  group_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   result_name = "cellphonedb",
   return_object = TRUE,
   method_control = list(),
+  groupby = NULL,
   ...
 )
 
@@ -125,13 +132,14 @@ sn_run_tangram(
   reference_assay = NULL,
   reference_layer = NULL,
   spatial_cols = NULL,
-  cell_type_key = NULL,
+  cell_type_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "tangram_",
   result_name = "tangram",
   return_object = TRUE,
   method_control = list(),
+  cell_type_key = NULL,
   ...
 )
 
@@ -142,13 +150,14 @@ sn_run_squidpy(
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
-  cluster_key = NULL,
+  cluster_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "squidpy_",
   result_name = "squidpy",
   return_object = TRUE,
   method_control = list(),
+  cluster_key = NULL,
   ...
 )
 
@@ -200,7 +209,7 @@ to \code{"python"}.}
 \item{layer}{Assay layer used for object-level infercnvpy input. Defaults to
 \code{"data"} when present and otherwise \code{"counts"}.}
 
-\item{batch, labels_key}{Metadata columns used by scArches/scPoli-style
+\item{batch_by, label_by}{Metadata columns used by scArches/scPoli-style
 object workflows.}
 
 \item{output_dir}{Optional run directory. Defaults to
@@ -218,12 +227,16 @@ return a run manifest list.}
 \item{method_control}{Optional named list of backend-specific settings passed
 to the Python runner config.}
 
+\item{batch}{Deprecated alias for \code{batch_by}.}
+
+\item{labels_key}{Deprecated alias for \code{label_by}.}
+
 \item{...}{Additional arguments passed to \code{sn_call_pixi_environment()}.}
 
 \item{species}{Species used to match bundled gene positions when
 \code{gene_order} and \code{gtf_file} are not supplied.}
 
-\item{reference_key}{Metadata column containing normal/tumor annotations.}
+\item{reference_by}{Metadata column containing normal/tumor annotations.}
 
 \item{reference_cat}{One or more values in \code{reference_key} denoting
 normal reference cells.}
@@ -248,9 +261,15 @@ downstream infercnvpy analysis steps.}
 
 \item{leiden_resolution}{Resolution passed to infercnvpy Leiden clustering.}
 
-\item{cnv_score_groupby}{Optional grouping column for infercnvpy CNV scores.}
+\item{cnv_score_group_by}{Optional grouping column for infercnvpy CNV scores.}
 
-\item{groupby}{Metadata column used by CellPhoneDB cell groups.}
+\item{reference_key}{Deprecated alias for \code{reference_by}.}
+
+\item{cnv_score_groupby}{Deprecated alias for \code{cnv_score_group_by}.}
+
+\item{group_by}{Metadata column used by CellPhoneDB cell groups.}
+
+\item{groupby}{Deprecated alias for \code{group_by}.}
 
 \item{reference_signatures}{Optional file path or data frame of reference
 cell-state signatures for cell2location.}
@@ -264,10 +283,14 @@ a query/spatial object against a single-cell reference, such as Tangram.}
 \item{reference_assay, reference_layer}{Assay and layer used when exporting
 \code{reference_object}.}
 
-\item{cell_type_key}{Reference metadata column containing cell-type labels
+\item{cell_type_by}{Reference metadata column containing cell-type labels
 for Tangram projection.}
 
-\item{cluster_key}{Metadata column used by Squidpy neighborhood enrichment.}
+\item{cell_type_key}{Deprecated alias for \code{cell_type_by}.}
+
+\item{cluster_by}{Metadata column used by Squidpy neighborhood enrichment.}
+
+\item{cluster_key}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 Command wrappers invisibly return command output. Object-level
@@ -286,13 +309,13 @@ backend produces cell-level metadata or embeddings.
 sn_run_infercnvpy(args = "--version")
 object <- sn_run_infercnvpy(
   object = object,
-  reference_key = "cell_type",
+  reference_by = "cell_type",
   reference_cat = c("T cell", "Myeloid")
 )
 spatial <- sn_run_tangram(
   object = spatial,
   reference_object = reference,
-  cell_type_key = "cell_type",
+  cell_type_by = "cell_type",
   spatial_cols = c("x", "y")
 )
 }

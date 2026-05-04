@@ -127,7 +127,7 @@ reference$cell_type <- reference$seurat_clusters
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_col = "cell_type",
+  label_by = "cell_type",
   prediction_prefix = "pbmc_reference",
   dims = 1:15,
   verbose = FALSE
@@ -145,7 +145,7 @@ reference by leaving `store_sce = TRUE` and `return.model = TRUE`.
 ```{r coralysis-label-transfer, eval = FALSE}
 reference <- sn_run_cluster(
   reference,
-  batch = "sample_id",
+  batch_by = "sample_id",
   integration_method = "coralysis",
   normalization_method = "seurat",
   integration_control = list(
@@ -158,7 +158,7 @@ reference <- sn_run_cluster(
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_col = "cell_type",
+  label_by = "cell_type",
   method = "coralysis",
   prediction_prefix = "coral_reference",
   transfer_control = list(k.nn = 10),

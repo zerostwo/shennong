@@ -41,6 +41,12 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
+counts_full <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+demo_features <- names(sort(Matrix::rowSums(counts_full), decreasing = TRUE))[
+  seq_len(min(1000, nrow(counts_full)))
+]
+demo_cells <- colnames(pbmc)[seq_len(min(400, ncol(pbmc)))]
+pbmc <- subset(pbmc, features = demo_features, cells = demo_cells)
 
 counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
 SeuratObject::LayerData(pbmc, assay = "RNA", layer = "decontaminated_counts") <- counts
@@ -62,8 +68,8 @@ pbmc_layered <- sn_run_cluster(
   normalization_method = "seurat",
   assay = "RNA",
   layer = "decontaminated_counts",
-  nfeatures = 1500,
-  dims = 1:15,
+  nfeatures = 500,
+  dims = 1:10,
   resolution = 0.6,
   species = "human",
   verbose = FALSE
@@ -130,7 +136,7 @@ pbmc_layered <- sn_run_celltypist(
 
 rogue_tbl <- sn_calculate_rogue(
   pbmc_layered,
-  cluster = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   assay = "RNA",
   layer = "decontaminated_counts"
 )
@@ -150,10 +156,10 @@ sim_pbmc <- sn_simulate(
   object = pbmc_layered,
   method = "scdesign3",
   celltype = "seurat_clusters",
-  ncell = 500,
+  ncell = 100,
   assay = "RNA",
   layer = "decontaminated_counts",
-  n_cores = 2,
+  n_cores = 1,
   return = "seurat"
 )
 

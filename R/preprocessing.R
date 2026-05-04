@@ -495,23 +495,30 @@ sn_normalize_data <- function(
   .sn_log_seurat_command(object = object, assay = assay, name = "sn_normalize_data")
 }
 
-#' Standardize gene symbols in a count matrix or Seurat object
+#' Standardize gene symbols in a vector, count matrix, or Seurat object
 #'
 #' This function helps unify gene symbols to a standard format. It can:
 #' \enumerate{
 #'   \item Convert gene IDs to gene symbols (if \code{is_gene_id = TRUE}).
 #'   \item Check and correct gene symbols using \code{HGNChelper::checkGeneSymbols}.
-#'   \item Aggregate duplicated gene symbols by summing their counts.
+#'   \item Aggregate duplicated gene symbols by summing their counts for matrix
+#'         and Seurat inputs.
 #' }
 #'
-#' @param x A count matrix or a \code{Seurat} object.
+#' @param x A character vector of gene symbols/IDs, a count matrix, or a
+#'   \code{Seurat} object.
 #' @param species The species for gene symbol checking, passed to \code{HGNChelper}.
 #' @param is_gene_id If \code{TRUE}, \code{x} is assumed to contain gene IDs (e.g., ENSEMBL IDs) as rownames.
 #'
-#' @return If \code{x} is a matrix, returns a matrix with standardized gene symbols.
-#'         If \code{x} is a Seurat object, returns the modified Seurat object.
+#' @return If \code{x} is a character vector, returns a character vector of
+#'         standardized gene symbols. If \code{x} is a matrix, returns a matrix
+#'         with standardized gene symbols. If \code{x} is a Seurat object,
+#'         returns the modified Seurat object.
 #' @examples
 #' \dontrun{
+#' # For a vector:
+#' genes <- sn_standardize_gene_symbols(c("1-Mar", "CD3D"), species = "human")
+#'
 #' # For a Seurat object:
 #' seurat_obj <- sn_standardize_gene_symbols(seurat_obj, species = "human", is_gene_id = FALSE)
 #'
@@ -529,6 +536,18 @@ sn_standardize_gene_symbols <- function(
   check_installed("dplyr")
 
   .sn_log_info("Starting gene-symbol standardization.")
+
+  if (is.character(x) && is.null(dim(x))) {
+    species <- sn_get_species(object = x, species = species)
+    standardized <- .sn_standardize_feature_vector(
+      features = x,
+      species = species,
+      is_gene_id = is_gene_id
+    )
+    .sn_log_info("Gene-symbol standardization complete.")
+    return(standardized$symbols)
+  }
+
   # -- Extract counts
   if (inherits(x, "Seurat")) {
     .sn_log_info("Detected a Seurat object; extracting counts from the RNA assay.")
@@ -544,62 +563,13 @@ sn_standardize_gene_symbols <- function(
     counts <- as.matrix(counts)
   }
 
-  # -- Convert gene IDs to symbols if requested
-  if (is_gene_id) {
-    gene_ids <- rownames(counts)
-    .sn_log_info("Converting gene IDs to gene symbols.")
-
-    genes <- .sn_get_gene_annotation_table(species = species)
-    df <- dplyr::tibble(gene_id = gene_ids) |>
-      dplyr::left_join(
-        dplyr::select(genes, .data$gene_id, .data$gene_id_base, .data$gene_name),
-        by = "gene_id"
-      ) |>
-      dplyr::mutate(
-        gene_id_base = sub("\\..*$", "", .data$gene_id),
-        gene_name = dplyr::coalesce(
-          .data$gene_name,
-          genes$gene_name[match(.data$gene_id_base, genes$gene_id_base)]
-        )
-      )
-
-    keep_genes <- !is_na(df$gene_name)
-    if (sum(keep_genes) < length(keep_genes)) {
-      .sn_log_warn("Some gene IDs did not match and will be removed.")
-    }
-
-    counts <- counts[keep_genes, , drop = FALSE]
-    df <- df[keep_genes, ]
-    rownames(counts) <- df$gene_name
-  }
-
-  # -- Check and correct gene symbols
-  .sn_log_info("Checking gene symbols for species = {species} with `HGNChelper`.")
-  check_gene_symbols <- HGNChelper::checkGeneSymbols(
-    x       = rownames(counts),
-    species = species
+  standardized <- .sn_standardize_feature_vector(
+    features = rownames(counts),
+    species = species,
+    is_gene_id = is_gene_id
   )
-  stopifnot(identical(check_gene_symbols$x, rownames(counts)))
-
-  check_gene_symbols <- check_gene_symbols |>
-    dplyr::mutate(Suggested.Symbol = dplyr::if_else(
-      stringr::str_detect(.data$Suggested.Symbol, "///"),
-      NA_character_,
-      .data$Suggested.Symbol
-    ))
-
-  suggested_symbols <- as.character(check_gene_symbols$Suggested.Symbol)
-  original_symbols <- as.character(check_gene_symbols$x)
-  invalid_suggested <- is.na(suggested_symbols) | !nzchar(suggested_symbols)
-  valid_original <- !is.na(original_symbols) & nzchar(original_symbols)
-  suggested_symbols[invalid_suggested & valid_original] <- original_symbols[invalid_suggested & valid_original]
-
-  # -- Filter out truly missing symbols, but preserve valid original names when
-  # HGNChelper has no unambiguous suggestion.
-  valid_idx <- !is.na(suggested_symbols) & nzchar(suggested_symbols)
-  counts <- counts[valid_idx, , drop = FALSE]
-  genes <- suggested_symbols[valid_idx]
-  rownames(counts) <- genes
+  counts <- counts[standardized$keep, , drop = FALSE]
+  rownames(counts) <- standardized$symbols
 
   # -- Aggregate duplicates
   duplicated_genes <- rownames(counts)[duplicated(rownames(counts)) | duplicated(rownames(counts), fromLast = TRUE)]
@@ -620,6 +590,74 @@ sn_standardize_gene_symbols <- function(
   } else {
     return(counts)
   }
+}
+
+.sn_standardize_feature_vector <- function(features,
+                                           species,
+                                           is_gene_id = FALSE) {
+  features <- as.character(features)
+  keep <- rep(TRUE, length(features))
+
+  if (is_gene_id) {
+    .sn_log_info("Converting gene IDs to gene symbols.")
+
+    genes <- .sn_get_gene_annotation_table(species = species)
+    df <- dplyr::tibble(gene_id = features) |>
+      dplyr::left_join(
+        dplyr::select(genes, .data$gene_id, .data$gene_id_base, .data$gene_name),
+        by = "gene_id"
+      ) |>
+      dplyr::mutate(
+        gene_id_base = sub("\\..*$", "", .data$gene_id),
+        gene_name = dplyr::coalesce(
+          .data$gene_name,
+          genes$gene_name[match(.data$gene_id_base, genes$gene_id_base)]
+        )
+      )
+
+    keep <- !is.na(df$gene_name) & nzchar(df$gene_name)
+    if (sum(keep) < length(keep)) {
+      .sn_log_warn("Some gene IDs did not match and will be removed.")
+    }
+    features <- df$gene_name
+  }
+
+  features_to_check <- features[keep]
+  if (length(features_to_check) == 0L) {
+    return(list(symbols = character(), keep = rep(FALSE, length(keep))))
+  }
+
+  # -- Check and correct gene symbols
+  .sn_log_info("Checking gene symbols for species = {species} with `HGNChelper`.")
+  check_gene_symbols <- HGNChelper::checkGeneSymbols(
+    x = features_to_check,
+    species = species
+  )
+  stopifnot(identical(check_gene_symbols$x, features_to_check))
+
+  check_gene_symbols <- check_gene_symbols |>
+    dplyr::mutate(Suggested.Symbol = dplyr::if_else(
+      stringr::str_detect(.data$Suggested.Symbol, "///"),
+      NA_character_,
+      .data$Suggested.Symbol
+    ))
+
+  suggested_symbols <- as.character(check_gene_symbols$Suggested.Symbol)
+  original_symbols <- as.character(check_gene_symbols$x)
+  invalid_suggested <- is.na(suggested_symbols) | !nzchar(suggested_symbols)
+  valid_original <- !is.na(original_symbols) & nzchar(original_symbols)
+  suggested_symbols[invalid_suggested & valid_original] <- original_symbols[invalid_suggested & valid_original]
+
+  # -- Filter out truly missing symbols, but preserve valid original names when
+  # HGNChelper has no unambiguous suggestion.
+  valid_symbols <- !is.na(suggested_symbols) & nzchar(suggested_symbols)
+  full_valid <- rep(FALSE, length(keep))
+  full_valid[which(keep)] <- valid_symbols
+
+  list(
+    symbols = suggested_symbols[valid_symbols],
+    keep = full_valid
+  )
 }
 
 .sn_get_gene_annotation_table <- function(species = NULL) {

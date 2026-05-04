@@ -7,7 +7,7 @@
 sn_detect_rare_cells(
   object,
   method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
-  group = NULL,
+  group_by = NULL,
   reduction = .sn_default_metric_reduction(object),
   dims = NULL,
   assay = "RNA",
@@ -29,7 +29,8 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon"
+  sca_model = "wilcoxon",
+  group = NULL
 )
 }
 \arguments{
@@ -39,7 +40,7 @@ sn_detect_rare_cells(
 \code{"sccad"}, \code{"sca"}, \code{"gapclust"}, and
 \code{"challenging_groups"}.}
 
-\item{group}{Optional metadata column used with
+\item{group_by}{Optional metadata column used with
 \code{method = "challenging_groups"}.}
 
 \item{reduction}{Reduction used by graph-based methods. Defaults to
@@ -90,6 +91,8 @@ matrix internally.}
 \item{sca_nbhd_size}{Neighborhood size passed to SCA.}
 
 \item{sca_model}{Scoring model passed to SCA.}
+
+\item{group}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per cell, including a \code{rare_score}

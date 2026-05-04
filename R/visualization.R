@@ -1253,11 +1253,12 @@ sn_plot_composition <- function(data,
 #'   milo result.
 #' @param milo_name Name of the stored milo result when \code{x} is a Seurat
 #'   object.
-#' @param annotation_col Optional column used to color points.
+#' @param annotation_by Optional column used to color points.
+#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param fdr_col FDR column used on the y-axis. Defaults to \code{"SpatialFDR"}.
 #' @param fdr_cutoff Horizontal significance threshold.
 #' @param logfc_cutoff Optional vertical threshold for effect size.
-#' @param palette Discrete palette used when \code{annotation_col} is supplied.
+#' @param palette Discrete palette used when \code{annotation_by} is supplied.
 #' @param title,x_label,y_label Optional plot labels.
 #' @param aspect_ratio Optional panel aspect ratio. When used together with
 #'   \code{panel_widths} or \code{panel_heights}, Shennong derives the missing
@@ -1273,12 +1274,12 @@ sn_plot_composition <- function(data,
 #'   SpatialFDR = c(0.01, 0.2, 0.04),
 #'   cell_type = c("T", "B", "Myeloid")
 #' )
-#' sn_plot_milo(milo_df, annotation_col = "cell_type")
+#' sn_plot_milo(milo_df, annotation_by = "cell_type")
 #'
 #' @export
 sn_plot_milo <- function(x,
                          milo_name = "default",
-                         annotation_col = NULL,
+                         annotation_by = NULL,
                          fdr_col = c("SpatialFDR", "FDR"),
                          fdr_cutoff = 0.1,
                          logfc_cutoff = NULL,
@@ -1288,7 +1289,9 @@ sn_plot_milo <- function(x,
                          y_label = expression(-log[10]("FDR")),
                          aspect_ratio = NULL,
                          panel_widths = NULL,
-                         panel_heights = NULL) {
+                         panel_heights = NULL,
+                         annotation_col = NULL) {
+  annotation_by <- .sn_resolve_legacy_arg(annotation_by, annotation_col, "annotation_by", "annotation_col")
   if (inherits(x, "Seurat")) {
     data <- sn_get_milo_result(x, milo_name = milo_name)
   } else if (is.data.frame(x)) {
@@ -1305,18 +1308,18 @@ sn_plot_milo <- function(x,
   data <- as.data.frame(data, stringsAsFactors = FALSE)
   data$.sn_neg_log10_fdr <- -log10(pmax(data[[fdr_col]], .Machine$double.xmin))
 
-  if (!is.null(annotation_col) && !annotation_col %in% colnames(data)) {
-    stop("Column '", annotation_col, "' was not found in the milo result.", call. = FALSE)
+  if (!is.null(annotation_by) && !annotation_by %in% colnames(data)) {
+    stop("Column '", annotation_by, "' was not found in the milo result.", call. = FALSE)
   }
 
-  if (is.null(annotation_col)) {
+  if (is.null(annotation_by)) {
     p <- ggplot2::ggplot(data, ggplot2::aes(x = .data$logFC, y = .data$.sn_neg_log10_fdr)) +
       ggplot2::geom_point(alpha = 0.8)
   } else {
     p <- ggplot2::ggplot(data, ggplot2::aes(
       x = .data$logFC,
       y = .data$.sn_neg_log10_fdr,
-      color = .data[[annotation_col]]
+      color = .data[[annotation_by]]
     )) +
       ggplot2::geom_point(alpha = 0.8)
   }
@@ -1342,8 +1345,8 @@ sn_plot_milo <- function(x,
     panel_heights = panel_heights
   )
 
-  if (!is.null(annotation_col)) {
-    n_col <- length(unique(stats::na.omit(as.character(data[[annotation_col]]))))
+  if (!is.null(annotation_by)) {
+    n_col <- length(unique(stats::na.omit(as.character(data[[annotation_by]]))))
     p <- .sn_add_discrete_palette(p, palette = palette, n = n_col, aesthetic = "color")
   }
 

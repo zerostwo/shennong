@@ -15,7 +15,7 @@ sn_run_cell_communication(
   receiver = NULL,
   geneset = NULL,
   background_genes = NULL,
-  condition_col = NULL,
+  condition_by = NULL,
   condition_oi = NULL,
   condition_reference = NULL,
   ligand_target_matrix = NULL,
@@ -29,6 +29,7 @@ sn_run_cell_communication(
   resource = NULL,
   store_name = "default",
   return_object = TRUE,
+  condition_col = NULL,
   ...
 )
 }
@@ -49,13 +50,15 @@ sn_run_cell_communication(
 \code{method = "nichenetr"}.}
 
 \item{geneset}{Receiver gene set of interest for NicheNet. If omitted,
-receiver differential expression is computed from \code{condition_col},
+receiver differential expression is computed from \code{condition_by},
 \code{condition_oi}, and \code{condition_reference}.}
 
 \item{background_genes}{Background expressed genes for NicheNet.}
 
-\item{condition_col, condition_oi, condition_reference}{Receiver condition
-contrast used to derive \code{geneset} for NicheNet.}
+\item{condition_by}{Metadata column containing receiver conditions.}
+
+\item{condition_oi, condition_reference}{Receiver condition contrast used to
+derive \code{geneset} for NicheNet.}
 
 \item{ligand_target_matrix, lr_network}{NicheNet prior matrices/networks.
 These must be supplied for \code{method = "nichenetr"}.}
@@ -77,6 +80,8 @@ is considered expressed in NicheNet filtering.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object;
 otherwise return the stored-result list.}
+
+\item{condition_col}{Deprecated alias for \code{condition_by}.}
 
 \item{...}{Backend-specific arguments.}
 }

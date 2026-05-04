@@ -7,7 +7,7 @@
 sn_prepare_annotation_evidence(
   object,
   de_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
   enrichment_name = NULL,
@@ -15,7 +15,8 @@ sn_prepare_annotation_evidence(
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
   reduction = "umap",
-  n_neighbor_clusters = 3
+  n_neighbor_clusters = 3,
+  cluster_col = NULL
 )
 }
 \arguments{
@@ -26,7 +27,7 @@ sn_prepare_annotation_evidence(
 \code{"default"}, then a single available result, and otherwise the most
 recent marker result.}
 
-\item{cluster_col}{Metadata column containing cluster labels.}
+\item{cluster_by}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of top markers to retain per cluster.}
 
@@ -56,6 +57,8 @@ cluster neighborhood geometry, for example \code{"umap"}. Use
 reduction centroid distances.
 Canonical lineage heuristic hints derived from known marker programs are
 included automatically when the required genes are present.}
+
+\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A structured list ready for prompt construction.

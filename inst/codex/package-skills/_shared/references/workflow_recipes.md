@@ -13,24 +13,24 @@ user request to the right Shennong function family quickly.
 4. Infer or verify species with `sn_get_species()`.
 5. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
-## Recipe: Normalize and cluster a single dataset
+## Recipe: Normalize and cluster_by a single dataset
 
 1. `sn_normalize_data()` when explicit normalization control is needed.
 2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
    `hvg_features = c(...)` when known rare-population markers should be forced
    into the PCA feature set.
-3. `sn_plot_dim()` for cluster and metadata visualization.
+3. `sn_plot_dim()` for cluster_by and metadata visualization.
 
 ## Recipe: Integrate multiple samples
 
-1. Ensure batch metadata are present.
-2. Run `sn_run_cluster(batch = ..., integration_method = "harmony")` for the
+1. Ensure batch_by metadata are present.
+2. Run `sn_run_cluster(batch_by = ..., integration_method = "harmony")` for the
    default fast workflow. Use `integration_method = "coralysis"` for
    Coralysis multi-level integration on imbalanced datasets, or
    `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration
    backends. Use `"scvi"` or `"scanvi"` when the workflow should run through a
    pixi-managed scverse environment under `~/.shennong/pixi/`; scANVI requires
-   `integration_control = list(labels_key = ...)`. Use `sn_pixi_paths()` to
+   `integration_control = list(label_by = ...)`. Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`. Use
@@ -44,7 +44,8 @@ user request to the right Shennong function family quickly.
 5. Use `sn_transfer_labels()` when labels should be projected from a
    reference to a query object. Use the default Seurat backend for anchor
    transfer, or `method = "coralysis"` when the reference was trained and
-   stored with Coralysis.
+   stored with Coralysis. Use `method = "scanvi"` or `method = "scarches"`
+   for semi-supervised scVI-family label transfer.
 
 ## Recipe: Simulate single-cell data
 
@@ -66,6 +67,12 @@ user request to the right Shennong function family quickly.
 1. If enriching stored DE on a Seurat object, use `sn_enrich(x = object, source_de_name = ...)`.
 2. If enriching a direct table, supply `gene_clusters = gene ~ cluster` for grouped ORA or `gene ~ log2fc` for ranked GSEA.
 3. Store reusable results with `sn_store_enrichment()` when needed.
+
+## Recipe: Summarize composition shifts
+
+1. Use `sn_calculate_composition(group_by = ..., variable = ..., measure = "both")` for grouped counts and percentages.
+2. Use `sn_calculate_roe(group_by = ..., variable = ...)` when the question is categorical observed-over-expected enrichment; set `return_matrix = TRUE` for heatmap inputs.
+3. Use `sn_compare_composition(sample_by = ..., group_by = ..., variable = ..., contrast = ...)` for replicate-aware condition comparisons.
 
 ## Recipe: Run communication or regulatory activity analysis
 
@@ -92,7 +99,13 @@ user request to the right Shennong function family quickly.
    `sn_get_milo_result()`, `sn_get_deconvolution_result()`,
    `sn_get_cell_communication_result()`,
    `sn_get_regulatory_activity_result()`, or `sn_get_interpretation_result()`.
-3. Avoid direct `object@misc` access in user-facing workflows.
+3. Use `sn_download_zenodo(record_id = ..., files = ...)` when a reusable
+   public Zenodo record should be pulled into a local cache. Public records do
+   not need a token; pass `token = ...` only for restricted/private files.
+4. Use `sn_upload_zenodo(files = ..., title = ..., version = ...)` when a
+   reusable object, marker table, reference, or manifest should be released for
+   cross-project reuse with stable checksums and Zenodo version metadata.
+5. Avoid direct `object@misc` access in user-facing workflows.
 
 ## Recipe: LLM-backed interpretation
 

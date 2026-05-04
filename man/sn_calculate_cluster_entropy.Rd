@@ -2,24 +2,34 @@
 % Please edit documentation in R/analysis_metrics.R
 \name{sn_calculate_cluster_entropy}
 \alias{sn_calculate_cluster_entropy}
-\title{Calculate cluster entropy for a categorical label}
+\title{Calculate cluster_by entropy for a categorical label}
 \usage{
-sn_calculate_cluster_entropy(x, cluster, label)
+sn_calculate_cluster_entropy(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  cluster = NULL,
+  label = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or data frame containing the required columns.}
 
-\item{cluster}{Metadata/data-frame column containing cluster labels.}
+\item{cluster_by}{Metadata/data-frame column containing cluster_by labels.}
 
-\item{label}{Metadata/data-frame column containing the label to evaluate
+\item{label_by}{Metadata/data-frame column containing the label_by to evaluate
 within each cluster.}
+
+\item{cluster}{Deprecated alias for \code{cluster_by}.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per cluster, including raw entropy and a
 normalized entropy score in \code{[0, 1]}.
 }
 \description{
-Cluster entropy measures how mixed a categorical label is within each
+Cluster entropy measures how mixed a categorical label_by is within each
 cluster. When used with batch labels, higher normalized entropy indicates
 stronger within-cluster batch mixing.
 }
@@ -28,6 +38,6 @@ meta <- data.frame(
   cluster = c("0", "0", "1", "1"),
   batch = c("a", "b", "a", "b")
 )
-sn_calculate_cluster_entropy(meta, cluster = "cluster", label = "batch")
+sn_calculate_cluster_entropy(meta, cluster_by = "cluster", label_by = "batch")
 
 }

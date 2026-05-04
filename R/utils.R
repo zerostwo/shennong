@@ -99,6 +99,27 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   .sn_log("error", ..., .envir = .envir)
 }
 
+.sn_resolve_legacy_arg <- function(value,
+                                   legacy,
+                                   value_name,
+                                   legacy_name) {
+  if (is.null(legacy)) {
+    return(value)
+  }
+  if (!is.null(value) && !identical(value, legacy)) {
+    stop(
+      "`", value_name, "` and deprecated `", legacy_name,
+      "` were both supplied with different values.",
+      call. = FALSE
+    )
+  }
+  warning(
+    "`", legacy_name, "` is deprecated; use `", value_name, "` instead.",
+    call. = FALSE
+  )
+  legacy
+}
+
 .sn_sort_discrete_levels <- function(data,
                                      level_col,
                                      metric_col,

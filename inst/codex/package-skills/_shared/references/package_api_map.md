@@ -11,10 +11,12 @@ Core object rule:
 
 ## Data and Import
 
-- `sn_load_data()`: load packaged or remote example datasets
+- `sn_load_data()`: load packaged or remote example datasets; vectorized datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices
+- `sn_download_zenodo()`: download reusable files from public Zenodo records without a token, or from restricted/private records when a token is supplied
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
 - `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
 - `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
+- `sn_upload_zenodo()`: upload reusable data files to Zenodo through `zen4R`, with a Shennong checksum/version manifest for later reuse
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
 
 Datasets:
@@ -40,9 +42,9 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, Harmony, Coralysis, Seurat CCA/RPCA, and pixi-managed scVI/scANVI integration through `integration_method`. SCTransform integration currently uses Harmony. For `integration_method = "scvi"` or `"scanvi"`, Shennong writes selected counts/metadata under `~/.shennong/runs/`, manages the shared scVI-family pixi project under `~/.shennong/pixi/scvi/`, imports the learned latent reduction, then continues Seurat neighbors/clustering/UMAP; scANVI requires `integration_control = list(labels_key = ...)`. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, Harmony, Coralysis, Seurat CCA/RPCA, and pixi-managed scVI/scANVI integration through `integration_method`. SCTransform integration currently uses Harmony. For `integration_method = "scvi"` or `"scanvi"`, Shennong writes selected counts/metadata under `~/.shennong/runs/`, manages the shared scVI-family pixi project under `~/.shennong/pixi/scvi/`, imports the learned latent reduction, then continues Seurat neighbors/clustering/UMAP; scANVI requires `integration_control = list(label_by = ...)`. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
 - `sn_run_scvi()` / `sn_run_scanvi()`: explicit wrappers for the corresponding `sn_run_cluster()` integration methods.
-- `sn_transfer_labels()`: query-first reference label transfer wrapper. Defaults to Seurat anchors and can use `method = "coralysis"` for Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment.
+- `sn_transfer_labels()`: query-first reference `label_by` transfer wrapper. Defaults to Seurat anchors, can use `method = "coralysis"` for Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment, and supports semi-supervised scVI-family transfer with `method = "scanvi"` or `method = "scarches"`.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
 - `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
 
@@ -64,14 +66,14 @@ Datasets:
 - `sn_assess_integration()`: aggregate integration quality summary
 - `sn_sweep_cluster_resolution()`: compare candidate Seurat resolutions with cluster-quality diagnostics and a recommended resolution
 - `sn_detect_rare_cells()`: rare-cell diagnostics
-- `sn_calculate_lisi()`: batch mixing and label mixing scores
+- `sn_calculate_lisi()`: batch_by mixing and label_by mixing scores
 - `sn_calculate_silhouette()`: silhouette widths
 - `sn_calculate_graph_connectivity()`: graph connectivity
-- `sn_calculate_pcr_batch()`: principal-component batch effect score
+- `sn_calculate_pcr_batch()`: principal-component batch_by effect score
 - `sn_calculate_clustering_agreement()`: clustering versus reference agreement
 - `sn_calculate_isolated_label_score()`: isolated-label preservation
 - `sn_calculate_cluster_purity()`: cluster purity
-- `sn_calculate_cluster_entropy()`: cluster entropy
+- `sn_calculate_cluster_entropy()`: cluster_by entropy
 - `sn_identify_challenging_groups()`: rare or difficult groups
 - `sn_calculate_rogue()`: cluster purity / heterogeneity score
 
@@ -89,6 +91,7 @@ Datasets:
 ## Composition and Comparative Analysis
 
 - `sn_calculate_composition()`: grouped counts and proportions
+- `sn_calculate_roe()`: observed-over-expected enrichment for categorical composition tables
 - `sn_compare_composition()`: compare sample-level composition between groups
 - `sn_run_milo()`: neighborhood differential abundance with miloR
 - `sn_store_milo()`: persist milo results

@@ -26,11 +26,20 @@ single-cell tasks. This skill is the main entry point for package usage.
 
 - a Shennong-driven workflow step
 - reusable Seurat outputs or stored results
+- a Zenodo upload plan or record when the user asks to release reusable data
 
 ## Rules
 
 - prefer Shennong exported APIs when they already expose the needed capability
 - keep the main object as a Seurat object unless another return type is required
+- use `sn_upload_zenodo()` for reusable data releases instead of hand-written
+  `zen4R` upload code; keep `publish = FALSE` until the user explicitly wants
+  to publish the Zenodo draft
+- use `sn_download_zenodo()` for reusable data downloads from public Zenodo
+  records; do not require a token unless the record is restricted/private
+- use vectorized `sn_load_data(dataset = c(...))` when several Shennong
+  example datasets should be loaded together; filtered inputs return a merged
+  Seurat object and raw inputs return a named list
 - respect strict `sn_verb_noun` naming conventions
 - use the shared package API and workflow references instead of inventing
   partial wrapper logic
@@ -49,7 +58,7 @@ single-cell tasks. This skill is the main entry point for package usage.
    `sn_filter_cells()` and `sn_filter_genes()`.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
-2. Run clustering or batch integration with `sn_run_cluster()`. Use
+2. Run clustering or batch_by integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
    forced into the ScaleData/PCA feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
@@ -59,16 +68,16 @@ single-cell tasks. This skill is the main entry point for package usage.
    batch-integration backend is requested. For scVI/scANVI, Shennong manages a
    shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
    artifacts under `~/.shennong/runs/`, and imports the latent reduction back
-   into Seurat; scANVI requires `integration_control = list(labels_key = ...)`.
+   into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
    Use `sn_pixi_paths()` when users ask where Python environments live, use
    `sn_list_pixi_environments()` and `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`, and pass
    `integration_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
    by Shennong.
-   Use `normalization_method = "sctransform"` with `batch = ...` only when an
+   Use `normalization_method = "sctransform"` with `batch_by = ...` only when an
    SCTransform-normalized Harmony integration is requested.
-3. Assess integration quality or cluster structure with
+3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
    `sn_calculate_isolated_label_score()`, or
    `sn_identify_challenging_groups()` when sample mixing, rare groups,
@@ -76,13 +85,17 @@ single-cell tasks. This skill is the main entry point for package usage.
 4. Move to downstream biological interpretation:
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
    optional reference annotation with `sn_transfer_labels()` or
-   `sn_transfer_labels(method = "coralysis")`, and optional external
+   `sn_transfer_labels(method = "coralysis")`; use
+   `sn_transfer_labels(method = "scanvi")` or
+   `sn_transfer_labels(method = "scarches")` when semi-supervised scVI-family
+   label transfer is requested. Optional external
    annotation with `sn_run_celltypist()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
-5. Use `sn_calculate_composition()`, `sn_compare_composition()`,
-   `sn_run_milo()`, `sn_plot_composition()`, and `sn_deconvolve_bulk()` for
+5. Use `sn_calculate_composition()`, `sn_calculate_roe()`,
+   `sn_compare_composition()`, `sn_run_milo()`, `sn_plot_composition()`, and
+   `sn_deconvolve_bulk()` for
    comparative summaries across samples, conditions, annotations, or paired
    bulk RNA-seq mixtures.
 6. Build prompts or stored-result summaries with the interpretation helpers
@@ -116,6 +129,7 @@ single-cell tasks. This skill is the main entry point for package usage.
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_enrich(x = object, source_de_name = "cluster_markers")`
 - `sn_calculate_composition()`
+- `sn_calculate_roe()`
 - `sn_run_milo()`
 - `sn_run_cell_communication(method = "cellchat")`
 - `sn_run_regulatory_activity(method = "dorothea")`

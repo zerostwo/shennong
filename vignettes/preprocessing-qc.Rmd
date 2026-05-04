@@ -190,7 +190,7 @@ the QC decision without rerunning preprocessing.
 qc_report <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_col = "sample",
+  sample_by = "sample",
   verbose = FALSE
 )
 
@@ -199,7 +199,7 @@ qc_report$overall
 pbmc_norm <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_col = "sample",
+  sample_by = "sample",
   store_name = "pbmc3k_preprocessing",
   return_object = TRUE,
   verbose = FALSE

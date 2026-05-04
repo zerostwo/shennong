@@ -6,7 +6,7 @@
 \usage{
 sn_run_cluster(
   object,
-  batch = NULL,
+  batch_by = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
     "scanvi"),
@@ -32,21 +32,24 @@ sn_run_cluster(
   assay = "RNA",
   layer = "counts",
   return_cluster = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  batch = NULL
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch}{A column name in \code{object@meta.data} specifying batch info.
+\item{batch_by}{A column name in \code{object@meta.data} specifying batch_by info.
 If \code{NULL}, no integration is performed.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
-\code{"sctransform"}. The scran workflow is currently only supported when
-\code{batch = NULL}. The SCTransform workflow can currently be combined
-with \code{integration_method = "harmony"} by supplying \code{batch}.}
+\code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
+be followed by any supported \code{integration_method} when
+\code{batch_by} is supplied. The SCTransform workflow can currently be
+combined with \code{integration_method = "harmony"} by supplying
+\code{batch_by}.}
 
-\item{integration_method}{Batch-integration backend used when \code{batch}
+\item{integration_method}{Batch-integration backend used when \code{batch_by}
 is supplied. Supported values are \code{"harmony"},
 \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 \code{"scvi"}, and \code{"scanvi"}.
@@ -70,7 +73,7 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{manifest_path}, \code{install_pixi}, \code{accelerator},
 \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 \code{model_args}, \code{train_args}, and \code{write_h5ad};
-\code{"scanvi"} additionally requires \code{labels_key} and accepts
+\code{"scanvi"} additionally requires \code{label_by} and accepts
 \code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
 generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
@@ -89,8 +92,8 @@ that they are present in \code{object}.}
 
 \item{hvg_group_by}{Optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. When \code{NULL} and
-\code{batch} is supplied, Shennong reuses \code{batch} by default. Use
-\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.}
+\code{batch_by} is supplied, Shennong reuses \code{batch_by} by default. Use
+\code{NULL} with \code{batch_by = NULL} to compute HVGs on the full object.}
 
 \item{rare_feature_method}{Optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
@@ -136,18 +139,20 @@ from built-in signatures.}
 
 \item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
 
-\item{return_cluster}{If \code{TRUE}, return only the cluster assignments.}
+\item{return_cluster}{If \code{TRUE}, return only the cluster_by assignments.}
 
 \item{verbose}{Whether to print/log progress messages.}
+
+\item{batch}{Deprecated alias for \code{batch_by}.}
 }
 \value{
 A \code{Seurat} object with clustering results and embeddings, or a
-cluster vector if \code{return_cluster = TRUE}.
+cluster_by vector if \code{return_cluster = TRUE}.
 }
 \description{
 This function is the main clustering entry point in \code{Shennong}.
-When \code{batch = NULL}, it performs single-dataset clustering with either the
-standard Seurat workflow or an SCTransform workflow. When \code{batch} is
+When \code{batch_by = NULL}, it performs single-dataset clustering with either the
+standard Seurat workflow or an SCTransform workflow. When \code{batch_by} is
 supplied, it performs batch integration followed by clustering and UMAP.
 }
 \examples{
@@ -160,7 +165,7 @@ seurat_obj <- sn_run_cluster(
 
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
-  batch = "sample_id",
+  batch_by = "sample_id",
   integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "sample_id",

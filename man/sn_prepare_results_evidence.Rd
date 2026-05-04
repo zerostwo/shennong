@@ -9,9 +9,10 @@ sn_prepare_results_evidence(
   cluster_de_name = NULL,
   contrast_de_name = NULL,
   enrichment_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   n_markers = 5,
-  n_terms = 10
+  n_terms = 10,
+  cluster_col = NULL
 )
 }
 \arguments{
@@ -23,11 +24,13 @@ sn_prepare_results_evidence(
 
 \item{enrichment_name}{Optional stored enrichment result.}
 
-\item{cluster_col}{Metadata column containing cluster labels.}
+\item{cluster_by}{Metadata column containing cluster labels.}
 
 \item{n_markers}{Number of marker genes to retain per cluster.}
 
 \item{n_terms}{Number of enrichment terms to retain.}
+
+\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A structured list ready for prompt construction.

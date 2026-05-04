@@ -2,31 +2,38 @@
 % Please edit documentation in R/preprocessing.R
 \name{sn_standardize_gene_symbols}
 \alias{sn_standardize_gene_symbols}
-\title{Standardize gene symbols in a count matrix or Seurat object}
+\title{Standardize gene symbols in a vector, count matrix, or Seurat object}
 \usage{
 sn_standardize_gene_symbols(x, species = NULL, is_gene_id = FALSE)
 }
 \arguments{
-\item{x}{A count matrix or a \code{Seurat} object.}
+\item{x}{A character vector of gene symbols/IDs, a count matrix, or a
+\code{Seurat} object.}
 
 \item{species}{The species for gene symbol checking, passed to \code{HGNChelper}.}
 
 \item{is_gene_id}{If \code{TRUE}, \code{x} is assumed to contain gene IDs (e.g., ENSEMBL IDs) as rownames.}
 }
 \value{
-If \code{x} is a matrix, returns a matrix with standardized gene symbols.
-If \code{x} is a Seurat object, returns the modified Seurat object.
+If \code{x} is a character vector, returns a character vector of
+standardized gene symbols. If \code{x} is a matrix, returns a matrix
+with standardized gene symbols. If \code{x} is a Seurat object,
+returns the modified Seurat object.
 }
 \description{
 This function helps unify gene symbols to a standard format. It can:
 \enumerate{
 \item Convert gene IDs to gene symbols (if \code{is_gene_id = TRUE}).
 \item Check and correct gene symbols using \code{HGNChelper::checkGeneSymbols}.
-\item Aggregate duplicated gene symbols by summing their counts.
+\item Aggregate duplicated gene symbols by summing their counts for matrix
+and Seurat inputs.
 }
 }
 \examples{
 \dontrun{
+# For a vector:
+genes <- sn_standardize_gene_symbols(c("1-Mar", "CD3D"), species = "human")
+
 # For a Seurat object:
 seurat_obj <- sn_standardize_gene_symbols(seurat_obj, species = "human", is_gene_id = FALSE)
 

@@ -9,11 +9,14 @@ sn_load_data(
   matrix_type = c("filtered", "raw"),
   save_dir = "~/.shennong/data",
   return_object = TRUE,
-  species = NULL
+  species = NULL,
+  token = NULL,
+  overwrite = FALSE,
+  quiet = FALSE
 )
 }
 \arguments{
-\item{dataset}{Character scalar. Which example dataset to load.
+\item{dataset}{Character vector. Which example dataset(s) to load.
 Currently one of \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"},
 or \code{"pbmc8k"}. Default: \code{"pbmc3k"}.}
 
@@ -41,7 +44,16 @@ path.}
 \code{sn_initialize_seurat_object()} when constructing Seurat objects
 (i.e. when \code{matrix_type == "filtered"}). Ignored if
 \code{matrix_type == "raw"}. If \code{NULL}, use the dataset default from
-the example-data registry.}
+the example-data registry. When loading multiple datasets, supply either
+one species label for all datasets or one label per dataset.}
+
+\item{token}{Optional Zenodo access token. Public example datasets do not
+require a token. Supply this only for restricted/private records.}
+
+\item{overwrite}{Logical. If \code{TRUE}, re-download cached files.}
+
+\item{quiet}{Logical. If \code{TRUE}, suppress Zenodo download progress
+messages.}
 }
 \value{
 One of:
@@ -49,15 +61,17 @@ One of:
 \itemize{
 \item If \code{matrix_type == "filtered"} and
 \code{return_object = TRUE}:
-a Seurat object.
+a Seurat object. Multiple datasets are returned as one merged Seurat
+object.
 
 \item If \code{matrix_type == "raw"} and
 \code{return_object = TRUE}:
-a sparse count matrix (e.g. \code{dgCMatrix}).
+a sparse count matrix (e.g. \code{dgCMatrix}) or, for multiple
+datasets, a named list of sparse count matrices.
 
 \item If \code{return_object = FALSE}:
-the local file path to the cached \code{.h5} file,
-returned invisibly.
+the local file path to the cached \code{.h5} file, or a named
+character vector of paths for multiple datasets, returned invisibly.
 }
 }
 \description{
@@ -109,15 +123,19 @@ fly:
 \itemize{
 \item If \code{matrix_type == "filtered"}:
 a Seurat object is constructed via
-\code{sn_initialize_seurat_object()}.
+\code{sn_initialize_seurat_object()}. When multiple datasets are
+requested, the per-dataset Seurat objects are merged and each source
+is recorded in the \code{sample} metadata column.
 \item If \code{matrix_type == "raw"}:
 the function returns a sparse count matrix
 (typically a \code{dgCMatrix}), suitable for ambient RNA
-estimation / SoupX workflows.
+estimation / SoupX workflows. When multiple raw datasets are
+requested, the matrices are returned as a named list.
 }
 
 When \code{return_object = FALSE}, no object is constructed;
-only the file is ensured to exist locally.
+only the file is ensured to exist locally. Multiple datasets return a named
+character vector of cached paths.
 }
 \examples{
 \dontrun{
@@ -130,7 +148,10 @@ pbmc_raw <- sn_load_data(matrix_type = "raw")
 # 3. Only download/cache PBMC8k, don't construct anything in-memory:
 sn_load_data(dataset = "pbmc8k", return_object = FALSE)
 
-# 4. Use a custom cache directory:
+# 4. Load and merge multiple filtered PBMC examples:
+pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
+
+# 5. Use a custom cache directory:
 pbmc4k <- sn_load_data(
   dataset  = "pbmc4k",
   save_dir = "~/datasets/pbmc_cache"
@@ -146,6 +167,7 @@ DOI: 10.5281/zenodo.14884845
 }
 \seealso{
 \code{\link{sn_initialize_seurat_object}},
+\code{\link{sn_download_zenodo}},
 \code{\link{sn_write}},
 \code{\link{sn_read}}
 }

@@ -7,10 +7,11 @@
 sn_assess_qc(
   object,
   reference = NULL,
-  sample_col = NULL,
+  sample_by = NULL,
   store_name = "default",
   return_object = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_col = NULL
 )
 }
 \arguments{
@@ -20,7 +21,7 @@ sn_assess_qc(
 When supplied, the function compares the retained cells in \code{object}
 against the QC flags and doublet calls recorded in \code{reference}.}
 
-\item{sample_col}{Optional metadata column defining samples. When
+\item{sample_by}{Optional metadata column defining samples. When
 \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 available and otherwise treats the object as one sample.}
 
@@ -31,6 +32,8 @@ available and otherwise treats the object as one sample.}
 Seurat object and return the updated object.}
 
 \item{verbose}{Logical; when \code{TRUE}, print a concise QC summary.}
+
+\item{sample_col}{Deprecated alias for \code{sample_by}.}
 }
 \value{
 A list with \code{overall}, \code{by_sample}, \code{comparison},

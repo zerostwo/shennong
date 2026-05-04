@@ -2,13 +2,14 @@
 #'
 #' This function calculates the Local Inverse Simpson's Index (LISI) for one or
 #' more metadata labels from a Seurat reduction. It is commonly used to assess
-#' batch mixing or label separation after integration.
+#' batch_by mixing or label_by separation after integration.
 #'
 #' @param x A Seurat object.
 #' @param reduction Reduction name used to extract embeddings. Defaults to
 #'   \code{"pca"}.
-#' @param label Character vector of metadata column names passed to
+#' @param label_by Character vector of metadata column names passed to
 #'   \code{lisi::compute_lisi()}.
+#' @param label Deprecated alias for \code{label_by}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
 #' @param cells Optional character vector of cell names to score.
 #' @param max_cells Optional integer cap used to subsample cells before running
@@ -18,7 +19,7 @@
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #'
 #' @return A data frame with one row per retained cell. The first column is
-#'   \code{cell_id}; each requested label contributes one LISI score column.
+#'   \code{cell_id}; each requested label_by contributes one LISI score column.
 #'
 #' @importFrom tibble rownames_to_column
 #'
@@ -27,14 +28,14 @@
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' lisi_tbl <- sn_calculate_lisi(
 #'   pbmc,
 #'   reduction = "harmony",
-#'   label = "sample"
+#'   label_by = "sample"
 #' )
 #' head(lisi_tbl)
 #' }
@@ -43,14 +44,18 @@
 sn_calculate_lisi <- function(
   x,
   reduction = "pca",
-  label = "sample",
+  label_by = NULL,
   dims = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = label[[1]],
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 ) {
   check_installed_github(pkg = "lisi", repo = "immunogenomics/lisi")
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  label_by <- label_by %||% "sample"
+  stratify_by <- stratify_by %||% label_by[[1]]
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -59,13 +64,13 @@ sn_calculate_lisi <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = label
+    required_cols = label_by
   )
 
   lisi_score <- lisi::compute_lisi(
     X = metric_input$embeddings,
     meta_data = metric_input$metadata,
-    label_colnames = label
+    label_colnames = label_by
   ) |>
     rownames_to_column("cell_id")
 
@@ -75,10 +80,11 @@ sn_calculate_lisi <- function(
 #' Calculate silhouette widths from a Seurat embedding
 #'
 #' Silhouette widths summarize how well cells are separated by a categorical
-#' metadata label in the selected embedding.
+#' metadata label_by in the selected embedding.
 #'
 #' @param x A Seurat object.
-#' @param label Metadata column used as the grouping label.
+#' @param label_by Metadata column used as the grouping label.
+#' @param label Deprecated alias for \code{label_by}.
 #' @param reduction Reduction name used to extract embeddings. Defaults to
 #'   \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -99,13 +105,13 @@ sn_calculate_lisi <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' sil_tbl <- sn_calculate_silhouette(
 #'   pbmc,
-#'   label = "seurat_clusters",
+#'   label_by = "seurat_clusters",
 #'   reduction = "harmony"
 #' )
 #' head(sil_tbl)
@@ -114,14 +120,20 @@ sn_calculate_lisi <- function(
 #' @export
 sn_calculate_silhouette <- function(
   x,
-  label,
+  label_by = NULL,
   reduction = "pca",
   dims = NULL,
   cells = NULL,
   max_cells = 3000,
-  stratify_by = label,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 ) {
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(label_by)) {
+    stop("`label_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% label_by
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -130,14 +142,14 @@ sn_calculate_silhouette <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = label
+    required_cols = label_by
   )
 
   silhouette_tbl <- .sn_compute_silhouette_table(
     embeddings = metric_input$embeddings,
-    labels = metric_input$metadata[[label]],
+    labels = metric_input$metadata[[label_by]],
     cell_ids = metric_input$cells,
-    label_name = label
+    label_name = label_by
   )
 
   silhouette_tbl
@@ -150,7 +162,8 @@ sn_calculate_silhouette <- function(
 #' conservation after integration.
 #'
 #' @param x A Seurat object.
-#' @param label Metadata column used to define groups.
+#' @param label_by Metadata column used to define groups.
+#' @param label Deprecated alias for \code{label_by}.
 #' @param graph Optional graph name stored in \code{x@graphs}. If \code{NULL},
 #'   the function tries to reuse an existing nearest-neighbor graph and falls
 #'   back to a kNN graph built from the selected embedding.
@@ -176,13 +189,13 @@ sn_calculate_silhouette <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' connectivity_tbl <- sn_calculate_graph_connectivity(
 #'   pbmc,
-#'   label = "seurat_clusters",
+#'   label_by = "seurat_clusters",
 #'   reduction = "harmony"
 #' )
 #' connectivity_tbl
@@ -191,7 +204,7 @@ sn_calculate_silhouette <- function(
 #' @export
 sn_calculate_graph_connectivity <- function(
   x,
-  label,
+  label_by = NULL,
   graph = NULL,
   reduction = "pca",
   dims = NULL,
@@ -199,10 +212,16 @@ sn_calculate_graph_connectivity <- function(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = NULL,
-  stratify_by = label,
+  stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  label = NULL
 ) {
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(label_by)) {
+    stop("`label_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% label_by
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -211,7 +230,7 @@ sn_calculate_graph_connectivity <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = label
+    required_cols = label_by
   )
   neighbor_method <- rlang::arg_match(neighbor_method)
 
@@ -227,8 +246,8 @@ sn_calculate_graph_connectivity <- function(
 
   connectivity_tbl <- .sn_calculate_connectivity_table(
     adjacency = graph_info$adjacency,
-    groups = metric_input$metadata[[label]],
-    group_name = label
+    groups = metric_input$metadata[[label_by]],
+    group_name = label_by
   )
 
   attr(connectivity_tbl, "overall_score") <- mean(connectivity_tbl$connectivity_score)
@@ -236,14 +255,15 @@ sn_calculate_graph_connectivity <- function(
   connectivity_tbl
 }
 
-#' Calculate PCR batch effect scores
+#' Calculate PCR batch_by effect scores
 #'
 #' This function estimates how much variance in an embedding is still explained
 #' by batch. If a baseline reduction or baseline object is supplied, it also
 #' reports the improvement relative to the unintegrated state.
 #'
 #' @param x A Seurat object.
-#' @param batch Metadata column containing batch labels.
+#' @param batch_by Metadata column containing batch labels.
+#' @param batch Deprecated alias for \code{batch_by}.
 #' @param reduction Reduction name used for the primary score. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -257,7 +277,7 @@ sn_calculate_graph_connectivity <- function(
 #'   during subsampling. Defaults to \code{batch}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #'
-#' @return A one-row data frame containing the weighted batch variance explained
+#' @return A one-row data frame containing the weighted batch_by variance explained
 #'   by the selected reduction and, when available, the baseline comparison.
 #'
 #' @examples
@@ -265,13 +285,13 @@ sn_calculate_graph_connectivity <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' sn_calculate_pcr_batch(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   reduction = "harmony",
 #'   baseline_reduction = "pca"
 #' )
@@ -280,16 +300,22 @@ sn_calculate_graph_connectivity <- function(
 #' @export
 sn_calculate_pcr_batch <- function(
   x,
-  batch,
+  batch_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
   baseline = NULL,
   baseline_reduction = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = batch,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  batch = NULL
 ) {
+  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+  if (is.null(batch_by)) {
+    stop("`batch_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% batch_by
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -298,10 +324,10 @@ sn_calculate_pcr_batch <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = batch
+    required_cols = batch_by
   )
 
-  batch_labels <- metric_input$metadata[[batch]]
+  batch_labels <- metric_input$metadata[[batch_by]]
   batch_variance <- .sn_compute_pcr_variance(
     embeddings = metric_input$embeddings,
     batch = batch_labels
@@ -322,11 +348,11 @@ sn_calculate_pcr_batch <- function(
       max_cells = NULL,
       stratify_by = NULL,
       seed = seed,
-      required_cols = batch
+      required_cols = batch_by
     )
     baseline_value <- .sn_compute_pcr_variance(
       embeddings = baseline_input$embeddings,
-      batch = baseline_input$metadata[[batch]]
+      batch = baseline_input$metadata[[batch_by]]
     )
     improvement <- baseline_value - batch_variance
     scaled_score <- .sn_scale_pcr_improvement(
@@ -338,7 +364,7 @@ sn_calculate_pcr_batch <- function(
   data.frame(
     reduction = reduction,
     baseline_reduction = baseline_name,
-    batch_column = batch,
+    batch_column = batch_by,
     n_cells = nrow(metric_input$embeddings),
     batch_variance = batch_variance,
     baseline_batch_variance = baseline_value,
@@ -355,8 +381,10 @@ sn_calculate_pcr_batch <- function(
 #' clustering preserves known cell identities.
 #'
 #' @param x A Seurat object or data frame containing the required columns.
-#' @param cluster Metadata/data-frame column containing cluster labels.
-#' @param label Metadata/data-frame column containing reference labels.
+#' @param cluster_by Metadata/data-frame column containing cluster_by labels.
+#' @param label_by Metadata/data-frame column containing reference labels.
+#' @param cluster Deprecated alias for \code{cluster_by}.
+#' @param label Deprecated alias for \code{label_by}.
 #'
 #' @return A one-row data frame with ARI and NMI.
 #'
@@ -365,31 +393,36 @@ sn_calculate_pcr_batch <- function(
 #'   cluster = c("T", "T", "B", "B"),
 #'   label = c("T", "T", "B", "B")
 #' )
-#' sn_calculate_clustering_agreement(meta, cluster = "cluster", label = "label")
+#' sn_calculate_clustering_agreement(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_clustering_agreement <- function(x, cluster, label) {
+sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
+  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(cluster_by) || is.null(label_by)) {
+    stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
+  }
   metadata <- .sn_extract_metric_metadata(x)
-  .sn_check_metric_columns(metadata, c(cluster, label))
+  .sn_check_metric_columns(metadata, c(cluster_by, label_by))
 
-  keep <- !is.na(metadata[[cluster]]) & !is.na(metadata[[label]])
+  keep <- !is.na(metadata[[cluster_by]]) & !is.na(metadata[[label_by]])
   metadata <- metadata[keep, , drop = FALSE]
   if (nrow(metadata) == 0) {
     stop("No cells remain after removing missing cluster/label values.")
   }
 
   ari <- .sn_adjusted_rand_index(
-    truth = metadata[[label]],
-    predicted = metadata[[cluster]]
+    truth = metadata[[label_by]],
+    predicted = metadata[[cluster_by]]
   )
   nmi <- .sn_normalized_mutual_information(
-    truth = metadata[[label]],
-    predicted = metadata[[cluster]]
+    truth = metadata[[label_by]],
+    predicted = metadata[[cluster_by]]
   )
 
   data.frame(
-    cluster_column = cluster,
-    label_column = label,
+    cluster_column = cluster_by,
+    label_column = label_by,
     n_cells = nrow(metadata),
     ari = ari,
     nmi = nmi,
@@ -405,7 +438,8 @@ sn_calculate_clustering_agreement <- function(x, cluster, label) {
 #' larger values indicate better preservation.
 #'
 #' @param x A Seurat object.
-#' @param label Metadata column containing biological labels.
+#' @param label_by Metadata column containing biological labels.
+#' @param label Deprecated alias for \code{label_by}.
 #' @param reduction Reduction name used to extract embeddings. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -420,8 +454,8 @@ sn_calculate_clustering_agreement <- function(x, cluster, label) {
 #' @param isolated_n Absolute cell-count threshold used to flag isolated labels.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #'
-#' @return A data frame with one row per label and columns describing label
-#'   abundance, silhouette separation, and whether the label is considered
+#' @return A data frame with one row per label_by and columns describing label
+#'   abundance, silhouette separation, and whether the label_by is considered
 #'   isolated. The attributes \code{overall_score} and \code{isolated_labels}
 #'   summarize the isolated-label subset.
 #'
@@ -430,13 +464,13 @@ sn_calculate_clustering_agreement <- function(x, cluster, label) {
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' isolated_tbl <- sn_calculate_isolated_label_score(
 #'   pbmc,
-#'   label = "seurat_clusters",
+#'   label_by = "seurat_clusters",
 #'   reduction = "harmony"
 #' )
 #' isolated_tbl
@@ -445,16 +479,22 @@ sn_calculate_clustering_agreement <- function(x, cluster, label) {
 #' @export
 sn_calculate_isolated_label_score <- function(
   x,
-  label,
+  label_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
   cells = NULL,
   max_cells = 3000,
-  stratify_by = label,
+  stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717
+  seed = 717,
+  label = NULL
 ) {
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(label_by)) {
+    stop("`label_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% label_by
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -463,16 +503,16 @@ sn_calculate_isolated_label_score <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = label
+    required_cols = label_by
   )
 
   silhouette_tbl <- .sn_compute_silhouette_table(
     embeddings = metric_input$embeddings,
-    labels = metric_input$metadata[[label]],
+    labels = metric_input$metadata[[label_by]],
     cell_ids = metric_input$cells,
-    label_name = label
+    label_name = label_by
   )
-  label_values <- as.character(metric_input$metadata[[label]])
+  label_values <- as.character(metric_input$metadata[[label_by]])
   label_n <- table(label_values)
   total_cells <- length(label_values)
 
@@ -480,7 +520,7 @@ sn_calculate_isolated_label_score <- function(
     n_cells <- as.integer(label_n[[current_label]])
     fraction_cells <- n_cells / total_cells
     current_silhouette <- mean(
-      silhouette_tbl$silhouette_width[silhouette_tbl[[label]] == current_label]
+      silhouette_tbl$silhouette_width[silhouette_tbl[[label_by]] == current_label]
     )
     isolated_flag <- n_cells <= isolated_n || fraction_cells <= isolated_fraction
 
@@ -496,7 +536,7 @@ sn_calculate_isolated_label_score <- function(
   })
 
   label_tbl <- .sn_bind_rows(label_tbl)
-  names(label_tbl)[names(label_tbl) == "label"] <- label
+  names(label_tbl)[names(label_tbl) == "label"] <- label_by
   label_tbl <- label_tbl[order(label_tbl$n_cells, label_tbl$isolated_score), , drop = FALSE]
   rownames(label_tbl) <- NULL
 
@@ -507,21 +547,23 @@ sn_calculate_isolated_label_score <- function(
     NA_real_
   }
   attr(label_tbl, "overall_score") <- overall_score
-  attr(label_tbl, "isolated_labels") <- label_tbl[[label]][isolated_rows]
+  attr(label_tbl, "isolated_labels") <- label_tbl[[label_by]][isolated_rows]
   label_tbl
 }
 
 #' Calculate cluster purity against a reference label
 #'
-#' Cluster purity summarizes how homogeneous each cluster is with respect to a
+#' Cluster purity summarizes how homogeneous each cluster_by is with respect to a
 #' reference label. This is useful for checking whether clustering preserves
 #' known cell identities after integration.
 #'
 #' @param x A Seurat object or data frame containing the required columns.
-#' @param cluster Metadata/data-frame column containing cluster labels.
-#' @param label Metadata/data-frame column containing reference labels.
+#' @param cluster_by Metadata/data-frame column containing cluster_by labels.
+#' @param label_by Metadata/data-frame column containing reference labels.
+#' @param cluster Deprecated alias for \code{cluster_by}.
+#' @param label Deprecated alias for \code{label_by}.
 #'
-#' @return A data frame with one row per cluster and purity diagnostics in
+#' @return A data frame with one row per cluster_by and purity diagnostics in
 #'   \code{[0, 1]}.
 #'
 #' @examples
@@ -529,22 +571,27 @@ sn_calculate_isolated_label_score <- function(
 #'   cluster = c("T", "T", "B", "B"),
 #'   label = c("T", "T", "B", "B")
 #' )
-#' sn_calculate_cluster_purity(meta, cluster = "cluster", label = "label")
+#' sn_calculate_cluster_purity(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_cluster_purity <- function(x, cluster, label) {
+sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
+  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(cluster_by) || is.null(label_by)) {
+    stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
+  }
   metadata <- .sn_extract_metric_metadata(x)
-  .sn_check_metric_columns(metadata, c(cluster, label))
+  .sn_check_metric_columns(metadata, c(cluster_by, label_by))
 
-  keep <- !is.na(metadata[[cluster]]) & !is.na(metadata[[label]])
+  keep <- !is.na(metadata[[cluster_by]]) & !is.na(metadata[[label_by]])
   metadata <- metadata[keep, , drop = FALSE]
   if (nrow(metadata) == 0) {
     stop("No cells remain after removing missing cluster/label values.")
   }
 
-  cluster_levels <- unique(as.character(metadata[[cluster]]))
+  cluster_levels <- unique(as.character(metadata[[cluster_by]]))
   purity_tbl <- lapply(cluster_levels, function(current_cluster) {
-    current_labels <- as.character(metadata[[label]][metadata[[cluster]] == current_cluster])
+    current_labels <- as.character(metadata[[label_by]][metadata[[cluster_by]] == current_cluster])
     label_n <- sort(table(current_labels), decreasing = TRUE)
     n_cells <- sum(label_n)
     dominant_label <- names(label_n)[[1]]
@@ -562,20 +609,22 @@ sn_calculate_cluster_purity <- function(x, cluster, label) {
   })
 
   purity_tbl <- .sn_bind_rows(purity_tbl)
-  names(purity_tbl)[names(purity_tbl) == "cluster"] <- cluster
+  names(purity_tbl)[names(purity_tbl) == "cluster"] <- cluster_by
   purity_tbl
 }
 
-#' Calculate cluster entropy for a categorical label
+#' Calculate cluster_by entropy for a categorical label
 #'
-#' Cluster entropy measures how mixed a categorical label is within each
+#' Cluster entropy measures how mixed a categorical label_by is within each
 #' cluster. When used with batch labels, higher normalized entropy indicates
 #' stronger within-cluster batch mixing.
 #'
 #' @param x A Seurat object or data frame containing the required columns.
-#' @param cluster Metadata/data-frame column containing cluster labels.
-#' @param label Metadata/data-frame column containing the label to evaluate
+#' @param cluster_by Metadata/data-frame column containing cluster_by labels.
+#' @param label_by Metadata/data-frame column containing the label_by to evaluate
 #'   within each cluster.
+#' @param cluster Deprecated alias for \code{cluster_by}.
+#' @param label Deprecated alias for \code{label_by}.
 #'
 #' @return A data frame with one row per cluster, including raw entropy and a
 #'   normalized entropy score in \code{[0, 1]}.
@@ -585,24 +634,29 @@ sn_calculate_cluster_purity <- function(x, cluster, label) {
 #'   cluster = c("0", "0", "1", "1"),
 #'   batch = c("a", "b", "a", "b")
 #' )
-#' sn_calculate_cluster_entropy(meta, cluster = "cluster", label = "batch")
+#' sn_calculate_cluster_entropy(meta, cluster_by = "cluster", label_by = "batch")
 #'
 #' @export
-sn_calculate_cluster_entropy <- function(x, cluster, label) {
+sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
+  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  if (is.null(cluster_by) || is.null(label_by)) {
+    stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
+  }
   metadata <- .sn_extract_metric_metadata(x)
-  .sn_check_metric_columns(metadata, c(cluster, label))
+  .sn_check_metric_columns(metadata, c(cluster_by, label_by))
 
-  keep <- !is.na(metadata[[cluster]]) & !is.na(metadata[[label]])
+  keep <- !is.na(metadata[[cluster_by]]) & !is.na(metadata[[label_by]])
   metadata <- metadata[keep, , drop = FALSE]
   if (nrow(metadata) == 0) {
     stop("No cells remain after removing missing cluster/label values.")
   }
 
-  max_levels <- length(unique(as.character(metadata[[label]])))
-  cluster_levels <- unique(as.character(metadata[[cluster]]))
+  max_levels <- length(unique(as.character(metadata[[label_by]])))
+  cluster_levels <- unique(as.character(metadata[[cluster_by]]))
 
   entropy_tbl <- lapply(cluster_levels, function(current_cluster) {
-    current_labels <- as.character(metadata[[label]][metadata[[cluster]] == current_cluster])
+    current_labels <- as.character(metadata[[label_by]][metadata[[cluster_by]] == current_cluster])
     label_n <- table(current_labels)
     proportions <- as.numeric(label_n) / sum(label_n)
     entropy <- -sum(proportions * log(proportions))
@@ -622,7 +676,7 @@ sn_calculate_cluster_entropy <- function(x, cluster, label) {
   })
 
   entropy_tbl <- .sn_bind_rows(entropy_tbl)
-  names(entropy_tbl)[names(entropy_tbl) == "cluster"] <- cluster
+  names(entropy_tbl)[names(entropy_tbl) == "cluster"] <- cluster_by
   entropy_tbl
 }
 
@@ -634,7 +688,8 @@ sn_calculate_cluster_entropy <- function(x, cluster, label) {
 #' visual inspection.
 #'
 #' @param x A Seurat object.
-#' @param group Metadata column defining the groups to inspect.
+#' @param group_by Metadata column defining the groups to inspect.
+#' @param group Deprecated alias for \code{group_by}.
 #' @param graph Optional graph name stored in \code{x@graphs}. If \code{NULL},
 #'   the function tries to reuse an existing nearest-neighbor graph and falls
 #'   back to a kNN graph built from the selected embedding.
@@ -649,7 +704,7 @@ sn_calculate_cluster_entropy <- function(x, cluster, label) {
 #' @param max_cells Optional integer cap used to subsample cells before running
 #'   the metric.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{group}.
+#'   during subsampling. Defaults to \code{group_by}.
 #' @param rare_fraction Fraction-of-cells threshold for flagging rare groups.
 #' @param rare_n Absolute cell-count threshold for flagging rare groups.
 #' @param challenge_threshold Threshold on the derived \code{challenge_score}
@@ -664,13 +719,13 @@ sn_calculate_cluster_entropy <- function(x, cluster, label) {
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' difficult_tbl <- sn_identify_challenging_groups(
 #'   pbmc,
-#'   group = "seurat_clusters",
+#'   group_by = "seurat_clusters",
 #'   reduction = "harmony"
 #' )
 #' difficult_tbl
@@ -679,7 +734,7 @@ sn_calculate_cluster_entropy <- function(x, cluster, label) {
 #' @export
 sn_identify_challenging_groups <- function(
   x,
-  group,
+  group_by = NULL,
   graph = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
@@ -687,13 +742,24 @@ sn_identify_challenging_groups <- function(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 3000,
-  stratify_by = group,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  group = NULL
 ) {
+  group_by <- .sn_resolve_legacy_arg(
+    value = group_by,
+    legacy = group,
+    value_name = "group_by",
+    legacy_name = "group"
+  )
+  if (is.null(group_by)) {
+    stop("`group_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% group_by
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -702,7 +768,7 @@ sn_identify_challenging_groups <- function(
     max_cells = max_cells,
     stratify_by = stratify_by,
     seed = seed,
-    required_cols = group
+    required_cols = group_by
   )
   neighbor_method <- rlang::arg_match(neighbor_method)
 
@@ -716,17 +782,17 @@ sn_identify_challenging_groups <- function(
     n_trees = n_trees
   )
 
-  groups <- metric_input$metadata[[group]]
+  groups <- metric_input$metadata[[group_by]]
   purity_tbl <- .sn_calculate_neighbor_purity(
     adjacency = graph_info$adjacency,
     labels = groups,
-    label_name = group,
+    label_name = group_by,
     cell_ids = metric_input$cells
   )
   connectivity_tbl <- .sn_calculate_connectivity_table(
     adjacency = graph_info$adjacency,
     groups = groups,
-    group_name = group
+    group_name = group_by
   )
 
   silhouette_tbl <- tryCatch(
@@ -734,7 +800,7 @@ sn_identify_challenging_groups <- function(
       embeddings = metric_input$embeddings,
       labels = groups,
       cell_ids = metric_input$cells,
-      label_name = group
+      label_name = group_by
     ),
     error = function(e) NULL
   )
@@ -747,7 +813,7 @@ sn_identify_challenging_groups <- function(
     current_cells <- metric_input$cells[as.character(groups) == current_group]
     purity_values <- purity_tbl$neighbor_purity[purity_tbl$cell_id %in% current_cells]
     current_connectivity <- connectivity_tbl$connectivity_score[
-      connectivity_tbl[[group]] == current_group
+      connectivity_tbl[[group_by]] == current_group
     ]
     current_silhouette <- NA_real_
     if (!is.null(silhouette_tbl)) {
@@ -787,7 +853,7 @@ sn_identify_challenging_groups <- function(
   })
 
   difficult_tbl <- .sn_bind_rows(difficult_tbl)
-  names(difficult_tbl)[names(difficult_tbl) == "group"] <- group
+  names(difficult_tbl)[names(difficult_tbl) == "group"] <- group_by
   difficult_tbl <- difficult_tbl[order(difficult_tbl$challenge_score, decreasing = TRUE), ]
   rownames(difficult_tbl) <- NULL
 
@@ -797,20 +863,23 @@ sn_identify_challenging_groups <- function(
 
 #' Assess integration quality across multiple metrics
 #'
-#' This wrapper combines fast, broadly useful metrics for batch mixing,
+#' This wrapper combines fast, broadly useful metrics for batch_by mixing,
 #' biological conservation, and cluster-level diagnostics. It reuses existing
 #' neighbor graphs when available and otherwise builds a kNN graph with Annoy or
 #' an exact fallback.
 #'
 #' @param x A Seurat object.
-#' @param batch Metadata column containing batch labels.
-#' @param label Optional metadata column containing biological labels such as
+#' @param batch_by Metadata column containing batch labels.
+#' @param label_by Optional metadata column containing biological labels such as
 #'   cell type annotations.
-#' @param cluster Optional metadata column containing the current clustering.
+#' @param cluster_by Optional metadata column containing the current clustering.
+#' @param batch Deprecated alias for \code{batch_by}.
+#' @param label Deprecated alias for \code{label_by}.
+#' @param cluster Deprecated alias for \code{cluster_by}.
 #' @param reduction Reduction name used for the primary integrated embedding.
 #'   Defaults to \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param baseline Optional Seurat object used as the baseline reference for
-#'   PCR batch scoring. If \code{NULL}, the baseline is taken from \code{x}.
+#'   PCR batch_by scoring. If \code{NULL}, the baseline is taken from \code{x}.
 #' @param baseline_reduction Optional reduction name used as the baseline.
 #' @param graph Optional graph name stored in \code{x@graphs}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -849,14 +918,14 @@ sn_identify_challenging_groups <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' metrics <- sn_assess_integration(
 #'   pbmc,
-#'   batch = "sample",
-#'   cluster = "seurat_clusters",
+#'   batch_by = "sample",
+#'   cluster_by = "seurat_clusters",
 #'   reduction = "harmony",
 #'   baseline_reduction = "pca"
 #' )
@@ -866,9 +935,9 @@ sn_identify_challenging_groups <- function(
 #' @export
 sn_assess_integration <- function(
   x,
-  batch,
-  label = NULL,
-  cluster = "seurat_clusters",
+  batch_by = NULL,
+  label_by = NULL,
+  cluster_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   baseline = NULL,
   baseline_reduction = .sn_default_baseline_reduction(x, reduction),
@@ -878,13 +947,24 @@ sn_assess_integration <- function(
   metrics = NULL,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 5000,
-  stratify_by = batch,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  batch = NULL,
+  label = NULL,
+  cluster = NULL
 ) {
+  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
+  cluster_by <- cluster_by %||% "seurat_clusters"
+  if (is.null(batch_by)) {
+    stop("`batch_by` must be supplied.", call. = FALSE)
+  }
+  stratify_by <- stratify_by %||% batch_by
   neighbor_method <- rlang::arg_match(neighbor_method)
   metrics <- metrics %||% c(
     "batch_lisi",
@@ -900,7 +980,7 @@ sn_assess_integration <- function(
     "challenging_groups"
   )
 
-  required_cols <- unique(stats::na.omit(c(batch, label, stratify_by)))
+  required_cols <- unique(stats::na.omit(c(batch_by, label_by, stratify_by)))
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
@@ -921,11 +1001,11 @@ sn_assess_integration <- function(
   if ("batch_silhouette" %in% metrics) {
     batch_silhouette <- .sn_calculate_batch_silhouette_score(
       embeddings = metric_input$embeddings,
-      batch = metric_input$metadata[[batch]],
-      label = if (!is.null(label)) metric_input$metadata[[label]] else NULL,
+      batch = metric_input$metadata[[batch_by]],
+      label = if (!is.null(label_by)) metric_input$metadata[[label_by]] else NULL,
       cell_ids = metric_input$cells,
-      batch_name = batch,
-      label_name = label
+      batch_name = batch_by,
+      label_name = label_by
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "batch_silhouette",
@@ -933,7 +1013,7 @@ sn_assess_integration <- function(
       score = batch_silhouette$raw_score,
       scaled_score = batch_silhouette$scaled_score,
       n_cells = cell_count,
-      source = if (is.null(label)) reduction else paste0(reduction, " + ", label),
+      source = if (is.null(label_by)) reduction else paste0(reduction, " + ", label_by),
       note = batch_silhouette$note
     )
     per_cell$batch_silhouette <- batch_silhouette$per_cell
@@ -942,12 +1022,12 @@ sn_assess_integration <- function(
     }
   }
 
-  if ("label_silhouette" %in% metrics && !is.null(label)) {
+  if ("label_silhouette" %in% metrics && !is.null(label_by)) {
     label_silhouette <- .sn_compute_silhouette_table(
       embeddings = metric_input$embeddings,
-      labels = metric_input$metadata[[label]],
+      labels = metric_input$metadata[[label_by]],
       cell_ids = metric_input$cells,
-      label_name = label
+      label_name = label_by
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "label_silhouette",
@@ -965,15 +1045,15 @@ sn_assess_integration <- function(
       batch_lisi <- sn_calculate_lisi(
         x = x,
         reduction = reduction,
-        label = batch,
+        label_by = batch_by,
         dims = dims,
         cells = metric_input$cells,
         max_cells = NULL,
         stratify_by = NULL,
         seed = seed
       )
-      batch_levels <- length(unique(metric_input$metadata[[batch]]))
-      batch_mean <- mean(batch_lisi[[batch]])
+      batch_levels <- length(unique(metric_input$metadata[[batch_by]]))
+      batch_mean <- mean(batch_lisi[[batch_by]])
       summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
         metric = "batch_lisi",
         category = "batch_removal",
@@ -991,20 +1071,20 @@ sn_assess_integration <- function(
     }
   }
 
-  if ("label_lisi" %in% metrics && !is.null(label)) {
+  if ("label_lisi" %in% metrics && !is.null(label_by)) {
     if (rlang::is_installed("lisi")) {
       label_lisi <- sn_calculate_lisi(
         x = x,
         reduction = reduction,
-        label = label,
+        label_by = label_by,
         dims = dims,
         cells = metric_input$cells,
         max_cells = NULL,
         stratify_by = NULL,
         seed = seed
       )
-      label_levels <- length(unique(metric_input$metadata[[label]]))
-      label_mean <- mean(label_lisi[[label]])
+      label_levels <- length(unique(metric_input$metadata[[label_by]]))
+      label_mean <- mean(label_lisi[[label_by]])
       summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
         metric = "label_lisi",
         category = "biology_conservation",
@@ -1027,17 +1107,17 @@ sn_assess_integration <- function(
   }
 
   if ("graph_connectivity" %in% metrics) {
-    connectivity_label <- if (!is.null(label) && label %in% colnames(metric_input$metadata)) {
-      label
-    } else if (!is.null(cluster) && cluster %in% colnames(metric_input$metadata)) {
-      cluster
+    connectivity_label <- if (!is.null(label_by) && label_by %in% colnames(metric_input$metadata)) {
+      label_by
+    } else if (!is.null(cluster_by) && cluster_by %in% colnames(metric_input$metadata)) {
+      cluster_by
     } else {
       NULL
     }
     if (!is.null(connectivity_label)) {
       connectivity_tbl <- sn_calculate_graph_connectivity(
         x = x,
-        label = connectivity_label,
+        label_by = connectivity_label,
         graph = graph,
         reduction = reduction,
         dims = dims,
@@ -1049,13 +1129,13 @@ sn_assess_integration <- function(
         seed = seed,
         n_trees = n_trees
       )
-      connectivity_category <- if (!is.null(label)) {
+      connectivity_category <- if (!is.null(label_by)) {
         "biology_conservation"
       } else {
         "structure"
       }
       summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
-        metric = if (!is.null(label)) {
+        metric = if (!is.null(label_by)) {
           "graph_connectivity"
         } else {
           "cluster_connectivity"
@@ -1071,14 +1151,14 @@ sn_assess_integration <- function(
   }
 
   if ("clustering_agreement" %in% metrics &&
-    !is.null(label) &&
-    !is.null(cluster) &&
-    label %in% colnames(metric_input$metadata) &&
-    cluster %in% colnames(metric_input$metadata)) {
+    !is.null(label_by) &&
+    !is.null(cluster_by) &&
+    label_by %in% colnames(metric_input$metadata) &&
+    cluster_by %in% colnames(metric_input$metadata)) {
     agreement_tbl <- sn_calculate_clustering_agreement(
       x = metric_input$metadata,
-      cluster = cluster,
-      label = label
+      cluster_by = cluster_by,
+      label_by = label_by
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "ari",
@@ -1086,7 +1166,7 @@ sn_assess_integration <- function(
       score = agreement_tbl$ari,
       scaled_score = agreement_tbl$ari,
       n_cells = agreement_tbl$n_cells,
-      source = paste(cluster, "vs", label)
+      source = paste(cluster_by, "vs", label_by)
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "nmi",
@@ -1094,17 +1174,17 @@ sn_assess_integration <- function(
       score = agreement_tbl$nmi,
       scaled_score = agreement_tbl$nmi,
       n_cells = agreement_tbl$n_cells,
-      source = paste(cluster, "vs", label)
+      source = paste(cluster_by, "vs", label_by)
     )
     per_group$clustering_agreement <- agreement_tbl
   }
 
   if ("isolated_label_score" %in% metrics &&
-    !is.null(label) &&
-    label %in% colnames(metric_input$metadata)) {
+    !is.null(label_by) &&
+    label_by %in% colnames(metric_input$metadata)) {
     isolated_tbl <- sn_calculate_isolated_label_score(
       x = x,
-      label = label,
+      label_by = label_by,
       reduction = reduction,
       dims = dims,
       cells = metric_input$cells,
@@ -1122,27 +1202,27 @@ sn_assess_integration <- function(
         score = isolated_score,
         scaled_score = isolated_score,
         n_cells = sum(isolated_tbl$n_cells[isolated_tbl$isolated_label]),
-        source = label,
+        source = label_by,
         note = paste(length(attr(isolated_tbl, "isolated_labels")), "isolated labels")
       )
     } else {
       notes <- c(
         notes,
-        paste0("Skipped isolated_label_score because no labels met the isolated thresholds for '", label, "'.")
+        paste0("Skipped isolated_label_score because no labels met the isolated thresholds for '", label_by, "'.")
       )
     }
     per_group$isolated_label_score <- isolated_tbl
   }
 
   if ("cluster_purity" %in% metrics &&
-    !is.null(cluster) &&
-    !is.null(label) &&
-    cluster %in% colnames(metric_input$metadata) &&
-    label %in% colnames(metric_input$metadata)) {
+    !is.null(cluster_by) &&
+    !is.null(label_by) &&
+    cluster_by %in% colnames(metric_input$metadata) &&
+    label_by %in% colnames(metric_input$metadata)) {
     purity_tbl <- sn_calculate_cluster_purity(
       x = metric_input$metadata,
-      cluster = cluster,
-      label = label
+      cluster_by = cluster_by,
+      label_by = label_by
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "cluster_label_purity",
@@ -1150,19 +1230,19 @@ sn_assess_integration <- function(
       score = mean(purity_tbl$purity_score),
       scaled_score = mean(purity_tbl$purity_score),
       n_cells = sum(purity_tbl$n_cells),
-      source = paste(cluster, "vs", label)
+      source = paste(cluster_by, "vs", label_by)
     )
     per_group$cluster_purity <- purity_tbl
   }
 
   if ("cluster_entropy" %in% metrics &&
-    !is.null(cluster) &&
-    cluster %in% colnames(metric_input$metadata) &&
-    batch %in% colnames(metric_input$metadata)) {
+    !is.null(cluster_by) &&
+    cluster_by %in% colnames(metric_input$metadata) &&
+    batch_by %in% colnames(metric_input$metadata)) {
     entropy_tbl <- sn_calculate_cluster_entropy(
       x = metric_input$metadata,
-      cluster = cluster,
-      label = batch
+      cluster_by = cluster_by,
+      label_by = batch_by
     )
     summary_rows[[length(summary_rows) + 1]] <- .sn_metric_row(
       metric = "cluster_batch_entropy",
@@ -1170,7 +1250,7 @@ sn_assess_integration <- function(
       score = mean(entropy_tbl$normalized_entropy),
       scaled_score = mean(entropy_tbl$normalized_entropy),
       n_cells = sum(entropy_tbl$n_cells),
-      source = paste(cluster, "vs", batch)
+      source = paste(cluster_by, "vs", batch_by)
     )
     per_group$cluster_entropy <- entropy_tbl
   }
@@ -1178,7 +1258,7 @@ sn_assess_integration <- function(
   if ("pcr_batch" %in% metrics) {
     pcr_tbl <- sn_calculate_pcr_batch(
       x = x,
-      batch = batch,
+      batch_by = batch_by,
       reduction = reduction,
       dims = dims,
       baseline = baseline,
@@ -1204,17 +1284,17 @@ sn_assess_integration <- function(
   }
 
   if ("challenging_groups" %in% metrics) {
-    difficulty_group <- if (!is.null(cluster) && cluster %in% colnames(metric_input$metadata)) {
-      cluster
-    } else if (!is.null(label) && label %in% colnames(metric_input$metadata)) {
-      label
+    difficulty_group <- if (!is.null(cluster_by) && cluster_by %in% colnames(metric_input$metadata)) {
+      cluster_by
+    } else if (!is.null(label_by) && label_by %in% colnames(metric_input$metadata)) {
+      label_by
     } else {
       NULL
     }
     if (!is.null(difficulty_group)) {
       difficult_tbl <- sn_identify_challenging_groups(
         x = x,
-        group = difficulty_group,
+        group_by = difficulty_group,
         graph = graph,
         reduction = reduction,
         dims = dims,
@@ -1242,13 +1322,13 @@ sn_assess_integration <- function(
     }
   }
 
-  if (!is.null(cluster) &&
-    cluster %in% colnames(metric_input$metadata) &&
-    batch %in% colnames(metric_input$metadata)) {
+  if (!is.null(cluster_by) &&
+    cluster_by %in% colnames(metric_input$metadata) &&
+    batch_by %in% colnames(metric_input$metadata)) {
     per_group$composition <- sn_calculate_composition(
       x = metric_input$metadata,
-      group_by = batch,
-      variable = cluster,
+      group_by = batch_by,
+      variable = cluster_by,
       min_cells = 1
     )
   }
@@ -1265,9 +1345,9 @@ sn_assess_integration <- function(
     parameters = list(
       reduction = reduction,
       baseline_reduction = baseline_reduction,
-      batch = batch,
-      label = label,
-      cluster = cluster,
+      batch_by = batch_by,
+      label_by = label_by,
+      cluster_by = cluster_by,
       dims = dims,
       k = k,
       metrics = metrics,
@@ -1290,8 +1370,10 @@ sn_assess_integration <- function(
 #' This function calculates ROGUE score based on Seurat object.
 #'
 #' @param x A Seurat object.
-#' @param cluster Column name in metadata specifying cluster labels.
-#' @param sample Column name in metadata specifying sample labels.
+#' @param cluster_by Column name in metadata specifying cluster_by labels.
+#' @param sample_by Column name in metadata specifying sample labels.
+#' @param cluster Deprecated alias for \code{cluster_by}.
+#' @param sample Deprecated alias for \code{sample_by}.
 #' @param span The span parameter for rogue estimation.
 #' @param assay Assay used for ROGUE calculation. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
@@ -1317,34 +1399,39 @@ sn_assess_integration <- function(
 #' \dontrun{
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(pbmc_small, normalization_method = "seurat", verbose = FALSE)
-#' rogue_tbl <- sn_calculate_rogue(pbmc, cluster = "seurat_clusters")
+#' rogue_tbl <- sn_calculate_rogue(pbmc, cluster_by = "seurat_clusters")
 #' head(rogue_tbl)
 #' }
 #' @export
 sn_calculate_rogue <- function(
   x,
-  cluster = NULL,
-  sample = NULL,
+  cluster_by = NULL,
+  sample_by = NULL,
   span = 0.9,
   assay = "RNA",
   layer = "counts",
   cells = NULL,
   max_cells = 3000,
-  stratify_by = sample %||% cluster,
+  stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10
+  min_genes = 10,
+  cluster = NULL,
+  sample = NULL
 ) {
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")
   }
+  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
+  sample_by <- .sn_resolve_legacy_arg(sample_by, sample, "sample_by", "sample")
+  stratify_by <- stratify_by %||% sample_by %||% cluster_by
 
   metadata <- x@meta.data
-  if (!is_null(cluster) && !cluster %in% colnames(metadata)) {
+  if (!is_null(cluster_by) && !cluster_by %in% colnames(metadata)) {
     stop("Specified cluster column not found in metadata.")
   }
-  if (!is_null(sample) && !sample %in% colnames(metadata)) {
+  if (!is_null(sample_by) && !sample_by %in% colnames(metadata)) {
     stop("Specified sample column not found in metadata.")
   }
   if (!is.null(stratify_by) && !stratify_by %in% colnames(metadata)) {
@@ -1376,12 +1463,12 @@ sn_calculate_rogue <- function(
   counts <- Matrix::as.matrix(counts)
   counts <- ROGUE::matr.filter(counts, min.cells = min_cells, min.genes = min_genes)
 
-  if (!is_null(cluster) && is_null(sample)) {
-    if (!cluster %in% colnames(metadata)) {
+  if (!is_null(cluster_by) && is_null(sample_by)) {
+    if (!cluster_by %in% colnames(metadata)) {
       stop("Specified cluster column not found in metadata.")
     }
     .sn_log_info("Calculating per-cluster ROGUE score.")
-    cluster_labels <- as.character(metadata[colnames(counts), cluster, drop = TRUE])
+    cluster_labels <- as.character(metadata[colnames(counts), cluster_by, drop = TRUE])
     cluster_levels <- unique(cluster_labels)
 
     rogue_tbl <- lapply(cluster_levels, function(current_cluster) {
@@ -1406,17 +1493,17 @@ sn_calculate_rogue <- function(
     return(.sn_bind_rows(rogue_tbl))
   }
 
-  if (!is_null(cluster) && !is_null(sample)) {
-    if (!cluster %in% colnames(metadata)) {
+  if (!is_null(cluster_by) && !is_null(sample_by)) {
+    if (!cluster_by %in% colnames(metadata)) {
       stop("Specified cluster column not found in metadata.")
     }
-    if (!sample %in% colnames(metadata)) {
+    if (!sample_by %in% colnames(metadata)) {
       stop("Specified sample column not found in metadata.")
     }
 
     .sn_log_info("Calculating per-sample per-cluster ROGUE score.")
-    cluster_labels <- as.character(metadata[colnames(counts), cluster, drop = TRUE])
-    sample_labels <- as.character(metadata[colnames(counts), sample, drop = TRUE])
+    cluster_labels <- as.character(metadata[colnames(counts), cluster_by, drop = TRUE])
+    sample_labels <- as.character(metadata[colnames(counts), sample_by, drop = TRUE])
     group_keys <- unique(data.frame(sample = sample_labels, cluster = cluster_labels, stringsAsFactors = FALSE))
 
     rogue_tbl <- lapply(seq_len(nrow(group_keys)), function(i) {
@@ -1475,7 +1562,7 @@ sn_calculate_rogue <- function(
 #' This helper reruns graph clustering across a grid of Seurat resolution
 #' values and evaluates each partition with one or more quality diagnostics.
 #' It is intended to support empirical resolution selection rather than relying
-#' on a fixed default cluster count.
+#' on a fixed default cluster_by count.
 #'
 #' @param x A Seurat object containing the reduction used for clustering.
 #' @param resolutions Numeric vector of Seurat resolution values to evaluate.
@@ -1490,8 +1577,9 @@ sn_calculate_rogue <- function(
 #'   \code{"n_clusters"}, \code{"mean_silhouette"},
 #'   \code{"graph_connectivity"}, \code{"cluster_purity"},
 #'   \code{"clustering_agreement"}, and \code{"rogue"}.
-#' @param label Optional metadata column containing reference labels. Required
+#' @param label_by Optional metadata column containing reference labels. Required
 #'   for \code{"cluster_purity"} and \code{"clustering_agreement"}.
+#' @param label Deprecated alias for \code{label_by}.
 #' @param max_cells Optional integer cap used by expensive embedding-based
 #'   metrics such as silhouette.
 #' @param rogue_max_cells Optional integer cap used by \code{"rogue"}.
@@ -1528,7 +1616,7 @@ sn_sweep_cluster_resolution <- function(
   dims = NULL,
   cluster_name = "seurat_clusters",
   metrics = c("n_clusters", "mean_silhouette", "graph_connectivity"),
-  label = NULL,
+  label_by = NULL,
   max_cells = 3000,
   rogue_max_cells = max_cells,
   assay = "RNA",
@@ -1536,8 +1624,10 @@ sn_sweep_cluster_resolution <- function(
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   k = 20,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  label = NULL
 ) {
+  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   check_installed("Seurat")
   if (!inherits(x, "Seurat")) {
     stop("Input `x` must be a Seurat object.")
@@ -1553,8 +1643,8 @@ sn_sweep_cluster_resolution <- function(
   if (length(resolutions) == 0) {
     stop("`resolutions` must contain at least one positive numeric value.")
   }
-  if ((any(metrics %in% c("cluster_purity", "clustering_agreement"))) && is.null(label)) {
-    stop("`label` must be supplied when requesting `cluster_purity` or `clustering_agreement`.")
+  if ((any(metrics %in% c("cluster_purity", "clustering_agreement"))) && is.null(label_by)) {
+    stop("`label_by` must be supplied when requesting `cluster_purity` or `clustering_agreement`.")
   }
 
   metric_input <- .sn_prepare_metric_input(
@@ -1565,7 +1655,7 @@ sn_sweep_cluster_resolution <- function(
     max_cells = NULL,
     stratify_by = NULL,
     seed = seed,
-    required_cols = label
+    required_cols = label_by
   )
   dims_use <- dims %||% seq_len(ncol(metric_input$embeddings))
 
@@ -1594,7 +1684,7 @@ sn_sweep_cluster_resolution <- function(
     if ("mean_silhouette" %in% metrics) {
       silhouette_tbl <- sn_calculate_silhouette(
         current_object,
-        label = cluster_name,
+        label_by = cluster_name,
         reduction = reduction,
         dims = dims_use,
         max_cells = max_cells,
@@ -1608,7 +1698,7 @@ sn_sweep_cluster_resolution <- function(
     if ("graph_connectivity" %in% metrics) {
       connectivity_tbl <- sn_calculate_graph_connectivity(
         current_object,
-        label = cluster_name,
+        label_by = cluster_name,
         reduction = reduction,
         dims = dims_use,
         k = k,
@@ -1623,13 +1713,13 @@ sn_sweep_cluster_resolution <- function(
     }
 
     if ("cluster_purity" %in% metrics) {
-      purity_tbl <- sn_calculate_cluster_purity(current_object, cluster = cluster_name, label = label)
+      purity_tbl <- sn_calculate_cluster_purity(current_object, cluster_by = cluster_name, label_by = label_by)
       row$cluster_purity <- mean(purity_tbl$purity_score, na.rm = TRUE)
       row$scaled_cluster_purity <- row$cluster_purity
     }
 
     if ("clustering_agreement" %in% metrics) {
-      agreement_tbl <- sn_calculate_clustering_agreement(current_object, cluster = cluster_name, label = label)
+      agreement_tbl <- sn_calculate_clustering_agreement(current_object, cluster_by = cluster_name, label_by = label_by)
       row$ari <- agreement_tbl$ari
       row$nmi <- agreement_tbl$nmi
       row$scaled_ari <- .sn_scale_silhouette(row$ari)
@@ -1639,7 +1729,7 @@ sn_sweep_cluster_resolution <- function(
     if ("rogue" %in% metrics) {
       rogue_tbl <- sn_calculate_rogue(
         current_object,
-        cluster = cluster_name,
+        cluster_by = cluster_name,
         assay = assay,
         layer = layer,
         max_cells = rogue_max_cells,
@@ -1855,6 +1945,163 @@ sn_calculate_composition <- function(x,
   composition
 }
 
+#' Calculate observed-over-expected enrichment
+#'
+#' Calculates observed-over-expected (RO/E) enrichment for a categorical
+#' \code{variable} across metadata groups. RO/E is useful for asking whether a
+#' cell type, cluster, state, or annotation is over-represented in a condition
+#' relative to the marginal distribution of the full table.
+#'
+#' @param x A Seurat object or a data frame.
+#' @param group_by Column name or character vector of column names used to
+#'   define the rows/groups of the contingency table.
+#' @param variable Column name defining the categories to test for enrichment.
+#' @param pseudocount Numeric scalar added to both observed and expected counts
+#'   before computing the ratio. Defaults to \code{0}.
+#' @param return_matrix Logical; if \code{TRUE}, return a numeric matrix with
+#'   \code{group_by} levels as rows and \code{variable} levels as columns.
+#' @param matrix_value Value to place in the matrix when
+#'   \code{return_matrix = TRUE}. One of \code{"roe"}, \code{"log2_roe"},
+#'   \code{"observed"}, or \code{"expected"}.
+#'
+#' @return A data frame with \code{observed}, \code{expected}, totals,
+#'   \code{roe}, and \code{log2_roe} columns. When \code{return_matrix = TRUE},
+#'   a numeric matrix is returned.
+#'
+#' @examples
+#' \dontrun{
+#' roe_tbl <- sn_calculate_roe(
+#'   seu,
+#'   group_by = "condition",
+#'   variable = "cell_type"
+#' )
+#' roe_mat <- sn_calculate_roe(
+#'   seu,
+#'   group_by = "condition",
+#'   variable = "cell_type",
+#'   return_matrix = TRUE
+#' )
+#' }
+#'
+#' @export
+sn_calculate_roe <- function(x,
+                             group_by,
+                             variable,
+                             pseudocount = 0,
+                             return_matrix = FALSE,
+                             matrix_value = c("roe", "log2_roe", "observed", "expected")) {
+  stopifnot(is.character(group_by), length(group_by) >= 1L)
+  stopifnot(is.character(variable), length(variable) == 1L)
+  stopifnot(is.numeric(pseudocount), length(pseudocount) == 1L, pseudocount >= 0)
+  stopifnot(is.logical(return_matrix), length(return_matrix) == 1L)
+  matrix_value <- match.arg(matrix_value)
+
+  metadata <- .sn_extract_metric_metadata(x)
+  required_cols <- c(group_by, variable)
+  missing_cols <- setdiff(required_cols, colnames(metadata))
+  if (length(missing_cols) > 0L) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  metadata <- metadata |>
+    dplyr::filter(
+      dplyr::if_all(dplyr::all_of(group_by), ~ !is.na(.x)),
+      !is.na(.data[[variable]])
+    )
+
+  if (nrow(metadata) == 0L) {
+    stop("No cells remaining after removing missing `group_by` or `variable` values.", call. = FALSE)
+  }
+  if (!is.factor(metadata[[variable]])) {
+    metadata[[variable]] <- as.character(metadata[[variable]])
+  }
+
+  group_data <- metadata |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(group_by)))
+
+  variable_levels <- .sn_observed_discrete_levels(metadata[[variable]])
+  full_grid <- merge(
+    as.data.frame(group_data),
+    data.frame(.sn_variable = variable_levels, stringsAsFactors = FALSE),
+    by = NULL,
+    sort = FALSE
+  )
+  colnames(full_grid)[colnames(full_grid) == ".sn_variable"] <- variable
+  if (is.factor(metadata[[variable]])) {
+    full_grid[[variable]] <- factor(full_grid[[variable]], levels = levels(metadata[[variable]]))
+  }
+
+  observed <- metadata |>
+    dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "observed")
+
+  roe_tbl <- full_grid |>
+    dplyr::left_join(observed, by = c(group_by, variable))
+  roe_tbl$observed[is.na(roe_tbl$observed)] <- 0
+
+  row_totals <- roe_tbl |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
+    dplyr::summarise(row_total = sum(.data$observed), .groups = "drop")
+  col_totals <- roe_tbl |>
+    dplyr::group_by(.data[[variable]]) |>
+    dplyr::summarise(col_total = sum(.data$observed), .groups = "drop")
+  grand_total <- sum(roe_tbl$observed)
+
+  roe_tbl <- roe_tbl |>
+    dplyr::left_join(row_totals, by = group_by) |>
+    dplyr::left_join(col_totals, by = variable) |>
+    dplyr::mutate(
+      grand_total = grand_total,
+      expected = .data$row_total * .data$col_total / .data$grand_total,
+      roe = dplyr::if_else(
+        .data$expected + pseudocount > 0,
+        (.data$observed + pseudocount) / (.data$expected + pseudocount),
+        NA_real_
+      ),
+      log2_roe = log2(.data$roe)
+    )
+
+  if (return_matrix) {
+    return(.sn_roe_matrix(
+      roe_tbl = roe_tbl,
+      group_by = group_by,
+      variable = variable,
+      value = matrix_value
+    ))
+  }
+
+  roe_tbl
+}
+
+.sn_observed_discrete_levels <- function(x) {
+  observed <- x[!is.na(x)]
+  if (is.factor(x)) {
+    observed_chr <- unique(as.character(observed))
+    return(levels(x)[levels(x) %in% observed_chr])
+  }
+
+  unique(as.character(observed))
+}
+
+.sn_roe_matrix <- function(roe_tbl, group_by, variable, value) {
+  group_labels <- if (length(group_by) == 1L) {
+    as.character(roe_tbl[[group_by]])
+  } else {
+    do.call(paste, c(as.data.frame(roe_tbl[group_by]), sep = "|"))
+  }
+  variable_labels <- as.character(roe_tbl[[variable]])
+
+  group_levels <- unique(group_labels)
+  variable_levels <- unique(variable_labels)
+  mat <- matrix(
+    NA_real_,
+    nrow = length(group_levels),
+    ncol = length(variable_levels),
+    dimnames = list(group_levels, variable_levels)
+  )
+  mat[cbind(match(group_labels, group_levels), match(variable_labels, variable_levels))] <- roe_tbl[[value]]
+  mat
+}
+
 .sn_validate_constant_within_sample <- function(metadata, sample_col, group_col) {
   summary_tbl <- metadata |>
     dplyr::filter(!is.na(.data[[sample_col]])) |>
@@ -1930,9 +2177,11 @@ sn_calculate_composition <- function(x,
 #' samples are available.
 #'
 #' @param x A Seurat object or a data frame containing cell-level metadata.
-#' @param sample_col Column defining biological samples.
-#' @param group_col Column defining the group or condition to compare between
+#' @param sample_by Column defining biological samples.
+#' @param sample_col Deprecated alias for \code{sample_by}.
+#' @param group_by Column defining the group or condition to compare between
 #'   samples.
+#' @param group_col Deprecated alias for \code{group_by}.
 #' @param variable Column whose composition should be compared, for example cell
 #'   type or cell-cycle phase.
 #' @param contrast Character vector of length 2 giving the group levels as
@@ -1958,8 +2207,8 @@ sn_calculate_composition <- function(x,
 #' \dontrun{
 #' comparison <- sn_compare_composition(
 #'   seu,
-#'   sample_col = "sample",
-#'   group_col = "condition",
+#'   sample_by = "sample",
+#'   group_by = "condition",
 #'   variable = "cell_type",
 #'   contrast = c("treated", "control")
 #' )
@@ -1967,8 +2216,8 @@ sn_calculate_composition <- function(x,
 #'
 #' @export
 sn_compare_composition <- function(x,
-                                   sample_col,
-                                   group_col,
+                                   sample_by = NULL,
+                                   group_by = NULL,
                                    variable,
                                    contrast,
                                    min_cells = 20,
@@ -1976,9 +2225,23 @@ sn_compare_composition <- function(x,
                                    test = c("wilcox", "none"),
                                    adjust_method = "BH",
                                    additional_cols = NULL,
-                                   return_sample_data = FALSE) {
-  stopifnot(is.character(sample_col), length(sample_col) == 1L)
-  stopifnot(is.character(group_col), length(group_col) == 1L)
+                                   return_sample_data = FALSE,
+                                   sample_col = NULL,
+                                   group_col = NULL) {
+  sample_by <- .sn_resolve_legacy_arg(
+    value = sample_by,
+    legacy = sample_col,
+    value_name = "sample_by",
+    legacy_name = "sample_col"
+  )
+  group_by <- .sn_resolve_legacy_arg(
+    value = group_by,
+    legacy = group_col,
+    value_name = "group_by",
+    legacy_name = "group_col"
+  )
+  stopifnot(is.character(sample_by), length(sample_by) == 1L)
+  stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.character(variable), length(variable) == 1L)
   stopifnot(is.character(contrast), length(contrast) == 2L)
   stopifnot(is.numeric(min_cells), length(min_cells) == 1L, min_cells >= 0)
@@ -1991,24 +2254,24 @@ sn_compare_composition <- function(x,
   test <- match.arg(test)
 
   metadata <- .sn_extract_metric_metadata(x)
-  required_cols <- c(sample_col, group_col, variable)
+  required_cols <- c(sample_by, group_by, variable)
   missing_cols <- setdiff(required_cols, colnames(metadata))
   if (length(missing_cols) > 0L) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
-  .sn_validate_constant_within_sample(metadata, sample_col = sample_col, group_col = group_col)
+  .sn_validate_constant_within_sample(metadata, sample_col = sample_by, group_col = group_by)
 
   sample_info <- metadata |>
-    dplyr::filter(!is.na(.data[[sample_col]]), !is.na(.data[[group_col]])) |>
-    dplyr::group_by(.data[[sample_col]]) |>
+    dplyr::filter(!is.na(.data[[sample_by]]), !is.na(.data[[group_by]])) |>
+    dplyr::group_by(.data[[sample_by]]) |>
     dplyr::summarise(
       .sn_sample_cells = dplyr::n(),
-      dplyr::across(dplyr::all_of(unique(c(group_col, additional_cols))), dplyr::first),
+      dplyr::across(dplyr::all_of(unique(c(group_by, additional_cols))), dplyr::first),
       .groups = "drop"
     ) |>
     dplyr::filter(.data$.sn_sample_cells >= min_cells) |>
-    dplyr::filter(.data[[group_col]] %in% contrast) |>
+    dplyr::filter(.data[[group_by]] %in% contrast) |>
     dplyr::select(-".sn_sample_cells")
 
   if (nrow(sample_info) == 0L) {
@@ -2016,24 +2279,24 @@ sn_compare_composition <- function(x,
   }
 
   composition <- sn_calculate_composition(
-    x = metadata[metadata[[sample_col]] %in% sample_info[[sample_col]], , drop = FALSE],
-    group_by = sample_col,
+    x = metadata[metadata[[sample_by]] %in% sample_info[[sample_by]], , drop = FALSE],
+    group_by = sample_by,
     variable = variable,
     min_cells = 0,
     measure = "both",
-    additional_cols = unique(c(group_col, additional_cols))
+    additional_cols = unique(c(group_by, additional_cols))
   )
 
-  sample_info <- sample_info[sample_info[[sample_col]] %in% unique(composition[[sample_col]]), , drop = FALSE]
+  sample_info <- sample_info[sample_info[[sample_by]] %in% unique(composition[[sample_by]]), , drop = FALSE]
   if (nrow(sample_info) == 0L) {
     stop("No samples remaining after filtering by `min_cells`.", call. = FALSE)
   }
 
-  composition <- composition[composition[[sample_col]] %in% sample_info[[sample_col]], , drop = FALSE]
+  composition <- composition[composition[[sample_by]] %in% sample_info[[sample_by]], , drop = FALSE]
   composition_complete <- .sn_complete_sample_composition(
     composition = composition,
     sample_info = sample_info,
-    sample_col = sample_col,
+    sample_col = sample_by,
     variable = variable
   )
 
@@ -2042,8 +2305,8 @@ sn_compare_composition <- function(x,
 
   summary_tbl <- lapply(comparison_levels, function(current_level) {
     current_data <- composition_complete[as.character(composition_complete[[variable]]) %in% current_level, , drop = FALSE]
-    case_data <- current_data[current_data[[group_col]] %in% contrast[[1]], , drop = FALSE]
-    control_data <- current_data[current_data[[group_col]] %in% contrast[[2]], , drop = FALSE]
+    case_data <- current_data[current_data[[group_by]] %in% contrast[[1]], , drop = FALSE]
+    control_data <- current_data[current_data[[group_by]] %in% contrast[[2]], , drop = FALSE]
 
     mean_case <- mean(case_data$proportion, na.rm = TRUE)
     mean_control <- mean(control_data$proportion, na.rm = TRUE)
@@ -2151,10 +2414,12 @@ sn_compare_composition <- function(x,
 #' tested for differential abundance between the two sample groups.
 #'
 #' @param x A Seurat object.
-#' @param sample_col Metadata column defining biological samples.
-#' @param group_col Metadata column defining the sample-level comparison group.
+#' @param sample_by Metadata column defining biological samples.
+#' @param group_by Metadata column defining the sample-level comparison group.
+#' @param sample_col Deprecated alias for \code{sample_by}.
+#' @param group_col Deprecated alias for \code{group_by}.
 #' @param contrast Optional character vector of length 2 giving the comparison
-#'   as \code{c(case, control)}. When omitted, \code{group_col} must contain
+#'   as \code{c(case, control)}. When omitted, \code{group_by} must contain
 #'   exactly two levels in the selected cells.
 #' @param reduction Reduction name used to build neighborhoods. Defaults to
 #'   \code{"pca"}.
@@ -2173,9 +2438,10 @@ sn_compare_composition <- function(x,
 #' @param refinement_scheme Refinement scheme passed to
 #'   \code{miloR::makeNhoods()}.
 #' @param covariates Optional sample-level covariates added to the DA design
-#'   formula alongside \code{group_col}.
-#' @param annotation_col Optional cell-level metadata column used to annotate
+#'   formula alongside \code{group_by}.
+#' @param annotation_by Optional cell-level metadata column used to annotate
 #'   neighborhoods with \code{miloR::annotateNhoods()}.
+#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param fdr_weighting FDR weighting strategy passed to
 #'   \code{miloR::testNhoods()}.
 #' @param min_mean Minimum mean count threshold passed to
@@ -2189,6 +2455,7 @@ sn_compare_composition <- function(x,
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
+#' @param group_col Deprecated alias for \code{group_by}.
 #'
 #' @return By default, a data frame of neighborhood-level DA statistics. When
 #'   \code{return_intermediate = TRUE}, a list with \code{table},
@@ -2198,8 +2465,8 @@ sn_compare_composition <- function(x,
 #' \dontrun{
 #' da_tbl <- sn_run_milo(
 #'   seu,
-#'   sample_col = "sample",
-#'   group_col = "condition",
+#'   sample_by = "sample",
+#'   group_by = "condition",
 #'   contrast = c("treated", "control"),
 #'   reduction = "pca"
 #' )
@@ -2207,34 +2474,55 @@ sn_compare_composition <- function(x,
 #'
 #' @export
 sn_run_milo <- function(x,
-                        sample_col,
-                        group_col,
+                        sample_by = NULL,
+                        group_by = NULL,
                         contrast = NULL,
                         reduction = "pca",
                         dims = NULL,
                         cells = NULL,
                         max_cells = NULL,
-                        stratify_by = sample_col,
+                        stratify_by = NULL,
                         k = 20,
                         d = NULL,
                         prop = 0.1,
                         refined = TRUE,
                         refinement_scheme = "reduced_dim",
                         covariates = NULL,
-                        annotation_col = NULL,
+                        annotation_by = NULL,
                         fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
                         min_mean = 0,
                         norm_method = c("TMM", "RLE", "logMS"),
                         store_name = NULL,
                         return_object = FALSE,
                         return_intermediate = FALSE,
-                        verbose = TRUE) {
+                        verbose = TRUE,
+                        sample_col = NULL,
+                        annotation_col = NULL,
+                        group_col = NULL) {
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
-  stopifnot(is.character(sample_col), length(sample_col) == 1L)
-  stopifnot(is.character(group_col), length(group_col) == 1L)
+  sample_by <- .sn_resolve_legacy_arg(
+    value = sample_by,
+    legacy = sample_col,
+    value_name = "sample_by",
+    legacy_name = "sample_col"
+  )
+  group_by <- .sn_resolve_legacy_arg(
+    value = group_by,
+    legacy = group_col,
+    value_name = "group_by",
+    legacy_name = "group_col"
+  )
+  annotation_by <- .sn_resolve_legacy_arg(
+    value = annotation_by,
+    legacy = annotation_col,
+    value_name = "annotation_by",
+    legacy_name = "annotation_col"
+  )
+  stopifnot(is.character(sample_by), length(sample_by) == 1L)
+  stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.null(contrast) || (is.character(contrast) && length(contrast) == 2L))
   stopifnot(is.null(covariates) || is.character(covariates))
-  stopifnot(is.null(annotation_col) || (is.character(annotation_col) && length(annotation_col) == 1L))
+  stopifnot(is.null(annotation_by) || (is.character(annotation_by) && length(annotation_by) == 1L))
   stopifnot(is.null(store_name) || (is.character(store_name) && length(store_name) == 1L))
   stopifnot(is.logical(return_object), length(return_object) == 1L)
   stopifnot(is.logical(return_intermediate), length(return_intermediate) == 1L)
@@ -2246,20 +2534,20 @@ sn_run_milo <- function(x,
   fdr_weighting <- match.arg(fdr_weighting)
   norm_method <- match.arg(norm_method)
 
-  required_cols <- unique(c(sample_col, group_col, covariates, annotation_col))
+  required_cols <- unique(c(sample_by, group_by, covariates, annotation_by))
   metric_input <- .sn_prepare_metric_input(
     x = x,
     reduction = reduction,
     dims = dims,
     cells = cells,
     max_cells = max_cells,
-    stratify_by = stratify_by,
+    stratify_by = stratify_by %||% sample_by,
     required_cols = required_cols
   )
 
   metadata <- metric_input$metadata
   if (!is.null(contrast)) {
-    metadata <- metadata[metadata[[group_col]] %in% contrast, , drop = FALSE]
+    metadata <- metadata[metadata[[group_by]] %in% contrast, , drop = FALSE]
     metric_input$embeddings <- metric_input$embeddings[rownames(metadata), , drop = FALSE]
     metric_input$cells <- rownames(metadata)
   }
@@ -2270,8 +2558,8 @@ sn_run_milo <- function(x,
 
   design_df <- .sn_prepare_sample_design(
     metadata = metadata,
-    sample_col = sample_col,
-    group_col = group_col,
+    sample_col = sample_by,
+    group_col = group_by,
     covariates = covariates,
     contrast = contrast
   )
@@ -2325,15 +2613,15 @@ sn_run_milo <- function(x,
   }
   milo_obj <- miloR::countCells(
     milo_obj,
-    samples = sample_col,
+    samples = sample_by,
     meta.data = as.data.frame(SummarizedExperiment::colData(milo_obj))
   )
 
-  design_terms <- c(covariates, group_col)
+  design_terms <- c(covariates, group_by)
   design_formula <- stats::reformulate(termlabels = design_terms)
 
   if (isTRUE(verbose)) {
-    .sn_log_info("Testing neighborhoods for differential abundance across `{group_col}`.")
+    .sn_log_info("Testing neighborhoods for differential abundance across `{group_by}`.")
   }
   da_table <- miloR::testNhoods(
     milo_obj,
@@ -2344,22 +2632,22 @@ sn_run_milo <- function(x,
     norm.method = norm_method
   )
 
-  if (!is.null(annotation_col)) {
+  if (!is.null(annotation_by)) {
     if (isTRUE(verbose)) {
-      .sn_log_info("Annotating neighborhoods using `{annotation_col}`.")
+      .sn_log_info("Annotating neighborhoods using `{annotation_by}`.")
     }
     da_table <- miloR::annotateNhoods(
       milo_obj,
       da.res = da_table,
-      coldata_col = annotation_col
+      coldata_col = annotation_by
     )
   }
 
   fdr_rank <- if ("SpatialFDR" %in% colnames(da_table)) da_table$SpatialFDR else da_table$FDR
   da_table <- da_table[order(fdr_rank, da_table$PValue), , drop = FALSE]
-  da_table$comparison <- paste(levels(design_df[[group_col]])[[2]], "vs", levels(design_df[[group_col]])[[1]])
-  da_table$sample_col <- sample_col
-  da_table$group_col <- group_col
+  da_table$comparison <- paste(levels(design_df[[group_by]])[[2]], "vs", levels(design_df[[group_by]])[[1]])
+  da_table$sample_col <- sample_by
+  da_table$group_col <- group_by
   da_table$reduction <- reduction
 
   if (!is.null(store_name)) {
@@ -2367,12 +2655,12 @@ sn_run_milo <- function(x,
       object = x,
       result = da_table,
       store_name = store_name,
-      sample_col = sample_col,
-      group_col = group_col,
+      sample_col = sample_by,
+      group_by = group_by,
       comparison = da_table$comparison[[1]],
       reduction = reduction,
       dims = colnames(metric_input$embeddings),
-      annotation_col = annotation_col,
+      annotation_by = annotation_by,
       return_object = FALSE
     )
 
@@ -2405,12 +2693,15 @@ sn_run_milo <- function(x,
 #' @param object A \code{Seurat} object.
 #' @param result A neighborhood-level differential-abundance table.
 #' @param store_name Name used under \code{object@misc$milo_results}.
-#' @param sample_col Sample column used for the design.
-#' @param group_col Group column used for the design.
+#' @param sample_by Sample column used for the design.
+#' @param group_by Group column used for the design.
+#' @param sample_col Deprecated alias for \code{sample_by}.
+#' @param group_col Deprecated alias for \code{group_by}.
 #' @param comparison Human-readable comparison label.
 #' @param reduction Reduction used to build the milo neighborhoods.
 #' @param dims Optional embedding dimension names or indices used for milo.
-#' @param annotation_col Optional neighborhood annotation column.
+#' @param annotation_by Optional neighborhood annotation column.
+#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A \code{Seurat} object or stored-result list.
@@ -2418,16 +2709,39 @@ sn_run_milo <- function(x,
 sn_store_milo <- function(object,
                           result,
                           store_name = "default",
-                          sample_col,
-                          group_col,
+                          sample_by = NULL,
+                          group_by = NULL,
                           comparison = NULL,
                           reduction = "pca",
                           dims = NULL,
+                          annotation_by = NULL,
+                          return_object = TRUE,
+                          sample_col = NULL,
                           annotation_col = NULL,
-                          return_object = TRUE) {
+                          group_col = NULL) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
+  sample_by <- .sn_resolve_legacy_arg(
+    value = sample_by,
+    legacy = sample_col,
+    value_name = "sample_by",
+    legacy_name = "sample_col"
+  )
+  group_by <- .sn_resolve_legacy_arg(
+    value = group_by,
+    legacy = group_col,
+    value_name = "group_by",
+    legacy_name = "group_col"
+  )
+  annotation_by <- .sn_resolve_legacy_arg(
+    value = annotation_by,
+    legacy = annotation_col,
+    value_name = "annotation_by",
+    legacy_name = "annotation_col"
+  )
+  stopifnot(is.character(sample_by), length(sample_by) == 1L)
+  stopifnot(is.character(group_by), length(group_by) == 1L)
 
   stored_result <- list(
     schema_version = "1.0.0",
@@ -2436,12 +2750,12 @@ sn_store_milo <- function(object,
     table = tibble::as_tibble(result),
     analysis = "milo",
     method = "miloR",
-    sample_col = sample_col,
-    group_col = group_col,
+    sample_col = sample_by,
+    group_col = group_by,
     comparison = comparison,
     reduction = reduction,
     dims = dims,
-    annotation_col = annotation_col
+    annotation_by = annotation_by
   )
 
   object <- .sn_store_misc_result(
@@ -2487,9 +2801,9 @@ sn_get_milo_result <- function(object,
   }
 
   table <- tibble::as_tibble(stored$table)
-  annotation_col <- stored$annotation_col %||% NULL
-  if (!is.null(annotation) && !is.null(annotation_col) && annotation_col %in% colnames(table)) {
-    table <- dplyr::filter(table, .data[[annotation_col]] %in% annotation)
+  annotation_by <- stored$annotation_col %||% NULL
+  if (!is.null(annotation) && !is.null(annotation_by) && annotation_by %in% colnames(table)) {
+    table <- dplyr::filter(table, .data[[annotation_by]] %in% annotation)
   }
   if (!is.null(spatial_fdr) && "SpatialFDR" %in% colnames(table)) {
     table <- dplyr::filter(table, .data$SpatialFDR <= spatial_fdr)
@@ -2748,9 +3062,10 @@ sn_get_milo_result <- function(object,
 #' @param reference Optional Seurat object representing the pre-filter state.
 #'   When supplied, the function compares the retained cells in \code{object}
 #'   against the QC flags and doublet calls recorded in \code{reference}.
-#' @param sample_col Optional metadata column defining samples. When
+#' @param sample_by Optional metadata column defining samples. When
 #'   \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 #'   available and otherwise treats the object as one sample.
+#' @param sample_col Deprecated alias for \code{sample_by}.
 #' @param store_name Name used when storing the assessment under
 #'   \code{object@misc$qc_assessments}.
 #' @param return_object Logical; when \code{TRUE}, store the assessment in the
@@ -2771,10 +3086,11 @@ sn_get_milo_result <- function(object,
 #' @export
 sn_assess_qc <- function(object,
                          reference = NULL,
-                         sample_col = NULL,
+                         sample_by = NULL,
                          store_name = "default",
                          return_object = FALSE,
-                         verbose = TRUE) {
+                         verbose = TRUE,
+                         sample_col = NULL) {
   check_installed("SeuratObject")
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.", call. = FALSE)
@@ -2783,10 +3099,11 @@ sn_assess_qc <- function(object,
     stop("`reference` must be NULL or a Seurat object.", call. = FALSE)
   }
 
-  sample_col <- .sn_qc_assessment_sample_col(object, sample_col = sample_col)
-  by_sample <- .sn_qc_current_summary(object@meta.data, sample_col = sample_col)
+  sample_by <- .sn_resolve_legacy_arg(sample_by, sample_col, "sample_by", "sample_col")
+  sample_by <- .sn_qc_assessment_sample_col(object, sample_col = sample_by)
+  by_sample <- .sn_qc_current_summary(object@meta.data, sample_col = sample_by)
   comparison <- if (!is_null(reference)) {
-    reference_sample_col <- .sn_qc_assessment_sample_col(reference, sample_col = sample_col)
+    reference_sample_col <- .sn_qc_assessment_sample_col(reference, sample_col = sample_by)
     .sn_qc_compare_to_reference(object = object, reference = reference, sample_col = reference_sample_col)
   } else {
     NULL
@@ -2815,7 +3132,7 @@ sn_assess_qc <- function(object,
     overall = overall,
     by_sample = by_sample,
     comparison = comparison,
-    sample_col = sample_col %||% NA_character_,
+    sample_col = sample_by %||% NA_character_,
     reference_provided = !is_null(reference)
   )
   report$messages <- .sn_qc_assessment_messages(
@@ -3023,7 +3340,7 @@ sn_assess_qc <- function(object,
       scaled_score = max(0, 1 - raw_score),
       per_cell = batch_tbl,
       per_group = NULL,
-      note = "Global batch silhouette"
+      note = "Global batch_by silhouette"
     ))
   }
 
@@ -3038,7 +3355,7 @@ sn_assess_qc <- function(object,
     if (length(idx) < 3 || length(batch_levels) < 2) {
       notes <- c(
         notes,
-        paste0("Skipped batch silhouette inside label '", current_group, "'.")
+        paste0("Skipped batch_by silhouette inside label_by '", current_group, "'.")
       )
       next
     }
@@ -3062,7 +3379,7 @@ sn_assess_qc <- function(object,
 
   per_group <- .sn_bind_rows(per_group)
   if (nrow(per_group) == 0) {
-    stop("No label groups contained enough cells and batch diversity for batch silhouette scoring.")
+    stop("No label_by groups contained enough cells and batch_by diversity for batch_by silhouette scoring.")
   }
 
   raw_score <- stats::weighted.mean(
@@ -3308,7 +3625,7 @@ sn_assess_qc <- function(object,
 }
 
 .sn_compute_pcr_variance <- function(embeddings, batch) {
-  batch <- as.factor(batch)
+  batch_by <- as.factor(batch)
   if (length(unique(batch)) < 2) {
     return(0)
   }
@@ -3487,7 +3804,7 @@ sn_assess_qc <- function(object,
       score = 0.4 * batch_score + 0.6 * biology_score,
       scaled_score = 0.4 * batch_score + 0.6 * biology_score,
       n_cells = max(summary_tbl$n_cells, na.rm = TRUE),
-      source = "0.4 batch + 0.6 biology"
+      source = "0.4 batch_by + 0.6 biology"
     )
   }
 

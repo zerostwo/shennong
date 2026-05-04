@@ -39,7 +39,7 @@ test_that("sn_deconvolve_bulk prepares local CIBERSORTx commands from a Seurat r
     object,
     bulk = bulk,
     method = "cibersortx",
-    cell_type_col = "cell_type",
+    cell_type_by = "cell_type",
     layer = "counts",
     outdir = outdir,
     prefix = "demo",
@@ -78,7 +78,7 @@ test_that("sn_deconvolve_bulk can import a CIBERSORTx fractions table and store 
     object,
     bulk = bulk,
     method = "cibersortx",
-    cell_type_col = "cell_type",
+    cell_type_by = "cell_type",
     layer = "counts",
     outdir = tempdir(),
     prefix = "import",
@@ -102,14 +102,27 @@ test_that("sn_deconvolve_bulk validates BayesPrism availability cleanly", {
   bulk <- make_bulk_matrix(object)
 
   expect_error(
-    sn_deconvolve_bulk(
-      object,
-      bulk = bulk,
-      method = "bayesprism",
-      cell_type_col = "cell_type",
-      cell_state_col = "cell_state",
-      layer = "counts",
-      return_object = FALSE
+    testthat::with_mocked_bindings(
+      sn_deconvolve_bulk(
+        object,
+        bulk = bulk,
+        method = "bayesprism",
+        cell_type_by = "cell_type",
+        cell_state_by = "cell_state",
+        layer = "counts",
+        return_object = FALSE
+      ),
+      check_installed_github = function(pkg, repo, reason = NULL) {
+        stop(
+          paste0(
+            "Package '", pkg, "' is required ",
+            reason,
+            "\nInstall it with:\n  remotes::install_github('", repo, "')"
+          ),
+          call. = FALSE
+        )
+      },
+      .package = "Shennong"
     ),
     "BayesPrism"
   )
@@ -126,7 +139,7 @@ test_that("sn_deconvolve_bulk validates local CIBERSORTx credentials", {
       object,
       bulk = bulk,
       method = "cibersortx",
-      cell_type_col = "cell_type",
+      cell_type_by = "cell_type",
       layer = "counts",
       outdir = tempdir(),
       prefix = "local",

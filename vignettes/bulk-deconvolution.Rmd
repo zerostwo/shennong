@@ -73,7 +73,7 @@ bundle <- sn_deconvolve_bulk(
   x = pbmc,
   bulk = bulk,
   method = "cibersortx",
-  cell_type_col = "cell_type",
+  cell_type_by = "cell_type",
   outdir = file.path(tempdir(), "pbmc3k-cibersortx"),
   prefix = "pbmc3k_demo",
   cibersortx_email = "demo@example.org",
@@ -100,7 +100,7 @@ result <- sn_deconvolve_bulk(
   x = pbmc,
   bulk = bulk,
   method = "cibersortx",
-  cell_type_col = "cell_type",
+  cell_type_by = "cell_type",
   outdir = "results/deconvolution/cibersortx",
   prefix = "pbmc3k"
 )
@@ -149,7 +149,7 @@ bayesprism_result <- sn_deconvolve_bulk(
   x = pbmc,
   bulk = bulk,
   method = "bayesprism",
-  cell_type_col = "cell_type",
+  cell_type_by = "cell_type",
   key = NULL,
   n_cores = 2,
   store_name = "pbmc3k_bayesprism"

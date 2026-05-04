@@ -46,7 +46,7 @@ pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "library",
   normalization_method = "seurat",
   hvg_group_by = "library",
   nfeatures = 1500,
@@ -66,9 +66,9 @@ results in predictable sections: `summary`, `per_cell`, `per_group`, and
 ```{r aggregate-assessment}
 assessment <- sn_assess_integration(
   x = pbmc,
-  batch = "library",
-  label = "seurat_clusters",
-  cluster = "seurat_clusters",
+  batch_by = "library",
+  label_by = "seurat_clusters",
+  cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca",
   dims = 1:15,
@@ -92,7 +92,7 @@ changing `label`.
 library_lisi <- sn_calculate_lisi(
   pbmc,
   reduction = "harmony",
-  label = "library",
+  label_by = "library",
   dims = 1:15,
   max_cells = 1500
 )
@@ -100,7 +100,7 @@ library_lisi <- sn_calculate_lisi(
 cluster_lisi <- sn_calculate_lisi(
   pbmc,
   reduction = "harmony",
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   dims = 1:15,
   max_cells = 1500
 )
@@ -116,7 +116,7 @@ means residual batch separation.
 ```{r silhouette}
 cluster_sil <- sn_calculate_silhouette(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony",
   dims = 1:15,
   max_cells = 1500
@@ -131,7 +131,7 @@ the neighbor graph.
 ```{r graph-connectivity}
 connectivity <- sn_calculate_graph_connectivity(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony",
   dims = 1:15,
   max_cells = 1500
@@ -150,25 +150,25 @@ pbmc$coarse_label <- paste0("cluster_", pbmc$seurat_clusters)
 
 sn_calculate_cluster_purity(
   pbmc,
-  cluster = "seurat_clusters",
-  label = "coarse_label"
+  cluster_by = "seurat_clusters",
+  label_by = "coarse_label"
 )
 
 sn_calculate_cluster_entropy(
   pbmc,
-  cluster = "seurat_clusters",
-  label = "coarse_label"
+  cluster_by = "seurat_clusters",
+  label_by = "coarse_label"
 )
 
 sn_calculate_clustering_agreement(
   pbmc,
-  cluster = "seurat_clusters",
-  label = "coarse_label"
+  cluster_by = "seurat_clusters",
+  label_by = "coarse_label"
 )
 
 sn_calculate_isolated_label_score(
   pbmc,
-  label = "coarse_label",
+  label_by = "coarse_label",
   reduction = "harmony",
   dims = 1:15,
   max_cells = 1500
@@ -188,7 +188,7 @@ pre-integration PCA space.
 ```{r pcr-batch}
 pcr <- sn_calculate_pcr_batch(
   pbmc,
-  batch = "library",
+  batch_by = "library",
   reduction = "harmony",
   baseline_reduction = "pca",
   dims = 1:15,
@@ -207,7 +207,7 @@ before final annotation.
 ```{r challenging-groups}
 challenging <- sn_identify_challenging_groups(
   pbmc,
-  group = "seurat_clusters",
+  group_by = "seurat_clusters",
   reduction = "harmony",
   dims = 1:15,
   max_cells = 1500
@@ -222,8 +222,8 @@ ROGUE is an optional cluster-purity diagnostic that depends on the upstream
 ```{r rogue, eval = FALSE}
 rogue_tbl <- sn_calculate_rogue(
   pbmc,
-  cluster = "seurat_clusters",
-  sample = "library",
+  cluster_by = "seurat_clusters",
+  sample_by = "library",
   max_cells = 1500
 )
 

@@ -1,6 +1,46 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04
+
+## 2026-05-04
+
+- Standardized public metadata-selector arguments on the `*_by` family across
+  grouping, sample, batch, label, cluster, annotation, condition, reference,
+  and cell-type workflows. Legacy names such as `group`, `group_col`,
+  `sample_col`, `batch`, `label`, `label_col`, `labels_key`, `annotation_col`,
+  `condition_col`, `cluster_col`, `reference_key`, `cell_type_key`,
+  `cell_type_col`, `cell_state_col`, `groupby`, and `cnv_score_groupby`
+  remain as deprecated compatibility aliases.
+- Added `sn_transfer_labels(method = "scanvi")` and
+  `sn_transfer_labels(method = "scarches")` as semi-supervised scVI-family
+  label-transfer paths alongside the existing Seurat and Coralysis methods.
+- Added `sn_upload_zenodo()` for draft-first Zenodo data releases through
+  `zen4R`. Uploads include an automatically generated Shennong manifest with
+  dataset version, package version, file sizes, md5 checksums, and sha256
+  checksums so reusable data assets can be verified later.
+- Added `sn_download_zenodo()` for token-free public Zenodo downloads with
+  optional explicit-token support for restricted/private records. `sn_load_data()`
+  now uses this shared download layer and can load multiple example datasets in
+  one call; filtered datasets are merged into one Seurat object and raw datasets
+  return a named list.
+- Bumped the package version to `0.1.4` and regenerated roxygen documentation
+  after the API naming update.
+- Validated with `testthat::test_local(stop_on_failure = TRUE)`, `R CMD build
+  .`, `R CMD check --no-manual Shennong_0.1.4.tar.gz`, and a complete
+  `SHENNONG_RUN_VIGNETTES=true pkgdown::build_site(new_process = FALSE)` run.
+  The final local test pass was `FAIL 0 | WARN 2 | SKIP 0 | PASS 1143`, and
+  `R CMD check` completed with `Status: OK`. The pkgdown pass rendered all
+  vignettes with real code execution; the layer-aware article now uses a
+  smaller real PBMC3k subset so the scDesign3 example remains check-safe while
+  still executing.
+- Verified the real pixi-managed scArches/scPoli backend path on a small
+  Seurat object after constraining the scArches pixi environment to
+  `anndata >=0.11,<0.12`; the smoke run imported `scarches_latent` and
+  `scpoli_latent` reductions back into Seurat.
+- Verified a live Zenodo token upload with `sn_upload_zenodo()` as an
+  unpublished production draft: record `20028321`, DOI
+  `10.5281/zenodo.20028321`, `published = FALSE`. The smoke upload included a
+  tiny test file plus `shennong_zenodo_manifest.json`.
 
 ## 2026-05-03
 
@@ -80,7 +120,7 @@ Last updated: 2026-05-03
 - Extended the interpretation layer so `sn_interpret_annotation()` can combine
   marker evidence with stored cluster-level enrichment summaries and available
   QC/doublet metadata, request structured JSON annotations, and map parsed
-  cluster labels plus confidence/risk flags back onto Seurat metadata.
+  cluster_by labels plus confidence/risk flags back onto Seurat metadata.
 - Re-centered the LLM integration on `ellmer`. High-level interpretation
   helpers now default to an `ellmer` provider built from environment
   variables instead of Shennong-managed local provider config under
@@ -96,10 +136,10 @@ Last updated: 2026-05-03
   the same stored-DE defaulting rules as `sn_enrich()`: prefer `default`,
   then a single available result, otherwise the most recent marker result.
 - Fixed annotation-prompt completeness and tightened the default annotation
-  instructions. Cluster-annotation prompts now include full cluster evidence
+  instructions. Cluster-annotation prompts now include full cluster_by evidence
   tables instead of truncating at eight rows, and the shipped prompt template
-  now explicitly requires one annotation per cluster plus more conservative,
-  evidence-grounded label selection.
+  now explicitly requires one annotation per cluster_by plus more conservative,
+  evidence-grounded label_by selection.
 - Added `label_candidates` to `sn_interpret_annotation()` so sorted or
   enriched datasets can constrain the annotation search space. This is
   intended for cases such as blood ILC-sorted data where marker-only prompts
@@ -172,8 +212,8 @@ Last updated: 2026-05-03
   blockwise exact-kNN helper in `tests/testthat/test_utils.R`.
 - Expanded `R/analysis_metrics.R` from a minimal LISI/ROGUE/composition module
   into a broader integration-assessment layer. New exported helpers now cover
-  silhouette widths, graph connectivity, PCR batch scoring, clustering
-  agreement, isolated-label preservation, cluster entropy/purity diagnostics,
+  silhouette widths, graph connectivity, PCR batch_by scoring, clustering
+  agreement, isolated-label preservation, cluster_by entropy/purity diagnostics,
   rare/difficult-group diagnostics, and an aggregate `sn_assess_integration()`
   wrapper that returns summary, per-cell, and per-group outputs.
 - Added rare-cell-aware clustering support in `R/analysis_clustering.R`. The
@@ -395,7 +435,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Added regression tests for inconsistent `additional_cols` behavior and the `min_cells` no-results error path.
 - Added `sn_load_data()` as the generalized example-data loader and retained `sn_load_pbmc()` as a compatibility wrapper.
 - Removed the separate `sn_quick_cluster()` implementation and folded single-dataset clustering into `sn_run_cluster()`.
-- Reworked `sn_remove_ambient_contamination()` into a unified SoupX/decontX interface with shared input and cluster handling.
+- Reworked `sn_remove_ambient_contamination()` into a unified SoupX/decontX interface with shared input and cluster_by handling.
 - Added new unit tests for data loading, clustering, and ambient contamination, plus a PBMC smoke script covering `pbmc1k` and `pbmc3k`.
 - Corrected `sn_initialize_seurat_object()` so plain base matrices are accepted as count inputs.
 - Updated `DESCRIPTION`, `NAMESPACE`, `.Rd` files, and the clustering vignette to match the new APIs.
@@ -456,6 +496,7 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Added user-facing palette discovery and retrieval helpers, `sn_list_palettes()` and `sn_get_palette()`, so scripts can reuse the same palette resolution logic as the plotting helpers instead of relying on printed output only.
 - Extended palette normalization to continuous color scales as well, so `sn_plot_feature()` and `sn_plot_dot()` now consume the same palette registry and direction semantics as the discrete plotting helpers.
 - Expanded `sn_plot_barplot()` from a thin `geom_col()` wrapper into a more generally useful grouped-summary plot helper with automatic repeated-observation summarization, optional SD/SE error bars, and optional jittered raw points.
+- Added `sn_calculate_roe()` for observed-over-expected categorical enrichment from Seurat metadata or data frames, including zero-filled contingency tables and optional matrix output for heatmap-style downstream use.
 
 ## Remaining High-Priority Work
 
@@ -482,11 +523,11 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Added `sn_transfer_labels()` as a query-first Seurat label-transfer wrapper that writes predicted labels, confidence scores, and provenance to the query object.
 - Extended `sn_transfer_labels()` with `method = "coralysis"` so queries can be projected onto Coralysis-trained references via `Coralysis::ReferenceMapping()`.
 - Added `sn_simulate()` as a method-based simulation entry point with `method = "scdesign3"` routed to the scDesign3 backend; `sn_simulate_scdesign3()` remains available as a backend-specific wrapper.
-- Updated `sn_plot_dim()` so `label_halo` can disable the white label background and repel labels remain repel-aware when the halo is enabled.
+- Updated `sn_plot_dim()` so `label_halo` can disable the white label_by background and repel labels remain repel-aware when the halo is enabled.
 - Updated `sn_plot_dot()` colorbar styling to use black frame/tick elements and suppress the duplicate colour-scale replacement message.
 - Added `sn_plot_heatmap()` for focused user-selected gene heatmaps with cell-level and group-averaged modes, grouping/splitting, feature validation, default rasterization, hidden cell names/ticks, 8 pt group labels, Paired group-bar colors, and automatic scaling of requested genes.
 - Updated `sn_plot_feature()` to expose more Seurat `FeaturePlot()` arguments and to use `ggrastr` post-rasterization when available, preserving `pt_size` behavior under `raster = TRUE`.
 - Quieted the user-visible `sn_plot_feature()` rasterization warning and duplicate expression color-scale message while preserving other warnings.
 - Added `sn_run_cell_communication()` plus store/get helpers for CellChat, NicheNet, and LIANA communication workflows, with NicheNet requiring explicit ligand-target and ligand-receptor priors.
 - Added `sn_run_regulatory_activity()` plus store/get helpers for fast DoRothEA TF activity and PROGENy pathway activity inference through decoupleR.
-- Extended `sn_run_cluster()` with `integration_method` so batch workflows can choose Harmony, Coralysis, Seurat CCA, or Seurat RPCA while preserving Harmony as the default.
+- Extended `sn_run_cluster()` with `integration_method` so batch_by workflows can choose Harmony, Coralysis, Seurat CCA, or Seurat RPCA while preserving Harmony as the default.

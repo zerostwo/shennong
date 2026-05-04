@@ -6,9 +6,9 @@
 \usage{
 sn_assess_integration(
   x,
-  batch,
-  label = NULL,
-  cluster = "seurat_clusters",
+  batch_by = NULL,
+  label_by = NULL,
+  cluster_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   baseline = NULL,
   baseline_reduction = .sn_default_baseline_reduction(x, reduction),
@@ -18,29 +18,32 @@ sn_assess_integration(
   metrics = NULL,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 5000,
-  stratify_by = batch,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  batch = NULL,
+  label = NULL,
+  cluster = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{batch}{Metadata column containing batch labels.}
+\item{batch_by}{Metadata column containing batch labels.}
 
-\item{label}{Optional metadata column containing biological labels such as
+\item{label_by}{Optional metadata column containing biological labels such as
 cell type annotations.}
 
-\item{cluster}{Optional metadata column containing the current clustering.}
+\item{cluster_by}{Optional metadata column containing the current clustering.}
 
 \item{reduction}{Reduction name used for the primary integrated embedding.
 Defaults to \code{"harmony"} when present, otherwise \code{"pca"}.}
 
 \item{baseline}{Optional Seurat object used as the baseline reference for
-PCR batch scoring. If \code{NULL}, the baseline is taken from \code{x}.}
+PCR batch_by scoring. If \code{NULL}, the baseline is taken from \code{x}.}
 
 \item{baseline_reduction}{Optional reduction name used as the baseline.}
 
@@ -77,6 +80,12 @@ used to flag difficult groups.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
+
+\item{batch}{Deprecated alias for \code{batch_by}.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
+
+\item{cluster}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A list with four top-level elements:
@@ -89,7 +98,7 @@ composition, and difficult-group diagnostics.
 }
 }
 \description{
-This wrapper combines fast, broadly useful metrics for batch mixing,
+This wrapper combines fast, broadly useful metrics for batch_by mixing,
 biological conservation, and cluster-level diagnostics. It reuses existing
 neighbor graphs when available and otherwise builds a kNN graph with Annoy or
 an exact fallback.
@@ -99,14 +108,14 @@ an exact fallback.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch = "sample",
-  cluster = "seurat_clusters",
+  batch_by = "sample",
+  cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

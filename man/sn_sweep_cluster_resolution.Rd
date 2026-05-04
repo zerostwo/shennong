@@ -11,7 +11,7 @@ sn_sweep_cluster_resolution(
   dims = NULL,
   cluster_name = "seurat_clusters",
   metrics = c("n_clusters", "mean_silhouette", "graph_connectivity"),
-  label = NULL,
+  label_by = NULL,
   max_cells = 3000,
   rogue_max_cells = max_cells,
   assay = "RNA",
@@ -19,7 +19,8 @@ sn_sweep_cluster_resolution(
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   k = 20,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  label = NULL
 )
 }
 \arguments{
@@ -42,7 +43,7 @@ assignments. Defaults to \code{"seurat_clusters"}.}
 \code{"graph_connectivity"}, \code{"cluster_purity"},
 \code{"clustering_agreement"}, and \code{"rogue"}.}
 
-\item{label}{Optional metadata column containing reference labels. Required
+\item{label_by}{Optional metadata column containing reference labels. Required
 for \code{"cluster_purity"} and \code{"clustering_agreement"}.}
 
 \item{max_cells}{Optional integer cap used by expensive embedding-based
@@ -64,6 +65,8 @@ graph from embeddings.}
 
 \item{n_trees}{Number of Annoy trees used by graph connectivity when
 \code{neighbor_method = "annoy"}.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A list with a per-resolution summary table and the recommended
@@ -73,7 +76,7 @@ resolution based on the mean of the available scaled quality metrics.
 This helper reruns graph clustering across a grid of Seurat resolution
 values and evaluates each partition with one or more quality diagnostics.
 It is intended to support empirical resolution selection rather than relying
-on a fixed default cluster count.
+on a fixed default cluster_by count.
 }
 \examples{
 \dontrun{

@@ -2,25 +2,26 @@
 % Please edit documentation in R/analysis_metrics.R
 \name{sn_calculate_pcr_batch}
 \alias{sn_calculate_pcr_batch}
-\title{Calculate PCR batch effect scores}
+\title{Calculate PCR batch_by effect scores}
 \usage{
 sn_calculate_pcr_batch(
   x,
-  batch,
+  batch_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
   baseline = NULL,
   baseline_reduction = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = batch,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  batch = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{batch}{Metadata column containing batch labels.}
+\item{batch_by}{Metadata column containing batch labels.}
 
 \item{reduction}{Reduction name used for the primary score. Defaults to
 \code{"harmony"} when present, otherwise \code{"pca"}.}
@@ -41,9 +42,11 @@ the metric.}
 during subsampling. Defaults to \code{batch}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{batch}{Deprecated alias for \code{batch_by}.}
 }
 \value{
-A one-row data frame containing the weighted batch variance explained
+A one-row data frame containing the weighted batch_by variance explained
 by the selected reduction and, when available, the baseline comparison.
 }
 \description{
@@ -56,13 +59,13 @@ reports the improvement relative to the unintegrated state.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 sn_calculate_pcr_batch(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

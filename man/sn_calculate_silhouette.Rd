@@ -6,19 +6,20 @@
 \usage{
 sn_calculate_silhouette(
   x,
-  label,
+  label_by = NULL,
   reduction = "pca",
   dims = NULL,
   cells = NULL,
   max_cells = 3000,
-  stratify_by = label,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{label}{Metadata column used as the grouping label.}
+\item{label_by}{Metadata column used as the grouping label.}
 
 \item{reduction}{Reduction name used to extract embeddings. Defaults to
 \code{"pca"}.}
@@ -35,26 +36,28 @@ distance matrix.}
 during subsampling. Defaults to \code{label}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with per-cell silhouette widths.
 }
 \description{
 Silhouette widths summarize how well cells are separated by a categorical
-metadata label in the selected embedding.
+metadata label_by in the selected embedding.
 }
 \examples{
 \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 sil_tbl <- sn_calculate_silhouette(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony"
 )
 head(sil_tbl)

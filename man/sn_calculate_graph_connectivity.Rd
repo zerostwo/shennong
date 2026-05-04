@@ -6,7 +6,7 @@
 \usage{
 sn_calculate_graph_connectivity(
   x,
-  label,
+  label_by = NULL,
   graph = NULL,
   reduction = "pca",
   dims = NULL,
@@ -14,15 +14,16 @@ sn_calculate_graph_connectivity(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = NULL,
-  stratify_by = label,
+  stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  label = NULL
 )
 }
 \arguments{
 \item{x}{A Seurat object.}
 
-\item{label}{Metadata column used to define groups.}
+\item{label_by}{Metadata column used to define groups.}
 
 \item{graph}{Optional graph name stored in \code{x@graphs}. If \code{NULL},
 the function tries to reuse an existing nearest-neighbor graph and falls
@@ -49,6 +50,8 @@ during subsampling. Defaults to \code{label}.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per group and a
@@ -64,13 +67,13 @@ conservation after integration.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 connectivity_tbl <- sn_calculate_graph_connectivity(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony"
 )
 connectivity_tbl

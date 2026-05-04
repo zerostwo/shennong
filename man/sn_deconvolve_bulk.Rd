@@ -8,8 +8,8 @@ sn_deconvolve_bulk(
   x,
   bulk,
   method = c("bayesprism", "cibersortx"),
-  cell_type_col = NULL,
-  cell_state_col = NULL,
+  cell_type_by = NULL,
+  cell_state_by = NULL,
   cell_type_labels = NULL,
   cell_state_labels = NULL,
   assay = "RNA",
@@ -36,7 +36,9 @@ sn_deconvolve_bulk(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
-  return_object = TRUE
+  return_object = TRUE,
+  cell_type_col = NULL,
+  cell_state_col = NULL
 )
 }
 \arguments{
@@ -47,11 +49,11 @@ gene-by-cell matrix-like object.}
 
 \item{method}{One of \code{"bayesprism"} or \code{"cibersortx"}.}
 
-\item{cell_type_col}{Metadata column containing cell-type labels when
+\item{cell_type_by}{Metadata column containing cell-type labels when
 \code{x} is a \code{Seurat} object. If \code{x} is a matrix, supply
 \code{cell_type_labels} instead.}
 
-\item{cell_state_col}{Optional metadata column containing cell-state labels.
+\item{cell_state_by}{Optional metadata column containing cell-state labels.
 Defaults to \code{cell_type_col}.}
 
 \item{cell_type_labels}{Optional vector of cell-type labels for matrix
@@ -69,7 +71,7 @@ references.}
 sample-by-gene input, or \code{"auto"} to infer it from the overlap with
 the reference genes.}
 
-\item{key}{Optional malignant-cell label passed to BayesPrism.}
+\item{key}{Optional malignant-cell label_by passed to BayesPrism.}
 
 \item{outdir}{Output directory used by CIBERSORTx file export.}
 
@@ -93,9 +95,9 @@ of \code{"docker"} or \code{"apptainer"}.}
 \item{cibersortx_dry_run}{If \code{TRUE}, prepare files and return local
 commands without running the container.}
 
-\item{cibersortx_rmbatch_b_mode}{Whether to enable B-mode batch correction.}
+\item{cibersortx_rmbatch_b_mode}{Whether to enable B-mode batch_by correction.}
 
-\item{cibersortx_rmbatch_s_mode}{Whether to enable S-mode batch correction.}
+\item{cibersortx_rmbatch_s_mode}{Whether to enable S-mode batch_by correction.}
 
 \item{cibersortx_perm}{Number of permutations used by the fractions module.}
 
@@ -118,6 +120,10 @@ signature matrix.}
 
 \item{return_object}{If \code{TRUE} and \code{x} is a \code{Seurat} object,
 return the updated object when a result table is available.}
+
+\item{cell_type_col}{Deprecated alias for \code{cell_type_by}.}
+
+\item{cell_state_col}{Deprecated alias for \code{cell_state_by}.}
 }
 \value{
 A stored-result list, an export-bundle list, or an updated
@@ -150,7 +156,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     ref,
     bulk = bulk,
     method = "cibersortx",
-    cell_type_col = "cell_type",
+    cell_type_by = "cell_type",
     outdir = tempdir(),
     cibersortx_email = "demo@example.org",
     cibersortx_token = "fake-token",

@@ -4,14 +4,24 @@
 \alias{sn_calculate_clustering_agreement}
 \title{Calculate agreement between clusters and reference labels}
 \usage{
-sn_calculate_clustering_agreement(x, cluster, label)
+sn_calculate_clustering_agreement(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  cluster = NULL,
+  label = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or data frame containing the required columns.}
 
-\item{cluster}{Metadata/data-frame column containing cluster labels.}
+\item{cluster_by}{Metadata/data-frame column containing cluster_by labels.}
 
-\item{label}{Metadata/data-frame column containing reference labels.}
+\item{label_by}{Metadata/data-frame column containing reference labels.}
+
+\item{cluster}{Deprecated alias for \code{cluster_by}.}
+
+\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A one-row data frame with ARI and NMI.
@@ -26,6 +36,6 @@ meta <- data.frame(
   cluster = c("T", "T", "B", "B"),
   label = c("T", "T", "B", "B")
 )
-sn_calculate_clustering_agreement(meta, cluster = "cluster", label = "label")
+sn_calculate_clustering_agreement(meta, cluster_by = "cluster", label_by = "label")
 
 }

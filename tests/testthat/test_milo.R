@@ -32,14 +32,14 @@ test_that("sn_run_milo returns neighborhood DA results and can annotate neighbor
 
   result <- sn_run_milo(
     object,
-    sample_col = "sample",
-    group_col = "Mutation",
+    sample_by = "sample",
+    group_by = "Mutation",
     contrast = c("PPP2R1A", "WT"),
     reduction = "pca",
     dims = 1:5,
     k = 5,
     prop = 0.5,
-    annotation_col = "cell_type"
+    annotation_by = "cell_type"
   )
 
   expect_s3_class(result, "data.frame")
@@ -79,8 +79,8 @@ test_that("sn_run_milo can return intermediate milo objects", {
   result <- suppressWarnings(
     sn_run_milo(
       object,
-      sample_col = "sample",
-      group_col = "group",
+      sample_by = "sample",
+      group_by = "group",
       reduction = "pca",
       dims = 1:4,
       k = 4,
@@ -122,9 +122,9 @@ test_that("milo results can be stored, retrieved, and plotted", {
     object,
     result = milo_tbl,
     store_name = "demo_milo",
-    sample_col = "sample",
-    group_col = "group",
-    annotation_col = "cell_type",
+    sample_by = "sample",
+    group_by = "group",
+    annotation_by = "cell_type",
     return_object = TRUE
   )
 
@@ -134,7 +134,7 @@ test_that("milo results can be stored, retrieved, and plotted", {
     annotation = "Tcell",
     spatial_fdr = 0.05
   )
-  plot <- sn_plot_milo(object, milo_name = "demo_milo", annotation_col = "cell_type")
+  plot <- sn_plot_milo(object, milo_name = "demo_milo", annotation_by = "cell_type")
 
   expect_equal(nrow(retrieved), 1)
   expect_equal(retrieved$cell_type[[1]], "Tcell")
@@ -173,8 +173,8 @@ test_that("sn_run_milo requires a constant group label within each sample", {
   expect_error(
     sn_run_milo(
       object,
-      sample_col = "sample",
-      group_col = "group",
+      sample_by = "sample",
+      group_by = "group",
       reduction = "pca",
       dims = 1:3,
       k = 3,
