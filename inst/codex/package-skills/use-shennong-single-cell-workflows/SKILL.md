@@ -54,7 +54,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    forced into the ScaleData/PCA feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
    automatically add rare-aware genes, and use
-   `normalization_method = "sctransform"` with `batch = ...` when an
+   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`, or
+   `"seurat_rpca"` when a specific batch-integration backend is requested.
+   Use `normalization_method = "sctransform"` with `batch = ...` only when an
    SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
@@ -63,8 +65,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    isolated labels, or difficult-to-separate populations matter.
 4. Move to downstream biological interpretation:
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
-   optional reference annotation with `sn_transfer_labels()`, and optional
-   external annotation with `sn_run_celltypist()`.
+   optional reference annotation with `sn_transfer_labels()` or
+   `sn_transfer_labels(method = "coralysis")`, and optional external
+   annotation with `sn_run_celltypist()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
@@ -104,6 +107,8 @@ single-cell tasks. This skill is the main entry point for package usage.
 - `sn_enrich(x = object, source_de_name = "cluster_markers")`
 - `sn_calculate_composition()`
 - `sn_run_milo()`
+- `sn_run_cell_communication(method = "cellchat")`
+- `sn_run_regulatory_activity(method = "dorothea")`
 - `sn_plot_dim()`
 - `sn_plot_feature()`
 - `sn_plot_heatmap()`

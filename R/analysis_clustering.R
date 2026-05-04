@@ -5,6 +5,246 @@
   dims[dims > 0]
 }
 
+.sn_merge_control_args <- function(defaults, control) {
+  control <- control %||% list()
+  if (!is.list(control)) {
+    stop("`integration_control` must be a named list.", call. = FALSE)
+  }
+  utils::modifyList(defaults, control, keep.null = TRUE)
+}
+
+.sn_valid_reduction_dims <- function(object, reduction, dims) {
+  embeddings <- Seurat::Embeddings(object = object[[reduction]])
+  max_dim <- ncol(embeddings)
+  valid_dims <- dims[dims <= max_dim]
+  if (length(valid_dims) == 0L) {
+    stop(glue("No requested `dims` are available in reduction '{reduction}'."), call. = FALSE)
+  }
+  valid_dims
+}
+
+.sn_run_batch_integration <- function(object,
+                                      method,
+                                      batch,
+                                      reduction,
+                                      features,
+                                      assay,
+                                      dims,
+                                      npcs,
+                                      theta,
+                                      group_by_vars,
+                                      integration_control = list(),
+                                      verbose = TRUE) {
+  switch(
+    method,
+    harmony = .sn_run_harmony_integration(
+      object = object,
+      batch = batch,
+      reduction = reduction,
+      theta = theta,
+      group_by_vars = group_by_vars,
+      verbose = verbose
+    ),
+    coralysis = .sn_run_coralysis_integration(
+      object = object,
+      batch = batch,
+      assay = assay,
+      features = features,
+      dims = dims,
+      npcs = npcs,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    seurat_cca = .sn_run_seurat_layer_integration(
+      object = object,
+      method = method,
+      batch = batch,
+      reduction = reduction,
+      features = features,
+      assay = assay,
+      dims = dims,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    seurat_rpca = .sn_run_seurat_layer_integration(
+      object = object,
+      method = method,
+      batch = batch,
+      reduction = reduction,
+      features = features,
+      assay = assay,
+      dims = dims,
+      integration_control = integration_control,
+      verbose = verbose
+    )
+  )
+}
+
+.sn_run_harmony_integration <- function(object,
+                                        batch,
+                                        reduction,
+                                        theta = 2,
+                                        group_by_vars = NULL,
+                                        verbose = TRUE) {
+  check_installed("harmony")
+  group_by_vars <- group_by_vars %||% batch
+  object <- harmony::RunHarmony(
+    object = object,
+    group.by.vars = group_by_vars,
+    theta = theta,
+    reduction.use = reduction,
+    verbose = verbose
+  )
+  object@misc$integration <- list(
+    method = "harmony",
+    batch = batch,
+    group_by_vars = group_by_vars,
+    reduction = "harmony",
+    input_reduction = reduction,
+    theta = theta
+  )
+  list(object = object, reduction = "harmony")
+}
+
+.sn_run_coralysis_integration <- function(object,
+                                          batch,
+                                          assay,
+                                          features,
+                                          dims,
+                                          npcs,
+                                          integration_control = list(),
+                                          verbose = TRUE) {
+  check_installed(c("Coralysis", "SingleCellExperiment", "SummarizedExperiment"))
+
+  feature_set <- intersect(features, rownames(object))
+  if (length(feature_set) < 2L) {
+    stop("Coralysis integration requires at least two selected features present in the object.", call. = FALSE)
+  }
+
+  expr <- SeuratObject::LayerData(object = object, assay = assay, layer = "data")
+  expr <- expr[feature_set, colnames(object), drop = FALSE]
+  metadata <- object[[]]
+
+  sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = expr),
+    colData = metadata
+  )
+
+  if (verbose) .sn_log_info("[sn_run_cluster] Preparing Coralysis input.")
+  sce <- Coralysis::PrepareData(object = sce)
+
+  icp_args <- .sn_merge_control_args(
+    defaults = list(
+      object = sce,
+      batch.label = batch,
+      threads = 0,
+      verbose = verbose,
+      RNGseed = 717
+    ),
+    control = integration_control$icp_args
+  )
+  if (verbose) .sn_log_info("[sn_run_cluster] Running Coralysis multi-level integration.")
+  sce <- do.call(Coralysis::RunParallelDivisiveICP, icp_args)
+
+  coralysis_dims <- max(dims)
+  coralysis_p <- max(1L, min(as.integer(npcs), as.integer(coralysis_dims), ncol(object) - 1L))
+  pca_args <- .sn_merge_control_args(
+    defaults = list(
+      object = sce,
+      assay.name = "joint.probability",
+      p = coralysis_p,
+      dimred.name = "Coralysis",
+      return.model = TRUE
+    ),
+    control = integration_control$pca_args
+  )
+  if (verbose) .sn_log_info("[sn_run_cluster] Running PCA on Coralysis joint probabilities.")
+  sce <- do.call(Coralysis::RunPCA, pca_args)
+
+  dimred_name <- pca_args$dimred.name %||% "Coralysis"
+  if (!dimred_name %in% SingleCellExperiment::reducedDimNames(sce)) {
+    dimred_name <- tail(SingleCellExperiment::reducedDimNames(sce), n = 1L)
+  }
+  embeddings <- SingleCellExperiment::reducedDim(sce, dimred_name)
+  embeddings <- embeddings[colnames(object), , drop = FALSE]
+  colnames(embeddings) <- paste0("CORALYSIS_", seq_len(ncol(embeddings)))
+
+  object[["coralysis"]] <- Seurat::CreateDimReducObject(
+    embeddings = embeddings,
+    key = "CORALYSIS_",
+    assay = assay
+  )
+  store_sce <- integration_control$store_sce %||% TRUE
+  object@misc$integration <- list(
+    method = "coralysis",
+    batch = batch,
+    reduction = "coralysis",
+    input_features = feature_set,
+    coralysis_dimred = dimred_name,
+    stored_sce = isTRUE(store_sce)
+  )
+  if (isTRUE(store_sce)) {
+    object@misc$coralysis <- sce
+  }
+
+  list(object = object, reduction = "coralysis")
+}
+
+.sn_run_seurat_layer_integration <- function(object,
+                                             method,
+                                             batch,
+                                             reduction,
+                                             features,
+                                             assay,
+                                             dims,
+                                             integration_control = list(),
+                                             verbose = TRUE) {
+  if (!exists("IntegrateLayers", envir = asNamespace("Seurat"), inherits = FALSE)) {
+    stop("Seurat layer integration requires Seurat >= 5 with `IntegrateLayers()`.", call. = FALSE)
+  }
+  integration_fun <- switch(
+    method,
+    seurat_cca = Seurat::CCAIntegration,
+    seurat_rpca = Seurat::RPCAIntegration
+  )
+  new_reduction <- switch(
+    method,
+    seurat_cca = "integrated.cca",
+    seurat_rpca = "integrated.rpca"
+  )
+
+  old_default_assay <- SeuratObject::DefaultAssay(object = object)
+  on.exit(SeuratObject::DefaultAssay(object = object) <- old_default_assay, add = TRUE)
+  SeuratObject::DefaultAssay(object = object) <- assay
+  object[[assay]] <- split(object[[assay]], f = object[[batch, drop = TRUE]])
+
+  args <- .sn_merge_control_args(
+    defaults = list(
+      object = object,
+      method = integration_fun,
+      orig.reduction = reduction,
+      assay = assay,
+      features = features,
+      dims = dims,
+      new.reduction = new_reduction,
+      verbose = verbose
+    ),
+    control = integration_control
+  )
+  if (verbose) .sn_log_info("[sn_run_cluster] Running Seurat layer integration with method = {method}.")
+  object <- do.call(Seurat::IntegrateLayers, args)
+  object[[assay]] <- SeuratObject::JoinLayers(object[[assay]])
+  SeuratObject::DefaultAssay(object = object) <- old_default_assay
+  object@misc$integration <- list(
+    method = method,
+    batch = batch,
+    reduction = new_reduction,
+    input_reduction = reduction
+  )
+
+  list(object = object, reduction = new_reduction)
+}
+
 .sn_gini_coefficient <- function(x) {
   x <- as.numeric(x)
   x <- x[is.finite(x) & x >= 0]
@@ -811,21 +1051,34 @@ sn_detect_rare_cells <- function(object,
   list(features = present, missing = missing)
 }
 
-#' Run clustering for a single dataset or Harmony integration workflow
+#' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
 #' When `batch = NULL`, it performs single-dataset clustering with either the
 #' standard Seurat workflow or an SCTransform workflow. When `batch` is
-#' supplied, it performs Harmony-based integration followed by clustering
-#' and UMAP.
+#' supplied, it performs batch integration followed by clustering and UMAP.
 #'
 #' @param object A \code{Seurat} object.
 #' @param batch A column name in \code{object@meta.data} specifying batch info.
 #'   If \code{NULL}, no integration is performed.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
 #'   \code{"sctransform"}. The scran workflow is currently only supported when
-#'   \code{batch = NULL}. The SCTransform workflow can be combined with Harmony
-#'   integration by supplying \code{batch}.
+#'   \code{batch = NULL}. The SCTransform workflow can currently be combined
+#'   with \code{integration_method = "harmony"} by supplying \code{batch}.
+#' @param integration_method Batch-integration backend used when \code{batch}
+#'   is supplied. Supported values are \code{"harmony"},
+#'   \code{"coralysis"}, \code{"seurat_cca"}, and \code{"seurat_rpca"}.
+#'   \code{"harmony"} preserves the historical Shennong behavior.
+#'   \code{"coralysis"} runs Coralysis multi-level integration on the selected
+#'   log-normalized feature set and stores the integrated embedding as the
+#'   \code{"coralysis"} reduction.
+#' @param integration_control Optional named list of backend-specific
+#'   parameters. For \code{"coralysis"}, use \code{icp_args} for
+#'   \code{Coralysis::RunParallelDivisiveICP()} arguments, \code{pca_args} for
+#'   \code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
+#'   the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
+#'   For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
+#'   to \code{Seurat::IntegrateLayers()}.
 #' @param nfeatures Number of variable features to select.
 #' @param hvg_features Optional character vector of user-supplied features to
 #'   force into the feature set used for scaling/PCA. These features are merged
@@ -857,9 +1110,11 @@ sn_detect_rare_cells <- function(object,
 #'   categories (for example \code{c("ribo","mito")}) or a custom vector of
 #'   gene symbols to exclude from HVGs.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
-#'   diversity preservation vs. correction.
+#'   diversity preservation vs. correction. Used only when
+#'   \code{integration_method = "harmony"}.
 #' @param group_by_vars Optional column name or character vector passed to
-#'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}.
+#'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
+#'   and is used only when \code{integration_method = "harmony"}.
 #' @param npcs Number of PCs to compute in \code{RunPCA}.
 #' @param dims A numeric vector of PCs (dimensions) to use for neighbor search,
 #'   clustering, and UMAP.
@@ -884,6 +1139,7 @@ sn_detect_rare_cells <- function(object,
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
 #'   batch = "sample_id",
+#'   integration_method = "harmony",
 #'   normalization_method = "seurat",
 #'   hvg_group_by = "sample_id",
 #'   nfeatures = 3000,
@@ -895,6 +1151,8 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
+                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca"),
+                           integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
                            vars_to_regress = NULL,
@@ -925,6 +1183,10 @@ sn_run_cluster <- function(object,
   }
 
   normalization_method <- match.arg(normalization_method)
+  integration_method <- match.arg(integration_method)
+  if (!is.list(integration_control)) {
+    stop("`integration_control` must be a named list.", call. = FALSE)
+  }
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
     c("none", "gini", "local_markers"),
@@ -955,8 +1217,12 @@ sn_run_cluster <- function(object,
     if (normalization_method == "scran") {
       stop("`normalization_method = \"scran\"` is currently only supported when `batch = NULL`.")
     }
-    check_installed("harmony")
-    if (verbose) .sn_log_info("[sn_run_cluster] Starting integration for batch = '{batch}'.")
+    if (normalization_method == "sctransform" && integration_method != "harmony") {
+      stop("SCTransform integration is currently supported only with `integration_method = \"harmony\"`.", call. = FALSE)
+    }
+    if (verbose) {
+      .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch = '{batch}'.")
+    }
   }
 
   if (is_null(hvg_group_by) && !is_null(batch)) {
@@ -964,7 +1230,10 @@ sn_run_cluster <- function(object,
   }
 
   if (verbose) {
-    .sn_log_info("[sn_run_cluster] Normalization method = {normalization_method}; batch = {batch %||% 'none'}.")
+    .sn_log_info(
+      "[sn_run_cluster] Normalization method = {normalization_method}; ",
+      "batch = {batch %||% 'none'}; integration_method = {if (is.null(batch)) 'none' else integration_method}."
+    )
   }
 
   user_hvg_info <- .sn_resolve_user_hvg_features(
@@ -1057,16 +1326,23 @@ sn_run_cluster <- function(object,
     if (is_null(x = batch)) {
       reduction <- "pca"
     } else {
-      if (verbose) .sn_log_info("[3/5] Running Harmony integration.")
-      group_by_vars <- group_by_vars %||% batch
-      object <- harmony::RunHarmony(
+      if (verbose) .sn_log_info("[3/5] Running {integration_method} integration.")
+      integration <- .sn_run_batch_integration(
         object = object,
-        group.by.vars = group_by_vars,
+        method = integration_method,
+        batch = batch,
+        reduction = "pca",
+        features = hvg,
+        assay = assay,
+        dims = dims,
+        npcs = npcs,
         theta = theta,
-        reduction.use = "pca",
+        group_by_vars = group_by_vars,
+        integration_control = integration_control,
         verbose = verbose
       )
-      reduction <- "harmony"
+      object <- integration$object
+      reduction <- integration$reduction
     }
   } else {
     if (normalization_method == "scran") {
@@ -1179,20 +1455,28 @@ sn_run_cluster <- function(object,
     if (is_null(x = batch)) {
       reduction <- "pca"
     } else {
-      if (verbose) .sn_log_info("[5/6] Running Harmony integration.")
-      group_by_vars <- group_by_vars %||% batch
-      object <- harmony::RunHarmony(
+      if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
+      integration <- .sn_run_batch_integration(
         object = object,
-        group.by.vars = group_by_vars,
+        method = integration_method,
+        batch = batch,
+        reduction = "pca",
+        features = hvg,
+        assay = assay,
+        dims = dims,
+        npcs = npcs,
         theta = theta,
-        reduction.use = "pca",
+        group_by_vars = group_by_vars,
+        integration_control = integration_control,
         verbose = verbose
       )
-      reduction <- "harmony"
+      object <- integration$object
+      reduction <- integration$reduction
     }
   }
 
   if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
+  dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
   object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
   object <- Seurat::FindClusters(object, resolution = resolution, random.seed = 717, verbose = verbose)
 
@@ -1225,6 +1509,10 @@ sn_run_cluster <- function(object,
   Seurat::TransferData(...)
 }
 
+.sn_coralysis_reference_mapping_backend <- function(...) {
+  Coralysis::ReferenceMapping(...)
+}
+
 .sn_metadata_suffix <- function(x) {
   x <- gsub("[^A-Za-z0-9]+", "_", as.character(x))
   x <- gsub("^_+|_+$", "", x)
@@ -1232,18 +1520,144 @@ sn_run_cluster <- function(object,
   x
 }
 
+.sn_get_seurat_logcounts_sce <- function(object,
+                                         assay = NULL,
+                                         layer = "data",
+                                         verbose = TRUE) {
+  check_installed(c("SingleCellExperiment", "SummarizedExperiment"))
+
+  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
+  if (identical(layer, "data") && !"data" %in% SeuratObject::Layers(object = object[[assay]])) {
+    if (verbose) .sn_log_info("Normalizing query object before Coralysis reference mapping.")
+    object <- Seurat::NormalizeData(object = object, assay = assay, verbose = verbose)
+  }
+
+  expr <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)
+  SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = expr),
+    colData = object[[]]
+  )
+}
+
+.sn_get_coralysis_reference_sce <- function(reference,
+                                           reference_assay = NULL,
+                                           reference_layer = "data",
+                                           verbose = TRUE) {
+  if (inherits(reference, "SingleCellExperiment")) {
+    return(reference)
+  }
+  if (!inherits(reference, "Seurat")) {
+    stop("`reference` must be a Seurat or SingleCellExperiment object for Coralysis label transfer.", call. = FALSE)
+  }
+  if (inherits(reference@misc$coralysis, "SingleCellExperiment")) {
+    return(reference@misc$coralysis)
+  }
+  stop(
+    "Coralysis label transfer requires a Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
+    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\", ",
+    "integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE)))` first.",
+    call. = FALSE
+  )
+}
+
+.sn_transfer_labels_coralysis <- function(object,
+                                          reference,
+                                          label_col,
+                                          prediction_prefix,
+                                          reference_assay = NULL,
+                                          query_assay = NULL,
+                                          reference_layer = "data",
+                                          query_layer = "data",
+                                          transfer_control = list(),
+                                          return_anchors = FALSE,
+                                          verbose = TRUE) {
+  check_installed("Coralysis")
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat query object for Coralysis label transfer.", call. = FALSE)
+  }
+  if (!is.list(transfer_control)) {
+    stop("`transfer_control` must be a named list.", call. = FALSE)
+  }
+
+  ref_sce <- .sn_get_coralysis_reference_sce(
+    reference = reference,
+    reference_assay = reference_assay,
+    reference_layer = reference_layer,
+    verbose = verbose
+  )
+  if (!label_col %in% colnames(SummarizedExperiment::colData(ref_sce))) {
+    stop(glue("`label_col` column '{label_col}' was not found in Coralysis reference colData."), call. = FALSE)
+  }
+  query_sce <- .sn_get_seurat_logcounts_sce(
+    object = object,
+    assay = query_assay,
+    layer = query_layer,
+    verbose = verbose
+  )
+  query_sce <- Coralysis::PrepareData(object = query_sce)
+
+  args <- .sn_merge_control_args(
+    defaults = list(
+      ref = ref_sce,
+      query = query_sce,
+      ref.label = label_col
+    ),
+    control = transfer_control
+  )
+  mapped <- do.call(.sn_coralysis_reference_mapping_backend, args)
+  mapped_coldata <- as.data.frame(SummarizedExperiment::colData(mapped))
+  mapped_coldata <- mapped_coldata[colnames(object), , drop = FALSE]
+
+  label_source <- if ("pruned_coral_labels" %in% colnames(mapped_coldata)) {
+    "pruned_coral_labels"
+  } else {
+    "coral_labels"
+  }
+  if (!label_source %in% colnames(mapped_coldata)) {
+    stop("Coralysis::ReferenceMapping() did not return `coral_labels`.", call. = FALSE)
+  }
+
+  metadata <- data.frame(row.names = colnames(object))
+  metadata[[paste0(prediction_prefix, "_label")]] <- mapped_coldata[[label_source]]
+  if ("coral_probability" %in% colnames(mapped_coldata)) {
+    metadata[[paste0(prediction_prefix, "_score")]] <- mapped_coldata$coral_probability
+  }
+  if ("coral_labels" %in% colnames(mapped_coldata)) {
+    metadata[[paste0(prediction_prefix, "_raw_label")]] <- mapped_coldata$coral_labels
+  }
+
+  object <- Seurat::AddMetaData(object, metadata = metadata)
+  object@misc$label_transfer[[prediction_prefix]] <- list(
+    method = "coralysis",
+    label_col = label_col,
+    prediction_columns = colnames(metadata),
+    transfer_control = transfer_control
+  )
+
+  if (isTRUE(return_anchors)) {
+    return(list(query = object, mapping = mapped))
+  }
+  object
+}
+
 #' Transfer labels from a Seurat reference to a query object
 #'
-#' \code{sn_transfer_labels()} is a thin Shennong wrapper around Seurat's
-#' \code{FindTransferAnchors()} and \code{TransferData()} workflow. It keeps the
-#' common reference-mapping path compact: find anchors, transfer one metadata
-#' label, add the predicted label and confidence score back to the query, and
-#' store a small provenance record in \code{query@misc$label_transfer}.
+#' \code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
+#' keeps the common path compact: transfer one metadata label, add the predicted
+#' label and confidence score back to the query, and store a small provenance
+#' record in \code{query@misc$label_transfer}. The default \code{method =
+#' "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
+#' \code{TransferData()} workflow. \code{method = "coralysis"} projects the
+#' query onto a Coralysis-trained reference with
+#' \code{Coralysis::ReferenceMapping()}.
 #'
 #' @param object A Seurat query object to annotate. This argument comes first
 #'   so the function can be used in pipes.
 #' @param reference A labeled Seurat reference object.
 #' @param label_col Metadata column in \code{reference} to transfer.
+#' @param method Label-transfer backend. \code{"seurat"} uses Seurat anchors;
+#'   \code{"coralysis"} uses \code{Coralysis::ReferenceMapping()} and requires
+#'   a Coralysis-trained reference stored under \code{reference@misc$coralysis}.
 #' @param query Deprecated alias for \code{object}; retained for compatibility
 #'   with the old reference-first call style.
 #' @param prediction_prefix Prefix for metadata columns added to
@@ -1252,6 +1666,12 @@ sn_run_cluster <- function(object,
 #'   \code{Seurat::FindTransferAnchors()}.
 #' @param reference_assay,query_assay Assays passed to
 #'   \code{Seurat::FindTransferAnchors()} and \code{Seurat::TransferData()}.
+#'   For \code{method = "coralysis"}, \code{query_assay} controls the assay
+#'   converted to query \code{logcounts}; the reference assay is ignored when a
+#'   stored Coralysis reference is available.
+#' @param reference_layer,query_layer Layers used as log-normalized expression
+#'   for \code{method = "coralysis"}. The query defaults to the Seurat
+#'   \code{"data"} layer and is normalized first if that layer is absent.
 #' @param reduction Dimensional reduction strategy passed to
 #'   \code{Seurat::FindTransferAnchors()}.
 #' @param reference_reduction Optional reference reduction passed to
@@ -1264,7 +1684,11 @@ sn_run_cluster <- function(object,
 #' @param store_prediction_scores If \code{TRUE}, also store per-label
 #'   prediction scores as query metadata columns.
 #' @param return_anchors If \code{TRUE}, return a list containing the annotated
-#'   query, anchors, and raw prediction table.
+#'   query and backend artifacts. For Coralysis, the artifact is the mapped
+#'   SingleCellExperiment.
+#' @param transfer_control Optional backend-specific list. For
+#'   \code{method = "coralysis"}, values are forwarded to
+#'   \code{Coralysis::ReferenceMapping()}.
 #' @param verbose Whether to print Seurat progress messages.
 #' @param ... Additional arguments passed to \code{Seurat::FindTransferAnchors()}.
 #'
@@ -1284,11 +1708,14 @@ sn_run_cluster <- function(object,
 sn_transfer_labels <- function(object = NULL,
                                reference,
                                label_col,
+                               method = c("seurat", "coralysis"),
                                query = NULL,
                                prediction_prefix = NULL,
                                normalization_method = "LogNormalize",
                                reference_assay = NULL,
                                query_assay = NULL,
+                               reference_layer = "data",
+                               query_layer = "data",
                                reduction = "pcaproject",
                                reference_reduction = NULL,
                                features = NULL,
@@ -1300,9 +1727,11 @@ sn_transfer_labels <- function(object = NULL,
                                k_weight = 50,
                                store_prediction_scores = FALSE,
                                return_anchors = FALSE,
+                               transfer_control = list(),
                                verbose = TRUE,
                                ...) {
   check_installed("Seurat")
+  method <- match.arg(method)
 
   if (is.null(object)) {
     if (is.null(query)) {
@@ -1314,7 +1743,7 @@ sn_transfer_labels <- function(object = NULL,
     stop("Use either `object` or deprecated `query`, not both.", call. = FALSE)
   }
 
-  if (!inherits(reference, "Seurat")) {
+  if (!inherits(reference, "Seurat") && !(method == "coralysis" && inherits(reference, "SingleCellExperiment"))) {
     stop("`reference` must be a Seurat object.", call. = FALSE)
   }
   if (!inherits(object, "Seurat")) {
@@ -1324,6 +1753,7 @@ sn_transfer_labels <- function(object = NULL,
     stop("`label_col` must be a non-empty metadata column name.", call. = FALSE)
   }
   if (
+    inherits(reference, "Seurat") &&
     label_col %in% colnames(object[[]]) &&
       !label_col %in% colnames(reference[[]])
   ) {
@@ -1332,6 +1762,23 @@ sn_transfer_labels <- function(object = NULL,
     object <- reference
     reference <- old_reference
   }
+  if (method == "coralysis") {
+    prediction_prefix <- prediction_prefix %||% paste0(label_col, "_coralysis")
+    return(.sn_transfer_labels_coralysis(
+      object = object,
+      reference = reference,
+      label_col = label_col,
+      prediction_prefix = prediction_prefix,
+      reference_assay = reference_assay,
+      query_assay = query_assay,
+      reference_layer = reference_layer,
+      query_layer = query_layer,
+      transfer_control = transfer_control,
+      return_anchors = return_anchors,
+      verbose = verbose
+    ))
+  }
+
   if (!label_col %in% colnames(reference[[]])) {
     stop(glue("`label_col` column '{label_col}' was not found in `reference` metadata."), call. = FALSE)
   }

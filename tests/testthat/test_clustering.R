@@ -554,6 +554,152 @@ test_that("sn_run_cluster integrates batches with harmony", {
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
 })
 
+test_that("sn_run_cluster dispatches the selected integration backend", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 13, prefix = "dispatcha")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 14, prefix = "dispatchb")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+
+  for (backend in c("coralysis", "seurat_cca", "seurat_rpca")) {
+    captured <- NULL
+    clustered <- testthat::with_mocked_bindings(
+      sn_run_cluster(
+        object = merged,
+        batch = "sample",
+        normalization_method = "seurat",
+        integration_method = backend,
+        integration_control = list(example = backend),
+        nfeatures = 50,
+        block_genes = NULL,
+        npcs = 10,
+        dims = 1:10,
+        verbose = FALSE
+      ),
+      .sn_run_batch_integration = function(object,
+                                           method,
+                                           batch,
+                                           reduction,
+                                           features,
+                                           assay,
+                                           dims,
+                                           npcs,
+                                           theta,
+                                           group_by_vars,
+                                           integration_control = list(),
+                                           verbose = TRUE) {
+        captured <<- list(
+          method = method,
+          batch = batch,
+          reduction = reduction,
+          features = features,
+          integration_control = integration_control
+        )
+        embeddings <- Seurat::Embeddings(object = object[[reduction]])
+        new_reduction <- switch(
+          method,
+          coralysis = "coralysis",
+          seurat_cca = "integrated.cca",
+          seurat_rpca = "integrated.rpca"
+        )
+        key <- switch(
+          method,
+          coralysis = "CORALYSIS_",
+          seurat_cca = "INTCCA_",
+          seurat_rpca = "INTRPCA_"
+        )
+        object@reductions[[new_reduction]] <- Seurat::CreateDimReducObject(
+          embeddings = embeddings,
+          key = key,
+          assay = assay
+        )
+        list(object = object, reduction = new_reduction)
+      },
+      .package = "Shennong"
+    )
+
+    expect_equal(captured$method, backend)
+    expect_equal(captured$batch, "sample")
+    expect_equal(captured$integration_control, list(example = backend))
+    expect_true(switch(
+      backend,
+      coralysis = "coralysis",
+      seurat_cca = "integrated.cca",
+      seurat_rpca = "integrated.rpca"
+    ) %in% names(clustered@reductions))
+    expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  }
+})
+
+test_that("sn_run_cluster runs Coralysis integration end to end", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("Coralysis")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 16, prefix = "coralysis", n_genes = 120, n_cells = 30)
+  object$sample <- rep(c("A", "B", "C"), each = 10)
+
+  clustered <- suppressWarnings(sn_run_cluster(
+    object = object,
+    batch = "sample",
+    normalization_method = "seurat",
+    integration_method = "coralysis",
+    nfeatures = 40,
+    block_genes = NULL,
+    npcs = 5,
+    dims = 1:5,
+    resolution = 0.2,
+    integration_control = list(
+      icp_args = list(
+        k = 2,
+        L = 3,
+        C = 1,
+        threads = 1,
+        train.with.bnn = FALSE,
+        train.k.nn.prop = NULL,
+        build.train.set = FALSE,
+        use.cluster.seed = FALSE,
+        ari.cutoff = 0.1
+      ),
+      pca_args = list(
+        p = 5,
+        pca.method = "stats",
+        return.model = TRUE
+      )
+    ),
+    verbose = FALSE
+  ))
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("coralysis" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_true(inherits(clustered@misc$coralysis, "SingleCellExperiment"))
+  expect_equal(clustered@misc$integration$method, "coralysis")
+})
+
+test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 15, prefix = "sctmethod")
+  object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+
+  expect_error(
+    sn_run_cluster(
+      object = object,
+      batch = "sample",
+      normalization_method = "sctransform",
+      integration_method = "coralysis",
+      nfeatures = 50,
+      npcs = 10,
+      dims = 1:10,
+      verbose = FALSE
+    ),
+    "SCTransform integration is currently supported only with `integration_method = \"harmony\"`"
+  )
+})
+
 test_that("sn_run_cluster can select HVGs by metadata group during integration", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("harmony")
@@ -829,6 +975,56 @@ test_that("sn_transfer_labels adds compact Seurat label-transfer metadata", {
   ) %in% colnames(mapped[[]])))
   expect_equal(unname(mapped$pbmc_ref_label), predictions$predicted.id)
   expect_equal(mapped@misc$label_transfer$pbmc_ref$label_col, "cell_type")
+})
+
+test_that("sn_transfer_labels supports Coralysis reference mapping", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("Coralysis")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("SummarizedExperiment")
+
+  reference <- make_test_object(seed = 210, prefix = "coralref", n_genes = 40, n_cells = 10)
+  query <- make_test_object(seed = 211, prefix = "coralquery", n_genes = 40, n_cells = 6)
+  reference$cell_type <- rep(c("T cell", "B cell"), each = 5)
+  reference <- Seurat::NormalizeData(reference, verbose = FALSE)
+  query <- Seurat::NormalizeData(query, verbose = FALSE)
+  ref_sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = SeuratObject::LayerData(reference, assay = "RNA", layer = "data")),
+    colData = reference[[]]
+  )
+  reference@misc$coralysis <- ref_sce
+
+  mapped_sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = SeuratObject::LayerData(query, assay = "RNA", layer = "data")),
+    colData = data.frame(
+      coral_labels = rep(c("T cell", "B cell"), each = 3),
+      pruned_coral_labels = rep(c("T cell", "B cell"), each = 3),
+      coral_probability = rep(c(0.91, 0.87), each = 3),
+      row.names = colnames(query)
+    )
+  )
+
+  mapped <- testthat::with_mocked_bindings(
+    sn_transfer_labels(
+      object = query,
+      reference = reference,
+      label_col = "cell_type",
+      method = "coralysis",
+      prediction_prefix = "coral_ref",
+      transfer_control = list(k.nn = 5),
+      verbose = FALSE
+    ),
+    .sn_coralysis_reference_mapping_backend = function(...) {
+      mapped_sce
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(mapped, "Seurat")
+  expect_true(all(c("coral_ref_label", "coral_ref_score", "coral_ref_raw_label") %in% colnames(mapped[[]])))
+  expect_equal(unname(mapped$coral_ref_label), mapped_sce$pruned_coral_labels)
+  expect_equal(mapped@misc$label_transfer$coral_ref$method, "coralysis")
+  expect_equal(mapped@misc$label_transfer$coral_ref$transfer_control, list(k.nn = 5))
 })
 
 test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {

@@ -442,9 +442,13 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Fixed `sn_standardize_gene_symbols()` to preserve unresolved valid symbols as their original names instead of returning or propagating `NA` row names.
 - Simplified `sn_run_cluster()` rare-aware feature selection to the stable `gini` and `local_markers` modes, with advanced thresholds consolidated under `rare_feature_control` and deprecated scalar threshold aliases retained for compatibility.
 - Added `sn_transfer_labels()` as a query-first Seurat label-transfer wrapper that writes predicted labels, confidence scores, and provenance to the query object.
+- Extended `sn_transfer_labels()` with `method = "coralysis"` so queries can be projected onto Coralysis-trained references via `Coralysis::ReferenceMapping()`.
 - Added `sn_simulate()` as a method-based simulation entry point with `method = "scdesign3"` routed to the scDesign3 backend; `sn_simulate_scdesign3()` remains available as a backend-specific wrapper.
 - Updated `sn_plot_dim()` so `label_halo` can disable the white label background and repel labels remain repel-aware when the halo is enabled.
 - Updated `sn_plot_dot()` colorbar styling to use black frame/tick elements and suppress the duplicate colour-scale replacement message.
 - Added `sn_plot_heatmap()` for focused user-selected gene heatmaps with cell-level and group-averaged modes, grouping/splitting, feature validation, default rasterization, hidden cell names/ticks, 8 pt group labels, Paired group-bar colors, and automatic scaling of requested genes.
 - Updated `sn_plot_feature()` to expose more Seurat `FeaturePlot()` arguments and to use `ggrastr` post-rasterization when available, preserving `pt_size` behavior under `raster = TRUE`.
 - Quieted the user-visible `sn_plot_feature()` rasterization warning and duplicate expression color-scale message while preserving other warnings.
+- Added `sn_run_cell_communication()` plus store/get helpers for CellChat, NicheNet, and LIANA communication workflows, with NicheNet requiring explicit ligand-target and ligand-receptor priors.
+- Added `sn_run_regulatory_activity()` plus store/get helpers for fast DoRothEA TF activity and PROGENy pathway activity inference through decoupleR.
+- Extended `sn_run_cluster()` with `integration_method` so batch workflows can choose Harmony, Coralysis, Seurat CCA, or Seurat RPCA while preserving Harmony as the default.

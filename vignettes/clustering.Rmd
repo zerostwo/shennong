@@ -189,6 +189,7 @@ pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 pbmc_integrated <- sn_run_cluster(
   object = pbmc,
   batch = "library",
+  integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "library",
   nfeatures = 2000,
@@ -206,8 +207,10 @@ sn_plot_dim(
 )
 ```
 
-This keeps the mental model small: single-sample clustering and Harmony
-integration use the same entry point; adding `batch` turns on integration.
+This keeps the mental model small: single-sample clustering and batch
+integration use the same entry point; adding `batch` turns on integration, and
+`integration_method` names the backend. Harmony is the default because it is
+fast and broadly useful.
 
 The same integration switch can be used with SCTransform normalization:
 
@@ -215,10 +218,60 @@ The same integration switch can be used with SCTransform normalization:
 pbmc_sct_integrated <- sn_run_cluster(
   object = pbmc,
   batch = "library",
+  integration_method = "harmony",
   normalization_method = "sctransform",
   hvg_features = c("IL7R", "CCR7", "NKG7"),
   dims = 1:20,
   resolution = 0.6,
+  verbose = FALSE
+)
+```
+
+For imbalanced datasets where a rare or unevenly distributed state may be
+washed out by conventional correction, Coralysis can be selected explicitly.
+Coralysis runs on the log-normalized feature set selected by Shennong and
+stores the integrated embedding as the `coralysis` reduction.
+
+```{r coralysis-integration, eval = FALSE}
+pbmc_coral <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  integration_method = "coralysis",
+  normalization_method = "seurat",
+  hvg_group_by = "library",
+  nfeatures = 2000,
+  dims = 1:20,
+  resolution = 0.6,
+  integration_control = list(
+    store_sce = TRUE,
+    icp_args = list(L = 25, threads = 2),
+    pca_args = list(p = 20, return.model = TRUE)
+  ),
+  verbose = FALSE
+)
+```
+
+Seurat layer integration methods are also available when users want to compare
+against familiar anchor-based workflows:
+
+```{r seurat-layer-integration, eval = FALSE}
+pbmc_cca <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  integration_method = "seurat_cca",
+  normalization_method = "seurat",
+  nfeatures = 2000,
+  dims = 1:20,
+  verbose = FALSE
+)
+
+pbmc_rpca <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  integration_method = "seurat_rpca",
+  normalization_method = "seurat",
+  nfeatures = 2000,
+  dims = 1:20,
   verbose = FALSE
 )
 ```

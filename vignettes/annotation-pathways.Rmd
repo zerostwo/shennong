@@ -137,6 +137,35 @@ table(query$pbmc_reference_label)
 head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
 ```
 
+The same query-first interface can use Coralysis reference mapping when the
+reference was trained with `sn_run_cluster(integration_method = "coralysis")`.
+For mapping, keep the Coralysis SingleCellExperiment and PCA model in the
+reference by leaving `store_sce = TRUE` and `return.model = TRUE`.
+
+```{r coralysis-label-transfer, eval = FALSE}
+reference <- sn_run_cluster(
+  reference,
+  batch = "sample_id",
+  integration_method = "coralysis",
+  normalization_method = "seurat",
+  integration_control = list(
+    store_sce = TRUE,
+    pca_args = list(return.model = TRUE)
+  ),
+  verbose = FALSE
+)
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = reference,
+  label_col = "cell_type",
+  method = "coralysis",
+  prediction_prefix = "coral_reference",
+  transfer_control = list(k.nn = 10),
+  verbose = FALSE
+)
+```
+
 ## Discover and manage bundled signatures
 
 Shennong ships a signature catalog so blocking genes, marker sets, and report
@@ -231,6 +260,72 @@ pbmc <- sn_store_enrichment(
   source_de_name = "cluster_markers",
   return_object = TRUE
 )
+```
+
+## Cell communication and regulatory activity
+
+Cell communication should be run through a real backend rather than an ad hoc
+ligand-receptor table. `sn_run_cell_communication()` keeps the same stored-result
+pattern used by DE and enrichment. Use CellChat for a global interaction
+network, NicheNet when the question is sender-to-receiver ligand activity, or
+LIANA when the optional LIANA package is available and consensus scoring is
+preferred.
+
+```{r cellchat-communication, eval = FALSE}
+pbmc <- sn_run_cell_communication(
+  object = pbmc,
+  method = "cellchat",
+  group_by = "seurat_clusters",
+  species = "human",
+  store_name = "cluster_cellchat"
+)
+
+cellchat_tbl <- sn_get_cell_communication_result(
+  pbmc,
+  communication_name = "cluster_cellchat"
+)
+
+head(cellchat_tbl)
+```
+
+NicheNet needs its ligand-target matrix and ligand-receptor network. Shennong
+requires those priors explicitly so the output remains traceable to the real
+NicheNet model rather than an inferred placeholder network.
+
+```{r nichenet-communication, eval = FALSE}
+pbmc <- sn_run_cell_communication(
+  object = pbmc,
+  method = "nichenetr",
+  group_by = "seurat_clusters",
+  sender = c("0", "1"),
+  receiver = "2",
+  geneset = c("IL7R", "CCR7", "LTB"),
+  ligand_target_matrix = ligand_target_matrix,
+  lr_network = lr_network,
+  store_name = "sender_receiver_nichenet"
+)
+```
+
+For transcription-factor and pathway activity, `sn_run_regulatory_activity()`
+uses fast footprint methods through `decoupleR`. DoRothEA reports TF activity;
+PROGENy reports pathway activity.
+
+```{r regulatory-activity, eval = FALSE}
+pbmc <- sn_run_regulatory_activity(
+  object = pbmc,
+  method = "dorothea",
+  group_by = "seurat_clusters",
+  species = "human",
+  store_name = "cluster_dorothea"
+)
+
+tf_activity <- sn_get_regulatory_activity_result(
+  pbmc,
+  activity_name = "cluster_dorothea",
+  sources = c("NFKB1", "STAT1")
+)
+
+head(tf_activity)
 ```
 
 ## Optional reference annotation with CellTypist

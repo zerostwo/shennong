@@ -48,7 +48,10 @@ package API.
 2. Discover result names with `sn_list_results()`.
 3. Retrieve specific results with `sn_get_de_result()`,
    `sn_get_enrichment_result()`, `sn_get_milo_result()`,
-   `sn_get_deconvolution_result()`, or `sn_get_interpretation_result()`.
+   `sn_get_deconvolution_result()`,
+   `sn_get_cell_communication_result()`,
+   `sn_get_regulatory_activity_result()`, or
+   `sn_get_interpretation_result()`.
 4. Reuse stored outputs in visualization or interpretation helpers.
 
 ## Common Mistakes
@@ -64,4 +67,6 @@ package API.
 - `sn_get_enrichment_result(object, enrichment_name = "cluster_pathways")`
 - `sn_get_milo_result(object, milo_name = "condition_da")`
 - `sn_get_deconvolution_result(object, deconvolution_name = "bulk_mix")`
+- `sn_get_cell_communication_result(object, communication_name = "cellchat")`
+- `sn_get_regulatory_activity_result(object, activity_name = "dorothea")`
 - `sn_get_interpretation_result(object, interpretation_name = "annotation_note")`

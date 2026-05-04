@@ -24,13 +24,18 @@ user request to the right Shennong function family quickly.
 ## Recipe: Integrate multiple samples
 
 1. Ensure batch metadata are present.
-2. Run `sn_run_cluster(batch = ...)`. Set
-   `normalization_method = "sctransform"` for SCTransform followed by Harmony
-   integration when that normalization is desired.
+2. Run `sn_run_cluster(batch = ..., integration_method = "harmony")` for the
+   default fast workflow. Use `integration_method = "coralysis"` for
+   Coralysis multi-level integration on imbalanced datasets, or
+   `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration
+   backends. Set `normalization_method = "sctransform"` only with Harmony when
+   that normalization is desired.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
 4. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
-5. Use `sn_transfer_labels()` when labels should be projected from a reference
-   Seurat object to a query object.
+5. Use `sn_transfer_labels()` when labels should be projected from a
+   reference to a query object. Use the default Seurat backend for anchor
+   transfer, or `method = "coralysis"` when the reference was trained and
+   stored with Coralysis.
 
 ## Recipe: Simulate single-cell data
 
@@ -53,6 +58,17 @@ user request to the right Shennong function family quickly.
 2. If enriching a direct table, supply `gene_clusters = gene ~ cluster` for grouped ORA or `gene ~ log2fc` for ranked GSEA.
 3. Store reusable results with `sn_store_enrichment()` when needed.
 
+## Recipe: Run communication or regulatory activity analysis
+
+1. Use `sn_run_cell_communication(method = "cellchat")` for global
+   interaction networks, `method = "nichenetr"` for sender-to-receiver ligand
+   activity with supplied NicheNet priors, or `method = "liana"` for LIANA
+   consensus scoring when the optional package is installed.
+2. Use `sn_run_regulatory_activity(method = "dorothea")` for TF activity and
+   `method = "progeny"` for pathway activity.
+3. Retrieve stored outputs with `sn_get_cell_communication_result()` or
+   `sn_get_regulatory_activity_result()`.
+
 ## Recipe: Build annotation evidence
 
 1. Start from stored marker results.
@@ -64,8 +80,9 @@ user request to the right Shennong function family quickly.
 
 1. Discover assets with `sn_list_results()`.
 2. Retrieve with `sn_get_de_result()`, `sn_get_enrichment_result()`,
-   `sn_get_milo_result()`, `sn_get_deconvolution_result()`, or
-   `sn_get_interpretation_result()`.
+   `sn_get_milo_result()`, `sn_get_deconvolution_result()`,
+   `sn_get_cell_communication_result()`,
+   `sn_get_regulatory_activity_result()`, or `sn_get_interpretation_result()`.
 3. Avoid direct `object@misc` access in user-facing workflows.
 
 ## Recipe: LLM-backed interpretation

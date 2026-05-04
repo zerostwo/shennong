@@ -547,21 +547,25 @@ sn_install_shennong <- function(
 .sn_dependency_source_overrides <- function() {
   data.frame(
     package = c(
-      "anndataR", "BayesPrism", "BPCells", "COSG", "GapClust",
-      "ROGUE", "SignatuR", "catplot", "harmony", "lisi", "tidytemplate"
+      "anndataR", "BayesPrism", "BPCells", "COSG", "CellChat", "GapClust",
+      "ROGUE", "SignatuR", "catplot", "harmony", "liana", "lisi",
+      "nichenetr", "tidytemplate"
     ),
-    source = rep("GitHub", 11),
+    source = rep("GitHub", 14),
     remote = c(
       "scverse/anndataR",
       "Danko-Lab/BayesPrism/BayesPrism",
       "bnprks/BPCells/r",
       "genecell/COSGR",
+      "jinworks/CellChat",
       "fabotao/GapClust",
       "PaulingLiu/ROGUE",
       "carmonalab/SignatuR",
       "catplot/catplot",
       "immunogenomics/harmony@harmony2",
+      "saezlab/liana",
       "immunogenomics/lisi",
+      "saeyslab/nichenetr",
       "tidyverse/tidytemplate"
     ),
     stringsAsFactors = FALSE
@@ -570,8 +574,8 @@ sn_install_shennong <- function(
 
 .sn_bioconductor_packages <- function() {
   c(
-    "BiocParallel", "celda", "clusterProfiler", "DESeq2", "edgeR",
-    "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "rhdf5",
+    "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR",
+    "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
     "rtracklayer", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment",
     "SummarizedExperiment", "limma"
   )
@@ -602,7 +606,11 @@ sn_install_shennong <- function(
   deps$source[has_override] <- overrides$source[matched_override[has_override]]
   deps$remote[has_override] <- overrides$remote[matched_override[has_override]]
 
-  deps$installed <- vapply(deps$package, rlang::is_installed, logical(1))
+  deps$installed <- vapply(
+    deps$package,
+    function(package) suppressWarnings(rlang::is_installed(package)),
+    logical(1)
+  )
   deps$version <- vapply(
     seq_len(nrow(deps)),
     function(i) {

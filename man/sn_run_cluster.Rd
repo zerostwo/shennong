@@ -2,12 +2,14 @@
 % Please edit documentation in R/analysis_clustering.R
 \name{sn_run_cluster}
 \alias{sn_run_cluster}
-\title{Run clustering for a single dataset or Harmony integration workflow}
+\title{Run clustering for a single dataset or batch integration workflow}
 \usage{
 sn_run_cluster(
   object,
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
+  integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca"),
+  integration_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
   vars_to_regress = NULL,
@@ -40,8 +42,24 @@ If \code{NULL}, no integration is performed.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
 \code{"sctransform"}. The scran workflow is currently only supported when
-\code{batch = NULL}. The SCTransform workflow can be combined with Harmony
-integration by supplying \code{batch}.}
+\code{batch = NULL}. The SCTransform workflow can currently be combined
+with \code{integration_method = "harmony"} by supplying \code{batch}.}
+
+\item{integration_method}{Batch-integration backend used when \code{batch}
+is supplied. Supported values are \code{"harmony"},
+\code{"coralysis"}, \code{"seurat_cca"}, and \code{"seurat_rpca"}.
+\code{"harmony"} preserves the historical Shennong behavior.
+\code{"coralysis"} runs Coralysis multi-level integration on the selected
+log-normalized feature set and stores the integrated embedding as the
+\code{"coralysis"} reduction.}
+
+\item{integration_control}{Optional named list of backend-specific
+parameters. For \code{"coralysis"}, use \code{icp_args} for
+\code{Coralysis::RunParallelDivisiveICP()} arguments, \code{pca_args} for
+\code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
+the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
+For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
+to \code{Seurat::IntegrateLayers()}.}
 
 \item{nfeatures}{Number of variable features to select.}
 
@@ -84,10 +102,12 @@ categories (for example \code{c("ribo","mito")}) or a custom vector of
 gene symbols to exclude from HVGs.}
 
 \item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
-diversity preservation vs. correction.}
+diversity preservation vs. correction. Used only when
+\code{integration_method = "harmony"}.}
 
 \item{group_by_vars}{Optional column name or character vector passed to
-\code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}.}
+\code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
+and is used only when \code{integration_method = "harmony"}.}
 
 \item{npcs}{Number of PCs to compute in \code{RunPCA}.}
 
@@ -113,8 +133,7 @@ cluster vector if \code{return_cluster = TRUE}.
 This function is the main clustering entry point in \code{Shennong}.
 When \code{batch = NULL}, it performs single-dataset clustering with either the
 standard Seurat workflow or an SCTransform workflow. When \code{batch} is
-supplied, it performs Harmony-based integration followed by clustering
-and UMAP.
+supplied, it performs batch integration followed by clustering and UMAP.
 }
 \examples{
 \dontrun{
@@ -127,6 +146,7 @@ seurat_obj <- sn_run_cluster(
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
   batch = "sample_id",
+  integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "sample_id",
   nfeatures = 3000,

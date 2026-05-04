@@ -114,6 +114,14 @@ reference:
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution
       - sn_get_deconvolution_result
+  - title: Communication and Regulatory Activity
+    contents:
+      - sn_run_cell_communication
+      - sn_store_cell_communication
+      - sn_get_cell_communication_result
+      - sn_run_regulatory_activity
+      - sn_store_regulatory_activity
+      - sn_get_regulatory_activity_result
   - title: Interpretation and Reporting
     contents:
       - sn_list_results

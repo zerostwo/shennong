@@ -8,11 +8,14 @@ sn_transfer_labels(
   object = NULL,
   reference,
   label_col,
+  method = c("seurat", "coralysis"),
   query = NULL,
   prediction_prefix = NULL,
   normalization_method = "LogNormalize",
   reference_assay = NULL,
   query_assay = NULL,
+  reference_layer = "data",
+  query_layer = "data",
   reduction = "pcaproject",
   reference_reduction = NULL,
   features = NULL,
@@ -24,6 +27,7 @@ sn_transfer_labels(
   k_weight = 50,
   store_prediction_scores = FALSE,
   return_anchors = FALSE,
+  transfer_control = list(),
   verbose = TRUE,
   ...
 )
@@ -36,6 +40,10 @@ so the function can be used in pipes.}
 
 \item{label_col}{Metadata column in \code{reference} to transfer.}
 
+\item{method}{Label-transfer backend. \code{"seurat"} uses Seurat anchors;
+\code{"coralysis"} uses \code{Coralysis::ReferenceMapping()} and requires
+a Coralysis-trained reference stored under \code{reference@misc$coralysis}.}
+
 \item{query}{Deprecated alias for \code{object}; retained for compatibility
 with the old reference-first call style.}
 
@@ -46,7 +54,14 @@ with the old reference-first call style.}
 \code{Seurat::FindTransferAnchors()}.}
 
 \item{reference_assay, query_assay}{Assays passed to
-\code{Seurat::FindTransferAnchors()} and \code{Seurat::TransferData()}.}
+\code{Seurat::FindTransferAnchors()} and \code{Seurat::TransferData()}.
+For \code{method = "coralysis"}, \code{query_assay} controls the assay
+converted to query \code{logcounts}; the reference assay is ignored when a
+stored Coralysis reference is available.}
+
+\item{reference_layer, query_layer}{Layers used as log-normalized expression
+for \code{method = "coralysis"}. The query defaults to the Seurat
+\code{"data"} layer and is normalized first if that layer is absent.}
 
 \item{reduction}{Dimensional reduction strategy passed to
 \code{Seurat::FindTransferAnchors()}.}
@@ -67,7 +82,12 @@ parameters.}
 prediction scores as query metadata columns.}
 
 \item{return_anchors}{If \code{TRUE}, return a list containing the annotated
-query, anchors, and raw prediction table.}
+query and backend artifacts. For Coralysis, the artifact is the mapped
+SingleCellExperiment.}
+
+\item{transfer_control}{Optional backend-specific list. For
+\code{method = "coralysis"}, values are forwarded to
+\code{Coralysis::ReferenceMapping()}.}
 
 \item{verbose}{Whether to print Seurat progress messages.}
 
@@ -78,11 +98,14 @@ A Seurat query object with transferred labels, or a list when
 \code{return_anchors = TRUE}.
 }
 \description{
-\code{sn_transfer_labels()} is a thin Shennong wrapper around Seurat's
-\code{FindTransferAnchors()} and \code{TransferData()} workflow. It keeps the
-common reference-mapping path compact: find anchors, transfer one metadata
-label, add the predicted label and confidence score back to the query, and
-store a small provenance record in \code{query@misc$label_transfer}.
+\code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
+keeps the common path compact: transfer one metadata label, add the predicted
+label and confidence score back to the query, and store a small provenance
+record in \code{query@misc$label_transfer}. The default \code{method =
+"seurat"} wraps Seurat's \code{FindTransferAnchors()} and
+\code{TransferData()} workflow. \code{method = "coralysis"} projects the
+query onto a Coralysis-trained reference with
+\code{Coralysis::ReferenceMapping()}.
 }
 \examples{
 \dontrun{

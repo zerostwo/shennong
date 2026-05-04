@@ -40,8 +40,8 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or Harmony integration; supports Seurat log-normalization, SCTransform, and SCTransform followed by Harmony when `batch` is supplied. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
-- `sn_transfer_labels()`: query-first Seurat reference label transfer wrapper that writes predicted labels, confidence scores, and transfer provenance back to the query object.
+- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, Harmony, Coralysis, and Seurat CCA/RPCA integration through `integration_method`. SCTransform integration currently uses Harmony. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_transfer_labels()`: query-first reference label transfer wrapper. Defaults to Seurat anchors and can use `method = "coralysis"` for Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
 - `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
 
@@ -83,10 +83,16 @@ Datasets:
 - `sn_set_cibersortx_credentials()`: store CIBERSORTx credentials
 - `sn_store_deconvolution()`: persist deconvolution results
 - `sn_get_deconvolution_result()`: retrieve deconvolution results
+- `sn_run_cell_communication()`: run CellChat, NicheNet, or LIANA communication inference
+- `sn_store_cell_communication()`: persist communication results
+- `sn_get_cell_communication_result()`: retrieve communication results
+- `sn_run_regulatory_activity()`: infer DoRothEA TF activity or PROGENy pathway activity with decoupleR
+- `sn_store_regulatory_activity()`: persist regulatory activity results
+- `sn_get_regulatory_activity_result()`: retrieve regulatory activity results
 
 ## Interpretation and Reporting
 
-- `sn_list_results()`: list stored DE, enrichment, milo, deconvolution, and interpretation results
+- `sn_list_results()`: list stored DE, enrichment, milo, deconvolution, communication, regulatory activity, and interpretation results
 - `sn_get_de_result()`: retrieve stored DE
 - `sn_get_enrichment_result()`: retrieve stored enrichment
 - `sn_get_interpretation_result()`: retrieve stored interpretation

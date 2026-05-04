@@ -7,10 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
-- `sn_transfer_labels()` now wraps Seurat reference mapping with a query-first
-  API for pipe-friendly workflows: find anchors, transfer one reference
-  metadata label, add predicted labels and confidence scores to the query, and
-  store provenance under `query@misc$label_transfer`.
+- `sn_transfer_labels()` now wraps reference mapping with a query-first API
+  for pipe-friendly workflows. The default Seurat anchor workflow is retained,
+  and `method = "coralysis"` now projects queries onto Coralysis-trained
+  references with `Coralysis::ReferenceMapping()`.
 - `sn_simulate()` now provides a method-based simulation entry point.
   `method = "scdesign3"` wraps `scDesign3::scdesign3()` for Seurat or
   SingleCellExperiment inputs and can return simulated counts as a Seurat
@@ -20,6 +20,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   cell-level and group-averaged modes, optional grouping/splitting, default
   rasterization, hidden cell names/ticks, 8 pt group labels, Paired group-bar
   colors, and automatic scaling of requested features when needed.
+- `sn_run_cell_communication()` now wraps real cell-cell communication
+  backends: CellChat, NicheNet (`nichenetr`), and LIANA. Results can be stored
+  and retrieved with `sn_store_cell_communication()` and
+  `sn_get_cell_communication_result()`.
+- `sn_run_regulatory_activity()` now runs fast footprint-style activity
+  inference with DoRothEA regulons or PROGENy pathway models through
+  `decoupleR::run_ulm()`. Results can be stored and retrieved with
+  `sn_store_regulatory_activity()` and `sn_get_regulatory_activity_result()`.
+- `sn_run_cluster()` now accepts `integration_method` for batch workflows.
+  In addition to the historical Harmony path, users can run Coralysis
+  multi-level integration or Seurat layer integration with CCA/RPCA through
+  the same clustering entry point.
 - `sn_run_cluster()` now accepts `hvg_features`, a user-supplied feature list
   that is validated against the object and merged with internally selected
   HVGs and rare-aware features before scaling/PCA. This lets users force rare
