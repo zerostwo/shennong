@@ -75,6 +75,7 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_run_scvi
       - sn_transfer_labels
       - sn_simulate
       - sn_simulate_scdesign3
@@ -164,6 +165,14 @@ reference:
       - sn_get_codex_skill_path
       - sn_list_dependencies
       - sn_install_dependencies
+      - sn_check_pixi
+      - sn_pixi_paths
+      - sn_list_pixi_environments
+      - sn_pixi_config_path
+      - sn_prepare_pixi_environment
+      - sn_run_scarches
+      - sn_detect_accelerator
+      - sn_configure_pixi_mirror
       - sn_initialize_project
       - sn_install_codex_skill
       - sn_set_path

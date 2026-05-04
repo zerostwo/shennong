@@ -1,0 +1,18 @@
+[workspace]
+name = "shennong-spatialdata"
+channels = ["conda-forge"]
+platforms = ["{{ platform }}"]
+
+[dependencies]
+python = ">=3.10,<3.12"
+spatialdata = "*"
+spatialdata-io = "*"
+spatialdata-plot = "*"
+anndata = ">=0.10"
+pandas = ">=2"
+scipy = ">=1.10"
+numpy = "*"
+
+[environments]
+default = []
+

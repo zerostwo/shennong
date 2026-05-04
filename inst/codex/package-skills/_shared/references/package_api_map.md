@@ -40,10 +40,24 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, Harmony, Coralysis, and Seurat CCA/RPCA integration through `integration_method`. SCTransform integration currently uses Harmony. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, Harmony, Coralysis, Seurat CCA/RPCA, and pixi-managed scVI/scANVI integration through `integration_method`. SCTransform integration currently uses Harmony. For `integration_method = "scvi"` or `"scanvi"`, Shennong writes selected counts/metadata under `~/.shennong/runs/`, manages the shared scVI-family pixi project under `~/.shennong/pixi/scvi/`, imports the learned latent reduction, then continues Seurat neighbors/clustering/UMAP; scANVI requires `integration_control = list(labels_key = ...)`. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_run_scvi()` / `sn_run_scanvi()`: explicit wrappers for the corresponding `sn_run_cluster()` integration methods.
 - `sn_transfer_labels()`: query-first reference label transfer wrapper. Defaults to Seurat anchors and can use `method = "coralysis"` for Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
 - `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
+
+## Python Runtime Helpers
+
+- `sn_check_pixi()`: check whether a pixi executable is available.
+- `sn_install_pixi()` / `sn_ensure_pixi()`: install or ensure the standalone pixi binary when Python backends need it.
+- `sn_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
+- `sn_list_pixi_environments()` / `sn_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
+- `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
+- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
+- `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
+- The same `sn_run_*()` wrappers still support command mode when `object` is omitted, for example `sn_run_tangram(args = c("-c", "import tangram"))`.
+- `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
+- `sn_configure_pixi_mirror()`: write Shennong-level pixi mirror configuration for default, China, TUNA, USTC, or BFSU sources.
 
 ## Diagnostics and Benchmarking
 

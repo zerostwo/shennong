@@ -1,6 +1,44 @@
 # Shennong Modernization Status
 
-Last updated: 2026-03-30
+Last updated: 2026-05-03
+
+## 2026-05-03
+
+- Added a first pixi-managed Python integration path to `sn_run_cluster()`.
+  Batch workflows can now choose `integration_method = "scvi"` or `"scanvi"`;
+  Shennong writes selected count data and metadata under `~/.shennong/runs/`,
+  keeps the scverse pixi manifest under `~/.shennong/pixi/scvi/`, runs the
+  packaged Python backend, imports the latent representation as a Seurat
+  reduction, and then continues the usual neighbors/clustering/UMAP steps.
+- Added the packaged Python runner at `inst/pixi/scvi/scripts/scvi_integration.py`.
+  It reads the Shennong MatrixMarket/CSV interchange files, trains scVI or
+  scANVI with `scvi-tools`, writes `latent.csv`, optional predictions in
+  `obs.csv`, a backend manifest, and an optional `integrated.h5ad`.
+- Added mock-backed tests for the scVI/scANVI dispatch path so the R side is
+  covered without requiring pixi or a live scverse environment during routine
+  package tests.
+- Added public pixi runtime helpers: `sn_check_pixi()`,
+  `sn_install_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
+  `sn_list_pixi_environments()`, `sn_pixi_config_path()`,
+  `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`,
+  `sn_detect_accelerator()`, and `sn_configure_pixi_mirror()`. The scVI/scANVI
+  path now uses CPU/CUDA pixi environments, defaults to user-level
+  `PIXI_HOME` under `~/.shennong/pixi/home`, and can write China mirror
+  configuration without mutating a user's global pixi setup.
+- Added package-bundled pixi configs under `inst/pixi/` for concrete method
+  families: `scvi`, `scarches`, `infercnvpy`, `cellphonedb`,
+  `cell2location`, `tangram`, `squidpy`, `spatialdata`, and `stlearn`.
+  `scanvi` resolves to the shared `scvi` environment and `scpoli` resolves to
+  the shared `scarches` environment. Environment command helpers and
+  analysis-oriented wrappers now cover these method families.
+- Python runner scripts now live beside their pixi family configs under
+  `inst/pixi/<family>/scripts/`. Object-level Python wrappers export Seurat
+  objects, run the corresponding family script, and import outputs for
+  infercnvpy, scArches/scPoli, CellPhoneDB, cell2location, Tangram, Squidpy,
+  SpatialData, and stLearn.
+- Tightened check diagnostics by declaring optional `qs`/`qs2` serialization
+  packages and qualifying or scoping the previous `ave`, `tail`, `target`, and
+  `mor` symbols.
 
 ## 2026-03-30
 

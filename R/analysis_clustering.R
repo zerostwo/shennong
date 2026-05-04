@@ -76,6 +76,24 @@
       dims = dims,
       integration_control = integration_control,
       verbose = verbose
+    ),
+    scvi = .sn_run_scvi_integration(
+      object = object,
+      method = method,
+      batch = batch,
+      features = features,
+      assay = assay,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    scanvi = .sn_run_scvi_integration(
+      object = object,
+      method = method,
+      batch = batch,
+      features = features,
+      assay = assay,
+      integration_control = integration_control,
+      verbose = verbose
     )
   )
 }
@@ -163,7 +181,7 @@
 
   dimred_name <- pca_args$dimred.name %||% "Coralysis"
   if (!dimred_name %in% SingleCellExperiment::reducedDimNames(sce)) {
-    dimred_name <- tail(SingleCellExperiment::reducedDimNames(sce), n = 1L)
+    dimred_name <- utils::tail(SingleCellExperiment::reducedDimNames(sce), n = 1L)
   }
   embeddings <- SingleCellExperiment::reducedDim(sce, dimred_name)
   embeddings <- embeddings[colnames(object), , drop = FALSE]
@@ -243,6 +261,471 @@
   )
 
   list(object = object, reduction = new_reduction)
+}
+
+.sn_shennong_runtime_dir <- function(path = NULL) {
+  candidates <- c(
+    path,
+    getOption("shennong.runtime_dir", NULL),
+    Sys.getenv("SHENNONG_RUNTIME_DIR", unset = ""),
+    Sys.getenv("SHENNONG_HOME", unset = ""),
+    "~/.shennong"
+  )
+  candidates <- candidates[!is.na(candidates) & nzchar(candidates)]
+  path <- candidates[[1]]
+  path <- path.expand(path)
+  dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  normalizePath(path, winslash = "/", mustWork = TRUE)
+}
+
+.sn_default_scvi_run_dir <- function(method, runtime_dir = NULL) {
+  runtime_dir <- .sn_shennong_runtime_dir(runtime_dir)
+  run_id <- paste0(
+    method,
+    "_",
+    format(Sys.time(), "%Y%m%d_%H%M%S"),
+    "_",
+    Sys.getpid()
+  )
+  file.path(runtime_dir, "runs", run_id)
+}
+
+.sn_current_pixi_platform <- function() {
+  sysname <- tolower(Sys.info()[["sysname"]] %||% .Platform$OS.type)
+  machine <- tolower(Sys.info()[["machine"]] %||% "")
+  if (grepl("darwin", sysname, fixed = TRUE)) {
+    if (machine %in% c("arm64", "aarch64")) "osx-arm64" else "osx-64"
+  } else if (.Platform$OS.type == "windows" || grepl("windows", sysname, fixed = TRUE)) {
+    "win-64"
+  } else if (machine %in% c("aarch64", "arm64")) {
+    "linux-aarch64"
+  } else {
+    "linux-64"
+  }
+}
+
+.sn_scvi_pixi_manifest_lines <- function(cuda_version = "12.6",
+                                         platforms = NULL) {
+  .sn_render_pixi_config(environment = "scvi", platforms = platforms, cuda_version = cuda_version)
+}
+
+.sn_prepare_scvi_pixi_project <- function(project_dir,
+                                          environment = "scvi",
+                                          manifest_path = NULL,
+                                          manifest_lines = NULL,
+                                          overwrite = FALSE,
+                                          cuda_version = "12.6",
+                                          platforms = NULL) {
+  project_dir <- path.expand(project_dir)
+  dir.create(project_dir, recursive = TRUE, showWarnings = FALSE)
+  manifest_path <- manifest_path %||% file.path(project_dir, "pixi.toml")
+  manifest_path <- path.expand(manifest_path)
+  dir.create(dirname(manifest_path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(manifest_path) || isTRUE(overwrite)) {
+    writeLines(
+      manifest_lines %||% .sn_render_pixi_config(
+        environment = environment,
+        cuda_version = cuda_version,
+        platforms = platforms
+      ),
+      con = manifest_path,
+      useBytes = TRUE
+    )
+  }
+  normalizePath(manifest_path, winslash = "/", mustWork = TRUE)
+}
+
+.sn_scvi_script_path <- function(script = NULL) {
+  if (!is.null(script) && nzchar(script)) {
+    script <- path.expand(script)
+    if (!file.exists(script)) {
+      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+    }
+    return(normalizePath(script, winslash = "/", mustWork = TRUE))
+  }
+
+  installed <- system.file("pixi", "scvi", "scripts", "scvi_integration.py", package = "Shennong")
+  if (nzchar(installed) && file.exists(installed)) {
+    return(normalizePath(installed, winslash = "/", mustWork = TRUE))
+  }
+
+  source_path <- file.path(getwd(), "inst", "pixi", "scvi", "scripts", "scvi_integration.py")
+  if (file.exists(source_path)) {
+    return(normalizePath(source_path, winslash = "/", mustWork = TRUE))
+  }
+
+  stop("Could not locate Shennong's scVI Python runner.", call. = FALSE)
+}
+
+.sn_write_scvi_input <- function(object,
+                                 input_dir,
+                                 features,
+                                 assay,
+                                 batch,
+                                 labels_key = NULL) {
+  dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
+
+  feature_set <- intersect(features, rownames(object))
+  if (length(feature_set) < 2L) {
+    stop("scVI integration requires at least two selected features present in the object.", call. = FALSE)
+  }
+
+  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = "counts")
+  counts <- counts[feature_set, colnames(object), drop = FALSE]
+  counts <- .sn_as_sparse_matrix(counts)
+
+  counts_path <- file.path(input_dir, "counts.mtx")
+  features_path <- file.path(input_dir, "features.csv")
+  cells_path <- file.path(input_dir, "cells.csv")
+  obs_path <- file.path(input_dir, "obs.csv")
+
+  Matrix::writeMM(obj = counts, file = counts_path)
+  utils::write.csv(
+    data.frame(feature_id = rownames(counts), stringsAsFactors = FALSE),
+    file = features_path,
+    row.names = FALSE,
+    quote = TRUE
+  )
+  utils::write.csv(
+    data.frame(cell_id = colnames(counts), stringsAsFactors = FALSE),
+    file = cells_path,
+    row.names = FALSE,
+    quote = TRUE
+  )
+
+  obs_cols <- unique(c(batch, labels_key))
+  obs_cols <- obs_cols[!is.na(obs_cols) & nzchar(obs_cols)]
+  obs <- object[[]][colnames(counts), obs_cols, drop = FALSE]
+  obs <- data.frame(cell_id = rownames(obs), obs, check.names = FALSE)
+  utils::write.csv(obs, file = obs_path, row.names = FALSE, quote = TRUE)
+
+  list(
+    input_dir = normalizePath(input_dir, winslash = "/", mustWork = TRUE),
+    counts_path = normalizePath(counts_path, winslash = "/", mustWork = TRUE),
+    features_path = normalizePath(features_path, winslash = "/", mustWork = TRUE),
+    cells_path = normalizePath(cells_path, winslash = "/", mustWork = TRUE),
+    obs_path = normalizePath(obs_path, winslash = "/", mustWork = TRUE),
+    features = feature_set
+  )
+}
+
+.sn_write_json_file <- function(x, path) {
+  jsonlite::write_json(x = x, path = path, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  normalizePath(path, winslash = "/", mustWork = TRUE)
+}
+
+.sn_execute_scvi_pixi <- function(pixi,
+                                  manifest_path,
+                                  script,
+                                  input_dir,
+                                  output_dir,
+                                  config_path,
+                                  environment = NULL,
+                                  pixi_home = NULL,
+                                  install_pixi = TRUE,
+                                  pixi_version = "latest",
+                                  pixi_download_url = NULL,
+                                  verbose = TRUE) {
+  pixi_info <- sn_ensure_pixi(
+    pixi = pixi,
+    install = install_pixi,
+    version = pixi_version,
+    pixi_home = path.expand("~/.pixi"),
+    no_path_update = TRUE,
+    download_url = pixi_download_url,
+    quiet = !isTRUE(verbose)
+  )
+  pixi <- pixi_info$path
+
+  args <- c(
+    "run",
+    "--manifest-path", shQuote(manifest_path),
+    if (!is.null(environment) && nzchar(environment)) c("--environment", shQuote(environment)) else character(0),
+    "python",
+    shQuote(script),
+    "--input-dir", shQuote(input_dir),
+    "--output-dir", shQuote(output_dir),
+    "--config", shQuote(config_path)
+  )
+  if (verbose) {
+    .sn_log_info("[sn_run_cluster] Executing scVI backend with pixi manifest: {manifest_path}.")
+  }
+  env <- if (!is.null(pixi_home) && nzchar(pixi_home)) {
+    dir.create(pixi_home, recursive = TRUE, showWarnings = FALSE)
+    paste0("PIXI_HOME=", normalizePath(pixi_home, winslash = "/", mustWork = TRUE))
+  } else {
+    character(0)
+  }
+
+  status <- tryCatch(
+    system2(command = pixi, args = args, env = env, stdout = TRUE, stderr = TRUE),
+    error = function(e) {
+      stop("scVI pixi execution failed. ", conditionMessage(e), call. = FALSE)
+    }
+  )
+  exit_code <- attr(status, "status") %||% 0L
+  if (!identical(exit_code, 0L)) {
+    stop("scVI pixi execution failed.\n", paste(status, collapse = "\n"), call. = FALSE)
+  }
+  invisible(status)
+}
+
+.sn_normalize_cuda_requirement <- function(cuda_version) {
+  cuda_version <- as.character(cuda_version %||% "12.0")
+  major_minor <- regmatches(cuda_version, regexpr("^[0-9]+(\\.[0-9]+)?", cuda_version))
+  if (length(major_minor) == 0L || !nzchar(major_minor)) {
+    return("12.0")
+  }
+  parts <- strsplit(major_minor, ".", fixed = TRUE)[[1]]
+  if (length(parts) == 1L) {
+    paste0(parts[[1]], ".0")
+  } else {
+    paste(parts[1:2], collapse = ".")
+  }
+}
+
+.sn_default_scvi_cuda_version <- function(detected_cuda_version) {
+  detected_cuda_version <- .sn_normalize_cuda_requirement(detected_cuda_version %||% "12.6")
+  detected_major <- suppressWarnings(as.integer(strsplit(detected_cuda_version, ".", fixed = TRUE)[[1]][[1]]))
+  if (!is.na(detected_major) && detected_major >= 12L) {
+    return("12.6")
+  }
+  detected_cuda_version
+}
+
+.sn_resolve_scvi_accelerator <- function(accelerator = c("auto", "cpu", "gpu", "cuda")) {
+  accelerator <- match.arg(accelerator)
+  if (identical(accelerator, "gpu")) {
+    accelerator <- "cuda"
+  }
+  detected <- sn_detect_accelerator(quiet = TRUE)
+  environment <- if (identical(accelerator, "auto")) {
+    if (identical(detected$backend, "cuda")) "gpu" else "cpu"
+  } else if (identical(accelerator, "cuda")) {
+    "gpu"
+  } else {
+    "cpu"
+  }
+  cuda_version <- .sn_default_scvi_cuda_version(detected$cuda_version)
+  list(
+    requested = accelerator,
+    environment = environment,
+    detected = detected,
+    cuda_version = cuda_version
+  )
+}
+
+.sn_import_scvi_results <- function(object,
+                                    output_dir,
+                                    method,
+                                    assay,
+                                    batch,
+                                    features,
+                                    reduction = NULL) {
+  reduction <- reduction %||% method
+  latent_path <- file.path(output_dir, "latent.csv")
+  metadata_path <- file.path(output_dir, "obs.csv")
+  manifest_path <- file.path(output_dir, "manifest.json")
+
+  if (!file.exists(latent_path)) {
+    stop("scVI output is missing `latent.csv`: ", latent_path, call. = FALSE)
+  }
+  latent <- utils::read.csv(latent_path, row.names = 1, check.names = FALSE)
+  missing_cells <- setdiff(colnames(object), rownames(latent))
+  if (length(missing_cells) > 0L) {
+    stop("scVI latent output is missing cells from the input object.", call. = FALSE)
+  }
+  latent <- as.matrix(latent[colnames(object), , drop = FALSE])
+  storage.mode(latent) <- "numeric"
+  colnames(latent) <- paste0(toupper(reduction), "_", seq_len(ncol(latent)))
+  object[[reduction]] <- Seurat::CreateDimReducObject(
+    embeddings = latent,
+    key = paste0(toupper(reduction), "_"),
+    assay = assay
+  )
+
+  if (file.exists(metadata_path)) {
+    metadata <- utils::read.csv(metadata_path, row.names = 1, check.names = FALSE)
+    shared_cells <- intersect(colnames(object), rownames(metadata))
+    if (length(shared_cells) > 0L && ncol(metadata) > 0L) {
+      object <- Seurat::AddMetaData(object = object, metadata = metadata[shared_cells, , drop = FALSE])
+    }
+  }
+
+  backend_manifest <- if (file.exists(manifest_path)) {
+    jsonlite::read_json(manifest_path, simplifyVector = TRUE)
+  } else {
+    list()
+  }
+  object@misc$integration <- list(
+    method = method,
+    batch = batch,
+    reduction = reduction,
+    input_features = features,
+    run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
+    output_h5ad = backend_manifest$output_h5ad %||% file.path(output_dir, "integrated.h5ad")
+  )
+
+  list(object = object, reduction = reduction)
+}
+
+.sn_run_scvi_integration <- function(object,
+                                     method,
+                                     batch,
+                                     features,
+                                     assay,
+                                     integration_control = list(),
+                                     verbose = TRUE) {
+  if (identical(method, "scanvi")) {
+    labels_key <- integration_control$labels_key %||% integration_control$label_col %||% NULL
+    if (is.null(labels_key) || !nzchar(labels_key) || !labels_key %in% colnames(object[[]])) {
+      stop(
+        "`integration_control$labels_key` must name a metadata column when ",
+        "`integration_method = \"scanvi\"`.",
+        call. = FALSE
+      )
+    }
+  } else {
+    labels_key <- integration_control$labels_key %||% NULL
+  }
+
+  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  pixi_paths <- sn_pixi_paths(environment = method, runtime_dir = runtime_dir)
+  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
+  accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
+  pixi_environment <- integration_control$environment %||% accelerator$environment
+  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
+  if (!identical(resolved_mirror, "default")) {
+    sn_configure_pixi_mirror(
+      mirror = mirror,
+      pixi_home = pixi_home,
+      runtime_dir = runtime_dir,
+      append_original = integration_control$mirror_append_original %||% TRUE
+    )
+  }
+  pixi_project <- integration_control$pixi_project %||%
+    integration_control$pixi_project_dir %||%
+    pixi_paths$project_dir
+  run_dir <- integration_control$run_dir %||% .sn_default_scvi_run_dir(method = method, runtime_dir = runtime_dir)
+  input_dir <- file.path(run_dir, "input")
+  output_dir <- file.path(run_dir, "output")
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+  manifest_path <- .sn_prepare_scvi_pixi_project(
+    project_dir = pixi_project,
+    environment = method,
+    manifest_path = integration_control$manifest_path %||% NULL,
+    manifest_lines = integration_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(integration_control$overwrite_manifest),
+    cuda_version = integration_control$cuda_version %||% accelerator$cuda_version,
+    platforms = integration_control$platforms %||% NULL
+  )
+  input <- .sn_write_scvi_input(
+    object = object,
+    input_dir = input_dir,
+    features = features,
+    assay = assay,
+    batch = batch,
+    labels_key = labels_key
+  )
+
+  config <- list(
+    method = method,
+    batch_key = batch,
+    labels_key = labels_key,
+    unlabeled_category = integration_control$unlabeled_category %||% "Unknown",
+    reduction = integration_control$reduction %||% method,
+    n_latent = integration_control$n_latent %||% 30L,
+    seed = integration_control$seed %||% 717L,
+    max_epochs = integration_control$max_epochs %||% NULL,
+    scanvi_max_epochs = integration_control$scanvi_max_epochs %||% integration_control$max_epochs %||% NULL,
+    model_args = integration_control$model_args %||% list(),
+    train_args = integration_control$train_args %||% list(),
+    scanvi_model_args = integration_control$scanvi_model_args %||% list(),
+    scanvi_train_args = integration_control$scanvi_train_args %||% list(),
+    write_h5ad = integration_control$write_h5ad %||% TRUE,
+    accelerator = accelerator$requested,
+    pixi_environment = pixi_environment
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
+  script <- .sn_scvi_script_path(integration_control$script %||% NULL)
+
+  .sn_execute_scvi_pixi(
+    pixi = integration_control$pixi %||% NULL,
+    manifest_path = manifest_path,
+    script = script,
+    input_dir = input$input_dir,
+    output_dir = output_dir,
+    config_path = config_path,
+    environment = pixi_environment,
+    pixi_home = pixi_home,
+    install_pixi = integration_control$install_pixi %||% TRUE,
+    pixi_version = integration_control$pixi_version %||% "latest",
+    pixi_download_url = integration_control$pixi_download_url %||% NULL,
+    verbose = verbose
+  )
+
+  .sn_import_scvi_results(
+    object = object,
+    output_dir = output_dir,
+    method = method,
+    assay = assay,
+    batch = batch,
+    features = input$features,
+    reduction = config$reduction
+  )
+}
+
+#' Run scVI or scANVI integration through Shennong
+#'
+#' Convenience wrappers around \code{\link{sn_run_cluster}} for users who want
+#' an explicit Python-method entry point. The underlying pixi environment is
+#' prepared from the bundled scVI-family config under \code{inst/pixi/scvi/}
+#' and materialized under \code{~/.shennong/pixi/scvi/}.
+#'
+#' @inheritParams sn_run_cluster
+#' @param ... Additional arguments passed to \code{sn_run_cluster()}.
+#'
+#' @return A Seurat object returned by \code{sn_run_cluster()}.
+#'
+#' @examples
+#' \dontrun{
+#' obj <- sn_run_scvi(obj, batch = "sample_id")
+#' obj <- sn_run_scanvi(
+#'   obj,
+#'   batch = "sample_id",
+#'   integration_control = list(labels_key = "cell_type")
+#' )
+#' }
+#'
+#' @export
+sn_run_scvi <- function(object,
+                        batch,
+                        integration_control = list(),
+                        ...) {
+  sn_run_cluster(
+    object = object,
+    batch = batch,
+    integration_method = "scvi",
+    integration_control = integration_control,
+    ...
+  )
+}
+
+#' @rdname sn_run_scvi
+#' @export
+sn_run_scanvi <- function(object,
+                          batch,
+                          integration_control = list(),
+                          ...) {
+  sn_run_cluster(
+    object = object,
+    batch = batch,
+    integration_method = "scanvi",
+    integration_control = integration_control,
+    ...
+  )
 }
 
 .sn_gini_coefficient <- function(x) {
@@ -1067,18 +1550,32 @@ sn_detect_rare_cells <- function(object,
 #'   with \code{integration_method = "harmony"} by supplying \code{batch}.
 #' @param integration_method Batch-integration backend used when \code{batch}
 #'   is supplied. Supported values are \code{"harmony"},
-#'   \code{"coralysis"}, \code{"seurat_cca"}, and \code{"seurat_rpca"}.
+#'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
+#'   \code{"scvi"}, and \code{"scanvi"}.
 #'   \code{"harmony"} preserves the historical Shennong behavior.
 #'   \code{"coralysis"} runs Coralysis multi-level integration on the selected
 #'   log-normalized feature set and stores the integrated embedding as the
-#'   \code{"coralysis"} reduction.
+#'   \code{"coralysis"} reduction. \code{"scvi"} and \code{"scanvi"} export
+#'   the selected count matrix to a pixi-managed scverse environment under
+#'   \code{~/.shennong/pixi/}, run the Python backend, and import the latent
+#'   representation as a Seurat reduction.
 #' @param integration_control Optional named list of backend-specific
 #'   parameters. For \code{"coralysis"}, use \code{icp_args} for
 #'   \code{Coralysis::RunParallelDivisiveICP()} arguments, \code{pca_args} for
 #'   \code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
 #'   the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
 #'   For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
-#'   to \code{Seurat::IntegrateLayers()}.
+#'   to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
+#'   \code{"scanvi"}, common fields include \code{runtime_dir},
+#'   \code{pixi_project}, \code{pixi_home}, \code{run_dir}, \code{pixi},
+#'   \code{manifest_path}, \code{install_pixi}, \code{accelerator},
+#'   \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
+#'   \code{model_args}, \code{train_args}, and \code{write_h5ad};
+#'   \code{"scanvi"} additionally requires \code{labels_key} and accepts
+#'   \code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
+#'   generated directory layout, \code{sn_pixi_config_path()} to inspect the
+#'   bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
+#'   pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.
 #' @param nfeatures Number of variable features to select.
 #' @param hvg_features Optional character vector of user-supplied features to
 #'   force into the feature set used for scaling/PCA. These features are merged
@@ -1151,7 +1648,7 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca"),
+                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi"),
                            integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,

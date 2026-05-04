@@ -1,0 +1,28 @@
+[workspace]
+name = "shennong-scvi"
+channels = ["conda-forge"]
+platforms = ["{{ platform }}"]
+
+[dependencies]
+python = ">=3.10,<3.13"
+scvi-tools = ">=1.2"
+scanpy = ">=1.10"
+anndata = ">=0.10"
+pandas = ">=2"
+scipy = ">=1.10"
+
+[feature.cpu.dependencies]
+pytorch-cpu = "*"
+
+[feature.gpu.system-requirements]
+cuda = "{{ cuda_major }}"
+
+[feature.gpu.dependencies]
+pytorch-gpu = "*"
+cuda-version = "{{ cuda_version }}.*"
+
+[environments]
+cpu = ["cpu"]
+gpu = ["gpu"]
+default = ["cpu"]
+

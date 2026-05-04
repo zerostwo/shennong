@@ -77,6 +77,8 @@ Suggests:
     patchwork,
     pkgdown,
     progeny,
+    qs,
+    qs2,
     readr,
     remotes,
     rhdf5,

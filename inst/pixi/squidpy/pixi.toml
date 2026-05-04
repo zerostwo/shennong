@@ -1,0 +1,17 @@
+[workspace]
+name = "shennong-squidpy"
+channels = ["conda-forge"]
+platforms = ["{{ platform }}"]
+
+[dependencies]
+python = ">=3.10,<3.12"
+scanpy = ">=1.10"
+squidpy = "*"
+anndata = ">=0.10"
+pandas = ">=2"
+scipy = ">=1.10"
+numpy = "*"
+
+[environments]
+default = []
+

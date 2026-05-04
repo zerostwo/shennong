@@ -633,6 +633,253 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
   }
 })
 
+test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 17, prefix = "scvia")
+  object1$sample <- "pbmc1k"
+  object2 <- make_test_object(seed = 18, prefix = "scvib")
+  object2$sample <- "pbmc3k"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
+  merged$cell_label <- rep(c("T", "B"), length.out = ncol(merged))
+
+  for (backend in c("scvi", "scanvi")) {
+    captured <- NULL
+    runtime_dir <- tempfile("shennong-runtime-")
+    control <- list(
+      runtime_dir = runtime_dir,
+      pixi_project = file.path(runtime_dir, "pixi", "scvi"),
+      n_latent = 6,
+      max_epochs = 1,
+      write_h5ad = FALSE
+    )
+    if (identical(backend, "scanvi")) {
+      control$labels_key <- "cell_label"
+    }
+
+    clustered <- testthat::with_mocked_bindings(
+      sn_run_cluster(
+        object = merged,
+        batch = "sample",
+        normalization_method = "seurat",
+        integration_method = backend,
+        integration_control = control,
+        nfeatures = 50,
+        block_genes = NULL,
+        npcs = 10,
+        dims = 1:6,
+        resolution = 0.3,
+        verbose = FALSE
+      ),
+      .sn_execute_scvi_pixi = function(pixi,
+                                       manifest_path,
+                                       script,
+                                       input_dir,
+                                       output_dir,
+                                       config_path,
+                                       environment = NULL,
+                                       pixi_home = NULL,
+                                       install_pixi = TRUE,
+                                       pixi_version = "latest",
+                                       pixi_download_url = NULL,
+                                       verbose = TRUE) {
+        captured <<- list(
+          manifest_path = manifest_path,
+          script = script,
+          input_dir = input_dir,
+          output_dir = output_dir,
+          environment = environment,
+          pixi_home = pixi_home,
+          install_pixi = install_pixi,
+          config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+        )
+        dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+        cells <- utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
+        latent <- as.data.frame(matrix(seq_along(cells), nrow = length(cells), ncol = 6))
+        rownames(latent) <- cells
+        utils::write.csv(latent, file.path(output_dir, "latent.csv"))
+        metadata <- data.frame(scvi_qc = seq_along(cells), row.names = cells)
+        if (identical(captured$config$method, "scanvi")) {
+          metadata$scanvi_prediction <- "predicted"
+        }
+        utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
+        jsonlite::write_json(
+          list(output_h5ad = file.path(output_dir, "integrated.h5ad")),
+          file.path(output_dir, "manifest.json"),
+          auto_unbox = TRUE
+        )
+      },
+      .package = "Shennong"
+    )
+
+    expect_s4_class(clustered, "Seurat")
+    expect_true(backend %in% names(clustered@reductions))
+    expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+    expect_equal(clustered@misc$integration$method, backend)
+    expect_equal(clustered@misc$integration$batch, "sample")
+    expect_true(file.exists(file.path(control$pixi_project, "pixi.toml")))
+    expect_equal(captured$config$method, backend)
+    expect_equal(captured$config$batch_key, "sample")
+    expect_equal(captured$config$n_latent, 6)
+    expect_true(captured$environment %in% c("cpu", "gpu"))
+    expect_true(grepl("pixi/home$", captured$pixi_home))
+    expect_true("scvi_qc" %in% colnames(clustered[[]]))
+    if (identical(backend, "scanvi")) {
+      expect_true("scanvi_prediction" %in% colnames(clustered[[]]))
+    }
+  }
+})
+
+test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
+  skip_if_not_installed("Seurat")
+
+  genes <- c("ACTB", "GAPDH", "TP53", "EGFR", "MYC", "PTEN", "CD3D", "MS4A1")
+  counts <- Matrix::Matrix(
+    matrix(rpois(length(genes) * 6, lambda = 5), nrow = length(genes)),
+    sparse = TRUE
+  )
+  rownames(counts) <- genes
+  colnames(counts) <- paste0("cnv_cell", seq_len(6))
+  object <- sn_initialize_seurat_object(x = counts, project = "infercnvpy")
+  object$cell_type <- rep(c("normal", "tumor"), each = 3)
+
+  captured <- NULL
+  runtime_dir <- tempfile("shennong-infercnvpy-")
+  updated <- testthat::with_mocked_bindings(
+    sn_run_infercnvpy(
+      object = object,
+      assay = "RNA",
+      layer = "counts",
+      species = "human",
+      reference_key = "cell_type",
+      reference_cat = "normal",
+      runtime_dir = runtime_dir,
+      window_size = 5,
+      step = 1,
+      run_umap = FALSE,
+      install_pixi = FALSE
+    ),
+    .sn_execute_infercnvpy_pixi = function(script,
+                                           input_dir,
+                                           output_dir,
+                                           config_path,
+                                           ...) {
+      captured <<- list(
+        script = script,
+        input_dir = input_dir,
+        output_dir = output_dir,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+        dots = list(...)
+      )
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      obs <- utils::read.csv(file.path(input_dir, "obs.csv"), stringsAsFactors = FALSE)
+      metadata <- data.frame(
+        cnv_score = seq_len(nrow(obs)) / 10,
+        cnv_leiden = rep(c("0", "1"), length.out = nrow(obs)),
+        row.names = obs$cell_id
+      )
+      utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
+      pca <- data.frame(
+        PC1 = seq_len(nrow(obs)),
+        PC2 = rev(seq_len(nrow(obs))),
+        row.names = obs$cell_id
+      )
+      utils::write.csv(pca, file.path(output_dir, "cnv_pca.csv"))
+      jsonlite::write_json(
+        list(output_h5ad = file.path(output_dir, "infercnvpy.h5ad")),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(updated, "Seurat")
+  expect_true("infercnvpy_cnv_score" %in% colnames(updated[[]]))
+  expect_true("infercnvpy_cnv_leiden" %in% colnames(updated[[]]))
+  expect_true("infercnvpy_cnv_pca" %in% names(updated@reductions))
+  expect_equal(captured$config$reference_key, "cell_type")
+  expect_equal(captured$config$reference_cat, "normal")
+  expect_equal(captured$config$window_size, 5)
+  expect_true(file.exists(file.path(captured$input_dir, "matrix.mtx")))
+  expect_true(file.exists(file.path(captured$input_dir, "var.csv")))
+  expect_true("infercnvpy" %in% names(updated@misc))
+  expect_true("infercnvpy" %in% names(updated@misc$infercnvpy))
+})
+
+test_that("python method wrappers accept Seurat object inputs", {
+  skip_if_not_installed("Seurat")
+
+  genes <- c("ACTB", "GAPDH", "TP53", "EGFR", "MYC", "PTEN")
+  counts <- Matrix::Matrix(
+    matrix(rpois(length(genes) * 6, lambda = 5), nrow = length(genes)),
+    sparse = TRUE
+  )
+  rownames(counts) <- genes
+  colnames(counts) <- paste0("py_cell", seq_len(6))
+  object <- sn_initialize_seurat_object(x = counts, project = "python-methods")
+  object$cell_type <- rep(c("T", "B"), each = 3)
+  object$sample <- rep(c("A", "B"), length.out = ncol(object))
+  object$x <- seq_len(ncol(object))
+  object$y <- rev(seq_len(ncol(object)))
+  signatures <- data.frame(T = runif(length(genes)), B = runif(length(genes)), row.names = genes)
+
+  calls <- list(
+    scarches = function() sn_run_scarches(object = object, batch = "sample", install_pixi = FALSE),
+    scpoli = function() sn_run_scpoli(object = object, batch = "sample", labels_key = "cell_type", install_pixi = FALSE),
+    cellphonedb = function() sn_run_cellphonedb(object = object, groupby = "cell_type", install_pixi = FALSE),
+    cell2location = function() sn_run_cell2location(object = object, reference_signatures = signatures, spatial_cols = c("x", "y"), install_pixi = FALSE),
+    tangram = function() sn_run_tangram(object = object, reference_object = object, cell_type_key = "cell_type", spatial_cols = c("x", "y"), install_pixi = FALSE),
+    squidpy = function() sn_run_squidpy(object = object, spatial_cols = c("x", "y"), cluster_key = "cell_type", install_pixi = FALSE),
+    spatialdata = function() sn_run_spatialdata(object = object, spatial_cols = c("x", "y"), install_pixi = FALSE),
+    stlearn = function() sn_run_stlearn(object = object, spatial_cols = c("x", "y"), install_pixi = FALSE)
+  )
+
+  for (method in names(calls)) {
+    captured <- NULL
+    updated <- testthat::with_mocked_bindings(
+      calls[[method]](),
+      .sn_execute_python_object_pixi = function(environment,
+                                                script,
+                                                input_dir,
+                                                output_dir,
+                                                config_path,
+                                                ...) {
+        captured <<- list(
+          environment = environment,
+          script = script,
+          input_dir = input_dir,
+          output_dir = output_dir,
+          config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+        )
+        dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+        obs <- utils::read.csv(file.path(input_dir, "query", "obs.csv"), stringsAsFactors = FALSE)
+        metadata <- data.frame(method_score = seq_len(nrow(obs)), row.names = obs$cell_id)
+        utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
+        latent <- data.frame(AXIS1 = seq_len(nrow(obs)), AXIS2 = rev(seq_len(nrow(obs))), row.names = obs$cell_id)
+        utils::write.csv(latent, file.path(output_dir, "latent.csv"))
+        jsonlite::write_json(
+          list(output_h5ad = file.path(output_dir, paste0(method, ".h5ad"))),
+          file.path(output_dir, "manifest.json"),
+          auto_unbox = TRUE
+        )
+      },
+      .package = "Shennong"
+    )
+    expect_s4_class(updated, "Seurat")
+    expect_true(paste0(method, "_method_score") %in% colnames(updated[[]]))
+    expect_true(paste0(method, "_latent") %in% names(updated@reductions))
+    expect_true(method %in% names(updated@misc))
+    expect_true(file.exists(file.path(captured$input_dir, "query", "matrix.mtx")))
+    if (method %in% c("tangram")) {
+      expect_true(file.exists(file.path(captured$input_dir, "reference", "matrix.mtx")))
+    }
+    if (method %in% c("cell2location", "tangram", "squidpy", "spatialdata", "stlearn")) {
+      expect_true(file.exists(file.path(captured$input_dir, "query", "spatial.csv")))
+    }
+  }
+})
+
 test_that("sn_run_cluster runs Coralysis integration end to end", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("Coralysis")

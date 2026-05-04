@@ -557,6 +557,7 @@ sn_run_regulatory_activity <- function(object,
     .sn_progeny_network(species, top = progeny_top)
   }
   network <- .sn_normalize_regulatory_network(network, method = method)
+  source <- target <- mor <- NULL
 
   table <- decoupleR::run_ulm(
     mat = mat,

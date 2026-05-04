@@ -54,8 +54,18 @@ single-cell tasks. This skill is the main entry point for package usage.
    forced into the ScaleData/PCA feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
    automatically add rare-aware genes, and use
-   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`, or
-   `"seurat_rpca"` when a specific batch-integration backend is requested.
+   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
+   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
+   batch-integration backend is requested. For scVI/scANVI, Shennong manages a
+   shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
+   artifacts under `~/.shennong/runs/`, and imports the latent reduction back
+   into Seurat; scANVI requires `integration_control = list(labels_key = ...)`.
+   Use `sn_pixi_paths()` when users ask where Python environments live, use
+   `sn_list_pixi_environments()` and `sn_pixi_config_path()` to inspect bundled
+   configs under `inst/pixi/`, and pass
+   `integration_control = list(accelerator = "auto", mirror = "auto")` when
+   GPU/CPU selection and China-friendly mirror configuration should be handled
+   by Shennong.
    Use `normalization_method = "sctransform"` with `batch = ...` only when an
    SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster structure with

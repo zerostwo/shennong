@@ -1814,7 +1814,7 @@ sn_plot_violin <- function(object,
   plot_data$group <- vapply(key_parts, `[[`, character(1), 2)
 
   if (isTRUE(scale)) {
-    plot_data$value <- ave(plot_data$expression, plot_data$feature, FUN = function(x) {
+    plot_data$value <- stats::ave(plot_data$expression, plot_data$feature, FUN = function(x) {
       sd_value <- stats::sd(x, na.rm = TRUE)
       if (all(is.na(x)) || !is.finite(sd_value) || identical(sd_value, 0)) {
         return(rep(0, length(x)))

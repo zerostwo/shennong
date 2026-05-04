@@ -1,6 +1,50 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-03-30
+Last updated: 2026-05-03
+
+## 2026-05-03
+
+- Python single-cell methods should enter Shennong through the existing
+  `sn_run_cluster()` integration-method contract rather than through a parallel
+  public clustering API. scVI and scANVI therefore behave like other batch
+  integration backends from the user's perspective and still return a regular
+  Seurat object.
+- Shennong should not make the package itself depend on Python or reticulate
+  for scVI/scANVI. The R side writes simple MatrixMarket/CSV interchange files,
+  pixi owns the Python environment under `~/.shennong/pixi/<family>/`, and the
+  Python backend writes explicit artifacts that can be inspected or reused.
+- scVI/scANVI outputs should be imported as reductions, not as a replacement
+  assay. The learned latent representation is the integration product used for
+  neighbors, clusters, and UMAP, while counts and normalized assay data remain
+  under Seurat's existing assay/layer structure.
+- Python environments should be generated under the user-level Shennong home,
+  not inside the analysis project and not inside the installed R package. The
+  package vendors backend scripts beside reusable pixi config templates under
+  `inst/pixi/<family>/scripts/`; materialized pixi manifests, lockfiles,
+  environments, runtime inputs, and outputs belong under `~/.shennong/`.
+- The pixi binary is a user-level tool, but pixi runtime state should be
+  isolated when Shennong launches Python backends. `sn_run_cluster()` therefore
+  ensures pixi is available, then runs with a Shennong-level `PIXI_HOME` so
+  mirror configuration and caches are discoverable and do not overwrite global
+  user settings.
+- GPU support should be opt-out and CPU fallback should remain reliable. The
+  scVI/scANVI manifest defines separate CPU and CUDA environments; automatic
+  selection uses CUDA only when `nvidia-smi` reports an NVIDIA GPU, while other
+  systems run the CPU environment unless the caller explicitly overrides it.
+- Pixi configs should represent installable environment families, not every
+  user-facing method alias. `scanvi` therefore resolves to the shared `scvi`
+  environment, and `scpoli` resolves to the shared `scarches` environment.
+  Spatial analysis is represented by concrete tools such as `cell2location`,
+  `tangram`, `squidpy`, `spatialdata`, and `stlearn`, rather than a generic
+  `spatial` environment.
+- Public `sn_run_*` Python method wrappers should prefer object-level
+  contracts whenever Shennong can define a stable Seurat input/output schema.
+  Command-mode wrappers remain available as a fallback, but user-facing
+  analysis APIs such as `sn_run_infercnvpy(object = ...)` should handle export,
+  pixi execution, and import back into Seurat.
+- Runner scripts belong with their pixi family config under
+  `inst/pixi/<family>/scripts/`, not in a separate global `inst/python/`
+  directory. This keeps each installable Python family self-contained.
 
 ## 2026-03-30
 

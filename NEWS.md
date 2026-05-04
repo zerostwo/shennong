@@ -32,6 +32,41 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   In addition to the historical Harmony path, users can run Coralysis
   multi-level integration or Seurat layer integration with CCA/RPCA through
   the same clustering entry point.
+- `sn_run_cluster()` now accepts `integration_method = "scvi"` and
+  `"scanvi"`. These backends export selected count data to a pixi-managed
+  scverse runtime under `~/.shennong/pixi/`, run the Python model, import the
+  latent representation as a Seurat reduction, and then continue Shennong's
+  neighbors/clustering/UMAP workflow. The scANVI path requires
+  `integration_control = list(labels_key = ...)`. Convenience wrappers
+  `sn_run_scvi()` and `sn_run_scanvi()` expose the same workflows directly.
+- New pixi helpers `sn_check_pixi()`, `sn_install_pixi()`,
+  `sn_ensure_pixi()`, `sn_pixi_paths()`, `sn_list_pixi_environments()`,
+  `sn_pixi_config_path()`, `sn_prepare_pixi_environment()`,
+  `sn_call_pixi_environment()`, `sn_detect_accelerator()`, and
+  `sn_configure_pixi_mirror()` expose the Python-runtime setup used by
+  scVI/scANVI and future Python backends. Shennong now keeps pixi workspaces
+  under `~/.shennong/pixi/`, renders package-bundled configs from
+  `inst/pixi/`, can auto-install pixi when missing, selects CPU or CUDA pixi
+  environments automatically, and can write China mirror configuration into
+  the Shennong `PIXI_HOME`.
+- Bundled pixi configs and command helpers are available for concrete Python
+  method families including `scvi` (shared by scVI/scANVI), `scarches`
+  (shared by scArches/scPoli), `infercnvpy`, `cellphonedb`, `cell2location`,
+  `tangram`, `squidpy`, `spatialdata`, and `stlearn`. Use environment calls
+  such as `sn_call_cell2location()` or analysis wrappers such as
+  `sn_run_tangram()` to run commands inside those managed environments.
+- `sn_run_infercnvpy(object = seurat_obj, ...)` now provides an object-level
+  infercnvpy workflow: it exports the selected Seurat assay/layer with gene
+  positions, runs infercnvpy in the managed pixi environment, and imports CNV
+  metadata and optional CNV reductions back into the Seurat object.
+- Packaged Python runner scripts now live with their pixi family configs under
+  `inst/pixi/<family>/scripts/`. Object-level Seurat workflows are available
+  for scArches/scPoli, CellPhoneDB, cell2location, Tangram, Squidpy,
+  SpatialData, and stLearn through their corresponding `sn_run_*()` wrappers;
+  method-specific Python settings can be supplied with `method_control`.
+- `R CMD check` namespace diagnostics are tighter: optional `qs`/`qs2`
+  serialization packages are now declared, and previous `ave`, `tail`,
+  `target`, and `mor` code-analysis notes have been resolved.
 - `sn_run_cluster()` now accepts `hvg_features`, a user-supplied feature list
   that is validated against the object and merged with internally selected
   HVGs and rare-aware features before scaling/PCA. This lets users force rare

@@ -28,8 +28,17 @@ user request to the right Shennong function family quickly.
    default fast workflow. Use `integration_method = "coralysis"` for
    Coralysis multi-level integration on imbalanced datasets, or
    `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration
-   backends. Set `normalization_method = "sctransform"` only with Harmony when
-   that normalization is desired.
+   backends. Use `"scvi"` or `"scanvi"` when the workflow should run through a
+   pixi-managed scverse environment under `~/.shennong/pixi/`; scANVI requires
+   `integration_control = list(labels_key = ...)`. Use `sn_pixi_paths()` to
+   inspect where Shennong will create the pixi workspace and
+   `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
+   configs under `inst/pixi/`. Use
+   `integration_control = list(accelerator = "auto", mirror = "auto")` when
+   CPU/CUDA selection and Shennong-level mirror configuration should be handled
+   automatically. Set
+   `normalization_method = "sctransform"` only with Harmony when that
+   normalization is desired.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
 4. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
 5. Use `sn_transfer_labels()` when labels should be projected from a

@@ -275,3 +275,109 @@ pbmc_rpca <- sn_run_cluster(
   verbose = FALSE
 )
 ```
+
+Python integration methods can be run through a pixi-managed scverse project
+kept under the user-level Shennong runtime directory, `~/.shennong/`. When
+`integration_method = "scvi"`, Shennong exports the selected count matrix and
+metadata, renders `~/.shennong/pixi/scvi/pixi.toml` from the package-bundled
+`inst/pixi/scvi/pixi.toml` template when needed, runs
+the Python backend, imports `latent.csv` as the `scvi` reduction, and then
+continues with Seurat neighbors, clusters, and UMAP.
+
+The R package does not vendor the Python environments. It ships only the
+backend runner script and pixi config templates; the pixi workspaces and
+environment prefixes are created under `~/.shennong/pixi/`, matching the
+package's `~/.shennong/data/` convention. Use `sn_pixi_paths("scvi")` to inspect the
+layout before a run. If pixi is not already available, Shennong can install the
+standalone pixi binary through `sn_ensure_pixi()` and then use the Shennong
+`PIXI_HOME` under `~/.shennong/pixi/home` for runtime configuration. By default
+`accelerator = "auto"` uses a CUDA pixi environment when `nvidia-smi` reports a
+CUDA-capable GPU and otherwise uses the CPU environment. China mirror handling
+can be enabled with `mirror = "auto"` or a specific mirror such as `"tuna"`.
+Other bundled Python environment configs can be inspected with
+`sn_list_pixi_environments()` and materialized with
+`sn_prepare_pixi_environment()`. Method aliases share environments when the
+underlying software stack is the same: scANVI uses the `scvi` environment, and
+scPoli uses the `scarches` environment. Spatial tools are represented by
+specific environment names such as `cell2location`, `tangram`, `squidpy`,
+`spatialdata`, and `stlearn`.
+
+For method wrappers that define an object-level contract, use the `object =`
+form. Runner scripts are stored with each pixi family under
+`inst/pixi/<family>/scripts/`. For example, inferCNVpy can be run directly on a
+Seurat object and will import cell-level CNV metadata and CNV reductions back
+into that object:
+
+```{r infercnvpy-object, eval = FALSE}
+tumor <- sn_run_infercnvpy(
+  object = tumor,
+  assay = "RNA",
+  layer = "data",
+  species = "human",
+  reference_key = "cell_type",
+  reference_cat = c("T cell", "Myeloid", "Endothelial")
+)
+```
+
+Other Python tools follow the same Seurat-first pattern. Tools that need
+additional biological inputs make those inputs explicit:
+
+```{r python-object-tools, eval = FALSE}
+object <- sn_run_cellphonedb(object, groupby = "cell_type")
+
+spatial <- sn_run_tangram(
+  object = spatial,
+  reference_object = sc_reference,
+  cell_type_key = "cell_type",
+  spatial_cols = c("x", "y")
+)
+
+spatial <- sn_run_cell2location(
+  object = spatial,
+  reference_signatures = signature_matrix,
+  spatial_cols = c("x", "y"),
+  method_control = list(max_epochs = 30000)
+)
+
+spatial <- sn_run_squidpy(object = spatial, spatial_cols = c("x", "y"))
+```
+
+```{r scvi-integration, eval = FALSE}
+sn_list_pixi_environments()
+sn_pixi_paths("scvi")
+sn_ensure_pixi()
+
+pbmc_scvi <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  integration_method = "scvi",
+  normalization_method = "seurat",
+  hvg_group_by = "library",
+  nfeatures = 3000,
+  dims = 1:30,
+  integration_control = list(
+    accelerator = "auto",
+    mirror = "auto",
+    n_latent = 30,
+    max_epochs = 100
+  ),
+  verbose = FALSE
+)
+
+pbmc_scanvi <- sn_run_cluster(
+  object = pbmc,
+  batch = "library",
+  integration_method = "scanvi",
+  normalization_method = "seurat",
+  hvg_group_by = "library",
+  nfeatures = 3000,
+  dims = 1:30,
+  integration_control = list(
+    labels_key = "reference_label",
+    unlabeled_category = "Unknown",
+    n_latent = 30,
+    max_epochs = 100
+  ),
+  verbose = FALSE
+)
+```

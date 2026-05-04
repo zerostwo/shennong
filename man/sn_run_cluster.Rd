@@ -8,7 +8,8 @@ sn_run_cluster(
   object,
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
-  integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca"),
+  integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
+    "scanvi"),
   integration_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
@@ -47,11 +48,15 @@ with \code{integration_method = "harmony"} by supplying \code{batch}.}
 
 \item{integration_method}{Batch-integration backend used when \code{batch}
 is supplied. Supported values are \code{"harmony"},
-\code{"coralysis"}, \code{"seurat_cca"}, and \code{"seurat_rpca"}.
+\code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
+\code{"scvi"}, and \code{"scanvi"}.
 \code{"harmony"} preserves the historical Shennong behavior.
 \code{"coralysis"} runs Coralysis multi-level integration on the selected
 log-normalized feature set and stores the integrated embedding as the
-\code{"coralysis"} reduction.}
+\code{"coralysis"} reduction. \code{"scvi"} and \code{"scanvi"} export
+the selected count matrix to a pixi-managed scverse environment under
+\code{~/.shennong/pixi/}, run the Python backend, and import the latent
+representation as a Seurat reduction.}
 
 \item{integration_control}{Optional named list of backend-specific
 parameters. For \code{"coralysis"}, use \code{icp_args} for
@@ -59,7 +64,17 @@ parameters. For \code{"coralysis"}, use \code{icp_args} for
 \code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
 the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
 For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
-to \code{Seurat::IntegrateLayers()}.}
+to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
+\code{"scanvi"}, common fields include \code{runtime_dir},
+\code{pixi_project}, \code{pixi_home}, \code{run_dir}, \code{pixi},
+\code{manifest_path}, \code{install_pixi}, \code{accelerator},
+\code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
+\code{model_args}, \code{train_args}, and \code{write_h5ad};
+\code{"scanvi"} additionally requires \code{labels_key} and accepts
+\code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
+generated directory layout, \code{sn_pixi_config_path()} to inspect the
+bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
+pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
 
 \item{nfeatures}{Number of variable features to select.}
 

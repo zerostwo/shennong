@@ -281,3 +281,102 @@ test_that("sn_install_dependencies validates requested package names", {
     "Unknown package"
   )
 })
+
+test_that("pixi helpers detect executables, expose runtime paths, and write mirror config", {
+  old_home <- Sys.getenv("HOME", unset = NA_character_)
+  old_path <- Sys.getenv("PATH", unset = NA_character_)
+  old_env <- Sys.getenv("SHENNONG_PIXI", unset = NA_character_)
+  old_option <- getOption("shennong.pixi", NULL)
+  fake_home <- tempfile("pixi-home-empty-")
+  fake_path <- tempfile("pixi-path-empty-")
+  dir.create(fake_home, recursive = TRUE)
+  dir.create(fake_path, recursive = TRUE)
+  on.exit({
+    if (is.na(old_home)) Sys.unsetenv("HOME") else Sys.setenv(HOME = old_home)
+    if (is.na(old_path)) Sys.unsetenv("PATH") else Sys.setenv(PATH = old_path)
+    if (is.na(old_env)) Sys.unsetenv("SHENNONG_PIXI") else Sys.setenv(SHENNONG_PIXI = old_env)
+    options(shennong.pixi = old_option)
+  }, add = TRUE)
+
+  Sys.setenv(HOME = fake_home, PATH = fake_path, SHENNONG_PIXI = "")
+  options(shennong.pixi = NULL)
+  missing_info <- sn_check_pixi(quiet = TRUE)
+  expect_false(missing_info$installed)
+  expect_true(is.na(missing_info$path))
+
+  fake_dir <- tempfile("pixi-bin-")
+  dir.create(fake_dir, recursive = TRUE)
+  fake_pixi <- file.path(fake_dir, if (.Platform$OS.type == "windows") "pixi.exe" else "pixi")
+  writeLines(c("#!/bin/sh", "echo 'pixi 0.99.0'"), fake_pixi)
+  Sys.chmod(fake_pixi, mode = "755")
+
+  info <- sn_check_pixi(pixi = fake_pixi, quiet = TRUE)
+  expect_true(info$installed)
+  expect_equal(info$version, "0.99.0")
+
+  ensured <- sn_ensure_pixi(pixi = fake_pixi, install = FALSE, quiet = TRUE)
+  expect_equal(ensured$path, fake_pixi)
+
+  runtime_dir <- tempfile("shennong-home-")
+  paths <- sn_pixi_paths("scanvi", runtime_dir = runtime_dir)
+  expect_equal(paths$environment, "scanvi")
+  expect_equal(paths$family, "scvi")
+  expect_true(grepl("/\\.shennong|shennong-home-", paths$runtime_dir))
+  expect_true(grepl("/pixi/scvi/pixi\\.toml$", paths$manifest_path))
+  expect_true(grepl("/pixi/home$", paths$pixi_home))
+  expect_true(file.exists(paths$source_config_path))
+  expect_true("scvi" %in% sn_list_pixi_environments())
+  expect_true("scarches" %in% sn_list_pixi_environments())
+  expect_true("infercnvpy" %in% sn_list_pixi_environments())
+  expect_true("cell2location" %in% sn_list_pixi_environments())
+  expect_true("tangram" %in% sn_list_pixi_environments())
+  expect_true("squidpy" %in% sn_list_pixi_environments())
+  expect_true("spatialdata" %in% sn_list_pixi_environments())
+  expect_true("stlearn" %in% sn_list_pixi_environments())
+  expect_false("scanvi" %in% sn_list_pixi_environments())
+  expect_false("scpoli" %in% sn_list_pixi_environments())
+  expect_false("spatial" %in% sn_list_pixi_environments())
+  expect_true(file.exists(sn_pixi_config_path("cellphonedb")))
+  expect_equal(dirname(sn_pixi_config_path("scanvi")), dirname(sn_pixi_config_path("scvi")))
+  expect_equal(dirname(sn_pixi_config_path("scpoli")), dirname(sn_pixi_config_path("scarches")))
+  expect_equal(dirname(sn_pixi_config_path("tarngram")), dirname(sn_pixi_config_path("tangram")))
+
+  prepared <- sn_prepare_pixi_environment(
+    "scpoli",
+    runtime_dir = runtime_dir,
+    pixi_environment = "cpu",
+    install_environment = FALSE,
+    overwrite = TRUE,
+    platforms = "linux-64"
+  )
+  expect_true(file.exists(prepared$manifest_path))
+  expect_equal(prepared$family, "scarches")
+  prepared_manifest <- readLines(prepared$manifest_path)
+  expect_true(any(grepl('name = "shennong-scarches"', prepared_manifest, fixed = TRUE)))
+  expect_true(any(grepl('platforms = ["linux-64"]', prepared_manifest, fixed = TRUE)))
+
+  pixi_home <- tempfile("pixi-home-")
+  config_path <- sn_configure_pixi_mirror("tuna", pixi_home = pixi_home)
+  config <- readLines(config_path)
+  expect_true(any(grepl("\\[mirrors\\]", config)))
+  expect_true(any(grepl("mirrors.tuna.tsinghua.edu.cn", config, fixed = TRUE)))
+  expect_true(any(grepl("pypi.tuna.tsinghua.edu.cn", config, fixed = TRUE)))
+  expect_true(any(grepl("files.pythonhosted.org/packages", config, fixed = TRUE)))
+})
+
+test_that("scVI pixi manifest includes CPU and GPU environments", {
+  manifest <- Shennong:::.sn_scvi_pixi_manifest_lines(cuda_version = "12.6", platforms = "linux-64")
+
+  expect_true(any(grepl('platforms = \\["linux-64"\\]', manifest)))
+  expect_true(any(grepl("\\[feature.cpu.dependencies\\]", manifest)))
+  expect_true(any(grepl("pytorch-cpu", manifest, fixed = TRUE)))
+  expect_true(any(grepl("\\[feature.gpu.system-requirements\\]", manifest)))
+  expect_true(any(grepl('cuda = "12"', manifest, fixed = TRUE)))
+  expect_true(any(grepl("pytorch-gpu", manifest, fixed = TRUE)))
+  expect_true(any(grepl('cuda-version = "12.6.*"', manifest, fixed = TRUE)))
+  expect_true(any(grepl("gpu = \\[\"gpu\"\\]", manifest)))
+  expect_equal(Shennong:::.sn_normalize_cuda_requirement("12.6"), "12.6")
+  expect_equal(Shennong:::.sn_normalize_cuda_requirement("12"), "12.0")
+  expect_equal(Shennong:::.sn_default_scvi_cuda_version("13.0"), "12.6")
+  expect_equal(Shennong:::.sn_default_scvi_cuda_version("11.8"), "11.8")
+})
