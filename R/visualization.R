@@ -31,14 +31,28 @@
 }
 
 .sn_apply_scale_to_plot <- function(p, scale) {
+  p <- .sn_drop_aesthetic_scales(p, scale$aesthetics)
   if (inherits(p, "patchwork")) {
     if (length(p$patches$plots) > 0) {
       p$patches$plots <- lapply(p$patches$plots, .sn_apply_scale_to_plot, scale = scale)
     }
-    return(p + scale)
+    return(suppressMessages(p + scale))
   }
 
-  p + scale
+  suppressMessages(p + scale)
+}
+
+.sn_drop_aesthetic_scales <- function(p, aesthetics) {
+  .sn_map_plot_leaves(p, function(plot) {
+    if (!inherits(plot, "ggplot") || length(plot$scales$scales) == 0L) {
+      return(plot)
+    }
+    plot$scales$scales <- Filter(
+      function(scale) length(intersect(scale$aesthetics, aesthetics)) == 0L,
+      plot$scales$scales
+    )
+    plot
+  })
 }
 
 .sn_hide_plot_axes <- function(p) {
@@ -61,11 +75,17 @@
   ggplot2::guide_colorbar(
     title = title,
     order = order,
+    frame.colour = "black",
+    frame.linewidth = 0.2,
     theme = ggplot2::theme(
       legend.key.width = grid::unit(width_pt, "pt"),
       legend.key.height = grid::unit(height_pt, "pt"),
-      legend.frame = ggplot2::element_rect(colour = "black", linewidth = 0.2),
+      legend.frame = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.2),
       legend.axis.line = ggplot2::element_line(
+        colour = "black",
+        linewidth = 0.5 / .sn_ggplot_pt
+      ),
+      legend.ticks = ggplot2::element_line(
         colour = "black",
         linewidth = 0.5 / .sn_ggplot_pt
       )
@@ -472,31 +492,31 @@
                                      label_layer,
                                      label_color = "black",
                                      label_size) {
-  built <- ggplot2::ggplot_build(plot)
-  label_data <- built$data[[label_layer]]
+  original_layer <- plot$layers[[label_layer]]
+  label_data <- original_layer$data
+  if (is.null(label_data)) {
+    built <- ggplot2::ggplot_build(plot)
+    label_data <- built$data[[label_layer]]
+  }
   if (nrow(label_data) == 0) {
     return(plot)
   }
 
-  base_size <- unique(label_data$size)[1] %||% label_size
-  halo_data <- data.frame(
-    x = label_data$x,
-    y = label_data$y,
-    label = label_data$label,
-    colour = label_data$colour,
-    stringsAsFactors = FALSE
-  )
+  base_size <- original_layer$aes_params$size %||%
+    original_layer$geom_params$size %||%
+    unique(label_data$size)[1] %||%
+    label_size
+  mapping <- original_layer$mapping
 
-  if (!rlang::is_installed("shadowtext")) {
-    plot$layers[[label_layer]] <- ggplot2::geom_text(
-      data = halo_data,
-      mapping = if (identical(label_color, "group")) {
-        ggplot2::aes(x = .data$x, y = .data$y, label = .data$label, colour = .data$colour)
-      } else {
-        ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)
-      },
+  if (rlang::is_installed("ggrepel")) {
+    plot$layers[[label_layer]] <- ggrepel::geom_label_repel(
+      data = label_data,
+      mapping = mapping,
       inherit.aes = FALSE,
       colour = if (identical(label_color, "group")) NULL else label_color,
+      fill = scales::alpha("white", 0.85),
+      label.size = 0,
+      label.r = grid::unit(0.08, "lines"),
       size = base_size,
       show.legend = FALSE
     )
@@ -504,12 +524,8 @@
   }
 
   plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
-    data = halo_data,
-    mapping = if (identical(label_color, "group")) {
-      ggplot2::aes(x = .data$x, y = .data$y, label = .data$label, colour = .data$colour)
-    } else {
-      ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)
-    },
+    data = label_data,
+    mapping = mapping,
     inherit.aes = FALSE,
     bg.colour = "white",
     bg.r = 0.16,
@@ -543,6 +559,22 @@
   }
 
   p + patchwork::plot_layout(guides = "collect")
+}
+
+.sn_rasterise_point_layers <- function(p, raster_dpi = c(512, 512)) {
+  if (!rlang::is_installed("ggrastr")) {
+    return(p)
+  }
+  dpi <- suppressWarnings(max(as.numeric(raster_dpi), na.rm = TRUE))
+  if (!is.finite(dpi)) {
+    dpi <- 512
+  }
+  .sn_map_plot_leaves(p, function(plot) {
+    if (!inherits(plot, "ggplot")) {
+      return(plot)
+    }
+    ggrastr::rasterise(plot, layers = "Point", dpi = dpi)
+  })
 }
 
 .sn_galaxy_palette <- function(n = 256L, direction = 1) {
@@ -599,7 +631,9 @@
     }
   }
 
-  as.data.frame(vars, check.names = FALSE, stringsAsFactors = FALSE)
+  out <- as.data.frame(vars, check.names = FALSE, stringsAsFactors = FALSE)
+  rownames(out) <- rownames(metadata)
+  out
 }
 
 .sn_calculate_density <- function(weights,
@@ -1337,6 +1371,9 @@ sn_plot_milo <- function(x,
 #' @param label_size The size of the labels on the plot. Default is 8 * 0.36.
 #' @param label_color The color of the labels on the plot. Default is "black".
 #' @param label_box Logical value indicating whether to show a box around the labels on the plot. Default is FALSE.
+#' @param label_halo Logical value indicating whether Shennong should add a
+#'   white halo/background behind text labels. Set to \code{FALSE} to keep
+#'   Seurat's native label layer unchanged.
 #' @param repel Logical value indicating whether to use point repulsion to avoid overlapping labels. Default is TRUE.
 #' @param cells_highlight The cells to highlight on the plot. Default is NULL.
 #' @param cols_highlight The columns to highlight on the plot. Default is NULL.
@@ -1392,6 +1429,7 @@ sn_plot_dim <- function(
   label_size = 8 * 0.36,
   label_color = "black",
   label_box = FALSE,
+  label_halo = TRUE,
   repel = FALSE,
   cells_highlight = NULL,
   cols_highlight = "#DE2D26",
@@ -1468,7 +1506,7 @@ sn_plot_dim <- function(
 
   p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
 
-  if (isTRUE(label) && !isTRUE(label_box)) {
+  if (isTRUE(label) && isTRUE(label_halo) && !isTRUE(label_box)) {
     p <- .sn_map_plot_leaves(p, function(plot) {
       label_layers <- which(vapply(
         plot$layers,
@@ -1615,6 +1653,458 @@ sn_plot_violin <- function(object,
     )
   p <- .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "fill")
   return(p)
+}
+
+.sn_resolve_heatmap_features <- function(object, features) {
+  if (is.null(features) || length(features) == 0L) {
+    stop("`features` must contain at least one gene or feature name.", call. = FALSE)
+  }
+  features <- unique(as.character(features))
+  features <- features[!is.na(features) & nzchar(features)]
+  missing_features <- setdiff(features, rownames(object))
+  if (length(missing_features) > 0L) {
+    .sn_log_warn(
+      "Dropped {length(missing_features)} feature(s) not found in the object (e.g. {paste(utils::head(missing_features, 3), collapse = ', ')})."
+    )
+  }
+  features <- intersect(features, rownames(object))
+  if (length(features) == 0L) {
+    stop("None of the requested `features` were found in the object.", call. = FALSE)
+  }
+  features
+}
+
+.sn_scale_heatmap_features <- function(object,
+                                       features,
+                                       assay = NULL,
+                                       layer = "scale.data",
+                                       verbose = FALSE) {
+  if (!identical(layer, "scale.data")) {
+    return(object)
+  }
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  scaled <- tryCatch(
+    SeuratObject::LayerData(object = object, assay = assay, layer = "scale.data"),
+    error = function(...) NULL
+  )
+  missing_scaled <- if (is.null(scaled)) features else setdiff(features, rownames(scaled))
+  if (length(missing_scaled) > 0L) {
+    object <- Seurat::ScaleData(
+      object = object,
+      assay = assay,
+      features = unique(features),
+      verbose = verbose
+    )
+  }
+  object
+}
+
+.sn_heatmap_cells <- function(object, cells, max_cells = NULL, seed = 717) {
+  if (is.null(max_cells) || length(cells) <= max_cells) {
+    return(cells)
+  }
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  sort(sample(cells, max_cells))
+}
+
+.sn_heatmap_group_colors <- function(object,
+                                     cells,
+                                     group_by = "ident",
+                                     palette = "Paired",
+                                     group_colors = NULL) {
+  group_values <- object[[group_by, drop = TRUE]][cells]
+  group_factor <- if (is.factor(group_values)) group_values else factor(group_values)
+  group_levels <- levels(group_factor)
+
+  if (is.null(group_colors)) {
+    out <- .sn_resolve_discrete_palette(palette = palette, n = length(group_levels))
+    names(out) <- group_levels
+    return(out)
+  }
+
+  out <- as.character(group_colors)
+  if (is.null(names(out))) {
+    out <- rep(out, length.out = length(group_levels))
+    names(out) <- group_levels
+    return(out)
+  }
+
+  missing_levels <- setdiff(group_levels, names(out))
+  if (length(missing_levels) > 0L) {
+    fallback <- .sn_resolve_discrete_palette(palette = palette, n = length(missing_levels))
+    names(fallback) <- missing_levels
+    out <- c(out, fallback)
+  }
+  out[group_levels]
+}
+
+.sn_heatmap_average_data <- function(object,
+                                     features,
+                                     group_by = "ident",
+                                     split_by = NULL,
+                                     assay = NULL,
+                                     layer = "data",
+                                     average_fun = c("mean", "median"),
+                                     scale = TRUE,
+                                     col_min = -2.5,
+                                     col_max = 2.5) {
+  average_fun <- match.arg(average_fun)
+  cells <- colnames(object)
+  metadata <- object[[]][cells, , drop = FALSE]
+  groups <- metadata[[group_by]]
+  if (is.factor(groups)) {
+    group_levels <- levels(groups)
+  } else {
+    group_levels <- unique(as.character(groups[!is.na(groups)]))
+    groups <- factor(groups, levels = group_levels)
+  }
+
+  if (is.null(split_by)) {
+    splits <- factor("All", levels = "All")
+  } else {
+    splits <- metadata[[split_by]]
+    if (is.factor(splits)) {
+      split_levels <- levels(splits)
+    } else {
+      split_levels <- unique(as.character(splits[!is.na(splits)]))
+      splits <- factor(splits, levels = split_levels)
+    }
+  }
+
+  expr <- .sn_fetch_feature_matrix(
+    object = object,
+    features = features,
+    assay = assay,
+    layer = layer
+  )
+
+  valid <- !is.na(groups) & !is.na(splits)
+  groups <- droplevels(groups[valid])
+  splits <- droplevels(splits[valid])
+  expr <- expr[valid, , drop = FALSE]
+  group_key <- interaction(splits, groups, drop = TRUE, sep = "\r")
+  key_levels <- levels(group_key)
+
+  aggregate_one <- function(values) {
+    stats::setNames(
+      tapply(
+        X = values,
+        INDEX = group_key,
+        FUN = if (identical(average_fun, "median")) stats::median else mean,
+        na.rm = TRUE
+      ),
+      key_levels
+    )
+  }
+
+  averaged <- lapply(features, function(feature) {
+    values <- aggregate_one(expr[[feature]])
+    data.frame(
+      feature = feature,
+      key = names(values),
+      expression = as.numeric(values),
+      stringsAsFactors = FALSE
+    )
+  })
+  plot_data <- do.call(rbind, averaged)
+  key_parts <- strsplit(plot_data$key, "\r", fixed = TRUE)
+  plot_data$split <- vapply(key_parts, `[[`, character(1), 1)
+  plot_data$group <- vapply(key_parts, `[[`, character(1), 2)
+
+  if (isTRUE(scale)) {
+    plot_data$value <- ave(plot_data$expression, plot_data$feature, FUN = function(x) {
+      sd_value <- stats::sd(x, na.rm = TRUE)
+      if (all(is.na(x)) || !is.finite(sd_value) || identical(sd_value, 0)) {
+        return(rep(0, length(x)))
+      }
+      as.numeric(base::scale(x))
+    })
+  } else {
+    plot_data$value <- plot_data$expression
+  }
+  plot_data$value <- pmax(pmin(plot_data$value, col_max), col_min)
+  plot_data$feature <- factor(plot_data$feature, levels = features)
+  plot_data$group <- factor(plot_data$group, levels = group_levels)
+  if (!is.null(split_by)) {
+    plot_data$split <- factor(plot_data$split, levels = levels(splits))
+  }
+  plot_data
+}
+
+#' Plot a heatmap for selected genes or features
+#'
+#' \code{sn_plot_heatmap()} draws a compact heatmap for user-selected genes. In
+#' \code{mode = "cells"} it renders cells with Seurat's heatmap backend, while
+#' \code{mode = "average"} first averages expression within the requested
+#' metadata groups and displays a group-level heatmap.
+#'
+#' @param object A Seurat object.
+#' @param features Character vector of genes or features to display.
+#' @param group_by Metadata column used to order and label cells. Use
+#'   \code{NULL}, \code{""}, or \code{"ident"} for current Seurat identities.
+#' @param split_by Optional metadata column. When supplied, one heatmap is drawn
+#'   for each split level and combined with patchwork.
+#' @param assay Assay used for expression retrieval.
+#' @param layer Data layer used for expression retrieval. Defaults to
+#'   \code{"scale.data"} for cell-level heatmaps. In \code{mode = "average"},
+#'   use \code{"data"} to average normalized expression before optional
+#'   feature-wise scaling.
+#' @param slot Deprecated alias for \code{layer}.
+#' @param mode One of \code{"cells"} or \code{"average"}. \code{"cells"}
+#'   displays cells; \code{"average"} averages expression by \code{group_by}
+#'   and optional \code{split_by}.
+#' @param scale_data If \code{TRUE} and \code{layer = "scale.data"}, scale the
+#'   requested features when they are missing from the scaled layer. Used only
+#'   in \code{mode = "cells"}.
+#' @param max_cells Optional maximum number of cells to show per cell-level
+#'   heatmap panel.
+#' @param seed Optional seed used when \code{max_cells} downsamples cells.
+#' @param palette Continuous color palette name or vector.
+#' @param direction Palette direction.
+#' @param disp_min,disp_max Display limits passed to
+#'   \code{Seurat::DoHeatmap()}.
+#' @param col_min,col_max Display limits for \code{mode = "average"}.
+#' @param average_fun Summary used in \code{mode = "average"}.
+#' @param average_scale Whether to feature-wise z-score average expression in
+#'   \code{mode = "average"}.
+#' @param group_bar,label,raster Passed to \code{Seurat::DoHeatmap()} for
+#'   \code{mode = "cells"}. Rasterization is enabled by default.
+#' @param label_size,label_angle Size in points and rotation angle for the
+#'   cell-level group labels drawn above the heatmap.
+#' @param angle Deprecated alias for \code{label_angle}.
+#' @param group_palette,group_colors Palette or explicit colors for the
+#'   cell-level group label bar. Defaults to \code{"Paired"}.
+#' @param show_cell_names,show_ticks Whether to show cell-level x-axis labels
+#'   and axis ticks in \code{mode = "cells"}. Both default to \code{FALSE}.
+#' @param show_legend Whether to keep the heatmap legend.
+#' @param title Optional plot title. When \code{split_by} is supplied, split
+#'   levels are used as panel titles unless \code{title} is also supplied.
+#' @param collect_legend Whether to collect patchwork legends for split plots.
+#' @param aspect_ratio,panel_widths,panel_heights Optional sizing controls
+#'   forwarded through the Shennong/catplot theme helper.
+#' @param ... Additional arguments passed to \code{Seurat::DoHeatmap()}.
+#'
+#' @return A ggplot2 or patchwork object.
+#'
+#' @examples
+#' \dontrun{
+#' sn_plot_heatmap(
+#'   seurat_obj,
+#'   features = c("CD3D", "MS4A1", "LYZ"),
+#'   group_by = "seurat_clusters"
+#' )
+#' }
+#' @export
+sn_plot_heatmap <- function(object,
+                            features,
+                            group_by = "ident",
+                            split_by = NULL,
+                            assay = NULL,
+                            layer = "scale.data",
+                            slot = NULL,
+                            mode = c("cells", "average"),
+                            scale_data = TRUE,
+                            max_cells = NULL,
+                            seed = 717,
+                            palette = "RdBu",
+                            direction = -1,
+                            disp_min = -2.5,
+                            disp_max = NULL,
+                            col_min = -2.5,
+                            col_max = 2.5,
+                            average_fun = c("mean", "median"),
+                            average_scale = TRUE,
+                            group_bar = TRUE,
+                            label = TRUE,
+                            raster = TRUE,
+                            label_size = 8,
+                            label_angle = 45,
+                            angle = NULL,
+                            group_palette = "Paired",
+                            group_colors = NULL,
+                            show_cell_names = FALSE,
+                            show_ticks = FALSE,
+                            show_legend = TRUE,
+                            title = NULL,
+                            collect_legend = TRUE,
+                            aspect_ratio = NULL,
+                            panel_widths = NULL,
+                            panel_heights = NULL,
+                            ...) {
+  check_installed("Seurat")
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.", call. = FALSE)
+  }
+
+  mode <- match.arg(mode)
+  average_fun <- match.arg(average_fun)
+  if (!is.null(slot)) {
+    .sn_log_warn("`slot` is deprecated; use `layer` instead.")
+    layer <- slot
+  }
+  if (!is.null(angle)) {
+    .sn_log_warn("`angle` is deprecated; use `label_angle` instead.")
+    label_angle <- angle
+  }
+
+  features <- .sn_resolve_heatmap_features(object, features)
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  if (isTRUE(scale_data) && identical(mode, "cells")) {
+    object <- .sn_scale_heatmap_features(
+      object = object,
+      features = features,
+      assay = assay,
+      layer = layer,
+      verbose = FALSE
+    )
+  }
+
+  object[["ident"]] <- Seurat::Idents(object = object)
+  group_by <- if (is.null(group_by) || identical(group_by, "")) "ident" else group_by
+  split_by <- if (is.null(split_by) || identical(split_by, "")) NULL else split_by
+  if (!group_by %in% colnames(object[[]])) {
+    stop(glue("`group_by` column '{group_by}' was not found in object metadata."), call. = FALSE)
+  }
+  if (!is.null(split_by) && !split_by %in% colnames(object[[]])) {
+    stop(glue("`split_by` column '{split_by}' was not found in object metadata."), call. = FALSE)
+  }
+
+  if (identical(mode, "average")) {
+    average_layer <- if (identical(layer, "scale.data")) "data" else layer
+    plot_data <- .sn_heatmap_average_data(
+      object = object,
+      features = features,
+      group_by = group_by,
+      split_by = split_by,
+      assay = assay,
+      layer = average_layer,
+      average_fun = average_fun,
+      scale = average_scale,
+      col_min = col_min,
+      col_max = col_max
+    )
+    colorbar_info <- .sn_colorbar_breaks_labels(
+      limits = c(col_min, col_max),
+      label_mode = "text"
+    )
+    p <- ggplot2::ggplot(
+      plot_data,
+      ggplot2::aes(x = .data$feature, y = .data$group, fill = .data$value)
+    ) +
+      ggplot2::geom_tile(colour = "white", linewidth = 0.2) +
+      ggplot2::scale_y_discrete(limits = rev) +
+      ggplot2::guides(fill = .sn_colorbar_guide(
+        title = if (isTRUE(average_scale)) "Z score" else "Expression",
+        order = 1
+      )) +
+      ggplot2::labs(
+        x = NULL,
+        y = NULL,
+        title = title
+      )
+    if (!is.null(split_by)) {
+      p <- p + ggplot2::facet_grid(rows = ggplot2::vars(.data$split), scales = "free_y", space = "free_y")
+    }
+    p <- .sn_add_continuous_palette(
+      p,
+      palette = palette,
+      direction = direction,
+      aesthetic = "fill",
+      guide = .sn_colorbar_guide(
+        title = if (isTRUE(average_scale)) "Z score" else "Expression",
+        order = 1
+      ),
+      limits = c(col_min, col_max),
+      breaks = colorbar_info$breaks,
+      labels = colorbar_info$labels
+    )
+    if (!show_legend) {
+      p <- p + Seurat::NoLegend()
+    }
+    p <- .sn_add_catplot_theme(
+      p,
+      aspect_ratio = aspect_ratio,
+      show_title = "both",
+      panel_widths = panel_widths,
+      panel_heights = panel_heights,
+      x_text_angle = label_angle
+    )
+    return(p + ggplot2::theme(
+      axis.text.x = ggplot2::element_text(face = "italic"),
+      axis.ticks = if (isTRUE(show_ticks)) ggplot2::element_line() else ggplot2::element_blank(),
+      legend.margin = ggplot2::margin(l = 2, r = 6)
+    ))
+  }
+
+  build_one <- function(cells, panel_title = title) {
+    cells <- .sn_heatmap_cells(object, cells = cells, max_cells = max_cells, seed = seed)
+    panel_group_colors <- .sn_heatmap_group_colors(
+      object = object,
+      cells = cells,
+      group_by = group_by,
+      palette = group_palette,
+      group_colors = group_colors
+    )
+    p <- Seurat::DoHeatmap(
+      object = object,
+      features = features,
+      cells = cells,
+      group.by = group_by,
+      group.bar = group_bar,
+      group.colors = panel_group_colors,
+      disp.min = disp_min,
+      disp.max = disp_max,
+      slot = layer,
+      assay = assay,
+      label = label,
+      size = label_size / .sn_ggplot_pt,
+      angle = label_angle,
+      raster = raster,
+      combine = TRUE,
+      ...
+    )
+    p <- .sn_add_continuous_palette(
+      p,
+      palette = palette,
+      direction = direction,
+      aesthetic = "fill"
+    )
+    if (!show_legend) {
+      p <- .sn_apply_plot_component(p, Seurat::NoLegend())
+    }
+    p <- .sn_add_catplot_theme(
+      p,
+      aspect_ratio = aspect_ratio,
+      show_title = "both",
+      panel_widths = panel_widths,
+      panel_heights = panel_heights
+    )
+    p + ggplot2::labs(title = panel_title, x = NULL, y = NULL) +
+      ggplot2::theme(
+        axis.text.x = if (isTRUE(show_cell_names)) ggplot2::element_text() else ggplot2::element_blank(),
+        axis.ticks = if (isTRUE(show_ticks)) ggplot2::element_line() else ggplot2::element_blank(),
+        legend.margin = ggplot2::margin(l = 2, r = 6)
+      )
+  }
+
+  if (is.null(split_by)) {
+    return(build_one(colnames(object), panel_title = title))
+  }
+
+  split_values <- object[[split_by, drop = TRUE]]
+  split_levels <- unique(as.character(split_values))
+  split_levels <- split_levels[!is.na(split_levels)]
+  plots <- lapply(split_levels, function(level) {
+    panel_title <- if (is.null(title)) paste0(split_by, ": ", level) else paste0(title, " - ", level)
+    build_one(colnames(object)[as.character(split_values) == level], panel_title = panel_title)
+  })
+  p <- patchwork::wrap_plots(plots)
+  if (isTRUE(collect_legend)) {
+    p <- .sn_collect_patchwork_guides(p)
+  }
+  p
 }
 
 .sn_resolve_dotplot_features <- function(object,
@@ -1803,7 +2293,7 @@ sn_plot_dot <- function(x,
         color = .sn_colorbar_guide(title = "Z score", order = 1)
       )
   )
-  p <- suppressWarnings(
+  p <- suppressMessages(suppressWarnings(
     .sn_add_catplot_theme(
       p,
       aspect_ratio = aspect_ratio,
@@ -1839,7 +2329,7 @@ sn_plot_dot <- function(x,
         breaks = color_breaks,
         labels = color_labels
       )
-  )
+  ))
   return(p)
 }
 
@@ -1850,14 +2340,25 @@ sn_plot_dot <- function(x,
 #' @param object A Seurat object containing the data to plot.
 #' @param features A character vector of feature names to plot.
 #' @param reduction A character string specifying the dimensionality reduction to use (e.g., "PCA", "UMAP", "tSNE"). Defaults to NULL.
+#' @param assay Optional assay passed to Seurat's \code{FeaturePlot()} and used
+#'   for density-mode expression retrieval.
+#' @param dims Two dimensions to plot. Defaults to \code{c(1, 2)}.
+#' @param cells Optional cells to include.
 #' @param label A character vector specifying the labels to use for each cell group. Defaults to label.
 #' @param split_by A character vector specifying the cell groups to split the plot by. Defaults to NULL.
 #' @param label_size A numeric value specifying the size of the labels. Defaults to 8 * 0.36.
 #' @param pt_size A numeric value specifying the size of the points. When
 #'   \code{NULL}, Shennong chooses a value automatically based on the number of
 #'   cells.
+#' @param alpha Point alpha passed to Seurat's \code{FeaturePlot()}.
+#' @param stroke_size Point stroke size passed to Seurat's \code{FeaturePlot()}.
 #' @param slot A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".
+#' @param min_cutoff A numeric value specifying the minimum expression cutoff.
+#'   Defaults to \code{NA}.
 #' @param max_cutoff A numeric value specifying the maximum expression cutoff. Defaults to NA.
+#' @param shape_by,blend,blend_threshold,ncol,coord_fixed,by_col,raster_dpi
+#'   Snake-case wrappers for the corresponding Seurat \code{FeaturePlot()}
+#'   arguments.
 #' @param mode One of \code{"expression"} or \code{"density"}. Density mode
 #'   computes a Nebulosa-style weighted feature density over the selected
 #'   embedding and renders it with a galaxy-like theme by default.
@@ -1867,7 +2368,11 @@ sn_plot_dot <- function(x,
 #'   estimator when \code{mode = "density"}. Larger values smooth more.
 #' @param density_style One of \code{"galaxy"} or \code{"plain"}. Defaults to
 #'   \code{"galaxy"}.
-#' @param raster A logical value specifying whether to use raster graphics. Defaults to TRUE.
+#' @param raster A logical value specifying whether to use raster graphics.
+#'   Defaults to TRUE. When \code{ggrastr} is installed, Shennong rasterizes the
+#'   regular ggplot point layer after plotting so \code{pt_size} keeps the same
+#'   behavior as \code{raster = FALSE}; otherwise it falls back to Seurat's
+#'   native raster backend.
 #' @param seed An integer value specifying the random seed. Defaults to 717.
 #' @param title A character string specifying the plot title. Defaults to NULL.
 #' @param legend_title A character string specifying the legend title. Defaults to NULL.
@@ -1907,17 +2412,30 @@ sn_plot_feature <-
   function(object,
            features,
            reduction = NULL,
-           label = label,
+           assay = NULL,
+           dims = c(1, 2),
+           cells = NULL,
+           label = FALSE,
            split_by = NULL,
            label_size = 8 * 0.36,
            pt_size = NULL,
+           alpha = 1,
+           stroke_size = NULL,
            slot = "data",
+           min_cutoff = NA,
            max_cutoff = NA,
+           shape_by = NULL,
+           blend = FALSE,
+           blend_threshold = 0.5,
+           ncol = NULL,
+           coord_fixed = FALSE,
+           by_col = TRUE,
            mode = c("expression", "density"),
            density_method = c("wkde", "ks"),
            density_adjust = 1,
            density_style = c("galaxy", "plain"),
            raster = TRUE,
+           raster_dpi = c(512, 512),
            seed = 717,
            title = NULL,
            legend_title = NULL,
@@ -1943,6 +2461,7 @@ sn_plot_feature <-
     pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
     reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
     object[["ident"]] <- Seurat::Idents(object = object)
+    cells <- cells %||% colnames(object)
 
     if (identical(mode, "density")) {
       check_installed("Nebulosa", reason = "to compute feature-density plots.")
@@ -1950,14 +2469,16 @@ sn_plot_feature <-
         check_installed("ks", reason = "to compute `density_method = \"ks\"` feature-density plots.")
       }
 
-      embeddings <- as.data.frame(Seurat::Embeddings(object[[reduction]])[, 1:2, drop = FALSE])
+      embeddings <- as.data.frame(Seurat::Embeddings(object[[reduction]])[cells, dims, drop = FALSE])
       colnames(embeddings) <- c("dim1", "dim2")
       feature_titles <- as.character(features)
       vars <- .sn_fetch_feature_matrix(
         object = object,
         features = feature_titles,
+        assay = assay,
         layer = slot
       )
+      vars <- vars[cells, , drop = FALSE]
       density_objects <- lapply(
         feature_titles,
         function(feature) .sn_density_object(
@@ -2019,20 +2540,45 @@ sn_plot_feature <-
       return(p)
     }
 
-    p <- Seurat::FeaturePlot(
-      object = object,
-      features = features,
-      reduction = reduction,
-      split.by = split_by,
-      label.size = 8 * 0.36,
-      pt.size = pt_size,
-      slot = slot,
-      raster = raster,
-      order = TRUE,
-      max.cutoff = max_cutoff,
-      keep.scale = keep_scale,
-      ...
+    featureplot_raster <- if (isTRUE(raster) && rlang::is_installed("ggrastr")) FALSE else raster
+    p <- withCallingHandlers(
+      Seurat::FeaturePlot(
+        object = object,
+        features = features,
+        dims = dims,
+        cells = cells,
+        assay = assay,
+        reduction = reduction,
+        split.by = split_by,
+        label = label,
+        label.size = label_size,
+        pt.size = pt_size,
+        alpha = alpha,
+        stroke.size = stroke_size,
+        slot = slot,
+        raster = featureplot_raster,
+        raster.dpi = raster_dpi,
+        order = TRUE,
+        min.cutoff = min_cutoff,
+        max.cutoff = max_cutoff,
+        shape.by = shape_by,
+        blend = blend,
+        blend.threshold = blend_threshold,
+        ncol = ncol,
+        coord.fixed = coord_fixed,
+        by.col = by_col,
+        keep.scale = keep_scale,
+        ...
+      ),
+      warning = function(w) {
+        if (grepl("ggrastr::rasterise", conditionMessage(w), fixed = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      }
     )
+    if (isTRUE(raster) && rlang::is_installed("ggrastr")) {
+      p <- .sn_rasterise_point_layers(p, raster_dpi = raster_dpi)
+    }
     if (inherits(p, "patchwork")) {
       p <- patchwork::wrap_plots(.sn_patchwork_leaf_plots(p))
     }
@@ -2045,7 +2591,8 @@ sn_plot_feature <-
       object = object,
       features = feature_titles,
       slot = slot,
-      max_cutoff = max_cutoff
+      max_cutoff = max_cutoff,
+      cells = cells
     )
     feature_breaks <- .sn_colorbar_breaks_labels(
       limits = feature_limits,

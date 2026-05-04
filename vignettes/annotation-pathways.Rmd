@@ -109,6 +109,34 @@ sn_plot_dot(
 )
 ```
 
+## Transfer labels from a reference
+
+Marker tables are useful when you want to name clusters manually. When a
+trusted reference already exists, `sn_transfer_labels()` follows Seurat's
+anchor workflow and writes the projected label plus a confidence score back to
+the query metadata. The wrapper keeps the source label and transfer settings in
+`query@misc$label_transfer`, so the annotation is not just a loose metadata
+column.
+
+```{r label-transfer, eval = FALSE}
+reference <- pbmc
+query <- pbmc
+
+reference$cell_type <- reference$seurat_clusters
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = reference,
+  label_col = "cell_type",
+  prediction_prefix = "pbmc_reference",
+  dims = 1:15,
+  verbose = FALSE
+)
+
+table(query$pbmc_reference_label)
+head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
+```
+
 ## Discover and manage bundled signatures
 
 Shennong ships a signature catalog so blocking genes, marker sets, and report

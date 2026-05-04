@@ -16,9 +16,10 @@ sn_run_cluster(
   rare_feature_method = "none",
   rare_feature_group_by = NULL,
   rare_feature_n = 200,
-  rare_group_max_fraction = 0.05,
-  rare_group_max_cells = 100,
-  rare_gene_max_fraction = 0.1,
+  rare_feature_control = list(),
+  rare_group_max_fraction = NULL,
+  rare_group_max_cells = NULL,
+  rare_gene_max_fraction = NULL,
   block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
   theta = 2,
   group_by_vars = NULL,
@@ -60,28 +61,23 @@ genes within groups before merging and ranking them. When \code{NULL} and
 
 \item{rare_feature_method}{Optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
-\code{"none"}, \code{"gini"}, \code{"local_hvg"},
-\code{"local_markers"}, and \code{"ciara"}.}
+\code{"none"}, \code{"gini"}, and \code{"local_markers"}.}
 
 \item{rare_feature_group_by}{Optional metadata column used to define groups
-for rare-group-aware feature extraction in \code{"local_hvg"} and
-\code{"local_markers"} modes. When \code{NULL}, Shennong builds a
-temporary coarse clustering from the base HVGs.}
+for \code{"local_markers"}. When \code{NULL}, Shennong builds a temporary
+coarse clustering from the base HVGs.}
 
 \item{rare_feature_n}{Number of rare-aware features to add per selected
 method. For example, \code{c("gini", "local_markers")} with
 \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
 before de-duplication.}
 
-\item{rare_group_max_fraction}{Maximum cluster fraction used when identifying
-rare groups for \code{"local_hvg"} and \code{"local_markers"}.}
+\item{rare_feature_control}{Named list of advanced rare-feature thresholds.
+Supported fields are \code{group_max_fraction}, \code{group_max_cells},
+\code{gene_max_fraction}, and \code{min_cells}.}
 
-\item{rare_group_max_cells}{Maximum absolute cluster size used when
-identifying rare groups for \code{"local_hvg"} and
-\code{"local_markers"}.}
-
-\item{rare_gene_max_fraction}{Maximum expressing-cell fraction used by
-score-based rare-feature methods such as \code{"gini"}.}
+\item{rare_group_max_fraction, rare_group_max_cells, rare_gene_max_fraction}{Deprecated rare-feature thresholds. Use \code{rare_feature_control}
+instead.}
 
 \item{block_genes}{Either a character vector of predefined bundled signature
 categories (for example \code{c("ribo","mito")}) or a custom vector of

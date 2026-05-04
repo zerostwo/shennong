@@ -136,6 +136,31 @@ rogue_tbl <- sn_calculate_rogue(
 )
 ```
 
+## Simulate from the current object
+
+Simulation is useful when you need a controlled object with the same covariate
+structure as a real experiment. `sn_simulate()` keeps the API method-based, so
+new simulation engines can be added later. With `method = "scdesign3"`, it
+converts the selected Seurat layer to a SingleCellExperiment, calls scDesign3,
+and returns a simulated Seurat object by default. It does not merge original
+and simulated cells unless `combine_original = TRUE`.
+
+```{r scdesign3-layer, eval = run_vignette && requireNamespace("scDesign3", quietly = TRUE)}
+sim_pbmc <- sn_simulate(
+  object = pbmc_layered,
+  method = "scdesign3",
+  celltype = "seurat_clusters",
+  ncell = 500,
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  n_cores = 2,
+  return = "seurat"
+)
+
+sim_pbmc
+sim_pbmc@misc$scdesign3
+```
+
 ## Cache layer-aware artifacts
 
 Layer-aware results are still regular Seurat objects and tables, so the same IO

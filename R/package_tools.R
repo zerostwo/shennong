@@ -572,7 +572,7 @@ sn_install_shennong <- function(
   c(
     "BiocParallel", "celda", "clusterProfiler", "DESeq2", "edgeR",
     "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "rhdf5",
-    "rtracklayer", "scDblFinder", "scran", "SingleCellExperiment",
+    "rtracklayer", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment",
     "SummarizedExperiment", "limma"
   )
 }

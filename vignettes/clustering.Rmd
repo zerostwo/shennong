@@ -106,7 +106,7 @@ pbmc_rare <- sn_run_cluster(
   rare_feature_method = c("gini", "local_markers"),
   rare_feature_group_by = "seurat_clusters",
   rare_feature_n = 50,
-  rare_group_max_fraction = 0.05,
+  rare_feature_control = list(group_max_fraction = 0.05),
   dims = 1:20,
   resolution = 0.8,
   species = "human",

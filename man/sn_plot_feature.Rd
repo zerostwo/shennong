@@ -8,17 +8,30 @@ sn_plot_feature(
   object,
   features,
   reduction = NULL,
-  label = label,
+  assay = NULL,
+  dims = c(1, 2),
+  cells = NULL,
+  label = FALSE,
   split_by = NULL,
   label_size = 8 * 0.36,
   pt_size = NULL,
+  alpha = 1,
+  stroke_size = NULL,
   slot = "data",
+  min_cutoff = NA,
   max_cutoff = NA,
+  shape_by = NULL,
+  blend = FALSE,
+  blend_threshold = 0.5,
+  ncol = NULL,
+  coord_fixed = FALSE,
+  by_col = TRUE,
   mode = c("expression", "density"),
   density_method = c("wkde", "ks"),
   density_adjust = 1,
   density_style = c("galaxy", "plain"),
   raster = TRUE,
+  raster_dpi = c(512, 512),
   seed = 717,
   title = NULL,
   legend_title = NULL,
@@ -45,6 +58,13 @@ sn_plot_feature(
 
 \item{reduction}{A character string specifying the dimensionality reduction to use (e.g., "PCA", "UMAP", "tSNE"). Defaults to NULL.}
 
+\item{assay}{Optional assay passed to Seurat's \code{FeaturePlot()} and used
+for density-mode expression retrieval.}
+
+\item{dims}{Two dimensions to plot. Defaults to \code{c(1, 2)}.}
+
+\item{cells}{Optional cells to include.}
+
 \item{label}{A character vector specifying the labels to use for each cell group. Defaults to label.}
 
 \item{split_by}{A character vector specifying the cell groups to split the plot by. Defaults to NULL.}
@@ -55,9 +75,19 @@ sn_plot_feature(
 \code{NULL}, Shennong chooses a value automatically based on the number of
 cells.}
 
+\item{alpha}{Point alpha passed to Seurat's \code{FeaturePlot()}.}
+
+\item{stroke_size}{Point stroke size passed to Seurat's \code{FeaturePlot()}.}
+
 \item{slot}{A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".}
 
+\item{min_cutoff}{A numeric value specifying the minimum expression cutoff.
+Defaults to \code{NA}.}
+
 \item{max_cutoff}{A numeric value specifying the maximum expression cutoff. Defaults to NA.}
+
+\item{shape_by, blend, blend_threshold, ncol, coord_fixed, by_col, raster_dpi}{Snake-case wrappers for the corresponding Seurat \code{FeaturePlot()}
+arguments.}
 
 \item{mode}{One of \code{"expression"} or \code{"density"}. Density mode
 computes a Nebulosa-style weighted feature density over the selected
@@ -72,7 +102,11 @@ estimator when \code{mode = "density"}. Larger values smooth more.}
 \item{density_style}{One of \code{"galaxy"} or \code{"plain"}. Defaults to
 \code{"galaxy"}.}
 
-\item{raster}{A logical value specifying whether to use raster graphics. Defaults to TRUE.}
+\item{raster}{A logical value specifying whether to use raster graphics.
+Defaults to TRUE. When \code{ggrastr} is installed, Shennong rasterizes the
+regular ggplot point layer after plotting so \code{pt_size} keeps the same
+behavior as \code{raster = FALSE}; otherwise it falls back to Seurat's
+native raster backend.}
 
 \item{seed}{An integer value specifying the random seed. Defaults to 717.}
 

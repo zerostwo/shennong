@@ -199,10 +199,12 @@ test_that("rare-feature helper functions cover gini, local markers, and grouped 
     layer = "data",
     nfeatures = 10,
     group_by = "seed_cluster",
-    rare_group_max_fraction = 0.2,
-    rare_group_max_cells = 10,
-    rare_gene_max_fraction = 0.2,
-    min_cells = 3,
+    control = list(
+      group_max_fraction = 0.2,
+      group_max_cells = 10,
+      gene_max_fraction = 0.2,
+      min_cells = 3
+    ),
     verbose = FALSE
   )
 
@@ -212,7 +214,7 @@ test_that("rare-feature helper functions cover gini, local markers, and grouped 
   expect_true(any(grepl("^raregene", selected$features)))
 })
 
-test_that("rare-feature grouping helpers cover temporary clustering and local HVGs", {
+test_that("rare-feature grouping helpers cover temporary clustering and controls", {
   skip_if_not_installed("Seurat")
 
   object <- make_rare_test_object()
@@ -235,37 +237,38 @@ test_that("rare-feature grouping helpers cover temporary clustering and local HV
     max_fraction = 0.2,
     max_cells = 10
   )
-  local_hvg <- Shennong:::.sn_detect_rare_features_local_hvg(
-    object = object,
-    groups = object$seed_cluster,
-    rare_groups = "rare",
-    nfeatures = 10
-  )
 
   expect_length(grouped, ncol(object))
   expect_true(all(grouped %in% auto_group_info$groups))
   expect_length(auto_group_info$groups, ncol(object))
   expect_true(all(names(auto_group_info$group_sizes) %in% unique(auto_group_info$groups)))
-  expect_lte(length(local_hvg), 10)
 
   selected <- Shennong:::.sn_select_rare_features(
     object = object,
     base_features = base_features,
-    method = "local_hvg",
+    method = "local_markers",
     assay = "RNA",
     layer = "data",
     nfeatures = 10,
     group_by = "seed_cluster",
-    rare_group_max_fraction = 0.2,
-    rare_group_max_cells = 10,
+    control = list(group_max_fraction = 0.2, group_max_cells = 10),
     npcs = 8,
     dims = 1:6,
     resolution = 0.3,
     verbose = FALSE
   )
 
-  expect_true(all(selected$metadata$method == "local_hvg"))
-  expect_equal(sort(unique(selected$features)), sort(unique(local_hvg)))
+  expect_true(all(selected$metadata$method == "local_markers"))
+  expect_true(any(grepl("^raregene", selected$features)))
+  expect_error(
+    Shennong:::.sn_select_rare_features(
+      object = object,
+      base_features = base_features,
+      method = "local_hvg",
+      verbose = FALSE
+    ),
+    "'arg' should be one of"
+  )
 })
 
 test_that("rare-feature selection handles none and missing grouping errors explicitly", {
@@ -713,7 +716,7 @@ test_that("sn_run_cluster can append rare-aware features before PCA", {
     nfeatures = 40,
     rare_feature_method = "gini",
     rare_feature_n = 15,
-    rare_gene_max_fraction = 0.15,
+    rare_feature_control = list(gene_max_fraction = 0.15),
     block_genes = NULL,
     npcs = 10,
     dims = 1:10,
@@ -761,7 +764,11 @@ test_that("sn_run_cluster applies rare_feature_n per selected method", {
     rare_feature_method = c("gini", "local_markers"),
     rare_feature_group_by = "seed_cluster",
     rare_feature_n = 5,
-    rare_gene_max_fraction = 0.2,
+    rare_feature_control = list(
+      group_max_fraction = 0.2,
+      group_max_cells = 10,
+      gene_max_fraction = 0.2
+    ),
     block_genes = NULL,
     npcs = 10,
     dims = 1:10,
@@ -778,6 +785,139 @@ test_that("sn_run_cluster applies rare_feature_n per selected method", {
   expect_gte(length(rare_store$rare_features), 5)
   expect_equal(rare_store$selected_rare_feature_n, length(rare_store$rare_features))
   expect_true(any(grepl("^raregene", rare_store$rare_features)))
+})
+
+test_that("sn_transfer_labels adds compact Seurat label-transfer metadata", {
+  skip_if_not_installed("Seurat")
+
+  reference <- make_test_object(seed = 200, prefix = "reference", n_genes = 80, n_cells = 20)
+  query <- make_test_object(seed = 201, prefix = "query", n_genes = 80, n_cells = 12)
+  reference$cell_type <- rep(c("T cell", "B cell"), each = 10)
+  predictions <- data.frame(
+    predicted.id = rep(c("T cell", "B cell"), each = 6),
+    prediction.score.max = rep(c(0.92, 0.88), each = 6),
+    prediction.score.T.cell = rep(c(0.92, 0.12), each = 6),
+    prediction.score.B.cell = rep(c(0.08, 0.88), each = 6),
+    row.names = colnames(query),
+    check.names = FALSE
+  )
+
+  mapped <- testthat::with_mocked_bindings(
+    sn_transfer_labels(
+      object = query,
+      reference = reference,
+      label_col = "cell_type",
+      prediction_prefix = "pbmc_ref",
+      dims = 1:5,
+      store_prediction_scores = TRUE,
+      verbose = FALSE
+    ),
+    .sn_find_transfer_anchors_backend = function(...) {
+      list(anchor_count = 5)
+    },
+    .sn_transfer_data_backend = function(...) {
+      predictions
+    }
+  )
+
+  expect_s4_class(mapped, "Seurat")
+  expect_true(all(c(
+    "pbmc_ref_label",
+    "pbmc_ref_score",
+    "pbmc_ref_score_T_cell",
+    "pbmc_ref_score_B_cell"
+  ) %in% colnames(mapped[[]])))
+  expect_equal(unname(mapped$pbmc_ref_label), predictions$predicted.id)
+  expect_equal(mapped@misc$label_transfer$pbmc_ref$label_col, "cell_type")
+})
+
+test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("SummarizedExperiment")
+  skip_if_not_installed("scDesign3")
+
+  object <- make_test_object(seed = 202, prefix = "simulate", n_genes = 30, n_cells = 10)
+  object$cell_type <- rep(c("A", "B"), each = 5)
+  sim_counts <- Matrix::Matrix(
+    matrix(rpois(30 * 6, lambda = 2), nrow = 30, ncol = 6),
+    sparse = TRUE
+  )
+  rownames(sim_counts) <- rownames(object)
+  colnames(sim_counts) <- paste0("sim_cell_", seq_len(6))
+
+  simulated <- testthat::with_mocked_bindings(
+    sn_simulate_scdesign3(
+      object = object,
+      celltype = "cell_type",
+      ncell = 6,
+      n_cores = 1,
+      return = "seurat",
+      project = "mock_scdesign3"
+    ),
+    .sn_run_scdesign3_backend = function(...) {
+      args <- list(...)
+      expect_equal(args$celltype, "cell_type")
+      expect_equal(args$mu_formula, "cell_type")
+      expect_equal(args$corr_formula, "cell_type")
+      expect_equal(args$ncell, 6)
+      list(
+        new_count = sim_counts,
+        new_covariate = data.frame(
+          cell_type = rep(c("A", "B"), each = 3),
+          row.names = colnames(sim_counts)
+        )
+      )
+    }
+  )
+
+  expect_s4_class(simulated, "Seurat")
+  expect_equal(ncol(simulated), 6)
+  expect_equal(rownames(simulated), rownames(object))
+  expect_equal(simulated@misc$scdesign3$mu_formula, "cell_type")
+
+  generic <- testthat::with_mocked_bindings(
+    sn_simulate(
+      object = object,
+      method = "scdesign3",
+      celltype = "cell_type",
+      ncell = 6,
+      n_cores = 1,
+      return = "counts"
+    ),
+    .sn_run_scdesign3_backend = function(...) {
+      list(
+        new_count = sim_counts,
+        new_covariate = data.frame(
+          cell_type = rep(c("A", "B"), each = 3),
+          row.names = colnames(sim_counts)
+        )
+      )
+    }
+  )
+  expect_s4_class(generic, "dgCMatrix")
+
+  combined <- testthat::with_mocked_bindings(
+    sn_simulate(
+      object = object,
+      method = "scdesign3",
+      celltype = "cell_type",
+      ncell = 6,
+      n_cores = 1,
+      combine_original = TRUE
+    ),
+    .sn_run_scdesign3_backend = function(...) {
+      list(
+        new_count = sim_counts,
+        new_covariate = data.frame(
+          cell_type = rep(c("A", "B"), each = 3),
+          row.names = colnames(sim_counts)
+        )
+      )
+    }
+  )
+  expect_s4_class(combined, "Seurat")
+  expect_true(all(c("original", "simulated") %in% combined$simulation_source))
 })
 
 test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not overlap", {

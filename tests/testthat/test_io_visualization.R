@@ -190,17 +190,56 @@ test_that("Seurat plotting helpers return ggplot objects", {
   )
 
   feature_plot <- sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1)
+  feature_plot_small <- sn_plot_feature(
+    object,
+    features = "CD3D",
+    reduction = "umap",
+    pt_size = 0.01,
+    raster = TRUE
+  )
+  expect_message(
+    sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", raster = FALSE),
+    NA
+  )
   multi_feature_plot <- sn_plot_feature(object, features = c("CD3D", "LYZ"), reduction = "umap", palette = "RdBu")
+  heatmap_plot <- sn_plot_heatmap(
+    object,
+    features = c("CD3D", "CD3E", "LYZ"),
+    group_by = "group",
+    raster = FALSE,
+    show_legend = FALSE
+  )
+  average_heatmap <- sn_plot_heatmap(
+    object,
+    features = c("CD3D", "CD3E", "LYZ"),
+    group_by = "group",
+    mode = "average",
+    show_legend = FALSE
+  )
+  split_heatmap <- sn_plot_heatmap(
+    object,
+    features = c("CD3D", "LYZ"),
+    group_by = "group",
+    split_by = "group",
+    raster = FALSE,
+    show_legend = FALSE
+  )
   dim_plot <- sn_plot_dim(object, reduction = "umap", group_by = "group")
   dim_plot_repel <- sn_plot_dim(object, reduction = "umap", group_by = "group", label = TRUE, repel = TRUE)
+  dim_plot_no_halo <- sn_plot_dim(object, reduction = "umap", group_by = "group", label = TRUE, repel = TRUE, label_halo = FALSE)
   dim_plot_panel_widths <- sn_plot_dim(object, reduction = "umap", group_by = "group", panel_widths = 80)
   dim_plot_no_aspect <- sn_plot_dim(object, reduction = "umap", group_by = "group", panel_widths = 80, aspect_ratio = NULL)
   feature_color_scale <- Filter(function(scale) "colour" %in% scale$aesthetics, feature_plot$scales$scales)[[1]]
 
   expect_s3_class(feature_plot, "ggplot")
+  expect_s3_class(feature_plot_small, "ggplot")
   expect_s3_class(multi_feature_plot, "ggplot")
+  expect_s3_class(heatmap_plot, "ggplot")
+  expect_s3_class(average_heatmap, "ggplot")
+  expect_s3_class(split_heatmap, "ggplot")
   expect_s3_class(dim_plot, "ggplot")
   expect_s3_class(dim_plot_repel, "ggplot")
+  expect_s3_class(dim_plot_no_halo, "ggplot")
   expect_s3_class(dim_plot_panel_widths, "ggplot")
   expect_s3_class(dim_plot_no_aspect, "ggplot")
   expect_s3_class(feature_plot$theme$axis.text, "element_blank")
@@ -210,15 +249,32 @@ test_that("Seurat plotting helpers return ggplot objects", {
   expect_equal(feature_color_scale$labels[[1]], "Min")
   expect_equal(tail(feature_color_scale$labels, 1), "Max")
   expect_gt(length(feature_color_scale$breaks), 2)
+  feature_plot_small_leaf <- Shennong:::.sn_patchwork_leaf_plots(feature_plot_small)[[1]]
+  expect_equal(feature_plot_small_leaf$layers[[1]]$aes_params$size, 0.01)
+  if (rlang::is_installed("ggrastr")) {
+    expect_identical(class(feature_plot_small_leaf$layers[[1]]$geom)[[1]], "GeomPoint")
+  }
   expect_true(is.language(feature_plot$labels$title))
+  expect_equal(heatmap_plot$labels$x, NULL)
+  expect_s3_class(heatmap_plot$theme$axis.text.x, "element_blank")
+  expect_s3_class(heatmap_plot$theme$axis.ticks, "element_blank")
+  expect_true(all(c("feature", "group", "expression", "value") %in% colnames(average_heatmap$data)))
+  expect_equal(
+    nrow(average_heatmap$data),
+    length(levels(average_heatmap$data$feature)) * length(unique(average_heatmap$data$group))
+  )
+  expect_identical(levels(average_heatmap$data$feature), c("CD3D", "CD3E", "LYZ"))
   multi_feature_scales <- lapply(
     multi_feature_plot$patches$plots,
     function(plot) Filter(function(scale) "colour" %in% scale$aesthetics, plot$scales$scales)
   )
   expect_true(all(vapply(multi_feature_scales, length, integer(1)) >= 1L))
   expect_equal(length(multi_feature_plot$guides$guides), 1)
-  expected_geom <- if (rlang::is_installed("shadowtext")) "GeomShadowText" else "GeomText"
+  expected_geom <- if (rlang::is_installed("ggrepel")) "GeomLabelRepel" else if (rlang::is_installed("shadowtext")) "GeomShadowText" else "GeomText"
   expect_identical(class(dim_plot_repel$layers[[2]]$geom)[[1]], expected_geom)
+  if (rlang::is_installed("ggrepel")) {
+    expect_identical(class(dim_plot_no_halo$layers[[2]]$geom)[[1]], "GeomTextRepel")
+  }
   expect_equal(as.numeric(dim_plot$theme$legend.text$margin[[4]]), 2)
   expect_true(all(vapply(
     c(list(multi_feature_plot), multi_feature_plot$patches$plots),
@@ -272,6 +328,8 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
     )
   )
   color_scale <- Filter(function(scale) "colour" %in% scale$aesthetics, plot$scales$scales)[[1]]
+  expect_equal(color_scale$guide$params$theme$legend.frame@colour, "black")
+  expect_equal(color_scale$guide$params$theme$legend.ticks@colour, "black")
 
   expect_equal(feature_info$group_by, "cell_type")
   expect_length(feature_info$features, 2)

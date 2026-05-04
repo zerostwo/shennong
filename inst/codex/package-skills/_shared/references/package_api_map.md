@@ -40,7 +40,10 @@ Datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or Harmony integration; supports Seurat log-normalization, SCTransform, and SCTransform followed by Harmony when `batch` is supplied. Rare-aware feature augmentation can combine `gini`, `local_hvg`, `local_markers`, and `ciara`, with `rare_feature_n` applied per selected method before de-duplication. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_run_cluster()`: single-dataset clustering or Harmony integration; supports Seurat log-normalization, SCTransform, and SCTransform followed by Harmony when `batch` is supplied. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the final ScaleData/PCA feature set.
+- `sn_transfer_labels()`: query-first Seurat reference label transfer wrapper that writes predicted labels, confidence scores, and transfer provenance back to the query object.
+- `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
+- `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
 
 ## Diagnostics and Benchmarking
 
@@ -106,7 +109,8 @@ Datasets:
 ## Visualization
 
 - `sn_plot_dim()`: embedding plot for categorical labels
-- `sn_plot_feature()`: feature plot or density-style feature map
+- `sn_plot_feature()`: feature plot or density-style feature map with rasterized points that preserve `pt_size`
+- `sn_plot_heatmap()`: selected-gene heatmap in cell-level or group-averaged mode
 - `sn_plot_violin()`: violin plot
 - `sn_plot_dot()`: dot plot
 - `sn_plot_boxplot()`: box plot

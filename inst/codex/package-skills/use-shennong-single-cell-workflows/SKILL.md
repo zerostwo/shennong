@@ -51,7 +51,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
 2. Run clustering or batch integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
-   forced into the ScaleData/PCA feature set, and use
+   forced into the ScaleData/PCA feature set, use
+   `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
+   automatically add rare-aware genes, and use
    `normalization_method = "sctransform"` with `batch = ...` when an
    SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster structure with
@@ -61,7 +63,8 @@ single-cell tasks. This skill is the main entry point for package usage.
    isolated labels, or difficult-to-separate populations matter.
 4. Move to downstream biological interpretation:
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
-   and optional reference annotation with `sn_run_celltypist()`.
+   optional reference annotation with `sn_transfer_labels()`, and optional
+   external annotation with `sn_run_celltypist()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
@@ -71,10 +74,13 @@ single-cell tasks. This skill is the main entry point for package usage.
    bulk RNA-seq mixtures.
 6. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
-7. Inspect and reuse bundled signatures with `sn_list_signatures()` and
+7. Simulate from real objects with `sn_simulate(method = "scdesign3")` when a
+   controlled Seurat or SingleCellExperiment output is needed for method
+   checks.
+8. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
-8. When the correct entry point is unclear, read
+9. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 
@@ -89,6 +95,8 @@ single-cell tasks. This skill is the main entry point for package usage.
 
 - `sn_initialize_seurat_object()`
 - `sn_run_cluster()`
+- `sn_transfer_labels()`
+- `sn_simulate(method = "scdesign3")`
 - `sn_assess_integration()`
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
@@ -98,6 +106,7 @@ single-cell tasks. This skill is the main entry point for package usage.
 - `sn_run_milo()`
 - `sn_plot_dim()`
 - `sn_plot_feature()`
+- `sn_plot_heatmap()`
 - `sn_deconvolve_bulk(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

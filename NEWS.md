@@ -7,6 +7,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_transfer_labels()` now wraps Seurat reference mapping with a query-first
+  API for pipe-friendly workflows: find anchors, transfer one reference
+  metadata label, add predicted labels and confidence scores to the query, and
+  store provenance under `query@misc$label_transfer`.
+- `sn_simulate()` now provides a method-based simulation entry point.
+  `method = "scdesign3"` wraps `scDesign3::scdesign3()` for Seurat or
+  SingleCellExperiment inputs and can return simulated counts as a Seurat
+  object, SingleCellExperiment, sparse matrix, or raw scDesign3 result.
+  `sn_simulate_scdesign3()` remains as the backend-specific wrapper.
+- `sn_plot_heatmap()` now draws focused heatmaps for user-selected genes, with
+  cell-level and group-averaged modes, optional grouping/splitting, default
+  rasterization, hidden cell names/ticks, 8 pt group labels, Paired group-bar
+  colors, and automatic scaling of requested features when needed.
 - `sn_run_cluster()` now accepts `hvg_features`, a user-supplied feature list
   that is validated against the object and merged with internally selected
   HVGs and rare-aware features before scaling/PCA. This lets users force rare
@@ -72,6 +85,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- `sn_run_cluster()` now uses a simpler rare-feature interface. The supported
+  automatic rare feature methods are `gini` and `local_markers`; less common
+  `local_hvg` and `ciara` modes were removed from the clustering wrapper.
+  Advanced thresholds are consolidated into `rare_feature_control =
+  list(group_max_fraction = ..., group_max_cells = ..., gene_max_fraction =
+  ..., min_cells = ...)`. The old scalar threshold arguments remain as
+  deprecated compatibility aliases.
+- `sn_plot_feature()` now silently replaces Seurat's default expression color
+  scale when a Shennong palette is requested, avoiding the noisy duplicate
+  colour-scale message.
+- `sn_plot_feature()` now exposes additional Seurat 5.5 `FeaturePlot()`
+  arguments including `assay`, `dims`, `cells`, `alpha`, `stroke_size`,
+  `min_cutoff`, and `raster_dpi`. With `ggrastr` available, `raster = TRUE`
+  rasterizes a regular ggplot point layer so `pt_size` behaves like
+  `raster = FALSE`, fixing overly large rasterized feature points.
+- `sn_plot_dim()` now exposes `label_halo` so users can disable the white label
+  halo/background, and `label = TRUE, repel = TRUE` now keeps a repel-aware
+  label layer instead of replacing it with fixed-position shadow text.
+- `sn_plot_dot()` now uses black colorbar frame/tick styling and suppresses the
+  duplicate colour-scale replacement message when applying Shennong palettes.
 - `sn_list_dependencies()` and `sn_install_dependencies()` now classify `anndataR` and `tidytemplate` as GitHub-hosted optional dependencies instead of routing them through Bioconductor or CRAN, matching the package's declared remote sources and avoiding misleading installation warnings on current R/Bioconductor releases.
 - Reworked the pkgdown article set around a PBMC3k tutorial path, adding
   explicit data/project and visualization articles and rewriting workflow
@@ -86,11 +119,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `rare_feature_method` before de-duplicating the combined rare-aware feature
   set, matching the documented contract. The stored
   `object@misc$rare_feature_selection` record now keeps both the requested
-  `rare_feature_n` and the realized `selected_rare_feature_n`. The
-  documentation now also clarifies that `rare_feature_group_by`,
-  `rare_group_max_fraction`, and `rare_group_max_cells` only affect the
-  group-aware rare-feature modes (`local_hvg` / `local_markers`), whereas
-  `rare_gene_max_fraction` is used by score-based modes such as `gini`.
+  `rare_feature_n`, the resolved `rare_feature_control`, and the realized
+  `selected_rare_feature_n`.
 - `sn_calculate_rogue()` now avoids materializing the full matrix before
   optional subsampling, skips redundant entropy work when grouped ROGUE scores
   are requested, and returns tidy per-cluster or per-sample-per-cluster tables

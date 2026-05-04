@@ -127,31 +127,6 @@
   )
 }
 
-.sn_detect_rare_features_local_hvg <- function(object,
-                                               groups,
-                                               rare_groups,
-                                               nfeatures = 200) {
-  if (length(rare_groups) == 0) {
-    return(character(0))
-  }
-
-  local_features <- lapply(rare_groups, function(current_group) {
-    current_cells <- colnames(object)[groups == current_group]
-    if (length(current_cells) < 3) {
-      return(character(0))
-    }
-    current_object <- subset(object, cells = current_cells)
-    current_object <- Seurat::FindVariableFeatures(
-      current_object,
-      nfeatures = nfeatures,
-      verbose = FALSE
-    )
-    Seurat::VariableFeatures(current_object)
-  })
-
-  utils::head(unique(unlist(local_features, use.names = FALSE)), nfeatures)
-}
-
 .sn_detect_rare_features_local_markers <- function(object,
                                                    groups,
                                                    rare_groups,
@@ -182,40 +157,64 @@
   utils::head(unique(unlist(local_markers, use.names = FALSE)), nfeatures)
 }
 
-.sn_detect_rare_features_ciara <- function(object,
-                                           assay = "RNA",
-                                           nfeatures = 200,
-                                           min_cells = 3,
-                                           max_cells = 100,
-                                           k = 20) {
-  check_installed("CIARA", reason = "to select rare-cell markers with the CIARA backend.")
+.sn_resolve_rare_feature_control <- function(control = list(),
+                                             rare_group_max_fraction = NULL,
+                                             rare_group_max_cells = NULL,
+                                             rare_gene_max_fraction = NULL) {
+  if (is.null(control)) {
+    control <- list()
+  }
+  if (!is.list(control)) {
+    stop("`rare_feature_control` must be a named list.", call. = FALSE)
+  }
 
-  expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = "data")
-  temp_object <- Seurat::FindNeighbors(
-    object = object,
-    reduction = "pca",
-    dims = seq_len(min(20, ncol(SeuratObject::Embeddings(object, "pca")))),
-    k.param = k,
-    verbose = FALSE
+  defaults <- list(
+    group_max_fraction = 0.05,
+    group_max_cells = 100,
+    gene_max_fraction = 0.1,
+    min_cells = 3
   )
-  nn_graph <- methods::as(temp_object@graphs[[.sn_guess_graph_name(temp_object)]], "dgCMatrix")
-  background <- CIARA::get_background_full(
-    norm_matrix = as.matrix(expr),
-    threshold = 1,
-    n_cells_low = min_cells,
-    n_cells_high = max_cells
-  )
-  result <- CIARA::CIARA(
-    norm_matrix = as.matrix(expr),
-    knn_matrix = as.matrix(nn_graph),
-    background = background,
-    cores_number = 1,
-    p_value = 0.001,
-    local_region = 1,
-    approximation = FALSE
-  )
-  ranked <- rownames(result)[order(as.numeric(result[, 1]), rownames(result))]
-  utils::head(ranked, nfeatures)
+  unknown <- setdiff(names(control), names(defaults))
+  if (length(unknown) > 0L) {
+    stop(
+      glue("Unknown `rare_feature_control` field(s): {paste(unknown, collapse = ', ')}."),
+      call. = FALSE
+    )
+  }
+  resolved <- utils::modifyList(defaults, control)
+
+  if (!is.null(rare_group_max_fraction)) {
+    .sn_log_warn("`rare_group_max_fraction` is deprecated; use `rare_feature_control = list(group_max_fraction = ...)`.")
+    resolved$group_max_fraction <- rare_group_max_fraction
+  }
+  if (!is.null(rare_group_max_cells)) {
+    .sn_log_warn("`rare_group_max_cells` is deprecated; use `rare_feature_control = list(group_max_cells = ...)`.")
+    resolved$group_max_cells <- rare_group_max_cells
+  }
+  if (!is.null(rare_gene_max_fraction)) {
+    .sn_log_warn("`rare_gene_max_fraction` is deprecated; use `rare_feature_control = list(gene_max_fraction = ...)`.")
+    resolved$gene_max_fraction <- rare_gene_max_fraction
+  }
+
+  resolved$group_max_fraction <- as.numeric(resolved$group_max_fraction)
+  resolved$group_max_cells <- as.integer(resolved$group_max_cells)
+  resolved$gene_max_fraction <- as.numeric(resolved$gene_max_fraction)
+  resolved$min_cells <- as.integer(resolved$min_cells)
+
+  if (!is.finite(resolved$group_max_fraction) || resolved$group_max_fraction <= 0 || resolved$group_max_fraction > 1) {
+    stop("`rare_feature_control$group_max_fraction` must be in (0, 1].", call. = FALSE)
+  }
+  if (!is.finite(resolved$gene_max_fraction) || resolved$gene_max_fraction <= 0 || resolved$gene_max_fraction > 1) {
+    stop("`rare_feature_control$gene_max_fraction` must be in (0, 1].", call. = FALSE)
+  }
+  if (is.na(resolved$group_max_cells) || resolved$group_max_cells < 1L) {
+    stop("`rare_feature_control$group_max_cells` must be a positive integer.", call. = FALSE)
+  }
+  if (is.na(resolved$min_cells) || resolved$min_cells < 1L) {
+    stop("`rare_feature_control$min_cells` must be a positive integer.", call. = FALSE)
+  }
+
+  resolved
 }
 
 .sn_select_rare_features <- function(object,
@@ -225,15 +224,14 @@
                                      layer = "data",
                                      nfeatures = 200,
                                      group_by = NULL,
-                                     rare_group_max_fraction = 0.05,
-                                     rare_group_max_cells = 100,
-                                     rare_gene_max_fraction = 0.1,
+                                     control = list(),
                                      min_cells = 3,
                                      npcs = 20,
                                      dims = 1:10,
                                      resolution = 0.2,
                                      verbose = TRUE) {
-  method <- unique(match.arg(method, c("none", "gini", "local_hvg", "local_markers", "ciara"), several.ok = TRUE))
+  control <- .sn_resolve_rare_feature_control(control = control)
+  method <- unique(match.arg(method, c("none", "gini", "local_markers"), several.ok = TRUE))
   method <- setdiff(method, "none")
   if (length(method) == 0) {
     return(list(
@@ -248,7 +246,7 @@
   rare_meta <- list()
   rare_group_info <- NULL
 
-  if (any(method %in% c("local_hvg", "local_markers"))) {
+  if ("local_markers" %in% method) {
     rare_group_info <- .sn_resolve_rare_groups(
       object = object,
       group_by = group_by,
@@ -256,8 +254,8 @@
       npcs = npcs,
       dims = dims,
       resolution = resolution,
-      max_fraction = rare_group_max_fraction,
-      max_cells = rare_group_max_cells
+      max_fraction = control$group_max_fraction,
+      max_cells = control$group_max_cells
     )
   }
 
@@ -265,33 +263,12 @@
     gini_tbl <- .sn_detect_rare_features_gini(
       expr = expr,
       nfeatures = nfeatures,
-      min_cells = min_cells,
-      max_fraction = rare_gene_max_fraction
+      min_cells = control$min_cells %||% min_cells,
+      max_fraction = control$gene_max_fraction
     )
     rare_features$gini <- gini_tbl$feature
     if (nrow(gini_tbl) > 0) {
       rare_meta[[length(rare_meta) + 1]] <- transform(gini_tbl, method = "gini")
-    }
-  }
-
-  if ("local_hvg" %in% method) {
-    local_hvg <- .sn_detect_rare_features_local_hvg(
-      object = object,
-      groups = rare_group_info$groups,
-      rare_groups = rare_group_info$rare_groups,
-      nfeatures = nfeatures
-    )
-    rare_features$local_hvg <- local_hvg
-    if (length(local_hvg) > 0) {
-      rare_meta[[length(rare_meta) + 1]] <- data.frame(
-        feature = local_hvg,
-        score = NA_real_,
-        prevalence = NA_integer_,
-        prevalence_fraction = NA_real_,
-        mean_expression = NA_real_,
-        method = "local_hvg",
-        stringsAsFactors = FALSE
-      )
     }
   }
 
@@ -303,7 +280,7 @@
       assay = assay,
       layer = layer,
       nfeatures = nfeatures,
-      min_cells = min_cells
+      min_cells = control$min_cells %||% min_cells
     )
     rare_features$local_markers <- local_markers
     if (length(local_markers) > 0) {
@@ -314,28 +291,6 @@
         prevalence_fraction = NA_real_,
         mean_expression = NA_real_,
         method = "local_markers",
-        stringsAsFactors = FALSE
-      )
-    }
-  }
-
-  if ("ciara" %in% method) {
-    ciara_features <- .sn_detect_rare_features_ciara(
-      object = object,
-      assay = assay,
-      nfeatures = nfeatures,
-      min_cells = min_cells,
-      max_cells = rare_group_max_cells
-    )
-    rare_features$ciara <- ciara_features
-    if (length(ciara_features) > 0) {
-      rare_meta[[length(rare_meta) + 1]] <- data.frame(
-        feature = ciara_features,
-        score = NA_real_,
-        prevalence = NA_integer_,
-        prevalence_fraction = NA_real_,
-        mean_expression = NA_real_,
-        method = "ciara",
         stringsAsFactors = FALSE
       )
     }
@@ -884,23 +839,20 @@ sn_detect_rare_cells <- function(object,
 #'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
 #' @param rare_feature_method Optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
-#'   \code{"none"}, \code{"gini"}, \code{"local_hvg"},
-#'   \code{"local_markers"}, and \code{"ciara"}.
+#'   \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
 #' @param rare_feature_group_by Optional metadata column used to define groups
-#'   for rare-group-aware feature extraction in \code{"local_hvg"} and
-#'   \code{"local_markers"} modes. When \code{NULL}, Shennong builds a
-#'   temporary coarse clustering from the base HVGs.
+#'   for \code{"local_markers"}. When \code{NULL}, Shennong builds a temporary
+#'   coarse clustering from the base HVGs.
 #' @param rare_feature_n Number of rare-aware features to add per selected
 #'   method. For example, \code{c("gini", "local_markers")} with
 #'   \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
 #'   before de-duplication.
-#' @param rare_group_max_fraction Maximum cluster fraction used when identifying
-#'   rare groups for \code{"local_hvg"} and \code{"local_markers"}.
-#' @param rare_group_max_cells Maximum absolute cluster size used when
-#'   identifying rare groups for \code{"local_hvg"} and
-#'   \code{"local_markers"}.
-#' @param rare_gene_max_fraction Maximum expressing-cell fraction used by
-#'   score-based rare-feature methods such as \code{"gini"}.
+#' @param rare_feature_control Named list of advanced rare-feature thresholds.
+#'   Supported fields are \code{group_max_fraction}, \code{group_max_cells},
+#'   \code{gene_max_fraction}, and \code{min_cells}.
+#' @param rare_group_max_fraction,rare_group_max_cells,rare_gene_max_fraction
+#'   Deprecated rare-feature thresholds. Use \code{rare_feature_control}
+#'   instead.
 #' @param block_genes Either a character vector of predefined bundled signature
 #'   categories (for example \code{c("ribo","mito")}) or a custom vector of
 #'   gene symbols to exclude from HVGs.
@@ -951,9 +903,10 @@ sn_run_cluster <- function(object,
                            rare_feature_method = "none",
                            rare_feature_group_by = NULL,
                            rare_feature_n = 200,
-                           rare_group_max_fraction = 0.05,
-                           rare_group_max_cells = 100,
-                           rare_gene_max_fraction = 0.1,
+                           rare_feature_control = list(),
+                           rare_group_max_fraction = NULL,
+                           rare_group_max_cells = NULL,
+                           rare_gene_max_fraction = NULL,
                            block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
                            group_by_vars = NULL,
@@ -974,9 +927,15 @@ sn_run_cluster <- function(object,
   normalization_method <- match.arg(normalization_method)
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
-    c("none", "gini", "local_hvg", "local_markers", "ciara"),
+    c("none", "gini", "local_markers"),
     several.ok = TRUE
   ))
+  rare_feature_control <- .sn_resolve_rare_feature_control(
+    control = rare_feature_control,
+    rare_group_max_fraction = rare_group_max_fraction,
+    rare_group_max_cells = rare_group_max_cells,
+    rare_gene_max_fraction = rare_gene_max_fraction
+  )
   if (!is_null(hvg_group_by) && !hvg_group_by %in% colnames(object[[]])) {
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{hvg_group_by}' was not found."))
   }
@@ -1168,10 +1127,8 @@ sn_run_cluster <- function(object,
       layer = "data",
       nfeatures = rare_feature_n,
       group_by = rare_feature_group_by,
-      rare_group_max_fraction = rare_group_max_fraction,
-      rare_group_max_cells = rare_group_max_cells,
-      rare_gene_max_fraction = rare_gene_max_fraction,
-      min_cells = 3,
+      control = rare_feature_control,
+      min_cells = rare_feature_control$min_cells,
       npcs = min(npcs, 20),
       dims = seq_len(min(10, npcs)),
       resolution = min(resolution, 0.4),
@@ -1192,6 +1149,7 @@ sn_run_cluster <- function(object,
       method = rare_feature_method,
       base_hvg_n = nfeatures,
       rare_feature_n = rare_feature_n,
+      control = rare_feature_control,
       selected_rare_feature_n = length(selected_rare_features),
       selected_features = hvg,
       rare_features = selected_rare_features,
@@ -1257,6 +1215,489 @@ sn_run_cluster <- function(object,
     if (verbose) .sn_log_info("Integration completed successfully.")
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))
   }
+}
+
+.sn_find_transfer_anchors_backend <- function(...) {
+  Seurat::FindTransferAnchors(...)
+}
+
+.sn_transfer_data_backend <- function(...) {
+  Seurat::TransferData(...)
+}
+
+.sn_metadata_suffix <- function(x) {
+  x <- gsub("[^A-Za-z0-9]+", "_", as.character(x))
+  x <- gsub("^_+|_+$", "", x)
+  x[!nzchar(x)] <- "value"
+  x
+}
+
+#' Transfer labels from a Seurat reference to a query object
+#'
+#' \code{sn_transfer_labels()} is a thin Shennong wrapper around Seurat's
+#' \code{FindTransferAnchors()} and \code{TransferData()} workflow. It keeps the
+#' common reference-mapping path compact: find anchors, transfer one metadata
+#' label, add the predicted label and confidence score back to the query, and
+#' store a small provenance record in \code{query@misc$label_transfer}.
+#'
+#' @param object A Seurat query object to annotate. This argument comes first
+#'   so the function can be used in pipes.
+#' @param reference A labeled Seurat reference object.
+#' @param label_col Metadata column in \code{reference} to transfer.
+#' @param query Deprecated alias for \code{object}; retained for compatibility
+#'   with the old reference-first call style.
+#' @param prediction_prefix Prefix for metadata columns added to
+#'   \code{query}. Defaults to \code{paste0(label_col, "_transfer")}.
+#' @param normalization_method Normalization method passed to
+#'   \code{Seurat::FindTransferAnchors()}.
+#' @param reference_assay,query_assay Assays passed to
+#'   \code{Seurat::FindTransferAnchors()} and \code{Seurat::TransferData()}.
+#' @param reduction Dimensional reduction strategy passed to
+#'   \code{Seurat::FindTransferAnchors()}.
+#' @param reference_reduction Optional reference reduction passed to
+#'   \code{Seurat::FindTransferAnchors()}.
+#' @param features Optional features used to find transfer anchors.
+#' @param dims Dimensions used for anchor scoring and label transfer.
+#' @param npcs Number of PCs used by \code{Seurat::FindTransferAnchors()}.
+#' @param k_anchor,k_filter,k_score,k_weight Seurat anchor/weighting
+#'   parameters.
+#' @param store_prediction_scores If \code{TRUE}, also store per-label
+#'   prediction scores as query metadata columns.
+#' @param return_anchors If \code{TRUE}, return a list containing the annotated
+#'   query, anchors, and raw prediction table.
+#' @param verbose Whether to print Seurat progress messages.
+#' @param ... Additional arguments passed to \code{Seurat::FindTransferAnchors()}.
+#'
+#' @return A Seurat query object with transferred labels, or a list when
+#'   \code{return_anchors = TRUE}.
+#'
+#' @examples
+#' \dontrun{
+#' query <- sn_transfer_labels(
+#'   object = query,
+#'   reference = reference,
+#'   label_col = "cell_type",
+#'   dims = 1:30
+#' )
+#' }
+#' @export
+sn_transfer_labels <- function(object = NULL,
+                               reference,
+                               label_col,
+                               query = NULL,
+                               prediction_prefix = NULL,
+                               normalization_method = "LogNormalize",
+                               reference_assay = NULL,
+                               query_assay = NULL,
+                               reduction = "pcaproject",
+                               reference_reduction = NULL,
+                               features = NULL,
+                               dims = 1:30,
+                               npcs = 30,
+                               k_anchor = 5,
+                               k_filter = NA,
+                               k_score = 30,
+                               k_weight = 50,
+                               store_prediction_scores = FALSE,
+                               return_anchors = FALSE,
+                               verbose = TRUE,
+                               ...) {
+  check_installed("Seurat")
+
+  if (is.null(object)) {
+    if (is.null(query)) {
+      stop("`object` must be supplied as the query Seurat object.", call. = FALSE)
+    }
+    .sn_log_warn("`query` is deprecated; pass the query object as the first `object` argument.")
+    object <- query
+  } else if (!is.null(query)) {
+    stop("Use either `object` or deprecated `query`, not both.", call. = FALSE)
+  }
+
+  if (!inherits(reference, "Seurat")) {
+    stop("`reference` must be a Seurat object.", call. = FALSE)
+  }
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat query object.", call. = FALSE)
+  }
+  if (!is.character(label_col) || length(label_col) != 1L || !nzchar(label_col)) {
+    stop("`label_col` must be a non-empty metadata column name.", call. = FALSE)
+  }
+  if (
+    label_col %in% colnames(object[[]]) &&
+      !label_col %in% colnames(reference[[]])
+  ) {
+    .sn_log_warn("Detected the old positional call order `sn_transfer_labels(reference, query, ...)`; swapping the first two objects. Prefer `sn_transfer_labels(query, reference, ...)`.")
+    old_reference <- object
+    object <- reference
+    reference <- old_reference
+  }
+  if (!label_col %in% colnames(reference[[]])) {
+    stop(glue("`label_col` column '{label_col}' was not found in `reference` metadata."), call. = FALSE)
+  }
+
+  ref_labels <- reference[[label_col, drop = TRUE]]
+  names(ref_labels) <- colnames(reference)
+  prediction_prefix <- prediction_prefix %||% paste0(label_col, "_transfer")
+
+  anchors <- .sn_find_transfer_anchors_backend(
+    reference = reference,
+    query = object,
+    normalization.method = normalization_method,
+    reference.assay = reference_assay,
+    query.assay = query_assay,
+    reduction = reduction,
+    reference.reduction = reference_reduction,
+    features = features,
+    npcs = npcs,
+    dims = dims,
+    k.anchor = k_anchor,
+    k.filter = k_filter,
+    k.score = k_score,
+    verbose = verbose,
+    ...
+  )
+
+  predictions <- .sn_transfer_data_backend(
+    anchorset = anchors,
+    refdata = ref_labels,
+    reference = reference,
+    query = object,
+    query.assay = query_assay,
+    weight.reduction = reduction,
+    dims = dims,
+    k.weight = k_weight,
+    verbose = verbose
+  )
+  predictions <- as.data.frame(predictions)
+  if (!all(colnames(object) %in% rownames(predictions)) && nrow(predictions) == ncol(object)) {
+    rownames(predictions) <- colnames(object)
+  }
+  predictions <- predictions[colnames(object), , drop = FALSE]
+  if (!"predicted.id" %in% colnames(predictions)) {
+    stop("Seurat::TransferData() did not return a `predicted.id` column.", call. = FALSE)
+  }
+
+  metadata <- data.frame(row.names = colnames(object))
+  metadata[[paste0(prediction_prefix, "_label")]] <- predictions$predicted.id
+  if ("prediction.score.max" %in% colnames(predictions)) {
+    metadata[[paste0(prediction_prefix, "_score")]] <- predictions$prediction.score.max
+  }
+  if (isTRUE(store_prediction_scores)) {
+    score_cols <- grep("^prediction\\.score\\.", colnames(predictions), value = TRUE)
+    score_cols <- setdiff(score_cols, "prediction.score.max")
+    for (score_col in score_cols) {
+      suffix <- sub("^prediction\\.score\\.", "", score_col)
+      metadata[[paste0(prediction_prefix, "_score_", .sn_metadata_suffix(suffix))]] <- predictions[[score_col]]
+    }
+  }
+
+  object <- Seurat::AddMetaData(object, metadata = metadata)
+  object@misc$label_transfer[[prediction_prefix]] <- list(
+    label_col = label_col,
+    normalization_method = normalization_method,
+    reduction = reduction,
+    dims = dims,
+    features = features,
+    prediction_columns = colnames(metadata)
+  )
+
+  if (isTRUE(return_anchors)) {
+    return(list(query = object, anchors = anchors, predictions = predictions))
+  }
+  object
+}
+
+.sn_run_scdesign3_backend <- function(...) {
+  scDesign3::scdesign3(...)
+}
+
+.sn_seurat_to_sce_for_scdesign3 <- function(object,
+                                            assay = "RNA",
+                                            layer = "counts") {
+  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  SingleCellExperiment::SingleCellExperiment(
+    list(counts = .sn_as_sparse_matrix(counts)),
+    colData = object[[]]
+  )
+}
+
+.sn_validate_scdesign3_columns <- function(sce,
+                                           celltype = NULL,
+                                           pseudotime = NULL,
+                                           spatial = NULL,
+                                           other_covariates = NULL) {
+  available <- colnames(SummarizedExperiment::colData(sce))
+  requested <- unique(c(celltype, pseudotime, spatial, other_covariates))
+  requested <- requested[!is.na(requested) & nzchar(requested)]
+  missing <- setdiff(requested, available)
+  if (length(missing) > 0L) {
+    stop(glue("Missing scDesign3 covariate column(s): {paste(missing, collapse = ', ')}."), call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+.sn_default_scdesign3_formula <- function(celltype = NULL,
+                                          pseudotime = NULL,
+                                          spatial = NULL,
+                                          other_covariates = NULL,
+                                          k = 10) {
+  if (!is.null(pseudotime) && length(pseudotime) > 0L) {
+    return(glue("s({pseudotime[[1]]}, bs = 'cr', k = {k})"))
+  }
+  if (!is.null(spatial) && length(spatial) == 2L) {
+    return(glue("s({spatial[[1]]}, {spatial[[2]]}, bs = 'gp', k = {k})"))
+  }
+  terms <- unique(c(celltype, other_covariates))
+  terms <- terms[!is.na(terms) & nzchar(terms)]
+  if (length(terms) == 0L) {
+    return("1")
+  }
+  paste(terms, collapse = " + ")
+}
+
+.sn_default_scdesign3_corr_formula <- function(celltype = NULL,
+                                               pseudotime = NULL,
+                                               spatial = NULL,
+                                               other_covariates = NULL) {
+  terms <- unique(c(pseudotime, spatial, celltype, other_covariates))
+  terms <- terms[!is.na(terms) & nzchar(terms)]
+  if (length(terms) == 0L) {
+    return("1")
+  }
+  paste(terms, collapse = " + ")
+}
+
+.sn_extract_scdesign3_counts <- function(result, expected_genes = NULL) {
+  if (!is.list(result) || !"new_count" %in% names(result)) {
+    stop("scDesign3 did not return a `new_count` result.", call. = FALSE)
+  }
+  counts <- result$new_count
+  if (is.list(counts)) {
+    counts <- counts[[1]]
+  }
+  counts <- .sn_as_sparse_matrix(counts)
+  if (is.null(rownames(counts)) && !is.null(expected_genes) && length(expected_genes) == nrow(counts)) {
+    rownames(counts) <- expected_genes
+  }
+  if (is.null(colnames(counts))) {
+    colnames(counts) <- paste0("sim_cell_", seq_len(ncol(counts)))
+  }
+  counts
+}
+
+#' Simulate single-cell counts with scDesign3
+#'
+#' \code{sn_simulate()} provides a method-based simulation entry point.
+#' Currently \code{method = "scdesign3"} delegates to
+#' \code{sn_simulate_scdesign3()}.
+#'
+#' @param object A Seurat or SingleCellExperiment object.
+#' @param method Simulation backend. Currently supports \code{"scdesign3"}.
+#' @param ... Additional arguments passed to the selected backend.
+#'
+#' @return Simulated data in the backend's requested format.
+#'
+#' @examples
+#' \dontrun{
+#' sim <- sn_simulate(seurat_obj, method = "scdesign3", celltype = "cell_type")
+#' }
+#' @export
+sn_simulate <- function(object,
+                        method = c("scdesign3"),
+                        ...) {
+  method <- match.arg(method)
+  switch(
+    method,
+    scdesign3 = sn_simulate_scdesign3(object = object, ...)
+  )
+}
+
+#' Simulate single-cell counts with scDesign3
+#'
+#' \code{sn_simulate_scdesign3()} prepares a Seurat or SingleCellExperiment
+#' object for \code{scDesign3::scdesign3()}, chooses simple default formulas
+#' from the supplied covariates, and returns simulated counts as a Seurat
+#' object, SingleCellExperiment, sparse count matrix, or raw scDesign3 result.
+#' Prefer \code{sn_simulate(method = "scdesign3")} for new code.
+#'
+#' @param object A Seurat or SingleCellExperiment object.
+#' @param celltype Column in \code{colData(object)} or Seurat metadata used as
+#'   the cell-type covariate. If \code{NULL}, \code{"seurat_clusters"} is used
+#'   when available.
+#' @param pseudotime Optional pseudotime covariate column name.
+#' @param spatial Optional length-two vector naming spatial coordinate columns.
+#' @param other_covariates Optional additional covariate columns.
+#' @param ncell Number of cells to simulate. Defaults to the input cell count.
+#' @param mu_formula,sigma_formula,corr_formula scDesign3 model formulas. When
+#'   \code{mu_formula} or \code{corr_formula} is \code{NULL}, Shennong builds a
+#'   simple default from \code{pseudotime}, \code{spatial}, \code{celltype}, and
+#'   \code{other_covariates}.
+#' @param family_use Marginal distribution passed to scDesign3.
+#' @param n_cores Number of cores passed to scDesign3.
+#' @param assay,layer Assay/layer used when \code{object} is a Seurat object.
+#' @param assay_use Assay name used when \code{object} is already a
+#'   SingleCellExperiment. Defaults to \code{"counts"}.
+#' @param return One of \code{"seurat"}, \code{"sce"}, \code{"counts"}, or
+#'   \code{"result"}.
+#' @param project Project name for returned Seurat objects.
+#' @param combine_original If \code{TRUE}, return a merged Seurat object
+#'   containing original and simulated cells with a \code{simulation_source}
+#'   metadata column. Only applies when \code{return = "seurat"} and
+#'   \code{object} is a Seurat object.
+#' @param seed Optional random seed.
+#' @param ... Additional arguments passed to \code{scDesign3::scdesign3()}.
+#'
+#' @return Simulated data in the requested format.
+#'
+#' @examples
+#' \dontrun{
+#' sim <- sn_simulate_scdesign3(
+#'   object = seurat_obj,
+#'   celltype = "cell_type",
+#'   ncell = 1000,
+#'   n_cores = 4
+#' )
+#' }
+#' @export
+sn_simulate_scdesign3 <- function(object,
+                                  celltype = NULL,
+                                  pseudotime = NULL,
+                                  spatial = NULL,
+                                  other_covariates = NULL,
+                                  ncell = NULL,
+                                  mu_formula = NULL,
+                                  sigma_formula = "1",
+                                  corr_formula = NULL,
+                                  family_use = "nb",
+                                  n_cores = 2,
+                                  assay = "RNA",
+                                  layer = "counts",
+                                  assay_use = "counts",
+                                  return = c("seurat", "sce", "counts", "result"),
+                                  project = "scdesign3",
+                                  combine_original = FALSE,
+                                  seed = 717,
+                                  ...) {
+  check_installed("scDesign3", reason = "to simulate single-cell data with scDesign3.")
+  check_installed(c("SingleCellExperiment", "SummarizedExperiment"))
+
+  return <- match.arg(return)
+  if (inherits(object, "Seurat")) {
+    sce <- .sn_seurat_to_sce_for_scdesign3(object = object, assay = assay, layer = layer)
+  } else if (inherits(object, "SingleCellExperiment")) {
+    sce <- object
+  } else {
+    stop("`object` must be a Seurat or SingleCellExperiment object.", call. = FALSE)
+  }
+
+  coldata <- SummarizedExperiment::colData(sce)
+  if (is.null(celltype) && "seurat_clusters" %in% colnames(coldata)) {
+    celltype <- "seurat_clusters"
+  }
+  .sn_validate_scdesign3_columns(
+    sce = sce,
+    celltype = celltype,
+    pseudotime = pseudotime,
+    spatial = spatial,
+    other_covariates = other_covariates
+  )
+
+  ncell <- ncell %||% ncol(sce)
+  formula_k <- max(3L, min(10L, floor(ncell / 5)))
+  mu_formula <- mu_formula %||% .sn_default_scdesign3_formula(
+    celltype = celltype,
+    pseudotime = pseudotime,
+    spatial = spatial,
+    other_covariates = other_covariates,
+    k = formula_k
+  )
+  corr_formula <- corr_formula %||% .sn_default_scdesign3_corr_formula(
+    celltype = celltype,
+    pseudotime = pseudotime,
+    spatial = spatial,
+    other_covariates = other_covariates
+  )
+
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  result <- .sn_run_scdesign3_backend(
+    sce = sce,
+    assay_use = assay_use,
+    celltype = celltype,
+    pseudotime = pseudotime,
+    spatial = spatial,
+    other_covariates = other_covariates,
+    ncell = ncell,
+    mu_formula = mu_formula,
+    sigma_formula = sigma_formula,
+    family_use = family_use,
+    n_cores = n_cores,
+    corr_formula = corr_formula,
+    ...
+  )
+  result$shennong <- list(
+    celltype = celltype,
+    pseudotime = pseudotime,
+    spatial = spatial,
+    other_covariates = other_covariates,
+    mu_formula = mu_formula,
+    sigma_formula = sigma_formula,
+    corr_formula = corr_formula,
+    family_use = family_use,
+    ncell = ncell
+  )
+
+  if (return == "result") {
+    return(result)
+  }
+
+  sim_counts <- .sn_extract_scdesign3_counts(
+    result = result,
+    expected_genes = rownames(sce)
+  )
+  sim_meta <- result$new_covariate
+  if (is.null(sim_meta)) {
+    sim_meta <- data.frame(row.names = colnames(sim_counts))
+  } else {
+    sim_meta <- as.data.frame(sim_meta)
+    if (nrow(sim_meta) == ncol(sim_counts)) {
+      rownames(sim_meta) <- colnames(sim_counts)
+    }
+  }
+
+  if (return == "counts") {
+    return(sim_counts)
+  }
+  if (return == "sce") {
+    return(SingleCellExperiment::SingleCellExperiment(
+      list(counts = sim_counts),
+      colData = sim_meta
+    ))
+  }
+
+  check_installed("Seurat")
+  sim_object <- Seurat::CreateSeuratObject(
+    counts = sim_counts,
+    meta.data = sim_meta,
+    project = project
+  )
+  sim_object@misc$scdesign3 <- result$shennong
+  if (isTRUE(combine_original) && inherits(object, "Seurat")) {
+    original <- object
+    original$simulation_source <- "original"
+    sim_object$simulation_source <- "simulated"
+    combined <- merge(
+      x = original,
+      y = sim_object,
+      add.cell.ids = c("original", "simulated"),
+      project = project
+    )
+    combined@misc$scdesign3 <- result$shennong
+    return(combined)
+  }
+  sim_object
 }
 
 

@@ -75,6 +75,9 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_transfer_labels
+      - sn_simulate
+      - sn_simulate_scdesign3
       - sn_sweep_cluster_resolution
   - title: Diagnostics and Benchmarking
     contents:
@@ -136,6 +139,7 @@ reference:
     contents:
       - sn_plot_dim
       - sn_plot_feature
+      - sn_plot_heatmap
       - sn_plot_violin
       - sn_plot_dot
       - sn_plot_boxplot

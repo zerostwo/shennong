@@ -70,6 +70,7 @@ sn_plot_dim(
   reduction = "umap",
   group_by = "seurat_clusters",
   label = TRUE,
+  label_halo = FALSE,
   palette = "Paired",
   title = "PBMC3k clusters"
 )
@@ -93,6 +94,9 @@ cluster_cols
 
 `sn_plot_feature()` covers standard expression maps and density-style maps. The
 same function handles legends, shared scales, rasterization, and panel sizing.
+Rasterization is enabled by default; when `ggrastr` is available the point layer
+is rasterized after the regular ggplot point size is applied, so small values
+such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes.
 
 ```{r plot-feature-expression}
 sn_plot_feature(
@@ -116,6 +120,51 @@ sn_plot_feature(
   mode = "density",
   density_style = "galaxy",
   title = "IL7R density"
+)
+```
+
+## Focused heatmaps for selected genes
+
+When the question is about a known marker panel, a heatmap is usually clearer
+than another embedding. `sn_plot_heatmap()` validates the requested genes and
+can draw either cell-level or group-averaged heatmaps. The default
+`mode = "cells"` follows Seurat's heatmap backend but hides cell names and ticks,
+uses an 8 pt group label, rasterizes by default, and colors the group bar with a
+Paired palette.
+
+```{r plot-heatmap}
+sn_plot_heatmap(
+  object = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
+  group_by = "seurat_clusters",
+  palette = "RdBu",
+  label_angle = 45
+)
+```
+
+Use `mode = "average"` when the comparison is about the group-level pattern
+rather than every individual cell. This averages expression within each group
+and then z-scores each gene by default, giving a compact marker-panel summary.
+
+```{r plot-heatmap-average}
+sn_plot_heatmap(
+  object = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
+  group_by = "seurat_clusters",
+  mode = "average",
+  palette = "RdBu"
+)
+```
+
+Use `split_by` when the same marker panel should be inspected separately across
+samples, conditions, or batches.
+
+```{r plot-heatmap-split, eval = FALSE}
+sn_plot_heatmap(
+  object = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
+  group_by = "seurat_clusters",
+  split_by = "sample"
 )
 ```
 

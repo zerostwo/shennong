@@ -29,6 +29,17 @@ user request to the right Shennong function family quickly.
    integration when that normalization is desired.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
 4. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
+5. Use `sn_transfer_labels()` when labels should be projected from a reference
+   Seurat object to a query object.
+
+## Recipe: Simulate single-cell data
+
+1. Start from a clustered Seurat object or a SingleCellExperiment with
+   covariates in metadata/colData.
+2. Use `sn_simulate(method = "scdesign3")` with a `celltype`, `pseudotime`, or
+   spatial design column.
+3. Return `"seurat"` for a ready-to-use simulated object or `"result"` when
+   scDesign3 model diagnostics are needed.
 
 ## Recipe: Find markers or run a contrast
 

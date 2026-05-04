@@ -21,6 +21,7 @@ sn_plot_dim(
   label_size = 8 * 0.36,
   label_color = "black",
   label_box = FALSE,
+  label_halo = TRUE,
   repel = FALSE,
   cells_highlight = NULL,
   cols_highlight = "#DE2D26",
@@ -74,6 +75,10 @@ Shennong chooses a value automatically based on the number of cells.}
 \item{label_color}{The color of the labels on the plot. Default is "black".}
 
 \item{label_box}{Logical value indicating whether to show a box around the labels on the plot. Default is FALSE.}
+
+\item{label_halo}{Logical value indicating whether Shennong should add a
+white halo/background behind text labels. Set to \code{FALSE} to keep
+Seurat's native label layer unchanged.}
 
 \item{repel}{Logical value indicating whether to use point repulsion to avoid overlapping labels. Default is TRUE.}
 
