@@ -133,7 +133,7 @@ file extension.
 outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-io"))
 
 metadata_path <- file.path(outdir, "pbmc3k_metadata.csv")
-object_path <- file.path(outdir, "pbmc3k_initialized.qs")
+object_path <- file.path(outdir, "pbmc3k_initialized.qs2")
 
 metadata_export <- cbind(cell = rownames(pbmc[[]]), pbmc[[]])
 sn_write(metadata_export, metadata_path, row.names = FALSE)
