@@ -17,6 +17,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   serialization format.
 - `sn_run_cluster()` now treats `batch` as the primary integration metadata
   argument while retaining `batch_by` as a compatibility alias.
+- GitHub Actions now install `leidenbase` anywhere evaluated clustering
+  examples or tests can request `cluster_algorithm = "leiden"`.
 
 ### Added
 

@@ -64,6 +64,7 @@ Suggests:
     knitr,
     ks,
     later,
+    leidenbase,
     liana,
     lisi,
     limma,

@@ -35,6 +35,7 @@ jobs:
             github::tidyverse/tidytemplate
             any::Seurat
             any::hdf5r
+            any::leidenbase
             any::qs2
             any::rio
             any::zen4R

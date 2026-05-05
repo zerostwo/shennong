@@ -33,6 +33,7 @@ jobs:
             github::carmonalab/SignatuR
             github::immunogenomics/harmony@harmony2
             any::HGNChelper
+            any::leidenbase
             any::rio
             any::anndataR
             any::hdf5r

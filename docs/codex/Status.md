@@ -7,6 +7,9 @@ Last updated: 2026-05-05
 - Updated the pkgdown GitHub Actions workflow so pushes to `main` deploy the
   rendered site to `gh-pages` with `pkgdown::deploy_to_branch()` instead of
   only checking that the site can build.
+- Added `leidenbase` to the package and GitHub Actions dependency surfaces so
+  evaluated pkgdown clustering examples using `cluster_algorithm = "leiden"`
+  can render on clean CI runners.
 - Updated `sn_write()` so missing parent directories are created before writer
   dispatch. This covers both ordinary `rio::export()` paths and custom
   Shennong writers such as `.qs`, `.h5ad`, `.h5`, and BPCells directories.

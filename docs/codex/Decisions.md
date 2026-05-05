@@ -7,6 +7,10 @@ Last updated: 2026-05-05
 - The pkgdown CI workflow should deploy successful `main` builds to
   `gh-pages`, not only run `pkgdown::build_site()`. A failed site build should
   still stop before deployment and surface the tail of the pkgdown log.
+- Any evaluated vignette that demonstrates a non-default clustering backend
+  must have that backend's R package declared in `DESCRIPTION` and installed in
+  the relevant GitHub Actions workflow. The Leiden clustering example therefore
+  requires `leidenbase` in both places.
 - Output path preparation belongs in `sn_write()` before writer dispatch, not
   inside each format-specific writer. This keeps nested output behavior
   consistent across `rio` formats, `.qs`/`.qs2`, `.h5ad`, `.h5`, and BPCells.
