@@ -55,6 +55,7 @@ reference:
       - pbmc_small_raw
       - shennong_gene_annotations
       - shennong_signature_catalog
+      - sn_list_datasets
       - sn_load_data
       - sn_download_zenodo
       - sn_list_10x_paths

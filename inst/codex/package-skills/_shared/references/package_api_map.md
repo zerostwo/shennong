@@ -11,7 +11,8 @@ Core object rule:
 
 ## Data and Import
 
-- `sn_load_data()`: load packaged or remote example datasets; vectorized datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices
+- `sn_list_datasets()`: list sample-level datasets available through the current Shennong public Zenodo collection, plus legacy examples with `source = "all"`
+- `sn_load_data()`: load packaged or remote example datasets; vectorized legacy datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices. Public Shennong collection samples can be loaded by sample ID from `sn_list_datasets()` or by `study_id` plus `sample_id`; the study ZIP is cached and only the requested filtered/raw H5 or metrics file is extracted.
 - `sn_download_zenodo()`: download reusable files from public Zenodo records without a token, or from restricted/private records when a token is supplied
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
 - `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats

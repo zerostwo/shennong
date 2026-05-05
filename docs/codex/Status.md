@@ -53,6 +53,12 @@ Last updated: 2026-05-05
   now uses this shared download layer and can load multiple example datasets in
   one call; filtered datasets are merged into one Seurat object and raw datasets
   return a named list.
+- Added `sn_list_datasets()` for sample-level discovery of the current
+  Shennong public Zenodo collection. The default public record is
+  `20044788`, read through `shennong_index.json`; `sn_load_data()` can now load
+  those samples by sample ID or by `study_id` plus `sample_id`, extracting the
+  requested filtered/raw H5 or metrics file from the study ZIP and optionally
+  validating it against `manifest.tsv`.
 - Bumped the package version to `0.1.4` and regenerated roxygen documentation
   after the API naming update.
 - Validated with `testthat::test_local(stop_on_failure = TRUE)`, `R CMD build

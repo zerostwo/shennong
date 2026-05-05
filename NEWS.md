@@ -60,6 +60,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   multiple example datasets such as `dataset = c("pbmc1k", "pbmc3k")`; filtered
   datasets are returned as one merged Seurat object and raw datasets as a named
   list of sparse matrices.
+- `sn_list_datasets()` now lists sample-level datasets available through the
+  Shennong public Zenodo collection. `sn_load_data()` can load those samples
+  from the `shennong_index.json` layout in Zenodo record `20044788`, downloading
+  the study ZIP, extracting the requested sample's filtered/raw H5 or Cell
+  Ranger metrics file, and optionally validating extracted files against
+  `manifest.tsv`.
 - `sn_simulate()` now provides a method-based simulation entry point.
   `method = "scdesign3"` wraps `scDesign3::scdesign3()` for Seurat or
   SingleCellExperiment inputs and can return simulated counts as a Seurat

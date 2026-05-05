@@ -58,6 +58,11 @@ Last updated: 2026-05-05
   a token while restricted/private records only need an explicit token when
   access control requires one. Example-data loading should reuse this helper
   instead of maintaining a separate download path.
+- Public Shennong Zenodo collections should be indexed by
+  `shennong_index.json` and exposed through sample-level APIs. `sn_load_data()`
+  treats the study ZIP as the network download unit, then extracts only the
+  requested sample file. `sn_list_datasets()` is the user-facing discovery
+  helper, with record `20044788` as the current default public collection.
 - Credentialed Zenodo validation should create an unpublished draft rather than
   publishing test data. A successful token smoke test is enough to verify
   authentication, draft deposition, DOI reservation, file upload, and manifest

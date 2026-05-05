@@ -72,6 +72,20 @@ public_h5 <- sn_download_zenodo(
 public_h5
 ```
 
+The current Shennong public reprocessed-data collection is indexed by
+`shennong_index.json` on Zenodo. Use `sn_list_datasets()` to discover the
+sample-level IDs, then pass one of those IDs to `sn_load_data()`. The study ZIP
+is cached locally, and only the requested sample file is extracted.
+
+```{r public-collection, eval=FALSE}
+datasets <- sn_list_datasets()
+head(datasets[, c("dataset", "study_id", "organism", "technology")])
+
+sample_obj <- sn_load_data(dataset = datasets$dataset[[1]])
+sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
+sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
+```
+
 ## Read once, then initialize with metadata
 
 `sn_read()` handles common tabular files, serialized objects, 10x matrices,

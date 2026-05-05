@@ -107,10 +107,14 @@ user request to the right Shennong function family quickly.
 3. Use `sn_download_zenodo(record_id = ..., files = ...)` when a reusable
    public Zenodo record should be pulled into a local cache. Public records do
    not need a token; pass `token = ...` only for restricted/private files.
-4. Use `sn_upload_zenodo(files = ..., title = ..., version = ...)` when a
+4. Use `sn_list_datasets()` to inspect the current Shennong public collection,
+   then `sn_load_data(dataset = <sample_id>)` or
+   `sn_load_data(dataset = <study_id>, sample_id = <sample_id>)` to cache the
+   study ZIP and extract one sample's filtered/raw H5 or metrics file.
+5. Use `sn_upload_zenodo(files = ..., title = ..., version = ...)` when a
    reusable object, marker table, reference, or manifest should be released for
    cross-project reuse with stable checksums and Zenodo version metadata.
-5. Avoid direct `object@misc` access in user-facing workflows.
+6. Avoid direct `object@misc` access in user-facing workflows.
 
 ## Recipe: LLM-backed interpretation
 

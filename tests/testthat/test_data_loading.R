@@ -1,5 +1,60 @@
 library(testthat)
 
+make_public_index <- function() {
+  list(
+    schema_version = "1.0.0",
+    project = list(project_id = "shennong-public-001"),
+    zenodo = list(record_id = "20044788", doi = "10.5281/zenodo.20044788"),
+    studies = list(
+      list(
+        study_id = "StudyA",
+        display_name = "Study A",
+        zip_file = "StudyA.zip",
+        samples = list(
+          list(
+            sample_id = "Sample1",
+            display_name = "Sample 1",
+            organism = "Homo sapiens",
+            taxon_id = 9606,
+            assay = "single_cell_transcriptomics",
+            technology = "10x_genomics",
+            source_accessions = list(geo = list("GSE1"), bioproject = list("PRJ1")),
+            processing = list(
+              pipeline = "cellranger",
+              pipeline_version = "9.0.1",
+              reference = "GENCODE:48:GRCh38.p14"
+            ),
+            files = list(
+              filtered_h5 = "StudyA/Sample1/filtered_feature_bc_matrix.h5",
+              raw_h5 = "StudyA/Sample1/raw_feature_bc_matrix.h5",
+              metrics_summary = "StudyA/Sample1/metrics_summary.csv"
+            )
+          ),
+          list(
+            sample_id = "Sample2",
+            display_name = "Sample 2",
+            organism = "Homo sapiens",
+            taxon_id = 9606,
+            assay = "single_cell_transcriptomics",
+            technology = "cite_seq",
+            source_accessions = list(geo = list("GSE1")),
+            processing = list(
+              pipeline = "cellranger",
+              pipeline_version = "9.0.1",
+              reference = "GENCODE:48:GRCh38.p14"
+            ),
+            files = list(
+              filtered_h5 = "StudyA/Sample2/filtered_feature_bc_matrix.h5",
+              raw_h5 = "StudyA/Sample2/raw_feature_bc_matrix.h5",
+              metrics_summary = "StudyA/Sample2/metrics_summary.csv"
+            )
+          )
+        )
+      )
+    )
+  )
+}
+
 test_that("sn_load_data returns cached file path when return_object is FALSE", {
   save_dir <- tempfile("shennong-cache-")
   dir.create(save_dir)
@@ -25,6 +80,28 @@ test_that("example-data registry exposes the expected bundled dataset metadata",
   expect_true(all(catalog$species == "human"))
 })
 
+test_that("sn_list_datasets exposes public collection samples from the Zenodo index", {
+  catalog <- with_mocked_bindings(
+    sn_list_datasets(source = "public", save_dir = tempfile("shennong-cache-")),
+    .sn_read_public_data_index = function(...) make_public_index(),
+    .package = "Shennong"
+  )
+
+  expect_s3_class(catalog, "data.frame")
+  expect_equal(catalog$dataset, c("Sample1", "Sample2"))
+  expect_equal(catalog$study_id, c("StudyA", "StudyA"))
+  expect_equal(catalog$zenodo_record, c("20044788", "20044788"))
+  expect_equal(catalog$filtered_h5[[1]], "StudyA/Sample1/filtered_feature_bc_matrix.h5")
+  expect_equal(catalog$geo_accession[[1]], "GSE1")
+
+  combined <- with_mocked_bindings(
+    sn_list_datasets(source = "all", save_dir = tempfile("shennong-cache-")),
+    .sn_read_public_data_index = function(...) make_public_index(),
+    .package = "Shennong"
+  )
+  expect_true(all(c("Sample1", "pbmc3k") %in% combined$dataset))
+})
+
 test_that("sn_load_data returns cached raw matrix paths and validates dataset names", {
   save_dir <- tempfile("shennong-cache-")
   dir.create(save_dir)
@@ -42,8 +119,12 @@ test_that("sn_load_data returns cached raw matrix paths and validates dataset na
   )
 
   expect_error(
-    sn_load_data(dataset = "not-a-dataset", save_dir = save_dir, return_object = FALSE),
-    "must contain only known"
+    with_mocked_bindings(
+      sn_load_data(dataset = "not-a-dataset", save_dir = save_dir, return_object = FALSE),
+      .sn_read_public_data_index = function(...) make_public_index(),
+      .package = "Shennong"
+    ),
+    "Invalid value|known sample IDs"
   )
 })
 
@@ -150,6 +231,103 @@ test_that("sn_load_data initializes filtered matrices with the resolved species"
   expect_identical(returned, sentinel)
   expect_equal(as.matrix(captured$x), as.matrix(counts))
   expect_equal(captured$species, "human")
+})
+
+test_that("sn_load_data resolves public collection samples by sample or study/sample", {
+  save_dir <- tempfile("shennong-cache-")
+  dir.create(save_dir)
+  local_h5 <- file.path(save_dir, "public-filtered.h5")
+  file.create(local_h5)
+
+  counts <- Matrix::Matrix(
+    matrix(1:12, nrow = 3, dimnames = list(paste0("gene", 1:3), paste0("cell", 1:4))),
+    sparse = TRUE
+  )
+  captured <- list()
+  sentinel <- list(kind = "public-seurat")
+
+  returned <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "Sample1",
+      save_dir = save_dir,
+      return_object = TRUE
+    ),
+    .sn_read_public_data_index = function(...) make_public_index(),
+    .sn_prepare_public_sample_file = function(row, matrix_type, ...) {
+      captured$prepared <<- list(row = row, matrix_type = matrix_type)
+      local_h5
+    },
+    sn_read = function(path, ...) {
+      expect_equal(path, local_h5)
+      counts
+    },
+    sn_initialize_seurat_object = function(x, species, sample_name, project, ...) {
+      captured$initialized <<- list(x = x, species = species, sample_name = sample_name, project = project)
+      sentinel
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(returned, sentinel)
+  expect_equal(captured$prepared$row$sample_id, "Sample1")
+  expect_equal(captured$prepared$matrix_type, "filtered")
+  expect_equal(captured$initialized$species, "human")
+  expect_equal(captured$initialized$sample_name, "Sample1")
+  expect_equal(captured$initialized$project, "StudyA")
+
+  path <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "StudyA",
+      sample_id = "Sample2",
+      matrix_type = "raw",
+      save_dir = save_dir,
+      return_object = FALSE
+    ),
+    .sn_read_public_data_index = function(...) make_public_index(),
+    .sn_prepare_public_sample_file = function(row, matrix_type, ...) {
+      expect_equal(row$sample_id, "Sample2")
+      expect_equal(matrix_type, "raw")
+      local_h5
+    },
+    .package = "Shennong"
+  )
+  expect_equal(path, local_h5)
+})
+
+test_that("sn_load_data returns public metrics tables", {
+  save_dir <- tempfile("shennong-cache-")
+  dir.create(save_dir)
+  metrics_path <- file.path(save_dir, "metrics_summary.csv")
+  write.csv(data.frame(Metric = "Estimated Number of Cells", Value = 10), metrics_path, row.names = FALSE)
+
+  metrics <- with_mocked_bindings(
+    sn_load_data(
+      dataset = "StudyA",
+      sample_id = "Sample1",
+      matrix_type = "metrics",
+      save_dir = save_dir
+    ),
+    .sn_read_public_data_index = function(...) make_public_index(),
+    .sn_prepare_public_sample_file = function(row, matrix_type, ...) {
+      expect_equal(matrix_type, "metrics")
+      metrics_path
+    },
+    .package = "Shennong"
+  )
+
+  expect_s3_class(metrics, "data.frame")
+  expect_equal(metrics$Metric[[1]], "Estimated Number of Cells")
+})
+
+test_that("sn_load_data asks for sample_id when a public study has multiple samples", {
+  expect_error(
+    with_mocked_bindings(
+      sn_load_data(dataset = "StudyA", return_object = FALSE),
+      .sn_read_public_data_index = function(...) make_public_index(),
+      .package = "Shennong"
+    ),
+    "`sample_id` must be supplied"
+  )
 })
 
 test_that("sn_load_data returns named paths for multiple example datasets", {
@@ -259,7 +437,7 @@ test_that("sn_load_data validates vectorized dataset and species inputs", {
   )
   expect_error(
     sn_load_data(dataset = c("pbmc1k", "not-a-dataset"), return_object = FALSE),
-    "Invalid value"
+    "cannot be mixed"
   )
   expect_error(
     sn_load_data(dataset = c("pbmc1k", "pbmc3k"), species = c("human", "mouse", "human"), return_object = FALSE),

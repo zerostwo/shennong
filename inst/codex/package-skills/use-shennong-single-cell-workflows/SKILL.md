@@ -37,6 +37,9 @@ single-cell tasks. This skill is the main entry point for package usage.
   to publish the Zenodo draft
 - use `sn_download_zenodo()` for reusable data downloads from public Zenodo
   records; do not require a token unless the record is restricted/private
+- use `sn_list_datasets()` before loading the Shennong public Zenodo
+  collection, then call `sn_load_data(dataset = <sample_id>)` or
+  `sn_load_data(dataset = <study_id>, sample_id = <sample_id>)`
 - use vectorized `sn_load_data(dataset = c(...))` when several Shennong
   example datasets should be loaded together; filtered inputs return a merged
   Seurat object and raw inputs return a named list

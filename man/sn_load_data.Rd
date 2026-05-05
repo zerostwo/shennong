@@ -6,19 +6,29 @@
 \usage{
 sn_load_data(
   dataset = "pbmc3k",
-  matrix_type = c("filtered", "raw"),
+  sample_id = NULL,
+  matrix_type = c("filtered", "raw", "metrics"),
   save_dir = "~/.shennong/data",
   return_object = TRUE,
   species = NULL,
   token = NULL,
   overwrite = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  record_id = NULL,
+  validate = FALSE
 )
 }
 \arguments{
-\item{dataset}{Character vector. Which example dataset(s) to load.
-Currently one of \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"},
-or \code{"pbmc8k"}. Default: \code{"pbmc3k"}.}
+\item{dataset}{Character vector. Which dataset(s) to load. Legacy example
+values include \code{"pbmc1k"}, \code{"pbmc3k"}, \code{"pbmc4k"}, and
+\code{"pbmc8k"}. Public Shennong collection values are sample IDs returned
+by \code{sn_list_datasets()}, or study IDs when \code{sample_id} is also
+supplied. Default: \code{"pbmc3k"}.}
+
+\item{sample_id}{Optional sample ID(s) for public Shennong collection
+records. Use this when \code{dataset} names a study ID such as
+\code{"AndrewDHildreth2021"}. If \code{dataset} already names sample IDs,
+leave this as \code{NULL}.}
 
 \item{matrix_type}{Character scalar. Which matrix type to load.
 One of:
@@ -28,6 +38,8 @@ One of:
 \item \code{"raw"}: the \code{raw_feature_bc_matrix.h5}
 (unfiltered barcodes; useful for ambient RNA correction tools
 such as SoupX).
+\item \code{"metrics"}: the Cell Ranger \code{metrics_summary.csv}
+for public Shennong collection samples.
 }
 Default: \code{"filtered"}.}
 
@@ -54,6 +66,12 @@ require a token. Supply this only for restricted/private records.}
 
 \item{quiet}{Logical. If \code{TRUE}, suppress Zenodo download progress
 messages.}
+
+\item{record_id}{Zenodo record ID for public Shennong collection samples.
+Defaults to option \code{shennong.public_data_record} or \code{"20044788"}.}
+
+\item{validate}{Logical; if \code{TRUE}, validate extracted public
+collection files against \code{manifest.tsv} MD5 checksums.}
 }
 \value{
 One of:
@@ -156,6 +174,10 @@ pbmc4k <- sn_load_data(
   dataset  = "pbmc4k",
   save_dir = "~/datasets/pbmc_cache"
 )
+
+# 6. Load a sample from the Shennong public Zenodo collection:
+data_index <- sn_list_datasets()
+sample_obj <- sn_load_data(dataset = data_index$dataset[[1]])
 }
 
 }
