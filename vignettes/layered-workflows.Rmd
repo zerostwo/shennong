@@ -175,7 +175,7 @@ helpers from the first article apply.
 ```{r cache-layered}
 outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-layered"))
 
-object_path <- file.path(outdir, "pbmc3k_layered.qs")
+object_path <- file.path(outdir, "pbmc3k_layered.qs2")
 markers_path <- file.path(outdir, "pbmc3k_layered_markers.csv")
 
 sn_write(pbmc_layered, object_path)
