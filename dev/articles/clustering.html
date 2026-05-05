@@ -104,9 +104,9 @@ species.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:21:39] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:21:40] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:21:40] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:19:00] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:19:00] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:19:01] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -126,6 +126,14 @@ species.</p>
 <span><span class="co">#&gt; Active assay: RNA (54872 features, 2000 variable features)</span></span>
 <span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
+<p>When the input already contains <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> stage
+metadata, the function reuses matching stages by default. This makes
+resolution tuning cheap:
+<code>sn_run_cluster(pbmc, resolution = 1.0)</code> reuses
+normalization, HVGs, PCA, the neighbor graph, and UMAP, then recomputes
+only the cluster labels. Use <code>rerun_from = "integration"</code>
+after changing an integration backend, or <code>reuse = FALSE</code>
+when a completely fresh run is needed.</p>
 <p>The result is a regular Seurat object. You can use Shennong plotting
 helpers or drop down to Seurat whenever needed.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">

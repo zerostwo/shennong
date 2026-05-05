@@ -83,6 +83,11 @@ supplied, it performs batch integration followed by clustering and UMAP.</p>
 <span>  leiden_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leidenbase"</span>, <span class="st">"igraph"</span><span class="op">)</span>,</span>
 <span>  leiden_objective_function <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"modularity"</span>, <span class="st">"CPM"</span><span class="op">)</span>,</span>
 <span>  cluster_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  reuse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  rerun_from <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  auto_install <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  install_repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span>,</span>
+<span>  install_ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  hvg_group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rare_feature_method <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  rare_feature_group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -222,6 +227,38 @@ should group singletons into the nearest cluster.</p></dd>
 <dd><p>Optional named list of additional
 <code><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">Seurat::FindClusters()</a></code> arguments. Values here override Shennong's
 generated defaults.</p></dd>
+
+
+<dt id="arg-reuse">reuse<a class="anchor" aria-label="anchor" href="#arg-reuse"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, reuse previously recorded
+<code>sn_run_cluster()</code> stages if their stored input signatures still match
+the current call. This lets resolution-only changes start at clustering,
+integration-method changes start at integration, and HVG changes start at
+feature selection instead of rerunning all earlier steps.</p></dd>
+
+
+<dt id="arg-rerun-from">rerun_from<a class="anchor" aria-label="anchor" href="#arg-rerun-from"></a></dt>
+<dd><p>Optional stage name forcing recomputation from that stage
+onward while still allowing earlier matching stages to be reused. Supported
+values are <code>"normalize"</code>, <code>"cell_cycle"</code>, <code>"hvg"</code>,
+<code>"pca"</code>, <code>"integration"</code>, <code>"neighbors"</code>,
+<code>"clusters"</code>, and <code>"umap"</code>.</p></dd>
+
+
+<dt id="arg-auto-install">auto_install<a class="anchor" aria-label="anchor" href="#arg-auto-install"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, install missing optional
+clustering dependencies such as <span class="pkg">leidenbase</span> before the relevant stage.</p></dd>
+
+
+<dt id="arg-install-repos">install_repos<a class="anchor" aria-label="anchor" href="#arg-install-repos"></a></dt>
+<dd><p>CRAN-like repositories used when <code>auto_install</code>
+installs CRAN packages.</p></dd>
+
+
+<dt id="arg-install-ask">install_ask<a class="anchor" aria-label="anchor" href="#arg-install-ask"></a></dt>
+<dd><p>Passed to <code>BiocManager::install()</code> when
+<code>auto_install</code> installs Bioconductor packages through
+<code><a href="sn_install_dependencies.html">sn_install_dependencies()</a></code>.</p></dd>
 
 
 <dt id="arg-hvg-group-by">hvg_group_by<a class="anchor" aria-label="anchor" href="#arg-hvg-group-by"></a></dt>

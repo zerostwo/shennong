@@ -102,9 +102,9 @@ reports.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:17:56] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:17:56] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:17:57] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:15:31] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:15:31] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:15:32] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -302,7 +302,7 @@ enrichment knows which DE result it came from.</p>
 <span>  store_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:19:03] Running ORA analysis for the GOBP database.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:16:35] Running ORA analysis for the GOBP database.</span></span>
 <span></span>
 <span><span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_enrichment_result.html">sn_get_enrichment_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>

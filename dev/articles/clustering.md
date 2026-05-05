@@ -21,9 +21,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 20:21:39] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 20:21:40] Running QC metrics for human.
-#> INFO [2026-05-05 20:21:40] Seurat object initialization complete.
+#> INFO [2026-05-05 21:19:00] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 21:19:00] Running QC metrics for human.
+#> INFO [2026-05-05 21:19:01] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -44,6 +44,15 @@ pbmc
 #>  3 layers present: counts, data, scale.data
 #>  2 dimensional reductions calculated: pca, umap
 ```
+
+When the input already contains
+[`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+stage metadata, the function reuses matching stages by default. This
+makes resolution tuning cheap: `sn_run_cluster(pbmc, resolution = 1.0)`
+reuses normalization, HVGs, PCA, the neighbor graph, and UMAP, then
+recomputes only the cluster labels. Use `rerun_from = "integration"`
+after changing an integration backend, or `reuse = FALSE` when a
+completely fresh run is needed.
 
 The result is a regular Seurat object. You can use Shennong plotting
 helpers or drop down to Seurat whenever needed.

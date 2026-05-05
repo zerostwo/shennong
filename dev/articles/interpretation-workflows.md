@@ -17,9 +17,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 20:32:53] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 20:32:54] Running QC metrics for human.
-#> INFO [2026-05-05 20:32:54] Seurat object initialization complete.
+#> INFO [2026-05-05 21:29:48] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 21:29:48] Running QC metrics for human.
+#> INFO [2026-05-05 21:29:49] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -170,10 +170,10 @@ annotation_prompt <- sn_interpret_annotation(
   output_format = "llm",
   background = "Annotate PBMC3k clusters conservatively."
 )
-#> INFO [2026-05-05 20:34:01] [sn_interpret_annotation] Starting interpretation workflow.
-#> INFO [2026-05-05 20:34:01] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:34:02] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.3s).
-#> INFO [2026-05-05 20:34:02] [sn_interpret_annotation] Prompt prepared (total elapsed 0.4s).
+#> INFO [2026-05-05 21:30:53] [sn_interpret_annotation] Starting interpretation workflow.
+#> INFO [2026-05-05 21:30:53] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:30:54] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.3s).
+#> INFO [2026-05-05 21:30:54] [sn_interpret_annotation] Prompt prepared (total elapsed 0.4s).
 
 annotation_prompt$task
 #> [1] "annotation"
@@ -215,10 +215,10 @@ de_prompt <- sn_interpret_de(
   return_prompt = TRUE,
   background = "Summarize PBMC3k cluster marker programs."
 )
-#> INFO [2026-05-05 20:34:02] [sn_interpret_de] Starting interpretation workflow.
-#> INFO [2026-05-05 20:34:02] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:34:02] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.1s).
-#> INFO [2026-05-05 20:34:02] [sn_interpret_de] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-05-05 21:30:54] [sn_interpret_de] Starting interpretation workflow.
+#> INFO [2026-05-05 21:30:54] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:30:54] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.1s).
+#> INFO [2026-05-05 21:30:54] [sn_interpret_de] Prompt prepared (total elapsed 0.1s).
 
 de_prompt$task
 #> [1] "de"
@@ -250,10 +250,10 @@ results_prompt <- sn_write_results(
   return_prompt = TRUE,
   background = "Write a concise Results paragraph for PBMC3k clustering."
 )
-#> INFO [2026-05-05 20:34:02] [sn_write_results] Starting interpretation workflow.
-#> INFO [2026-05-05 20:34:02] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:34:02] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.4s).
-#> INFO [2026-05-05 20:34:02] [sn_write_results] Prompt prepared (total elapsed 0.4s).
+#> INFO [2026-05-05 21:30:54] [sn_write_results] Starting interpretation workflow.
+#> INFO [2026-05-05 21:30:54] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:30:55] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.3s).
+#> INFO [2026-05-05 21:30:55] [sn_write_results] Prompt prepared (total elapsed 0.3s).
 
 legend_prompt <- sn_write_figure_legend(
   object = pbmc,
@@ -262,10 +262,10 @@ legend_prompt <- sn_write_figure_legend(
   return_prompt = TRUE,
   background = "Describe a UMAP and marker dot plot."
 )
-#> INFO [2026-05-05 20:34:02] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-05-05 20:34:02] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:34:03] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.3s).
-#> INFO [2026-05-05 20:34:03] [sn_write_figure_legend] Prompt prepared (total elapsed 0.3s).
+#> INFO [2026-05-05 21:30:55] [sn_write_figure_legend] Starting interpretation workflow.
+#> INFO [2026-05-05 21:30:55] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:30:55] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.3s).
+#> INFO [2026-05-05 21:30:55] [sn_write_figure_legend] Prompt prepared (total elapsed 0.3s).
 
 summary_prompt <- sn_write_presentation_summary(
   object = pbmc,
@@ -274,10 +274,10 @@ summary_prompt <- sn_write_presentation_summary(
   return_prompt = TRUE,
   background = "Prepare a short collaborator-facing PBMC3k summary."
 )
-#> INFO [2026-05-05 20:34:03] [sn_write_presentation_summary] Starting interpretation workflow.
-#> INFO [2026-05-05 20:34:03] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:34:03] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.4s).
-#> INFO [2026-05-05 20:34:03] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.4s).
+#> INFO [2026-05-05 21:30:55] [sn_write_presentation_summary] Starting interpretation workflow.
+#> INFO [2026-05-05 21:30:55] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:30:55] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.3s).
+#> INFO [2026-05-05 21:30:55] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.3s).
 
 c(results_prompt$task, legend_prompt$task, summary_prompt$task)
 #> [1] "results"              "figure_legend"       

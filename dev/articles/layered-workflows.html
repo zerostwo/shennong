@@ -100,9 +100,9 @@ CellBender, or another preprocessing tool.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:34:11] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:34:11] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 20:34:12] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:31:02] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:31:02] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 21:31:03] Seurat object initialization complete.</span></span>
 <span><span class="va">counts_full</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
 <span><span class="va">demo_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -136,7 +136,7 @@ the object.</p>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; WARN [2026-05-05 20:34:13] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).</span></span>
+<span><span class="co">#&gt; WARN [2026-05-05 21:31:04] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
@@ -178,7 +178,7 @@ through <code>layer</code>.</p>
 <span><span class="co">#&gt; [1] "0.1.4"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $created_at</span></span>
-<span><span class="co">#&gt; [1] "2026-05-05 20:34:21 UTC"</span></span>
+<span><span class="co">#&gt; [1] "2026-05-05 21:31:11 UTC"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $table</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 7</span></span></span>

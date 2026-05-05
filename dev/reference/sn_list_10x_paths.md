@@ -57,8 +57,8 @@ file.create(file.path(sample_dir, "metrics_summary.csv"))
 #> [1] TRUE
 sn_list_10x_paths(root)
 #>                                               sample1 
-#> "/tmp/RtmpI5uOII/tenx-root-26172bdcf49d/sample1/outs" 
+#> "/tmp/RtmpYoDYOn/tenx-root-1c7a6a306e36/sample1/outs" 
 sn_list_10x_paths(root, path_type = "filtered")
 #>                                                                          sample1 
-#> "/tmp/RtmpI5uOII/tenx-root-26172bdcf49d/sample1/outs/filtered_feature_bc_matrix" 
+#> "/tmp/RtmpYoDYOn/tenx-root-1c7a6a306e36/sample1/outs/filtered_feature_bc_matrix" 
 ```

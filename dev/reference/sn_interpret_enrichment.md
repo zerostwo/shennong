@@ -101,12 +101,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-05-05 20:17:11] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 20:17:11] Running QC metrics for human.
-#> INFO [2026-05-05 20:17:11] Seurat object initialization complete.
-#> INFO [2026-05-05 20:17:11] [sn_interpret_enrichment] Starting interpretation workflow.
-#> INFO [2026-05-05 20:17:11] [sn_interpret_enrichment] Step 1/4: Preparing enrichment evidence (elapsed 0.0s).
-#> INFO [2026-05-05 20:17:11] [sn_interpret_enrichment] Step 2/4: Building interpretation prompt (elapsed 0.0s).
-#> INFO [2026-05-05 20:17:11] [sn_interpret_enrichment] Prompt prepared (total elapsed 0.0s).
+#> INFO [2026-05-05 21:14:50] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 21:14:50] Running QC metrics for human.
+#> INFO [2026-05-05 21:14:50] Seurat object initialization complete.
+#> INFO [2026-05-05 21:14:50] [sn_interpret_enrichment] Starting interpretation workflow.
+#> INFO [2026-05-05 21:14:50] [sn_interpret_enrichment] Step 1/4: Preparing enrichment evidence (elapsed 0.0s).
+#> INFO [2026-05-05 21:14:50] [sn_interpret_enrichment] Step 2/4: Building interpretation prompt (elapsed 0.0s).
+#> INFO [2026-05-05 21:14:50] [sn_interpret_enrichment] Prompt prepared (total elapsed 0.0s).
 #> [1] "enrichment"
 ```

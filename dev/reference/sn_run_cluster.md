@@ -28,6 +28,11 @@ sn_run_cluster(
   leiden_method = c("leidenbase", "igraph"),
   leiden_objective_function = c("modularity", "CPM"),
   cluster_control = list(),
+  reuse = TRUE,
+  rerun_from = NULL,
+  auto_install = TRUE,
+  install_repos = getOption("repos"),
+  install_ask = FALSE,
   hvg_group_by = NULL,
   rare_feature_method = "none",
   rare_feature_group_by = NULL,
@@ -169,6 +174,37 @@ sn_run_cluster(
   Optional named list of additional
   [`Seurat::FindClusters()`](https://satijalab.org/seurat/reference/FindClusters.html)
   arguments. Values here override Shennong's generated defaults.
+
+- reuse:
+
+  Logical; when `TRUE`, reuse previously recorded `sn_run_cluster()`
+  stages if their stored input signatures still match the current call.
+  This lets resolution-only changes start at clustering,
+  integration-method changes start at integration, and HVG changes start
+  at feature selection instead of rerunning all earlier steps.
+
+- rerun_from:
+
+  Optional stage name forcing recomputation from that stage onward while
+  still allowing earlier matching stages to be reused. Supported values
+  are `"normalize"`, `"cell_cycle"`, `"hvg"`, `"pca"`, `"integration"`,
+  `"neighbors"`, `"clusters"`, and `"umap"`.
+
+- auto_install:
+
+  Logical; when `TRUE`, install missing optional clustering dependencies
+  such as leidenbase before the relevant stage.
+
+- install_repos:
+
+  CRAN-like repositories used when `auto_install` installs CRAN
+  packages.
+
+- install_ask:
+
+  Passed to `BiocManager::install()` when `auto_install` installs
+  Bioconductor packages through
+  [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md).
 
 - hvg_group_by:
 

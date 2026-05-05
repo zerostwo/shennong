@@ -24,9 +24,9 @@ library(dplyr)
 library(ggplot2)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 20:35:28] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 20:35:28] Running QC metrics for human.
-#> INFO [2026-05-05 20:35:28] Seurat object initialization complete.
+#> INFO [2026-05-05 21:32:14] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 21:32:14] Running QC metrics for human.
+#> INFO [2026-05-05 21:32:15] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
