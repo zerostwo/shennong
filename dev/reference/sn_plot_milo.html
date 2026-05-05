@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -55,7 +57,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_plot_milo</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
 <span>  milo_name <span class="op">=</span> <span class="st">"default"</span>,</span>
-<span>  annotation_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fdr_col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SpatialFDR"</span>, <span class="st">"FDR"</span><span class="op">)</span>,</span>
 <span>  fdr_cutoff <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  logfc_cutoff <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -65,7 +67,8 @@
 <span>  y_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="op">-</span><span class="va">log</span><span class="op">[</span><span class="fl">10</span><span class="op">]</span><span class="op">(</span><span class="st">"FDR"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  aspect_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_col <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -83,7 +86,7 @@ milo result.</p></dd>
 object.</p></dd>
 
 
-<dt id="arg-annotation-col">annotation_col<a class="anchor" aria-label="anchor" href="#arg-annotation-col"></a></dt>
+<dt id="arg-annotation-by">annotation_by<a class="anchor" aria-label="anchor" href="#arg-annotation-by"></a></dt>
 <dd><p>Optional column used to color points.</p></dd>
 
 
@@ -100,7 +103,7 @@ object.</p></dd>
 
 
 <dt id="arg-palette">palette<a class="anchor" aria-label="anchor" href="#arg-palette"></a></dt>
-<dd><p>Discrete palette used when <code>annotation_col</code> is supplied.</p></dd>
+<dd><p>Discrete palette used when <code>annotation_by</code> is supplied.</p></dd>
 
 
 <dt id="arg-title-x-label-y-label">title, x_label, y_label<a class="anchor" aria-label="anchor" href="#arg-title-x-label-y-label"></a></dt>
@@ -117,6 +120,10 @@ panel dimension automatically.</p></dd>
 <dd><p>Optional panel size arguments forwarded to
 <code><a href="https://rdrr.io/pkg/catplot/man/theme_cat.html" class="external-link">catplot::theme_cat()</a></code> when available.</p></dd>
 
+
+<dt id="arg-annotation-col">annotation_col<a class="anchor" aria-label="anchor" href="#arg-annotation-col"></a></dt>
+<dd><p>Deprecated alias for <code>annotation_by</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -130,7 +137,7 @@ panel dimension automatically.</p></dd>
 <span class="r-in"><span>  SpatialFDR <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.2</span>, <span class="fl">0.04</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  cell_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="st">"B"</span>, <span class="st">"Myeloid"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">sn_plot_milo</span><span class="op">(</span><span class="va">milo_df</span>, annotation_col <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">sn_plot_milo</span><span class="op">(</span><span class="va">milo_df</span>, annotation_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="sn_plot_milo-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

@@ -11,7 +11,7 @@ This adapter is exported so rio can dispatch to it."><meta name="robots" content
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,14 +24,16 @@ This adapter is exported so rio can dispatch to it."><meta name="robots" content
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -58,13 +60,25 @@ single-cell formats such as BPCells, <code>.h5ad</code>, and 10x <code>.h5</code
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_write</span><span class="op">(</span><span class="va">x</span>, path <span class="op">=</span> <span class="cn">NULL</span>, to <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_write</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  to <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  auto_install <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  install_repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span>,</span>
+<span>  install_ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">.export.rio_bpcells</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, overwrite <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">.export.rio_h5ad</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, mode <span class="op">=</span> <span class="st">"w"</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">.export.rio_h5</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">.export.rio_h5</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">.export.rio_qs</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">.export.rio_qs2</span><span class="op">(</span><span class="va">file</span>, <span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -76,11 +90,30 @@ single-cell formats such as BPCells, <code>.h5ad</code>, and 10x <code>.h5</code
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
-<dd><p>Output path.</p></dd>
+<dd><p>Output path. Missing parent directories are created
+automatically before dispatching the selected writer.</p></dd>
 
 
 <dt id="arg-to">to<a class="anchor" aria-label="anchor" href="#arg-to"></a></dt>
 <dd><p>Optional format override when it cannot be inferred from <code>path</code>.</p></dd>
+
+
+<dt id="arg-auto-install">auto_install<a class="anchor" aria-label="anchor" href="#arg-auto-install"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, install missing writer
+dependencies before writing. This includes <span class="pkg">rio</span> plus optional
+Shennong custom writer dependencies such as <code>.qs2</code>, <code>.h5ad</code>,
+<code>.h5</code>, or BPCells. Legacy <code>.qs</code> output installs <span class="pkg">qs</span> from
+the GitHub remote <code>qsbase/qs</code> when needed.</p></dd>
+
+
+<dt id="arg-install-repos">install_repos<a class="anchor" aria-label="anchor" href="#arg-install-repos"></a></dt>
+<dd><p>CRAN-like repositories used when <code>auto_install</code>
+needs to install CRAN packages.</p></dd>
+
+
+<dt id="arg-install-ask">install_ask<a class="anchor" aria-label="anchor" href="#arg-install-ask"></a></dt>
+<dd><p>Passed to <code>BiocManager::install()</code> when
+<code>auto_install</code> installs Bioconductor packages.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

@@ -9,7 +9,7 @@ sn_write_figure_legend(
   object,
   cluster_de_name = NULL,
   enrichment_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
@@ -18,6 +18,7 @@ sn_write_figure_legend(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
+  cluster_col = NULL,
   ...
 )
 ```
@@ -36,7 +37,7 @@ sn_write_figure_legend(
 
   Optional stored enrichment result.
 
-- cluster_col:
+- cluster_by:
 
   Metadata column containing cluster labels.
 
@@ -75,6 +76,10 @@ sn_write_figure_legend(
   Logical; if `TRUE`, emit step-wise progress logs and, when cli is
   available, a console progress bar while waiting for the LLM response.
 
+- cluster_col:
+
+  Deprecated alias for `cluster_by`.
+
 - ...:
 
   Additional arguments forwarded to `provider`.
@@ -109,13 +114,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-04-05 05:31:20] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:31:20] Running QC metrics for human.
-#> INFO [2026-04-05 05:31:20] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:41] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:41] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:42] Seurat object initialization complete.
 #> Warning: No DE genes identified
-#> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.0s).
-#> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
+#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
+#> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Starting interpretation workflow.
+#> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
+#> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).
+#> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
 #> [1] "figure_legend"
 ```

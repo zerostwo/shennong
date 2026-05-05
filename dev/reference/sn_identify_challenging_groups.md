@@ -10,7 +10,7 @@ obscured in standard UMAP visual inspection.
 ``` r
 sn_identify_challenging_groups(
   x,
-  group,
+  group_by = NULL,
   graph = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
@@ -18,12 +18,13 @@ sn_identify_challenging_groups(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 3000,
-  stratify_by = group,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  group = NULL
 )
 ```
 
@@ -33,7 +34,7 @@ sn_identify_challenging_groups(
 
   A Seurat object.
 
-- group:
+- group_by:
 
   Metadata column defining the groups to inspect.
 
@@ -73,7 +74,7 @@ sn_identify_challenging_groups(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `group`.
+  subsampling. Defaults to `group_by`.
 
 - rare_fraction:
 
@@ -96,6 +97,10 @@ sn_identify_challenging_groups(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
+- group:
+
+  Deprecated alias for `group_by`.
+
 ## Value
 
 A data frame with one row per group and rarity/separation flags.
@@ -107,13 +112,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 difficult_tbl <- sn_identify_challenging_groups(
   pbmc,
-  group = "seurat_clusters",
+  group_by = "seurat_clusters",
   reduction = "harmony"
 )
 difficult_tbl

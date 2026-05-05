@@ -19,7 +19,7 @@ sn_find_de(
   group_by = NULL,
   subset_by = NULL,
   subset_levels = NULL,
-  sample_col = NULL,
+  sample_by = NULL,
   assay = "RNA",
   layer = NULL,
   features = NULL,
@@ -33,6 +33,7 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  sample_col = NULL,
   ...
 )
 ```
@@ -68,7 +69,7 @@ sn_find_de(
   Optional character vector of subset values to analyze. Defaults to all
   observed values in `subset_by`.
 
-- sample_col:
+- sample_by:
 
   Metadata column containing sample IDs. Required for `"pseudobulk"`
   analyses.
@@ -126,6 +127,10 @@ sn_find_de(
 - verbose:
 
   Whether to emit progress information.
+
+- sample_col:
+
+  Deprecated alias for `sample_by`.
 
 - ...:
 
@@ -187,9 +192,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(obj@misc$de_results)
 }
-#> INFO [2026-04-05 05:30:49] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:30:49] Running QC metrics for human.
-#> INFO [2026-04-05 05:30:49] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:04] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:04] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:04] Seurat object initialization complete.
 #> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
 #> (default method for FindMarkers) please install the presto package
 #> --------------------------------------------

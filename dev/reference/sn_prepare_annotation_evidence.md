@@ -8,7 +8,7 @@ Prepare cluster-annotation evidence from a Seurat object
 sn_prepare_annotation_evidence(
   object,
   de_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
   enrichment_name = NULL,
@@ -16,7 +16,8 @@ sn_prepare_annotation_evidence(
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
   reduction = "umap",
-  n_neighbor_clusters = 3
+  n_neighbor_clusters = 3,
+  cluster_col = NULL
 )
 ```
 
@@ -32,7 +33,7 @@ sn_prepare_annotation_evidence(
   omitted, Shennong prefers `"default"`, then a single available result,
   and otherwise the most recent marker result.
 
-- cluster_col:
+- cluster_by:
 
   Metadata column containing cluster labels.
 
@@ -81,6 +82,10 @@ sn_prepare_annotation_evidence(
   programs are included automatically when the required genes are
   present.
 
+- cluster_col:
+
+  Deprecated alias for `cluster_by`.
+
 ## Value
 
 A structured list ready for prompt construction.
@@ -114,9 +119,10 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
-#> INFO [2026-04-05 05:31:11] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:31:12] Running QC metrics for human.
-#> INFO [2026-04-05 05:31:12] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:30] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:30] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:30] Seurat object initialization complete.
+#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
 #>  [1] "task"                      "cluster_col"              
 #>  [3] "source_de_name"            "source_enrichment_name"   
 #>  [5] "analysis_method"           "species"                  

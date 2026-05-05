@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -92,9 +94,9 @@ results.</p>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu">sn_list_results</span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:06] Initializing Seurat object for project: Shennong.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:06] Running QC metrics for human.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:06] Seurat object initialization complete.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:23] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:23] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:23] Seurat object initialization complete.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No DE genes identified</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The following tests were not performed: </span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>When testing Shennong versus all:</span>
@@ -102,7 +104,7 @@ results.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   collection type  name    analysis method created_at     n_rows source</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> de_results de    default markers  wilcox 2026-04-05 05…      0 <span style="color: #BB0000;">NA</span>    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> de_results de    default markers  wilcox 2026-05-05 20…      0 <span style="color: #BB0000;">NA</span>    </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -9,7 +9,7 @@ conservation after integration.
 ``` r
 sn_calculate_graph_connectivity(
   x,
-  label,
+  label_by = NULL,
   graph = NULL,
   reduction = "pca",
   dims = NULL,
@@ -17,9 +17,10 @@ sn_calculate_graph_connectivity(
   k = 20,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = NULL,
-  stratify_by = label,
+  stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  label = NULL
 )
 ```
 
@@ -29,7 +30,7 @@ sn_calculate_graph_connectivity(
 
   A Seurat object.
 
-- label:
+- label_by:
 
   Metadata column used to define groups.
 
@@ -79,6 +80,10 @@ sn_calculate_graph_connectivity(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
+- label:
+
+  Deprecated alias for `label_by`.
+
 ## Value
 
 A data frame with one row per group and a `connectivity_score` column in
@@ -91,13 +96,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 connectivity_tbl <- sn_calculate_graph_connectivity(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony"
 )
 connectivity_tbl

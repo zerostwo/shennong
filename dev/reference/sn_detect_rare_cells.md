@@ -8,7 +8,7 @@ Detect rare cells with native or optional rare-cell backends
 sn_detect_rare_cells(
   object,
   method = c("gini", "sccad", "sca", "gapclust", "challenging_groups"),
-  group = NULL,
+  group_by = NULL,
   reduction = .sn_default_metric_reduction(object),
   dims = NULL,
   assay = "RNA",
@@ -30,7 +30,8 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon"
+  sca_model = "wilcoxon",
+  group = NULL
 )
 ```
 
@@ -45,7 +46,7 @@ sn_detect_rare_cells(
   Rare-cell method. Supported values are `"gini"`, `"sccad"`, `"sca"`,
   `"gapclust"`, and `"challenging_groups"`.
 
-- group:
+- group_by:
 
   Optional metadata column used with `method = "challenging_groups"`.
 
@@ -139,6 +140,10 @@ sn_detect_rare_cells(
 - sca_model:
 
   Scoring model passed to SCA.
+
+- group:
+
+  Deprecated alias for `group_by`.
 
 ## Value
 

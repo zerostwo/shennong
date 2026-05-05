@@ -11,12 +11,12 @@ Source:
 [`DESCRIPTION`](https://github.com/zerostwo/shennong/blob/main/DESCRIPTION)
 
 Duan S (2026). *Shennong: Toolkit for Interpreting Omics Data*. R
-package version 0.1.3, <https://songqi.org/shennong>.
+package version 0.1.4, <https://songqi.org/shennong>.
 
     @Manual{,
       title = {Shennong: Toolkit for Interpreting Omics Data},
       author = {Songqi Duan},
       year = {2026},
-      note = {R package version 0.1.3},
+      note = {R package version 0.1.4},
       url = {https://songqi.org/shennong},
     }

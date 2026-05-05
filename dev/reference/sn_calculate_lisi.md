@@ -2,7 +2,7 @@
 
 This function calculates the Local Inverse Simpson's Index (LISI) for
 one or more metadata labels from a Seurat reduction. It is commonly used
-to assess batch mixing or label separation after integration.
+to assess batch_by mixing or label_by separation after integration.
 
 ## Usage
 
@@ -10,12 +10,13 @@ to assess batch mixing or label separation after integration.
 sn_calculate_lisi(
   x,
   reduction = "pca",
-  label = "sample",
+  label_by = NULL,
   dims = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = label[[1]],
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 )
 ```
 
@@ -29,7 +30,7 @@ sn_calculate_lisi(
 
   Reduction name used to extract embeddings. Defaults to `"pca"`.
 
-- label:
+- label_by:
 
   Character vector of metadata column names passed to
   [`lisi::compute_lisi()`](https://rdrr.io/pkg/lisi/man/compute_lisi.html).
@@ -56,10 +57,14 @@ sn_calculate_lisi(
 
   Random seed used when `max_cells` triggers subsampling.
 
+- label:
+
+  Deprecated alias for `label_by`.
+
 ## Value
 
 A data frame with one row per retained cell. The first column is
-`cell_id`; each requested label contributes one LISI score column.
+`cell_id`; each requested label_by contributes one LISI score column.
 
 ## Examples
 
@@ -68,14 +73,14 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 lisi_tbl <- sn_calculate_lisi(
   pbmc,
   reduction = "harmony",
-  label = "sample"
+  label_by = "sample"
 )
 head(lisi_tbl)
 } # }

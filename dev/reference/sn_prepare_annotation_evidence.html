@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -55,7 +57,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_prepare_annotation_evidence</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
 <span>  de_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  cluster_col <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_markers <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  marker_selection <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"specific"</span>, <span class="st">"top"</span><span class="op">)</span>,</span>
 <span>  enrichment_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -63,7 +65,8 @@
 <span>  enrichment_selection <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"specific"</span>, <span class="st">"top"</span><span class="op">)</span>,</span>
 <span>  include_qc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
-<span>  n_neighbor_clusters <span class="op">=</span> <span class="fl">3</span></span>
+<span>  n_neighbor_clusters <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  cluster_col <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -82,7 +85,7 @@
 recent marker result.</p></dd>
 
 
-<dt id="arg-cluster-col">cluster_col<a class="anchor" aria-label="anchor" href="#arg-cluster-col"></a></dt>
+<dt id="arg-cluster-by">cluster_by<a class="anchor" aria-label="anchor" href="#arg-cluster-by"></a></dt>
 <dd><p>Metadata column containing cluster labels.</p></dd>
 
 
@@ -130,6 +133,10 @@ reduction centroid distances.
 Canonical lineage heuristic hints derived from known marker programs are
 included automatically when the required genes are present.</p></dd>
 
+
+<dt id="arg-cluster-col">cluster_col<a class="anchor" aria-label="anchor" href="#arg-cluster-col"></a></dt>
+<dd><p>Deprecated alias for <code>cluster_by</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -164,9 +171,10 @@ included automatically when the required genes are present.</p></dd>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">evidence</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:11] Initializing Seurat object for project: Shennong.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:12] Running QC metrics for human.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:12] Seurat object initialization complete.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:30] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:30] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:30] Seurat object initialization complete.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`cluster_col` is deprecated; use `cluster_by` instead.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "task"                      "cluster_col"              </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "source_de_name"            "source_enrichment_name"   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "analysis_method"           "species"                  </span>

@@ -41,7 +41,7 @@ sn_store_deconvolution(
 
 - reference_label:
 
-  Metadata column or label set used as the reference.
+  Metadata column or label_by set used as the reference.
 
 - artifacts:
 

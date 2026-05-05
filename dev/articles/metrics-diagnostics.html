@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Metrics and diagnostics workflow • Shennong</title>
+<title>Integration metrics and diagnostics • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Metrics and diagnostics workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Integration metrics and diagnostics">
 <meta name="robots" content="noindex">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +39,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Metrics and diagnostics workflow</h1>
+      <h1>Integration metrics and diagnostics</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -82,525 +84,425 @@ Duan</h4>
 
     
     
-<p>This article focuses on the diagnostic layer that sits after
-clustering or integration. In practice, Shennong metrics fall into three
-scientific groups:</p>
+<p>Good integration is not just a pretty UMAP. A useful diagnostic layer
+should separate three questions:</p>
 <ul>
-<li>batch removal: LISI, batch silhouette, PCR batch score</li>
-<li>biological conservation: graph connectivity, isolated-label
-preservation</li>
-<li>structure diagnostics: challenging groups, cluster entropy, cluster
-purity</li>
+<li>Are technical labels mixed?</li>
+<li>Are biological labels still separated?</li>
+<li>Which clusters or groups are difficult enough to inspect
+manually?</li>
 </ul>
+<p>Shennong exposes both one-line aggregate diagnostics and individual
+metrics. This article uses PBMC3k and a teaching-only pseudo-batch
+column.</p>
+<div class="section level2">
+<h2 id="prepare-a-diagnostic-object">Prepare a diagnostic object<a class="anchor" aria-label="anchor" href="#prepare-a-diagnostic-object"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="run-the-aggregate-assessment-first">Run the aggregate assessment first<a class="anchor" aria-label="anchor" href="#run-the-aggregate-assessment-first"></a>
-</h2>
-<p><code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code> is the recommended entry point
-because it bundles the main metrics into one object with summary,
-per-cell, and per-group outputs.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">summary_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="24%">
-<col width="11%">
-<col width="5%">
-<col width="11%">
-<col width="6%">
-<col width="22%">
-<col width="18%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">metric</th>
-<th align="left">category</th>
-<th align="right">score</th>
-<th align="right">scaled_score</th>
-<th align="right">n_cells</th>
-<th align="left">source</th>
-<th align="left">note</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">batch_silhouette</td>
-<td align="left">batch_removal</td>
-<td align="right">0.210</td>
-<td align="right">0.790</td>
-<td align="right">200</td>
-<td align="left">harmony + seurat_clusters</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">batch_lisi</td>
-<td align="left">batch_removal</td>
-<td align="right">1.604</td>
-<td align="right">0.604</td>
-<td align="right">200</td>
-<td align="left">harmony</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">cluster_batch_entropy</td>
-<td align="left">batch_removal</td>
-<td align="right">0.822</td>
-<td align="right">0.822</td>
-<td align="right">200</td>
-<td align="left">seurat_clusters vs sample</td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">pcr_batch</td>
-<td align="left">batch_removal</td>
-<td align="right">0.012</td>
-<td align="right">0.839</td>
-<td align="right">200</td>
-<td align="left">harmony vs pca</td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">well_resolved_group_fraction</td>
-<td align="left">structure</td>
-<td align="right">1.000</td>
-<td align="right">1.000</td>
-<td align="right">200</td>
-<td align="left">seurat_clusters</td>
-<td align="left">4 rare groups flagged</td>
-</tr>
-<tr class="even">
-<td align="left">overall_integration_score</td>
-<td align="left">aggregate</td>
-<td align="right">0.829</td>
-<td align="right">0.829</td>
-<td align="right">200</td>
-<td align="left">0.4 batch + 0.6 biology</td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="inspect-local-sample-mixing-with-lisi">Inspect local sample mixing with LISI<a class="anchor" aria-label="anchor" href="#inspect-local-sample-mixing-with-lisi"></a>
-</h2>
-<p>Higher sample LISI indicates better local batch mixing. When
-<code>lisi</code> is installed, Shennong stores the per-cell values so
-you can examine the full distribution rather than relying on a single
-mean.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">batch_lisi</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">batch_lisi</span>, <span class="fl">10</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">cell_id</th>
-<th align="right">sample</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">pbmc1k_ACGTTCCGTGGGTCAA-1</td>
-<td align="right">1.943</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k_GGACGTCGTTCAACGT-1</td>
-<td align="right">1.802</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k_CCAATTTCATTCGATG-1</td>
-<td align="right">1.795</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k_TTTCCTCTCCTACACC-1</td>
-<td align="right">1.521</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k_GGGTTATCAGCCATTA-1</td>
-<td align="right">1.101</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k_CCGCAAGCATTCAGGT-1</td>
-<td align="right">1.936</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k_AGGACGAAGATTAGTG-1</td>
-<td align="right">1.470</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k_GTAGAGGCAACTTCTT-1</td>
-<td align="right">1.351</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k_TTCACGCGTTAAGTCC-1</td>
-<td align="right">1.993</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k_GTCATGAAGACTCATC-1</td>
-<td align="right">1.607</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="surface-rare-or-difficult-groups">Surface rare or difficult groups<a class="anchor" aria-label="anchor" href="#surface-rare-or-difficult-groups"></a>
-</h2>
-<p>The challenging-group summary is useful for small populations that do
-not form an obvious island in UMAP but still look unstable in neighbor
-structure or silhouette space.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">challenging_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="8%">
-<col width="4%">
-<col width="8%">
-<col width="12%">
-<col width="11%">
-<col width="10%">
-<col width="8%">
-<col width="9%">
-<col width="8%">
-<col width="6%">
-<col width="10%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">seurat_clusters</th>
-<th align="right">n_cells</th>
-<th align="right">fraction_cells</th>
-<th align="right">median_neighbor_purity</th>
-<th align="right">mean_neighbor_purity</th>
-<th align="right">graph_connectivity</th>
-<th align="right">mean_silhouette</th>
-<th align="right">separation_score</th>
-<th align="right">challenge_score</th>
-<th align="left">rare_group</th>
-<th align="left">challenging_group</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">2</td>
-<td align="right">45</td>
-<td align="right">0.225</td>
-<td align="right">0.879</td>
-<td align="right">0.843</td>
-<td align="right">1</td>
-<td align="right">-0.013</td>
-<td align="right">0.791</td>
-<td align="right">0.209</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">4</td>
-<td align="right">26</td>
-<td align="right">0.130</td>
-<td align="right">0.871</td>
-<td align="right">0.811</td>
-<td align="right">1</td>
-<td align="right">0.180</td>
-<td align="right">0.820</td>
-<td align="right">0.180</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">1</td>
-<td align="right">46</td>
-<td align="right">0.230</td>
-<td align="right">1.000</td>
-<td align="right">0.995</td>
-<td align="right">1</td>
-<td align="right">0.178</td>
-<td align="right">0.863</td>
-<td align="right">0.137</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="right">55</td>
-<td align="right">0.275</td>
-<td align="right">0.909</td>
-<td align="right">0.859</td>
-<td align="right">1</td>
-<td align="right">0.393</td>
-<td align="right">0.869</td>
-<td align="right">0.131</td>
-<td align="left">FALSE</td>
-<td align="left">FALSE</td>
-</tr>
-<tr class="odd">
-<td align="left">3</td>
-<td align="right">28</td>
-<td align="right">0.140</td>
-<td align="right">1.000</td>
-<td align="right">0.980</td>
-<td align="right">1</td>
-<td align="right">0.367</td>
-<td align="right">0.895</td>
-<td align="right">0.105</td>
-<td align="left">TRUE</td>
-<td align="left">FALSE</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="score-candidate-rare-cells-directly">Score candidate rare cells directly<a class="anchor" aria-label="anchor" href="#score-candidate-rare-cells-directly"></a>
-</h2>
-<p><code><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells()</a></code> provides a cell-level complement
-to the group-level diagnostics. The native <code>gini</code> backend
-uses rare-gene enrichment to score cells, while optional backends such
-as Python-based scCAD can be used when installed locally.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">$</span><span class="va">rare_score</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">10</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left"></th>
-<th align="left">cell_id</th>
-<th align="left">method</th>
-<th align="right">rare_score</th>
-<th align="left">rare_cell</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">23</td>
-<td align="left">pbmc1k_CGAGAAGTCCAATGCA-1</td>
-<td align="left">gini</td>
-<td align="right">6.185</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">51</td>
-<td align="left">pbmc1k_TCATATCCATGCTGCG-1</td>
-<td align="left">gini</td>
-<td align="right">5.830</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">14</td>
-<td align="left">pbmc1k_TACCGGGTCCTCGATC-1</td>
-<td align="left">gini</td>
-<td align="right">5.448</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">19</td>
-<td align="left">pbmc1k_GTGTGGCGTAAGTTGA-1</td>
-<td align="left">gini</td>
-<td align="right">5.082</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">134</td>
-<td align="left">pbmc3k_TGGACCCTCATGGT-1</td>
-<td align="left">gini</td>
-<td align="right">4.814</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">128</td>
-<td align="left">pbmc3k_GAGTTGTGGTAGCT-1</td>
-<td align="left">gini</td>
-<td align="right">4.222</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">181</td>
-<td align="left">pbmc3k_TGACGATGCAAAGA-1</td>
-<td align="left">gini</td>
-<td align="right">4.219</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">61</td>
-<td align="left">pbmc1k_CATTGAGAGGGACCAT-1</td>
-<td align="left">gini</td>
-<td align="right">4.186</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">156</td>
-<td align="left">pbmc3k_GATATCCTCCCGTT-1</td>
-<td align="left">gini</td>
-<td align="right">4.148</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">191</td>
-<td align="left">pbmc3k_TCAGACGACGTTAG-1</td>
-<td align="left">gini</td>
-<td align="right">3.914</td>
-<td align="left">TRUE</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="inspect-isolated-label-preservation">Inspect isolated-label preservation<a class="anchor" aria-label="anchor" href="#inspect-isolated-label-preservation"></a>
-</h2>
-<p><code><a href="../reference/sn_calculate_isolated_label_score.html">sn_calculate_isolated_label_score()</a></code> and the
-corresponding table inside <code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code>
-highlight low-frequency labels or clusters that remain well-separated
-after integration.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">isolated_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="18%">
-<col width="9%">
-<col width="17%">
-<col width="18%">
-<col width="17%">
-<col width="17%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">seurat_clusters</th>
-<th align="right">n_cells</th>
-<th align="right">fraction_cells</th>
-<th align="right">mean_silhouette</th>
-<th align="right">isolated_score</th>
-<th align="left">isolated_label</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">4</td>
-<td align="right">26</td>
-<td align="right">0.130</td>
-<td align="right">0.180</td>
-<td align="right">0.590</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
-<td align="right">28</td>
-<td align="right">0.140</td>
-<td align="right">0.367</td>
-<td align="right">0.684</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="right">45</td>
-<td align="right">0.225</td>
-<td align="right">-0.013</td>
-<td align="right">0.494</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">46</td>
-<td align="right">0.230</td>
-<td align="right">0.178</td>
-<td align="right">0.589</td>
-<td align="left">TRUE</td>
-</tr>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">55</td>
-<td align="right">0.275</td>
-<td align="right">0.393</td>
-<td align="right">0.697</td>
-<td align="left">FALSE</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="quantify-batch-mixing-inside-each-cluster">Quantify batch mixing inside each cluster<a class="anchor" aria-label="anchor" href="#quantify-batch-mixing-inside-each-cluster"></a>
-</h2>
-<p>Cluster entropy is a practical complement to LISI because it answers
-a simpler question: within a given cluster, are the batches actually
-mixed?</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">entropy_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<colgroup>
-<col width="21%">
-<col width="10%">
-<col width="12%">
-<col width="20%">
-<col width="10%">
-<col width="25%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">seurat_clusters</th>
-<th align="right">n_cells</th>
-<th align="right">n_labels</th>
-<th align="left">dominant_label</th>
-<th align="right">entropy</th>
-<th align="right">normalized_entropy</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">1</td>
-<td align="right">46</td>
-<td align="right">2</td>
-<td align="left">pbmc3k</td>
-<td align="right">0.678</td>
-<td align="right">0.978</td>
-</tr>
-<tr class="even">
-<td align="left">4</td>
-<td align="right">26</td>
-<td align="right">2</td>
-<td align="left">pbmc3k</td>
-<td align="right">0.690</td>
-<td align="right">0.996</td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="right">45</td>
-<td align="right">2</td>
-<td align="left">pbmc1k</td>
-<td align="right">0.580</td>
-<td align="right">0.837</td>
-</tr>
-<tr class="even">
-<td align="left">0</td>
-<td align="right">55</td>
-<td align="right">2</td>
-<td align="left">pbmc3k</td>
-<td align="right">0.212</td>
-<td align="right">0.305</td>
-</tr>
-<tr class="odd">
-<td align="left">3</td>
-<td align="right">28</td>
-<td align="right">2</td>
-<td align="left">pbmc3k</td>
-<td align="right">0.691</td>
-<td align="right">0.996</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="add-supervised-metrics-when-labels-are-available">Add supervised metrics when labels are available<a class="anchor" aria-label="anchor" href="#add-supervised-metrics-when-labels-are-available"></a>
-</h2>
-<p>If you already have a trusted annotation column such as
-<code>cell_type</code>, you can extend the same workflow with supervised
-conservation metrics:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">assessment</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_integrated</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  label <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  cluster <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
-<span>  baseline_reduction <span class="op">=</span> <span class="st">"pca"</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:34:29] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:34:30] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:34:30] Seurat object initialization complete.</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">library</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library_a"</span>, <span class="st">"library_b"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  hvg_group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>That enables <code>label_lisi</code>, ARI/NMI, cluster purity against
-<code>cell_type</code>, and a more interpretable isolated-label
-summary.</p>
+</div>
+<div class="section level2">
+<h2 id="start-with-the-aggregate-assessment">Start with the aggregate assessment<a class="anchor" aria-label="anchor" href="#start-with-the-aggregate-assessment"></a>
+</h2>
+<p><code><a href="../reference/sn_assess_integration.html">sn_assess_integration()</a></code> runs a compact panel of metrics
+and returns the results in predictable sections: <code>summary</code>,
+<code>per_cell</code>, <code>per_group</code>, and
+<code>parameters</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">assessment</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  baseline_reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">assessment</span><span class="op">$</span><span class="va">summary</span></span>
+<span><span class="co">#&gt;                          metric             category        score</span></span>
+<span><span class="co">#&gt; 1              batch_silhouette        batch_removal 0.0291797570</span></span>
+<span><span class="co">#&gt; 2              label_silhouette biology_conservation 0.2866008297</span></span>
+<span><span class="co">#&gt; 3                    batch_lisi        batch_removal 1.8889673188</span></span>
+<span><span class="co">#&gt; 4                    label_lisi biology_conservation 1.1758400747</span></span>
+<span><span class="co">#&gt; 5            graph_connectivity biology_conservation 1.0000000000</span></span>
+<span><span class="co">#&gt; 6                           ari biology_conservation 1.0000000000</span></span>
+<span><span class="co">#&gt; 7                           nmi biology_conservation 1.0000000000</span></span>
+<span><span class="co">#&gt; 8          isolated_label_score biology_conservation 0.7662856393</span></span>
+<span><span class="co">#&gt; 9          cluster_label_purity biology_conservation 1.0000000000</span></span>
+<span><span class="co">#&gt; 10        cluster_batch_entropy        batch_removal 0.9886574048</span></span>
+<span><span class="co">#&gt; 11                    pcr_batch        batch_removal 0.0002694834</span></span>
+<span><span class="co">#&gt; 12 well_resolved_group_fraction            structure 1.0000000000</span></span>
+<span><span class="co">#&gt; 13           batch_mixing_score            aggregate 0.7294300338</span></span>
+<span><span class="co">#&gt; 14   biology_conservation_score            aggregate 0.9128640383</span></span>
+<span><span class="co">#&gt; 15              structure_score            aggregate 1.0000000000</span></span>
+<span><span class="co">#&gt; 16    overall_integration_score            aggregate 0.8394904365</span></span>
+<span><span class="co">#&gt;    scaled_score n_cells                             source</span></span>
+<span><span class="co">#&gt; 1    0.97082024    1500          harmony + seurat_clusters</span></span>
+<span><span class="co">#&gt; 2    0.64330041    1500                            harmony</span></span>
+<span><span class="co">#&gt; 3    0.88896732    1500                            harmony</span></span>
+<span><span class="co">#&gt; 4    0.98046221    1500                            harmony</span></span>
+<span><span class="co">#&gt; 5    1.00000000    1500                             RNA_nn</span></span>
+<span><span class="co">#&gt; 6    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
+<span><span class="co">#&gt; 7    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
+<span><span class="co">#&gt; 8    0.76628564      50                    seurat_clusters</span></span>
+<span><span class="co">#&gt; 9    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
+<span><span class="co">#&gt; 10   0.98865740    1500         seurat_clusters vs library</span></span>
+<span><span class="co">#&gt; 11   0.06927517    1500                     harmony vs pca</span></span>
+<span><span class="co">#&gt; 12   1.00000000    1500                    seurat_clusters</span></span>
+<span><span class="co">#&gt; 13   0.72943003    1500                          aggregate</span></span>
+<span><span class="co">#&gt; 14   0.91286404    1500                          aggregate</span></span>
+<span><span class="co">#&gt; 15   1.00000000    1500                          aggregate</span></span>
+<span><span class="co">#&gt; 16   0.83949044    1500         0.4 batch_by + 0.6 biology</span></span>
+<span><span class="co">#&gt;                     note</span></span>
+<span><span class="co">#&gt; 1                       </span></span>
+<span><span class="co">#&gt; 2                       </span></span>
+<span><span class="co">#&gt; 3                       </span></span>
+<span><span class="co">#&gt; 4                       </span></span>
+<span><span class="co">#&gt; 5                       </span></span>
+<span><span class="co">#&gt; 6                       </span></span>
+<span><span class="co">#&gt; 7                       </span></span>
+<span><span class="co">#&gt; 8      3 isolated labels</span></span>
+<span><span class="co">#&gt; 9                       </span></span>
+<span><span class="co">#&gt; 10                      </span></span>
+<span><span class="co">#&gt; 11                      </span></span>
+<span><span class="co">#&gt; 12 3 rare groups flagged</span></span>
+<span><span class="co">#&gt; 13                      </span></span>
+<span><span class="co">#&gt; 14                      </span></span>
+<span><span class="co">#&gt; 15                      </span></span>
+<span><span class="co">#&gt; 16</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">assessment</span><span class="op">$</span><span class="va">per_group</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "batch_silhouette"     "graph_connectivity"  </span></span>
+<span><span class="co">#&gt; [3] "clustering_agreement" "isolated_label_score"</span></span>
+<span><span class="co">#&gt; [5] "cluster_purity"       "cluster_entropy"     </span></span>
+<span><span class="co">#&gt; [7] "pcr_batch"            "challenging_groups"  </span></span>
+<span><span class="co">#&gt; [9] "composition"</span></span></code></pre></div>
+<p>Use the wrapper for routine reporting, then call individual metrics
+when one part of the assessment needs more detail.</p>
+</div>
+<div class="section level2">
+<h2 id="inspect-mixing-and-separation-directly">Inspect mixing and separation directly<a class="anchor" aria-label="anchor" href="#inspect-mixing-and-separation-directly"></a>
+</h2>
+<p>LISI asks how diverse each cell’s local neighborhood is with respect
+to a label. Here the same function can measure library mixing or cluster
+mixing by changing <code>label</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">library_lisi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_lisi.html">sn_calculate_lisi</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cluster_lisi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_lisi.html">sn_calculate_lisi</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">library_lisi</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            cell_id  library</span></span>
+<span><span class="co">#&gt; 1 AAACATACAACCAC-1 1.851349</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1 1.763703</span></span>
+<span><span class="co">#&gt; 3 AAACCGTGCTTCCG-1 1.693069</span></span>
+<span><span class="co">#&gt; 4 AAACGCACTGGTAC-1 1.599863</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGACCAGT-1 1.818432</span></span>
+<span><span class="co">#&gt; 6 AAACGCTGGTTCTT-1 1.998104</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cluster_lisi</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            cell_id seurat_clusters</span></span>
+<span><span class="co">#&gt; 1 AAACATTGAGCTAC-1        1.000000</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1        1.041738</span></span>
+<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1        1.085267</span></span>
+<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1        2.651311</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1        1.115321</span></span>
+<span><span class="co">#&gt; 6 AAACTTGAAAAACG-1        1.000000</span></span></code></pre></div>
+<p>Silhouette asks whether a label is compact in the embedding. For
+biological labels, high silhouette can be good; for batch labels, high
+silhouette often means residual batch separation.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cluster_sil</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_silhouette.html">sn_calculate_silhouette</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cluster_sil</span><span class="op">)</span></span>
+<span><span class="co">#&gt;            cell_id seurat_clusters silhouette_width</span></span>
+<span><span class="co">#&gt; 1 AAACATTGAGCTAC-1               4       0.42128412</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1               1       0.23931000</span></span>
+<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1               3       0.10464782</span></span>
+<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1               3      -0.04240411</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1               5       0.22616282</span></span>
+<span><span class="co">#&gt; 6 AAACTTGAAAAACG-1               4       0.37935553</span></span></code></pre></div>
+<p>Graph connectivity asks whether cells with the same label remain
+connected in the neighbor graph.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">connectivity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_graph_connectivity.html">sn_calculate_graph_connectivity</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">connectivity</span></span>
+<span><span class="co">#&gt;    seurat_clusters n_cells largest_component connectivity_score</span></span>
+<span><span class="co">#&gt; 1                0     253               253                  1</span></span>
+<span><span class="co">#&gt; 2                1     224               224                  1</span></span>
+<span><span class="co">#&gt; 3                2     237               237                  1</span></span>
+<span><span class="co">#&gt; 4                3     221               221                  1</span></span>
+<span><span class="co">#&gt; 5                4     209               209                  1</span></span>
+<span><span class="co">#&gt; 6                5     136               136                  1</span></span>
+<span><span class="co">#&gt; 7                6     131               131                  1</span></span>
+<span><span class="co">#&gt; 8                7      36                36                  1</span></span>
+<span><span class="co">#&gt; 9                8      36                36                  1</span></span>
+<span><span class="co">#&gt; 10               9      17                17                  1</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="compare-clusters-to-labels-when-references-exist">Compare clusters to labels when references exist<a class="anchor" aria-label="anchor" href="#compare-clusters-to-labels-when-references-exist"></a>
+</h2>
+<p>When you have a trusted label column, purity, entropy, and clustering
+agreement show how the computed clusters relate to that reference.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span><span class="op">$</span><span class="va">coarse_label</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cluster_"</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_calculate_cluster_purity.html">sn_calculate_cluster_purity</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;    seurat_clusters n_cells dominant_label dominant_label_n</span></span>
+<span><span class="co">#&gt; 1                3     368      cluster_3              368</span></span>
+<span><span class="co">#&gt; 2                4     357      cluster_4              357</span></span>
+<span><span class="co">#&gt; 3                1     527      cluster_1              527</span></span>
+<span><span class="co">#&gt; 4                2     487      cluster_2              487</span></span>
+<span><span class="co">#&gt; 5                6     154      cluster_6              154</span></span>
+<span><span class="co">#&gt; 6                5     165      cluster_5              165</span></span>
+<span><span class="co">#&gt; 7                0     606      cluster_0              606</span></span>
+<span><span class="co">#&gt; 8                9      17      cluster_9               17</span></span>
+<span><span class="co">#&gt; 9                8      36      cluster_8               36</span></span>
+<span><span class="co">#&gt; 10               7      36      cluster_7               36</span></span>
+<span><span class="co">#&gt;    purity_score impurity_score</span></span>
+<span><span class="co">#&gt; 1             1              0</span></span>
+<span><span class="co">#&gt; 2             1              0</span></span>
+<span><span class="co">#&gt; 3             1              0</span></span>
+<span><span class="co">#&gt; 4             1              0</span></span>
+<span><span class="co">#&gt; 5             1              0</span></span>
+<span><span class="co">#&gt; 6             1              0</span></span>
+<span><span class="co">#&gt; 7             1              0</span></span>
+<span><span class="co">#&gt; 8             1              0</span></span>
+<span><span class="co">#&gt; 9             1              0</span></span>
+<span><span class="co">#&gt; 10            1              0</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_calculate_cluster_entropy.html">sn_calculate_cluster_entropy</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;    seurat_clusters n_cells n_labels dominant_label entropy</span></span>
+<span><span class="co">#&gt; 1                3     368        1      cluster_3       0</span></span>
+<span><span class="co">#&gt; 2                4     357        1      cluster_4       0</span></span>
+<span><span class="co">#&gt; 3                1     527        1      cluster_1       0</span></span>
+<span><span class="co">#&gt; 4                2     487        1      cluster_2       0</span></span>
+<span><span class="co">#&gt; 5                6     154        1      cluster_6       0</span></span>
+<span><span class="co">#&gt; 6                5     165        1      cluster_5       0</span></span>
+<span><span class="co">#&gt; 7                0     606        1      cluster_0       0</span></span>
+<span><span class="co">#&gt; 8                9      17        1      cluster_9       0</span></span>
+<span><span class="co">#&gt; 9                8      36        1      cluster_8       0</span></span>
+<span><span class="co">#&gt; 10               7      36        1      cluster_7       0</span></span>
+<span><span class="co">#&gt;    normalized_entropy</span></span>
+<span><span class="co">#&gt; 1                   0</span></span>
+<span><span class="co">#&gt; 2                   0</span></span>
+<span><span class="co">#&gt; 3                   0</span></span>
+<span><span class="co">#&gt; 4                   0</span></span>
+<span><span class="co">#&gt; 5                   0</span></span>
+<span><span class="co">#&gt; 6                   0</span></span>
+<span><span class="co">#&gt; 7                   0</span></span>
+<span><span class="co">#&gt; 8                   0</span></span>
+<span><span class="co">#&gt; 9                   0</span></span>
+<span><span class="co">#&gt; 10                  0</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_calculate_clustering_agreement.html">sn_calculate_clustering_agreement</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;    cluster_column label_column n_cells ari nmi</span></span>
+<span><span class="co">#&gt; 1 seurat_clusters coarse_label    2753   1   1</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_calculate_isolated_label_score.html">sn_calculate_isolated_label_score</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;    coarse_label n_cells fraction_cells mean_silhouette isolated_score</span></span>
+<span><span class="co">#&gt; 1     cluster_9      17     0.01133333       0.5761626      0.7880813</span></span>
+<span><span class="co">#&gt; 2     cluster_7      36     0.02400000       0.4048276      0.7024138</span></span>
+<span><span class="co">#&gt; 3     cluster_8      36     0.02400000       0.4395448      0.7197724</span></span>
+<span><span class="co">#&gt; 4     cluster_6     131     0.08733333       0.3224888      0.6612444</span></span>
+<span><span class="co">#&gt; 5     cluster_5     136     0.09066667       0.4203340      0.7101670</span></span>
+<span><span class="co">#&gt; 6     cluster_4     209     0.13933333       0.4784576      0.7392288</span></span>
+<span><span class="co">#&gt; 7     cluster_3     221     0.14733333       0.1120699      0.5560349</span></span>
+<span><span class="co">#&gt; 8     cluster_1     224     0.14933333       0.1718597      0.5859299</span></span>
+<span><span class="co">#&gt; 9     cluster_2     237     0.15800000       0.3980331      0.6990165</span></span>
+<span><span class="co">#&gt; 10    cluster_0     253     0.16866667       0.2395322      0.6197661</span></span>
+<span><span class="co">#&gt;    isolated_label</span></span>
+<span><span class="co">#&gt; 1            TRUE</span></span>
+<span><span class="co">#&gt; 2            TRUE</span></span>
+<span><span class="co">#&gt; 3            TRUE</span></span>
+<span><span class="co">#&gt; 4           FALSE</span></span>
+<span><span class="co">#&gt; 5           FALSE</span></span>
+<span><span class="co">#&gt; 6           FALSE</span></span>
+<span><span class="co">#&gt; 7           FALSE</span></span>
+<span><span class="co">#&gt; 8           FALSE</span></span>
+<span><span class="co">#&gt; 9           FALSE</span></span>
+<span><span class="co">#&gt; 10          FALSE</span></span></code></pre></div>
+<p>The artificial label above is deliberately simple. In a real
+workflow, replace it with cell-type annotations, reference-mapping
+labels, or curated manual labels.</p>
+</div>
+<div class="section level2">
+<h2 id="quantify-residual-batch-signal">Quantify residual batch signal<a class="anchor" aria-label="anchor" href="#quantify-residual-batch-signal"></a>
+</h2>
+<p>PCR batch scoring measures how much variation in the embedding is
+explained by batch. Supplying a baseline reduction lets you compare
+correction against the pre-integration PCA space.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_pcr_batch.html">sn_calculate_pcr_batch</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  baseline_reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pcr</span></span>
+<span><span class="co">#&gt;   reduction baseline_reduction batch_column n_cells batch_variance</span></span>
+<span><span class="co">#&gt; 1   harmony                pca      library    1500   0.0002694834</span></span>
+<span><span class="co">#&gt;   baseline_batch_variance pcr_improvement scaled_score</span></span>
+<span><span class="co">#&gt; 1            0.0002895414    2.005803e-05   0.06927517</span></span></code></pre></div>
+<p>When several metadata variables might drive the same residual
+structure, rank them directly with variance-explained scoring. Use the
+single-variable mode for a quick screen, then the partial mode when the
+design is not fully confounded.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span><span class="op">$</span><span class="va">study</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"study_"</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">library</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">tissue</span> <span class="op">&lt;-</span> <span class="st">"blood"</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">variance_drivers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_variance_explained.html">sn_calculate_variance_explained</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library"</span>, <span class="st">"study"</span>, <span class="st">"tissue"</span>, <span class="st">"sample"</span><span class="op">)</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">variance_drivers</span></span>
+<span><span class="co">#&gt;   variable reduction method n_cells n_dims n_levels variance_explained</span></span>
+<span><span class="co">#&gt; 1   sample       pca single    1500     15        4       0.0011152765</span></span>
+<span><span class="co">#&gt; 2  library       pca single    1500     15        2       0.0002026187</span></span>
+<span><span class="co">#&gt; 3    study       pca single    1500     15        2       0.0002026187</span></span>
+<span><span class="co">#&gt; 4   tissue       pca single    1500     15        1       0.0000000000</span></span>
+<span><span class="co">#&gt;   mean_dim_variance_explained max_dim_variance_explained</span></span>
+<span><span class="co">#&gt; 1                 0.002004462                0.006997445</span></span>
+<span><span class="co">#&gt; 2                 0.000441611                0.002234708</span></span>
+<span><span class="co">#&gt; 3                 0.000441611                0.002234708</span></span>
+<span><span class="co">#&gt; 4                 0.000000000                0.000000000</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="flag-difficult-groups">Flag difficult groups<a class="anchor" aria-label="anchor" href="#flag-difficult-groups"></a>
+</h2>
+<p><code><a href="../reference/sn_identify_challenging_groups.html">sn_identify_challenging_groups()</a></code> combines rarity,
+connectivity, and local mixing diagnostics to surface groups that
+deserve manual review. This is useful before final annotation.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">challenging</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_identify_challenging_groups.html">sn_identify_challenging_groups</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">challenging</span></span>
+<span><span class="co">#&gt;    seurat_clusters n_cells fraction_cells median_neighbor_purity</span></span>
+<span><span class="co">#&gt; 1                3     221     0.14733333              1.0000000</span></span>
+<span><span class="co">#&gt; 2                1     224     0.14933333              1.0000000</span></span>
+<span><span class="co">#&gt; 3                0     253     0.16866667              1.0000000</span></span>
+<span><span class="co">#&gt; 4                6     131     0.08733333              1.0000000</span></span>
+<span><span class="co">#&gt; 5                2     237     0.15800000              1.0000000</span></span>
+<span><span class="co">#&gt; 6                7      36     0.02400000              1.0000000</span></span>
+<span><span class="co">#&gt; 7                5     136     0.09066667              1.0000000</span></span>
+<span><span class="co">#&gt; 8                8      36     0.02400000              1.0000000</span></span>
+<span><span class="co">#&gt; 9                9      17     0.01133333              0.9411765</span></span>
+<span><span class="co">#&gt; 10               4     209     0.13933333              1.0000000</span></span>
+<span><span class="co">#&gt;    mean_neighbor_purity graph_connectivity mean_silhouette</span></span>
+<span><span class="co">#&gt; 1             0.9154503                  1       0.1120699</span></span>
+<span><span class="co">#&gt; 2             0.8730401                  1       0.1718597</span></span>
+<span><span class="co">#&gt; 3             0.8912202                  1       0.2395322</span></span>
+<span><span class="co">#&gt; 4             0.9481837                  1       0.3224888</span></span>
+<span><span class="co">#&gt; 5             0.9660129                  1       0.3980331</span></span>
+<span><span class="co">#&gt; 6             0.9466419                  1       0.4048276</span></span>
+<span><span class="co">#&gt; 7             0.9564398                  1       0.4203340</span></span>
+<span><span class="co">#&gt; 8             0.9617983                  1       0.4395448</span></span>
+<span><span class="co">#&gt; 9             0.9091375                  1       0.5761626</span></span>
+<span><span class="co">#&gt; 10            0.9938152                  1       0.4784576</span></span>
+<span><span class="co">#&gt;    separation_score challenge_score rare_group challenging_group</span></span>
+<span><span class="co">#&gt; 1         0.8520116      0.14798835      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 2         0.8619766      0.13802338      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 3         0.8732554      0.12674464      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 4         0.8870815      0.11291853      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 5         0.8996722      0.10032782      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 6         0.9008046      0.09919540       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 7         0.9033890      0.09661099      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 8         0.9065908      0.09340920       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 9         0.9097526      0.09024741       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 10        0.9130763      0.08692373      FALSE             FALSE</span></span></code></pre></div>
+<p>ROGUE is an optional cluster-purity diagnostic that depends on the
+upstream <code>ROGUE</code> package. Keep it as a targeted check rather
+than a mandatory build step.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rogue_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_rogue.html">sn_calculate_rogue</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rogue_tbl</span></span></code></pre></div>
+<p>The intended workflow is: use the aggregate table for a quick read,
+then drill into single metrics only when a value changes a downstream
+decision.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

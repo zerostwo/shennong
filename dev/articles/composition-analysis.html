@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Composition and comparative analysis workflow • Shennong</title>
+<title>Composition and differential abundance • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Composition and comparative analysis workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Composition and differential abundance">
 <meta name="robots" content="noindex">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +39,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Composition and comparative analysis workflow</h1>
+      <h1>Composition and differential abundance</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -82,462 +84,269 @@ Duan</h4>
 
     
     
-<p>This workflow covers the analysis tasks that happen after clusters or
-cell types already exist and the main question becomes comparative
-rather than structural:</p>
-<ul>
-<li>how cell states are distributed across samples</li>
-<li>whether cluster proportions shift between groups</li>
-<li>how QC or score columns differ across categories</li>
-</ul>
+<p>Composition analysis should not treat every cell as an independent
+biological replicate. Shennong separates cell-level counting from
+sample-level comparison: first compute proportions, then compare
+replicate samples.</p>
+<p>This article uses PBMC3k with teaching-only pseudo samples and
+conditions.</p>
+<div class="section level2">
+<h2 id="prepare-cluster-labels-and-sample-metadata">Prepare cluster labels and sample metadata<a class="anchor" aria-label="anchor" href="#prepare-cluster-labels-and-sample-metadata"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:31:53] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:31:53] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:31:54] Seurat object initialization complete.</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span>, <span class="st">"control"</span>, <span class="st">"stim"</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">cluster_label</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cluster_"</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span></code></pre></div>
+<p>The pseudo labels are only for demonstration. In a real analysis,
+<code>sample</code> should be a biological replicate and
+<code>condition</code> should come from experimental metadata.</p>
+</div>
 <div class="section level2">
-<h2 id="summarize-cell-state-proportions">1. Summarize cell-state proportions<a class="anchor" aria-label="anchor" href="#summarize-cell-state-proportions"></a>
+<h2 id="count-cells-before-comparing-groups">Count cells before comparing groups<a class="anchor" aria-label="anchor" href="#count-cells-before-comparing-groups"></a>
 </h2>
-<p><code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> is the main helper for
-grouped proportion summaries. The most common pattern is
-sample-by-cluster composition. When you need a nested summary such as
-phase proportions within each cell type inside each sample, pass
-multiple grouping columns.</p>
+<p><code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> returns a transparent table
+with group totals, category counts, and percentages.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">composition_tbl</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">sample</th>
-<th align="left">seurat_clusters</th>
-<th align="right">proportion</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">0</td>
-<td align="right">16.25</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">1</td>
-<td align="right">23.75</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">2</td>
-<td align="right">43.75</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">3</td>
-<td align="right">16.25</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">0</td>
-<td align="right">65.00</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">1</td>
-<td align="right">21.67</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">3</td>
-<td align="right">13.33</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="plot-proportions-across-groups">2. Plot proportions across groups<a class="anchor" aria-label="anchor" href="#plot-proportions-across-groups"></a>
-</h2>
-<p>The returned composition table can be plotted directly with
-<code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code>. It automatically uses the
-<code>proportion</code> column when present and can order the x-axis by
-one fill category.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
-<span>  <span class="va">composition_tbl</span>,</span>
-<span>  x <span class="op">=</span> <span class="va">sample</span>,</span>
-<span>  fill <span class="op">=</span> <span class="va">seurat_clusters</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-analysis_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" alt="" width="768"></p>
-<p>When ordering matters, request it during composition summarization or
-at plot time. This is useful for comparisons such as mutation fractions
-across cell types.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">phase_tbl_ordered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_composition.html">sn_calculate_composition</a></span><span class="op">(</span></span>
-<span>  <span class="va">seu</span>,</span>
+<code class="sourceCode R"><span><span class="va">composition</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_composition.html">sn_calculate_composition</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  variable <span class="op">=</span> <span class="st">"Phase"</span>,</span>
+<span>  variable <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
 <span>  min_cells <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  sort_by <span class="op">=</span> <span class="st">"proportion"</span>,</span>
-<span>  sort_value <span class="op">=</span> <span class="st">"G1"</span></span>
+<span>  measure <span class="op">=</span> <span class="st">"both"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
-<span>  <span class="va">phase_tbl_ordered</span>,</span>
-<span>  x <span class="op">=</span> <span class="va">sample</span>,</span>
-<span>  fill <span class="op">=</span> <span class="va">Phase</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-analysis_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="768"></p>
-</div>
-<div class="section level2">
-<h2 id="compare-categorical-structure-beyond-clusters">3. Compare categorical structure beyond clusters<a class="anchor" aria-label="anchor" href="#compare-categorical-structure-beyond-clusters"></a>
-</h2>
-<p>The same composition helper also works for cell-cycle phase,
-annotation labels, or any other metadata column.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">composition</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;   sample cluster_label count group_total proportion</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> donor1 cluster_0       109         442      24.7 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> donor1 cluster_1        79         442      17.9 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> donor1 cluster_2        80         442      18.1 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> donor1 cluster_3        59         442      13.3 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> donor1 cluster_4        64         442      14.5 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> donor1 cluster_5        27         442       6.11</span></span></code></pre></div>
+<p>The denominator is visible in <code>group_total</code>, which makes
+it easy to audit whether a proportion is based on enough cells.</p>
+<p>Observed-over-expected enrichment is useful when you want to ask
+which clusters are enriched or depleted relative to the full contingency
+table.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">roe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_roe.html">sn_calculate_roe</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  variable <span class="op">=</span> <span class="st">"cluster_label"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">roe</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   condition cluster_label observed row_total col_total grand_total</span></span>
+<span><span class="co">#&gt; 1   control     cluster_0      317      1377       590        2753</span></span>
+<span><span class="co">#&gt; 2      stim     cluster_0      273      1376       590        2753</span></span>
+<span><span class="co">#&gt; 3   control     cluster_3      177      1377       360        2753</span></span>
+<span><span class="co">#&gt; 4      stim     cluster_3      183      1376       360        2753</span></span>
+<span><span class="co">#&gt; 5   control     cluster_2      246      1377       479        2753</span></span>
+<span><span class="co">#&gt; 6      stim     cluster_2      233      1376       479        2753</span></span>
+<span><span class="co">#&gt;   expected       roe    log2_roe</span></span>
+<span><span class="co">#&gt; 1 295.1072 1.0741861  0.10324394</span></span>
+<span><span class="co">#&gt; 2 294.8928 0.9257600 -0.11128986</span></span>
+<span><span class="co">#&gt; 3 180.0654 0.9829763 -0.02477150</span></span>
+<span><span class="co">#&gt; 4 179.9346 1.0170361  0.02437088</span></span>
+<span><span class="co">#&gt; 5 239.5870 1.0267669  0.03810871</span></span>
+<span><span class="co">#&gt; 6 239.4130 0.9732136 -0.03917156</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">roe_matrix</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_roe.html">sn_calculate_roe</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  variable <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
+<span>  return_matrix <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">roe_matrix</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">roe_matrix</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="co">#&gt;         cluster_0 cluster_3 cluster_2 cluster_6</span></span>
+<span><span class="co">#&gt; control  1.074186 0.9829763 1.0267669 0.8642022</span></span>
+<span><span class="co">#&gt; stim     0.925760 1.0170361 0.9732136 1.1358965</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">phase_tbl</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">sample</th>
-<th align="left">cell_type</th>
-<th align="left">Phase</th>
-<th align="right">count</th>
-<th align="right">group_total</th>
-<th align="right">proportion</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_0</td>
-<td align="left">G1</td>
-<td align="right">6</td>
-<td align="right">13</td>
-<td align="right">46.15</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_0</td>
-<td align="left">G2M</td>
-<td align="right">3</td>
-<td align="right">13</td>
-<td align="right">23.08</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_0</td>
-<td align="left">S</td>
-<td align="right">4</td>
-<td align="right">13</td>
-<td align="right">30.77</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_1</td>
-<td align="left">G1</td>
-<td align="right">15</td>
-<td align="right">19</td>
-<td align="right">78.95</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_1</td>
-<td align="left">G2M</td>
-<td align="right">4</td>
-<td align="right">19</td>
-<td align="right">21.05</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_2</td>
-<td align="left">G1</td>
-<td align="right">19</td>
-<td align="right">35</td>
-<td align="right">54.29</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_2</td>
-<td align="left">G2M</td>
-<td align="right">7</td>
-<td align="right">35</td>
-<td align="right">20.00</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_2</td>
-<td align="left">S</td>
-<td align="right">9</td>
-<td align="right">35</td>
-<td align="right">25.71</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_3</td>
-<td align="left">G1</td>
-<td align="right">7</td>
-<td align="right">13</td>
-<td align="right">53.85</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_3</td>
-<td align="left">G2M</td>
-<td align="right">3</td>
-<td align="right">13</td>
-<td align="right">23.08</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc1k</td>
-<td align="left">cluster_3</td>
-<td align="left">S</td>
-<td align="right">3</td>
-<td align="right">13</td>
-<td align="right">23.08</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_0</td>
-<td align="left">G1</td>
-<td align="right">39</td>
-<td align="right">78</td>
-<td align="right">50.00</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_0</td>
-<td align="left">G2M</td>
-<td align="right">18</td>
-<td align="right">78</td>
-<td align="right">23.08</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_0</td>
-<td align="left">S</td>
-<td align="right">21</td>
-<td align="right">78</td>
-<td align="right">26.92</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_1</td>
-<td align="left">G1</td>
-<td align="right">13</td>
-<td align="right">26</td>
-<td align="right">50.00</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_1</td>
-<td align="left">G2M</td>
-<td align="right">9</td>
-<td align="right">26</td>
-<td align="right">34.62</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_1</td>
-<td align="left">S</td>
-<td align="right">4</td>
-<td align="right">26</td>
-<td align="right">15.38</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_3</td>
-<td align="left">G1</td>
-<td align="right">7</td>
-<td align="right">16</td>
-<td align="right">43.75</td>
-</tr>
-<tr class="odd">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_3</td>
-<td align="left">G2M</td>
-<td align="right">5</td>
-<td align="right">16</td>
-<td align="right">31.25</td>
-</tr>
-<tr class="even">
-<td align="left">pbmc3k</td>
-<td align="left">cluster_3</td>
-<td align="left">S</td>
-<td align="right">4</td>
-<td align="right">16</td>
-<td align="right">25.00</td>
-</tr>
-</tbody>
-</table>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
+<span>  <span class="va">composition</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">sample</span>,</span>
+<span>  fill <span class="op">=</span> <span class="va">cluster_label</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">proportion</span>,</span>
+<span>  position <span class="op">=</span> <span class="st">"stack"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="st">"Paired"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"PBMC3k cluster composition by pseudo donor"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-analysis_files/figure-html/plot-composition-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="compare-composition-shifts-between-groups">4. Compare composition shifts between groups<a class="anchor" aria-label="anchor" href="#compare-composition-shifts-between-groups"></a>
+<h2 id="compare-sample-level-proportions">Compare sample-level proportions<a class="anchor" aria-label="anchor" href="#compare-sample-level-proportions"></a>
 </h2>
-<p>When replicate samples are available, compare sample-level
-proportions instead of pooling all cells together.
-<code><a href="../reference/sn_compare_composition.html">sn_compare_composition()</a></code> computes per-sample composition
-first, then reports group means, differences, log2 fold changes, and
-optional Wilcoxon statistics.</p>
+<p><code><a href="../reference/sn_compare_composition.html">sn_compare_composition()</a></code> summarizes each sample first,
+then compares those sample-level proportions between conditions. That
+avoids pseudo-replication.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">composition_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_compare_composition.html">sn_compare_composition</a></span><span class="op">(</span></span>
-<span>  <span class="va">seu</span>,</span>
-<span>  sample_col <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  group_col <span class="op">=</span> <span class="st">"study"</span>,</span>
-<span>  variable <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc3k"</span>, <span class="st">"pbmc1k"</span><span class="op">)</span>,</span>
-<span>  min_cells <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  test <span class="op">=</span> <span class="st">"none"</span></span>
+<code class="sourceCode R"><span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_compare_composition.html">sn_compare_composition</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  variable <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stim"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
+<span>  min_cells <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  test <span class="op">=</span> <span class="st">"wilcox"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">composition_comparison</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="10%">
-<col width="6%">
-<col width="8%">
-<col width="7%">
-<col width="9%">
-<col width="7%">
-<col width="5%">
-<col width="4%">
-<col width="6%">
-<col width="5%">
-<col width="8%">
-<col width="10%">
-<col width="5%">
-<col width="3%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">seurat_clusters</th>
-<th align="right">mean_case</th>
-<th align="right">mean_control</th>
-<th align="right">median_case</th>
-<th align="right">median_control</th>
-<th align="right">difference</th>
-<th align="right">log2_fc</th>
-<th align="right">n_case</th>
-<th align="right">n_control</th>
-<th align="right">p_value</th>
-<th align="left">contrast_case</th>
-<th align="left">contrast_control</th>
-<th align="left">change</th>
-<th align="right">p_adj</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">0</td>
-<td align="right">65.00</td>
-<td align="right">16.25</td>
-<td align="right">65.00</td>
-<td align="right">16.25</td>
-<td align="right">48.75</td>
-<td align="right">1.97</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">NA</td>
-<td align="left">pbmc3k</td>
-<td align="left">pbmc1k</td>
-<td align="left">Increase</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">1</td>
-<td align="right">21.67</td>
-<td align="right">23.75</td>
-<td align="right">21.67</td>
-<td align="right">23.75</td>
-<td align="right">-2.08</td>
-<td align="right">-0.13</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">NA</td>
-<td align="left">pbmc3k</td>
-<td align="left">pbmc1k</td>
-<td align="left">Decrease</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">2</td>
-<td align="right">0.00</td>
-<td align="right">43.75</td>
-<td align="right">0.00</td>
-<td align="right">43.75</td>
-<td align="right">-43.75</td>
-<td align="right">-6.47</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">NA</td>
-<td align="left">pbmc3k</td>
-<td align="left">pbmc1k</td>
-<td align="left">Decrease</td>
-<td align="right">NA</td>
-</tr>
-<tr class="even">
-<td align="left">3</td>
-<td align="right">13.33</td>
-<td align="right">16.25</td>
-<td align="right">13.33</td>
-<td align="right">16.25</td>
-<td align="right">-2.92</td>
-<td align="right">-0.28</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">NA</td>
-<td align="left">pbmc3k</td>
-<td align="left">pbmc1k</td>
-<td align="left">Decrease</td>
-<td align="right">NA</td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">comparison</span></span>
+<span><span class="co">#&gt;    cluster_label  mean_case mean_control median_case median_control</span></span>
+<span><span class="co">#&gt; 1      cluster_0 19.8417229   23.0210603  20.0435730     23.7472767</span></span>
+<span><span class="co">#&gt; 2      cluster_1 21.5833738   19.3173566  20.3056769     19.6078431</span></span>
+<span><span class="co">#&gt; 3      cluster_2 16.9335274   17.8649237  17.4672489     17.4291939</span></span>
+<span><span class="co">#&gt; 4      cluster_3 13.2986399   12.8540305  13.5076253     12.8540305</span></span>
+<span><span class="co">#&gt; 5      cluster_4 12.0643891   12.9992738  12.6637555     12.8540305</span></span>
+<span><span class="co">#&gt; 6      cluster_5  7.1933480    5.2287582   8.0610022      5.4466231</span></span>
+<span><span class="co">#&gt; 7      cluster_6  6.3956199    4.8656500   6.7685590      5.2287582</span></span>
+<span><span class="co">#&gt; 8      cluster_7  1.0902760    1.6702977   1.3071895      1.7429194</span></span>
+<span><span class="co">#&gt; 9      cluster_8  1.0174958    1.4524328   1.0917031      1.5250545</span></span>
+<span><span class="co">#&gt; 10     cluster_9  0.5816074    0.7262164   0.4357298      0.6535948</span></span>
+<span><span class="co">#&gt;    difference     log2_fc n_case n_control   p_value contrast_case</span></span>
+<span><span class="co">#&gt; 1  -3.1793374 -0.20951122      3         3 0.1840386          stim</span></span>
+<span><span class="co">#&gt; 2   2.2660172  0.15619606      3         3 0.6625206          stim</span></span>
+<span><span class="co">#&gt; 3  -0.9313963 -0.07508840      3         3 1.0000000          stim</span></span>
+<span><span class="co">#&gt; 4   0.4446093  0.04725083      3         3 0.6625206          stim</span></span>
+<span><span class="co">#&gt; 5  -0.9348847 -0.10354127      3         3 1.0000000          stim</span></span>
+<span><span class="co">#&gt; 6   1.9645898  0.42538913      3         3 0.3827331          stim</span></span>
+<span><span class="co">#&gt; 7   1.5299699  0.36192730      3         3 0.1211833          stim</span></span>
+<span><span class="co">#&gt; 8  -0.5800218 -0.44861581      3         3 0.0765225          stim</span></span>
+<span><span class="co">#&gt; 9  -0.4349370 -0.36358040      3         3 0.1156880          stim</span></span>
+<span><span class="co">#&gt; 10 -0.1446090 -0.18103672      3         3 0.6530951          stim</span></span>
+<span><span class="co">#&gt;    contrast_control   change     p_adj</span></span>
+<span><span class="co">#&gt; 1           control Decrease 0.4600966</span></span>
+<span><span class="co">#&gt; 2           control Increase 0.8281507</span></span>
+<span><span class="co">#&gt; 3           control Decrease 1.0000000</span></span>
+<span><span class="co">#&gt; 4           control Increase 0.8281507</span></span>
+<span><span class="co">#&gt; 5           control Decrease 1.0000000</span></span>
+<span><span class="co">#&gt; 6           control Increase 0.7654662</span></span>
+<span><span class="co">#&gt; 7           control Increase 0.4039442</span></span>
+<span><span class="co">#&gt; 8           control Decrease 0.4039442</span></span>
+<span><span class="co">#&gt; 9           control Decrease 0.4039442</span></span>
+<span><span class="co">#&gt; 10          control Decrease 0.8281507</span></span></code></pre></div>
+<p>Use the plotting helpers for the summary table when you want a
+compact figure-ready view.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_barplot.html">sn_plot_barplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">comparison</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">cluster_label</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">log2_fc</span>,</span>
+<span>  fill <span class="op">=</span> <span class="va">change</span>,</span>
+<span>  stat <span class="op">=</span> <span class="st">"identity"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="st">"Set2"</span>,</span>
+<span>  angle_x <span class="op">=</span> <span class="fl">45</span>,</span>
+<span>  y_label <span class="op">=</span> <span class="st">"log2 fold-change"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Composition shift: stim vs control"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-analysis_files/figure-html/plot-comparison-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="test-neighborhood-abundance-shifts-with-milor">5. Test neighborhood abundance shifts with miloR<a class="anchor" aria-label="anchor" href="#test-neighborhood-abundance-shifts-with-milor"></a>
+<h2 id="compare-continuous-metadata-with-boxplots">Compare continuous metadata with boxplots<a class="anchor" aria-label="anchor" href="#compare-continuous-metadata-with-boxplots"></a>
 </h2>
-<p>When the question is not just “does this label’s global proportion
-change?” but “which local transcriptional neighborhoods expand or
-contract between sample groups?”, use <code><a href="../reference/sn_run_milo.html">sn_run_milo()</a></code>. This
-is especially useful when abundance shifts cut across coarse cluster
-labels.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>Composition is categorical. For continuous per-cell or per-sample
+summaries, summarize to the replicate level first, then plot.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sample_qc</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">condition</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>    median_features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">nFeature_RNA</span><span class="op">)</span>,</span>
+<span>    median_mito <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">percent.mt</span><span class="op">)</span>,</span>
+<span>    .groups <span class="op">=</span> <span class="st">"drop"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">sample_qc</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">condition</span>,</span>
+<span>  y <span class="op">=</span> <span class="va">median_features</span>,</span>
+<span>  y_label <span class="op">=</span> <span class="st">"Median detected genes"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"QC summary by pseudo condition"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-analysis_files/figure-html/continuous-summaries-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="local-differential-abundance-with-milor">Local differential abundance with miloR<a class="anchor" aria-label="anchor" href="#local-differential-abundance-with-milor"></a>
+</h2>
+<p>Global proportions can miss local shifts inside an embedding.
+<code><a href="../reference/sn_run_milo.html">sn_run_milo()</a></code> wraps the miloR neighborhood workflow for
+sample-level differential abundance.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">milo_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_milo.html">sn_run_milo</a></span><span class="op">(</span></span>
-<span>  <span class="va">seu</span>,</span>
-<span>  sample_col <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  group_col <span class="op">=</span> <span class="st">"study"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc3k"</span>, <span class="st">"pbmc1k"</span><span class="op">)</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stim"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
-<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
-<span>  annotation_col <span class="op">=</span> <span class="st">"seurat_clusters"</span></span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"condition_da"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">milo_tbl</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="compare-continuous-scores-across-groups">6. Compare continuous scores across groups<a class="anchor" aria-label="anchor" href="#compare-continuous-scores-across-groups"></a>
-</h2>
-<p>Once a grouped table exists, Shennong’s plotting helpers can
-summarize how QC or score columns differ by sample or cluster.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot</a></span><span class="op">(</span><span class="va">score_tbl</span>, x <span class="op">=</span> <span class="va">sample</span>, y <span class="op">=</span> <span class="va">nFeature_RNA</span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-analysis_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="768"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot</a></span><span class="op">(</span><span class="va">score_tbl</span>, x <span class="op">=</span> <span class="va">seurat_clusters</span>, y <span class="op">=</span> <span class="va">S.Score</span><span class="op">)</span></span></code></pre></div>
-<p><img src="composition-analysis_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="768"></p>
-</div>
-<div class="section level2">
-<h2 id="keep-comparative-analysis-downstream-of-stable-labels">7. Keep comparative analysis downstream of stable labels<a class="anchor" aria-label="anchor" href="#keep-comparative-analysis-downstream-of-stable-labels"></a>
-</h2>
-<p>Composition and grouped-score analysis become much more interpretable
-once the labels are stable. In practice the recommended order is:</p>
-<ol style="list-style-type: decimal">
-<li>preprocessing and QC</li>
-<li>clustering or integration</li>
-<li>marker or reference-based annotation</li>
-<li>composition and grouped comparisons</li>
-</ol>
-<p>That order reduces the chance of over-interpreting composition shifts
-that are actually caused by unstable clustering.</p>
+<p>If a milo result was generated elsewhere, store and retrieve it with
+the same object-level convention used for DE and enrichment.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mock_milo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  logFC <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="op">-</span><span class="fl">0.7</span>, <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>  SpatialFDR <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.03</span>, <span class="fl">0.08</span>, <span class="fl">0.4</span><span class="op">)</span>,</span>
+<span>  cluster_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cluster_0"</span>, <span class="st">"cluster_1"</span>, <span class="st">"cluster_2"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_store_milo.html">sn_store_milo</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  result <span class="op">=</span> <span class="va">mock_milo</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"condition_da"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  comparison <span class="op">=</span> <span class="st">"stim_vs_control"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_get_milo_result.html">sn_get_milo_result</a></span><span class="op">(</span><span class="va">pbmc</span>, milo_name <span class="op">=</span> <span class="st">"condition_da"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">#&gt;   logFC SpatialFDR cluster_label</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   1.1       0.03 cluster_0    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>  -<span style="color: #BB0000;">0.7</span>       0.08 cluster_1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>   0.2       0.4  cluster_2</span></span></code></pre></div>
+<p><code><a href="../reference/sn_plot_milo.html">sn_plot_milo()</a></code> then displays the stored
+neighborhood-level table.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_milo.html">sn_plot_milo</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  milo_name <span class="op">=</span> <span class="st">"condition_da"</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="st">"cluster_label"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Neighborhood differential abundance"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="composition-analysis_files/figure-html/plot-milo-1.png" class="r-plt" alt="" width="672"></p>
+<p>The recommended reporting pattern is to show both global composition
+and local neighborhood abundance when a biological claim depends on
+changes in cell-state frequency.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -1,20 +1,21 @@
 # Calculate silhouette widths from a Seurat embedding
 
 Silhouette widths summarize how well cells are separated by a
-categorical metadata label in the selected embedding.
+categorical metadata label_by in the selected embedding.
 
 ## Usage
 
 ``` r
 sn_calculate_silhouette(
   x,
-  label,
+  label_by = NULL,
   reduction = "pca",
   dims = NULL,
   cells = NULL,
   max_cells = 3000,
-  stratify_by = label,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  label = NULL
 )
 ```
 
@@ -24,7 +25,7 @@ sn_calculate_silhouette(
 
   A Seurat object.
 
-- label:
+- label_by:
 
   Metadata column used as the grouping label.
 
@@ -55,6 +56,10 @@ sn_calculate_silhouette(
 
   Random seed used when `max_cells` triggers subsampling.
 
+- label:
+
+  Deprecated alias for `label_by`.
+
 ## Value
 
 A data frame with per-cell silhouette widths.
@@ -66,13 +71,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 sil_tbl <- sn_calculate_silhouette(
   pbmc,
-  label = "seurat_clusters",
+  label_by = "seurat_clusters",
   reduction = "harmony"
 )
 head(sil_tbl)

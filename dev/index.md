@@ -11,6 +11,7 @@ visualization, and interpretation-ready result storage.
 Install the current development version from GitHub:
 
 ``` r
+
 install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
@@ -19,6 +20,7 @@ List Shennong’s required and recommended R packages, then install the
 missing ones in one step:
 
 ``` r
+
 deps <- sn_list_dependencies()
 deps
 
@@ -56,6 +58,7 @@ can still download the full PBMC references on demand.
 ## Quick Start
 
 ``` r
+
 library(Shennong)
 
 data("pbmc_small", package = "Shennong")
@@ -80,6 +83,7 @@ sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
 The same built-in PBMC example can be used for batch-aware integration:
 
 ``` r
+
 pbmc_integrated <- sn_run_cluster(
   pbmc,
   batch = "sample",
@@ -95,6 +99,7 @@ You can summarize integration quality and surface rare or difficult
 groups directly from the integrated object:
 
 ``` r
+
 metrics <- sn_assess_integration(
   pbmc_integrated,
   batch = "sample",
@@ -113,6 +118,7 @@ metrics$per_group$challenging_groups
 ## Differential Expression And Enrichment
 
 ``` r
+
 pbmc <- sn_find_de(
   pbmc,
   analysis = "markers",

@@ -8,7 +8,7 @@ Plot miloR neighborhood differential-abundance results
 sn_plot_milo(
   x,
   milo_name = "default",
-  annotation_col = NULL,
+  annotation_by = NULL,
   fdr_col = c("SpatialFDR", "FDR"),
   fdr_cutoff = 0.1,
   logfc_cutoff = NULL,
@@ -18,7 +18,8 @@ sn_plot_milo(
   y_label = expression(-log[10]("FDR")),
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  annotation_col = NULL
 )
 ```
 
@@ -33,7 +34,7 @@ sn_plot_milo(
 
   Name of the stored milo result when `x` is a Seurat object.
 
-- annotation_col:
+- annotation_by:
 
   Optional column used to color points.
 
@@ -51,7 +52,7 @@ sn_plot_milo(
 
 - palette:
 
-  Discrete palette used when `annotation_col` is supplied.
+  Discrete palette used when `annotation_by` is supplied.
 
 - title, x_label, y_label:
 
@@ -69,6 +70,10 @@ sn_plot_milo(
   [`catplot::theme_cat()`](https://rdrr.io/pkg/catplot/man/theme_cat.html)
   when available.
 
+- annotation_col:
+
+  Deprecated alias for `annotation_by`.
+
 ## Value
 
 A ggplot object.
@@ -81,6 +86,6 @@ milo_df <- data.frame(
   SpatialFDR = c(0.01, 0.2, 0.04),
   cell_type = c("T", "B", "Myeloid")
 )
-sn_plot_milo(milo_df, annotation_col = "cell_type")
+sn_plot_milo(milo_df, annotation_by = "cell_type")
 
 ```

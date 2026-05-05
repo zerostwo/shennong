@@ -24,5 +24,5 @@ The resulting path string.
 ``` r
 tmp_dir <- tempfile("shennong-")
 sn_set_path(tmp_dir)
-#> /tmp/Rtmpm5uTLe/shennong-1ee63cb81558
+#> /tmp/RtmpI5uOII/shennong-261769ebdbcd
 ```

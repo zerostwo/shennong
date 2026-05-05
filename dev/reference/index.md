@@ -16,21 +16,30 @@
   : Bundled Shennong Signature Catalog
 - [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
   : Load example datasets from Zenodo
+- [`sn_download_zenodo()`](https://songqi.org/shennong/dev/reference/sn_download_zenodo.md)
+  : Download files from a Zenodo record
 - [`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
   : List detected 10x Genomics output paths under a root folder
 - [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_bpcells()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_10x()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+  [`.import.rio_10x_spatial()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_starsolo()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_h5ad()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_h5()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+  [`.import.rio_qs()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+  [`.import.rio_qs2()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   [`.import.rio_gmt()`](https://songqi.org/shennong/dev/reference/sn_read.md)
   : Read tabular and bioinformatics file formats
 - [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   [`.export.rio_bpcells()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   [`.export.rio_h5ad()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   [`.export.rio_h5()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  [`.export.rio_qs()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  [`.export.rio_qs2()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   : Write tabular and bioinformatics file formats
+- [`sn_upload_zenodo()`](https://songqi.org/shennong/dev/reference/sn_upload_zenodo.md)
+  : Upload reusable data files to Zenodo
 - [`sn_add_data_from_anndata()`](https://songqi.org/shennong/dev/reference/sn_add_data_from_anndata.md)
   : Add metadata and embeddings exported from AnnData
 
@@ -41,7 +50,7 @@
 - [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md)
   : Initialize a Seurat object with optional QC metrics
 - [`sn_standardize_gene_symbols()`](https://songqi.org/shennong/dev/reference/sn_standardize_gene_symbols.md)
-  : Standardize gene symbols in a count matrix or Seurat object
+  : Standardize gene symbols in a vector, count matrix, or Seurat object
 - [`sn_normalize_data()`](https://songqi.org/shennong/dev/reference/sn_normalize_data.md)
   : Normalize data in a Seurat object
 - [`sn_score_cell_cycle()`](https://songqi.org/shennong/dev/reference/sn_score_cell_cycle.md)
@@ -60,7 +69,19 @@
 ## Clustering and Integration
 
 - [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
-  : Run clustering for a single dataset or Harmony integration workflow
+  : Run clustering for a single dataset or batch integration workflow
+- [`sn_run_scvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
+  [`sn_run_scanvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
+  : Run scVI or scANVI integration through Shennong
+- [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md)
+  : Transfer labels from a Seurat reference to a query object
+- [`sn_simulate()`](https://songqi.org/shennong/dev/reference/sn_simulate.md)
+  : Simulate single-cell counts with scDesign3
+- [`sn_simulate_scdesign3()`](https://songqi.org/shennong/dev/reference/sn_simulate_scdesign3.md)
+  : Simulate single-cell counts with scDesign3
+- [`sn_sweep_cluster_resolution()`](https://songqi.org/shennong/dev/reference/sn_sweep_cluster_resolution.md)
+  : Sweep clustering resolutions and summarize cluster-quality
+  diagnostics
 
 ## Diagnostics and Benchmarking
 
@@ -75,7 +96,9 @@
 - [`sn_calculate_graph_connectivity()`](https://songqi.org/shennong/dev/reference/sn_calculate_graph_connectivity.md)
   : Calculate graph connectivity for a grouping label
 - [`sn_calculate_pcr_batch()`](https://songqi.org/shennong/dev/reference/sn_calculate_pcr_batch.md)
-  : Calculate PCR batch effect scores
+  : Calculate PCR batch_by effect scores
+- [`sn_calculate_variance_explained()`](https://songqi.org/shennong/dev/reference/sn_calculate_variance_explained.md)
+  : Rank metadata variables by embedding variance explained
 - [`sn_calculate_clustering_agreement()`](https://songqi.org/shennong/dev/reference/sn_calculate_clustering_agreement.md)
   : Calculate agreement between clusters and reference labels
 - [`sn_calculate_isolated_label_score()`](https://songqi.org/shennong/dev/reference/sn_calculate_isolated_label_score.md)
@@ -83,7 +106,7 @@
 - [`sn_calculate_cluster_purity()`](https://songqi.org/shennong/dev/reference/sn_calculate_cluster_purity.md)
   : Calculate cluster purity against a reference label
 - [`sn_calculate_cluster_entropy()`](https://songqi.org/shennong/dev/reference/sn_calculate_cluster_entropy.md)
-  : Calculate cluster entropy for a categorical label
+  : Calculate cluster_by entropy for a categorical label
 - [`sn_identify_challenging_groups()`](https://songqi.org/shennong/dev/reference/sn_identify_challenging_groups.md)
   : Identify rare or difficult-to-separate groups
 - [`sn_calculate_rogue()`](https://songqi.org/shennong/dev/reference/sn_calculate_rogue.md)
@@ -112,6 +135,8 @@
 
 - [`sn_calculate_composition()`](https://songqi.org/shennong/dev/reference/sn_calculate_composition.md)
   : Calculate composition proportions
+- [`sn_calculate_roe()`](https://songqi.org/shennong/dev/reference/sn_calculate_roe.md)
+  : Calculate observed-over-expected enrichment
 - [`sn_compare_composition()`](https://songqi.org/shennong/dev/reference/sn_compare_composition.md)
   : Compare sample-level composition between groups
 - [`sn_run_milo()`](https://songqi.org/shennong/dev/reference/sn_run_milo.md)
@@ -128,6 +153,21 @@
   : Store a deconvolution result on a Seurat object
 - [`sn_get_deconvolution_result()`](https://songqi.org/shennong/dev/reference/sn_get_deconvolution_result.md)
   : Retrieve a stored deconvolution result from a Seurat object
+
+## Communication and Regulatory Activity
+
+- [`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+  : Run cell-cell communication inference
+- [`sn_store_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_store_cell_communication.md)
+  : Store a cell-cell communication result on a Seurat object
+- [`sn_get_cell_communication_result()`](https://songqi.org/shennong/dev/reference/sn_get_cell_communication_result.md)
+  : Retrieve a stored cell-cell communication result
+- [`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md)
+  : Infer transcription-factor or pathway activity
+- [`sn_store_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_store_regulatory_activity.md)
+  : Store regulatory activity results on a Seurat object
+- [`sn_get_regulatory_activity_result()`](https://songqi.org/shennong/dev/reference/sn_get_regulatory_activity_result.md)
+  : Retrieve stored regulatory activity results
 
 ## Interpretation and Reporting
 
@@ -198,6 +238,8 @@
   : Create a dimensionality reduction plot for categorical data
 - [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
   : Plot feature expression in reduced dimensions
+- [`sn_plot_heatmap()`](https://songqi.org/shennong/dev/reference/sn_plot_heatmap.md)
+  : Plot a heatmap for selected genes or features
 - [`sn_plot_violin()`](https://songqi.org/shennong/dev/reference/sn_plot_violin.md)
   : Plot a violin plot with categorical groups
 - [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
@@ -229,6 +271,45 @@
   : List Shennong runtime and recommended R package dependencies
 - [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
   : Install missing Shennong dependencies in one step
+- [`sn_check_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  [`sn_install_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  [`sn_ensure_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  : Check, install, and configure pixi for Shennong Python backends
+- [`sn_pixi_paths()`](https://songqi.org/shennong/dev/reference/sn_pixi_paths.md)
+  : Inspect Shennong pixi runtime paths
+- [`sn_list_pixi_environments()`](https://songqi.org/shennong/dev/reference/sn_list_pixi_environments.md)
+  : List bundled pixi environment configs
+- [`sn_pixi_config_path()`](https://songqi.org/shennong/dev/reference/sn_pixi_config_path.md)
+  : Locate a bundled pixi config
+- [`sn_prepare_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scanvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scarches()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scpoli()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_cell2location()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_tangram()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_squidpy()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_stlearn()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  : Prepare or call a Shennong pixi environment
+- [`sn_run_scarches()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_scpoli()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cell2location()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_tangram()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_squidpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_stlearn()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  : Run a Python analysis command through a managed Shennong pixi
+  environment
+- [`sn_detect_accelerator()`](https://songqi.org/shennong/dev/reference/sn_detect_accelerator.md)
+  : Detect local accelerator support for pixi-managed Python methods
+- [`sn_configure_pixi_mirror()`](https://songqi.org/shennong/dev/reference/sn_configure_pixi_mirror.md)
+  : Configure pixi mirrors for Shennong runtime environments
 - [`sn_initialize_project()`](https://songqi.org/shennong/dev/reference/sn_initialize_project.md)
   : Initialize a Shennong analysis project
 - [`sn_install_codex_skill()`](https://songqi.org/shennong/dev/reference/sn_install_codex_skill.md)

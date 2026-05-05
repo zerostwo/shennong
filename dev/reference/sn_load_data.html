@@ -17,7 +17,7 @@ top-level loader function."><meta name="robots" content="noindex"><script async 
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,14 +30,16 @@ top-level loader function."><meta name="robots" content="noindex"><script async 
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -72,7 +74,10 @@ top-level loader function.</p>
 <span>  matrix_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"filtered"</span>, <span class="st">"raw"</span><span class="op">)</span>,</span>
 <span>  save_dir <span class="op">=</span> <span class="st">"~/.shennong/data"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  species <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  token <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,7 +86,7 @@ top-level loader function.</p>
 
 
 <dl><dt id="arg-dataset">dataset<a class="anchor" aria-label="anchor" href="#arg-dataset"></a></dt>
-<dd><p>Character scalar. Which example dataset to load.
+<dd><p>Character vector. Which example dataset(s) to load.
 Currently one of <code>"pbmc1k"</code>, <code>"pbmc3k"</code>, <code>"pbmc4k"</code>,
 or <code>"pbmc8k"</code>. Default: <code>"pbmc3k"</code>.</p></dd>
 
@@ -114,7 +119,22 @@ path.</p></dd>
 <code><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code> when constructing Seurat objects
 (i.e. when <code>matrix_type == "filtered"</code>). Ignored if
 <code>matrix_type == "raw"</code>. If <code>NULL</code>, use the dataset default from
-the example-data registry.</p></dd>
+the example-data registry. When loading multiple datasets, supply either
+one species label for all datasets or one label per dataset.</p></dd>
+
+
+<dt id="arg-token">token<a class="anchor" aria-label="anchor" href="#arg-token"></a></dt>
+<dd><p>Optional Zenodo access token. Public example datasets do not
+require a token. Supply this only for restricted/private records.</p></dd>
+
+
+<dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, re-download cached files.</p></dd>
+
+
+<dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, suppress Zenodo download progress
+messages.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -122,13 +142,15 @@ the example-data registry.</p></dd>
     <p>One of:</p>
 <ul><li><p>If <code>matrix_type == "filtered"</code> and
 <code>return_object = TRUE</code>:
-a Seurat object.</p></li>
+a Seurat object. Multiple datasets are returned as one merged Seurat
+object.</p></li>
 <li><p>If <code>matrix_type == "raw"</code> and
 <code>return_object = TRUE</code>:
-a sparse count matrix (e.g. <code>dgCMatrix</code>).</p></li>
+a sparse count matrix (e.g. <code>dgCMatrix</code>) or, for multiple
+datasets, a named list of sparse count matrices.</p></li>
 <li><p>If <code>return_object = FALSE</code>:
-the local file path to the cached <code>.h5</code> file,
-returned invisibly.</p></li>
+the local file path to the cached <code>.h5</code> file, or a named
+character vector of paths for multiple datasets, returned invisibly.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -162,13 +184,17 @@ based on GENCODE v48 (GRCh38.p14).</p>
 <p>When <code>return_object = TRUE</code>, the cached <code>.h5</code> file is read on the
 fly:</p><ul><li><p>If <code>matrix_type == "filtered"</code>:
 a Seurat object is constructed via
-<code><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>.</p></li>
+<code><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>. When multiple datasets are
+requested, the per-dataset Seurat objects are merged and each source
+is recorded in the <code>sample</code> metadata column.</p></li>
 <li><p>If <code>matrix_type == "raw"</code>:
 the function returns a sparse count matrix
 (typically a <code>dgCMatrix</code>), suitable for ambient RNA
-estimation / SoupX workflows.</p></li>
+estimation / SoupX workflows. When multiple raw datasets are
+requested, the matrices are returned as a named list.</p></li>
 </ul><p>When <code>return_object = FALSE</code>, no object is constructed;
-only the file is ensured to exist locally.</p>
+only the file is ensured to exist locally. Multiple datasets return a named
+character vector of cached paths.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -180,6 +206,7 @@ DOI: 10.5281/zenodo.14884845</p>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></code>,
+<code><a href="sn_download_zenodo.html">sn_download_zenodo</a></code>,
 <code><a href="sn_write.html">sn_write</a></code>,
 <code><a href="sn_read.html">sn_read</a></code></p></div>
     </div>
@@ -196,7 +223,10 @@ DOI: 10.5281/zenodo.14884845</p>
 <span class="r-in"><span><span class="co"># 3. Only download/cache PBMC8k, don't construct anything in-memory:</span></span></span>
 <span class="r-in"><span><span class="fu">sn_load_data</span><span class="op">(</span>dataset <span class="op">=</span> <span class="st">"pbmc8k"</span>, return_object <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># 4. Use a custom cache directory:</span></span></span>
+<span class="r-in"><span><span class="co"># 4. Load and merge multiple filtered PBMC examples:</span></span></span>
+<span class="r-in"><span><span class="va">pbmc_merged</span> <span class="op">&lt;-</span> <span class="fu">sn_load_data</span><span class="op">(</span>dataset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc1k"</span>, <span class="st">"pbmc3k"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># 5. Use a custom cache directory:</span></span></span>
 <span class="r-in"><span><span class="va">pbmc4k</span> <span class="op">&lt;-</span> <span class="fu">sn_load_data</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  dataset  <span class="op">=</span> <span class="st">"pbmc4k"</span>,</span></span>
 <span class="r-in"><span>  save_dir <span class="op">=</span> <span class="st">"~/datasets/pbmc_cache"</span></span></span>

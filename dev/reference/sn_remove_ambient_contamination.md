@@ -78,9 +78,10 @@ sn_remove_ambient_contamination(
 ## Value
 
 A corrected counts matrix, or an updated Seurat object when
-`return_object = TRUE` and `x` is a Seurat object. For decontX-based
-Seurat returns, the `decontX_contamination` and `decontX_clusters`
-columns are added to `meta.data`.
+`return_object = TRUE` and `x` is a Seurat object. For Seurat returns,
+`nCount_<assay>_corrected` and `nFeature_<assay>_corrected` are added to
+`meta.data`. For decontX-based Seurat returns, the
+`decontX_contamination` and `decontX_clusters` columns are also added.
 
 ## Examples
 

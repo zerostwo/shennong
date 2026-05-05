@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Preprocessing and QC workflow • Shennong</title>
+<title>Preprocessing and QC with PBMC3k • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Preprocessing and QC workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Preprocessing and QC with PBMC3k">
 <meta name="robots" content="noindex">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +39,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Preprocessing and QC workflow</h1>
+      <h1>Preprocessing and QC with PBMC3k</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -82,187 +84,205 @@ Duan</h4>
 
     
     
-<p>This article covers the first stage of a typical Shennong
-analysis:</p>
-<ul>
-<li>constructing a Seurat object</li>
-<li>inferring species and standardizing feature naming</li>
-<li>filtering poor-quality cells</li>
-<li>filtering genes by expression and bundled GENCODE annotations</li>
-<li>normalizing data</li>
-<li>adding cell-cycle scores for downstream modeling</li>
-</ul>
-<p>The examples use the built-in <code>pbmc_small</code> and
-<code>pbmc_small_raw</code> objects so the workflow stays check-safe and
-does not depend on network downloads.</p>
+<p>Preprocessing should answer four questions before clustering:</p>
+<ol style="list-style-type: decimal">
+<li>What object did we create from the count matrix?</li>
+<li>Which low-quality cells were flagged, and why?</li>
+<li>Which genes are retained for downstream analysis?</li>
+<li>What QC evidence can be stored and revisited later?</li>
+</ol>
+<p>Shennong keeps those decisions explicit while keeping the code short.
+The examples use PBMC3k and are evaluated only when
+<code>SHENNONG_RUN_VIGNETTES=true</code>.</p>
+<div class="section level2">
+<h2 id="load-pbmc3k-and-inspect-species-aware-qc-fields">Load PBMC3k and inspect species-aware QC fields<a class="anchor" aria-label="anchor" href="#load-pbmc3k-and-inspect-species-aware-qc-fields"></a>
+</h2>
+<p><code>sn_load_data("pbmc3k")</code> downloads or reuses the cached
+10x H5 file, reads it, and initializes a Seurat object with human QC
+metrics.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:35:14] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:35:15] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:35:15] Seurat object initialization complete.</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="st">"pbmc3k"</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small_raw"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small_raw"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small_raw"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small_raw.rda"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small_raw.rda"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="initialize-a-seurat-object">1. Initialize a Seurat object<a class="anchor" aria-label="anchor" href="#initialize-a-seurat-object"></a>
-</h2>
-<p>Start from a matrix-like object and let Shennong create the Seurat
-object with species-aware QC metadata.</p>
+<span><span class="fu"><a href="../reference/sn_get_species.html">sn_get_species</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "human"</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"nFeature_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                  sample nCount_RNA nFeature_RNA percent.mt</span></span>
+<span><span class="co">#&gt; AAACATACAACCAC-1 pbmc3k       2844         1046  2.7777778</span></span>
+<span><span class="co">#&gt; AAACATTGAGCTAC-1 pbmc3k       5717         1722  3.2534546</span></span>
+<span><span class="co">#&gt; AAACATTGATCAGC-1 pbmc3k       3766         1500  0.6903877</span></span>
+<span><span class="co">#&gt; AAACCGTGCTTCCG-1 pbmc3k       2981         1153  1.5095606</span></span>
+<span><span class="co">#&gt; AAACCGTGTATGCG-1 pbmc3k       1229          698  0.8950366</span></span>
+<span><span class="co">#&gt; AAACGCACTGGTAC-1 pbmc3k       2536         1032  1.4984227</span></span></code></pre></div>
+<p>If you start from a raw matrix instead, the equivalent explicit form
+is:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">feature_summary</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">metric</th>
-<th align="left">value</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">species</td>
-<td align="left">human</td>
-</tr>
-<tr class="even">
-<td align="left">median_nFeature</td>
-<td align="left">1280</td>
-</tr>
-<tr class="odd">
-<td align="left">median_nCount</td>
-<td align="left">3353</td>
-</tr>
-<tr class="even">
-<td align="left">median_percent_mt</td>
-<td align="left">2.07</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="filter-poor-quality-cells">2. Filter poor-quality cells<a class="anchor" aria-label="anchor" href="#filter-poor-quality-cells"></a>
-</h2>
-<p><code><a href="../reference/sn_filter_cells.html">sn_filter_cells()</a></code> works on standard QC columns such as
-<code>nFeature_RNA</code>, <code>nCount_RNA</code>, and
-<code>percent.mt</code>. The function can also draw diagnostics, but the
-article disables plotting to keep the rendered workflow compact.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">qc_summary</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">stage</th>
-<th align="right">cells</th>
-<th align="right">genes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">initialized</td>
-<td align="right">200</td>
-<td align="right">54872</td>
-</tr>
-<tr class="even">
-<td align="left">cell_filtered</td>
-<td align="right">185</td>
-<td align="right">54872</td>
-</tr>
-<tr class="odd">
-<td align="left">gene_filtered</td>
-<td align="right">185</td>
-<td align="right">10707</td>
-</tr>
-<tr class="even">
-<td align="left">normalized</td>
-<td align="right">185</td>
-<td align="right">10707</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="filter-genes-with-expression-and-annotation-rules">3. Filter genes with expression and annotation rules<a class="anchor" aria-label="anchor" href="#filter-genes-with-expression-and-annotation-rules"></a>
-</h2>
-<p>Shennong ships bundled human and mouse GENCODE snapshots. That means
-<code><a href="../reference/sn_filter_genes.html">sn_filter_genes()</a></code> can combine expression thresholds with
-annotation-aware filters such as <code>gene_class = "coding"</code> or
-exact <code>gene_type</code> values.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_cells</span>,</span>
-<span>  min_cells <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  gene_class <span class="op">=</span> <span class="st">"coding"</span>,</span>
-<span>  plot <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>For finer control you can target exact biotypes:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_lnc_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_cells</span>,</span>
-<span>  min_cells <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  gene_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lncRNA"</span>, <span class="st">"antisense"</span><span class="op">)</span>,</span>
-<span>  plot <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="normalize-and-add-cell-cycle-scores">4. Normalize and add cell-cycle scores<a class="anchor" aria-label="anchor" href="#normalize-and-add-cell-cycle-scores"></a>
-</h2>
-<p>After QC, normalize the object and add cell-cycle scores if they are
-useful for regression, cluster interpretation, or doublet
-diagnostics.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">cycle_summary</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">Phase</th>
-<th align="right">cells</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">G1</td>
-<td align="right">61</td>
-</tr>
-<tr class="even">
-<td align="left">G2M</td>
-<td align="right">62</td>
-</tr>
-<tr class="odd">
-<td align="left">S</td>
-<td align="right">62</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="optional-qc-extensions">5. Optional QC extensions<a class="anchor" aria-label="anchor" href="#optional-qc-extensions"></a>
-</h2>
-<p>Shennong also exposes heavier QC helpers that are usually run only
-when the analysis requires them:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Doublet detection</span></span>
-<span><span class="va">pbmc_doublets</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_doublets.html">sn_find_doublets</a></span><span class="op">(</span><span class="va">pbmc_norm</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="st">"pbmc3k_filtered_feature_bc_matrix.h5"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Ambient RNA correction from a raw count matrix</span></span>
-<span><span class="va">pbmc_decont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_norm</span>,</span>
-<span>  raw_counts <span class="op">=</span> <span class="va">pbmc_small_raw</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">counts</span>,</span>
+<span>  project <span class="op">=</span> <span class="st">"pbmc3k_demo"</span>,</span>
+<span>  sample_name <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
+<span>  study <span class="op">=</span> <span class="st">"10x_pbmc"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>When gene identifiers or mixed symbol styles are a concern,
+standardize at initialization or call
+<code><a href="../reference/sn_standardize_gene_symbols.html">sn_standardize_gene_symbols()</a></code> before downstream analysis.
+If <code>HGNChelper</code> cannot provide an unambiguous replacement for
+an otherwise valid symbol, Shennong preserves the original symbol
+instead of returning an <code>NA</code> feature name.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_standardize_gene_symbols.html">sn_standardize_gene_symbols</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  is_gene_id <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="filter-cells-with-inspectable-qc-flags">Filter cells with inspectable QC flags<a class="anchor" aria-label="anchor" href="#filter-cells-with-inspectable-qc-flags"></a>
+</h2>
+<p><code><a href="../reference/sn_filter_cells.html">sn_filter_cells()</a></code> uses median absolute deviation
+thresholds by default. The key point is that filtering and flagging are
+separated: set <code>filter = FALSE</code> to see which cells would be
+removed, then set <code>filter = TRUE</code> when the rule is
+acceptable.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_flagged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_cells.html">sn_filter_cells</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"mad"</span>,</span>
+<span>  n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  filter <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Summarize current QC status or compare a filtered object against a pre-QC reference</span></span>
-<span><span class="va">qc_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_qc.html">sn_assess_qc</a></span><span class="op">(</span><span class="va">pbmc_decont</span>, reference <span class="op">=</span> <span class="va">pbmc_norm</span><span class="op">)</span></span>
-<span><span class="va">qc_report</span><span class="op">$</span><span class="va">overall</span></span></code></pre></div>
+<span><span class="va">qc_flag_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^qc_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_flagged</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc_flagged</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="va">qc_flag_cols</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; data frame with 0 columns and 6 rows</span></span></code></pre></div>
+<p>Once the flags look sensible, apply the same rule:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_cells.html">sn_filter_cells</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"mad"</span>,</span>
+<span>  n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">5</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  filter <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>before <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_cells</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; before  after </span></span>
+<span><span class="co">#&gt;   2753   2597</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="where-this-stage-leads-next">Where this stage leads next<a class="anchor" aria-label="anchor" href="#where-this-stage-leads-next"></a>
+<h2 id="filter-genes-by-expression-and-annotation">Filter genes by expression and annotation<a class="anchor" aria-label="anchor" href="#filter-genes-by-expression-and-annotation"></a>
 </h2>
-<p>Once preprocessing is complete, the usual next step is
-<code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> for single-sample clustering or
-Harmony-based integration. The dedicated clustering article continues
-from this point.</p>
+<p><code><a href="../reference/sn_filter_genes.html">sn_filter_genes()</a></code> keeps the threshold and optional
+annotation rule in one place. The expression threshold protects sparse
+downstream steps, while <code>gene_class = "coding"</code> can remove
+noncoding genes when your workflow is protein-coding focused.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc_cells</span>,</span>
+<span>  min_cells <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  plot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  filter <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  gene_class <span class="op">=</span> <span class="st">"coding"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; WARN [2026-05-05 20:35:18] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped. Examples: LINC01115.1, PCBP1-AS1.1, LSP1P5.1, DDX11L2.1, LINC01618.1, CAST.1, RAET1E-AS1.1, LINC03021.1, LINC03023.1, BMS1P14.1.</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>before <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_cells</span><span class="op">)</span>, after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_genes</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; before  after </span></span>
+<span><span class="co">#&gt;  54872  12403</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="normalize-and-add-cell-cycle-scores">Normalize and add cell-cycle scores<a class="anchor" aria-label="anchor" href="#normalize-and-add-cell-cycle-scores"></a>
+</h2>
+<p><code><a href="../reference/sn_normalize_data.html">sn_normalize_data()</a></code> and
+<code><a href="../reference/sn_score_cell_cycle.html">sn_score_cell_cycle()</a></code> keep preprocessing inside the same
+Shennong vocabulary used later by clustering and plotting.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_norm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_normalize_data.html">sn_normalize_data</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_genes</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc_norm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_score_cell_cycle.html">sn_score_cell_cycle</a></span><span class="op">(</span><span class="va">pbmc_norm</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_norm</span><span class="op">$</span><span class="va">Phase</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  G1 G2M   S </span></span>
+<span><span class="co">#&gt; 872 896 829</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="optional-doublet-and-ambient-rna-correction">Optional doublet and ambient-RNA correction<a class="anchor" aria-label="anchor" href="#optional-doublet-and-ambient-rna-correction"></a>
+</h2>
+<p>Doublet detection and ambient correction depend on optional backends.
+Shennong keeps them as explicit steps rather than hiding them in
+clustering.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_doublets</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_doublets.html">sn_find_doublets</a></span><span class="op">(</span><span class="va">pbmc_norm</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_doublets</span><span class="op">$</span><span class="va">doublet_class</span><span class="op">)</span></span></code></pre></div>
+<p>For ambient RNA, PBMC3k raw counts can be loaded from the same
+example registry. The corrected matrix is written to a new layer by
+default, so the original counts remain inspectable.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span>, matrix_type <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc_decont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc_norm</span>,</span>
+<span>  raw <span class="op">=</span> <span class="va">pbmc_raw</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"decontx"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="store-a-qc-assessment">Store a QC assessment<a class="anchor" aria-label="anchor" href="#store-a-qc-assessment"></a>
+</h2>
+<p><code><a href="../reference/sn_assess_qc.html">sn_assess_qc()</a></code> summarizes the object after filtering and
+can compare it to the pre-filter object. Store the result when you want
+later reports to recover the QC decision without rerunning
+preprocessing.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">qc_report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_qc.html">sn_assess_qc</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_norm</span>,</span>
+<span>  reference <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">qc_report</span><span class="op">$</span><span class="va">overall</span></span>
+<span><span class="co">#&gt;   n_samples n_cells qc_score qc_label retention_fraction</span></span>
+<span><span class="co">#&gt; 1         1    2597 84.92677     good          0.9433345</span></span>
+<span><span class="co">#&gt;   low_quality_removed_fraction doublet_removed_fraction</span></span>
+<span><span class="co">#&gt; 1                          NaN                      NaN</span></span>
+<span></span>
+<span><span class="va">pbmc_norm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_qc.html">sn_assess_qc</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_norm</span>,</span>
+<span>  reference <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc3k_preprocessing"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc_norm</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">qc_assessments</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "pbmc3k_preprocessing"</span></span></code></pre></div>
+<p>The object is now ready for clustering. The important part is not
+just that cells and genes were filtered, but that the rationale and
+summary are stored in a place downstream code can find.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

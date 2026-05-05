@@ -5,7 +5,9 @@ the declared source for each dependency. CRAN packages are installed
 with
 [`install.packages()`](https://rdrr.io/r/utils/install.packages.html),
 Bioconductor packages with `BiocManager::install()`, and GitHub packages
-with `remotes::install_github()`.
+with `remotes::install_github()`. Legacy `.qs` files remain supported
+when the archived qs package is already available, but new installations
+should use qs2.
 
 ## Usage
 
@@ -17,6 +19,7 @@ sn_install_dependencies(
   repos = getOption("repos"),
   ask = interactive(),
   upgrade = FALSE,
+  github_dependencies = NA,
   ...
 )
 ```
@@ -50,6 +53,12 @@ sn_install_dependencies(
 
   Logical; when `TRUE`, allow updating already installed GitHub and
   Bioconductor packages during installation.
+
+- github_dependencies:
+
+  Dependency policy passed to `remotes::install_github()` for
+  GitHub-hosted packages. The default installs required dependencies
+  without pulling optional suggested packages.
 
 - ...:
 

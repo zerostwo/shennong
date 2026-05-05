@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -56,17 +58,30 @@
 <span>  <span class="va">object</span>,</span>
 <span>  <span class="va">features</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  label <span class="op">=</span> <span class="va">label</span>,</span>
+<span>  assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  cells <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  label <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  split_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  label_size <span class="op">=</span> <span class="fl">8</span> <span class="op">*</span> <span class="fl">0.36</span>,</span>
 <span>  pt_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  stroke_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  slot <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  min_cutoff <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  max_cutoff <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  shape_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  blend <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  blend_threshold <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  ncol <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  coord_fixed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  by_col <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"expression"</span>, <span class="st">"density"</span><span class="op">)</span>,</span>
 <span>  density_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wkde"</span>, <span class="st">"ks"</span><span class="op">)</span>,</span>
 <span>  density_adjust <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  density_style <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"galaxy"</span>, <span class="st">"plain"</span><span class="op">)</span>,</span>
 <span>  raster <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  raster_dpi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">512</span>, <span class="fl">512</span><span class="op">)</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -103,6 +118,19 @@
 <dd><p>A character string specifying the dimensionality reduction to use (e.g., "PCA", "UMAP", "tSNE"). Defaults to NULL.</p></dd>
 
 
+<dt id="arg-assay">assay<a class="anchor" aria-label="anchor" href="#arg-assay"></a></dt>
+<dd><p>Optional assay passed to Seurat's <code>FeaturePlot()</code> and used
+for density-mode expression retrieval.</p></dd>
+
+
+<dt id="arg-dims">dims<a class="anchor" aria-label="anchor" href="#arg-dims"></a></dt>
+<dd><p>Two dimensions to plot. Defaults to <code>c(1, 2)</code>.</p></dd>
+
+
+<dt id="arg-cells">cells<a class="anchor" aria-label="anchor" href="#arg-cells"></a></dt>
+<dd><p>Optional cells to include.</p></dd>
+
+
 <dt id="arg-label">label<a class="anchor" aria-label="anchor" href="#arg-label"></a></dt>
 <dd><p>A character vector specifying the labels to use for each cell group. Defaults to label.</p></dd>
 
@@ -121,12 +149,30 @@
 cells.</p></dd>
 
 
+<dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
+<dd><p>Point alpha passed to Seurat's <code>FeaturePlot()</code>.</p></dd>
+
+
+<dt id="arg-stroke-size">stroke_size<a class="anchor" aria-label="anchor" href="#arg-stroke-size"></a></dt>
+<dd><p>Point stroke size passed to Seurat's <code>FeaturePlot()</code>.</p></dd>
+
+
 <dt id="arg-slot">slot<a class="anchor" aria-label="anchor" href="#arg-slot"></a></dt>
 <dd><p>A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".</p></dd>
 
 
+<dt id="arg-min-cutoff">min_cutoff<a class="anchor" aria-label="anchor" href="#arg-min-cutoff"></a></dt>
+<dd><p>A numeric value specifying the minimum expression cutoff.
+Defaults to <code>NA</code>.</p></dd>
+
+
 <dt id="arg-max-cutoff">max_cutoff<a class="anchor" aria-label="anchor" href="#arg-max-cutoff"></a></dt>
 <dd><p>A numeric value specifying the maximum expression cutoff. Defaults to NA.</p></dd>
+
+
+<dt id="arg-shape-by-blend-blend-threshold-ncol-coord-fixed-by-col-raster-dpi">shape_by, blend, blend_threshold, ncol, coord_fixed, by_col, raster_dpi<a class="anchor" aria-label="anchor" href="#arg-shape-by-blend-blend-threshold-ncol-coord-fixed-by-col-raster-dpi"></a></dt>
+<dd><p>Snake-case wrappers for the corresponding Seurat <code>FeaturePlot()</code>
+arguments.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
@@ -151,7 +197,11 @@ estimator when <code>mode = "density"</code>. Larger values smooth more.</p></dd
 
 
 <dt id="arg-raster">raster<a class="anchor" aria-label="anchor" href="#arg-raster"></a></dt>
-<dd><p>A logical value specifying whether to use raster graphics. Defaults to TRUE.</p></dd>
+<dd><p>A logical value specifying whether to use raster graphics.
+Defaults to TRUE. When <code>ggrastr</code> is installed, Shennong rasterizes the
+regular ggplot point layer after plotting so <code>pt_size</code> keeps the same
+behavior as <code>raster = FALSE</code>; otherwise it falls back to Seurat's
+native raster backend.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>

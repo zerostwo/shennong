@@ -40,5 +40,5 @@ file.create(existing)
 #> [1] TRUE
 missing <- tempfile("missing-")
 sn_check_file(c(existing, missing), stop = FALSE)
-#> [1] "/tmp/Rtmpm5uTLe/missing-1ee662a1d959"
+#> [1] "/tmp/RtmpI5uOII/missing-26174f784c8b"
 ```

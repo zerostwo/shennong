@@ -1,4 +1,4 @@
-# Calculate PCR batch effect scores
+# Calculate PCR batch_by effect scores
 
 This function estimates how much variance in an embedding is still
 explained by batch. If a baseline reduction or baseline object is
@@ -10,15 +10,16 @@ state.
 ``` r
 sn_calculate_pcr_batch(
   x,
-  batch,
+  batch_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   dims = NULL,
   baseline = NULL,
   baseline_reduction = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = batch,
-  seed = 717
+  stratify_by = NULL,
+  seed = 717,
+  batch = NULL
 )
 ```
 
@@ -28,7 +29,7 @@ sn_calculate_pcr_batch(
 
   A Seurat object.
 
-- batch:
+- batch_by:
 
   Metadata column containing batch labels.
 
@@ -68,10 +69,14 @@ sn_calculate_pcr_batch(
 
   Random seed used when `max_cells` triggers subsampling.
 
+- batch:
+
+  Deprecated alias for `batch_by`.
+
 ## Value
 
-A one-row data frame containing the weighted batch variance explained by
-the selected reduction and, when available, the baseline comparison.
+A one-row data frame containing the weighted batch_by variance explained
+by the selected reduction and, when available, the baseline comparison.
 
 ## Examples
 
@@ -80,13 +85,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 sn_calculate_pcr_batch(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

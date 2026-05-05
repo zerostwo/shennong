@@ -11,8 +11,8 @@ significance when replicate samples are available.
 ``` r
 sn_compare_composition(
   x,
-  sample_col,
-  group_col,
+  sample_by = NULL,
+  group_by = NULL,
   variable,
   contrast,
   min_cells = 20,
@@ -20,7 +20,9 @@ sn_compare_composition(
   test = c("wilcox", "none"),
   adjust_method = "BH",
   additional_cols = NULL,
-  return_sample_data = FALSE
+  return_sample_data = FALSE,
+  sample_col = NULL,
+  group_col = NULL
 )
 ```
 
@@ -30,11 +32,11 @@ sn_compare_composition(
 
   A Seurat object or a data frame containing cell-level metadata.
 
-- sample_col:
+- sample_by:
 
   Column defining biological samples.
 
-- group_col:
+- group_by:
 
   Column defining the group or condition to compare between samples.
 
@@ -79,6 +81,14 @@ sn_compare_composition(
   Logical; if `TRUE`, return both the summary table and the completed
   sample-level composition table.
 
+- sample_col:
+
+  Deprecated alias for `sample_by`.
+
+- group_col:
+
+  Deprecated alias for `group_by`.
+
 ## Value
 
 A data frame with one row per `variable` level. When
@@ -91,8 +101,8 @@ returned.
 if (FALSE) { # \dontrun{
 comparison <- sn_compare_composition(
   seu,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   variable = "cell_type",
   contrast = c("treated", "control")
 )

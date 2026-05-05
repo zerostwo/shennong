@@ -38,27 +38,22 @@ head(deps)
 #> 1 BPCells      recommended Suggests    GitHub  bnprk… FALSE     NA     
 #> 2 BayesPrism   recommended Suggests    GitHub  Danko… FALSE     NA     
 #> 3 BiocManager  recommended Suggests    CRAN    NA     FALSE     NA     
-#> 4 BiocParallel recommended Suggests    Biocon… NA     TRUE      1.44.0 
-#> 5 CIARA        recommended Suggests    CRAN    NA     FALSE     NA     
-#> 6 COSG         recommended Suggests    GitHub  genec… TRUE      1.0.0  
+#> 4 BiocParallel recommended Suggests    Biocon… NA     TRUE      1.46.0 
+#> 5 COSG         recommended Suggests    GitHub  genec… TRUE      1.0.0  
+#> 6 CellChat     recommended Suggests    GitHub  jinwo… FALSE     NA     
 subset(deps, !installed & requirement == "recommended")
-#> # A tibble: 16 × 7
-#>    package      requirement declared_in source remote installed version
-#>    <chr>        <chr>       <chr>       <chr>  <chr>  <lgl>     <chr>  
-#>  1 BPCells      recommended Suggests    GitHub bnprk… FALSE     NA     
-#>  2 BayesPrism   recommended Suggests    GitHub Danko… FALSE     NA     
-#>  3 BiocManager  recommended Suggests    CRAN   NA     FALSE     NA     
-#>  4 CIARA        recommended Suggests    CRAN   NA     FALSE     NA     
-#>  5 GapClust     recommended Suggests    GitHub fabot… FALSE     NA     
-#>  6 Nebulosa     recommended Suggests    CRAN   NA     FALSE     NA     
-#>  7 ROGUE        recommended Suggests    GitHub Pauli… FALSE     NA     
-#>  8 SoupX        recommended Suggests    CRAN   NA     FALSE     NA     
-#>  9 ellmer       recommended Suggests    CRAN   NA     FALSE     NA     
-#> 10 glmGamPoi    recommended Suggests    Bioco… NA     FALSE     NA     
-#> 11 ks           recommended Suggests    CRAN   NA     FALSE     NA     
-#> 12 miloR        recommended Suggests    Bioco… NA     FALSE     NA     
-#> 13 msigdbr      recommended Suggests    CRAN   NA     FALSE     NA     
-#> 14 org.Mm.eg.db recommended Suggests    Bioco… NA     FALSE     NA     
-#> 15 remotes      recommended Suggests    CRAN   NA     FALSE     NA     
-#> 16 shadowtext   recommended Suggests    CRAN   NA     FALSE     NA     
+#> # A tibble: 23 × 7
+#>    package     requirement declared_in source  remote installed version
+#>    <chr>       <chr>       <chr>       <chr>   <chr>  <lgl>     <chr>  
+#>  1 BPCells     recommended Suggests    GitHub  bnprk… FALSE     NA     
+#>  2 BayesPrism  recommended Suggests    GitHub  Danko… FALSE     NA     
+#>  3 BiocManager recommended Suggests    CRAN    NA     FALSE     NA     
+#>  4 CellChat    recommended Suggests    GitHub  jinwo… FALSE     NA     
+#>  5 Coralysis   recommended Suggests    Biocon… NA     FALSE     NA     
+#>  6 GapClust    recommended Suggests    GitHub  fabot… FALSE     NA     
+#>  7 Nebulosa    recommended Suggests    Biocon… NA     FALSE     NA     
+#>  8 ROGUE       recommended Suggests    GitHub  Pauli… FALSE     NA     
+#>  9 SoupX       recommended Suggests    CRAN    NA     FALSE     NA     
+#> 10 decoupleR   recommended Suggests    Biocon… NA     FALSE     NA     
+#> # ℹ 13 more rows
 ```

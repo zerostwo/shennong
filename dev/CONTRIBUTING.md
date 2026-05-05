@@ -8,6 +8,7 @@ commit, with matching tests and documentation updates.
 Before opening a pull request, run:
 
 ``` r
+
 devtools::document()
 testthat::test_local(stop_on_failure = TRUE)
 ```

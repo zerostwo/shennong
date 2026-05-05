@@ -3,11 +3,15 @@
 declared source for each dependency. CRAN packages are installed with
 install.packages(), Bioconductor packages with
 BiocManager::install(), and GitHub packages with
-remotes::install_github()."><meta property="og:description" content="This helper installs missing required and/or recommended packages using the
+remotes::install_github().
+Legacy .qs files remain supported when the archived qs package
+is already available, but new installations should use qs2."><meta property="og:description" content="This helper installs missing required and/or recommended packages using the
 declared source for each dependency. CRAN packages are installed with
 install.packages(), Bioconductor packages with
 BiocManager::install(), and GitHub packages with
-remotes::install_github()."><meta name="robots" content="noindex"><script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script></head><body>
+remotes::install_github().
+Legacy .qs files remain supported when the archived qs package
+is already available, but new installations should use qs2."><meta name="robots" content="noindex"><script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script></head><body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
@@ -15,7 +19,7 @@ remotes::install_github()."><meta name="robots" content="noindex"><script async 
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,14 +32,16 @@ remotes::install_github()."><meta name="robots" content="noindex"><script async 
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -59,7 +65,9 @@ remotes::install_github()."><meta name="robots" content="noindex"><script async 
 declared source for each dependency. CRAN packages are installed with
 <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, Bioconductor packages with
 <code>BiocManager::install()</code>, and GitHub packages with
-<code>remotes::install_github()</code>.</p>
+<code>remotes::install_github()</code>.
+Legacy <code>.qs</code> files remain supported when the archived <span class="pkg">qs</span> package
+is already available, but new installations should use <span class="pkg">qs2</span>.</p>
     </div>
 
     <div class="section level2">
@@ -71,6 +79,7 @@ declared source for each dependency. CRAN packages are installed with
 <span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span>,</span>
 <span>  ask <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  upgrade <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  github_dependencies <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -108,6 +117,12 @@ behavior.</p></dd>
 <dt id="arg-upgrade">upgrade<a class="anchor" aria-label="anchor" href="#arg-upgrade"></a></dt>
 <dd><p>Logical; when <code>TRUE</code>, allow updating already installed
 GitHub and Bioconductor packages during installation.</p></dd>
+
+
+<dt id="arg-github-dependencies">github_dependencies<a class="anchor" aria-label="anchor" href="#arg-github-dependencies"></a></dt>
+<dd><p>Dependency policy passed to
+<code>remotes::install_github()</code> for GitHub-hosted packages. The default
+installs required dependencies without pulling optional suggested packages.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

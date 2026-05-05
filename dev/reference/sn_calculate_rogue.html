@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -54,11 +56,19 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_calculate_rogue</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  sample <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  span <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"counts"</span></span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  cells <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_cells <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span>  stratify_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
+<span>  min_cells <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  min_genes <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sample <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -70,11 +80,11 @@
 <dd><p>A Seurat object.</p></dd>
 
 
-<dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
-<dd><p>Column name in metadata specifying cluster labels.</p></dd>
+<dt id="arg-cluster-by">cluster_by<a class="anchor" aria-label="anchor" href="#arg-cluster-by"></a></dt>
+<dd><p>Column name in metadata specifying cluster_by labels.</p></dd>
 
 
-<dt id="arg-sample">sample<a class="anchor" aria-label="anchor" href="#arg-sample"></a></dt>
+<dt id="arg-sample-by">sample_by<a class="anchor" aria-label="anchor" href="#arg-sample-by"></a></dt>
 <dd><p>Column name in metadata specifying sample labels.</p></dd>
 
 
@@ -89,10 +99,51 @@
 <dt id="arg-layer">layer<a class="anchor" aria-label="anchor" href="#arg-layer"></a></dt>
 <dd><p>Layer used as the input count matrix. Defaults to <code>"counts"</code>.</p></dd>
 
+
+<dt id="arg-cells">cells<a class="anchor" aria-label="anchor" href="#arg-cells"></a></dt>
+<dd><p>Optional character vector of cell names to include.</p></dd>
+
+
+<dt id="arg-max-cells">max_cells<a class="anchor" aria-label="anchor" href="#arg-max-cells"></a></dt>
+<dd><p>Optional integer cap used to subsample cells before running
+ROGUE. Defaults to <code>3000</code>.</p></dd>
+
+
+<dt id="arg-stratify-by">stratify_by<a class="anchor" aria-label="anchor" href="#arg-stratify-by"></a></dt>
+<dd><p>Optional metadata column used to preserve representation
+during subsampling. Defaults to <code>sample</code> when supplied, otherwise
+<code>cluster</code>.</p></dd>
+
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Random seed used when <code>max_cells</code> triggers subsampling.</p></dd>
+
+
+<dt id="arg-min-cells">min_cells<a class="anchor" aria-label="anchor" href="#arg-min-cells"></a></dt>
+<dd><p>Minimum cells retained by the upstream
+<code>ROGUE::matr.filter()</code> step.</p></dd>
+
+
+<dt id="arg-min-genes">min_genes<a class="anchor" aria-label="anchor" href="#arg-min-genes"></a></dt>
+<dd><p>Minimum detected genes retained by the upstream
+<code>ROGUE::matr.filter()</code> step.</p></dd>
+
+
+<dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
+<dd><p>Deprecated alias for <code>cluster_by</code>.</p></dd>
+
+
+<dt id="arg-sample">sample<a class="anchor" aria-label="anchor" href="#arg-sample"></a></dt>
+<dd><p>Deprecated alias for <code>sample_by</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data.frame of ROGUE score per cluster/sample or per cluster.</p>
+    <p>When neither <code>cluster</code> nor <code>sample</code> is supplied, returns a
+single numeric ROGUE score for the selected matrix. When
+<code>cluster</code> is supplied, returns a data frame with per-cluster ROGUE
+scores. When both <code>cluster</code> and <code>sample</code> are supplied, returns a
+tidy data frame with one row per sample-cluster combination.</p>
     </div>
 
     <div class="section level2">
@@ -100,7 +151,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span><span class="va">pbmc_small</span>, normalization_method <span class="op">=</span> <span class="st">"seurat"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">rogue_tbl</span> <span class="op">&lt;-</span> <span class="fu">sn_calculate_rogue</span><span class="op">(</span><span class="va">pbmc</span>, cluster <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">rogue_tbl</span> <span class="op">&lt;-</span> <span class="fu">sn_calculate_rogue</span><span class="op">(</span><span class="va">pbmc</span>, cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rogue_tbl</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

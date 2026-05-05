@@ -11,28 +11,31 @@ sample groups.
 ``` r
 sn_run_milo(
   x,
-  sample_col,
-  group_col,
+  sample_by = NULL,
+  group_by = NULL,
   contrast = NULL,
   reduction = "pca",
   dims = NULL,
   cells = NULL,
   max_cells = NULL,
-  stratify_by = sample_col,
+  stratify_by = NULL,
   k = 20,
   d = NULL,
   prop = 0.1,
   refined = TRUE,
   refinement_scheme = "reduced_dim",
   covariates = NULL,
-  annotation_col = NULL,
+  annotation_by = NULL,
   fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
   store_name = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_col = NULL,
+  annotation_col = NULL,
+  group_col = NULL
 )
 ```
 
@@ -42,18 +45,18 @@ sn_run_milo(
 
   A Seurat object.
 
-- sample_col:
+- sample_by:
 
   Metadata column defining biological samples.
 
-- group_col:
+- group_by:
 
   Metadata column defining the sample-level comparison group.
 
 - contrast:
 
   Optional character vector of length 2 giving the comparison as
-  `c(case, control)`. When omitted, `group_col` must contain exactly two
+  `c(case, control)`. When omitted, `group_by` must contain exactly two
   levels in the selected cells.
 
 - reduction:
@@ -102,9 +105,9 @@ sn_run_milo(
 - covariates:
 
   Optional sample-level covariates added to the DA design formula
-  alongside `group_col`.
+  alongside `group_by`.
 
-- annotation_col:
+- annotation_by:
 
   Optional cell-level metadata column used to annotate neighborhoods
   with `miloR::annotateNhoods()`.
@@ -140,6 +143,18 @@ sn_run_milo(
 
   Logical; if `TRUE`, emit progress logs.
 
+- sample_col:
+
+  Deprecated alias for `sample_by`.
+
+- annotation_col:
+
+  Deprecated alias for `annotation_by`.
+
+- group_col:
+
+  Deprecated alias for `group_by`.
+
 ## Value
 
 By default, a data frame of neighborhood-level DA statistics. When
@@ -152,8 +167,8 @@ By default, a data frame of neighborhood-level DA statistics. When
 if (FALSE) { # \dontrun{
 da_tbl <- sn_run_milo(
   seu,
-  sample_col = "sample",
-  group_col = "condition",
+  sample_by = "sample",
+  group_by = "condition",
   contrast = c("treated", "control"),
   reduction = "pca"
 )

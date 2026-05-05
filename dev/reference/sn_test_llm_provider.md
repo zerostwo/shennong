@@ -45,5 +45,5 @@ sn_test_llm_provider(provider = test_provider)
 #> # A tibble: 1 × 6
 #>   provider ok    model elapsed_sec text  error
 #>   <chr>    <lgl> <chr>       <dbl> <chr> <chr>
-#> 1 ellmer   TRUE  demo    0.0000448 OK    NA   
+#> 1 ellmer   TRUE  demo    0.0000510 OK    NA   
 ```

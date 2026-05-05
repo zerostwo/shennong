@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -56,7 +58,7 @@
 <span>  <span class="va">object</span>,</span>
 <span>  cluster_de_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  enrichment_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  cluster_col <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  cluster_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  background <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"llm"</span>, <span class="st">"human"</span><span class="op">)</span>,</span>
 <span>  provider <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -65,6 +67,7 @@
 <span>  store_name <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_progress <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  cluster_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -85,7 +88,7 @@
 <dd><p>Optional stored enrichment result.</p></dd>
 
 
-<dt id="arg-cluster-col">cluster_col<a class="anchor" aria-label="anchor" href="#arg-cluster-col"></a></dt>
+<dt id="arg-cluster-by">cluster_by<a class="anchor" aria-label="anchor" href="#arg-cluster-by"></a></dt>
 <dd><p>Metadata column containing cluster labels.</p></dd>
 
 
@@ -126,6 +129,10 @@ and, when <span class="pkg">cli</span> is available, a console progress bar whil
 the LLM response.</p></dd>
 
 
+<dt id="arg-cluster-col">cluster_col<a class="anchor" aria-label="anchor" href="#arg-cluster-col"></a></dt>
+<dd><p>Deprecated alias for <code>cluster_by</code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments forwarded to <code>provider</code>.</p></dd>
 
@@ -160,14 +167,15 @@ the LLM response.</p></dd>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">prompt</span><span class="op">$</span><span class="va">task</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:20] Initializing Seurat object for project: Shennong.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:20] Running QC metrics for human.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:20] Seurat object initialization complete.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:41] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:41] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:42] Seurat object initialization complete.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No DE genes identified</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Starting interpretation workflow.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.0s).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-04-05 05:31:21] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`cluster_col` is deprecated; use `cluster_by` instead.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Starting interpretation workflow.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-05-05 20:17:43] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "figure_legend"</span>
 </code></pre></div>
     </div>

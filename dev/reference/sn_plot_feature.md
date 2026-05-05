@@ -10,17 +10,30 @@ sn_plot_feature(
   object,
   features,
   reduction = NULL,
-  label = label,
+  assay = NULL,
+  dims = c(1, 2),
+  cells = NULL,
+  label = FALSE,
   split_by = NULL,
   label_size = 8 * 0.36,
   pt_size = NULL,
+  alpha = 1,
+  stroke_size = NULL,
   slot = "data",
+  min_cutoff = NA,
   max_cutoff = NA,
+  shape_by = NULL,
+  blend = FALSE,
+  blend_threshold = 0.5,
+  ncol = NULL,
+  coord_fixed = FALSE,
+  by_col = TRUE,
   mode = c("expression", "density"),
   density_method = c("wkde", "ks"),
   density_adjust = 1,
   density_style = c("galaxy", "plain"),
   raster = TRUE,
+  raster_dpi = c(512, 512),
   seed = 717,
   title = NULL,
   legend_title = NULL,
@@ -56,6 +69,19 @@ sn_plot_feature(
   A character string specifying the dimensionality reduction to use
   (e.g., "PCA", "UMAP", "tSNE"). Defaults to NULL.
 
+- assay:
+
+  Optional assay passed to Seurat's `FeaturePlot()` and used for
+  density-mode expression retrieval.
+
+- dims:
+
+  Two dimensions to plot. Defaults to `c(1, 2)`.
+
+- cells:
+
+  Optional cells to include.
+
 - label:
 
   A character vector specifying the labels to use for each cell group.
@@ -76,15 +102,34 @@ sn_plot_feature(
   A numeric value specifying the size of the points. When `NULL`,
   Shennong chooses a value automatically based on the number of cells.
 
+- alpha:
+
+  Point alpha passed to Seurat's `FeaturePlot()`.
+
+- stroke_size:
+
+  Point stroke size passed to Seurat's `FeaturePlot()`.
+
 - slot:
 
   A character string specifying which slot in the Seurat object to use
   (e.g., "data", "scale.data", "integrated"). Defaults to "data".
 
+- min_cutoff:
+
+  A numeric value specifying the minimum expression cutoff. Defaults to
+  `NA`.
+
 - max_cutoff:
 
   A numeric value specifying the maximum expression cutoff. Defaults to
   NA.
+
+- shape_by, blend, blend_threshold, ncol, coord_fixed, by_col,
+  raster_dpi:
+
+  Snake-case wrappers for the corresponding Seurat `FeaturePlot()`
+  arguments.
 
 - mode:
 
@@ -109,7 +154,10 @@ sn_plot_feature(
 - raster:
 
   A logical value specifying whether to use raster graphics. Defaults to
-  TRUE.
+  TRUE. When `ggrastr` is installed, Shennong rasterizes the regular
+  ggplot point layer after plotting so `pt_size` keeps the same behavior
+  as `raster = FALSE`; otherwise it falls back to Seurat's native raster
+  backend.
 
 - seed:
 

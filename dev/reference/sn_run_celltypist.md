@@ -119,8 +119,9 @@ sn_run_celltypist(
 
 ## Value
 
-A Seurat object with three new columns in its metadata:
-`_predicted_labels`, `_over_clustering`, `_majority_voting`.
+When `x` is a Seurat object, a Seurat object with prediction columns
+added to metadata. When `x` is a path, the CellTypist prediction table
+is returned.
 
 ## Examples
 

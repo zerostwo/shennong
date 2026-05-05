@@ -27,6 +27,7 @@ sn_plot_dim(
   label_size = 8 * 0.36,
   label_color = "black",
   label_box = FALSE,
+  label_halo = TRUE,
   repel = FALSE,
   cells_highlight = NULL,
   cols_highlight = "#DE2D26",
@@ -117,6 +118,12 @@ sn_plot_dim(
 
   Logical value indicating whether to show a box around the labels on
   the plot. Default is FALSE.
+
+- label_halo:
+
+  Logical value indicating whether Shennong should add a white
+  halo/background behind text labels. Set to `FALSE` to keep Seurat's
+  native label layer unchanged.
 
 - repel:
 

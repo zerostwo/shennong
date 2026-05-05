@@ -1,6 +1,6 @@
 # Assess integration quality across multiple metrics
 
-This wrapper combines fast, broadly useful metrics for batch mixing,
+This wrapper combines fast, broadly useful metrics for batch_by mixing,
 biological conservation, and cluster-level diagnostics. It reuses
 existing neighbor graphs when available and otherwise builds a kNN graph
 with Annoy or an exact fallback.
@@ -10,9 +10,9 @@ with Annoy or an exact fallback.
 ``` r
 sn_assess_integration(
   x,
-  batch,
-  label = NULL,
-  cluster = "seurat_clusters",
+  batch_by = NULL,
+  label_by = NULL,
+  cluster_by = NULL,
   reduction = .sn_default_metric_reduction(x),
   baseline = NULL,
   baseline_reduction = .sn_default_baseline_reduction(x, reduction),
@@ -22,12 +22,15 @@ sn_assess_integration(
   metrics = NULL,
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   max_cells = 5000,
-  stratify_by = batch,
+  stratify_by = NULL,
   rare_fraction = 0.02,
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  batch = NULL,
+  label = NULL,
+  cluster = NULL
 )
 ```
 
@@ -37,16 +40,16 @@ sn_assess_integration(
 
   A Seurat object.
 
-- batch:
+- batch_by:
 
   Metadata column containing batch labels.
 
-- label:
+- label_by:
 
   Optional metadata column containing biological labels such as cell
   type annotations.
 
-- cluster:
+- cluster_by:
 
   Optional metadata column containing the current clustering.
 
@@ -57,7 +60,7 @@ sn_assess_integration(
 
 - baseline:
 
-  Optional Seurat object used as the baseline reference for PCR batch
+  Optional Seurat object used as the baseline reference for PCR batch_by
   scoring. If `NULL`, the baseline is taken from `x`.
 
 - baseline_reduction:
@@ -121,6 +124,18 @@ sn_assess_integration(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
+- batch:
+
+  Deprecated alias for `batch_by`.
+
+- label:
+
+  Deprecated alias for `label_by`.
+
+- cluster:
+
+  Deprecated alias for `cluster_by`.
+
 ## Value
 
 A list with four top-level elements:
@@ -141,14 +156,14 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch = "sample",
-  cluster = "seurat_clusters",
+  batch_by = "sample",
+  cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

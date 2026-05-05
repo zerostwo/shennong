@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -105,6 +107,13 @@
 
         <dt>
 
+          <code><a href="sn_download_zenodo.html">sn_download_zenodo()</a></code>
+
+        </dt>
+        <dd>Download files from a Zenodo record</dd>
+
+        <dt>
+
           <code><a href="sn_list_10x_paths.html">sn_list_10x_paths()</a></code>
 
         </dt>
@@ -112,17 +121,24 @@
 
         <dt>
 
-          <code><a href="sn_read.html">sn_read()</a></code> <code><a href="sn_read.html">.import.rio_bpcells()</a></code> <code><a href="sn_read.html">.import.rio_10x()</a></code> <code><a href="sn_read.html">.import.rio_starsolo()</a></code> <code><a href="sn_read.html">.import.rio_h5ad()</a></code> <code><a href="sn_read.html">.import.rio_h5()</a></code> <code><a href="sn_read.html">.import.rio_gmt()</a></code>
+          <code><a href="sn_read.html">sn_read()</a></code> <code><a href="sn_read.html">.import.rio_bpcells()</a></code> <code><a href="sn_read.html">.import.rio_10x()</a></code> <code><a href="sn_read.html">.import.rio_10x_spatial()</a></code> <code><a href="sn_read.html">.import.rio_starsolo()</a></code> <code><a href="sn_read.html">.import.rio_h5ad()</a></code> <code><a href="sn_read.html">.import.rio_h5()</a></code> <code><a href="sn_read.html">.import.rio_qs()</a></code> <code><a href="sn_read.html">.import.rio_qs2()</a></code> <code><a href="sn_read.html">.import.rio_gmt()</a></code>
 
         </dt>
         <dd>Read tabular and bioinformatics file formats</dd>
 
         <dt>
 
-          <code><a href="sn_write.html">sn_write()</a></code> <code><a href="sn_write.html">.export.rio_bpcells()</a></code> <code><a href="sn_write.html">.export.rio_h5ad()</a></code> <code><a href="sn_write.html">.export.rio_h5()</a></code>
+          <code><a href="sn_write.html">sn_write()</a></code> <code><a href="sn_write.html">.export.rio_bpcells()</a></code> <code><a href="sn_write.html">.export.rio_h5ad()</a></code> <code><a href="sn_write.html">.export.rio_h5()</a></code> <code><a href="sn_write.html">.export.rio_qs()</a></code> <code><a href="sn_write.html">.export.rio_qs2()</a></code>
 
         </dt>
         <dd>Write tabular and bioinformatics file formats</dd>
+
+        <dt>
+
+          <code><a href="sn_upload_zenodo.html">sn_upload_zenodo()</a></code>
+
+        </dt>
+        <dd>Upload reusable data files to Zenodo</dd>
 
         <dt>
 
@@ -159,7 +175,7 @@
           <code><a href="sn_standardize_gene_symbols.html">sn_standardize_gene_symbols()</a></code>
 
         </dt>
-        <dd>Standardize gene symbols in a count matrix or Seurat object</dd>
+        <dd>Standardize gene symbols in a vector, count matrix, or Seurat object</dd>
 
         <dt>
 
@@ -224,7 +240,42 @@
           <code><a href="sn_run_cluster.html">sn_run_cluster()</a></code>
 
         </dt>
-        <dd>Run clustering for a single dataset or Harmony integration workflow</dd>
+        <dd>Run clustering for a single dataset or batch integration workflow</dd>
+
+        <dt>
+
+          <code><a href="sn_run_scvi.html">sn_run_scvi()</a></code> <code><a href="sn_run_scvi.html">sn_run_scanvi()</a></code>
+
+        </dt>
+        <dd>Run scVI or scANVI integration through Shennong</dd>
+
+        <dt>
+
+          <code><a href="sn_transfer_labels.html">sn_transfer_labels()</a></code>
+
+        </dt>
+        <dd>Transfer labels from a Seurat reference to a query object</dd>
+
+        <dt>
+
+          <code><a href="sn_simulate.html">sn_simulate()</a></code>
+
+        </dt>
+        <dd>Simulate single-cell counts with scDesign3</dd>
+
+        <dt>
+
+          <code><a href="sn_simulate_scdesign3.html">sn_simulate_scdesign3()</a></code>
+
+        </dt>
+        <dd>Simulate single-cell counts with scDesign3</dd>
+
+        <dt>
+
+          <code><a href="sn_sweep_cluster_resolution.html">sn_sweep_cluster_resolution()</a></code>
+
+        </dt>
+        <dd>Sweep clustering resolutions and summarize cluster-quality diagnostics</dd>
       </dl></div><div class="section level2">
       <h2 id="diagnostics-and-benchmarking">Diagnostics and Benchmarking<a class="anchor" aria-label="anchor" href="#diagnostics-and-benchmarking"></a></h2>
 
@@ -275,7 +326,14 @@
           <code><a href="sn_calculate_pcr_batch.html">sn_calculate_pcr_batch()</a></code>
 
         </dt>
-        <dd>Calculate PCR batch effect scores</dd>
+        <dd>Calculate PCR batch_by effect scores</dd>
+
+        <dt>
+
+          <code><a href="sn_calculate_variance_explained.html">sn_calculate_variance_explained()</a></code>
+
+        </dt>
+        <dd>Rank metadata variables by embedding variance explained</dd>
 
         <dt>
 
@@ -303,7 +361,7 @@
           <code><a href="sn_calculate_cluster_entropy.html">sn_calculate_cluster_entropy()</a></code>
 
         </dt>
-        <dd>Calculate cluster entropy for a categorical label</dd>
+        <dd>Calculate cluster_by entropy for a categorical label</dd>
 
         <dt>
 
@@ -402,6 +460,13 @@
 
         <dt>
 
+          <code><a href="sn_calculate_roe.html">sn_calculate_roe()</a></code>
+
+        </dt>
+        <dd>Calculate observed-over-expected enrichment</dd>
+
+        <dt>
+
           <code><a href="sn_compare_composition.html">sn_compare_composition()</a></code>
 
         </dt>
@@ -455,6 +520,57 @@
 
         </dt>
         <dd>Retrieve a stored deconvolution result from a Seurat object</dd>
+      </dl></div><div class="section level2">
+      <h2 id="communication-and-regulatory-activity">Communication and Regulatory Activity<a class="anchor" aria-label="anchor" href="#communication-and-regulatory-activity"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="sn_run_cell_communication.html">sn_run_cell_communication()</a></code>
+
+        </dt>
+        <dd>Run cell-cell communication inference</dd>
+
+        <dt>
+
+          <code><a href="sn_store_cell_communication.html">sn_store_cell_communication()</a></code>
+
+        </dt>
+        <dd>Store a cell-cell communication result on a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="sn_get_cell_communication_result.html">sn_get_cell_communication_result()</a></code>
+
+        </dt>
+        <dd>Retrieve a stored cell-cell communication result</dd>
+
+        <dt>
+
+          <code><a href="sn_run_regulatory_activity.html">sn_run_regulatory_activity()</a></code>
+
+        </dt>
+        <dd>Infer transcription-factor or pathway activity</dd>
+
+        <dt>
+
+          <code><a href="sn_store_regulatory_activity.html">sn_store_regulatory_activity()</a></code>
+
+        </dt>
+        <dd>Store regulatory activity results on a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="sn_get_regulatory_activity_result.html">sn_get_regulatory_activity_result()</a></code>
+
+        </dt>
+        <dd>Retrieve stored regulatory activity results</dd>
       </dl></div><div class="section level2">
       <h2 id="interpretation-and-reporting">Interpretation and Reporting<a class="anchor" aria-label="anchor" href="#interpretation-and-reporting"></a></h2>
 
@@ -623,6 +739,13 @@
 
         <dt>
 
+          <code><a href="sn_plot_heatmap.html">sn_plot_heatmap()</a></code>
+
+        </dt>
+        <dd>Plot a heatmap for selected genes or features</dd>
+
+        <dt>
+
           <code><a href="sn_plot_violin.html">sn_plot_violin()</a></code>
 
         </dt>
@@ -727,6 +850,62 @@
 
         </dt>
         <dd>Install missing Shennong dependencies in one step</dd>
+
+        <dt>
+
+          <code><a href="sn_check_pixi.html">sn_check_pixi()</a></code> <code><a href="sn_check_pixi.html">sn_install_pixi()</a></code> <code><a href="sn_check_pixi.html">sn_ensure_pixi()</a></code>
+
+        </dt>
+        <dd>Check, install, and configure pixi for Shennong Python backends</dd>
+
+        <dt>
+
+          <code><a href="sn_pixi_paths.html">sn_pixi_paths()</a></code>
+
+        </dt>
+        <dd>Inspect Shennong pixi runtime paths</dd>
+
+        <dt>
+
+          <code><a href="sn_list_pixi_environments.html">sn_list_pixi_environments()</a></code>
+
+        </dt>
+        <dd>List bundled pixi environment configs</dd>
+
+        <dt>
+
+          <code><a href="sn_pixi_config_path.html">sn_pixi_config_path()</a></code>
+
+        </dt>
+        <dd>Locate a bundled pixi config</dd>
+
+        <dt>
+
+          <code><a href="sn_prepare_pixi_environment.html">sn_prepare_pixi_environment()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_pixi_environment()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_scvi()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_scanvi()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_scarches()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_scpoli()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_infercnvpy()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_cellphonedb()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_cell2location()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_tangram()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_squidpy()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_spatialdata()</a></code> <code><a href="sn_prepare_pixi_environment.html">sn_call_stlearn()</a></code>
+
+        </dt>
+        <dd>Prepare or call a Shennong pixi environment</dd>
+
+        <dt>
+
+          <code><a href="sn_run_scarches.html">sn_run_scarches()</a></code> <code><a href="sn_run_scarches.html">sn_run_scpoli()</a></code> <code><a href="sn_run_scarches.html">sn_run_infercnvpy()</a></code> <code><a href="sn_run_scarches.html">sn_run_cellphonedb()</a></code> <code><a href="sn_run_scarches.html">sn_run_cell2location()</a></code> <code><a href="sn_run_scarches.html">sn_run_tangram()</a></code> <code><a href="sn_run_scarches.html">sn_run_squidpy()</a></code> <code><a href="sn_run_scarches.html">sn_run_spatialdata()</a></code> <code><a href="sn_run_scarches.html">sn_run_stlearn()</a></code>
+
+        </dt>
+        <dd>Run a Python analysis command through a managed Shennong pixi environment</dd>
+
+        <dt>
+
+          <code><a href="sn_detect_accelerator.html">sn_detect_accelerator()</a></code>
+
+        </dt>
+        <dd>Detect local accelerator support for pixi-managed Python methods</dd>
+
+        <dt>
+
+          <code><a href="sn_configure_pixi_mirror.html">sn_configure_pixi_mirror()</a></code>
+
+        </dt>
+        <dd>Configure pixi mirrors for Shennong runtime environments</dd>
 
         <dt>
 

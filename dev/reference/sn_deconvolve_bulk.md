@@ -10,8 +10,8 @@ sn_deconvolve_bulk(
   x,
   bulk,
   method = c("bayesprism", "cibersortx"),
-  cell_type_col = NULL,
-  cell_state_col = NULL,
+  cell_type_by = NULL,
+  cell_state_by = NULL,
   cell_type_labels = NULL,
   cell_state_labels = NULL,
   assay = "RNA",
@@ -38,7 +38,9 @@ sn_deconvolve_bulk(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
-  return_object = TRUE
+  return_object = TRUE,
+  cell_type_col = NULL,
+  cell_state_col = NULL
 )
 ```
 
@@ -57,12 +59,12 @@ sn_deconvolve_bulk(
 
   One of `"bayesprism"` or `"cibersortx"`.
 
-- cell_type_col:
+- cell_type_by:
 
   Metadata column containing cell-type labels when `x` is a `Seurat`
   object. If `x` is a matrix, supply `cell_type_labels` instead.
 
-- cell_state_col:
+- cell_state_by:
 
   Optional metadata column containing cell-state labels. Defaults to
   `cell_type_col`.
@@ -91,7 +93,7 @@ sn_deconvolve_bulk(
 
 - key:
 
-  Optional malignant-cell label passed to BayesPrism.
+  Optional malignant-cell label_by passed to BayesPrism.
 
 - outdir:
 
@@ -135,11 +137,11 @@ sn_deconvolve_bulk(
 
 - cibersortx_rmbatch_b_mode:
 
-  Whether to enable B-mode batch correction.
+  Whether to enable B-mode batch_by correction.
 
 - cibersortx_rmbatch_s_mode:
 
-  Whether to enable S-mode batch correction.
+  Whether to enable S-mode batch_by correction.
 
 - cibersortx_perm:
 
@@ -182,6 +184,14 @@ sn_deconvolve_bulk(
   If `TRUE` and `x` is a `Seurat` object, return the updated object when
   a result table is available.
 
+- cell_type_col:
+
+  Deprecated alias for `cell_type_by`.
+
+- cell_state_col:
+
+  Deprecated alias for `cell_state_by`.
+
 ## Value
 
 A stored-result list, an export-bundle list, or an updated `Seurat`
@@ -211,7 +221,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     ref,
     bulk = bulk,
     method = "cibersortx",
-    cell_type_col = "cell_type",
+    cell_type_by = "cell_type",
     outdir = tempdir(),
     cibersortx_email = "demo@example.org",
     cibersortx_token = "fake-token",
@@ -220,9 +230,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(bundle$files)
 }
-#> INFO [2026-04-05 05:30:45] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:30:45] Running QC metrics for human.
-#> INFO [2026-04-05 05:30:45] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:00] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:00] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:00] Seurat object initialization complete.
 #> [1] "single_cell_reference" "mixture"              
 #> [3] "signature_matrix"      "result"               
 ```

@@ -10,9 +10,10 @@ sn_prepare_results_evidence(
   cluster_de_name = NULL,
   contrast_de_name = NULL,
   enrichment_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   n_markers = 5,
-  n_terms = 10
+  n_terms = 10,
+  cluster_col = NULL
 )
 ```
 
@@ -34,7 +35,7 @@ sn_prepare_results_evidence(
 
   Optional stored enrichment result.
 
-- cluster_col:
+- cluster_by:
 
   Metadata column containing cluster labels.
 
@@ -45,6 +46,10 @@ sn_prepare_results_evidence(
 - n_terms:
 
   Number of enrichment terms to retain.
+
+- cluster_col:
+
+  Deprecated alias for `cluster_by`.
 
 ## Value
 
@@ -81,10 +86,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
-#> INFO [2026-04-05 05:31:14] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:31:14] Running QC metrics for human.
-#> INFO [2026-04-05 05:31:15] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:34] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:34] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:34] Seurat object initialization complete.
 #> Warning: No DE genes identified
+#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
 #> [1] "task"               "dataset"            "cluster_summary"   
 #> [4] "cluster_markers"    "enrichment_summary"
 ```

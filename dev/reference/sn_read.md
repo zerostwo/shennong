@@ -24,11 +24,17 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 
 .import.rio_10x(file, ...)
 
+.import.rio_10x_spatial(file, ...)
+
 .import.rio_starsolo(file, ...)
 
 .import.rio_h5ad(file, ...)
 
 .import.rio_h5(file, ...)
+
+.import.rio_qs(file, ...)
+
+.import.rio_qs2(file, ...)
 
 .import.rio_gmt(file, ...)
 ```

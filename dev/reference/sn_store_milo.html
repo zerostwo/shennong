@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,14 +20,16 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -56,13 +58,16 @@
 <span>  <span class="va">object</span>,</span>
 <span>  <span class="va">result</span>,</span>
 <span>  store_name <span class="op">=</span> <span class="st">"default"</span>,</span>
-<span>  <span class="va">sample_col</span>,</span>
-<span>  <span class="va">group_col</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  comparison <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"pca"</span>,</span>
 <span>  dims <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  sample_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  annotation_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  group_col <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -82,11 +87,11 @@
 <dd><p>Name used under <code>object@misc$milo_results</code>.</p></dd>
 
 
-<dt id="arg-sample-col">sample_col<a class="anchor" aria-label="anchor" href="#arg-sample-col"></a></dt>
+<dt id="arg-sample-by">sample_by<a class="anchor" aria-label="anchor" href="#arg-sample-by"></a></dt>
 <dd><p>Sample column used for the design.</p></dd>
 
 
-<dt id="arg-group-col">group_col<a class="anchor" aria-label="anchor" href="#arg-group-col"></a></dt>
+<dt id="arg-group-by">group_by<a class="anchor" aria-label="anchor" href="#arg-group-by"></a></dt>
 <dd><p>Group column used for the design.</p></dd>
 
 
@@ -102,12 +107,24 @@
 <dd><p>Optional embedding dimension names or indices used for milo.</p></dd>
 
 
-<dt id="arg-annotation-col">annotation_col<a class="anchor" aria-label="anchor" href="#arg-annotation-col"></a></dt>
+<dt id="arg-annotation-by">annotation_by<a class="anchor" aria-label="anchor" href="#arg-annotation-by"></a></dt>
 <dd><p>Optional neighborhood annotation column.</p></dd>
 
 
 <dt id="arg-return-object">return_object<a class="anchor" aria-label="anchor" href="#arg-return-object"></a></dt>
 <dd><p>If <code>TRUE</code>, return the updated object.</p></dd>
+
+
+<dt id="arg-sample-col">sample_col<a class="anchor" aria-label="anchor" href="#arg-sample-col"></a></dt>
+<dd><p>Deprecated alias for <code>sample_by</code>.</p></dd>
+
+
+<dt id="arg-annotation-col">annotation_col<a class="anchor" aria-label="anchor" href="#arg-annotation-col"></a></dt>
+<dd><p>Deprecated alias for <code>annotation_by</code>.</p></dd>
+
+
+<dt id="arg-group-col">group_col<a class="anchor" aria-label="anchor" href="#arg-group-col"></a></dt>
+<dd><p>Deprecated alias for <code>group_by</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

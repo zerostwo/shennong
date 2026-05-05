@@ -1,4 +1,4 @@
-pandoc: 3.1.11
+pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
@@ -6,11 +6,13 @@ articles:
   bulk-deconvolution: bulk-deconvolution.html
   clustering: clustering.html
   composition-analysis: composition-analysis.html
+  data-io-projects: data-io-projects.html
   interpretation-workflows: interpretation-workflows.html
   layered-workflows: layered-workflows.html
   metrics-diagnostics: metrics-diagnostics.html
   preprocessing-qc: preprocessing-qc.html
-last_built: 2026-04-05T05:30Z
+  visualization: visualization.html
+last_built: 2026-05-05T20:16Z
 urls:
   reference: https://songqi.org/shennong/reference
   article: https://songqi.org/shennong/articles

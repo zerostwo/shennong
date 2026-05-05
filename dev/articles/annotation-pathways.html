@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Annotation, markers, and pathways workflow • Shennong</title>
+<title>Markers, signatures, pathways, and annotation • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Annotation, markers, and pathways workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Markers, signatures, pathways, and annotation">
 <meta name="robots" content="noindex">
 <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.3</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +39,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Metrics and diagnostics workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation, markers, and pathways workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and comparative analysis workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk Deconvolution Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Advanced layer-aware workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
+    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
+    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Annotation, markers, and pathways workflow</h1>
+      <h1>Markers, signatures, pathways, and annotation</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -82,264 +84,357 @@ Duan</h4>
 
     
     
-<p>This article covers the main biological-interpretation stage after
-clustering:</p>
-<ul>
-<li>inspect bundled signatures</li>
-<li>score marker structure with differential expression</li>
-<li>visualize top markers</li>
-<li>run ORA or GSEA with <code><a href="../reference/sn_enrich.html">sn_enrich()</a></code>
-</li>
-<li>optionally bring in reference-based annotation with
-<code><a href="../reference/sn_run_celltypist.html">sn_run_celltypist()</a></code>
-</li>
-</ul>
+<p>After clustering, users usually ask three linked questions:</p>
+<ol style="list-style-type: decimal">
+<li>Which genes define each cluster?</li>
+<li>Which known signatures or pathways explain those genes?</li>
+<li>How can the evidence be reused for plots and annotation?</li>
+</ol>
+<p>Shennong stores DE and enrichment results on the Seurat object so the
+same tables can feed dot plots, interpretation prompts, and later
+reports.</p>
+<div class="section level2">
+<h2 id="cluster-pbmc3k-and-find-markers">Cluster PBMC3k and find markers<a class="anchor" aria-label="anchor" href="#cluster-pbmc3k-and-find-markers"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, silent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, inherits <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"pbmc_small.rda"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="start-from-bundled-signatures">1. Start from bundled signatures<a class="anchor" aria-label="anchor" href="#start-from-bundled-signatures"></a>
-</h2>
-<p>Bundled signatures provide a stable set of marker programs and
-technical gene sets for filtering, scoring, or interpretation.</p>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:17:56] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:17:56] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:17:57] Seurat object initialization complete.</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  min_pct <span class="op">=</span> <span class="fl">0.25</span>,</span>
+<span>  logfc_threshold <span class="op">=</span> <span class="fl">0.25</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The result is stored under <code>object@misc$de_results</code>.
+Retrieve it by name instead of relying on a temporary variable from an
+earlier script.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">signature_tbl</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"path"</span>, <span class="st">"n_genes"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="left">path</th>
-<th align="right">n_genes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">Blocklists/Pseudogenes</td>
-<td align="right">12600</td>
-</tr>
-<tr class="even">
-<td align="left">Blocklists/Non-coding</td>
-<td align="right">7783</td>
-</tr>
-<tr class="odd">
-<td align="left">Programs/HeatShock</td>
-<td align="right">97</td>
-</tr>
-<tr class="even">
-<td align="left">Programs/cellCycle.G1S</td>
-<td align="right">42</td>
-</tr>
-<tr class="odd">
-<td align="left">Programs/cellCycle.G2M</td>
-<td align="right">52</td>
-</tr>
-<tr class="even">
-<td align="left">Programs/IFN</td>
-<td align="right">107</td>
-</tr>
-<tr class="odd">
-<td align="left">Programs/Tcell.cytotoxicity</td>
-<td align="right">3</td>
-</tr>
-<tr class="even">
-<td align="left">Programs/Tcell.exhaustion</td>
-<td align="right">5</td>
-</tr>
-</tbody>
-</table>
+<code class="sourceCode R"><span><span class="va">marker_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  top_n <span class="op">=</span> <span class="fl">5</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">marker_tbl</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 7</span></span></span>
+<span><span class="co">#&gt;       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  </span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 6.44<span style="color: #949494;">e</span><span style="color: #BB0000;">- 89</span>       2.52 0.42  0.083  3.54<span style="color: #949494;">e</span><span style="color: #BB0000;">-84</span> 0       AQP3  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 2.85<span style="color: #949494;">e</span><span style="color: #BB0000;">- 60</span>       2.49 0.278 0.049  1.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-55</span> 0       CD40LG</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 7.42<span style="color: #949494;">e</span><span style="color: #BB0000;">- 59</span>       2.38 0.295 0.06   4.07<span style="color: #949494;">e</span><span style="color: #BB0000;">-54</span> 0       LMNA  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 1.08<span style="color: #949494;">e</span><span style="color: #BB0000;">- 48</span>       1.81 0.371 0.116  5.93<span style="color: #949494;">e</span><span style="color: #BB0000;">-44</span> 0       TRADD </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 1.28<span style="color: #949494;">e</span><span style="color: #BB0000;">- 54</span>       1.78 0.381 0.105  7.01<span style="color: #949494;">e</span><span style="color: #BB0000;">-50</span> 0       TRAT1 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 4.22<span style="color: #949494;">e</span><span style="color: #BB0000;">-102</span>       2.49 0.512 0.118  2.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-97</span> 1       CCR7</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">de_results</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "cluster_markers"</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="plot-stored-markers-without-hand-copying-gene-lists">Plot stored markers without hand-copying gene lists<a class="anchor" aria-label="anchor" href="#plot-stored-markers-without-hand-copying-gene-lists"></a>
+</h2>
+<p>Because the DE result is stored, <code><a href="../reference/sn_plot_dot.html">sn_plot_dot()</a></code> can
+select top markers per cluster directly.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">stress_genes</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 134</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="find-marker-genes">2. Find marker genes<a class="anchor" aria-label="anchor" href="#find-marker-genes"></a>
-</h2>
-<p>Cluster markers are usually the first evidence layer for
-annotation.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">marker_tbl</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr class="header">
-<th align="right">p_val</th>
-<th align="right">avg_log2FC</th>
-<th align="right">pct.1</th>
-<th align="right">pct.2</th>
-<th align="right">p_val_adj</th>
-<th align="left">cluster</th>
-<th align="left">gene</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="right">8.9e-06</td>
-<td align="right">5.159201</td>
-<td align="right">0.330</td>
-<td align="right">0.101</td>
-<td align="right">0.4901319</td>
-<td align="left">0</td>
-<td align="left">NKG7</td>
-</tr>
-<tr class="even">
-<td align="right">7.0e-07</td>
-<td align="right">5.143783</td>
-<td align="right">0.352</td>
-<td align="right">0.092</td>
-<td align="right">0.0407973</td>
-<td align="left">0</td>
-<td align="left">CCL5</td>
-</tr>
-<tr class="odd">
-<td align="right">1.0e-07</td>
-<td align="right">4.070451</td>
-<td align="right">0.330</td>
-<td align="right">0.046</td>
-<td align="right">0.0039324</td>
-<td align="left">0</td>
-<td align="left">GZMA</td>
-</tr>
-<tr class="even">
-<td align="right">0.0e+00</td>
-<td align="right">9.635408</td>
-<td align="right">0.533</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">1</td>
-<td align="left">LRMDA</td>
-</tr>
-<tr class="odd">
-<td align="right">0.0e+00</td>
-<td align="right">9.603413</td>
-<td align="right">0.444</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">1</td>
-<td align="left">S100A12</td>
-</tr>
-<tr class="even">
-<td align="right">0.0e+00</td>
-<td align="right">9.137996</td>
-<td align="right">0.422</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">1</td>
-<td align="left">IL1B</td>
-</tr>
-<tr class="odd">
-<td align="right">0.0e+00</td>
-<td align="right">6.317317</td>
-<td align="right">0.257</td>
-<td align="right">0.000</td>
-<td align="right">0.0000017</td>
-<td align="left">2</td>
-<td align="left">CA6</td>
-</tr>
-<tr class="even">
-<td align="right">0.0e+00</td>
-<td align="right">6.152965</td>
-<td align="right">0.286</td>
-<td align="right">0.000</td>
-<td align="right">0.0000001</td>
-<td align="left">2</td>
-<td align="left">TRPC1</td>
-</tr>
-<tr class="odd">
-<td align="right">0.0e+00</td>
-<td align="right">6.144032</td>
-<td align="right">0.314</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">2</td>
-<td align="left">OPRM1</td>
-</tr>
-<tr class="even">
-<td align="right">0.0e+00</td>
-<td align="right">11.461813</td>
-<td align="right">0.379</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">3</td>
-<td align="left">IGLC2</td>
-</tr>
-<tr class="odd">
-<td align="right">0.0e+00</td>
-<td align="right">10.040121</td>
-<td align="right">0.690</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">3</td>
-<td align="left">IGHD</td>
-</tr>
-<tr class="even">
-<td align="right">0.0e+00</td>
-<td align="right">9.743428</td>
-<td align="right">0.586</td>
-<td align="right">0.000</td>
-<td align="right">0.0000000</td>
-<td align="left">3</td>
-<td align="left">TCL1A</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="visualize-top-markers">3. Visualize top markers<a class="anchor" aria-label="anchor" href="#visualize-top-markers"></a>
-</h2>
-<p><code><a href="../reference/sn_plot_dot.html">sn_plot_dot()</a></code> can reuse the stored DE result directly,
-which avoids manual gene selection in routine cluster review.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_clustered</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"top_markers"</span>,</span>
 <span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
-<span>  n <span class="op">=</span> <span class="fl">3</span></span>
+<span>  n <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="st">"RdBu"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Top PBMC3k markers"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="annotation-pathways_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="768"></p>
+<p><img src="annotation-pathways_files/figure-html/marker-dotplot-1.png" class="r-plt" alt="" width="672"></p>
+<p>For canonical checks, pass marker genes explicitly.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"S100A8"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="st">"Purples"</span>,</span>
+<span>  direction <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Canonical PBMC markers"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="annotation-pathways_files/figure-html/canonical-dotplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="run-pathway-analysis">4. Run pathway analysis<a class="anchor" aria-label="anchor" href="#run-pathway-analysis"></a>
+<h2 id="transfer-labels-from-a-reference">Transfer labels from a reference<a class="anchor" aria-label="anchor" href="#transfer-labels-from-a-reference"></a>
 </h2>
-<p><code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> now supports grouped ORA and ranked GSEA
-through the same <code>gene_clusters</code> formula interface. It can
-also query multiple databases in one call.</p>
+<p>Marker tables are useful when you want to name clusters manually.
+When a trusted reference already exists,
+<code><a href="../reference/sn_transfer_labels.html">sn_transfer_labels()</a></code> follows Seurat’s anchor workflow and
+writes the projected label plus a confidence score back to the query
+metadata. The wrapper keeps the source label and transfer settings in
+<code>query@misc$label_transfer</code>, so the annotation is not just a
+loose metadata column.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
+<span><span class="va">query</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
+<span></span>
+<span><span class="va">reference</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">reference</span><span class="op">$</span><span class="va">seurat_clusters</span></span>
+<span></span>
+<span><span class="va">query</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_transfer_labels.html">sn_transfer_labels</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">query</span>,</span>
+<span>  reference <span class="op">=</span> <span class="va">reference</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  prediction_prefix <span class="op">=</span> <span class="st">"pbmc_reference"</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">query</span><span class="op">$</span><span class="va">pbmc_reference_label</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">query</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc_reference_label"</span>, <span class="st">"pbmc_reference_score"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>The same query-first interface can use Coralysis reference mapping
+when the reference was trained with
+<code>sn_run_cluster(integration_method = "coralysis")</code>. For
+mapping, keep the Coralysis SingleCellExperiment and PCA model in the
+reference by leaving <code>store_sce = TRUE</code> and
+<code>return.model = TRUE</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">stored_pathways</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">stored_pathways</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p>Grouped ORA uses a categorical right-hand side:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ora_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">pbmc_clustered</span>,</span>
-<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
-<span>  gene_clusters <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">cluster</span>,</span>
-<span>  database <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"H"</span>, <span class="st">"C2:CP:REACTOME"</span><span class="op">)</span>,</span>
-<span>  species <span class="op">=</span> <span class="st">"human"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Ranked GSEA uses a numeric right-hand side:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gsea_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
-<span>  <span class="va">marker_table</span>,</span>
-<span>  gene_clusters <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">avg_log2FC</span>,</span>
-<span>  database <span class="op">=</span> <span class="st">"GOBP"</span>,</span>
-<span>  species <span class="op">=</span> <span class="st">"human"</span></span>
+<code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  <span class="va">reference</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"sample_id"</span>,</span>
+<span>  integration_method <span class="op">=</span> <span class="st">"coralysis"</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    store_sce <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    pca_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>return.model <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">query</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_transfer_labels.html">sn_transfer_labels</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">query</span>,</span>
+<span>  reference <span class="op">=</span> <span class="va">reference</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"coralysis"</span>,</span>
+<span>  prediction_prefix <span class="op">=</span> <span class="st">"coral_reference"</span>,</span>
+<span>  transfer_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>k.nn <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="optional-reference-based-annotation">5. Optional reference-based annotation<a class="anchor" aria-label="anchor" href="#optional-reference-based-annotation"></a>
+<h2 id="discover-and-manage-bundled-signatures">Discover and manage bundled signatures<a class="anchor" aria-label="anchor" href="#discover-and-manage-bundled-signatures"></a>
 </h2>
-<p>If CellTypist is configured in the local environment, Shennong can
-add reference labels to the Seurat object:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_annotated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_clustered</span>,</span>
-<span>  model <span class="op">=</span> <span class="st">"Immune_All_Low.pkl"</span></span>
+<p>Shennong ships a signature catalog so blocking genes, marker sets,
+and report features do not need to be redefined in every analysis.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">signature_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_signatures.html">sn_list_signatures</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">signature_index</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;   species path                   name          kind      n_genes</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> human   Blocklists/Pseudogenes Pseudogenes   signature   <span style="text-decoration: underline;">12</span>600</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> human   Blocklists/Non-coding  Non-coding    signature    <span style="text-decoration: underline;">7</span>783</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> human   Programs/HeatShock     HeatShock     signature      97</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> human   Programs/cellCycle.G1S cellCycle.G1S signature      42</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> human   Programs/cellCycle.G2M cellCycle.G2M signature      52</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> human   Programs/IFN           IFN           signature     107</span></span>
+<span></span>
+<span><span class="va">immune_signatures</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_signatures.html">sn_get_signatures</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  category <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mito"</span>, <span class="st">"ribo"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">immune_signatures</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "MT-ATP6" "MT-ATP8" "MT-CO1"  "MT-CO2"  "MT-CO3"  "MT-CYB"</span></span></code></pre></div>
+<p>Custom signatures can be added, renamed, and deleted through the same
+API. Use a project-specific catalog path when you do not want to modify
+the package-level catalog.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">catalog_path</span> <span class="op">&lt;-</span> <span class="st">"config/signatures/pbmc_signatures.csv"</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_add_signature.html">sn_add_signature</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"custom/t_cell_activation"</span>,</span>
+<span>  genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"LTB"</span><span class="op">)</span>,</span>
+<span>  catalog_path <span class="op">=</span> <span class="va">catalog_path</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"project"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_update_signature.html">sn_update_signature</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"custom/t_cell_activation"</span>,</span>
+<span>  rename_to <span class="op">=</span> <span class="st">"custom/naive_t_cell"</span>,</span>
+<span>  catalog_path <span class="op">=</span> <span class="va">catalog_path</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_delete_signature.html">sn_delete_signature</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"custom/naive_t_cell"</span>,</span>
+<span>  catalog_path <span class="op">=</span> <span class="va">catalog_path</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>That annotation can then be reused as the <code>label</code> input
-for downstream integration metrics or cluster summaries.</p>
+</div>
+<div class="section level2">
+<h2 id="run-enrichment-from-stored-marker-results">Run enrichment from stored marker results<a class="anchor" aria-label="anchor" href="#run-enrichment-from-stored-marker-results"></a>
+</h2>
+<p><code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> can accept a gene vector, a ranked vector, a
+data frame, or a Seurat object with stored DE results. For cluster
+markers, the Seurat-object path is the most reproducible because the
+enrichment knows which DE result it came from.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  database <span class="op">=</span> <span class="st">"GOBP"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; INFO [2026-05-05 20:19:03] Running ORA analysis for the GOBP database.</span></span>
+<span></span>
+<span><span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_enrichment_result.html">sn_get_enrichment_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  enrichment_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
+<span>  top_n <span class="op">=</span> <span class="fl">5</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pathways</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 12</span></span></span>
+<span><span class="co">#&gt;   ID     Description GeneRatio BgRatio RichFactor FoldEnrichment zScore</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> GO:00… regulation… 159/2481  453/18…      0.351           2.67   14.0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> GO:19… mononuclea… 152/2481  439/18…      0.346           2.63   13.5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> GO:00… generation… 147/2481  438/18…      0.336           2.55   12.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> GO:00… regulation… 146/2481  472/18…      0.309           2.35   11.6</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> GO:00… nucleotide… 146/2481  478/18…      0.305           2.32   11.4</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: pvalue &lt;dbl&gt;, p.adjust &lt;dbl&gt;, qvalue &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   geneID &lt;chr&gt;, Count &lt;int&gt;</span></span></span></code></pre></div>
+<p>If you already have an enrichment table from another tool, store it
+with <code><a href="../reference/sn_store_enrichment.html">sn_store_enrichment()</a></code> so the interpretation layer can
+find it.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">external_terms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  cluster <span class="op">=</span> <span class="st">"0"</span>,</span>
+<span>  ID <span class="op">=</span> <span class="st">"GO:0006955"</span>,</span>
+<span>  Description <span class="op">=</span> <span class="st">"immune response"</span>,</span>
+<span>  p.adjust <span class="op">=</span> <span class="fl">0.001</span>,</span>
+<span>  geneID <span class="op">=</span> <span class="st">"IL7R/CCR7/LTB"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_store_enrichment.html">sn_store_enrichment</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  result <span class="op">=</span> <span class="va">external_terms</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"external_gobp"</span>,</span>
+<span>  analysis <span class="op">=</span> <span class="st">"ora"</span>,</span>
+<span>  database <span class="op">=</span> <span class="st">"GOBP"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="cell-communication-and-regulatory-activity">Cell communication and regulatory activity<a class="anchor" aria-label="anchor" href="#cell-communication-and-regulatory-activity"></a>
+</h2>
+<p>Cell communication should be run through a real backend rather than
+an ad hoc ligand-receptor table.
+<code><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication()</a></code> keeps the same stored-result
+pattern used by DE and enrichment. Use CellChat for a global interaction
+network, NicheNet when the question is sender-to-receiver ligand
+activity, or LIANA when the optional LIANA package is available and
+consensus scoring is preferred.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"cellchat"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_cellchat"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cellchat_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_cell_communication_result.html">sn_get_cell_communication_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  communication_name <span class="op">=</span> <span class="st">"cluster_cellchat"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cellchat_tbl</span><span class="op">)</span></span></code></pre></div>
+<p>NicheNet needs its ligand-target matrix and ligand-receptor network.
+Shennong requires those priors explicitly so the output remains
+traceable to the real NicheNet model rather than an inferred placeholder
+network.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"nichenetr"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  sender <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0"</span>, <span class="st">"1"</span><span class="op">)</span>,</span>
+<span>  receiver <span class="op">=</span> <span class="st">"2"</span>,</span>
+<span>  geneset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"LTB"</span><span class="op">)</span>,</span>
+<span>  ligand_target_matrix <span class="op">=</span> <span class="va">ligand_target_matrix</span>,</span>
+<span>  lr_network <span class="op">=</span> <span class="va">lr_network</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"sender_receiver_nichenet"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>For transcription-factor and pathway activity,
+<code><a href="../reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity()</a></code> uses fast footprint methods
+through <code>decoupleR</code>. DoRothEA reports TF activity; PROGENy
+reports pathway activity.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"dorothea"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"cluster_dorothea"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">tf_activity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_regulatory_activity_result.html">sn_get_regulatory_activity_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  activity_name <span class="op">=</span> <span class="st">"cluster_dorothea"</span>,</span>
+<span>  sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"NFKB1"</span>, <span class="st">"STAT1"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tf_activity</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="optional-reference-annotation-with-celltypist">Optional reference annotation with CellTypist<a class="anchor" aria-label="anchor" href="#optional-reference-annotation-with-celltypist"></a>
+</h2>
+<p>CellTypist is a Python command-line tool, so Shennong keeps it
+explicit. When the input is a Seurat object, predictions are written
+back to metadata. When the input is a file path, Shennong returns the
+prediction table because there is no object to update.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"Immune_All_Low.pkl"</span>,</span>
+<span>  over_clustering <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  majority_voting <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"Immune_All_Low"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prediction_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="st">"pbmc3k_counts.csv"</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"Immune_All_Low.pkl"</span>,</span>
+<span>  over_clustering <span class="op">=</span> <span class="st">"obs_cluster"</span>,</span>
+<span>  quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">prediction_tbl</span><span class="op">)</span></span></code></pre></div>
+<p>The intended pattern is evidence first, label second: markers and
+pathways are computed and stored before automated or LLM-assisted
+annotation consumes them.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

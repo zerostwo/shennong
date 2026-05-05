@@ -1,4 +1,4 @@
-# Standardize gene symbols in a count matrix or Seurat object
+# Standardize gene symbols in a vector, count matrix, or Seurat object
 
 This function helps unify gene symbols to a standard format. It can:
 
@@ -7,7 +7,8 @@ This function helps unify gene symbols to a standard format. It can:
 2.  Check and correct gene symbols using
     [`HGNChelper::checkGeneSymbols`](https://waldronlab.io/HGNChelper/reference/checkGeneSymbols.html).
 
-3.  Aggregate duplicated gene symbols by summing their counts.
+3.  Aggregate duplicated gene symbols by summing their counts for matrix
+    and Seurat inputs.
 
 ## Usage
 
@@ -19,7 +20,8 @@ sn_standardize_gene_symbols(x, species = NULL, is_gene_id = FALSE)
 
 - x:
 
-  A count matrix or a `Seurat` object.
+  A character vector of gene symbols/IDs, a count matrix, or a `Seurat`
+  object.
 
 - species:
 
@@ -32,13 +34,18 @@ sn_standardize_gene_symbols(x, species = NULL, is_gene_id = FALSE)
 
 ## Value
 
-If `x` is a matrix, returns a matrix with standardized gene symbols. If
-`x` is a Seurat object, returns the modified Seurat object.
+If `x` is a character vector, returns a character vector of standardized
+gene symbols. If `x` is a matrix, returns a matrix with standardized
+gene symbols. If `x` is a Seurat object, returns the modified Seurat
+object.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
+# For a vector:
+genes <- sn_standardize_gene_symbols(c("1-Mar", "CD3D"), species = "human")
+
 # For a Seurat object:
 seurat_obj <- sn_standardize_gene_symbols(seurat_obj, species = "human", is_gene_id = FALSE)
 

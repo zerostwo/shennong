@@ -13,10 +13,11 @@ problematic zero-count cells.
 sn_assess_qc(
   object,
   reference = NULL,
-  sample_col = NULL,
+  sample_by = NULL,
   store_name = "default",
   return_object = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_col = NULL
 )
 ```
 
@@ -32,7 +33,7 @@ sn_assess_qc(
   supplied, the function compares the retained cells in `object` against
   the QC flags and doublet calls recorded in `reference`.
 
-- sample_col:
+- sample_by:
 
   Optional metadata column defining samples. When `NULL`, the function
   uses `sample` or `orig.ident` when available and otherwise treats the
@@ -51,6 +52,10 @@ sn_assess_qc(
 - verbose:
 
   Logical; when `TRUE`, print a concise QC summary.
+
+- sample_col:
+
+  Deprecated alias for `sample_by`.
 
 ## Value
 

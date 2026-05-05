@@ -1,142 +1,401 @@
-# Annotation, markers, and pathways workflow
+# Markers, signatures, pathways, and annotation
 
-This article covers the main biological-interpretation stage after
-clustering:
+After clustering, users usually ask three linked questions:
 
-- inspect bundled signatures
-- score marker structure with differential expression
-- visualize top markers
-- run ORA or GSEA with
-  [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
-- optionally bring in reference-based annotation with
-  [`sn_run_celltypist()`](https://songqi.org/shennong/dev/reference/sn_run_celltypist.md)
+1.  Which genes define each cluster?
+2.  Which known signatures or pathways explain those genes?
+3.  How can the evidence be reused for plots and annotation?
+
+Shennong stores DE and enrichment results on the Seurat object so the
+same tables can feed dot plots, interpretation prompts, and later
+reports.
+
+## Cluster PBMC3k and find markers
 
 ``` r
+
 library(Shennong)
-library(dplyr)
-library(knitr)
 library(Seurat)
+library(dplyr)
 
-if (!exists("pbmc_small", inherits = FALSE)) {
-  try(data("pbmc_small", package = "Shennong", envir = environment()), silent = TRUE)
-}
-if (!exists("pbmc_small", inherits = FALSE) && file.exists(file.path("data", "pbmc_small.rda"))) {
-  load(file.path("data", "pbmc_small.rda"))
-}
+pbmc <- sn_load_data("pbmc3k")
+#> INFO [2026-05-05 20:17:56] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 20:17:56] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:57] Seurat object initialization complete.
+
+pbmc <- sn_run_cluster(
+  object = pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+pbmc <- sn_find_de(
+  object = pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  layer = "data",
+  min_pct = 0.25,
+  logfc_threshold = 0.25,
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
 ```
 
-## 1. Start from bundled signatures
-
-Bundled signatures provide a stable set of marker programs and technical
-gene sets for filtering, scoring, or interpretation.
+The result is stored under `object@misc$de_results`. Retrieve it by name
+instead of relying on a temporary variable from an earlier script.
 
 ``` r
-knitr::kable(head(signature_tbl[, c("path", "n_genes")], 8))
+
+marker_tbl <- sn_get_de_result(
+  pbmc,
+  de_name = "cluster_markers",
+  top_n = 5
+)
+
+head(marker_tbl)
+#> # A tibble: 6 × 7
+#>       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  
+#>       <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr> 
+#> 1 6.44e- 89       2.52 0.42  0.083  3.54e-84 0       AQP3  
+#> 2 2.85e- 60       2.49 0.278 0.049  1.56e-55 0       CD40LG
+#> 3 7.42e- 59       2.38 0.295 0.06   4.07e-54 0       LMNA  
+#> 4 1.08e- 48       1.81 0.371 0.116  5.93e-44 0       TRADD 
+#> 5 1.28e- 54       1.78 0.381 0.105  7.01e-50 0       TRAT1 
+#> 6 4.22e-102       2.49 0.512 0.118  2.31e-97 1       CCR7
+names(pbmc@misc$de_results)
+#> [1] "cluster_markers"
 ```
 
-| path                        | n_genes |
-|:----------------------------|--------:|
-| Blocklists/Pseudogenes      |   12600 |
-| Blocklists/Non-coding       |    7783 |
-| Programs/HeatShock          |      97 |
-| Programs/cellCycle.G1S      |      42 |
-| Programs/cellCycle.G2M      |      52 |
-| Programs/IFN                |     107 |
-| Programs/Tcell.cytotoxicity |       3 |
-| Programs/Tcell.exhaustion   |       5 |
+## Plot stored markers without hand-copying gene lists
 
-``` r
-length(stress_genes)
-#> [1] 134
-```
-
-## 2. Find marker genes
-
-Cluster markers are usually the first evidence layer for annotation.
-
-``` r
-knitr::kable(marker_tbl)
-```
-
-|   p_val | avg_log2FC | pct.1 | pct.2 | p_val_adj | cluster | gene    |
-|--------:|-----------:|------:|------:|----------:|:--------|:--------|
-| 8.9e-06 |   5.159201 | 0.330 | 0.101 | 0.4901319 | 0       | NKG7    |
-| 7.0e-07 |   5.143783 | 0.352 | 0.092 | 0.0407973 | 0       | CCL5    |
-| 1.0e-07 |   4.070451 | 0.330 | 0.046 | 0.0039324 | 0       | GZMA    |
-| 0.0e+00 |   9.635408 | 0.533 | 0.000 | 0.0000000 | 1       | LRMDA   |
-| 0.0e+00 |   9.603413 | 0.444 | 0.000 | 0.0000000 | 1       | S100A12 |
-| 0.0e+00 |   9.137996 | 0.422 | 0.000 | 0.0000000 | 1       | IL1B    |
-| 0.0e+00 |   6.317317 | 0.257 | 0.000 | 0.0000017 | 2       | CA6     |
-| 0.0e+00 |   6.152965 | 0.286 | 0.000 | 0.0000001 | 2       | TRPC1   |
-| 0.0e+00 |   6.144032 | 0.314 | 0.000 | 0.0000000 | 2       | OPRM1   |
-| 0.0e+00 |  11.461813 | 0.379 | 0.000 | 0.0000000 | 3       | IGLC2   |
-| 0.0e+00 |  10.040121 | 0.690 | 0.000 | 0.0000000 | 3       | IGHD    |
-| 0.0e+00 |   9.743428 | 0.586 | 0.000 | 0.0000000 | 3       | TCL1A   |
-
-## 3. Visualize top markers
-
+Because the DE result is stored,
 [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
-can reuse the stored DE result directly, which avoids manual gene
-selection in routine cluster review.
+can select top markers per cluster directly.
 
 ``` r
+
 sn_plot_dot(
-  pbmc_clustered,
+  x = pbmc,
   features = "top_markers",
   de_name = "cluster_markers",
-  n = 3
+  n = 4,
+  group_by = "seurat_clusters",
+  palette = "RdBu",
+  title = "Top PBMC3k markers"
 )
 ```
 
-![](annotation-pathways_files/figure-html/unnamed-chunk-4-1.png)
+![](annotation-pathways_files/figure-html/marker-dotplot-1.png)
 
-## 4. Run pathway analysis
+For canonical checks, pass marker genes explicitly.
+
+``` r
+
+sn_plot_dot(
+  x = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "S100A8", "NKG7"),
+  group_by = "seurat_clusters",
+  palette = "Purples",
+  direction = 1,
+  title = "Canonical PBMC markers"
+)
+```
+
+![](annotation-pathways_files/figure-html/canonical-dotplot-1.png)
+
+## Transfer labels from a reference
+
+Marker tables are useful when you want to name clusters manually. When a
+trusted reference already exists,
+[`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md)
+follows Seurat’s anchor workflow and writes the projected label plus a
+confidence score back to the query metadata. The wrapper keeps the
+source label and transfer settings in `query@misc$label_transfer`, so
+the annotation is not just a loose metadata column.
+
+``` r
+
+reference <- pbmc
+query <- pbmc
+
+reference$cell_type <- reference$seurat_clusters
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = reference,
+  label_by = "cell_type",
+  prediction_prefix = "pbmc_reference",
+  dims = 1:15,
+  verbose = FALSE
+)
+
+table(query$pbmc_reference_label)
+head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
+```
+
+The same query-first interface can use Coralysis reference mapping when
+the reference was trained with
+`sn_run_cluster(integration_method = "coralysis")`. For mapping, keep
+the Coralysis SingleCellExperiment and PCA model in the reference by
+leaving `store_sce = TRUE` and `return.model = TRUE`.
+
+``` r
+
+reference <- sn_run_cluster(
+  reference,
+  batch = "sample_id",
+  integration_method = "coralysis",
+  normalization_method = "seurat",
+  integration_control = list(
+    store_sce = TRUE,
+    pca_args = list(return.model = TRUE)
+  ),
+  verbose = FALSE
+)
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = reference,
+  label_by = "cell_type",
+  method = "coralysis",
+  prediction_prefix = "coral_reference",
+  transfer_control = list(k.nn = 10),
+  verbose = FALSE
+)
+```
+
+## Discover and manage bundled signatures
+
+Shennong ships a signature catalog so blocking genes, marker sets, and
+report features do not need to be redefined in every analysis.
+
+``` r
+
+signature_index <- sn_list_signatures(species = "human")
+head(signature_index)
+#> # A tibble: 6 × 5
+#>   species path                   name          kind      n_genes
+#>   <chr>   <chr>                  <chr>         <chr>       <int>
+#> 1 human   Blocklists/Pseudogenes Pseudogenes   signature   12600
+#> 2 human   Blocklists/Non-coding  Non-coding    signature    7783
+#> 3 human   Programs/HeatShock     HeatShock     signature      97
+#> 4 human   Programs/cellCycle.G1S cellCycle.G1S signature      42
+#> 5 human   Programs/cellCycle.G2M cellCycle.G2M signature      52
+#> 6 human   Programs/IFN           IFN           signature     107
+
+immune_signatures <- sn_get_signatures(
+  species = "human",
+  category = c("mito", "ribo")
+)
+
+head(immune_signatures)
+#> [1] "MT-ATP6" "MT-ATP8" "MT-CO1"  "MT-CO2"  "MT-CO3"  "MT-CYB"
+```
+
+Custom signatures can be added, renamed, and deleted through the same
+API. Use a project-specific catalog path when you do not want to modify
+the package-level catalog.
+
+``` r
+
+catalog_path <- "config/signatures/pbmc_signatures.csv"
+
+sn_add_signature(
+  species = "human",
+  path = "custom/t_cell_activation",
+  genes = c("IL7R", "CCR7", "LTB"),
+  catalog_path = catalog_path,
+  source = "project"
+)
+
+sn_update_signature(
+  species = "human",
+  path = "custom/t_cell_activation",
+  rename_to = "custom/naive_t_cell",
+  catalog_path = catalog_path
+)
+
+sn_delete_signature(
+  species = "human",
+  path = "custom/naive_t_cell",
+  catalog_path = catalog_path
+)
+```
+
+## Run enrichment from stored marker results
 
 [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
-now supports grouped ORA and ranked GSEA through the same
-`gene_clusters` formula interface. It can also query multiple databases
-in one call.
+can accept a gene vector, a ranked vector, a data frame, or a Seurat
+object with stored DE results. For cluster markers, the Seurat-object
+path is the most reproducible because the enrichment knows which DE
+result it came from.
 
 ``` r
-if (!is.null(stored_pathways)) {
-  knitr::kable(stored_pathways, digits = 4)
-}
-```
 
-Grouped ORA uses a categorical right-hand side:
-
-``` r
-ora_result <- sn_enrich(
-  x = pbmc_clustered,
+pbmc <- sn_enrich(
+  x = pbmc,
   source_de_name = "cluster_markers",
-  gene_clusters = gene ~ cluster,
-  database = c("H", "C2:CP:REACTOME"),
-  species = "human"
-)
-```
-
-Ranked GSEA uses a numeric right-hand side:
-
-``` r
-gsea_result <- sn_enrich(
-  marker_table,
-  gene_clusters = gene ~ avg_log2FC,
+  species = "human",
   database = "GOBP",
-  species = "human"
+  store_name = "cluster_gobp",
+  return_object = TRUE
 )
+#> INFO [2026-05-05 20:19:03] Running ORA analysis for the GOBP database.
+
+pathways <- sn_get_enrichment_result(
+  pbmc,
+  enrichment_name = "cluster_gobp",
+  top_n = 5
+)
+
+head(pathways)
+#> # A tibble: 5 × 12
+#>   ID     Description GeneRatio BgRatio RichFactor FoldEnrichment zScore
+#>   <chr>  <chr>       <chr>     <chr>        <dbl>          <dbl>  <dbl>
+#> 1 GO:00… regulation… 159/2481  453/18…      0.351           2.67   14.0
+#> 2 GO:19… mononuclea… 152/2481  439/18…      0.346           2.63   13.5
+#> 3 GO:00… generation… 147/2481  438/18…      0.336           2.55   12.8
+#> 4 GO:00… regulation… 146/2481  472/18…      0.309           2.35   11.6
+#> 5 GO:00… nucleotide… 146/2481  478/18…      0.305           2.32   11.4
+#> # ℹ 5 more variables: pvalue <dbl>, p.adjust <dbl>, qvalue <dbl>,
+#> #   geneID <chr>, Count <int>
 ```
 
-## 5. Optional reference-based annotation
-
-If CellTypist is configured in the local environment, Shennong can add
-reference labels to the Seurat object:
+If you already have an enrichment table from another tool, store it with
+[`sn_store_enrichment()`](https://songqi.org/shennong/dev/reference/sn_store_enrichment.md)
+so the interpretation layer can find it.
 
 ``` r
-pbmc_annotated <- sn_run_celltypist(
-  pbmc_clustered,
-  model = "Immune_All_Low.pkl"
+
+external_terms <- data.frame(
+  cluster = "0",
+  ID = "GO:0006955",
+  Description = "immune response",
+  p.adjust = 0.001,
+  geneID = "IL7R/CCR7/LTB"
+)
+
+pbmc <- sn_store_enrichment(
+  object = pbmc,
+  result = external_terms,
+  store_name = "external_gobp",
+  analysis = "ora",
+  database = "GOBP",
+  species = "human",
+  source_de_name = "cluster_markers",
+  return_object = TRUE
 )
 ```
 
-That annotation can then be reused as the `label` input for downstream
-integration metrics or cluster summaries.
+## Cell communication and regulatory activity
+
+Cell communication should be run through a real backend rather than an
+ad hoc ligand-receptor table.
+[`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+keeps the same stored-result pattern used by DE and enrichment. Use
+CellChat for a global interaction network, NicheNet when the question is
+sender-to-receiver ligand activity, or LIANA when the optional LIANA
+package is available and consensus scoring is preferred.
+
+``` r
+
+pbmc <- sn_run_cell_communication(
+  object = pbmc,
+  method = "cellchat",
+  group_by = "seurat_clusters",
+  species = "human",
+  store_name = "cluster_cellchat"
+)
+
+cellchat_tbl <- sn_get_cell_communication_result(
+  pbmc,
+  communication_name = "cluster_cellchat"
+)
+
+head(cellchat_tbl)
+```
+
+NicheNet needs its ligand-target matrix and ligand-receptor network.
+Shennong requires those priors explicitly so the output remains
+traceable to the real NicheNet model rather than an inferred placeholder
+network.
+
+``` r
+
+pbmc <- sn_run_cell_communication(
+  object = pbmc,
+  method = "nichenetr",
+  group_by = "seurat_clusters",
+  sender = c("0", "1"),
+  receiver = "2",
+  geneset = c("IL7R", "CCR7", "LTB"),
+  ligand_target_matrix = ligand_target_matrix,
+  lr_network = lr_network,
+  store_name = "sender_receiver_nichenet"
+)
+```
+
+For transcription-factor and pathway activity,
+[`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md)
+uses fast footprint methods through `decoupleR`. DoRothEA reports TF
+activity; PROGENy reports pathway activity.
+
+``` r
+
+pbmc <- sn_run_regulatory_activity(
+  object = pbmc,
+  method = "dorothea",
+  group_by = "seurat_clusters",
+  species = "human",
+  store_name = "cluster_dorothea"
+)
+
+tf_activity <- sn_get_regulatory_activity_result(
+  pbmc,
+  activity_name = "cluster_dorothea",
+  sources = c("NFKB1", "STAT1")
+)
+
+head(tf_activity)
+```
+
+## Optional reference annotation with CellTypist
+
+CellTypist is a Python command-line tool, so Shennong keeps it explicit.
+When the input is a Seurat object, predictions are written back to
+metadata. When the input is a file path, Shennong returns the prediction
+table because there is no object to update.
+
+``` r
+
+pbmc <- sn_run_celltypist(
+  x = pbmc,
+  model = "Immune_All_Low.pkl",
+  over_clustering = "seurat_clusters",
+  majority_voting = TRUE,
+  quiet = TRUE
+)
+
+grep("Immune_All_Low", colnames(pbmc[[]]), value = TRUE)
+```
+
+``` r
+
+prediction_tbl <- sn_run_celltypist(
+  x = "pbmc3k_counts.csv",
+  model = "Immune_All_Low.pkl",
+  over_clustering = "obs_cluster",
+  quiet = TRUE
+)
+
+head(prediction_tbl)
+```
+
+The intended pattern is evidence first, label second: markers and
+pathways are computed and stored before automated or LLM-assisted
+annotation consumes them.

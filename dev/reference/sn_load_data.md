@@ -15,7 +15,10 @@ sn_load_data(
   matrix_type = c("filtered", "raw"),
   save_dir = "~/.shennong/data",
   return_object = TRUE,
-  species = NULL
+  species = NULL,
+  token = NULL,
+  overwrite = FALSE,
+  quiet = FALSE
 )
 ```
 
@@ -23,7 +26,7 @@ sn_load_data(
 
 - dataset:
 
-  Character scalar. Which example dataset to load. Currently one of
+  Character vector. Which example dataset(s) to load. Currently one of
   `"pbmc1k"`, `"pbmc3k"`, `"pbmc4k"`, or `"pbmc8k"`. Default:
   `"pbmc3k"`.
 
@@ -57,20 +60,37 @@ sn_load_data(
   [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md)
   when constructing Seurat objects (i.e. when
   `matrix_type == "filtered"`). Ignored if `matrix_type == "raw"`. If
-  `NULL`, use the dataset default from the example-data registry.
+  `NULL`, use the dataset default from the example-data registry. When
+  loading multiple datasets, supply either one species label for all
+  datasets or one label per dataset.
+
+- token:
+
+  Optional Zenodo access token. Public example datasets do not require a
+  token. Supply this only for restricted/private records.
+
+- overwrite:
+
+  Logical. If `TRUE`, re-download cached files.
+
+- quiet:
+
+  Logical. If `TRUE`, suppress Zenodo download progress messages.
 
 ## Value
 
 One of:
 
 - If `matrix_type == "filtered"` and `return_object = TRUE`: a Seurat
-  object.
+  object. Multiple datasets are returned as one merged Seurat object.
 
 - If `matrix_type == "raw"` and `return_object = TRUE`: a sparse count
-  matrix (e.g. `dgCMatrix`).
+  matrix (e.g. `dgCMatrix`) or, for multiple datasets, a named list of
+  sparse count matrices.
 
 - If `return_object = FALSE`: the local file path to the cached `.h5`
-  file, returned invisibly.
+  file, or a named character vector of paths for multiple datasets,
+  returned invisibly.
 
 ## Details
 
@@ -93,9 +113,11 @@ reference based on GENCODE v48 (GRCh38.p14).
 
 The function caches the original files from Zenodo on first use:
 
+
     {dataset}_{matrix_type}_feature_bc_matrix.h5
 
 For example, after loading `pbmc3k` you may see:
+
 
     ~/.shennong/data/
     |- pbmc1k_filtered_feature_bc_matrix.h5
@@ -111,13 +133,18 @@ When `return_object = TRUE`, the cached `.h5` file is read on the fly:
 
 - If `matrix_type == "filtered"`: a Seurat object is constructed via
   [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md).
+  When multiple datasets are requested, the per-dataset Seurat objects
+  are merged and each source is recorded in the `sample` metadata
+  column.
 
 - If `matrix_type == "raw"`: the function returns a sparse count matrix
   (typically a `dgCMatrix`), suitable for ambient RNA estimation / SoupX
-  workflows.
+  workflows. When multiple raw datasets are requested, the matrices are
+  returned as a named list.
 
 When `return_object = FALSE`, no object is constructed; only the file is
-ensured to exist locally.
+ensured to exist locally. Multiple datasets return a named character
+vector of cached paths.
 
 ## References
 
@@ -127,6 +154,7 @@ v9.0.1 (GENCODE v48, GRCh38.p14). Zenodo. DOI: 10.5281/zenodo.14884845
 ## See also
 
 [`sn_initialize_seurat_object`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md),
+[`sn_download_zenodo`](https://songqi.org/shennong/dev/reference/sn_download_zenodo.md),
 [`sn_write`](https://songqi.org/shennong/dev/reference/sn_write.md),
 [`sn_read`](https://songqi.org/shennong/dev/reference/sn_read.md)
 
@@ -143,7 +171,10 @@ pbmc_raw <- sn_load_data(matrix_type = "raw")
 # 3. Only download/cache PBMC8k, don't construct anything in-memory:
 sn_load_data(dataset = "pbmc8k", return_object = FALSE)
 
-# 4. Use a custom cache directory:
+# 4. Load and merge multiple filtered PBMC examples:
+pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
+
+# 5. Use a custom cache directory:
 pbmc4k <- sn_load_data(
   dataset  = "pbmc4k",
   save_dir = "~/datasets/pbmc_cache"

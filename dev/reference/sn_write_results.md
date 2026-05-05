@@ -10,7 +10,7 @@ sn_write_results(
   cluster_de_name = NULL,
   contrast_de_name = NULL,
   enrichment_name = NULL,
-  cluster_col = "seurat_clusters",
+  cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
@@ -19,6 +19,7 @@ sn_write_results(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
+  cluster_col = NULL,
   ...
 )
 ```
@@ -41,7 +42,7 @@ sn_write_results(
 
   Optional stored enrichment result.
 
-- cluster_col:
+- cluster_by:
 
   Metadata column containing cluster labels.
 
@@ -79,6 +80,10 @@ sn_write_results(
 
   Logical; if `TRUE`, emit step-wise progress logs and, when cli is
   available, a console progress bar while waiting for the LLM response.
+
+- cluster_col:
+
+  Deprecated alias for `cluster_by`.
 
 - ...:
 
@@ -120,13 +125,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-04-05 05:31:23] Initializing Seurat object for project: Shennong.
-#> INFO [2026-04-05 05:31:23] Running QC metrics for human.
-#> INFO [2026-04-05 05:31:23] Seurat object initialization complete.
+#> INFO [2026-05-05 20:17:45] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 20:17:45] Running QC metrics for human.
+#> INFO [2026-05-05 20:17:45] Seurat object initialization complete.
 #> Warning: No DE genes identified
-#> INFO [2026-04-05 05:31:24] [sn_write_results] Starting interpretation workflow.
-#> INFO [2026-04-05 05:31:24] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
-#> INFO [2026-04-05 05:31:24] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.1s).
-#> INFO [2026-04-05 05:31:24] [sn_write_results] Prompt prepared (total elapsed 0.1s).
+#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
+#> INFO [2026-05-05 20:17:46] [sn_write_results] Starting interpretation workflow.
+#> INFO [2026-05-05 20:17:46] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
+#> INFO [2026-05-05 20:17:46] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.1s).
+#> INFO [2026-05-05 20:17:47] [sn_write_results] Prompt prepared (total elapsed 0.1s).
 #> [1] "results"
 ```
