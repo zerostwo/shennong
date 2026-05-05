@@ -7,25 +7,25 @@
 \usage{
 sn_run_scvi(
   object,
-  batch_by = NULL,
-  integration_control = list(),
   batch = NULL,
+  integration_control = list(),
+  batch_by = NULL,
   ...
 )
 
 sn_run_scanvi(
   object,
-  batch_by = NULL,
-  integration_control = list(),
   batch = NULL,
+  integration_control = list(),
+  batch_by = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch_by}{A column name in \code{object@meta.data} specifying batch_by info.
-If \code{NULL}, no integration is performed.}
+\item{batch}{A column name in \code{object@meta.data} specifying the batch
+labels used for integration. If \code{NULL}, no integration is performed.}
 
 \item{integration_control}{Optional named list of backend-specific
 parameters. For \code{"coralysis"}, use \code{icp_args} for
@@ -45,7 +45,7 @@ generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
 
-\item{batch}{Deprecated alias for \code{batch_by}.}
+\item{batch_by}{Compatibility alias for \code{batch}.}
 
 \item{...}{Additional arguments passed to \code{sn_run_cluster()}.}
 }
@@ -60,10 +60,10 @@ and materialized under \code{~/.shennong/pixi/scvi/}.
 }
 \examples{
 \dontrun{
-obj <- sn_run_scvi(obj, batch_by = "sample_id")
+obj <- sn_run_scvi(obj, batch = "sample_id")
 obj <- sn_run_scanvi(
   obj,
-  batch_by = "sample_id",
+  batch = "sample_id",
   integration_control = list(label_by = "cell_type")
 )
 }

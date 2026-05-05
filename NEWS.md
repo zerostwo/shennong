@@ -10,9 +10,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_write()` now creates missing parent directories before dispatching both
   rio and custom writers, so nested `.qs`, `.h5ad`, `.h5`, and BPCells outputs
   no longer fail only because the containing directory does not exist.
+- `sn_write()` now auto-installs missing optional writer dependencies by
+  default for custom formats such as `.qs2`, `.h5ad`, `.h5`, and BPCells.
+  Legacy `.qs` output now attempts to install `qs` from the GitHub remote
+  `qsbase/qs` for compatibility, while `.qs2` remains the recommended new
+  serialization format.
+- `sn_run_cluster()` now treats `batch` as the primary integration metadata
+  argument while retaining `batch_by` as a compatibility alias.
 
 ### Added
 
+- `sn_run_cluster()` now exposes key `Seurat::FindClusters()` controls,
+  including `cluster_algorithm = "leiden"` / `"louvain"` / `"slm"`, custom
+  cluster metadata names, random seed, start/iteration counts, singleton
+  handling, and Leiden method/objective options.
 - `sn_calculate_variance_explained()` now ranks metadata variables such as
   platform, study, tissue, and sample by weighted embedding variance explained,
   with single-variable and partial multi-variable modes for batch-effect

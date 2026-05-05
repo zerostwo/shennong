@@ -46,7 +46,7 @@ pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   normalization_method = "seurat",
   hvg_group_by = "library",
   nfeatures = 1500,
@@ -66,7 +66,7 @@ results in predictable sections: `summary`, `per_cell`, `per_group`, and
 ```{r aggregate-assessment}
 assessment <- sn_assess_integration(
   x = pbmc,
-  batch_by = "library",
+  batch = "library",
   label_by = "seurat_clusters",
   cluster_by = "seurat_clusters",
   reduction = "harmony",
@@ -188,7 +188,7 @@ pre-integration PCA space.
 ```{r pcr-batch}
 pcr <- sn_calculate_pcr_batch(
   pbmc,
-  batch_by = "library",
+  batch = "library",
   reduction = "harmony",
   baseline_reduction = "pca",
   dims = 1:15,

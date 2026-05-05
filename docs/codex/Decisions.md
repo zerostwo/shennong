@@ -4,9 +4,24 @@ Last updated: 2026-05-05
 
 ## 2026-05-05
 
+- The pkgdown CI workflow should deploy successful `main` builds to
+  `gh-pages`, not only run `pkgdown::build_site()`. A failed site build should
+  still stop before deployment and surface the tail of the pkgdown log.
 - Output path preparation belongs in `sn_write()` before writer dispatch, not
   inside each format-specific writer. This keeps nested output behavior
   consistent across `rio` formats, `.qs`/`.qs2`, `.h5ad`, `.h5`, and BPCells.
+- Custom writer dependencies should be installed opportunistically by
+  `sn_write()` in interactive workflows, using Shennong's dependency table so
+  CRAN, Bioconductor, and GitHub sources stay consistent. Legacy `.qs` should
+  remain supported for existing workflows by attempting `qsbase/qs` from
+  GitHub, while new examples should prefer `.qs2`.
+- For clustering/integration entry points, `batch` is clearer than `batch_by`
+  because users are naming the batch column itself, not applying a generic
+  grouping operation. `sn_run_cluster()` should therefore document `batch` as
+  the primary argument while retaining `batch_by` as a compatibility alias.
+- `sn_run_cluster()` should expose the common `FindClusters()` controls instead
+  of hard-coding Seurat defaults. Named algorithm values are preferred for user
+  readability, with numeric Seurat algorithm IDs retained for compatibility.
 
 ## 2026-05-04
 

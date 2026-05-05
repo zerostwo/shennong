@@ -16,6 +16,8 @@ jobs:
       SHENNONG_RUN_VIGNETTES: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -55,15 +57,23 @@ jobs:
         run: R CMD INSTALL .
         shell: bash
 
-      - name: Build site
+      - name: Build and deploy site
         run: |
           set +e
-          Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)' > pkgdown.log 2>&1
+          Rscript -e '
+            sha <- substr(Sys.getenv("GITHUB_SHA"), 1, 7)
+            version <- as.character(utils::packageVersion("Shennong"))
+            pkgdown::deploy_to_branch(
+              new_process = FALSE,
+              install = FALSE,
+              commit_message = sprintf("Built site for Shennong@%s: %s", version, sha)
+            )
+          ' > pkgdown.log 2>&1
           status=$?
           cat pkgdown.log
           if [ "$status" -ne 0 ]; then
             tail_msg=$(tail -n 80 pkgdown.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
-            echo "::error title=pkgdown build failed::$tail_msg"
+            echo "::error title=pkgdown deploy failed::$tail_msg"
             exit "$status"
           fi
         shell: bash

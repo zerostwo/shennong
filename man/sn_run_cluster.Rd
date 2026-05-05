@@ -6,7 +6,7 @@
 \usage{
 sn_run_cluster(
   object,
-  batch_by = NULL,
+  batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
     "scanvi"),
@@ -15,6 +15,15 @@ sn_run_cluster(
   hvg_features = NULL,
   vars_to_regress = NULL,
   resolution = 0.8,
+  cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden"),
+  cluster_name = NULL,
+  cluster_n_start = 10,
+  cluster_n_iter = 10,
+  cluster_random_seed = 717,
+  cluster_group_singletons = TRUE,
+  leiden_method = c("leidenbase", "igraph"),
+  leiden_objective_function = c("modularity", "CPM"),
+  cluster_control = list(),
   hvg_group_by = NULL,
   rare_feature_method = "none",
   rare_feature_group_by = NULL,
@@ -33,23 +42,23 @@ sn_run_cluster(
   layer = "counts",
   return_cluster = FALSE,
   verbose = TRUE,
-  batch = NULL
+  batch_by = NULL
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch_by}{A column name in \code{object@meta.data} specifying batch_by info.
-If \code{NULL}, no integration is performed.}
+\item{batch}{A column name in \code{object@meta.data} specifying the batch
+labels used for integration. If \code{NULL}, no integration is performed.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
 \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
-be followed by any supported \code{integration_method} when
-\code{batch_by} is supplied. The SCTransform workflow can currently be
+be followed by any supported \code{integration_method} when \code{batch}
+is supplied. The SCTransform workflow can currently be
 combined with \code{integration_method = "harmony"} by supplying
-\code{batch_by}.}
+\code{batch}.}
 
-\item{integration_method}{Batch-integration backend used when \code{batch_by}
+\item{integration_method}{Batch-integration backend used when \code{batch}
 is supplied. Supported values are \code{"harmony"},
 \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 \code{"scvi"}, and \code{"scanvi"}.
@@ -90,10 +99,38 @@ that they are present in \code{object}.}
 
 \item{resolution}{Resolution parameter for \code{FindClusters}.}
 
+\item{cluster_algorithm}{Community-detection algorithm passed to
+\code{Seurat::FindClusters()}. Supported names are \code{"louvain"}
+(Seurat algorithm 1), \code{"louvain_multilevel"} (algorithm 2),
+\code{"slm"} (algorithm 3), and \code{"leiden"} (algorithm 4). Numeric
+values 1 through 4 are also accepted.}
+
+\item{cluster_name}{Optional metadata column name for the cluster labels.
+Defaults to Seurat's \code{"seurat_clusters"} behavior.}
+
+\item{cluster_n_start, cluster_n_iter}{Number of starts and iterations passed
+to \code{Seurat::FindClusters()}.}
+
+\item{cluster_random_seed}{Random seed passed to
+\code{Seurat::FindClusters()}.}
+
+\item{cluster_group_singletons}{Whether \code{Seurat::FindClusters()}
+should group singletons into the nearest cluster.}
+
+\item{leiden_method}{Leiden implementation passed to
+\code{Seurat::FindClusters()} when \code{cluster_algorithm = "leiden"}.}
+
+\item{leiden_objective_function}{Leiden objective function passed to
+\code{Seurat::FindClusters()}.}
+
+\item{cluster_control}{Optional named list of additional
+\code{Seurat::FindClusters()} arguments. Values here override Shennong's
+generated defaults.}
+
 \item{hvg_group_by}{Optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. When \code{NULL} and
-\code{batch_by} is supplied, Shennong reuses \code{batch_by} by default. Use
-\code{NULL} with \code{batch_by = NULL} to compute HVGs on the full object.}
+\code{batch} is supplied, Shennong reuses \code{batch} by default. Use
+\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.}
 
 \item{rare_feature_method}{Optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
@@ -143,7 +180,7 @@ from built-in signatures.}
 
 \item{verbose}{Whether to print/log progress messages.}
 
-\item{batch}{Deprecated alias for \code{batch_by}.}
+\item{batch_by}{Compatibility alias for \code{batch}.}
 }
 \value{
 A \code{Seurat} object with clustering results and embeddings, or a
@@ -151,8 +188,8 @@ cluster_by vector if \code{return_cluster = TRUE}.
 }
 \description{
 This function is the main clustering entry point in \code{Shennong}.
-When \code{batch_by = NULL}, it performs single-dataset clustering with either the
-standard Seurat workflow or an SCTransform workflow. When \code{batch_by} is
+When \code{batch = NULL}, it performs single-dataset clustering with either the
+standard Seurat workflow or an SCTransform workflow. When \code{batch} is
 supplied, it performs batch integration followed by clustering and UMAP.
 }
 \examples{
@@ -160,12 +197,13 @@ supplied, it performs batch integration followed by clustering and UMAP.
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
   normalization_method = "seurat",
-  resolution = 0.8
+  resolution = 0.8,
+  cluster_algorithm = "leiden"
 )
 
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
-  batch_by = "sample_id",
+  batch = "sample_id",
   integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "sample_id",

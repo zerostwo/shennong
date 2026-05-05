@@ -9,7 +9,15 @@
 \alias{.export.rio_qs2}
 \title{Write tabular and bioinformatics file formats}
 \usage{
-sn_write(x, path = NULL, to = NULL, ...)
+sn_write(
+  x,
+  path = NULL,
+  to = NULL,
+  auto_install = TRUE,
+  install_repos = getOption("repos"),
+  install_ask = FALSE,
+  ...
+)
 
 .export.rio_bpcells(file, x, overwrite = FALSE, ...)
 
@@ -28,6 +36,18 @@ sn_write(x, path = NULL, to = NULL, ...)
 automatically before dispatching the selected writer.}
 
 \item{to}{Optional format override when it cannot be inferred from \code{path}.}
+
+\item{auto_install}{Logical; when \code{TRUE}, install missing writer
+dependencies before writing. This includes \pkg{rio} plus optional
+Shennong custom writer dependencies such as \code{.qs2}, \code{.h5ad},
+\code{.h5}, or BPCells. Legacy \code{.qs} output installs \pkg{qs} from
+the GitHub remote \code{qsbase/qs} when needed.}
+
+\item{install_repos}{CRAN-like repositories used when \code{auto_install}
+needs to install CRAN packages.}
+
+\item{install_ask}{Passed to \code{BiocManager::install()} when
+\code{auto_install} installs Bioconductor packages.}
 
 \item{...}{Additional arguments forwarded to the underlying exporter.}
 

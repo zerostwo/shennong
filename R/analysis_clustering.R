@@ -5,6 +5,25 @@
   dims[dims > 0]
 }
 
+.sn_resolve_find_clusters_algorithm <- function(cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden")) {
+  if (is.numeric(cluster_algorithm) && length(cluster_algorithm) == 1L) {
+    algorithm <- as.integer(cluster_algorithm)
+    if (!algorithm %in% 1:4) {
+      stop("`cluster_algorithm` must be one of 1, 2, 3, 4 or a supported algorithm name.", call. = FALSE)
+    }
+    return(algorithm)
+  }
+
+  cluster_algorithm <- match.arg(cluster_algorithm)
+  switch(
+    cluster_algorithm,
+    louvain = 1L,
+    louvain_multilevel = 2L,
+    slm = 3L,
+    leiden = 4L
+  )
+}
+
 .sn_merge_control_args <- function(defaults, control) {
   control <- control %||% list()
   if (!is.list(control)) {
@@ -691,24 +710,29 @@
 #'
 #' @examples
 #' \dontrun{
-#' obj <- sn_run_scvi(obj, batch_by = "sample_id")
+#' obj <- sn_run_scvi(obj, batch = "sample_id")
 #' obj <- sn_run_scanvi(
 #'   obj,
-#'   batch_by = "sample_id",
+#'   batch = "sample_id",
 #'   integration_control = list(label_by = "cell_type")
 #' )
 #' }
 #'
 #' @export
 sn_run_scvi <- function(object,
-                        batch_by = NULL,
-                        integration_control = list(),
                         batch = NULL,
+                        integration_control = list(),
+                        batch_by = NULL,
                         ...) {
-  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+  if (!is.null(batch_by)) {
+    if (!is.null(batch) && !identical(batch, batch_by)) {
+      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
+    }
+    batch <- batch_by
+  }
   sn_run_cluster(
     object = object,
-    batch_by = batch_by,
+    batch = batch,
     integration_method = "scvi",
     integration_control = integration_control,
     ...
@@ -718,14 +742,19 @@ sn_run_scvi <- function(object,
 #' @rdname sn_run_scvi
 #' @export
 sn_run_scanvi <- function(object,
-                          batch_by = NULL,
-                          integration_control = list(),
                           batch = NULL,
+                          integration_control = list(),
+                          batch_by = NULL,
                           ...) {
-  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+  if (!is.null(batch_by)) {
+    if (!is.null(batch) && !identical(batch, batch_by)) {
+      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
+    }
+    batch <- batch_by
+  }
   sn_run_cluster(
     object = object,
-    batch_by = batch_by,
+    batch = batch,
     integration_method = "scanvi",
     integration_control = integration_control,
     ...
@@ -1549,21 +1578,21 @@ sn_detect_rare_cells <- function(object,
 #' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
-#' When `batch_by = NULL`, it performs single-dataset clustering with either the
-#' standard Seurat workflow or an SCTransform workflow. When `batch_by` is
+#' When `batch = NULL`, it performs single-dataset clustering with either the
+#' standard Seurat workflow or an SCTransform workflow. When `batch` is
 #' supplied, it performs batch integration followed by clustering and UMAP.
 #'
 #' @param object A \code{Seurat} object.
-#' @param batch_by A column name in \code{object@meta.data} specifying batch_by info.
-#'   If \code{NULL}, no integration is performed.
-#' @param batch Deprecated alias for \code{batch_by}.
+#' @param batch A column name in \code{object@meta.data} specifying the batch
+#'   labels used for integration. If \code{NULL}, no integration is performed.
+#' @param batch_by Compatibility alias for \code{batch}.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
 #'   \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
-#'   be followed by any supported \code{integration_method} when
-#'   \code{batch_by} is supplied. The SCTransform workflow can currently be
+#'   be followed by any supported \code{integration_method} when \code{batch}
+#'   is supplied. The SCTransform workflow can currently be
 #'   combined with \code{integration_method = "harmony"} by supplying
-#'   \code{batch_by}.
-#' @param integration_method Batch-integration backend used when \code{batch_by}
+#'   \code{batch}.
+#' @param integration_method Batch-integration backend used when \code{batch}
 #'   is supplied. Supported values are \code{"harmony"},
 #'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 #'   \code{"scvi"}, and \code{"scanvi"}.
@@ -1598,10 +1627,30 @@ sn_detect_rare_cells <- function(object,
 #'   that they are present in \code{object}.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
 #' @param resolution Resolution parameter for \code{FindClusters}.
+#' @param cluster_algorithm Community-detection algorithm passed to
+#'   \code{Seurat::FindClusters()}. Supported names are \code{"louvain"}
+#'   (Seurat algorithm 1), \code{"louvain_multilevel"} (algorithm 2),
+#'   \code{"slm"} (algorithm 3), and \code{"leiden"} (algorithm 4). Numeric
+#'   values 1 through 4 are also accepted.
+#' @param cluster_name Optional metadata column name for the cluster labels.
+#'   Defaults to Seurat's \code{"seurat_clusters"} behavior.
+#' @param cluster_n_start,cluster_n_iter Number of starts and iterations passed
+#'   to \code{Seurat::FindClusters()}.
+#' @param cluster_random_seed Random seed passed to
+#'   \code{Seurat::FindClusters()}.
+#' @param cluster_group_singletons Whether \code{Seurat::FindClusters()}
+#'   should group singletons into the nearest cluster.
+#' @param leiden_method Leiden implementation passed to
+#'   \code{Seurat::FindClusters()} when \code{cluster_algorithm = "leiden"}.
+#' @param leiden_objective_function Leiden objective function passed to
+#'   \code{Seurat::FindClusters()}.
+#' @param cluster_control Optional named list of additional
+#'   \code{Seurat::FindClusters()} arguments. Values here override Shennong's
+#'   generated defaults.
 #' @param hvg_group_by Optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. When \code{NULL} and
-#'   \code{batch_by} is supplied, Shennong reuses \code{batch_by} by default. Use
-#'   \code{NULL} with \code{batch_by = NULL} to compute HVGs on the full object.
+#'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
+#'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
 #' @param rare_feature_method Optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
 #'   \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
@@ -1645,12 +1694,13 @@ sn_detect_rare_cells <- function(object,
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
 #'   normalization_method = "seurat",
-#'   resolution = 0.8
+#'   resolution = 0.8,
+#'   cluster_algorithm = "leiden"
 #' )
 #'
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
-#'   batch_by = "sample_id",
+#'   batch = "sample_id",
 #'   integration_method = "harmony",
 #'   normalization_method = "seurat",
 #'   hvg_group_by = "sample_id",
@@ -1661,7 +1711,7 @@ sn_detect_rare_cells <- function(object,
 #' }
 #' @export
 sn_run_cluster <- function(object,
-                           batch_by = NULL,
+                           batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
                            integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi"),
                            integration_control = list(),
@@ -1669,6 +1719,15 @@ sn_run_cluster <- function(object,
                            hvg_features = NULL,
                            vars_to_regress = NULL,
                            resolution = 0.8,
+                           cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden"),
+                           cluster_name = NULL,
+                           cluster_n_start = 10,
+                           cluster_n_iter = 10,
+                           cluster_random_seed = 717,
+                           cluster_group_singletons = TRUE,
+                           leiden_method = c("leidenbase", "igraph"),
+                           leiden_objective_function = c("modularity", "CPM"),
+                           cluster_control = list(),
                            hvg_group_by = NULL,
                            rare_feature_method = "none",
                            rare_feature_group_by = NULL,
@@ -1687,32 +1746,43 @@ sn_run_cluster <- function(object,
                            layer = "counts",
                            return_cluster = FALSE,
                            verbose = TRUE,
-                           batch = NULL) {
+                           batch_by = NULL) {
   check_installed("Seurat")
   check_installed("HGNChelper")
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
-  if (inherits(batch_by, "Seurat")) {
+  if (inherits(batch, "Seurat") || inherits(batch_by, "Seurat")) {
     stop(
-      "`batch_by` received a Seurat object. ",
+      "`batch` received a Seurat object. ",
       "This usually means the input object was supplied twice, for example ",
       "`object %>% sn_run_cluster(object)`. Use `object %>% sn_run_cluster()` ",
       "or `sn_run_cluster(object)` instead.",
       call. = FALSE
     )
   }
-  if (!is.null(batch_by) && (!is.character(batch_by) || length(batch_by) != 1L)) {
-    stop("`batch_by` must be a single metadata column name or `NULL`.", call. = FALSE)
+  if (!is.null(batch_by)) {
+    if (!is.null(batch) && !identical(batch, batch_by)) {
+      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
+    }
+    batch <- batch_by
+  }
+  if (!is.null(batch) && (!is.character(batch) || length(batch) != 1L)) {
+    stop("`batch` must be a single metadata column name or `NULL`.", call. = FALSE)
   }
 
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
+  cluster_algorithm_value <- .sn_resolve_find_clusters_algorithm(cluster_algorithm)
+  leiden_method <- match.arg(leiden_method)
+  leiden_objective_function <- match.arg(leiden_objective_function)
   if (!is.list(integration_control)) {
     stop("`integration_control` must be a named list.", call. = FALSE)
   }
-  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
+  if (!is.list(cluster_control)) {
+    stop("`cluster_control` must be a named list.", call. = FALSE)
+  }
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
     c("none", "gini", "local_markers"),
@@ -1736,26 +1806,26 @@ sn_run_cluster <- function(object,
   )
   object <- prepared$object
 
-  if (!is_null(x = batch_by)) {
-    if (!(batch_by %in% colnames(object@meta.data))) {
-      stop(glue("Batch variable '{batch_by}' not found in metadata."))
+  if (!is_null(x = batch)) {
+    if (!(batch %in% colnames(object@meta.data))) {
+      stop(glue("Batch variable '{batch}' not found in metadata."))
     }
     if (normalization_method == "sctransform" && integration_method != "harmony") {
       stop("SCTransform integration is currently supported only with `integration_method = \"harmony\"`.", call. = FALSE)
     }
     if (verbose) {
-      .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch_by = '{batch_by}'.")
+      .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch = '{batch}'.")
     }
   }
 
-  if (is_null(hvg_group_by) && !is_null(batch_by)) {
-    hvg_group_by <- batch_by
+  if (is_null(hvg_group_by) && !is_null(batch)) {
+    hvg_group_by <- batch
   }
 
   if (verbose) {
     .sn_log_info(
       "[sn_run_cluster] Normalization method = {normalization_method}; ",
-      "batch_by = {batch_by %||% 'none'}; integration_method = {if (is.null(batch_by)) 'none' else integration_method}."
+      "batch = {batch %||% 'none'}; integration_method = {if (is.null(batch)) 'none' else integration_method}."
     )
   }
 
@@ -1846,14 +1916,14 @@ sn_run_cluster <- function(object,
       seed.use = 717
     )
 
-    if (is_null(x = batch_by)) {
+    if (is_null(x = batch)) {
       reduction <- "pca"
     } else {
       if (verbose) .sn_log_info("[3/5] Running {integration_method} integration.")
       integration <- .sn_run_batch_integration(
         object = object,
         method = integration_method,
-        batch = batch_by,
+        batch = batch,
         reduction = "pca",
         features = hvg,
         assay = assay,
@@ -1975,14 +2045,14 @@ sn_run_cluster <- function(object,
       seed.use = 717
     )
 
-    if (is_null(x = batch_by)) {
+    if (is_null(x = batch)) {
       reduction <- "pca"
     } else {
       if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
       integration <- .sn_run_batch_integration(
         object = object,
         method = integration_method,
-        batch = batch_by,
+        batch = batch,
         reduction = "pca",
         features = hvg,
         assay = assay,
@@ -2001,12 +2071,31 @@ sn_run_cluster <- function(object,
   if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
   dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
   object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
-  object <- Seurat::FindClusters(object, resolution = resolution, random.seed = 717, verbose = verbose)
+  find_clusters_args <- .sn_merge_control_args(
+    defaults = list(
+      object = object,
+      resolution = resolution,
+      algorithm = cluster_algorithm_value,
+      n.start = cluster_n_start,
+      n.iter = cluster_n_iter,
+      random.seed = cluster_random_seed,
+      group.singletons = cluster_group_singletons,
+      leiden_method = leiden_method,
+      leiden_objective_function = leiden_objective_function,
+      verbose = verbose
+    ),
+    control = cluster_control
+  )
+  if (!is.null(cluster_name)) {
+    find_clusters_args$cluster.name <- cluster_name
+  }
+  object <- do.call(Seurat::FindClusters, find_clusters_args)
+  cluster_column <- cluster_name %||% "seurat_clusters"
 
   if (return_cluster) {
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) .sn_log_info("Integration completed successfully.")
-    return(object@meta.data[, "seurat_clusters"])
+    return(object@meta.data[, cluster_column])
   } else {
     if (verbose) .sn_log_info("[7/7] Running UMAP.")
     object <- suppressWarnings(Seurat::RunUMAP(
@@ -2194,7 +2283,7 @@ sn_run_cluster <- function(object,
   }
   stop(
     "Coralysis label_by transfer requires a Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
-    "Run `sn_run_cluster(reference, batch_by = ..., integration_method = \"coralysis\", ",
+    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\", ",
     "integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE)))` first.",
     call. = FALSE
   )

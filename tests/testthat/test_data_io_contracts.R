@@ -298,6 +298,80 @@ test_that("sn_write creates parent directories before dispatching writers", {
   expect_true(file.exists(qs_path))
 })
 
+test_that("sn_write auto-installs missing custom writer dependencies", {
+  skip_if_not_installed("rio")
+
+  installed <- character(0)
+  qs2_path <- tempfile(fileext = ".qs2")
+  testthat::with_mocked_bindings(
+    sn_write(list(a = 1), qs2_path),
+    .sn_find_missing_packages = function(packages) {
+      setdiff(packages, installed)
+    },
+    sn_install_dependencies = function(packages,
+                                       missing_only = TRUE,
+                                       repos = getOption("repos"),
+                                       ask = FALSE,
+                                       github_dependencies = NA,
+                                       ...) {
+      installed <<- union(installed, packages)
+      invisible(data.frame(package = packages, installed = TRUE))
+    },
+    .export.rio_qs2 = function(file, x, ...) {
+      saveRDS(x, file = file)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true("qs2" %in% installed)
+  expect_true(file.exists(qs2_path))
+
+  installed <- character(0)
+  qs_path <- tempfile(fileext = ".qs")
+  testthat::with_mocked_bindings(
+    sn_write(list(a = 1), qs_path),
+    .sn_find_missing_packages = function(packages) {
+      setdiff(packages, installed)
+    },
+    .sn_install_legacy_qs = function(repos = getOption("repos")) {
+      installed <<- union(installed, "qs")
+      invisible("qs")
+    },
+    .export.rio_qs = function(file, x, ...) {
+      saveRDS(x, file = file)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true("qs" %in% installed)
+  expect_true(file.exists(qs_path))
+})
+
+test_that("sn_write can disable custom writer auto-installation", {
+  skip_if_not_installed("rio")
+
+  testthat::with_mocked_bindings(
+    expect_error(
+      sn_write(list(a = 1), tempfile(fileext = ".qs2"), auto_install = FALSE),
+      "required to write qs2 files"
+    ),
+    .sn_find_missing_packages = function(packages) packages,
+    .package = "Shennong"
+  )
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      sn_write(list(a = 1), tempfile(fileext = ".qs")),
+      .sn_find_missing_packages = function(packages) packages,
+      .sn_install_legacy_qs = function(repos = getOption("repos")) {
+        stop("qsbase/qs failed", call. = FALSE)
+      },
+      .package = "Shennong"
+    ),
+    "qsbase/qs"
+  )
+})
+
 test_that("sn_add_data_from_anndata respects custom reduction keys and logs the import", {
   skip_if_not_installed("Seurat")
 

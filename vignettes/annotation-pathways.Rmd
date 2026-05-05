@@ -145,7 +145,7 @@ reference by leaving `store_sce = TRUE` and `return.model = TRUE`.
 ```{r coralysis-label-transfer, eval = FALSE}
 reference <- sn_run_cluster(
   reference,
-  batch_by = "sample_id",
+  batch = "sample_id",
   integration_method = "coralysis",
   normalization_method = "seurat",
   integration_control = list(

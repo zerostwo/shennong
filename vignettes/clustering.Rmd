@@ -35,7 +35,7 @@ analysis unless `SHENNONG_RUN_VIGNETTES=true`.
 
 The minimal clustering call is intentionally short. The arguments that usually
 matter for a report are visible: normalization method, number of features, PC
-range, resolution, and species.
+range, resolution, clustering algorithm, and species.
 
 ```{r cluster-pbmc3k}
 library(Shennong)
@@ -51,6 +51,7 @@ pbmc <- sn_run_cluster(
   npcs = 30,
   dims = 1:20,
   resolution = 0.6,
+  cluster_algorithm = "leiden",
   species = "human",
   verbose = FALSE
 )
@@ -188,7 +189,7 @@ pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc_integrated <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "library",
@@ -217,7 +218,7 @@ The same integration switch can be used with SCTransform normalization:
 ```{r sctransform-integration, eval = FALSE}
 pbmc_sct_integrated <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "harmony",
   normalization_method = "sctransform",
   hvg_features = c("IL7R", "CCR7", "NKG7"),
@@ -235,7 +236,7 @@ stores the integrated embedding as the `coralysis` reduction.
 ```{r coralysis-integration, eval = FALSE}
 pbmc_coral <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "coralysis",
   normalization_method = "seurat",
   hvg_group_by = "library",
@@ -257,7 +258,7 @@ against familiar anchor-based workflows:
 ```{r seurat-layer-integration, eval = FALSE}
 pbmc_cca <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "seurat_cca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -267,7 +268,7 @@ pbmc_cca <- sn_run_cluster(
 
 pbmc_rpca <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "seurat_rpca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -349,7 +350,7 @@ sn_ensure_pixi()
 
 pbmc_scvi <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "scvi",
   normalization_method = "seurat",
   hvg_group_by = "library",
@@ -366,7 +367,7 @@ pbmc_scvi <- sn_run_cluster(
 
 pbmc_scanvi <- sn_run_cluster(
   object = pbmc,
-  batch_by = "library",
+  batch = "library",
   integration_method = "scanvi",
   normalization_method = "seurat",
   hvg_group_by = "library",

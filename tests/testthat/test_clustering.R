@@ -94,6 +94,60 @@ test_that("sn_run_cluster catches duplicate object arguments in pipe-style calls
   )
 })
 
+test_that("sn_run_cluster exposes FindClusters algorithm controls", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("leidenbase")
+
+  object <- make_test_object(seed = 3, prefix = "leiden")
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    cluster_algorithm = "leiden",
+    cluster_name = "leiden_clusters",
+    cluster_n_start = 2,
+    cluster_n_iter = 2,
+    cluster_random_seed = 717,
+    verbose = FALSE
+  )
+
+  expect_true("leiden_clusters" %in% colnames(clustered[[]]))
+  expect_true(all(!is.na(clustered$leiden_clusters)))
+  expect_equal(Shennong:::.sn_resolve_find_clusters_algorithm("louvain"), 1L)
+  expect_equal(Shennong:::.sn_resolve_find_clusters_algorithm("leiden"), 4L)
+  expect_equal(Shennong:::.sn_resolve_find_clusters_algorithm(3), 3L)
+  expect_error(Shennong:::.sn_resolve_find_clusters_algorithm(5), "`cluster_algorithm`")
+})
+
+test_that("sn_run_cluster treats batch as the primary integration argument", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("harmony")
+
+  object <- make_test_object(seed = 4, prefix = "batch-primary")
+  object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+
+  clustered <- sn_run_cluster(
+    object = object,
+    batch = "sample",
+    integration_method = "harmony",
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_equal(clustered@misc$integration$batch_by, "sample")
+  expect_error(
+    sn_run_cluster(object, batch = "sample", batch_by = "other", verbose = FALSE),
+    "different values"
+  )
+})
+
 test_that("sn_run_cluster can return cluster assignments directly and supports scran batch workflows", {
   skip_if_not_installed("Seurat")
 

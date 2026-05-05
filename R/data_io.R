@@ -458,6 +458,15 @@ sn_list_10x_paths <- function(path,
 #' @param path Output path. Missing parent directories are created
 #'   automatically before dispatching the selected writer.
 #' @param to Optional format override when it cannot be inferred from `path`.
+#' @param auto_install Logical; when \code{TRUE}, install missing writer
+#'   dependencies before writing. This includes \pkg{rio} plus optional
+#'   Shennong custom writer dependencies such as \code{.qs2}, \code{.h5ad},
+#'   \code{.h5}, or BPCells. Legacy \code{.qs} output installs \pkg{qs} from
+#'   the GitHub remote \code{qsbase/qs} when needed.
+#' @param install_repos CRAN-like repositories used when \code{auto_install}
+#'   needs to install CRAN packages.
+#' @param install_ask Passed to \code{BiocManager::install()} when
+#'   \code{auto_install} installs Bioconductor packages.
 #' @param file Output path used by the exported `rio` adapter methods.
 #' @param overwrite Logical; overwrite an existing BPCells directory.
 #' @param mode File mode passed through to `anndataR::write_h5ad()`.
@@ -471,8 +480,18 @@ sn_list_10x_paths <- function(path,
 #'
 #' @seealso [sn_read()]
 #' @export
-sn_write <- function(x, path = NULL, to = NULL, ...) {
-  check_installed(pkg = "rio", reason = "to use `sn_write()` function.")
+sn_write <- function(x,
+                     path = NULL,
+                     to = NULL,
+                     auto_install = TRUE,
+                     install_repos = getOption("repos"),
+                     install_ask = FALSE,
+                     ...) {
+  .sn_ensure_sn_write_base_dependencies(
+    auto_install = auto_install,
+    repos = install_repos,
+    ask = install_ask
+  )
 
   if (is.null(path) && is.null(to)) {
     stop("Must specify 'path' and/or 'to'")
@@ -505,6 +524,13 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   }
 
   if (.sn_is_custom_format(format)) {
+    .sn_ensure_writer_dependencies(
+      format = format,
+      x = x,
+      auto_install = auto_install,
+      repos = install_repos,
+      ask = install_ask
+    )
     .sn_dispatch_custom_writer(path = path, x = x, format = format, ...)
     return(invisible(path))
   }
@@ -516,6 +542,140 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   )
   do.call(rio::export, args = args)
   invisible(path)
+}
+
+.sn_ensure_sn_write_base_dependencies <- function(auto_install = TRUE,
+                                                  repos = getOption("repos"),
+                                                  ask = FALSE) {
+  if (rlang::is_installed("rio")) {
+    return(invisible("rio"))
+  }
+
+  if (!isTRUE(auto_install)) {
+    check_installed(pkg = "rio", reason = "to use `sn_write()` function.")
+  }
+
+  .sn_log_info("Installing missing writer package(s) for sn_write: rio.")
+  sn_install_dependencies(
+    packages = "rio",
+    missing_only = TRUE,
+    repos = repos,
+    ask = ask,
+    github_dependencies = NA
+  )
+  check_installed(pkg = "rio", reason = "to use `sn_write()` function.")
+  invisible("rio")
+}
+
+.sn_writer_dependency_packages <- function(format, x = NULL) {
+  switch(format,
+    bpcells = "BPCells",
+    h5 = "BPCells",
+    h5ad = unique(c(
+      "anndataR",
+      "SingleCellExperiment",
+      "rhdf5",
+      if (!inherits(x = x, what = "SingleCellExperiment")) "Seurat"
+    )),
+    qs = "qs",
+    qs2 = "qs2",
+    character(0)
+  )
+}
+
+.sn_ensure_writer_dependencies <- function(format,
+                                           x = NULL,
+                                           auto_install = TRUE,
+                                           repos = getOption("repos"),
+                                           ask = FALSE) {
+  packages <- .sn_writer_dependency_packages(format = format, x = x)
+  missing <- .sn_find_missing_packages(packages)
+  if (length(missing) == 0) {
+    return(invisible(packages))
+  }
+
+  if (!isTRUE(auto_install)) {
+    stop(
+      "The package(s) ", paste(missing, collapse = ", "),
+      " are required to write ", format, " files.",
+      call. = FALSE
+    )
+  }
+
+  .sn_log_info(
+    "Installing missing writer package(s) for {format}: ",
+    "{paste(missing, collapse = ', ')}."
+  )
+  .sn_install_writer_dependency_packages(
+    packages = missing,
+    repos = repos,
+    ask = ask
+  )
+
+  failed <- .sn_find_missing_packages(missing)
+  if (length(failed) > 0) {
+    stop(
+      "Failed to install writer package(s): ", paste(failed, collapse = ", "),
+      ". Install them manually or call `sn_write(..., auto_install = FALSE)` ",
+      "to fail immediately.",
+      call. = FALSE
+    )
+  }
+
+  invisible(packages)
+}
+
+.sn_install_writer_dependency_packages <- function(packages,
+                                                   repos = getOption("repos"),
+                                                   ask = FALSE) {
+  packages <- unique(stats::na.omit(packages))
+  if (length(packages) == 0) {
+    return(invisible(NULL))
+  }
+
+  if ("qs" %in% packages) {
+    .sn_install_legacy_qs(repos = repos)
+  }
+
+  dependency_packages <- setdiff(packages, "qs")
+  if (length(dependency_packages) > 0) {
+    sn_install_dependencies(
+      packages = dependency_packages,
+      missing_only = TRUE,
+      repos = repos,
+      ask = ask,
+      github_dependencies = NA
+    )
+  }
+
+  invisible(packages)
+}
+
+.sn_install_legacy_qs <- function(repos = getOption("repos")) {
+  if (rlang::is_installed("qs")) {
+    return(invisible("qs"))
+  }
+
+  .sn_log_info("Installing legacy `qs` writer dependency from GitHub: qsbase/qs.")
+  tryCatch(
+    .sn_install_github_packages(
+      remotes = "qsbase/qs",
+      upgrade = FALSE,
+      repos = repos,
+      dependencies = NA
+    ),
+    error = function(e) {
+      stop(
+        "Failed to install legacy `qs` from GitHub remote `qsbase/qs`: ",
+        conditionMessage(e),
+        "\nUse a `.qs2` output path for the recommended modern serializer, ",
+        "or install `qs` manually if this environment needs the legacy format.",
+        call. = FALSE
+      )
+    }
+  )
+
+  invisible("qs")
 }
 
 .sn_ensure_output_parent <- function(path) {
