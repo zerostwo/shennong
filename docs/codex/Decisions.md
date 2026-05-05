@@ -11,6 +11,15 @@ Last updated: 2026-05-05
   must have that backend's R package declared in `DESCRIPTION` and installed in
   the relevant GitHub Actions workflow. The Leiden clustering example therefore
   requires `leidenbase` in both places.
+- `sn_run_cluster()` should also preflight runtime-only optional clustering
+  dependencies. Leiden clustering should auto-install `leidenbase` by default
+  for interactive workflows, while `auto_install = FALSE` preserves strict
+  dependency checking.
+- Clustering workflows should be resumable by stage when the input object
+  already carries matching `sn_run_cluster()` signatures. This keeps
+  resolution-only tuning at the clustering stage, integration-method changes at
+  the integration stage, and HVG-control changes at feature selection, while
+  `rerun_from` provides an explicit escape hatch.
 - Output path preparation belongs in `sn_write()` before writer dispatch, not
   inside each format-specific writer. This keeps nested output behavior
   consistent across `rio` formats, `.qs`/`.qs2`, `.h5ad`, `.h5`, and BPCells.

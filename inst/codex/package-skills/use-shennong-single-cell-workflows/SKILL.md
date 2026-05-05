@@ -58,7 +58,7 @@ single-cell tasks. This skill is the main entry point for package usage.
    `sn_filter_cells()` and `sn_filter_genes()`.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
-2. Run clustering or batch_by integration with `sn_run_cluster()`. Use
+2. Run clustering or batch integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
    forced into the ScaleData/PCA feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
@@ -75,7 +75,11 @@ single-cell tasks. This skill is the main entry point for package usage.
    `integration_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
    by Shennong.
-   Use `normalization_method = "sctransform"` with `batch_by = ...` only when an
+   Re-running `sn_run_cluster()` on its own output reuses matching stages by
+   default; use `rerun_from = "integration"` or `reuse = FALSE` when a stage
+   must be forced to recompute. Leiden clustering auto-installs `leidenbase` by
+   default unless `auto_install = FALSE`.
+   Use `normalization_method = "sctransform"` with `batch = ...` only when an
    SCTransform-normalized Harmony integration is requested.
 3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,

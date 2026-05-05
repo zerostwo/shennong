@@ -24,6 +24,97 @@
   )
 }
 
+.sn_cluster_stage_order <- c(
+  normalize = 1L,
+  cell_cycle = 2L,
+  hvg = 3L,
+  pca = 4L,
+  integration = 5L,
+  neighbors = 6L,
+  clusters = 7L,
+  umap = 8L
+)
+
+.sn_resolve_cluster_rerun_from <- function(rerun_from = NULL) {
+  if (is.null(rerun_from)) {
+    return(NULL)
+  }
+  rerun_from <- match.arg(rerun_from, names(.sn_cluster_stage_order))
+  rerun_from
+}
+
+.sn_can_reuse_cluster_stage <- function(object,
+                                        stage,
+                                        signature,
+                                        reuse = TRUE,
+                                        rerun_from = NULL,
+                                        required = TRUE) {
+  if (!isTRUE(reuse)) {
+    return(FALSE)
+  }
+  if (!is.null(rerun_from) && .sn_cluster_stage_order[[stage]] >= .sn_cluster_stage_order[[rerun_from]]) {
+    return(FALSE)
+  }
+  stages <- object@misc$sn_run_cluster$stages %||% list()
+  stage_info <- stages[[stage]] %||% NULL
+  if (is.null(stage_info) || !identical(stage_info$signature, signature)) {
+    return(FALSE)
+  }
+  if (is.function(required)) {
+    return(isTRUE(required(object, stage_info)))
+  }
+  isTRUE(required)
+}
+
+.sn_record_cluster_stage <- function(object, stage, signature, ...) {
+  metadata <- list(...)
+  object@misc$sn_run_cluster <- object@misc$sn_run_cluster %||% list()
+  object@misc$sn_run_cluster$stages <- object@misc$sn_run_cluster$stages %||% list()
+  object@misc$sn_run_cluster$stages[[stage]] <- c(
+    list(
+      signature = signature,
+      created_at = as.character(Sys.time())
+    ),
+    metadata
+  )
+  object
+}
+
+.sn_has_seurat_layer <- function(object, assay = "RNA", layer = "data") {
+  assay %in% names(object@assays) &&
+    length(.sn_match_seurat_layers(object = object, assay = assay, layer = layer)) > 0L
+}
+
+.sn_ensure_cluster_algorithm_dependencies <- function(cluster_algorithm_value,
+                                                      leiden_method = "leidenbase",
+                                                      auto_install = TRUE,
+                                                      repos = getOption("repos"),
+                                                      ask = FALSE) {
+  if (!identical(as.integer(cluster_algorithm_value), 4L) || !identical(leiden_method, "leidenbase")) {
+    return(invisible(TRUE))
+  }
+  missing <- .sn_find_missing_packages("leidenbase")
+  if (length(missing) == 0L) {
+    return(invisible(TRUE))
+  }
+  if (!isTRUE(auto_install)) {
+    check_installed("leidenbase", reason = "to run Leiden clustering with `cluster_algorithm = \"leiden\"`.")
+  }
+
+  .sn_log_info("Installing missing clustering package for Leiden: leidenbase.")
+  sn_install_dependencies(
+    packages = "leidenbase",
+    missing_only = TRUE,
+    repos = repos,
+    ask = ask,
+    github_dependencies = NA
+  )
+  if (length(.sn_find_missing_packages("leidenbase")) > 0L) {
+    check_installed("leidenbase", reason = "to run Leiden clustering with `cluster_algorithm = \"leiden\"`.")
+  }
+  invisible(TRUE)
+}
+
 .sn_merge_control_args <- function(defaults, control) {
   control <- control %||% list()
   if (!is.list(control)) {
@@ -1647,6 +1738,23 @@ sn_detect_rare_cells <- function(object,
 #' @param cluster_control Optional named list of additional
 #'   \code{Seurat::FindClusters()} arguments. Values here override Shennong's
 #'   generated defaults.
+#' @param reuse Logical; when \code{TRUE}, reuse previously recorded
+#'   \code{sn_run_cluster()} stages if their stored input signatures still match
+#'   the current call. This lets resolution-only changes start at clustering,
+#'   integration-method changes start at integration, and HVG changes start at
+#'   feature selection instead of rerunning all earlier steps.
+#' @param rerun_from Optional stage name forcing recomputation from that stage
+#'   onward while still allowing earlier matching stages to be reused. Supported
+#'   values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
+#'   \code{"pca"}, \code{"integration"}, \code{"neighbors"},
+#'   \code{"clusters"}, and \code{"umap"}.
+#' @param auto_install Logical; when \code{TRUE}, install missing optional
+#'   clustering dependencies such as \pkg{leidenbase} before the relevant stage.
+#' @param install_repos CRAN-like repositories used when \code{auto_install}
+#'   installs CRAN packages.
+#' @param install_ask Passed to \code{BiocManager::install()} when
+#'   \code{auto_install} installs Bioconductor packages through
+#'   \code{sn_install_dependencies()}.
 #' @param hvg_group_by Optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. When \code{NULL} and
 #'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
@@ -1728,6 +1836,11 @@ sn_run_cluster <- function(object,
                            leiden_method = c("leidenbase", "igraph"),
                            leiden_objective_function = c("modularity", "CPM"),
                            cluster_control = list(),
+                           reuse = TRUE,
+                           rerun_from = NULL,
+                           auto_install = TRUE,
+                           install_repos = getOption("repos"),
+                           install_ask = FALSE,
                            hvg_group_by = NULL,
                            rare_feature_method = "none",
                            rare_feature_group_by = NULL,
@@ -1777,6 +1890,7 @@ sn_run_cluster <- function(object,
   cluster_algorithm_value <- .sn_resolve_find_clusters_algorithm(cluster_algorithm)
   leiden_method <- match.arg(leiden_method)
   leiden_objective_function <- match.arg(leiden_objective_function)
+  rerun_from <- .sn_resolve_cluster_rerun_from(rerun_from)
   if (!is.list(integration_control)) {
     stop("`integration_control` must be a named list.", call. = FALSE)
   }
@@ -1882,22 +1996,71 @@ sn_run_cluster <- function(object,
     )
   }
 
-  if (normalization_method == "sctransform") {
-    check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
-
-    if (verbose) .sn_log_info("[1/5] Running SCTransform.")
-    sct_args <- list(
-      object = object,
-      variable.features.n = nfeatures,
-      vars.to.regress = vars_to_regress,
-      verbose = verbose,
-      seed.use = 717
-    )
-    if (length(user_hvg) > 0L) {
-      sct_args$return.only.var.genes <- FALSE
+  normalization_signature <- list(
+    method = normalization_method,
+    assay = assay,
+    layer = layer,
+    nfeatures = if (identical(normalization_method, "sctransform")) nfeatures else NULL,
+    vars_to_regress = if (identical(normalization_method, "sctransform")) vars_to_regress else NULL,
+    user_hvg = if (identical(normalization_method, "sctransform")) user_hvg else NULL
+  )
+  can_reuse_normalization <- .sn_can_reuse_cluster_stage(
+    object = object,
+    stage = "normalize",
+    signature = normalization_signature,
+    reuse = reuse,
+    rerun_from = rerun_from,
+    required = function(current_object, stage_info) {
+      if (identical(normalization_method, "sctransform")) {
+        return("SCT" %in% names(current_object@assays))
+      }
+      .sn_has_seurat_layer(current_object, assay = assay, layer = "data")
     }
-    object <- do.call(Seurat::SCTransform, sct_args)
-    hvg <- unique(c(Seurat::VariableFeatures(object = object), user_hvg))
+  )
+
+  if (normalization_method == "sctransform") {
+    if (can_reuse_normalization) {
+      if (verbose) .sn_log_info("[1/5] Reusing SCTransform results.")
+      SeuratObject::DefaultAssay(object = object) <- "SCT"
+    } else {
+      check_installed("glmGamPoi", reason = "for the SCTransform workflow.")
+
+      if (verbose) .sn_log_info("[1/5] Running SCTransform.")
+      sct_args <- list(
+        object = object,
+        variable.features.n = nfeatures,
+        vars.to.regress = vars_to_regress,
+        verbose = verbose,
+        seed.use = 717
+      )
+      if (length(user_hvg) > 0L) {
+        sct_args$return.only.var.genes <- FALSE
+      }
+      object <- do.call(Seurat::SCTransform, sct_args)
+      object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
+    }
+
+    hvg_signature <- list(
+      method = "sctransform",
+      nfeatures = nfeatures,
+      user_hvg = user_hvg,
+      missing_user_hvg = user_hvg_info$missing,
+      normalization = normalization_signature
+    )
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "hvg",
+      signature = hvg_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) length(stage_info$selected_features %||% character(0)) > 0L
+    )) {
+      if (verbose) .sn_log_info("[2/5] Reusing SCTransform feature set.")
+      hvg <- object@misc$sn_run_cluster$stages$hvg$selected_features
+    } else {
+      hvg <- unique(c(Seurat::VariableFeatures(object = object), user_hvg))
+      object <- .sn_record_cluster_stage(object, "hvg", hvg_signature, selected_features = hvg)
+    }
     Seurat::VariableFeatures(object = object) <- hvg
     object@misc$hvg_selection <- list(
       method = "sctransform",
@@ -1907,104 +2070,171 @@ sn_run_cluster <- function(object,
       missing_user_features = user_hvg_info$missing
     )
 
-    if (verbose) .sn_log_info("[2/5] Running PCA.")
-    object <- Seurat::RunPCA(
-      object,
-      npcs = npcs,
+    pca_signature <- list(
+      method = "sctransform",
       features = hvg,
-      verbose = verbose,
-      seed.use = 717
+      npcs = npcs,
+      vars_to_regress = vars_to_regress,
+      normalization = normalization_signature,
+      hvg = hvg_signature
     )
-
-    if (is_null(x = batch)) {
-      reduction <- "pca"
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "pca",
+      signature = pca_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
+    )) {
+      if (verbose) .sn_log_info("[3/5] Reusing PCA reduction.")
     } else {
-      if (verbose) .sn_log_info("[3/5] Running {integration_method} integration.")
-      integration <- .sn_run_batch_integration(
-        object = object,
-        method = integration_method,
-        batch = batch,
-        reduction = "pca",
-        features = hvg,
-        assay = assay,
-        dims = dims,
+      if (verbose) .sn_log_info("[3/5] Running PCA.")
+      object <- Seurat::RunPCA(
+        object,
         npcs = npcs,
-        theta = theta,
-        group_by_vars = group_by_vars,
-        integration_control = integration_control,
-        verbose = verbose
+        features = hvg,
+        verbose = verbose,
+        seed.use = 717
       )
-      object <- integration$object
-      reduction <- integration$reduction
+      object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
     }
   } else {
-    if (normalization_method == "scran") {
+    if (can_reuse_normalization) {
+      if (verbose) .sn_log_info("[1/6] Reusing normalized data.")
+    } else if (normalization_method == "scran") {
       object <- sn_normalize_data(
         object = object,
         method = "scran",
         assay = assay,
         layer = "counts"
       )
+      object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     } else {
       object <- Seurat::NormalizeData(object = object, verbose = verbose)
+      object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }
 
     if (!is_null(species)) {
-      if (verbose) .sn_log_info("[1/6] Scoring cell cycle.")
-      object <- sn_score_cell_cycle(object = object, species = species)
+      cell_cycle_signature <- list(species = species, normalization = normalization_signature)
+      if (.sn_can_reuse_cluster_stage(
+        object = object,
+        stage = "cell_cycle",
+        signature = cell_cycle_signature,
+        reuse = reuse,
+        rerun_from = rerun_from,
+        required = function(current_object, stage_info) {
+          all(c("S.Score", "G2M.Score", "Phase", "CC.Difference") %in% colnames(current_object[[]]))
+        }
+      )) {
+        if (verbose) .sn_log_info("[2/6] Reusing cell-cycle scores.")
+      } else {
+        if (verbose) .sn_log_info("[2/6] Scoring cell cycle.")
+        object <- sn_score_cell_cycle(object = object, species = species)
+        object <- .sn_record_cluster_stage(object, "cell_cycle", cell_cycle_signature)
+      }
     }
 
-    if (verbose) {
-      .sn_log_info("[2/6] Selecting highly variable features with hvg_group_by = {hvg_group_by %||% 'global'}.")
-    }
-    hvg_info <- .sn_select_variable_features(
-      object = object,
-      nfeatures = hvg_candidate_nfeatures,
-      split_by = hvg_group_by,
-      verbose = verbose
+    hvg_signature <- list(
+      method = normalization_method,
+      nfeatures = nfeatures,
+      hvg_candidate_nfeatures = hvg_candidate_nfeatures,
+      hvg_group_by = hvg_group_by,
+      block_genes = block_genes,
+      rare_feature_method = rare_feature_method,
+      rare_feature_group_by = rare_feature_group_by,
+      rare_feature_n = rare_feature_n,
+      rare_feature_control = rare_feature_control,
+      rare_feature_resolution = min(resolution, 0.4),
+      user_hvg = user_hvg,
+      missing_user_hvg = user_hvg_info$missing,
+      normalization = normalization_signature
     )
-    object <- hvg_info$object
-    hvg <- hvg_info$features
-
-    if (!is_null(block_genes)) {
-      n_before <- length(hvg)
-      hvg <- setdiff(hvg, block_genes)
-      n_after_filter <- length(hvg)
-      hvg <- utils::head(hvg, nfeatures)
-      n_removed <- n_before - n_after_filter
-
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "hvg",
+      signature = hvg_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) length(stage_info$selected_features %||% character(0)) > 0L
+    )) {
+      if (verbose) .sn_log_info("[3/6] Reusing selected feature set.")
+      stage_info <- object@misc$sn_run_cluster$stages$hvg
+      hvg <- stage_info$selected_features
+      selected_rare_features <- stage_info$rare_features %||% character(0)
+      object@misc$rare_feature_selection <- stage_info$rare_feature_selection %||% object@misc$rare_feature_selection
+    } else {
       if (verbose) {
-        .sn_log_info(
-          "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
-        )
+        .sn_log_info("[3/6] Selecting highly variable features with hvg_group_by = {hvg_group_by %||% 'global'}.")
+      }
+      hvg_info <- .sn_select_variable_features(
+        object = object,
+        nfeatures = hvg_candidate_nfeatures,
+        split_by = hvg_group_by,
+        verbose = verbose
+      )
+      object <- hvg_info$object
+      hvg <- hvg_info$features
+
+      if (!is_null(block_genes)) {
+        n_before <- length(hvg)
+        hvg <- setdiff(hvg, block_genes)
+        n_after_filter <- length(hvg)
+        hvg <- utils::head(hvg, nfeatures)
+        n_removed <- n_before - n_after_filter
+
+        if (verbose) {
+          .sn_log_info(
+            "  Removed {n_removed} genes ({round(n_removed/n_before*100,1)}%) via block_genes"
+          )
+        }
+
+        if (length(hvg) < nfeatures) {
+          .sn_log_warn(
+            "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
+            "Consider adjusting 'nfeatures' or 'block_genes'."
+          )
+        }
+        hvg <- utils::head(hvg, nfeatures)
       }
 
-      if (length(hvg) < nfeatures) {
-        .sn_log_warn(
-          "Only {length(hvg)} HVGs left (< requested {nfeatures}).\n",
-          "Consider adjusting 'nfeatures' or 'block_genes'."
-        )
-      }
-      hvg <- utils::head(hvg, nfeatures)
+      rare_feature_info <- .sn_select_rare_features(
+        object = object,
+        base_features = hvg,
+        method = rare_feature_method,
+        assay = assay,
+        layer = "data",
+        nfeatures = rare_feature_n,
+        group_by = rare_feature_group_by,
+        control = rare_feature_control,
+        min_cells = rare_feature_control$min_cells,
+        npcs = min(npcs, 20),
+        dims = seq_len(min(10, npcs)),
+        resolution = min(resolution, 0.4),
+        verbose = verbose
+      )
+      selected_rare_features <- rare_feature_info$features
+      hvg <- unique(c(hvg, selected_rare_features, user_hvg))
+      rare_feature_store <- list(
+        method = rare_feature_method,
+        base_hvg_n = nfeatures,
+        rare_feature_n = rare_feature_n,
+        control = rare_feature_control,
+        selected_rare_feature_n = length(selected_rare_features),
+        selected_features = hvg,
+        rare_features = selected_rare_features,
+        rare_feature_table = rare_feature_info$metadata,
+        rare_groups = if (!is.null(rare_feature_info$groups)) rare_feature_info$groups$rare_groups else character(0)
+      )
+      object@misc$rare_feature_selection <- rare_feature_store
+      object <- .sn_record_cluster_stage(
+        object,
+        "hvg",
+        hvg_signature,
+        selected_features = hvg,
+        rare_features = selected_rare_features,
+        rare_feature_selection = rare_feature_store
+      )
     }
-
-    rare_feature_info <- .sn_select_rare_features(
-      object = object,
-      base_features = hvg,
-      method = rare_feature_method,
-      assay = assay,
-      layer = "data",
-      nfeatures = rare_feature_n,
-      group_by = rare_feature_group_by,
-      control = rare_feature_control,
-      min_cells = rare_feature_control$min_cells,
-      npcs = min(npcs, 20),
-      dims = seq_len(min(10, npcs)),
-      resolution = min(resolution, 0.4),
-      verbose = verbose
-    )
-    selected_rare_features <- rare_feature_info$features
-    hvg <- unique(c(hvg, selected_rare_features, user_hvg))
     Seurat::VariableFeatures(object = object) <- hvg
     object@misc$hvg_selection <- list(
       method = normalization_method,
@@ -2014,63 +2244,133 @@ sn_run_cluster <- function(object,
       user_features = user_hvg,
       missing_user_features = user_hvg_info$missing
     )
-    object@misc$rare_feature_selection <- list(
-      method = rare_feature_method,
-      base_hvg_n = nfeatures,
-      rare_feature_n = rare_feature_n,
-      control = rare_feature_control,
-      selected_rare_feature_n = length(selected_rare_features),
-      selected_features = hvg,
-      rare_features = selected_rare_features,
-      rare_feature_table = rare_feature_info$metadata,
-      rare_groups = if (!is.null(rare_feature_info$groups)) rare_feature_info$groups$rare_groups else character(0)
-    )
 
-    #-- Scaling
-    if (verbose) .sn_log_info("[3/6] Scaling data.")
-    object <- Seurat::ScaleData(
-      object = object,
-      vars.to.regress = vars_to_regress,
+    pca_signature <- list(
+      method = normalization_method,
       features = hvg,
-      verbose = verbose
-    )
-
-    #-- PCA
-    if (verbose) .sn_log_info("[4/6] Running PCA.")
-    object <- Seurat::RunPCA(
-      object,
+      vars_to_regress = vars_to_regress,
       npcs = npcs,
-      features = hvg,
-      verbose = verbose,
-      seed.use = 717
+      normalization = normalization_signature,
+      hvg = hvg_signature
     )
-
-    if (is_null(x = batch)) {
-      reduction <- "pca"
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "pca",
+      signature = pca_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
+    )) {
+      if (verbose) .sn_log_info("[4/6] Reusing scaled data and PCA reduction.")
     } else {
-      if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
-      integration <- .sn_run_batch_integration(
+      if (verbose) .sn_log_info("[4/6] Scaling data.")
+      object <- Seurat::ScaleData(
         object = object,
-        method = integration_method,
-        batch = batch,
-        reduction = "pca",
+        vars.to.regress = vars_to_regress,
         features = hvg,
-        assay = assay,
-        dims = dims,
-        npcs = npcs,
-        theta = theta,
-        group_by_vars = group_by_vars,
-        integration_control = integration_control,
         verbose = verbose
       )
-      object <- integration$object
-      reduction <- integration$reduction
+
+      if (verbose) .sn_log_info("[5/6] Running PCA.")
+      object <- Seurat::RunPCA(
+        object,
+        npcs = npcs,
+        features = hvg,
+        verbose = verbose,
+        seed.use = 717
+      )
+      object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
     }
+  }
+
+  integration_signature <- list(
+    method = integration_method,
+    batch = batch,
+    features = hvg,
+    dims = dims,
+    npcs = npcs,
+    theta = theta,
+    group_by_vars = group_by_vars,
+    integration_control = integration_control,
+    pca = pca_signature
+  )
+  if (is_null(x = batch)) {
+    reduction <- "pca"
+  } else if (.sn_can_reuse_cluster_stage(
+    object = object,
+    stage = "integration",
+    signature = integration_signature,
+    reuse = reuse,
+    rerun_from = rerun_from,
+    required = function(current_object, stage_info) {
+      !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+    }
+  )) {
+    reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+    if (verbose) .sn_log_info("[5/6] Reusing {reduction} integration reduction.")
+  } else {
+    if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
+    integration <- .sn_run_batch_integration(
+      object = object,
+      method = integration_method,
+      batch = batch,
+      reduction = "pca",
+      features = hvg,
+      assay = assay,
+      dims = dims,
+      npcs = npcs,
+      theta = theta,
+      group_by_vars = group_by_vars,
+      integration_control = integration_control,
+      verbose = verbose
+    )
+    object <- integration$object
+    reduction <- integration$reduction
+    object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
   }
 
   if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
   dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
-  object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
+  reduction_signature <- if (is_null(x = batch)) pca_signature else integration_signature
+  neighbors_signature <- list(
+    reduction = reduction,
+    dims = dims,
+    upstream = reduction_signature
+  )
+  if (.sn_can_reuse_cluster_stage(
+    object = object,
+    stage = "neighbors",
+    signature = neighbors_signature,
+    reuse = reuse,
+    rerun_from = rerun_from,
+    required = function(current_object, stage_info) {
+      length(stage_info$graph_names %||% character(0)) > 0L &&
+        all(stage_info$graph_names %in% names(current_object@graphs))
+    }
+  )) {
+    if (verbose) .sn_log_info("[6/6] Reusing nearest-neighbor graph.")
+  } else {
+    graph_names_before <- names(object@graphs)
+    object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
+    graph_names_after <- names(object@graphs)
+    graph_names <- setdiff(graph_names_after, graph_names_before)
+    if (length(graph_names) == 0L) {
+      graph_names <- graph_names_after
+    }
+    snn_graph <- grep("_snn$", graph_names, value = TRUE)
+    snn_graph <- if (length(snn_graph) > 0L) {
+      snn_graph[[1]]
+    } else {
+      utils::tail(graph_names, n = 1L)
+    }
+    object <- .sn_record_cluster_stage(
+      object,
+      "neighbors",
+      neighbors_signature,
+      graph_names = graph_names,
+      snn_graph = snn_graph
+    )
+  }
   find_clusters_args <- .sn_merge_control_args(
     defaults = list(
       object = object,
@@ -2089,24 +2389,73 @@ sn_run_cluster <- function(object,
   if (!is.null(cluster_name)) {
     find_clusters_args$cluster.name <- cluster_name
   }
-  object <- do.call(Seurat::FindClusters, find_clusters_args)
   cluster_column <- cluster_name %||% "seurat_clusters"
+  neighbors_stage <- object@misc$sn_run_cluster$stages$neighbors %||% NULL
+  if (is.null(find_clusters_args$graph.name) && !is.null(neighbors_stage$snn_graph)) {
+    find_clusters_args$graph.name <- neighbors_stage$snn_graph
+  }
+  cluster_signature <- find_clusters_args
+  cluster_signature$object <- NULL
+  cluster_signature$verbose <- NULL
+  cluster_signature$neighbors <- neighbors_signature
+  if (.sn_can_reuse_cluster_stage(
+    object = object,
+    stage = "clusters",
+    signature = cluster_signature,
+    reuse = reuse,
+    rerun_from = rerun_from,
+    required = function(current_object, stage_info) cluster_column %in% colnames(current_object[[]])
+  )) {
+    if (verbose) .sn_log_info("[7/7] Reusing cluster assignments.")
+  } else {
+    .sn_ensure_cluster_algorithm_dependencies(
+      cluster_algorithm_value = find_clusters_args$algorithm,
+      leiden_method = find_clusters_args$leiden_method %||% leiden_method,
+      auto_install = auto_install,
+      repos = install_repos,
+      ask = install_ask
+    )
+    object <- do.call(Seurat::FindClusters, find_clusters_args)
+    object <- .sn_record_cluster_stage(object, "clusters", cluster_signature, cluster_column = cluster_column)
+  }
 
   if (return_cluster) {
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) .sn_log_info("Integration completed successfully.")
     return(object@meta.data[, cluster_column])
   } else {
-    if (verbose) .sn_log_info("[7/7] Running UMAP.")
-    object <- suppressWarnings(Seurat::RunUMAP(
-      object,
+    umap_signature <- list(
       reduction = reduction,
       dims = dims,
       umap.method = "uwot",
       metric = "cosine",
-      verbose = verbose,
-      seed.use = 717
-    ))
+      seed.use = 717,
+      upstream = reduction_signature
+    )
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "umap",
+      signature = umap_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+      }
+    )) {
+      if (verbose) .sn_log_info("[7/7] Reusing UMAP reduction.")
+    } else {
+      if (verbose) .sn_log_info("[7/7] Running UMAP.")
+      object <- suppressWarnings(Seurat::RunUMAP(
+        object,
+        reduction = reduction,
+        dims = dims,
+        umap.method = "uwot",
+        metric = "cosine",
+        verbose = verbose,
+        seed.use = 717
+      ))
+      object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "umap")
+    }
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     if (verbose) .sn_log_info("Integration completed successfully.")
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))

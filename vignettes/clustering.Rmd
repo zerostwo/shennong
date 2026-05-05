@@ -59,6 +59,13 @@ pbmc <- sn_run_cluster(
 pbmc
 ```
 
+When the input already contains `sn_run_cluster()` stage metadata, the function
+reuses matching stages by default. This makes resolution tuning cheap:
+`sn_run_cluster(pbmc, resolution = 1.0)` reuses normalization, HVGs, PCA, the
+neighbor graph, and UMAP, then recomputes only the cluster labels. Use
+`rerun_from = "integration"` after changing an integration backend, or
+`reuse = FALSE` when a completely fresh run is needed.
+
 The result is a regular Seurat object. You can use Shennong plotting helpers or
 drop down to Seurat whenever needed.
 

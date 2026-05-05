@@ -18,13 +18,15 @@ user request to the right Shennong function family quickly.
 1. `sn_normalize_data()` when explicit normalization control is needed.
 2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
    `hvg_features = c(...)` when known rare-population markers should be forced
-   into the PCA feature set.
+   into the PCA feature set. Re-run the returned object with a new
+   `resolution` to reuse normalization, feature selection, PCA, neighbors, and
+   UMAP while recomputing cluster labels.
 3. `sn_plot_dim()` for cluster_by and metadata visualization.
 
 ## Recipe: Integrate multiple samples
 
-1. Ensure batch_by metadata are present.
-2. Run `sn_run_cluster(batch_by = ..., integration_method = "harmony")` for the
+1. Ensure batch metadata are present.
+2. Run `sn_run_cluster(batch = ..., integration_method = "harmony")` for the
    default fast workflow. Use `integration_method = "coralysis"` for
    Coralysis multi-level integration on imbalanced datasets, or
    `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration

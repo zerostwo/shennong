@@ -19,9 +19,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   argument while retaining `batch_by` as a compatibility alias.
 - GitHub Actions now install `leidenbase` anywhere evaluated clustering
   examples or tests can request `cluster_algorithm = "leiden"`.
+- `sn_run_cluster(cluster_algorithm = "leiden")` now checks for `leidenbase`
+  before calling Seurat and auto-installs it through `sn_install_dependencies()`
+  by default. Set `auto_install = FALSE` to keep the previous fail-fast
+  behavior.
 
 ### Added
 
+- `sn_run_cluster()` now records reusable stage signatures for normalization,
+  cell-cycle scoring, HVG/rare-feature selection, PCA, integration, neighbor
+  graph construction, clustering, and UMAP. Re-running on its own output
+  reuses matching stages by default, so changing only `resolution` starts at
+  clustering, changing `integration_method` starts at integration, and changing
+  HVG controls starts at feature selection. Use `reuse = FALSE` or
+  `rerun_from = "hvg"` / `"integration"` / another stage to force recompute.
 - `sn_run_cluster()` now exposes key `Seurat::FindClusters()` controls,
   including `cluster_algorithm = "leiden"` / `"louvain"` / `"slm"`, custom
   cluster metadata names, random seed, start/iteration counts, singleton

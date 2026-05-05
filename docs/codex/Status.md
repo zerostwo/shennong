@@ -10,6 +10,13 @@ Last updated: 2026-05-05
 - Added `leidenbase` to the package and GitHub Actions dependency surfaces so
   evaluated pkgdown clustering examples using `cluster_algorithm = "leiden"`
   can render on clean CI runners.
+- Updated `sn_run_cluster()` so Leiden clustering preflights `leidenbase` and
+  auto-installs it through `sn_install_dependencies()` by default.
+- Added stage-signature reuse to `sn_run_cluster()` for normalization,
+  cell-cycle scoring, HVG/rare-feature selection, PCA, integration, neighbor
+  graph construction, clustering, and UMAP. Matching stages are reused by
+  default, with `reuse = FALSE` and `rerun_from` available for explicit
+  recomputation.
 - Updated `sn_write()` so missing parent directories are created before writer
   dispatch. This covers both ordinary `rio::export()` paths and custom
   Shennong writers such as `.qs`, `.h5ad`, `.h5`, and BPCells directories.

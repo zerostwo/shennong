@@ -24,6 +24,11 @@ sn_run_cluster(
   leiden_method = c("leidenbase", "igraph"),
   leiden_objective_function = c("modularity", "CPM"),
   cluster_control = list(),
+  reuse = TRUE,
+  rerun_from = NULL,
+  auto_install = TRUE,
+  install_repos = getOption("repos"),
+  install_ask = FALSE,
   hvg_group_by = NULL,
   rare_feature_method = "none",
   rare_feature_group_by = NULL,
@@ -126,6 +131,28 @@ should group singletons into the nearest cluster.}
 \item{cluster_control}{Optional named list of additional
 \code{Seurat::FindClusters()} arguments. Values here override Shennong's
 generated defaults.}
+
+\item{reuse}{Logical; when \code{TRUE}, reuse previously recorded
+\code{sn_run_cluster()} stages if their stored input signatures still match
+the current call. This lets resolution-only changes start at clustering,
+integration-method changes start at integration, and HVG changes start at
+feature selection instead of rerunning all earlier steps.}
+
+\item{rerun_from}{Optional stage name forcing recomputation from that stage
+onward while still allowing earlier matching stages to be reused. Supported
+values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
+\code{"pca"}, \code{"integration"}, \code{"neighbors"},
+\code{"clusters"}, and \code{"umap"}.}
+
+\item{auto_install}{Logical; when \code{TRUE}, install missing optional
+clustering dependencies such as \pkg{leidenbase} before the relevant stage.}
+
+\item{install_repos}{CRAN-like repositories used when \code{auto_install}
+installs CRAN packages.}
+
+\item{install_ask}{Passed to \code{BiocManager::install()} when
+\code{auto_install} installs Bioconductor packages through
+\code{sn_install_dependencies()}.}
 
 \item{hvg_group_by}{Optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. When \code{NULL} and

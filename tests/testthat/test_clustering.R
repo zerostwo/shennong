@@ -83,6 +83,42 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   expect_true("umap" %in% names(clustered@reductions))
 })
 
+test_that("sn_run_cluster reuses matching stages when only clustering resolution changes", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 11, prefix = "reuse")
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    resolution = 0.4,
+    verbose = FALSE
+  )
+  initial_stages <- clustered@misc$sn_run_cluster$stages
+
+  reclustered <- sn_run_cluster(
+    object = clustered,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    resolution = 1.2,
+    verbose = FALSE
+  )
+  updated_stages <- reclustered@misc$sn_run_cluster$stages
+
+  expect_identical(updated_stages$normalize, initial_stages$normalize)
+  expect_identical(updated_stages$hvg, initial_stages$hvg)
+  expect_identical(updated_stages$pca, initial_stages$pca)
+  expect_identical(updated_stages$neighbors, initial_stages$neighbors)
+  expect_identical(updated_stages$umap, initial_stages$umap)
+  expect_equal(updated_stages$clusters$signature$resolution, 1.2)
+})
+
 test_that("sn_run_cluster catches duplicate object arguments in pipe-style calls", {
   skip_if_not_installed("Seurat")
 
@@ -120,6 +156,49 @@ test_that("sn_run_cluster exposes FindClusters algorithm controls", {
   expect_equal(Shennong:::.sn_resolve_find_clusters_algorithm("leiden"), 4L)
   expect_equal(Shennong:::.sn_resolve_find_clusters_algorithm(3), 3L)
   expect_error(Shennong:::.sn_resolve_find_clusters_algorithm(5), "`cluster_algorithm`")
+})
+
+test_that("sn_run_cluster auto-installs Leiden dependencies before clustering", {
+  install_calls <- list()
+  missing_calls <- 0L
+
+  testthat::with_mocked_bindings(
+    Shennong:::.sn_ensure_cluster_algorithm_dependencies(
+      cluster_algorithm_value = 4L,
+      leiden_method = "leidenbase",
+      auto_install = TRUE,
+      repos = c(CRAN = "https://example.test/cran"),
+      ask = FALSE
+    ),
+    .sn_find_missing_packages = function(packages) {
+      missing_calls <<- missing_calls + 1L
+      if (missing_calls == 1L) {
+        packages
+      } else {
+        character(0)
+      }
+    },
+    sn_install_dependencies = function(...) {
+      install_calls[[length(install_calls) + 1L]] <<- list(...)
+      invisible(TRUE)
+    }
+  )
+
+  expect_length(install_calls, 1L)
+  expect_equal(install_calls[[1]]$packages, "leidenbase")
+  expect_false(install_calls[[1]]$ask)
+  expect_equal(install_calls[[1]]$github_dependencies, NA)
+
+  testthat::with_mocked_bindings(
+    Shennong:::.sn_ensure_cluster_algorithm_dependencies(
+      cluster_algorithm_value = 1L,
+      leiden_method = "leidenbase",
+      auto_install = TRUE
+    ),
+    .sn_find_missing_packages = function(packages) {
+      stop("dependency lookup should not run for non-Leiden clustering")
+    }
+  )
 })
 
 test_that("sn_run_cluster treats batch as the primary integration argument", {
