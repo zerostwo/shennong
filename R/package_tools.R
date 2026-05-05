@@ -188,6 +188,8 @@ sn_list_dependencies <- function(scope = c("all", "required", "recommended")) {
 #' \code{install.packages()}, Bioconductor packages with
 #' \code{BiocManager::install()}, and GitHub packages with
 #' \code{remotes::install_github()}.
+#' Legacy \code{.qs} files remain supported when the archived \pkg{qs} package
+#' is already available, but new installations should use \pkg{qs2}.
 #'
 #' @param scope One of \code{"all"}, \code{"required"}, or
 #'   \code{"recommended"}.
@@ -202,6 +204,9 @@ sn_list_dependencies <- function(scope = c("all", "required", "recommended")) {
 #'   behavior.
 #' @param upgrade Logical; when \code{TRUE}, allow updating already installed
 #'   GitHub and Bioconductor packages during installation.
+#' @param github_dependencies Dependency policy passed to
+#'   \code{remotes::install_github()} for GitHub-hosted packages. The default
+#'   installs required dependencies without pulling optional suggested packages.
 #' @param ... Additional arguments forwarded to the underlying installer calls.
 #'
 #' @return Invisibly returns the refreshed dependency table from
@@ -219,6 +224,7 @@ sn_install_dependencies <- function(scope = c("all", "required", "recommended"),
                                     repos = getOption("repos"),
                                     ask = interactive(),
                                     upgrade = FALSE,
+                                    github_dependencies = NA,
                                     ...) {
   scope <- match.arg(scope)
   deps <- .sn_dependency_table()
@@ -256,7 +262,22 @@ sn_install_dependencies <- function(scope = c("all", "required", "recommended"),
 
   .sn_install_cran_packages(packages = cran_pkgs, repos = repos, ...)
   .sn_install_bioc_packages(packages = bioc_pkgs, ask = ask, update = upgrade, repos = repos, ...)
-  .sn_install_github_packages(remotes = github_remotes, upgrade = upgrade, repos = repos, ...)
+  .sn_install_github_packages(
+    remotes = github_remotes,
+    upgrade = upgrade,
+    repos = repos,
+    dependencies = github_dependencies,
+    ...
+  )
+
+  failed <- .sn_find_missing_packages(deps$package)
+  if (length(failed) > 0) {
+    stop(
+      "Failed to install package(s): ", paste(failed, collapse = ", "),
+      ". Review the installer output above for the first compilation or dependency error.",
+      call. = FALSE
+    )
+  }
 
   invisible(sn_list_dependencies(scope = "all"))
 }
@@ -2742,7 +2763,7 @@ sn_install_shennong <- function(
   c(
     "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR",
     "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
-    "rtracklayer", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment",
+    "rtracklayer", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "Nebulosa",
     "SummarizedExperiment", "limma"
   )
 }
@@ -2822,6 +2843,7 @@ sn_install_shennong <- function(
 .sn_install_github_packages <- function(remotes,
                                         upgrade = FALSE,
                                         repos = getOption("repos"),
+                                        dependencies = NA,
                                         ...) {
   remotes <- unique(stats::na.omit(remotes))
   if (length(remotes) == 0) {
@@ -2834,10 +2856,15 @@ sn_install_shennong <- function(
 
   upgrade_policy <- if (isTRUE(upgrade)) "always" else "never"
   for (remote in remotes) {
-    remotes::install_github(remote, upgrade = upgrade_policy, dependencies = FALSE, ...)
+    remotes::install_github(remote, upgrade = upgrade_policy, dependencies = dependencies, ...)
   }
 
   invisible(remotes)
+}
+
+.sn_find_missing_packages <- function(packages) {
+  packages <- unique(stats::na.omit(packages))
+  packages[!vapply(packages, rlang::is_installed, logical(1))]
 }
 
 .sn_get_installed_version <- function(package = "Shennong") {

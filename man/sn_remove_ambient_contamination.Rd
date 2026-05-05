@@ -49,8 +49,10 @@ the updated Seurat object. Otherwise return the corrected counts matrix.}
 \value{
 A corrected counts matrix, or an updated Seurat object when
 \code{return_object = TRUE} and \code{x} is a Seurat object. For
+Seurat returns, \code{nCount_<assay>_corrected} and
+\code{nFeature_<assay>_corrected} are added to \code{meta.data}. For
 decontX-based Seurat returns, the \code{decontX_contamination} and
-\code{decontX_clusters} columns are added to \code{meta.data}.
+\code{decontX_clusters} columns are also added.
 }
 \description{
 This function provides a unified interface for ambient RNA correction using

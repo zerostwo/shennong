@@ -5,6 +5,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Unreleased
 
+### Fixed
+
+- `sn_write()` now creates missing parent directories before dispatching both
+  rio and custom writers, so nested `.qs`, `.h5ad`, `.h5`, and BPCells outputs
+  no longer fail only because the containing directory does not exist.
+
 ### Added
 
 - `sn_calculate_variance_explained()` now ranks metadata variables such as
@@ -178,7 +184,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   label layer instead of replacing it with fixed-position shadow text.
 - `sn_plot_dot()` now uses black colorbar frame/tick styling and suppresses the
   duplicate colour-scale replacement message when applying Shennong palettes.
-- `sn_list_dependencies()` and `sn_install_dependencies()` now classify `anndataR` and `tidytemplate` as GitHub-hosted optional dependencies instead of routing them through Bioconductor or CRAN, matching the package's declared remote sources and avoiding misleading installation warnings on current R/Bioconductor releases.
+- `sn_list_dependencies()` and `sn_install_dependencies()` now classify
+  `anndataR` and `tidytemplate` as GitHub-hosted optional dependencies and
+  `Nebulosa` as a Bioconductor dependency instead of routing them through CRAN.
+  Legacy `.qs` support now remains opportunistic when `qs` is already
+  installed, while new one-step dependency installation uses `qs2` and avoids
+  attempting the archived, R 4.6-incompatible `qs` package.
+- `sn_install_dependencies()` now installs required dependencies for
+  GitHub-hosted optional packages by default and stops with the package names
+  that remain missing after installer warnings, making partial installation
+  failures easier to diagnose.
 - Reworked the pkgdown article set around a PBMC3k tutorial path, adding
   explicit data/project and visualization articles and rewriting workflow
   articles to explain why each Shennong function is used before showing the
@@ -334,6 +349,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   and `qs2` serialization called `qs2::qs_save()` with the wrong argument name.
 - Fixed `sn_run_celltypist()` path inputs so precomputed CellTypist inputs return
   a prediction table instead of trying to write metadata onto a character path.
+- Fixed `sn_remove_ambient_contamination(method = "soupx")` so Seurat returns
+  now add `nCount_<assay>_corrected` and `nFeature_<assay>_corrected` metadata
+  from the SoupX-corrected layer, matching the decontX writeback behavior.
 - Fixed the pkgdown reference index by adding the exported
   `sn_sweep_cluster_resolution()` topic.
 - Fixed a malformed hidden R chunk in the clustering vignette that prevented

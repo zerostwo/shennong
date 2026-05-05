@@ -1,6 +1,14 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-04
+Last updated: 2026-05-05
+
+## 2026-05-05
+
+- Updated `sn_write()` so missing parent directories are created before writer
+  dispatch. This covers both ordinary `rio::export()` paths and custom
+  Shennong writers such as `.qs`, `.h5ad`, `.h5`, and BPCells directories.
+- Added a focused IO regression test that writes to nested tabular and custom
+  writer paths without pre-creating the containing directories.
 
 ## 2026-05-04
 
@@ -76,9 +84,15 @@ Last updated: 2026-05-04
   objects, run the corresponding family script, and import outputs for
   infercnvpy, scArches/scPoli, CellPhoneDB, cell2location, Tangram, Squidpy,
   SpatialData, and stLearn.
-- Tightened check diagnostics by declaring optional `qs`/`qs2` serialization
-  packages and qualifying or scoping the previous `ave`, `tail`, `target`, and
-  `mor` symbols.
+- Tightened check diagnostics by declaring optional serialization support and
+  qualifying or scoping the previous `ave`, `tail`, `target`, and `mor`
+  symbols. Current dependency installation now treats `qs2` as the supported
+  installable serializer while legacy `.qs` files remain readable/writable only
+  when the archived `qs` package is already available.
+- Repaired `sn_install_dependencies()` source routing for current R 4.6/Bioc
+  stacks: `Nebulosa` is installed from Bioconductor, GitHub packages install
+  their required dependencies by default, and the helper now errors with the
+  package names that remain missing after installer warnings.
 
 ## 2026-03-30
 

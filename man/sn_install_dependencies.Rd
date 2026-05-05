@@ -11,6 +11,7 @@ sn_install_dependencies(
   repos = getOption("repos"),
   ask = interactive(),
   upgrade = FALSE,
+  github_dependencies = NA,
   ...
 )
 }
@@ -34,6 +35,10 @@ behavior.}
 \item{upgrade}{Logical; when \code{TRUE}, allow updating already installed
 GitHub and Bioconductor packages during installation.}
 
+\item{github_dependencies}{Dependency policy passed to
+\code{remotes::install_github()} for GitHub-hosted packages. The default
+installs required dependencies without pulling optional suggested packages.}
+
 \item{...}{Additional arguments forwarded to the underlying installer calls.}
 }
 \value{
@@ -46,6 +51,8 @@ declared source for each dependency. CRAN packages are installed with
 \code{install.packages()}, Bioconductor packages with
 \code{BiocManager::install()}, and GitHub packages with
 \code{remotes::install_github()}.
+Legacy \code{.qs} files remain supported when the archived \pkg{qs} package
+is already available, but new installations should use \pkg{qs2}.
 }
 \examples{
 \dontrun{

@@ -1,6 +1,12 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-04
+Last updated: 2026-05-05
+
+## 2026-05-05
+
+- Output path preparation belongs in `sn_write()` before writer dispatch, not
+  inside each format-specific writer. This keeps nested output behavior
+  consistent across `rio` formats, `.qs`/`.qs2`, `.h5ad`, `.h5`, and BPCells.
 
 ## 2026-05-04
 
@@ -395,6 +401,14 @@ Last updated: 2026-05-04
   exposes `sn_list_dependencies()` for inspection and
   `sn_install_dependencies()` for one-click installation of missing CRAN,
   Bioconductor, and GitHub dependencies.
+- Legacy `.qs` IO support should not force `qs` into the modern dependency
+  installer. The upstream `qs` package is archived/deprecated and currently
+  fails to compile on R 4.6, so Shennong keeps `.qs` read/write support only
+  when `qs` is already installed and uses `qs2` as the installable serializer.
+- `sn_install_dependencies()` should verify the post-install state instead of
+  relying on installer warnings alone. If a CRAN, Bioconductor, or GitHub
+  installer returns after a non-zero package status, Shennong should report the
+  remaining missing package names directly.
 
 - Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
 

@@ -24,7 +24,8 @@ sn_write(x, path = NULL, to = NULL, ...)
 \arguments{
 \item{x}{Object to write.}
 
-\item{path}{Output path.}
+\item{path}{Output path. Missing parent directories are created
+automatically before dispatching the selected writer.}
 
 \item{to}{Optional format override when it cannot be inferred from \code{path}.}
 

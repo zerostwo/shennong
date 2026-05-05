@@ -218,6 +218,12 @@ test_that("sn_list_dependencies reports declared package metadata", {
     deps$remote[deps$package == "tidytemplate"][[1]],
     "tidyverse/tidytemplate"
   )
+  expect_equal(
+    deps$source[deps$package == "Nebulosa"][[1]],
+    "Bioconductor"
+  )
+  expect_false("qs" %in% deps$package)
+  expect_true("qs2" %in% deps$package)
 })
 
 test_that("sn_install_dependencies dispatches installs by declared source", {
@@ -243,10 +249,16 @@ test_that("sn_install_dependencies dispatches installs by declared source", {
       captured$bioc <<- packages
       invisible(packages)
     },
-    .sn_install_github_packages = function(remotes, upgrade = FALSE, repos = getOption("repos"), ...) {
+    .sn_install_github_packages = function(remotes,
+                                           upgrade = FALSE,
+                                           repos = getOption("repos"),
+                                           dependencies = NA,
+                                           ...) {
       captured$github <<- remotes
+      captured$github_dependencies <<- dependencies
       invisible(remotes)
     },
+    .sn_find_missing_packages = function(packages) character(0),
     .env = asNamespace("Shennong")
   )
 
@@ -257,6 +269,40 @@ test_that("sn_install_dependencies dispatches installs by declared source", {
   expect_equal(captured$cran, "cli")
   expect_equal(captured$bioc, "scran")
   expect_equal(captured$github, "immunogenomics/harmony@harmony2")
+  expect_equal(captured$github_dependencies, NA)
+})
+
+test_that("sn_install_dependencies errors when installer leaves packages missing", {
+  fake_deps <- data.frame(
+    package = "cli",
+    requirement = "required",
+    declared_in = "Imports",
+    source = "CRAN",
+    remote = NA_character_,
+    installed = FALSE,
+    version = NA_character_,
+    stringsAsFactors = FALSE
+  )
+
+  local_mocked_bindings(
+    .sn_dependency_table = function() fake_deps,
+    .sn_install_cran_packages = function(packages, repos = getOption("repos"), ...) {
+      invisible(packages)
+    },
+    .sn_install_bioc_packages = function(packages, ask = interactive(), update = FALSE, repos = getOption("repos"), ...) {
+      invisible(packages)
+    },
+    .sn_install_github_packages = function(remotes, upgrade = FALSE, repos = getOption("repos"), dependencies = NA, ...) {
+      invisible(remotes)
+    },
+    .sn_find_missing_packages = function(packages) "cli",
+    .env = asNamespace("Shennong")
+  )
+
+  expect_error(
+    Shennong::sn_install_dependencies(),
+    "Failed to install package"
+  )
 })
 
 test_that("sn_install_dependencies validates requested package names", {

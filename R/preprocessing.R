@@ -1594,16 +1594,28 @@ sn_find_doublets <- function(
     object <- object[, colnames(out$counts), drop = FALSE]
   }
 
-  if (!is_null(out$metadata)) {
-    if (all(c("nCount_corrected", "nFeature_corrected") %in% colnames(out$metadata))) {
-      colnames(out$metadata)[colnames(out$metadata) == "nCount_corrected"] <- ncount_col
-      colnames(out$metadata)[colnames(out$metadata) == "nFeature_corrected"] <- nfeature_col
-    }
-    out$metadata[[zero_flag_col]] <- rownames(out$metadata) %in% (out$zero_cells %||% character(0))
-    for (col_name in colnames(out$metadata)) {
-      values <- out$metadata[[col_name]][match(colnames(object), rownames(out$metadata))]
-      object[[col_name]] <- values
-    }
+  metadata <- out$metadata
+  if (is_null(metadata)) {
+    metadata <- data.frame(row.names = colnames(out$counts))
+  }
+
+  if ("nCount_corrected" %in% colnames(metadata)) {
+    colnames(metadata)[colnames(metadata) == "nCount_corrected"] <- ncount_col
+  }
+  if ("nFeature_corrected" %in% colnames(metadata)) {
+    colnames(metadata)[colnames(metadata) == "nFeature_corrected"] <- nfeature_col
+  }
+  if (!ncount_col %in% colnames(metadata)) {
+    metadata[[ncount_col]] <- Matrix::colSums(out$counts)
+  }
+  if (!nfeature_col %in% colnames(metadata)) {
+    metadata[[nfeature_col]] <- Matrix::colSums(out$counts > 0)
+  }
+
+  metadata[[zero_flag_col]] <- rownames(metadata) %in% (out$zero_cells %||% character(0))
+  for (col_name in colnames(metadata)) {
+    values <- metadata[[col_name]][match(colnames(object), rownames(metadata))]
+    object[[col_name]] <- values
   }
 
   SeuratObject::LayerData(object = object, layer = layer) <- out$counts
@@ -1641,8 +1653,10 @@ sn_find_doublets <- function(
 #'
 #' @return A corrected counts matrix, or an updated Seurat object when
 #'   \code{return_object = TRUE} and \code{x} is a Seurat object. For
+#'   Seurat returns, \code{nCount_<assay>_corrected} and
+#'   \code{nFeature_<assay>_corrected} are added to \code{meta.data}. For
 #'   decontX-based Seurat returns, the \code{decontX_contamination} and
-#'   \code{decontX_clusters} columns are added to \code{meta.data}.
+#'   \code{decontX_clusters} columns are also added.
 #'
 #' @examples
 #' \dontrun{

@@ -275,6 +275,29 @@ test_that("sn_read and sn_write preserve row names and matrix-like tabular input
   )
 })
 
+test_that("sn_write creates parent directories before dispatching writers", {
+  skip_if_not_installed("rio")
+
+  root <- tempfile("sn-write-nested-")
+  csv_path <- file.path(root, "tables", "summary.csv")
+  sn_write(data.frame(a = 1:2), csv_path)
+
+  expect_true(dir.exists(dirname(csv_path)))
+  expect_true(file.exists(csv_path))
+
+  qs_path <- file.path(root, "custom", "objects", "payload.qs")
+  testthat::with_mocked_bindings(
+    sn_write(list(a = 1), qs_path),
+    .export.rio_qs = function(file, x, ...) {
+      saveRDS(x, file = file)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true(dir.exists(dirname(qs_path)))
+  expect_true(file.exists(qs_path))
+})
+
 test_that("sn_add_data_from_anndata respects custom reduction keys and logs the import", {
   skip_if_not_installed("Seurat")
 

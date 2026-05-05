@@ -83,6 +83,17 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   expect_true("umap" %in% names(clustered@reductions))
 })
 
+test_that("sn_run_cluster catches duplicate object arguments in pipe-style calls", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 2, prefix = "duplicate")
+
+  expect_error(
+    sn_run_cluster(object, object, verbose = FALSE),
+    "object was supplied twice"
+  )
+})
+
 test_that("sn_run_cluster can return cluster assignments directly and supports scran batch workflows", {
   skip_if_not_installed("Seurat")
 
@@ -1613,6 +1624,52 @@ test_that("sn_remove_ambient_contamination reuses stored raw paths from initiali
   expect_equal(as.matrix(corrected), as.matrix(counts))
   expect_equal(as.matrix(captured$x_counts), as.matrix(counts))
   expect_equal(as.matrix(captured$raw_counts), as.matrix(raw_counts))
+})
+
+test_that("sn_remove_ambient_contamination writes corrected QC metadata for SoupX", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(rpois(80 * 12, lambda = 3), nrow = 80, ncol = 12), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(80))
+  colnames(counts) <- paste0("cell", seq_len(12))
+  raw_counts <- counts + 1
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "soupx-meta")
+
+  corrected_counts <- counts
+  corrected_counts[1:10, 1:3] <- 0
+
+  updated <- with_mocked_bindings(
+    sn_remove_ambient_contamination(
+      x = object,
+      raw = raw_counts,
+      method = "soupx",
+      verbose = FALSE
+    ),
+    .sn_remove_ambient_soupx = function(x_info, raw_info, ...) {
+      list(
+        counts = corrected_counts,
+        metadata = NULL,
+        zero_cells = character(0),
+        removed_cells = character(0)
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(updated, "Seurat")
+  expect_true(all(c(
+    "nCount_RNA_corrected",
+    "nFeature_RNA_corrected",
+    "decontaminated_counts_zero_count"
+  ) %in% colnames(updated[[]])))
+  expect_equal(
+    unname(updated$nCount_RNA_corrected),
+    unname(Matrix::colSums(corrected_counts))
+  )
+  expect_equal(
+    unname(updated$nFeature_RNA_corrected),
+    unname(Matrix::colSums(corrected_counts > 0))
+  )
 })
 
 test_that("sn_remove_ambient_contamination supports decontX on matrices", {

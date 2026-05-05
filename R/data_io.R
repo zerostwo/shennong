@@ -367,7 +367,7 @@ sn_list_10x_paths <- function(path,
 #' @export
 .import.rio_qs <- function(file, ...) {
   check_installed(pkg = "qs", reason = "to read qs files.")
-  qs::qread(file = file, ...)
+  getExportedValue("qs", "qread")(file = file, ...)
 }
 
 #' @rdname sn_read
@@ -455,7 +455,8 @@ sn_list_10x_paths <- function(path,
 #' single-cell formats such as BPCells, `.h5ad`, and 10x `.h5`.
 #'
 #' @param x Object to write.
-#' @param path Output path.
+#' @param path Output path. Missing parent directories are created
+#'   automatically before dispatching the selected writer.
 #' @param to Optional format override when it cannot be inferred from `path`.
 #' @param file Output path used by the exported `rio` adapter methods.
 #' @param overwrite Logical; overwrite an existing BPCells directory.
@@ -486,6 +487,7 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
   if (is.null(path)) {
     path <- paste0(as.character(substitute(x)), ".", format)
   }
+  .sn_ensure_output_parent(path)
 
   if (is.matrix(x) || inherits(x, "ArrowTabular")) {
     x <- as.data.frame(x)
@@ -507,13 +509,32 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
     return(invisible(path))
   }
 
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   args <- c(
     list(x = x, file = path),
     if (!is_null(to)) list(format = format) else list(),
     list(...)
   )
   do.call(rio::export, args = args)
+  invisible(path)
+}
+
+.sn_ensure_output_parent <- function(path) {
+  if (!is.character(path) || length(path) != 1L || !nzchar(path)) {
+    stop("`path` must be a non-empty character scalar.", call. = FALSE)
+  }
+
+  parent <- dirname(path)
+  if (is.na(parent) || !nzchar(parent) || identical(parent, ".")) {
+    return(invisible(path))
+  }
+
+  if (!dir.exists(parent)) {
+    dir.create(parent, recursive = TRUE, showWarnings = FALSE)
+  }
+  if (!dir.exists(parent)) {
+    stop("Failed to create output directory: ", parent, call. = FALSE)
+  }
+
   invisible(path)
 }
 
@@ -583,7 +604,7 @@ sn_write <- function(x, path = NULL, to = NULL, ...) {
 #' @export
 .export.rio_qs <- function(file, x, ...) {
   check_installed(pkg = "qs", reason = "to write qs files.")
-  qs::qsave(x = x, file = file, ...)
+  getExportedValue("qs", "qsave")(x = x, file = file, ...)
 }
 
 #' @rdname sn_write

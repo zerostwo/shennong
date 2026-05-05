@@ -222,6 +222,11 @@ dplyr::count(deps, scope, source)
 sn_install_dependencies(scope = "recommended")
 ```
 
+For serialized project objects, prefer `.qs2` files in new workflows. Legacy
+`.qs` files remain supported when the archived `qs` package is already present
+in the active R library, but `sn_install_dependencies()` does not attempt to
+install `qs` on current R releases.
+
 The package also ships Codex skill assets for Shennong-style analysis projects.
 These helpers expose their installed locations without making users search the
 package directory manually.

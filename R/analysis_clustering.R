@@ -1694,6 +1694,18 @@ sn_run_cluster <- function(object,
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
+  if (inherits(batch_by, "Seurat")) {
+    stop(
+      "`batch_by` received a Seurat object. ",
+      "This usually means the input object was supplied twice, for example ",
+      "`object %>% sn_run_cluster(object)`. Use `object %>% sn_run_cluster()` ",
+      "or `sn_run_cluster(object)` instead.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(batch_by) && (!is.character(batch_by) || length(batch_by) != 1L)) {
+    stop("`batch_by` must be a single metadata column name or `NULL`.", call. = FALSE)
+  }
 
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
