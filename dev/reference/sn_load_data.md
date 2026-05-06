@@ -12,13 +12,16 @@ another top-level loader function.
 ``` r
 sn_load_data(
   dataset = "pbmc3k",
-  matrix_type = c("filtered", "raw"),
+  sample_id = NULL,
+  matrix_type = c("filtered", "raw", "metrics"),
   save_dir = "~/.shennong/data",
   return_object = TRUE,
   species = NULL,
   token = NULL,
   overwrite = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  record_id = NULL,
+  validate = FALSE
 )
 ```
 
@@ -26,9 +29,17 @@ sn_load_data(
 
 - dataset:
 
-  Character vector. Which example dataset(s) to load. Currently one of
-  `"pbmc1k"`, `"pbmc3k"`, `"pbmc4k"`, or `"pbmc8k"`. Default:
-  `"pbmc3k"`.
+  Character vector. Which dataset(s) to load. Legacy example values
+  include `"pbmc1k"`, `"pbmc3k"`, `"pbmc4k"`, and `"pbmc8k"`. Public
+  Shennong collection values are sample IDs returned by
+  [`sn_list_datasets()`](https://songqi.org/shennong/dev/reference/sn_list_datasets.md),
+  or study IDs when `sample_id` is also supplied. Default: `"pbmc3k"`.
+
+- sample_id:
+
+  Optional sample ID(s) for public Shennong collection records. Use this
+  when `dataset` names a study ID such as `"AndrewDHildreth2021"`. If
+  `dataset` already names sample IDs, leave this as `NULL`.
 
 - matrix_type:
 
@@ -39,6 +50,9 @@ sn_load_data(
 
   - `"raw"`: the `raw_feature_bc_matrix.h5` (unfiltered barcodes; useful
     for ambient RNA correction tools such as SoupX).
+
+  - `"metrics"`: the Cell Ranger `metrics_summary.csv` for public
+    Shennong collection samples.
 
   Default: `"filtered"`.
 
@@ -76,6 +90,16 @@ sn_load_data(
 - quiet:
 
   Logical. If `TRUE`, suppress Zenodo download progress messages.
+
+- record_id:
+
+  Zenodo record ID for public Shennong collection samples. Defaults to
+  option `shennong.public_data_record` or `"20044788"`.
+
+- validate:
+
+  Logical; if `TRUE`, validate extracted public collection files against
+  `manifest.tsv` MD5 checksums.
 
 ## Value
 
@@ -179,5 +203,9 @@ pbmc4k <- sn_load_data(
   dataset  = "pbmc4k",
   save_dir = "~/datasets/pbmc_cache"
 )
+
+# 6. Load a sample from the Shennong public Zenodo collection:
+data_index <- sn_list_datasets()
+sample_obj <- sn_load_data(dataset = data_index$dataset[[1]])
 } # }
 ```

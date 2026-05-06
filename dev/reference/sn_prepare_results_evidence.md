@@ -86,9 +86,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
-#> INFO [2026-05-05 21:15:11] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 21:15:11] Running QC metrics for human.
-#> INFO [2026-05-05 21:15:11] Seurat object initialization complete.
+#> INFO [2026-05-05 23:43:27] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 23:43:27] Running QC metrics for human.
+#> INFO [2026-05-05 23:43:27] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
 #> [1] "task"               "dataset"            "cluster_summary"   

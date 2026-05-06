@@ -25,9 +25,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data(dataset = "pbmc3k")
-#> INFO [2026-05-05 21:29:32] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 21:29:33] Running QC metrics for human.
-#> INFO [2026-05-05 21:29:33] Seurat object initialization complete.
+#> INFO [2026-05-05 23:58:06] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 23:58:07] Running QC metrics for human.
+#> INFO [2026-05-05 23:58:07] Seurat object initialization complete.
 
 pbmc_h5 <- sn_load_data(
   dataset = "pbmc3k",
@@ -38,12 +38,12 @@ pbmc_h5
 #> [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 
 pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-#> INFO [2026-05-05 21:29:37] Initializing Seurat object for project: pbmc1k.
-#> INFO [2026-05-05 21:29:37] Running QC metrics for human.
-#> INFO [2026-05-05 21:29:38] Seurat object initialization complete.
-#> INFO [2026-05-05 21:29:38] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 21:29:38] Running QC metrics for human.
-#> INFO [2026-05-05 21:29:39] Seurat object initialization complete.
+#> INFO [2026-05-05 23:58:11] Initializing Seurat object for project: pbmc1k.
+#> INFO [2026-05-05 23:58:12] Running QC metrics for human.
+#> INFO [2026-05-05 23:58:12] Seurat object initialization complete.
+#> INFO [2026-05-05 23:58:12] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 23:58:12] Running QC metrics for human.
+#> INFO [2026-05-05 23:58:13] Seurat object initialization complete.
 table(pbmc_merged$sample)
 #> 
 #> pbmc1k pbmc3k 
@@ -67,6 +67,24 @@ public_h5
 #> "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 ```
 
+The current Shennong public reprocessed-data collection is indexed by
+`shennong_index.json` on Zenodo. Use
+[`sn_list_datasets()`](https://songqi.org/shennong/dev/reference/sn_list_datasets.md)
+to discover the sample-level IDs, then pass one of those IDs to
+[`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md).
+The study ZIP is cached locally, and only the requested sample file is
+extracted.
+
+``` r
+
+datasets <- sn_list_datasets()
+head(datasets[, c("dataset", "study_id", "organism", "technology")])
+
+sample_obj <- sn_load_data(dataset = datasets$dataset[[1]])
+sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
+sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
+```
+
 ## Read once, then initialize with metadata
 
 [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
@@ -86,9 +104,9 @@ pbmc <- sn_initialize_seurat_object(
   study = "10x_pbmc",
   species = "human"
 )
-#> INFO [2026-05-05 21:29:40] Initializing Seurat object for project: pbmc3k_demo.
-#> INFO [2026-05-05 21:29:40] Running QC metrics for human.
-#> INFO [2026-05-05 21:29:40] Seurat object initialization complete.
+#> INFO [2026-05-05 23:58:14] Initializing Seurat object for project: pbmc3k_demo.
+#> INFO [2026-05-05 23:58:15] Running QC metrics for human.
+#> INFO [2026-05-05 23:58:15] Seurat object initialization complete.
 
 pbmc
 #> An object of class Seurat 
@@ -201,9 +219,9 @@ zenodo_plan$files[, c("file", "size", "md5")]
 #>   file                      size md5                             
 #>   <chr>                    <dbl> <chr>                           
 #> 1 pbmc3k_metadata.csv     252144 30e88b334de6ed4d04a0393921f0f216
-#> 2 pbmc3k_initialized.qs2 6229213 893995ff5f501940472696de1b0525f3
+#> 2 pbmc3k_initialized.qs2 6229213 bbb8358e83de591fdc9a3bcda75d8c68
 zenodo_plan$manifest_path
-#> [1] "/tmp/RtmpQv4OOE/shennong_zenodo_manifest.json"
+#> [1] "/tmp/RtmpX9EYhQ/shennong_zenodo_manifest.json"
 ```
 
 In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and

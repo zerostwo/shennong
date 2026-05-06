@@ -192,9 +192,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(obj@misc$de_results)
 }
-#> INFO [2026-05-05 21:14:44] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 21:14:44] Running QC metrics for human.
-#> INFO [2026-05-05 21:14:44] Seurat object initialization complete.
+#> INFO [2026-05-05 23:43:00] Initializing Seurat object for project: Shennong.
+#> INFO [2026-05-05 23:43:00] Running QC metrics for human.
+#> INFO [2026-05-05 23:43:00] Seurat object initialization complete.
 #> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
 #> (default method for FindMarkers) please install the presto package
 #> --------------------------------------------

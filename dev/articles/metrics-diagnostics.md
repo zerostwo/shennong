@@ -20,9 +20,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 21:31:19] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 21:31:19] Running QC metrics for human.
-#> INFO [2026-05-05 21:31:20] Seurat object initialization complete.
+#> INFO [2026-05-05 23:59:57] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-05-05 23:59:58] Running QC metrics for human.
+#> INFO [2026-05-05 23:59:58] Seurat object initialization complete.
 pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc <- sn_run_cluster(

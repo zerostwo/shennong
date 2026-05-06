@@ -71,13 +71,16 @@ top-level loader function.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_load_data</span><span class="op">(</span></span>
 <span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
-<span>  matrix_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"filtered"</span>, <span class="st">"raw"</span><span class="op">)</span>,</span>
+<span>  sample_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  matrix_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"filtered"</span>, <span class="st">"raw"</span>, <span class="st">"metrics"</span><span class="op">)</span>,</span>
 <span>  save_dir <span class="op">=</span> <span class="st">"~/.shennong/data"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  token <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  record_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  validate <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -86,9 +89,18 @@ top-level loader function.</p>
 
 
 <dl><dt id="arg-dataset">dataset<a class="anchor" aria-label="anchor" href="#arg-dataset"></a></dt>
-<dd><p>Character vector. Which example dataset(s) to load.
-Currently one of <code>"pbmc1k"</code>, <code>"pbmc3k"</code>, <code>"pbmc4k"</code>,
-or <code>"pbmc8k"</code>. Default: <code>"pbmc3k"</code>.</p></dd>
+<dd><p>Character vector. Which dataset(s) to load. Legacy example
+values include <code>"pbmc1k"</code>, <code>"pbmc3k"</code>, <code>"pbmc4k"</code>, and
+<code>"pbmc8k"</code>. Public Shennong collection values are sample IDs returned
+by <code><a href="sn_list_datasets.html">sn_list_datasets()</a></code>, or study IDs when <code>sample_id</code> is also
+supplied. Default: <code>"pbmc3k"</code>.</p></dd>
+
+
+<dt id="arg-sample-id">sample_id<a class="anchor" aria-label="anchor" href="#arg-sample-id"></a></dt>
+<dd><p>Optional sample ID(s) for public Shennong collection
+records. Use this when <code>dataset</code> names a study ID such as
+<code>"AndrewDHildreth2021"</code>. If <code>dataset</code> already names sample IDs,
+leave this as <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-matrix-type">matrix_type<a class="anchor" aria-label="anchor" href="#arg-matrix-type"></a></dt>
@@ -98,6 +110,8 @@ One of:</p><ul><li><p><code>"filtered"</code>: the <code>filtered_feature_bc_mat
 <li><p><code>"raw"</code>: the <code>raw_feature_bc_matrix.h5</code>
 (unfiltered barcodes; useful for ambient RNA correction tools
 such as SoupX).</p></li>
+<li><p><code>"metrics"</code>: the Cell Ranger <code>metrics_summary.csv</code>
+for public Shennong collection samples.</p></li>
 </ul><p>Default: <code>"filtered"</code>.</p></dd>
 
 
@@ -135,6 +149,16 @@ require a token. Supply this only for restricted/private records.</p></dd>
 <dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, suppress Zenodo download progress
 messages.</p></dd>
+
+
+<dt id="arg-record-id">record_id<a class="anchor" aria-label="anchor" href="#arg-record-id"></a></dt>
+<dd><p>Zenodo record ID for public Shennong collection samples.
+Defaults to option <code>shennong.public_data_record</code> or <code>"20044788"</code>.</p></dd>
+
+
+<dt id="arg-validate">validate<a class="anchor" aria-label="anchor" href="#arg-validate"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, validate extracted public
+collection files against <code>manifest.tsv</code> MD5 checksums.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -231,6 +255,10 @@ DOI: 10.5281/zenodo.14884845</p>
 <span class="r-in"><span>  dataset  <span class="op">=</span> <span class="st">"pbmc4k"</span>,</span></span>
 <span class="r-in"><span>  save_dir <span class="op">=</span> <span class="st">"~/datasets/pbmc_cache"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># 6. Load a sample from the Shennong public Zenodo collection:</span></span></span>
+<span class="r-in"><span><span class="va">data_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_list_datasets.html">sn_list_datasets</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sample_obj</span> <span class="op">&lt;-</span> <span class="fu">sn_load_data</span><span class="op">(</span>dataset <span class="op">=</span> <span class="va">data_index</span><span class="op">$</span><span class="va">dataset</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

@@ -14,6 +14,8 @@
   : Bundled Shennong Gene Annotations
 - [`shennong_signature_catalog`](https://songqi.org/shennong/dev/reference/shennong_signature_catalog.md)
   : Bundled Shennong Signature Catalog
+- [`sn_list_datasets()`](https://songqi.org/shennong/dev/reference/sn_list_datasets.md)
+  : List datasets available through Shennong
 - [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
   : Load example datasets from Zenodo
 - [`sn_download_zenodo()`](https://songqi.org/shennong/dev/reference/sn_download_zenodo.md)
