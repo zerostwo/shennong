@@ -14,6 +14,19 @@ make_test_object <- function(seed, prefix, n_genes = 200, n_cells = 40) {
   )
 }
 
+make_cite_seq_test_object <- function() {
+  object <- make_test_object(seed = 24, prefix = "cite", n_genes = 180, n_cells = 50)
+  set.seed(25)
+  adt_counts <- matrix(rpois(24 * 50, lambda = 5), nrow = 24, ncol = 50)
+  adt_counts[1:6, 1:25] <- adt_counts[1:6, 1:25] + 12
+  adt_counts[7:12, 26:50] <- adt_counts[7:12, 26:50] + 12
+  adt_counts <- Matrix::Matrix(adt_counts, sparse = TRUE)
+  rownames(adt_counts) <- paste0("ADT", seq_len(24))
+  colnames(adt_counts) <- colnames(object)
+  object[["ADT"]] <- SeuratObject::CreateAssayObject(counts = adt_counts)
+  object
+}
+
 make_zero_layer <- function(object) {
   Matrix::Matrix(
     0,
@@ -81,6 +94,131 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   expect_s4_class(clustered, "Seurat")
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_true("umap" %in% names(clustered@reductions))
+})
+
+test_that("sn_run_cluster supports CITE-seq WNN clustering", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_cite_seq_test_object()
+  clustered <- sn_run_cluster(
+    object = object,
+    modality = "cite_seq",
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    adt_npcs = 10,
+    adt_dims = 1:10,
+    verbose = FALSE
+  )
+
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_true("apca" %in% names(clustered@reductions))
+  expect_true("wnn.umap" %in% names(clustered@reductions))
+  expect_true("wsnn" %in% names(clustered@graphs))
+  expect_equal(clustered@misc$sn_run_cluster$stages$neighbors$snn_graph, "wsnn")
+  expect_equal(clustered@misc$sn_run_cluster$stages$umap$reduction, "wnn.umap")
+})
+
+test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
+  skip_if_not_installed("Seurat")
+
+  for (backend in c("coralysis", "coralysis2")) {
+    object <- make_cite_seq_test_object()
+    object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+    captured <- NULL
+
+    clustered <- testthat::with_mocked_bindings(
+      sn_run_cluster(
+        object = object,
+        modality = "cite_seq",
+        multimodal_method = backend,
+        batch = "sample",
+        normalization_method = "seurat",
+        nfeatures = 50,
+        block_genes = NULL,
+        npcs = 10,
+        dims = 1:5,
+        adt_features = paste0("ADT", 1:10),
+        adt_npcs = 3,
+        adt_dims = 1:3,
+        integration_control = list(example = backend),
+        verbose = FALSE
+      ),
+      .sn_run_batch_integration = function(object,
+                                           method,
+                                           batch,
+                                           reduction,
+                                           features,
+                                           assay,
+                                           dims,
+                                           npcs,
+                                           theta,
+                                           group_by_vars,
+                                           integration_control = list(),
+                                           verbose = TRUE) {
+        captured <<- list(
+          method = method,
+          batch = batch,
+          reduction = reduction,
+          features = features,
+          assay = assay,
+          dims = dims,
+          npcs = npcs,
+          integration_control = integration_control
+        )
+        embeddings <- Seurat::Embeddings(object = object[[reduction]])[, seq_len(length(dims)), drop = FALSE]
+        new_reduction <- switch(backend, coralysis = "coralysis", coralysis2 = "coralysis2")
+        key <- switch(backend, coralysis = "CORALYSIS_", coralysis2 = "CORALYSIS2_")
+        object[[new_reduction]] <- Seurat::CreateDimReducObject(
+          embeddings = embeddings,
+          key = key,
+          assay = assay
+        )
+        object@misc$integration <- list(method = method, batch_by = batch, reduction = new_reduction)
+        list(object = object, reduction = new_reduction)
+      },
+      .package = "Shennong"
+    )
+
+    expect_equal(captured$method, backend)
+    expect_equal(captured$batch, "sample")
+    expect_equal(captured$assay, "ADT")
+    expect_equal(captured$reduction, "apca")
+    expect_equal(captured$features, paste0("ADT", 1:10))
+    expect_equal(captured$dims, 1:3)
+    expect_equal(captured$integration_control, list(example = backend))
+    expect_true(switch(backend, coralysis = "coralysis", coralysis2 = "coralysis2") %in% names(clustered@reductions))
+    expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+    expect_equal(clustered@misc$integration$modality, "cite_seq")
+    expect_equal(clustered@misc$integration$protein_assay, "ADT")
+  }
+})
+
+test_that("Coralysis protein integration resolves features from the ADT assay", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_cite_seq_test_object()
+  adt_features <- rownames(object[["ADT"]])
+
+  feature_set <- .sn_resolve_integration_assay_features(
+    object = object,
+    assay = "ADT",
+    features = adt_features,
+    backend = "Coralysis"
+  )
+
+  expect_equal(feature_set, adt_features)
+  expect_error(
+    .sn_resolve_integration_assay_features(
+      object = object,
+      assay = "ADT",
+      features = rownames(object),
+      backend = "Coralysis"
+    ),
+    "Coralysis integration requires at least two selected features present"
+  )
 })
 
 test_that("sn_run_cluster reuses matching stages when only clustering resolution changes", {
@@ -743,7 +881,7 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
   object2$sample <- "pbmc3k"
   merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
 
-  for (backend in c("coralysis", "seurat_cca", "seurat_rpca")) {
+  for (backend in c("coralysis", "coralysis2", "seurat_cca", "seurat_rpca")) {
     captured <- NULL
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
@@ -781,12 +919,14 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
         new_reduction <- switch(
           method,
           coralysis = "coralysis",
+          coralysis2 = "coralysis2",
           seurat_cca = "integrated.cca",
           seurat_rpca = "integrated.rpca"
         )
         key <- switch(
           method,
           coralysis = "CORALYSIS_",
+          coralysis2 = "CORALYSIS2_",
           seurat_cca = "INTCCA_",
           seurat_rpca = "INTRPCA_"
         )
@@ -806,9 +946,14 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
     expect_true(switch(
       backend,
       coralysis = "coralysis",
+      coralysis2 = "coralysis2",
       seurat_cca = "integrated.cca",
       seurat_rpca = "integrated.rpca"
     ) %in% names(clustered@reductions))
+    if (backend %in% c("coralysis", "coralysis2")) {
+      expect_lt(length(captured$features), nrow(merged))
+      expect_lte(length(captured$features), 50)
+    }
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   }
 })
@@ -908,6 +1053,255 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
       expect_true("scanvi_prediction" %in% colnames(clustered[[]]))
     }
   }
+})
+
+test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_cite_seq_test_object()
+  object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+  runtime_dir <- tempfile("shennong-totalvi-runtime-")
+  captured <- NULL
+  control <- list(
+    runtime_dir = runtime_dir,
+    pixi_project = file.path(runtime_dir, "pixi", "scvi"),
+    n_latent = 5,
+    max_epochs = 1,
+    write_h5ad = FALSE
+  )
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = object,
+      modality = "cite_seq",
+      multimodal_method = "totalvi",
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_control = control,
+      nfeatures = 40,
+      block_genes = NULL,
+      npcs = 8,
+      dims = 1:5,
+      adt_features = paste0("ADT", 1:6),
+      verbose = FALSE
+    ),
+    .sn_execute_scvi_pixi = function(pixi,
+                                     manifest_path,
+                                     script,
+                                     input_dir,
+                                     output_dir,
+                                     config_path,
+                                     environment = NULL,
+                                     pixi_home = NULL,
+                                     install_pixi = TRUE,
+                                     pixi_version = "latest",
+                                     pixi_download_url = NULL,
+                                     verbose = TRUE) {
+      captured <<- list(
+        manifest_path = manifest_path,
+        script = script,
+        input_dir = input_dir,
+        output_dir = output_dir,
+        environment = environment,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+      )
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      cells <- utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
+      latent <- as.data.frame(matrix(seq_len(length(cells) * 5), nrow = length(cells), ncol = 5))
+      rownames(latent) <- cells
+      utils::write.csv(latent, file.path(output_dir, "latent.csv"))
+      metadata <- data.frame(totalvi_qc = seq_along(cells), row.names = cells)
+      utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
+      jsonlite::write_json(
+        list(output_h5ad = file.path(output_dir, "integrated.h5ad")),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("totalvi" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_true("totalvi_qc" %in% colnames(clustered[[]]))
+  expect_equal(clustered@misc$integration$method, "totalvi")
+  expect_equal(clustered@misc$integration$modality, "cite_seq")
+  expect_equal(captured$config$method, "totalvi")
+  expect_equal(captured$config$batch_key, "sample")
+  expect_equal(captured$config$protein_assay, "ADT")
+  expect_equal(captured$config$protein_features, paste0("ADT", 1:6))
+  expect_true(file.exists(file.path(captured$input_dir, "protein_counts.mtx")))
+  expect_true(file.exists(file.path(captured$input_dir, "proteins.csv")))
+})
+
+test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_cite_seq_test_object()
+  object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
+  runtime_dir <- tempfile("shennong-mmochi-runtime-")
+  captured <- NULL
+  control <- list(
+    runtime_dir = runtime_dir,
+    pixi_project = file.path(runtime_dir, "pixi", "mmochi"),
+    protein_layer = "data",
+    show = TRUE,
+    store_corrected_layer = TRUE
+  )
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = object,
+      modality = "cite_seq",
+      integration_method = "mmochi",
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_control = control,
+      nfeatures = 40,
+      block_genes = NULL,
+      npcs = 8,
+      dims = 1:5,
+      adt_features = paste0("ADT", 1:10),
+      adt_npcs = 3,
+      adt_dims = 1:3,
+      verbose = FALSE
+    ),
+    .sn_execute_scvi_pixi = function(pixi,
+                                     manifest_path,
+                                     script,
+                                     input_dir,
+                                     output_dir,
+                                     config_path,
+                                     environment = NULL,
+                                     pixi_home = NULL,
+                                     install_pixi = TRUE,
+                                     pixi_version = "latest",
+                                     pixi_download_url = NULL,
+                                     verbose = TRUE,
+                                     backend_label = "scVI") {
+      captured <<- list(
+        manifest_path = manifest_path,
+        script = script,
+        input_dir = input_dir,
+        output_dir = output_dir,
+        environment = environment,
+        backend_label = backend_label,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+      )
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      protein <- utils::read.csv(file.path(input_dir, "protein.csv"), check.names = FALSE)
+      rownames(protein) <- protein$cell_id
+      protein$cell_id <- NULL
+      corrected <- protein + 0.25
+      utils::write.csv(corrected, file.path(output_dir, "landmark_protein.csv"))
+      utils::write.csv(data.frame(row.names = rownames(protein)), file.path(output_dir, "obs.csv"))
+      jsonlite::write_json(
+        list(mmochi_version = "0.3.5"),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("mmochi" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_equal(clustered@misc$integration$method, "mmochi")
+  expect_equal(clustered@misc$integration$modality, "cite_seq")
+  expect_equal(clustered@misc$integration$batch_by, "sample")
+  expect_equal(clustered@misc$integration$protein_assay, "ADT")
+  expect_equal(clustered@misc$integration$protein_layer, "data")
+  expect_equal(clustered@misc$integration$mmochi_version, "0.3.5")
+  expect_equal(captured$config$method, "mmochi")
+  expect_equal(captured$config$batch_key, "sample")
+  expect_equal(captured$config$protein_assay, "ADT")
+  expect_equal(captured$config$protein_features, paste0("ADT", 1:10))
+  expect_equal(captured$backend_label, "MMoCHi")
+  expect_equal(captured$environment, "default")
+  expect_true(file.exists(file.path(captured$input_dir, "protein.csv")))
+  expect_true(file.exists(file.path(captured$input_dir, "obs.csv")))
+  if (identical(clustered@misc$integration$corrected_storage, "layer")) {
+    expect_equal(dim(SeuratObject::LayerData(clustered, assay = "ADT", layer = "mmochi.data")), c(10L, ncol(clustered)))
+  } else {
+    expect_equal(clustered@misc$integration$corrected_storage, "misc")
+    expect_equal(dim(clustered@misc$mmochi$corrected_protein), c(10L, ncol(clustered)))
+  }
+})
+
+test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_cite_seq_test_object()
+  runtime_dir <- tempfile("shennong-mmochi-single-runtime-")
+  captured <- NULL
+  control <- list(
+    runtime_dir = runtime_dir,
+    pixi_project = file.path(runtime_dir, "pixi", "mmochi"),
+    protein_layer = "data",
+    store_corrected_layer = FALSE
+  )
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = object,
+      modality = "cite_seq",
+      multimodal_method = "mmochi",
+      normalization_method = "seurat",
+      integration_control = control,
+      nfeatures = 40,
+      block_genes = NULL,
+      npcs = 8,
+      dims = 1:5,
+      adt_features = paste0("ADT", 1:10),
+      adt_npcs = 3,
+      adt_dims = 1:3,
+      verbose = FALSE
+    ),
+    .sn_execute_scvi_pixi = function(pixi,
+                                     manifest_path,
+                                     script,
+                                     input_dir,
+                                     output_dir,
+                                     config_path,
+                                     environment = NULL,
+                                     pixi_home = NULL,
+                                     install_pixi = TRUE,
+                                     pixi_version = "latest",
+                                     pixi_download_url = NULL,
+                                     verbose = TRUE,
+                                     backend_label = "scVI") {
+      captured <<- list(
+        input_dir = input_dir,
+        output_dir = output_dir,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+      )
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      protein <- utils::read.csv(file.path(input_dir, "protein.csv"), check.names = FALSE)
+      rownames(protein) <- protein$cell_id
+      protein$cell_id <- NULL
+      corrected <- protein + 0.5
+      utils::write.csv(corrected, file.path(output_dir, "landmark_protein.csv"))
+      jsonlite::write_json(
+        list(mmochi_version = "0.3.5"),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
+    },
+    .package = "Shennong"
+  )
+
+  obs <- utils::read.csv(file.path(captured$input_dir, "obs.csv"), check.names = FALSE)
+  expect_s4_class(clustered, "Seurat")
+  expect_true("mmochi" %in% names(clustered@reductions))
+  expect_null(clustered@misc$integration$batch_by)
+  expect_match(clustered@misc$integration$backend_batch_key, "^\\.sn_mmochi_single_sample")
+  expect_true(clustered@misc$integration$single_sample_batch)
+  expect_equal(captured$config$batch_key, clustered@misc$integration$backend_batch_key)
+  expect_true(captured$config$batch_key %in% colnames(obs))
+  expect_equal(unique(obs[[captured$config$batch_key]]), "single_sample")
+  expect_false(captured$config$batch_key %in% colnames(clustered[[]]))
 })
 
 test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
@@ -1136,6 +1530,57 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_true(inherits(clustered@misc$coralysis, "SingleCellExperiment"))
   expect_equal(clustered@misc$integration$method, "coralysis")
+  expect_false("backend_package" %in% names(clustered@misc$integration))
+})
+
+test_that("sn_run_cluster runs Coralysis2 integration end to end", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("Coralysis2")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(seed = 19, prefix = "coralysis2", n_genes = 120, n_cells = 30)
+  object$sample <- rep(c("A", "B", "C"), each = 10)
+
+  clustered <- suppressWarnings(sn_run_cluster(
+    object = object,
+    batch_by = "sample",
+    normalization_method = "seurat",
+    integration_method = "coralysis2",
+    nfeatures = 40,
+    block_genes = NULL,
+    npcs = 5,
+    dims = 1:5,
+    resolution = 0.2,
+    integration_control = list(
+      icp_args = list(
+        k = 2,
+        L = 3,
+        C = 1,
+        threads = 1,
+        train.with.bnn = FALSE,
+        train.k.nn.prop = NULL,
+        build.train.set = FALSE,
+        use.cluster.seed = FALSE,
+        ari.cutoff = 0.1
+      ),
+      pca_args = list(
+        p = 5,
+        pca.method = "stats",
+        return.model = TRUE
+      )
+    ),
+    verbose = FALSE
+  ))
+
+  expect_s4_class(clustered, "Seurat")
+  expect_true("coralysis2" %in% names(clustered@reductions))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_true(inherits(clustered@misc$coralysis2, "SingleCellExperiment"))
+  expect_equal(clustered@misc$integration$method, "coralysis2")
+  expect_equal(clustered@misc$integration$backend_package, "Coralysis2")
+  expect_lte(length(clustered@misc$integration$input_features), 40)
+  expect_false(S4Vectors::metadata(clustered@misc$coralysis2)$coralysis$store.joint.probability)
+  expect_false(is.list(S4Vectors::metadata(clustered@misc$coralysis2)$coralysis$joint.probability))
 })
 
 test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
@@ -1690,6 +2135,7 @@ test_that("sn_run_cluster can use a non-default layer without overwriting counts
     as.matrix(SeuratObject::LayerData(clustered, layer = "counts")),
     as.matrix(zero_counts)
   )
+  expect_gt(Matrix::nnzero(SeuratObject::LayerData(clustered, layer = "data")), 0)
 })
 
 test_that("sn_remove_ambient_contamination requires raw counts for SoupX", {

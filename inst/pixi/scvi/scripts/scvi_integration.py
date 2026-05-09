@@ -46,6 +46,20 @@ def _read_input(input_dir: Path) -> ad.AnnData:
     adata.obs_names = cells
     adata.var_names = features
     adata.var_names_make_unique()
+
+    protein_counts_path = input_dir / "protein_counts.mtx"
+    proteins_path = input_dir / "proteins.csv"
+    if protein_counts_path.exists() and proteins_path.exists():
+        protein_counts = scipy.io.mmread(protein_counts_path)
+        protein_counts = sp.csr_matrix(protein_counts).transpose().tocsr()
+        proteins = pd.read_csv(proteins_path)["protein_id"].astype(str).to_numpy()
+        if protein_counts.shape[0] != adata.n_obs:
+            raise ValueError("protein_counts.mtx must have one row per cell after transposition.")
+        adata.obsm["protein_expression"] = pd.DataFrame(
+            protein_counts.toarray(),
+            index=adata.obs_names,
+            columns=proteins,
+        )
     return adata
 
 
@@ -69,7 +83,7 @@ def _prepare_labels(adata: ad.AnnData, labels_key: str, unlabeled_category: str)
 def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     method = config.get("method", "scvi")
-    batch_key = config["batch_key"]
+    batch_key = config.get("batch_key")
     labels_key = config.get("labels_key")
     unlabeled_category = config.get("unlabeled_category", "Unknown")
     n_latent = int(config.get("n_latent") or 30)
@@ -77,10 +91,55 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
 
     scvi.settings.seed = seed
     adata = _read_input(input_dir)
-    if batch_key not in adata.obs.columns:
+    if batch_key is not None and batch_key not in adata.obs.columns:
         raise ValueError(f"Batch key {batch_key!r} was not found in obs.csv.")
 
-    setup_kwargs = {"batch_key": batch_key}
+    setup_kwargs = {}
+    if batch_key is not None:
+        setup_kwargs["batch_key"] = batch_key
+
+    obs_out = pd.DataFrame(index=adata.obs_names)
+    if method == "totalvi":
+        protein_obsm_key = config.get("protein_obsm_key") or "protein_expression"
+        if "protein_expression" not in adata.obsm:
+            raise ValueError("totalVI requires protein_counts.mtx and proteins.csv in the input directory.")
+        if protein_obsm_key != "protein_expression":
+            adata.obsm[protein_obsm_key] = adata.obsm["protein_expression"]
+        totalvi_setup_kwargs = dict(setup_kwargs)
+        totalvi_setup_kwargs["protein_expression_obsm_key"] = protein_obsm_key
+        scvi.model.TOTALVI.setup_anndata(adata, **totalvi_setup_kwargs)
+        totalvi_model_args = _drop_none(config.get("totalvi_model_args"))
+        totalvi_model_args.setdefault("n_latent", n_latent)
+        backend = scvi.model.TOTALVI(adata, **totalvi_model_args)
+        totalvi_train_args = _drop_none(config.get("totalvi_train_args"))
+        if config.get("max_epochs") is not None:
+            totalvi_train_args.setdefault("max_epochs", int(config["max_epochs"]))
+        backend.train(**totalvi_train_args)
+        latent = backend.get_latent_representation()
+        latent_path = _write_latent(latent, adata.obs_names, output_dir, method.upper())
+        obs_path = output_dir / "obs.csv"
+        obs_out.to_csv(obs_path)
+        h5ad_path = output_dir / "integrated.h5ad"
+        if bool(config.get("write_h5ad", True)):
+            adata.obsm[f"X_{method}"] = latent
+            adata.write_h5ad(h5ad_path)
+        manifest = {
+            "method": method,
+            "batch_key": batch_key,
+            "labels_key": labels_key,
+            "latent_csv": str(latent_path),
+            "obs_csv": str(obs_path),
+            "output_h5ad": str(h5ad_path) if h5ad_path.exists() else None,
+            "n_cells": int(adata.n_obs),
+            "n_features": int(adata.n_vars),
+            "n_proteins": int(adata.obsm[protein_obsm_key].shape[1]),
+            "scvi_version": scvi.__version__,
+            "scanpy_version": sc.__version__,
+        }
+        with (output_dir / "manifest.json").open("w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, indent=2)
+        return
+
     scvi.model.SCVI.setup_anndata(adata, **setup_kwargs)
 
     model_args = _drop_none(config.get("model_args"))
@@ -92,7 +151,6 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
         train_args.setdefault("max_epochs", int(config["max_epochs"]))
     model.train(**train_args)
 
-    obs_out = pd.DataFrame(index=adata.obs_names)
     backend = model
     if method == "scanvi":
         if labels_key is None or labels_key not in adata.obs.columns:

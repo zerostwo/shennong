@@ -26,6 +26,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_run_cluster(modality = "cite_seq")` now runs Seurat CITE-seq weighted
+  nearest-neighbor clustering from paired RNA and ADT assays, including ADT CLR
+  normalization, ADT PCA, `weighted.nn` / `wsnn` graph construction, clustering,
+  and `wnn.umap` embedding.
+- `sn_run_cluster(modality = "cite_seq", multimodal_method = ...)` now exposes
+  a unified CITE-seq backend selector. In addition to Seurat WNN, users can run
+  Coralysis/Coralysis2 on the ADT protein assay, scvi-tools totalVI on paired
+  RNA and ADT counts, or MMoCHi ADT landmark registration through a managed
+  pixi backend.
+- `sn_run_cluster(modality = "cite_seq", multimodal_method = "mmochi")` now
+  supports single-sample CITE-seq runs with `batch = NULL` by passing a constant
+  internal batch key to the MMoCHi backend instead of requiring a user-supplied
+  batch column.
 - `sn_run_cluster()` now records reusable stage signatures for normalization,
   cell-cycle scoring, HVG/rare-feature selection, PCA, integration, neighbor
   graph construction, clustering, and UMAP. Re-running on its own output

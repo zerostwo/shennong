@@ -162,6 +162,93 @@ This is different from `rare_feature_method`: `rare_feature_method` asks
 Shennong to discover rare-aware features, while `hvg_features` records a
 user-provided feature prior.
 
+## CITE-seq RNA and protein workflows
+
+For CITE-seq objects with paired RNA and ADT assays, set
+`modality = "cite_seq"`. The default `multimodal_method = "wnn"` runs the
+standard RNA PCA path, normalizes the ADT assay with CLR, computes ADT PCA, then
+uses Seurat weighted nearest neighbors to cluster on the `wsnn` graph and create
+a `wnn.umap` embedding.
+
+```{r cite-seq-wnn}
+pbmc_cite <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  assay = "RNA",
+  adt_assay = "ADT",
+  normalization_method = "seurat",
+  nfeatures = 2000,
+  dims = 1:20,
+  adt_dims = 1:18,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+sn_plot_dim(pbmc_cite, reduction = "wnn.umap", group_by = "seurat_clusters")
+```
+
+For batch-aware CITE-seq integration, choose a multimodal backend explicitly.
+`multimodal_method = "totalvi"` runs scvi-tools totalVI on RNA counts and ADT
+counts. `multimodal_method = "coralysis"` or `"coralysis2"` runs the selected
+Coralysis backend on the ADT assay as a log-normalized protein matrix.
+`multimodal_method = "mmochi"` runs MMoCHi ADT landmark registration across
+the supplied `batch` column, or in single-sample mode when `batch = NULL`.
+It stores the corrected protein matrix as an assay layer when the local Seurat
+object supports arbitrary layers and otherwise under
+`object@misc$mmochi$corrected_protein`, computes a protein-derived `mmochi`
+reduction, and clusters from that reduction. The full MMoCHi hierarchy
+classifier remains an advanced Python workflow because it requires an explicit
+user-defined hierarchy.
+
+```{r cite-seq-totalvi, eval = FALSE}
+pbmc_totalvi <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "totalvi",
+  batch = "library",
+  assay = "RNA",
+  adt_assay = "ADT",
+  normalization_method = "seurat",
+  nfeatures = 3000,
+  dims = 1:30,
+  integration_control = list(max_epochs = 100),
+  verbose = FALSE
+)
+
+sn_plot_dim(pbmc_totalvi, reduction = "umap", group_by = "seurat_clusters")
+```
+
+```{r cite-seq-coralysis-protein, eval = FALSE}
+pbmc_adt_coral <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "coralysis2",
+  batch = "library",
+  adt_assay = "ADT",
+  adt_dims = 1:18,
+  integration_control = list(store_sce = TRUE),
+  verbose = FALSE
+)
+```
+
+```{r cite-seq-mmochi-protein, eval = FALSE}
+pbmc_adt_mmochi <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "mmochi",
+  batch = NULL,
+  adt_assay = "ADT",
+  adt_dims = 1:18,
+  integration_control = list(
+    protein_layer = "data",
+    marker_bandwidths = list(CD3 = 0.25),
+    store_corrected_layer = TRUE
+  ),
+  verbose = FALSE
+)
+```
+
 ## Choose resolution empirically
 
 Instead of treating `resolution = 0.8` as a magic number,

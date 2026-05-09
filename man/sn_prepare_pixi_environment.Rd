@@ -5,6 +5,7 @@
 \alias{sn_call_pixi_environment}
 \alias{sn_call_scvi}
 \alias{sn_call_scanvi}
+\alias{sn_call_mmochi}
 \alias{sn_call_scarches}
 \alias{sn_call_scpoli}
 \alias{sn_call_infercnvpy}
@@ -56,6 +57,8 @@ sn_call_pixi_environment(
 sn_call_scvi(command, args = character(), ...)
 
 sn_call_scanvi(command, args = character(), ...)
+
+sn_call_mmochi(command, args = character(), ...)
 
 sn_call_scarches(command, args = character(), ...)
 

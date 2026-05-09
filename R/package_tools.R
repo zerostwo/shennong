@@ -711,6 +711,12 @@ sn_call_scanvi <- function(command, args = character(), ...) {
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
+sn_call_mmochi <- function(command, args = character(), ...) {
+  sn_call_pixi_environment("mmochi", command = command, args = args, ...)
+}
+
+#' @rdname sn_prepare_pixi_environment
+#' @export
 sn_call_scarches <- function(command, args = character(), ...) {
   sn_call_pixi_environment("scarches", command = command, args = args, ...)
 }
@@ -2345,6 +2351,11 @@ sn_install_shennong <- function(
     "scvi-tools" = "scvi",
     "scverse" = "scvi",
     "scanvi" = "scvi",
+    "totalvi" = "scvi",
+    "total-vi" = "scvi",
+    "mmochi" = "mmochi",
+    "mmochi-landmark" = "mmochi",
+    "mmochi_landmark" = "mmochi",
     "scpoli" = "scarches",
     "sc_poli" = "scarches",
     "scarches" = "scarches",
@@ -2763,7 +2774,7 @@ sn_install_shennong <- function(
   c(
     "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR",
     "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
-    "rtracklayer", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "Nebulosa",
+    "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "Nebulosa",
     "SummarizedExperiment", "limma"
   )
 }

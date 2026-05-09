@@ -1,6 +1,17 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-05
+Last updated: 2026-05-08
+
+## 2026-05-08
+
+- CITE-seq support in `sn_run_cluster()` should be explicit via
+  `modality = "cite_seq"` instead of inferred from the presence of an `ADT`
+  assay. This avoids surprising RNA-only clustering calls on multimodal objects.
+- CITE-seq backend selection should be explicit through `multimodal_method`.
+  `wnn` remains the single-object default; `totalvi` owns joint RNA+ADT latent
+  integration; and `coralysis` / `coralysis2` run on the ADT assay as a
+  log-normalized protein matrix. This keeps protein-aware workflows discoverable
+  without overloading RNA-only `integration_method` semantics.
 
 ## 2026-05-05
 
@@ -423,6 +434,19 @@ Last updated: 2026-05-05
 - Observed-over-expected enrichment belongs beside composition summaries rather than as a plotting-only helper. `sn_calculate_roe()` uses the same `group_by` / `variable` contract as `sn_calculate_composition()`, fills absent combinations with zero observed counts, and returns a long audit table by default with matrix output only as an opt-in convenience.
 - Batch-effect diagnostics need a variable-ranking API, not only one-batch-at-a-time PCR scoring. `sn_calculate_variance_explained()` therefore reports weighted embedding variance explained for multiple metadata variables and keeps partial multi-variable scoring explicit because nested variables such as study and platform can be confounded.
 - The pkgdown GitHub Actions workflow should install the optional packages that are actually exercised by evaluated articles. The data IO article runs real `sn_write()` / `sn_read()` examples and the Zenodo dry-run path, so `qs2`, `rio`, and `zen4R` are part of the website dependency set even though they remain runtime-optional for the package. Article examples should prefer `qs2` over archived `qs` when either format is acceptable.
+- MMoCHi should enter `sn_run_cluster()` as a CITE-seq protein backend, not as
+  a generic RNA batch-integration method. Its user-independent piece is ADT
+  landmark registration, so Shennong exposes `multimodal_method = "mmochi"` for
+  batch-aware ADT correction and clustering on a protein-derived reduction. The
+  full MMoCHi hierarchy classifier remains outside the default wrapper because
+  it requires a user-specified `MMoCHi.Hierarchy` contract that cannot be
+  inferred safely from a Seurat object.
+- Single-sample CITE-seq is a valid MMoCHi use case even though the Python
+  landmark-registration API expects a `batch_key`. When users call
+  `sn_run_cluster(multimodal_method = "mmochi", batch = NULL)`, Shennong should
+  pass a constant internal backend batch key rather than requiring users to
+  create artificial batch labels or derive a pseudo batch from biological
+  annotations.
 
 ## 2026-03-28
 

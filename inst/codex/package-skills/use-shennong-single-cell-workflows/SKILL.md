@@ -66,9 +66,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    forced into the ScaleData/PCA feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
    automatically add rare-aware genes, and use
-   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
-   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
-   batch-integration backend is requested. For scVI/scANVI, Shennong manages a
+	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
+	   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
+	   batch-integration backend is requested. For scVI/scANVI, Shennong manages a
    shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
    artifacts under `~/.shennong/runs/`, and imports the latent reduction back
    into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
@@ -80,10 +80,19 @@ single-cell tasks. This skill is the main entry point for package usage.
    by Shennong.
    Re-running `sn_run_cluster()` on its own output reuses matching stages by
    default; use `rerun_from = "integration"` or `reuse = FALSE` when a stage
-   must be forced to recompute. Leiden clustering auto-installs `leidenbase` by
-   default unless `auto_install = FALSE`.
-   Use `normalization_method = "sctransform"` with `batch = ...` only when an
-   SCTransform-normalized Harmony integration is requested.
+	   must be forced to recompute. Leiden clustering auto-installs `leidenbase` by
+	   default unless `auto_install = FALSE`.
+	   Use `normalization_method = "sctransform"` with `batch = ...` only when an
+	   SCTransform-normalized Harmony integration is requested.
+	   For CITE-seq objects with paired RNA and ADT assays, use
+	   `modality = "cite_seq"` plus `multimodal_method = "wnn"` for Seurat
+	   weighted nearest-neighbor clustering on `weighted.nn` / `wsnn`,
+	   `multimodal_method = "totalvi"` for scvi-tools totalVI RNA+ADT latent
+	   integration, or `multimodal_method = "coralysis"` / `"coralysis2"` to run
+	   Coralysis on the ADT protein assay. Use `multimodal_method = "mmochi"`
+	   when ADT alignment should be driven by MMoCHi landmark registration
+	   before protein-only clustering; it can run with `batch = NULL` for a
+	   single CITE-seq sample.
 3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
    `sn_calculate_variance_explained()`,

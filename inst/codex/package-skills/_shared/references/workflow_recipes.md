@@ -36,11 +36,18 @@ user request to the right Shennong function family quickly.
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`. Use
-   `integration_control = list(accelerator = "auto", mirror = "auto")` when
-   CPU/CUDA selection and Shennong-level mirror configuration should be handled
-   automatically. Set
-   `normalization_method = "sctransform"` only with Harmony when that
-   normalization is desired.
+	   `integration_control = list(accelerator = "auto", mirror = "auto")` when
+	   CPU/CUDA selection and Shennong-level mirror configuration should be handled
+	   automatically. Set
+	   `normalization_method = "sctransform"` only with Harmony when that
+	   normalization is desired.
+	   For CITE-seq, use `modality = "cite_seq"` and select
+	   `multimodal_method = "wnn"`, `"totalvi"`, `"coralysis"`, `"coralysis2"`,
+	   or `"mmochi"`
+	   depending on whether the protein signal should enter through Seurat WNN,
+	   scvi-tools totalVI, Coralysis on the ADT assay, or MMoCHi landmark
+	   registration on the ADT assay. MMoCHi can run as a single-sample CITE-seq
+	   workflow with `batch = NULL`.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
 4. Use `sn_calculate_variance_explained(variables = c(...))` to rank platform,
    study, tissue, sample, or other metadata drivers of residual embedding

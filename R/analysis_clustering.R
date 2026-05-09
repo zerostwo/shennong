@@ -5,6 +5,19 @@
   dims[dims > 0]
 }
 
+.sn_resolve_multimodal_method <- function(multimodal_method = NULL,
+                                          integration_method = "harmony",
+                                          integration_method_supplied = FALSE) {
+  supported <- c("wnn", "coralysis", "coralysis2", "totalvi", "mmochi")
+  if (is.null(multimodal_method)) {
+    if (isTRUE(integration_method_supplied) && integration_method %in% supported) {
+      return(integration_method)
+    }
+    return("wnn")
+  }
+  match.arg(multimodal_method, supported)
+}
+
 .sn_resolve_find_clusters_algorithm <- function(cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden")) {
   if (is.numeric(cluster_algorithm) && length(cluster_algorithm) == 1L) {
     algorithm <- as.integer(cluster_algorithm)
@@ -29,10 +42,11 @@
   cell_cycle = 2L,
   hvg = 3L,
   pca = 4L,
-  integration = 5L,
-  neighbors = 6L,
-  clusters = 7L,
-  umap = 8L
+  adt = 5L,
+  integration = 6L,
+  neighbors = 7L,
+  clusters = 8L,
+  umap = 9L
 )
 
 .sn_resolve_cluster_rerun_from <- function(rerun_from = NULL) {
@@ -163,7 +177,21 @@
       dims = dims,
       npcs = npcs,
       integration_control = integration_control,
-      verbose = verbose
+      verbose = verbose,
+      backend = "Coralysis",
+      method = "coralysis"
+    ),
+    coralysis2 = .sn_run_coralysis_integration(
+      object = object,
+      batch = batch,
+      assay = assay,
+      features = features,
+      dims = dims,
+      npcs = npcs,
+      integration_control = integration_control,
+      verbose = verbose,
+      backend = "Coralysis2",
+      method = "coralysis2"
     ),
     seurat_cca = .sn_run_seurat_layer_integration(
       object = object,
@@ -188,6 +216,15 @@
       verbose = verbose
     ),
     scvi = .sn_run_scvi_integration(
+      object = object,
+      method = method,
+      batch = batch,
+      features = features,
+      assay = assay,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    totalvi = .sn_run_scvi_integration(
       object = object,
       method = method,
       batch = batch,
@@ -234,6 +271,305 @@
   list(object = object, reduction = "harmony")
 }
 
+.sn_resolve_integration_assay_features <- function(object,
+                                                   assay,
+                                                   features,
+                                                   backend = "Integration") {
+  feature_set <- intersect(features, rownames(object[[assay]]))
+  if (length(feature_set) < 2L) {
+    stop(glue("{backend} integration requires at least two selected features present in the object."), call. = FALSE)
+  }
+  feature_set
+}
+
+.sn_mmochi_script_path <- function(script = NULL) {
+  if (!is.null(script) && nzchar(script)) {
+    script <- path.expand(script)
+    if (!file.exists(script)) {
+      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+    }
+    return(normalizePath(script, winslash = "/", mustWork = TRUE))
+  }
+
+  installed <- system.file("pixi", "mmochi", "scripts", "mmochi_run.py", package = "Shennong")
+  if (nzchar(installed) && file.exists(installed)) {
+    return(normalizePath(installed, winslash = "/", mustWork = TRUE))
+  }
+
+  source_path <- file.path(getwd(), "inst", "pixi", "mmochi", "scripts", "mmochi_run.py")
+  if (file.exists(source_path)) {
+    return(normalizePath(source_path, winslash = "/", mustWork = TRUE))
+  }
+
+  stop("Could not locate Shennong's MMoCHi Python runner.", call. = FALSE)
+}
+
+.sn_unique_mmochi_batch_key <- function(object, base = ".sn_mmochi_single_sample") {
+  if (!is.character(base) || length(base) != 1L || !nzchar(base)) {
+    stop("`integration_control$single_sample_batch_key` must be a non-empty string.", call. = FALSE)
+  }
+  metadata_columns <- colnames(object[[]])
+  key <- base
+  counter <- 1L
+  while (key %in% metadata_columns) {
+    counter <- counter + 1L
+    key <- paste0(base, "_", counter)
+  }
+  key
+}
+
+.sn_write_mmochi_input <- function(object,
+                                   input_dir,
+                                   batch,
+                                   protein_assay,
+                                   protein_layer = "data",
+                                   protein_features = NULL) {
+  dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
+  protein <- .sn_get_seurat_layer_data(object = object, assay = protein_assay, layer = protein_layer)
+  feature_set <- protein_features %||% rownames(protein)
+  feature_set <- intersect(feature_set, rownames(protein))
+  if (length(feature_set) < 2L) {
+    stop("MMoCHi integration requires at least two ADT/protein features present in the object.", call. = FALSE)
+  }
+  protein <- protein[feature_set, colnames(object), drop = FALSE]
+  protein_df <- as.data.frame(t(as.matrix(protein)), check.names = FALSE)
+  protein_df <- cbind(cell_id = rownames(protein_df), protein_df)
+
+  metadata <- object[[]]
+  metadata <- metadata[colnames(object), , drop = FALSE]
+  metadata <- data.frame(cell_id = rownames(metadata), metadata, check.names = FALSE)
+
+  protein_path <- file.path(input_dir, "protein.csv")
+  obs_path <- file.path(input_dir, "obs.csv")
+  utils::write.csv(protein_df, protein_path, row.names = FALSE, quote = TRUE)
+  utils::write.csv(metadata, obs_path, row.names = FALSE, quote = TRUE)
+
+  list(
+    input_dir = normalizePath(input_dir, winslash = "/", mustWork = TRUE),
+    protein_path = normalizePath(protein_path, winslash = "/", mustWork = TRUE),
+    obs_path = normalizePath(obs_path, winslash = "/", mustWork = TRUE),
+    protein_features = feature_set,
+    cells = colnames(object),
+    batch = batch
+  )
+}
+
+.sn_import_mmochi_results <- function(object,
+                                      output_dir,
+                                      assay,
+                                      batch,
+                                      backend_batch = batch,
+                                      single_sample_batch = FALSE,
+                                      protein_assay,
+                                      protein_layer,
+                                      protein_features,
+                                      dims,
+                                      npcs,
+                                      reduction = "mmochi",
+                                      corrected_layer = "mmochi.data",
+                                      store_corrected_layer = TRUE) {
+  corrected_path <- file.path(output_dir, "landmark_protein.csv")
+  manifest_path <- file.path(output_dir, "manifest.json")
+  if (!file.exists(corrected_path)) {
+    stop("MMoCHi output is missing `landmark_protein.csv`: ", corrected_path, call. = FALSE)
+  }
+
+  corrected <- utils::read.csv(corrected_path, row.names = 1, check.names = FALSE)
+  missing_cells <- setdiff(colnames(object), rownames(corrected))
+  if (length(missing_cells) > 0L) {
+    stop("MMoCHi landmark output is missing cells from the input object.", call. = FALSE)
+  }
+  missing_features <- setdiff(protein_features, colnames(corrected))
+  if (length(missing_features) > 0L) {
+    stop("MMoCHi landmark output is missing requested ADT/protein features.", call. = FALSE)
+  }
+  corrected <- as.matrix(corrected[colnames(object), protein_features, drop = FALSE])
+  storage.mode(corrected) <- "numeric"
+  corrected_features_by_cells <- t(corrected)
+
+  stored_corrected_layer <- NULL
+  stored_corrected_misc <- NULL
+  if (isTRUE(store_corrected_layer)) {
+    layer_error <- NULL
+    object <- tryCatch(
+      {
+        SeuratObject::LayerData(object = object, assay = protein_assay, layer = corrected_layer) <- corrected_features_by_cells
+        stored_corrected_layer <- corrected_layer
+        object
+      },
+      error = function(e) {
+        layer_error <<- conditionMessage(e)
+        object
+      }
+    )
+    if (!is.null(layer_error)) {
+      object@misc$mmochi <- object@misc$mmochi %||% list()
+      object@misc$mmochi$corrected_protein <- corrected_features_by_cells
+      object@misc$mmochi$corrected_protein_layer_error <- layer_error
+      stored_corrected_misc <- "object@misc$mmochi$corrected_protein"
+    }
+  }
+
+  scaled <- t(scale(t(corrected_features_by_cells)))
+  scaled[is.na(scaled)] <- 0
+  available_pcs <- max(1L, min(as.integer(npcs), as.integer(max(dims)), nrow(scaled), ncol(scaled) - 1L))
+  pca <- stats::prcomp(t(scaled), rank. = available_pcs, center = FALSE, scale. = FALSE)
+  embeddings <- pca$x[, seq_len(available_pcs), drop = FALSE]
+  embeddings <- embeddings[colnames(object), , drop = FALSE]
+  reduction_key <- paste0(toupper(reduction), "_")
+  colnames(embeddings) <- paste0(reduction_key, seq_len(ncol(embeddings)))
+  object[[reduction]] <- Seurat::CreateDimReducObject(
+    embeddings = embeddings,
+    key = reduction_key,
+    assay = assay
+  )
+
+  backend_manifest <- if (file.exists(manifest_path)) {
+    jsonlite::read_json(manifest_path, simplifyVector = TRUE)
+  } else {
+    list()
+  }
+  object@misc$integration <- list(
+    method = "mmochi",
+    batch_by = batch,
+    backend_batch_key = backend_batch,
+    single_sample_batch = isTRUE(single_sample_batch),
+    reduction = reduction,
+    input_features = protein_features,
+    protein_assay = protein_assay,
+    protein_layer = protein_layer,
+    corrected_layer = stored_corrected_layer,
+    corrected_storage = if (!is.null(stored_corrected_layer)) "layer" else if (!is.null(stored_corrected_misc)) "misc" else NULL,
+    corrected_misc = stored_corrected_misc,
+    run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
+    mmochi_version = backend_manifest$mmochi_version %||% NULL
+  )
+
+  list(object = object, reduction = reduction)
+}
+
+.sn_run_mmochi_integration <- function(object,
+                                       batch,
+                                       assay,
+                                       protein_assay,
+                                       protein_features,
+                                       dims,
+                                       npcs,
+                                       integration_control = list(),
+                                       verbose = TRUE) {
+  user_batch <- batch
+  backend_batch <- batch
+  single_sample_batch <- is.null(backend_batch) || !nzchar(backend_batch)
+  if (single_sample_batch) {
+    backend_batch <- .sn_unique_mmochi_batch_key(
+      object = object,
+      base = integration_control$single_sample_batch_key %||% ".sn_mmochi_single_sample"
+    )
+    object[[backend_batch]] <- rep("single_sample", ncol(object))
+    if (verbose) {
+      .sn_log_info("MMoCHi single-sample mode uses internal backend batch key '{backend_batch}'.")
+    }
+  } else if (!backend_batch %in% colnames(object[[]])) {
+    stop("MMoCHi landmark registration requires `batch` to name a metadata column.", call. = FALSE)
+  }
+
+  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  pixi_paths <- sn_pixi_paths(environment = "mmochi", runtime_dir = runtime_dir)
+  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
+  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
+  if (!identical(resolved_mirror, "default")) {
+    sn_configure_pixi_mirror(
+      mirror = mirror,
+      pixi_home = pixi_home,
+      runtime_dir = runtime_dir,
+      append_original = integration_control$mirror_append_original %||% TRUE
+    )
+  }
+
+  pixi_project <- integration_control$pixi_project %||%
+    integration_control$pixi_project_dir %||%
+    pixi_paths$project_dir
+  run_dir <- integration_control$run_dir %||% .sn_default_scvi_run_dir(method = "mmochi", runtime_dir = runtime_dir)
+  input_dir <- file.path(run_dir, "input")
+  output_dir <- file.path(run_dir, "output")
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+  manifest_path <- .sn_prepare_scvi_pixi_project(
+    project_dir = pixi_project,
+    environment = "mmochi",
+    manifest_path = integration_control$manifest_path %||% NULL,
+    manifest_lines = integration_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(integration_control$overwrite_manifest),
+    platforms = integration_control$platforms %||% NULL
+  )
+  protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+  input <- .sn_write_mmochi_input(
+    object = object,
+    input_dir = input_dir,
+    batch = backend_batch,
+    protein_assay = protein_assay,
+    protein_layer = protein_layer,
+    protein_features = protein_features
+  )
+
+  config <- list(
+    method = "mmochi",
+    batch_key = backend_batch,
+    data_key = integration_control$data_key %||% "protein",
+    key_added = integration_control$key_added %||% "landmark_protein",
+    single_peaks = integration_control$single_peaks %||% list(),
+    marker_bandwidths = integration_control$marker_bandwidths %||% list(),
+    peak_overrides = integration_control$peak_overrides %||% list(),
+    inclusion_mask = integration_control$inclusion_mask %||% NULL,
+    landmark_args = integration_control$landmark_args %||% list(),
+    show = integration_control$show %||% FALSE,
+    protein_assay = protein_assay,
+    protein_layer = protein_layer,
+    protein_features = input$protein_features
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
+  script <- .sn_mmochi_script_path(integration_control$script %||% NULL)
+
+  .sn_execute_scvi_pixi(
+    pixi = integration_control$pixi %||% NULL,
+    manifest_path = manifest_path,
+    script = script,
+    input_dir = input$input_dir,
+    output_dir = output_dir,
+    config_path = config_path,
+    environment = integration_control$environment %||% "default",
+    pixi_home = pixi_home,
+    install_pixi = integration_control$install_pixi %||% TRUE,
+    pixi_version = integration_control$pixi_version %||% "latest",
+    pixi_download_url = integration_control$pixi_download_url %||% NULL,
+    verbose = verbose,
+    backend_label = "MMoCHi"
+  )
+
+  result <- .sn_import_mmochi_results(
+    object = object,
+    output_dir = output_dir,
+    assay = assay,
+    batch = user_batch,
+    backend_batch = backend_batch,
+    single_sample_batch = single_sample_batch,
+    protein_assay = protein_assay,
+    protein_layer = protein_layer,
+    protein_features = input$protein_features,
+    dims = dims,
+    npcs = npcs,
+    reduction = integration_control$reduction %||% "mmochi",
+    corrected_layer = integration_control$corrected_layer %||% "mmochi.data",
+    store_corrected_layer = integration_control$store_corrected_layer %||% TRUE
+  )
+
+  if (single_sample_batch && !isTRUE(integration_control$keep_single_sample_batch)) {
+    result$object@meta.data[[backend_batch]] <- NULL
+  }
+  result
+}
+
 .sn_run_coralysis_integration <- function(object,
                                           batch,
                                           assay,
@@ -241,13 +577,36 @@
                                           dims,
                                           npcs,
                                           integration_control = list(),
-                                          verbose = TRUE) {
-  check_installed(c("Coralysis", "SingleCellExperiment", "SummarizedExperiment"))
+                                          verbose = TRUE,
+                                          backend = "Coralysis",
+                                          method = "coralysis") {
+  check_installed(c(backend, "SingleCellExperiment", "SummarizedExperiment"))
 
-  feature_set <- intersect(features, rownames(object))
-  if (length(feature_set) < 2L) {
-    stop("Coralysis integration requires at least two selected features present in the object.", call. = FALSE)
-  }
+  feature_set <- .sn_resolve_integration_assay_features(
+    object = object,
+    assay = assay,
+    features = features,
+    backend = backend
+  )
+  coralysis_ns <- asNamespace(backend)
+  prepare_data <- get("PrepareData", envir = coralysis_ns, inherits = FALSE)
+  run_icp <- get("RunParallelDivisiveICP", envir = coralysis_ns, inherits = FALSE)
+  run_pca <- get("RunPCA", envir = coralysis_ns, inherits = FALSE)
+  reduction_name <- switch(
+    method,
+    coralysis = "coralysis",
+    coralysis2 = "coralysis2"
+  )
+  reduction_key <- switch(
+    method,
+    coralysis = "CORALYSIS_",
+    coralysis2 = "CORALYSIS2_"
+  )
+  default_dimred_name <- switch(
+    method,
+    coralysis = "Coralysis",
+    coralysis2 = "Coralysis2"
+  )
 
   expr <- SeuratObject::LayerData(object = object, assay = assay, layer = "data")
   expr <- expr[feature_set, colnames(object), drop = FALSE]
@@ -258,21 +617,36 @@
     colData = metadata
   )
 
-  if (verbose) .sn_log_info("[sn_run_cluster] Preparing Coralysis input.")
-  sce <- Coralysis::PrepareData(object = sce)
+  if (verbose) .sn_log_info("[sn_run_cluster] Preparing {backend} input.")
+  sce <- prepare_data(object = sce)
 
   icp_args <- .sn_merge_control_args(
-    defaults = list(
-      object = sce,
-      batch.label = batch,
-      threads = 0,
-      verbose = verbose,
-      RNGseed = 717
-    ),
+    defaults = {
+      defaults <- list(
+        object = sce,
+        batch.label = batch,
+        threads = 0,
+        verbose = verbose,
+        RNGseed = 717
+      )
+      batch_sizes <- if (!is.null(batch) && batch %in% colnames(metadata)) {
+        table(metadata[[batch]])
+      } else {
+        ncol(object)
+      }
+      defaults$build.train.params <- list(
+        nhvg = min(length(feature_set), 2000L),
+        p = min(30L, max(1L, length(feature_set) - 1L), max(1L, min(batch_sizes) - 5L))
+      )
+      if (identical(method, "coralysis2")) {
+        defaults$store.joint.probability <- FALSE
+      }
+      defaults
+    },
     control = integration_control$icp_args
   )
-  if (verbose) .sn_log_info("[sn_run_cluster] Running Coralysis multi-level integration.")
-  sce <- do.call(Coralysis::RunParallelDivisiveICP, icp_args)
+  if (verbose) .sn_log_info("[sn_run_cluster] Running {backend} multi-level integration.")
+  sce <- do.call(run_icp, icp_args)
 
   coralysis_dims <- max(dims)
   coralysis_p <- max(1L, min(as.integer(npcs), as.integer(coralysis_dims), ncol(object) - 1L))
@@ -281,41 +655,45 @@
       object = sce,
       assay.name = "joint.probability",
       p = coralysis_p,
-      dimred.name = "Coralysis",
+      dimred.name = default_dimred_name,
       return.model = TRUE
     ),
     control = integration_control$pca_args
   )
-  if (verbose) .sn_log_info("[sn_run_cluster] Running PCA on Coralysis joint probabilities.")
-  sce <- do.call(Coralysis::RunPCA, pca_args)
+  if (verbose) .sn_log_info("[sn_run_cluster] Running PCA on {backend} joint probabilities.")
+  sce <- do.call(run_pca, pca_args)
 
-  dimred_name <- pca_args$dimred.name %||% "Coralysis"
+  dimred_name <- pca_args$dimred.name %||% default_dimred_name
   if (!dimred_name %in% SingleCellExperiment::reducedDimNames(sce)) {
     dimred_name <- utils::tail(SingleCellExperiment::reducedDimNames(sce), n = 1L)
   }
   embeddings <- SingleCellExperiment::reducedDim(sce, dimred_name)
   embeddings <- embeddings[colnames(object), , drop = FALSE]
-  colnames(embeddings) <- paste0("CORALYSIS_", seq_len(ncol(embeddings)))
+  colnames(embeddings) <- paste0(reduction_key, seq_len(ncol(embeddings)))
 
-  object[["coralysis"]] <- Seurat::CreateDimReducObject(
+  object[[reduction_name]] <- Seurat::CreateDimReducObject(
     embeddings = embeddings,
-    key = "CORALYSIS_",
+    key = reduction_key,
     assay = assay
   )
   store_sce <- integration_control$store_sce %||% TRUE
-  object@misc$integration <- list(
-    method = "coralysis",
+  integration_metadata <- list(
+    method = method,
     batch_by = batch,
-    reduction = "coralysis",
+    reduction = reduction_name,
     input_features = feature_set,
     coralysis_dimred = dimred_name,
     stored_sce = isTRUE(store_sce)
   )
+  if (!identical(method, "coralysis")) {
+    integration_metadata$backend_package <- backend
+  }
+  object@misc$integration <- integration_metadata
   if (isTRUE(store_sce)) {
-    object@misc$coralysis <- sce
+    object@misc[[reduction_name]] <- sce
   }
 
-  list(object = object, reduction = "coralysis")
+  list(object = object, reduction = reduction_name)
 }
 
 .sn_run_seurat_layer_integration <- function(object,
@@ -472,7 +850,10 @@
                                  features,
                                  assay,
                                  batch,
-                                 labels_key = NULL) {
+                                 labels_key = NULL,
+                                 protein_assay = NULL,
+                                 protein_layer = "counts",
+                                 protein_features = NULL) {
   dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
 
   feature_set <- intersect(features, rownames(object))
@@ -509,13 +890,41 @@
   obs <- data.frame(cell_id = rownames(obs), obs, check.names = FALSE)
   utils::write.csv(obs, file = obs_path, row.names = FALSE, quote = TRUE)
 
+  protein_counts_path <- NULL
+  proteins_path <- NULL
+  protein_feature_set <- character(0)
+  if (!is.null(protein_assay) && nzchar(protein_assay)) {
+    .sn_validate_seurat_assay_layer(object = object, assay = protein_assay, layer = protein_layer)
+    protein_counts <- .sn_get_seurat_layer_data(object = object, assay = protein_assay, layer = protein_layer)
+    protein_feature_set <- protein_features %||% rownames(protein_counts)
+    protein_feature_set <- unique(protein_feature_set[!is.na(protein_feature_set) & nzchar(protein_feature_set)])
+    protein_feature_set <- intersect(protein_feature_set, rownames(protein_counts))
+    if (length(protein_feature_set) < 1L) {
+      stop("totalVI integration requires at least one protein feature present in `adt_assay`.", call. = FALSE)
+    }
+    protein_counts <- protein_counts[protein_feature_set, colnames(counts), drop = FALSE]
+    protein_counts <- .sn_as_sparse_matrix(protein_counts)
+    protein_counts_path <- file.path(input_dir, "protein_counts.mtx")
+    proteins_path <- file.path(input_dir, "proteins.csv")
+    Matrix::writeMM(obj = protein_counts, file = protein_counts_path)
+    utils::write.csv(
+      data.frame(protein_id = rownames(protein_counts), stringsAsFactors = FALSE),
+      file = proteins_path,
+      row.names = FALSE,
+      quote = TRUE
+    )
+  }
+
   list(
     input_dir = normalizePath(input_dir, winslash = "/", mustWork = TRUE),
     counts_path = normalizePath(counts_path, winslash = "/", mustWork = TRUE),
     features_path = normalizePath(features_path, winslash = "/", mustWork = TRUE),
     cells_path = normalizePath(cells_path, winslash = "/", mustWork = TRUE),
     obs_path = normalizePath(obs_path, winslash = "/", mustWork = TRUE),
-    features = feature_set
+    protein_counts_path = if (!is.null(protein_counts_path)) normalizePath(protein_counts_path, winslash = "/", mustWork = TRUE) else NULL,
+    proteins_path = if (!is.null(proteins_path)) normalizePath(proteins_path, winslash = "/", mustWork = TRUE) else NULL,
+    features = feature_set,
+    protein_features = protein_feature_set
   )
 }
 
@@ -535,7 +944,8 @@
                                   install_pixi = TRUE,
                                   pixi_version = "latest",
                                   pixi_download_url = NULL,
-                                  verbose = TRUE) {
+                                  verbose = TRUE,
+                                  backend_label = "scVI") {
   pixi_info <- sn_ensure_pixi(
     pixi = pixi,
     install = install_pixi,
@@ -558,7 +968,7 @@
     "--config", shQuote(config_path)
   )
   if (verbose) {
-    .sn_log_info("[sn_run_cluster] Executing scVI backend with pixi manifest: {manifest_path}.")
+    .sn_log_info("[sn_run_cluster] Executing {backend_label} backend with pixi manifest: {manifest_path}.")
   }
   env <- if (!is.null(pixi_home) && nzchar(pixi_home)) {
     dir.create(pixi_home, recursive = TRUE, showWarnings = FALSE)
@@ -570,12 +980,12 @@
   status <- tryCatch(
     system2(command = pixi, args = args, env = env, stdout = TRUE, stderr = TRUE),
     error = function(e) {
-      stop("scVI pixi execution failed. ", conditionMessage(e), call. = FALSE)
+      stop(backend_label, " pixi execution failed. ", conditionMessage(e), call. = FALSE)
     }
   )
   exit_code <- attr(status, "status") %||% 0L
   if (!identical(exit_code, 0L)) {
-    stop("scVI pixi execution failed.\n", paste(status, collapse = "\n"), call. = FALSE)
+    stop(backend_label, " pixi execution failed.\n", paste(status, collapse = "\n"), call. = FALSE)
   }
   invisible(status)
 }
@@ -686,6 +1096,18 @@
                                      assay,
                                      integration_control = list(),
                                      verbose = TRUE) {
+  protein_assay <- NULL
+  protein_layer <- NULL
+  protein_features <- NULL
+  if (identical(method, "totalvi")) {
+    protein_assay <- integration_control$protein_assay %||% integration_control$adt_assay %||% NULL
+    if (is.null(protein_assay) || !nzchar(protein_assay)) {
+      stop("totalVI integration requires `integration_control$adt_assay` or `protein_assay`.", call. = FALSE)
+    }
+    protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "counts"
+    protein_features <- integration_control$protein_features %||% integration_control$adt_features %||% NULL
+  }
+
   if (identical(method, "scanvi")) {
     labels_key <- integration_control$label_by %||% integration_control$labels_key %||% integration_control$label_col %||% NULL
     if (is.null(labels_key) || !nzchar(labels_key) || !labels_key %in% colnames(object[[]])) {
@@ -737,7 +1159,10 @@
     features = features,
     assay = assay,
     batch = batch,
-    labels_key = labels_key
+    labels_key = labels_key,
+    protein_assay = protein_assay,
+    protein_layer = protein_layer %||% "counts",
+    protein_features = protein_features
   )
 
   config <- list(
@@ -754,6 +1179,12 @@
     train_args = integration_control$train_args %||% list(),
     scanvi_model_args = integration_control$scanvi_model_args %||% list(),
     scanvi_train_args = integration_control$scanvi_train_args %||% list(),
+    totalvi_model_args = integration_control$totalvi_model_args %||% integration_control$model_args %||% list(),
+    totalvi_train_args = integration_control$totalvi_train_args %||% integration_control$train_args %||% list(),
+    protein_obsm_key = integration_control$protein_obsm_key %||% "protein_expression",
+    protein_assay = protein_assay,
+    protein_layer = protein_layer,
+    protein_features = input$protein_features,
     write_h5ad = integration_control$write_h5ad %||% TRUE,
     accelerator = accelerator$requested,
     pixi_environment = pixi_environment
@@ -1666,16 +2097,48 @@ sn_detect_rare_cells <- function(object,
   list(features = present, missing = missing)
 }
 
+.sn_resolve_assay_features <- function(object,
+                                       assay,
+                                       features = NULL,
+                                       arg_name = "features",
+                                       verbose = TRUE) {
+  available <- rownames(object[[assay]])
+  if (is.null(features)) {
+    return(list(features = available, missing = character(0)))
+  }
+  if (!is.character(features)) {
+    stop("`", arg_name, "` must be NULL or a character vector of feature names.", call. = FALSE)
+  }
+
+  features <- unique(features[!is.na(features) & nzchar(features)])
+  present <- intersect(features, available)
+  missing <- setdiff(features, present)
+  if (length(missing) > 0L && isTRUE(verbose)) {
+    .sn_log_warn(
+      "`{arg_name}` contains {length(missing)} feature(s) not present in assay '{assay}'; ",
+      "ignoring examples: {paste(utils::head(missing, 5), collapse = ', ')}."
+    )
+  }
+  if (length(present) == 0L) {
+    stop("`", arg_name, "` did not contain any features present in assay '", assay, "'.", call. = FALSE)
+  }
+
+  list(features = present, missing = missing)
+}
+
 #' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
 #' When `batch = NULL`, it performs single-dataset clustering with either the
-#' standard Seurat workflow or an SCTransform workflow. When `batch` is
-#' supplied, it performs batch integration followed by clustering and UMAP.
+#' standard Seurat workflow, an SCTransform workflow, or a single-sample
+#' CITE-seq workflow. When `batch` is supplied, it performs batch integration
+#' followed by clustering and UMAP.
 #'
 #' @param object A \code{Seurat} object.
 #' @param batch A column name in \code{object@meta.data} specifying the batch
-#'   labels used for integration. If \code{NULL}, no integration is performed.
+#'   labels used for integration. If \code{NULL}, no RNA batch integration is
+#'   performed. CITE-seq MMoCHi runs in single-sample mode by passing an
+#'   internal constant batch key to the Python backend.
 #' @param batch_by Compatibility alias for \code{batch}.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
 #'   \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
@@ -1685,20 +2148,31 @@ sn_detect_rare_cells <- function(object,
 #'   \code{batch}.
 #' @param integration_method Batch-integration backend used when \code{batch}
 #'   is supplied. Supported values are \code{"harmony"},
-#'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
-#'   \code{"scvi"}, and \code{"scanvi"}.
+#'   \code{"coralysis"}, \code{"coralysis2"}, \code{"seurat_cca"},
+#'   \code{"seurat_rpca"}, \code{"scvi"}, \code{"scanvi"}, and
+#'   \code{"totalvi"}. \code{"mmochi"} is accepted as a CITE-seq convenience
+#'   alias and requires \code{modality = "cite_seq"}.
 #'   \code{"harmony"} preserves the historical Shennong behavior.
-#'   \code{"coralysis"} runs Coralysis multi-level integration on the selected
-#'   log-normalized feature set and stores the integrated embedding as the
-#'   \code{"coralysis"} reduction. \code{"scvi"} and \code{"scanvi"} export
-#'   the selected count matrix to a pixi-managed scverse environment under
-#'   \code{~/.shennong/pixi/}, run the Python backend, and import the latent
-#'   representation as a Seurat reduction.
+#'   \code{"coralysis"} and \code{"coralysis2"} run the corresponding
+#'   Coralysis backend on the selected log-normalized feature set and store the
+#'   integrated embedding as the \code{"coralysis"} or \code{"coralysis2"}
+#'   reduction. \code{"scvi"} and \code{"scanvi"} export the selected count
+#'   matrix to a pixi-managed scverse environment under \code{~/.shennong/pixi/},
+#'   run the Python backend, and import the latent representation as a Seurat
+#'   reduction. \code{"totalvi"} is used for RNA+ADT CITE-seq workflows and is
+#'   usually selected through \code{modality = "cite_seq"} and
+#'   \code{multimodal_method = "totalvi"}.
 #' @param integration_control Optional named list of backend-specific
-#'   parameters. For \code{"coralysis"}, use \code{icp_args} for
-#'   \code{Coralysis::RunParallelDivisiveICP()} arguments, \code{pca_args} for
-#'   \code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
-#'   the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
+#'   parameters. For \code{"coralysis"} and \code{"coralysis2"}, use
+#'   \code{icp_args} for \code{RunParallelDivisiveICP()} arguments,
+#'   \code{pca_args} for \code{RunPCA()} arguments, and \code{store_sce = TRUE}
+#'   to keep the backend SingleCellExperiment under \code{object@misc$coralysis}
+#'   or \code{object@misc$coralysis2}. For \code{"coralysis2"},
+#'   \code{store.joint.probability = FALSE} is used by default to avoid storing
+#'   full-cell probability tables, and default \code{build.train.params} are
+#'   supplied from the selected feature set. Override these fields in
+#'   \code{icp_args} when full probability tables or custom Coralysis training
+#'   sets are required.
 #'   For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
 #'   to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 #'   \code{"scanvi"}, common fields include \code{runtime_dir},
@@ -1707,7 +2181,20 @@ sn_detect_rare_cells <- function(object,
 #'   \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 #'   \code{model_args}, \code{train_args}, and \code{write_h5ad};
 #'   \code{"scanvi"} additionally requires \code{label_by} and accepts
-#'   \code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
+#'   \code{unlabeled_category}. \code{"totalvi"} additionally accepts
+#'   \code{totalvi_model_args}, \code{totalvi_train_args}, and
+#'   \code{protein_obsm_key}. \code{"mmochi"} additionally accepts
+#'   \code{protein_layer}, \code{single_peaks}, \code{marker_bandwidths},
+#'   \code{peak_overrides}, \code{inclusion_mask}, \code{landmark_args},
+#'   \code{corrected_layer}, \code{store_corrected_layer},
+#'   \code{single_sample_batch_key}, and \code{keep_single_sample_batch};
+#'   Shennong runs MMoCHi's ADT landmark registration and imports the corrected
+#'   protein matrix as a protein-derived reduction. When \code{batch = NULL},
+#'   Shennong uses a constant internal backend batch key for single-sample
+#'   registration. When Seurat accepts arbitrary assay layers, the corrected
+#'   matrix is stored as \code{corrected_layer}; otherwise it is kept under
+#'   \code{object@misc$mmochi$corrected_protein}.
+#'   Use \code{sn_pixi_paths()} to inspect the
 #'   generated directory layout, \code{sn_pixi_config_path()} to inspect the
 #'   bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 #'   pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.
@@ -1746,7 +2233,7 @@ sn_detect_rare_cells <- function(object,
 #' @param rerun_from Optional stage name forcing recomputation from that stage
 #'   onward while still allowing earlier matching stages to be reused. Supported
 #'   values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
-#'   \code{"pca"}, \code{"integration"}, \code{"neighbors"},
+#'   \code{"pca"}, \code{"adt"}, \code{"integration"}, \code{"neighbors"},
 #'   \code{"clusters"}, and \code{"umap"}.
 #' @param auto_install Logical; when \code{TRUE}, install missing optional
 #'   clustering dependencies such as \pkg{leidenbase} before the relevant stage.
@@ -1791,6 +2278,35 @@ sn_detect_rare_cells <- function(object,
 #'   from built-in signatures.
 #' @param assay Assay used for clustering. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
+#' @param modality Workflow modality. \code{"rna"} runs the standard RNA-only
+#'   workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
+#'   \code{multimodal_method}.
+#' @param multimodal_method CITE-seq backend used when
+#'   \code{modality = "cite_seq"}. \code{"wnn"} combines RNA PCA with ADT PCA
+#'   using Seurat's weighted nearest-neighbor workflow and clusters on
+#'   \code{"wsnn"}. \code{"coralysis"} and \code{"coralysis2"} run the
+#'   corresponding Coralysis backend on the ADT assay as a log-normalized protein
+#'   matrix. \code{"totalvi"} runs scvi-tools totalVI on RNA counts plus ADT
+#'   counts and clusters on the imported totalVI latent representation.
+#'   \code{"mmochi"} runs MMoCHi ADT landmark registration across batches, or
+#'   in single-sample mode when \code{batch = NULL}, stores the corrected
+#'   protein matrix when supported, computes a protein PCA reduction, and
+#'   clusters on that reduction. When
+#'   \code{NULL}, Shennong keeps the historical CITE-seq default
+#'   \code{"wnn"} unless \code{integration_method} was explicitly set to one of
+#'   the supported multimodal backends.
+#' @param adt_assay Assay containing antibody-derived tag counts for
+#'   \code{modality = "cite_seq"}.
+#' @param adt_layer Layer in \code{adt_assay} used as ADT counts.
+#' @param adt_features Optional ADT/protein features used by CITE-seq backends.
+#'   Defaults to all features in \code{adt_assay}.
+#' @param adt_npcs Number of ADT PCs to compute for \code{modality = "cite_seq"}.
+#' @param adt_dims Numeric vector of ADT PCs used in weighted nearest-neighbor
+#'   graph construction. Defaults to \code{seq_len(min(18, adt_npcs))}.
+#' @param wnn_control Optional named list of additional
+#'   \code{Seurat::FindMultiModalNeighbors()} arguments used only when
+#'   \code{modality = "cite_seq"}. Values here override Shennong's generated
+#'   defaults.
 #' @param return_cluster If \code{TRUE}, return only the cluster_by assignments.
 #' @param verbose Whether to print/log progress messages.
 #'
@@ -1821,7 +2337,7 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi"),
+                           integration_method = c("harmony", "coralysis", "coralysis2", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
                            integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
@@ -1857,6 +2373,14 @@ sn_run_cluster <- function(object,
                            species = NULL,
                            assay = "RNA",
                            layer = "counts",
+                           modality = c("rna", "cite_seq"),
+                           multimodal_method = NULL,
+                           adt_assay = "ADT",
+                           adt_layer = "counts",
+                           adt_features = NULL,
+                           adt_npcs = 30,
+                           adt_dims = NULL,
+                           wnn_control = list(),
                            return_cluster = FALSE,
                            verbose = TRUE,
                            batch_by = NULL) {
@@ -1885,8 +2409,22 @@ sn_run_cluster <- function(object,
     stop("`batch` must be a single metadata column name or `NULL`.", call. = FALSE)
   }
 
+  integration_method_supplied <- !missing(integration_method)
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
+  modality <- match.arg(modality)
+  multimodal_method <- if (identical(modality, "cite_seq")) {
+    .sn_resolve_multimodal_method(
+      multimodal_method = multimodal_method,
+      integration_method = integration_method,
+      integration_method_supplied = integration_method_supplied
+    )
+  } else {
+    if (!is.null(multimodal_method)) {
+      stop("`multimodal_method` is used only when `modality = \"cite_seq\"`.", call. = FALSE)
+    }
+    NULL
+  }
   cluster_algorithm_value <- .sn_resolve_find_clusters_algorithm(cluster_algorithm)
   leiden_method <- match.arg(leiden_method)
   leiden_objective_function <- match.arg(leiden_objective_function)
@@ -1896,6 +2434,9 @@ sn_run_cluster <- function(object,
   }
   if (!is.list(cluster_control)) {
     stop("`cluster_control` must be a named list.", call. = FALSE)
+  }
+  if (!is.list(wnn_control)) {
+    stop("`wnn_control` must be a named list.", call. = FALSE)
   }
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
@@ -1912,6 +2453,46 @@ sn_run_cluster <- function(object,
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{hvg_group_by}' was not found."))
   }
   dims <- .sn_resolve_cluster_dims(dims = dims, npcs = npcs)
+  adt_feature_info <- NULL
+  adt_feature_set <- character(0)
+  if (identical(modality, "cite_seq")) {
+    if (identical(multimodal_method, "wnn") && !is.null(batch)) {
+      stop(
+        "`multimodal_method = \"wnn\"` currently supports single-object WNN clustering only. ",
+        "For CITE-seq batch-aware workflows, use `multimodal_method = \"totalvi\"`, ",
+        "`\"coralysis\"`, `\"coralysis2\"`, or `\"mmochi\"`.",
+        call. = FALSE
+      )
+    }
+    if (multimodal_method %in% c("coralysis", "coralysis2") && is.null(batch)) {
+      stop("`multimodal_method = \"coralysis\"` or `\"coralysis2\"` requires `batch`.", call. = FALSE)
+    }
+    if (identical(normalization_method, "sctransform") && multimodal_method %in% c("coralysis", "coralysis2")) {
+      stop("CITE-seq Coralysis protein workflows currently require `normalization_method = \"seurat\"` or `\"scran\"`.", call. = FALSE)
+    }
+    if (!is.character(adt_assay) || length(adt_assay) != 1L) {
+      stop("`adt_assay` must be a single assay name.", call. = FALSE)
+    }
+    if (!is.character(adt_layer) || length(adt_layer) != 1L) {
+      stop("`adt_layer` must be a single layer name.", call. = FALSE)
+    }
+    adt_npcs <- as.integer(adt_npcs)
+    if (length(adt_npcs) != 1L || is.na(adt_npcs) || adt_npcs < 1L) {
+      stop("`adt_npcs` must be a positive integer.", call. = FALSE)
+    }
+    adt_dims <- .sn_resolve_cluster_dims(dims = adt_dims %||% seq_len(min(18L, adt_npcs)), npcs = adt_npcs)
+    .sn_validate_seurat_assay_layer(object = object, assay = adt_assay, layer = adt_layer)
+    adt_feature_info <- .sn_resolve_assay_features(
+      object = object,
+      assay = adt_assay,
+      features = adt_features,
+      arg_name = "adt_features",
+      verbose = verbose
+    )
+    adt_feature_set <- adt_feature_info$features
+  } else if (integration_method %in% c("totalvi", "mmochi")) {
+    stop("`integration_method = \"totalvi\"` or `\"mmochi\"` requires `modality = \"cite_seq\"`.", call. = FALSE)
+  }
 
   prepared <- .sn_prepare_seurat_analysis_input(
     object = object,
@@ -1919,6 +2500,13 @@ sn_run_cluster <- function(object,
     layer = layer
   )
   object <- prepared$object
+  adt_context <- NULL
+  restore_analysis_inputs <- function(current_object) {
+    if (!is.null(adt_context)) {
+      current_object <- .sn_restore_seurat_analysis_input(object = current_object, context = adt_context)
+    }
+    .sn_restore_seurat_analysis_input(object = current_object, context = prepared$context)
+  }
 
   if (!is_null(x = batch)) {
     if (!(batch %in% colnames(object@meta.data))) {
@@ -1939,7 +2527,8 @@ sn_run_cluster <- function(object,
   if (verbose) {
     .sn_log_info(
       "[sn_run_cluster] Normalization method = {normalization_method}; ",
-      "batch = {batch %||% 'none'}; integration_method = {if (is.null(batch)) 'none' else integration_method}."
+      "batch = {batch %||% 'none'}; integration_method = {if (is.null(batch) || identical(modality, 'cite_seq')) 'none' else integration_method}; ",
+      "modality = {modality}; multimodal_method = {multimodal_method %||% 'none'}."
     )
   }
 
@@ -2000,6 +2589,7 @@ sn_run_cluster <- function(object,
     method = normalization_method,
     assay = assay,
     layer = layer,
+    layer_source_version = 2L,
     nfeatures = if (identical(normalization_method, "sctransform")) nfeatures else NULL,
     vars_to_regress = if (identical(normalization_method, "sctransform")) vars_to_regress else NULL,
     user_hvg = if (identical(normalization_method, "sctransform")) user_hvg else NULL
@@ -2106,11 +2696,11 @@ sn_run_cluster <- function(object,
         object = object,
         method = "scran",
         assay = assay,
-        layer = "counts"
+        layer = layer
       )
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     } else {
-      object <- Seurat::NormalizeData(object = object, verbose = verbose)
+      object <- Seurat::NormalizeData(object = object, assay = assay, layer = layer, verbose = verbose)
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }
 
@@ -2283,60 +2873,311 @@ sn_run_cluster <- function(object,
     }
   }
 
-  integration_signature <- list(
-    method = integration_method,
-    batch = batch,
-    features = hvg,
-    dims = dims,
-    npcs = npcs,
-    theta = theta,
-    group_by_vars = group_by_vars,
-    integration_control = integration_control,
-    pca = pca_signature
-  )
-  if (is_null(x = batch)) {
-    reduction <- "pca"
-  } else if (.sn_can_reuse_cluster_stage(
-    object = object,
-    stage = "integration",
-    signature = integration_signature,
-    reuse = reuse,
-    rerun_from = rerun_from,
-    required = function(current_object, stage_info) {
-      !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
-    }
-  )) {
-    reduction <- object@misc$sn_run_cluster$stages$integration$reduction
-    if (verbose) .sn_log_info("[5/6] Reusing {reduction} integration reduction.")
-  } else {
-    if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
-    integration <- .sn_run_batch_integration(
+  adt_signature <- NULL
+  if (identical(modality, "cite_seq") && multimodal_method %in% c("wnn", "coralysis", "coralysis2", "mmochi")) {
+    adt_signature <- list(
+      modality = modality,
+      multimodal_method = multimodal_method,
+      assay = adt_assay,
+      layer = adt_layer,
+      layer_source_version = 2L,
+      normalization_method = "CLR",
+      margin = 2L,
+      npcs = adt_npcs,
+      features = adt_feature_set,
+      missing_features = adt_feature_info$missing
+    )
+    can_reuse_adt <- .sn_can_reuse_cluster_stage(
       object = object,
+      stage = "adt",
+      signature = adt_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        "apca" %in% names(current_object@reductions) &&
+          .sn_has_seurat_layer(current_object, assay = adt_assay, layer = "data") &&
+          .sn_has_seurat_layer(current_object, assay = adt_assay, layer = "scale.data")
+      }
+    )
+
+    adt_prepared <- .sn_prepare_seurat_analysis_input(
+      object = object,
+      assay = adt_assay,
+      layer = adt_layer
+    )
+    object <- adt_prepared$object
+    adt_context <- adt_prepared$context
+
+    if (can_reuse_adt) {
+      if (verbose) .sn_log_info("[5/6] Reusing ADT normalization and PCA.")
+    } else {
+      if (verbose) .sn_log_info("[5/6] Running ADT CLR normalization and PCA.")
+      object <- Seurat::NormalizeData(
+        object = object,
+        assay = adt_assay,
+        normalization.method = "CLR",
+        margin = 2,
+        verbose = verbose
+      )
+      object <- Seurat::ScaleData(
+        object = object,
+        assay = adt_assay,
+        features = adt_feature_set,
+        verbose = verbose
+      )
+      object <- Seurat::RunPCA(
+        object = object,
+        assay = adt_assay,
+        features = adt_feature_set,
+        npcs = adt_npcs,
+        reduction.name = "apca",
+        reduction.key = "apca_",
+        verbose = verbose,
+        seed.use = 717
+      )
+      object <- .sn_record_cluster_stage(object, "adt", adt_signature, reduction = "apca")
+    }
+    SeuratObject::DefaultAssay(object = object) <- if (identical(normalization_method, "sctransform")) "SCT" else assay
+  }
+
+  if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+    reduction <- "wnn"
+    integration_signature <- NULL
+    reduction_signature <- list(
+      method = "cite_seq_wnn",
+      rna_reduction = "pca",
+      adt_reduction = "apca",
+      rna_dims = dims,
+      adt_dims = adt_dims,
+      pca = pca_signature,
+      adt = adt_signature
+    )
+  } else if (identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "coralysis2")) {
+    integration_signature <- list(
+      method = paste0("cite_seq_", multimodal_method),
+      batch = batch,
+      protein_assay = adt_assay,
+      protein_layer = adt_layer,
+      protein_features = adt_feature_set,
+      dims = adt_dims,
+      npcs = adt_npcs,
+      integration_control = integration_control,
+      adt = adt_signature
+    )
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "integration",
+      signature = integration_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+      }
+    )) {
+      reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+      if (verbose) .sn_log_info("[5/6] Reusing {reduction} protein integration reduction.")
+    } else {
+      if (verbose) .sn_log_info("[5/6] Running {multimodal_method} protein integration.")
+      integration <- .sn_run_batch_integration(
+        object = object,
+        method = multimodal_method,
+        batch = batch,
+        reduction = "apca",
+        features = adt_feature_set,
+        assay = adt_assay,
+        dims = adt_dims,
+        npcs = adt_npcs,
+        theta = theta,
+        group_by_vars = group_by_vars,
+        integration_control = integration_control,
+        verbose = verbose
+      )
+      object <- integration$object
+      reduction <- integration$reduction
+      object@misc$integration$modality <- "cite_seq"
+      object@misc$integration$protein_assay <- adt_assay
+      object@misc$integration$protein_layer <- adt_layer
+      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+    }
+    reduction_signature <- integration_signature
+  } else if (identical(modality, "cite_seq") && identical(multimodal_method, "mmochi")) {
+    mmochi_control <- utils::modifyList(
+      integration_control,
+      list(
+        protein_layer = integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+      ),
+      keep.null = TRUE
+    )
+    integration_signature <- list(
+      method = "cite_seq_mmochi",
+      batch = batch,
+      protein_assay = adt_assay,
+      protein_layer = mmochi_control$protein_layer,
+      protein_features = adt_feature_set,
+      dims = adt_dims,
+      npcs = adt_npcs,
+      integration_control = mmochi_control,
+      adt = adt_signature
+    )
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "integration",
+      signature = integration_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+      }
+    )) {
+      reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+      if (verbose) .sn_log_info("[5/6] Reusing MMoCHi protein integration reduction.")
+    } else {
+      if (verbose) .sn_log_info("[5/6] Running MMoCHi ADT landmark registration.")
+      integration <- .sn_run_mmochi_integration(
+        object = object,
+        batch = batch,
+        assay = adt_assay,
+        protein_assay = adt_assay,
+        protein_features = adt_feature_set,
+        dims = adt_dims,
+        npcs = adt_npcs,
+        integration_control = mmochi_control,
+        verbose = verbose
+      )
+      object <- integration$object
+      reduction <- integration$reduction
+      object@misc$integration$modality <- "cite_seq"
+      object@misc$integration$protein_assay <- adt_assay
+      object@misc$integration$protein_layer <- mmochi_control$protein_layer
+      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+    }
+    reduction_signature <- integration_signature
+  } else if (identical(modality, "cite_seq") && identical(multimodal_method, "totalvi")) {
+    totalvi_control <- utils::modifyList(
+      integration_control,
+      list(
+        adt_assay = adt_assay,
+        adt_layer = adt_layer,
+        adt_features = adt_feature_set
+      ),
+      keep.null = TRUE
+    )
+    integration_signature <- list(
+      method = "cite_seq_totalvi",
+      batch = batch,
+      features = hvg,
+      protein_assay = adt_assay,
+      protein_layer = adt_layer,
+      protein_features = adt_feature_set,
+      integration_control = totalvi_control,
+      pca = pca_signature
+    )
+    if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "integration",
+      signature = integration_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+      }
+    )) {
+      reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+      if (verbose) .sn_log_info("[5/6] Reusing totalVI integration reduction.")
+    } else {
+      if (verbose) .sn_log_info("[5/6] Running totalVI RNA+ADT integration.")
+      integration <- .sn_run_scvi_integration(
+        object = object,
+        method = "totalvi",
+        batch = batch,
+        features = hvg,
+        assay = assay,
+        integration_control = totalvi_control,
+        verbose = verbose
+      )
+      object <- integration$object
+      reduction <- integration$reduction
+      object@misc$integration$modality <- "cite_seq"
+      object@misc$integration$protein_assay <- adt_assay
+      object@misc$integration$protein_layer <- adt_layer
+      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+    }
+    reduction_signature <- integration_signature
+  } else {
+    integration_signature <- list(
       method = integration_method,
       batch = batch,
-      reduction = "pca",
       features = hvg,
-      assay = assay,
       dims = dims,
       npcs = npcs,
       theta = theta,
       group_by_vars = group_by_vars,
       integration_control = integration_control,
-      verbose = verbose
+      pca = pca_signature
     )
-    object <- integration$object
-    reduction <- integration$reduction
-    object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+    if (is_null(x = batch)) {
+      reduction <- "pca"
+    } else if (.sn_can_reuse_cluster_stage(
+      object = object,
+      stage = "integration",
+      signature = integration_signature,
+      reuse = reuse,
+      rerun_from = rerun_from,
+      required = function(current_object, stage_info) {
+        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+      }
+    )) {
+      reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+      if (verbose) .sn_log_info("[5/6] Reusing {reduction} integration reduction.")
+    } else {
+      if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
+      integration <- .sn_run_batch_integration(
+        object = object,
+        method = integration_method,
+        batch = batch,
+        reduction = "pca",
+        features = hvg,
+        assay = assay,
+        dims = dims,
+        npcs = npcs,
+        theta = theta,
+        group_by_vars = group_by_vars,
+        integration_control = integration_control,
+        verbose = verbose
+      )
+      object <- integration$object
+      reduction <- integration$reduction
+      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+    }
+    reduction_signature <- if (is_null(x = batch)) pca_signature else integration_signature
   }
 
   if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
-  dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
-  reduction_signature <- if (is_null(x = batch)) pca_signature else integration_signature
-  neighbors_signature <- list(
-    reduction = reduction,
-    dims = dims,
-    upstream = reduction_signature
-  )
+  if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+    dims <- .sn_valid_reduction_dims(object = object, reduction = "pca", dims = dims)
+    adt_dims <- .sn_valid_reduction_dims(object = object, reduction = "apca", dims = adt_dims)
+    neighbors_signature <- list(
+      method = "weighted_nearest_neighbor",
+      reduction_list = c("pca", "apca"),
+      dims_list = list(rna = dims, adt = adt_dims),
+      modality_weight_name = c("RNA.weight", "ADT.weight"),
+      knn_range = max(1L, min(200L, ncol(object) - 1L)),
+      wnn_control = wnn_control,
+      upstream = reduction_signature
+    )
+  } else {
+    reduction_dims <- if (identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "coralysis2", "mmochi")) {
+      adt_dims
+    } else {
+      dims
+    }
+    dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = reduction_dims)
+    neighbors_signature <- list(
+      reduction = reduction,
+      dims = dims,
+      upstream = reduction_signature
+    )
+  }
   if (.sn_can_reuse_cluster_stage(
     object = object,
     stage = "neighbors",
@@ -2351,24 +3192,44 @@ sn_run_cluster <- function(object,
     if (verbose) .sn_log_info("[6/6] Reusing nearest-neighbor graph.")
   } else {
     graph_names_before <- names(object@graphs)
-    object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
+    if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+      wnn_args <- .sn_merge_control_args(
+        defaults = list(
+          object = object,
+          reduction.list = list("pca", "apca"),
+          dims.list = list(dims, adt_dims),
+          modality.weight.name = c("RNA.weight", "ADT.weight"),
+          knn.range = max(1L, min(200L, ncol(object) - 1L)),
+          verbose = verbose
+        ),
+        control = wnn_control
+      )
+      object <- do.call(Seurat::FindMultiModalNeighbors, wnn_args)
+    } else {
+      object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
+    }
     graph_names_after <- names(object@graphs)
     graph_names <- setdiff(graph_names_after, graph_names_before)
     if (length(graph_names) == 0L) {
       graph_names <- graph_names_after
     }
-    snn_graph <- grep("_snn$", graph_names, value = TRUE)
-    snn_graph <- if (length(snn_graph) > 0L) {
-      snn_graph[[1]]
+    snn_graph <- if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn") && "wsnn" %in% graph_names_after) {
+      "wsnn"
     } else {
-      utils::tail(graph_names, n = 1L)
+      snn_candidates <- grep("_snn$", graph_names, value = TRUE)
+      if (length(snn_candidates) > 0L) {
+        snn_candidates[[1]]
+      } else {
+        utils::tail(graph_names, n = 1L)
+      }
     }
     object <- .sn_record_cluster_stage(
       object,
       "neighbors",
       neighbors_signature,
       graph_names = graph_names,
-      snn_graph = snn_graph
+      snn_graph = snn_graph,
+      nn_name = if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) "weighted.nn" else NULL
     )
   }
   find_clusters_args <- .sn_merge_control_args(
@@ -2420,18 +3281,30 @@ sn_run_cluster <- function(object,
   }
 
   if (return_cluster) {
-    object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
+    object <- restore_analysis_inputs(object)
     if (verbose) .sn_log_info("Integration completed successfully.")
     return(object@meta.data[, cluster_column])
   } else {
-    umap_signature <- list(
-      reduction = reduction,
-      dims = dims,
-      umap.method = "uwot",
-      metric = "cosine",
-      seed.use = 717,
-      upstream = reduction_signature
-    )
+    if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+      umap_signature <- list(
+        method = "weighted_nearest_neighbor",
+        nn.name = "weighted.nn",
+        reduction.name = "wnn.umap",
+        umap.method = "uwot",
+        metric = "cosine",
+        seed.use = 717,
+        upstream = neighbors_signature
+      )
+    } else {
+      umap_signature <- list(
+        reduction = reduction,
+        dims = dims,
+        umap.method = "uwot",
+        metric = "cosine",
+        seed.use = 717,
+        upstream = reduction_signature
+      )
+    }
     if (.sn_can_reuse_cluster_stage(
       object = object,
       stage = "umap",
@@ -2445,18 +3318,32 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[7/7] Reusing UMAP reduction.")
     } else {
       if (verbose) .sn_log_info("[7/7] Running UMAP.")
-      object <- suppressWarnings(Seurat::RunUMAP(
-        object,
-        reduction = reduction,
-        dims = dims,
-        umap.method = "uwot",
-        metric = "cosine",
-        verbose = verbose,
-        seed.use = 717
-      ))
-      object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "umap")
+      if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+        object <- suppressWarnings(Seurat::RunUMAP(
+          object,
+          nn.name = "weighted.nn",
+          reduction.name = "wnn.umap",
+          reduction.key = "wnnUMAP_",
+          umap.method = "uwot",
+          metric = "cosine",
+          verbose = verbose,
+          seed.use = 717
+        ))
+        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "wnn.umap")
+      } else {
+        object <- suppressWarnings(Seurat::RunUMAP(
+          object,
+          reduction = reduction,
+          dims = dims,
+          umap.method = "uwot",
+          metric = "cosine",
+          verbose = verbose,
+          seed.use = 717
+        ))
+        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "umap")
+      }
     }
-    object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
+    object <- restore_analysis_inputs(object)
     if (verbose) .sn_log_info("Integration completed successfully.")
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))
   }

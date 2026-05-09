@@ -25,13 +25,21 @@ sn_run_scanvi(
 \item{object}{A \code{Seurat} object.}
 
 \item{batch}{A column name in \code{object@meta.data} specifying the batch
-labels used for integration. If \code{NULL}, no integration is performed.}
+labels used for integration. If \code{NULL}, no RNA batch integration is
+performed. CITE-seq MMoCHi runs in single-sample mode by passing an
+internal constant batch key to the Python backend.}
 
 \item{integration_control}{Optional named list of backend-specific
-parameters. For \code{"coralysis"}, use \code{icp_args} for
-\code{Coralysis::RunParallelDivisiveICP()} arguments, \code{pca_args} for
-\code{Coralysis::RunPCA()} arguments, and \code{store_sce = TRUE} to keep
-the Coralysis SingleCellExperiment under \code{object@misc$coralysis}.
+parameters. For \code{"coralysis"} and \code{"coralysis2"}, use
+\code{icp_args} for \code{RunParallelDivisiveICP()} arguments,
+\code{pca_args} for \code{RunPCA()} arguments, and \code{store_sce = TRUE}
+to keep the backend SingleCellExperiment under \code{object@misc$coralysis}
+or \code{object@misc$coralysis2}. For \code{"coralysis2"},
+\code{store.joint.probability = FALSE} is used by default to avoid storing
+full-cell probability tables, and default \code{build.train.params} are
+supplied from the selected feature set. Override these fields in
+\code{icp_args} when full probability tables or custom Coralysis training
+sets are required.
 For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
 to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{"scanvi"}, common fields include \code{runtime_dir},
@@ -40,7 +48,20 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 \code{model_args}, \code{train_args}, and \code{write_h5ad};
 \code{"scanvi"} additionally requires \code{label_by} and accepts
-\code{unlabeled_category}. Use \code{sn_pixi_paths()} to inspect the
+\code{unlabeled_category}. \code{"totalvi"} additionally accepts
+\code{totalvi_model_args}, \code{totalvi_train_args}, and
+\code{protein_obsm_key}. \code{"mmochi"} additionally accepts
+\code{protein_layer}, \code{single_peaks}, \code{marker_bandwidths},
+\code{peak_overrides}, \code{inclusion_mask}, \code{landmark_args},
+\code{corrected_layer}, \code{store_corrected_layer},
+\code{single_sample_batch_key}, and \code{keep_single_sample_batch};
+Shennong runs MMoCHi's ADT landmark registration and imports the corrected
+protein matrix as a protein-derived reduction. When \code{batch = NULL},
+Shennong uses a constant internal backend batch key for single-sample
+registration. When Seurat accepts arbitrary assay layers, the corrected
+matrix is stored as \code{corrected_layer}; otherwise it is kept under
+\code{object@misc$mmochi$corrected_protein}.
+Use \code{sn_pixi_paths()} to inspect the
 generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}

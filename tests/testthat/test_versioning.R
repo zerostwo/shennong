@@ -379,6 +379,7 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_true("squidpy" %in% sn_list_pixi_environments())
   expect_true("spatialdata" %in% sn_list_pixi_environments())
   expect_true("stlearn" %in% sn_list_pixi_environments())
+  expect_true("mmochi" %in% sn_list_pixi_environments())
   expect_false("scanvi" %in% sn_list_pixi_environments())
   expect_false("scpoli" %in% sn_list_pixi_environments())
   expect_false("spatial" %in% sn_list_pixi_environments())
@@ -386,6 +387,7 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_equal(dirname(sn_pixi_config_path("scanvi")), dirname(sn_pixi_config_path("scvi")))
   expect_equal(dirname(sn_pixi_config_path("scpoli")), dirname(sn_pixi_config_path("scarches")))
   expect_equal(dirname(sn_pixi_config_path("tarngram")), dirname(sn_pixi_config_path("tangram")))
+  expect_equal(basename(dirname(sn_pixi_config_path("mmochi-landmark"))), "mmochi")
 
   prepared <- sn_prepare_pixi_environment(
     "scpoli",

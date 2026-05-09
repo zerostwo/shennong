@@ -1,6 +1,17 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-05
+Last updated: 2026-05-08
+
+## 2026-05-08
+
+- Added CITE-seq WNN support to `sn_run_cluster()` through
+  `modality = "cite_seq"`, with RNA PCA, ADT CLR normalization/PCA,
+  `FindMultiModalNeighbors()`, `wsnn` clustering, and `wnn.umap` embedding.
+- Extended the CITE-seq interface with `multimodal_method`, adding
+  Coralysis/Coralysis2 protein-assay integration and scvi-tools totalVI
+  RNA+ADT latent integration under the same `sn_run_cluster()` entry point.
+- Updated the clustering vignette, NEWS, and shipped package-skill API notes so
+  the new RNA+ADT workflow is discoverable from package docs and Codex assets.
 
 ## 2026-05-05
 
@@ -541,6 +552,18 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Added `sn_calculate_roe()` for observed-over-expected categorical enrichment from Seurat metadata or data frames, including zero-filled contingency tables and optional matrix output for heatmap-style downstream use.
 - Added `sn_calculate_variance_explained()` for ranking metadata variables by embedding variance explained, including both single-variable screening and partial multi-variable scoring for batch-effect diagnostics.
 - Added the pkgdown CI article dependencies (`qs2`, `rio`, and `zen4R`) required by the evaluated data IO and Zenodo workflow article.
+- Extended CITE-seq `sn_run_cluster()` multimodal backends with
+  `multimodal_method = "mmochi"` / `integration_method = "mmochi"` as an
+  alias. The implementation runs MMoCHi ADT landmark registration through a
+  dedicated pixi backend, imports `landmark_protein.csv`, stores an optional
+  `mmochi.data` ADT layer when supported and otherwise records the corrected
+  protein matrix under `object@misc$mmochi$corrected_protein`, computes a
+  protein-derived `mmochi` reduction, and then uses the ordinary Shennong
+  neighbor/clustering/UMAP stages.
+- Updated the MMoCHi wrapper so single-sample CITE-seq runs can use
+  `batch = NULL`. Shennong now supplies a constant internal backend batch key
+  for the Python API, records that key in `object@misc$integration`, and drops
+  the temporary metadata column from the returned Seurat object by default.
 
 ## Remaining High-Priority Work
 

@@ -11,3 +11,5 @@ README.html
 tests/testthat/Rplots.pdf
 *.tar.gz
 *.Rcheck/
+benchmarks/coralysis_capacity/results*/inputs/
+benchmarks/coralysis_capacity/results*/runs/
