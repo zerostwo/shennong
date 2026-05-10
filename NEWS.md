@@ -36,6 +36,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `FindClusters()` and `RunUMAP()` through symbolic object calls rather than
   `do.call(object = object, ...)`, preventing `object@commands` entries from
   serializing the full Seurat object into command-history call strings.
+- Grouped HVG selection in `sn_run_cluster()` now skips cells with missing or
+  empty `hvg_group_by` labels and runs temporary per-group HVG calls on the
+  selected assay only, avoiding spurious ADT assay removal messages on
+  multimodal objects.
 
 ### Added
 

@@ -2034,6 +2034,8 @@ sn_detect_rare_cells <- function(object,
 .sn_select_variable_features <- function(object,
                                          nfeatures = 3000,
                                          split_by = NULL,
+                                         assay = NULL,
+                                         layer = NULL,
                                          verbose = TRUE) {
   if (is_null(split_by) || identical(split_by, "global")) {
     object <- Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose)
@@ -2047,11 +2049,52 @@ sn_detect_rare_cells <- function(object,
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{split_by}' was not found."))
   }
 
-  split_values <- as.character(object[[split_by, drop = TRUE]])
+  metadata <- object[[]]
+  split_values <- as.character(metadata[[split_by]])
+  names(split_values) <- rownames(metadata)
+  analysis_cells <- colnames(object)
+  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
+  if (!is.null(layer) && assay %in% names(object@assays)) {
+    matched_layers <- .sn_match_seurat_layers(object = object, assay = assay, layer = layer)
+    if (length(matched_layers) > 0L) {
+      layer_cells <- unique(unlist(lapply(matched_layers, function(current_layer) {
+        colnames(SeuratObject::LayerData(object = object, assay = assay, layer = current_layer))
+      }), use.names = FALSE))
+      analysis_cells <- intersect(analysis_cells, layer_cells)
+    }
+  }
+  analysis_cells <- intersect(analysis_cells, names(split_values))
+  split_values <- split_values[analysis_cells]
+  valid_group <- !is.na(split_values) & nzchar(split_values)
+  if (verbose && any(!valid_group)) {
+    .sn_log_warn(
+      "[hvg] Skipping {sum(!valid_group)} cell(s) with missing or empty `{split_by}` values during grouped HVG selection."
+    )
+  }
+  analysis_cells <- analysis_cells[valid_group]
+  split_values <- split_values[valid_group]
+  if (length(analysis_cells) == 0L) {
+    stop(glue("No cells with non-missing `{split_by}` values are available for grouped HVG selection."), call. = FALSE)
+  }
+
+  hvg_object <- object
+  SeuratObject::DefaultAssay(object = hvg_object) <- assay
+  extra_assays <- setdiff(names(hvg_object@assays), assay)
+  if (length(extra_assays) > 0L) {
+    for (extra_assay in extra_assays) {
+      hvg_object[[extra_assay]] <- NULL
+    }
+  }
+
   split_levels <- unique(split_values)
+  skipped_groups <- character(0)
   feature_lists <- lapply(split_levels, function(current_group) {
-    current_cells <- colnames(object)[split_values == current_group]
-    current_object <- object[, current_cells]
+    current_cells <- analysis_cells[split_values == current_group]
+    if (length(current_cells) < 2L) {
+      skipped_groups <<- c(skipped_groups, current_group)
+      return(character(0))
+    }
+    current_object <- hvg_object[, current_cells]
     current_object <- Seurat::FindVariableFeatures(
       current_object,
       nfeatures = nfeatures,
@@ -2059,6 +2102,17 @@ sn_detect_rare_cells <- function(object,
     )
     Seurat::VariableFeatures(current_object)
   })
+  feature_lists <- Filter(length, feature_lists)
+  if (verbose && length(skipped_groups) > 0L) {
+    .sn_log_warn(
+      "[hvg] Skipping {length(skipped_groups)} `{split_by}` group(s) with fewer than 2 analyzable cells: ",
+      "{paste(utils::head(skipped_groups, 5), collapse = ', ')}",
+      "{if (length(skipped_groups) > 5) '...' else ''}."
+    )
+  }
+  if (length(feature_lists) == 0L) {
+    stop(glue("No `{split_by}` groups have enough analyzable cells for grouped HVG selection."), call. = FALSE)
+  }
 
   feature_frequency <- sort(table(unlist(feature_lists, use.names = FALSE)), decreasing = TRUE)
   all_features <- names(feature_frequency)
@@ -2821,6 +2875,8 @@ sn_run_cluster <- function(object,
         object = object,
         nfeatures = hvg_candidate_nfeatures,
         split_by = hvg_group_by,
+        assay = assay,
+        layer = "data",
         verbose = verbose
       )
       object <- hvg_info$object

@@ -1661,7 +1661,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
 
   captured <- list()
   local_mocked_bindings(
-    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, verbose = TRUE) {
+    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, assay = NULL, layer = NULL, verbose = TRUE) {
       captured <<- c(captured, list(split_by))
       list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
     },
@@ -1683,7 +1683,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
 
   captured <- list()
   local_mocked_bindings(
-    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, verbose = TRUE) {
+    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, assay = NULL, layer = NULL, verbose = TRUE) {
       captured <<- c(captured, list(split_by))
       list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
     },
@@ -1703,6 +1703,56 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
   )
 
   expect_equal(captured[[1]], "orig.ident")
+})
+
+test_that("grouped HVG selection skips missing group labels", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 71, prefix = "hvg-na")
+  object$donor <- rep(c("A", "B"), each = ncol(object) / 2)
+  object$donor[c(1, 2)] <- NA_character_
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  hvg_info <- .sn_select_variable_features(
+    object = object,
+    nfeatures = 30,
+    split_by = "donor",
+    assay = "RNA",
+    layer = "data",
+    verbose = FALSE
+  )
+
+  expect_s4_class(hvg_info$object, "Seurat")
+  expect_gt(length(hvg_info$features), 0)
+  expect_lte(length(hvg_info$features), 30)
+  expect_false(anyNA(hvg_info$features))
+})
+
+test_that("grouped HVG selection ignores non-analysis assays", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 72, prefix = "hvg-adt", n_cells = 50)
+  set.seed(73)
+  adt_counts <- matrix(rpois(24 * 25, lambda = 5), nrow = 24, ncol = 25)
+  adt_counts <- Matrix::Matrix(adt_counts, sparse = TRUE)
+  rownames(adt_counts) <- paste0("ADT", seq_len(24))
+  colnames(adt_counts) <- colnames(object)[seq_len(25)]
+  object[["ADT"]] <- SeuratObject::CreateAssayObject(counts = adt_counts)
+  object$donor <- rep(c("A", "B"), each = ncol(object) / 2)
+  object <- Seurat::NormalizeData(object, assay = "RNA", verbose = FALSE)
+
+  expect_message(hvg_info <- .sn_select_variable_features(
+    object = object,
+    nfeatures = 30,
+    split_by = "donor",
+    assay = "RNA",
+    layer = "data",
+    verbose = FALSE
+  ), NA)
+
+  expect_true("ADT" %in% names(hvg_info$object@assays))
+  expect_gt(length(hvg_info$features), 0)
+  expect_lte(length(hvg_info$features), 30)
 })
 
 test_that("sn_run_cluster handles merged split layers with differing feature sets", {

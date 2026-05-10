@@ -25,6 +25,10 @@ Last updated: 2026-05-10
   object calls instead of `do.call(object = object, ...)`, preventing
   `FindClusters` and UMAP command-history entries from capturing the full
   Seurat object in `object@commands`.
+- Hardened grouped HVG selection in `sn_run_cluster()` for multimodal and
+  partially annotated objects: cells with missing `hvg_group_by` labels are
+  skipped, and temporary per-group HVG calls keep only the selected assay so
+  ADT assays are not repeatedly removed during RNA feature selection.
 
 ## 2026-05-08
 

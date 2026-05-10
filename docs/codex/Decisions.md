@@ -23,6 +23,11 @@ Last updated: 2026-05-10
   `do.call()` with the full object stored in the argument list. When dynamic
   arguments are needed, construct a symbolic `object = object` call so Seurat's
   command logger records compact call strings like direct Seurat usage.
+- Grouped HVG selection is an assay-local preprocessing step. Even when the
+  user object contains ADT or other assays, Shennong should subset only the
+  selected assay for temporary per-group HVG calls and skip cells with missing
+  grouping labels instead of letting Seurat drop unrelated assays or fail with
+  no cells in the default assay.
 
 ## 2026-05-08
 
