@@ -746,7 +746,11 @@
     control = integration_control
   )
   if (verbose) .sn_log_info("[sn_run_cluster] Running Seurat layer integration with method = {method}.")
-  object <- do.call(Seurat::IntegrateLayers, args)
+  object <- .sn_call_with_symbolic_object(
+    fun_call = quote(Seurat::IntegrateLayers),
+    object = object,
+    args = args
+  )
   object[[assay]] <- SeuratObject::JoinLayers(object[[assay]])
   SeuratObject::DefaultAssay(object = object) <- old_default_assay
   object@misc$integration <- list(
@@ -2312,6 +2316,10 @@ sn_detect_rare_cells <- function(object,
 #'   \code{Seurat::FindMultiModalNeighbors()} arguments used only when
 #'   \code{modality = "cite_seq"}. Values here override Shennong's generated
 #'   defaults.
+#' @param umap_control Optional named list of additional
+#'   \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
+#'   generated defaults, for example \code{n.neighbors}, \code{min.dist},
+#'   \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
 #' @param return_cluster If \code{TRUE}, return only the cluster_by assignments.
 #' @param verbose Whether to print/log progress messages.
 #'
@@ -2386,6 +2394,7 @@ sn_run_cluster <- function(object,
                            adt_npcs = 30,
                            adt_dims = NULL,
                            wnn_control = list(),
+                           umap_control = list(),
                            return_cluster = FALSE,
                            verbose = TRUE,
                            batch_by = NULL) {
@@ -2442,6 +2451,9 @@ sn_run_cluster <- function(object,
   }
   if (!is.list(wnn_control)) {
     stop("`wnn_control` must be a named list.", call. = FALSE)
+  }
+  if (!is.list(umap_control)) {
+    stop("`umap_control` must be a named list.", call. = FALSE)
   }
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
@@ -2667,7 +2679,11 @@ sn_run_cluster <- function(object,
       if (length(user_hvg) > 0L) {
         sct_args$return.only.var.genes <- FALSE
       }
-      object <- do.call(Seurat::SCTransform, sct_args)
+      object <- .sn_call_with_symbolic_object(
+        fun_call = quote(Seurat::SCTransform),
+        object = object,
+        args = sct_args
+      )
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }
 
@@ -3280,7 +3296,11 @@ sn_run_cluster <- function(object,
         ),
         control = wnn_control
       )
-      object <- do.call(Seurat::FindMultiModalNeighbors, wnn_args)
+      object <- .sn_call_with_symbolic_object(
+        fun_call = quote(Seurat::FindMultiModalNeighbors),
+        object = object,
+        args = wnn_args
+      )
     } else {
       object <- Seurat::FindNeighbors(object, reduction = reduction, dims = dims, verbose = verbose)
     }
@@ -3352,7 +3372,11 @@ sn_run_cluster <- function(object,
       repos = install_repos,
       ask = install_ask
     )
-    object <- do.call(Seurat::FindClusters, find_clusters_args)
+    object <- .sn_call_with_symbolic_object(
+      fun_call = quote(Seurat::FindClusters),
+      object = object,
+      args = find_clusters_args
+    )
     object <- .sn_record_cluster_stage(object, "clusters", cluster_signature, cluster_column = cluster_column)
   }
 
@@ -3362,24 +3386,37 @@ sn_run_cluster <- function(object,
     return(object@meta.data[, cluster_column])
   } else {
     if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
-      umap_signature <- list(
-        method = "weighted_nearest_neighbor",
-        nn.name = "weighted.nn",
-        reduction.name = "wnn.umap",
-        umap.method = "uwot",
-        metric = "cosine",
-        seed.use = 717,
-        upstream = neighbors_signature
+      umap_args <- .sn_merge_control_args(
+        defaults = list(
+          nn.name = "weighted.nn",
+          reduction.name = "wnn.umap",
+          reduction.key = "wnnUMAP_",
+          umap.method = "uwot",
+          metric = "cosine",
+          verbose = verbose,
+          seed.use = 717
+        ),
+        control = umap_control
       )
+      umap_signature <- umap_args
+      umap_signature$verbose <- NULL
+      umap_signature$method <- "weighted_nearest_neighbor"
+      umap_signature$upstream <- neighbors_signature
     } else {
-      umap_signature <- list(
-        reduction = reduction,
-        dims = dims,
-        umap.method = "uwot",
-        metric = "cosine",
-        seed.use = 717,
-        upstream = reduction_signature
+      umap_args <- .sn_merge_control_args(
+        defaults = list(
+          reduction = reduction,
+          dims = dims,
+          umap.method = "uwot",
+          metric = "cosine",
+          verbose = verbose,
+          seed.use = 717
+        ),
+        control = umap_control
       )
+      umap_signature <- umap_args
+      umap_signature$verbose <- NULL
+      umap_signature$upstream <- reduction_signature
     }
     if (.sn_can_reuse_cluster_stage(
       object = object,
@@ -3394,29 +3431,21 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[7/7] Reusing UMAP reduction.")
     } else {
       if (verbose) .sn_log_info("[7/7] Running UMAP.")
+      umap_reduction <- umap_args$reduction.name %||% "umap"
       if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
-        object <- suppressWarnings(Seurat::RunUMAP(
-          object,
-          nn.name = "weighted.nn",
-          reduction.name = "wnn.umap",
-          reduction.key = "wnnUMAP_",
-          umap.method = "uwot",
-          metric = "cosine",
-          verbose = verbose,
-          seed.use = 717
+        object <- suppressWarnings(.sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::RunUMAP),
+          object = object,
+          args = umap_args
         ))
-        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "wnn.umap")
+        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = umap_reduction)
       } else {
-        object <- suppressWarnings(Seurat::RunUMAP(
-          object,
-          reduction = reduction,
-          dims = dims,
-          umap.method = "uwot",
-          metric = "cosine",
-          verbose = verbose,
-          seed.use = 717
+        object <- suppressWarnings(.sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::RunUMAP),
+          object = object,
+          args = umap_args
         ))
-        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = "umap")
+        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = umap_reduction)
       }
     }
     object <- restore_analysis_inputs(object)
@@ -3619,6 +3648,268 @@ sn_run_cluster <- function(object,
     "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\")` first, ",
     "or avoid `integration_control = list(store_sce = FALSE)` if the object should be used as a reference.",
     call. = FALSE
+  )
+}
+
+.sn_minimize_coralysis_pca_model <- function(pca_model) {
+  if (!is.list(pca_model)) {
+    return(pca_model)
+  }
+  keep <- intersect(c("x", "center", "scale", "rotation"), names(pca_model))
+  pca_model[keep]
+}
+
+.sn_prepare_coralysis_label_transfer_reference <- function(object,
+                                                          label_by,
+                                                          metadata_columns = NULL,
+                                                          keep_umap_model = FALSE,
+                                                          verbose = TRUE) {
+  check_installed(c("SingleCellExperiment", "SummarizedExperiment", "S4Vectors"))
+
+  ref_sce <- .sn_get_coralysis_reference_sce(
+    reference = object,
+    verbose = verbose,
+    label_col = label_by
+  )
+  coldata <- SummarizedExperiment::colData(ref_sce)
+  if (!label_by %in% colnames(coldata)) {
+    stop(glue("`label_by` column '{label_by}' was not found in the Coralysis reference colData."), call. = FALSE)
+  }
+
+  coralysis <- S4Vectors::metadata(ref_sce)$coralysis
+  required <- c("models", "pca.model", "pca.params")
+  missing_required <- required[vapply(coralysis[required], is.null, logical(1))]
+  if (length(missing_required) > 0L) {
+    stop(
+      "The Coralysis reference is missing required field(s): ",
+      paste(missing_required, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (is.null(coralysis$pca.params$select.icp.tables)) {
+    stop("The Coralysis reference is missing `pca.params$select.icp.tables`.", call. = FALSE)
+  }
+
+  keep_cols <- unique(c(label_by, metadata_columns))
+  keep_cols <- intersect(keep_cols, colnames(coldata))
+  coldata <- coldata[, keep_cols, drop = FALSE]
+
+  reference <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(),
+    rowData = S4Vectors::DataFrame(row.names = rownames(ref_sce)),
+    colData = coldata
+  )
+  reference_metadata <- S4Vectors::metadata(reference)
+  reference_metadata$coralysis <- list(
+    models = coralysis$models,
+    pca.model = .sn_minimize_coralysis_pca_model(coralysis$pca.model),
+    pca.params = list(select.icp.tables = coralysis$pca.params$select.icp.tables)
+  )
+  if (isTRUE(keep_umap_model) && !is.null(coralysis$umap.model)) {
+    reference_metadata$coralysis$umap.model <- coralysis$umap.model
+  }
+  reference_metadata$shennong_reference <- list(
+    method = "coralysis",
+    label_by = label_by,
+    n_features = nrow(reference),
+    n_cells = ncol(reference),
+    assays_dropped = TRUE,
+    reduced_dims_dropped = TRUE,
+    joint_probability_dropped = TRUE
+  )
+  S4Vectors::metadata(reference) <- reference_metadata
+  reference
+}
+
+.sn_prepare_seurat_label_transfer_reference <- function(object,
+                                                        label_by,
+                                                        method,
+                                                        assay = NULL,
+                                                        layers = NULL,
+                                                        features = NULL,
+                                                        reduction = NULL,
+                                                        metadata_columns = NULL) {
+  check_installed("Seurat")
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object for this label-transfer method.", call. = FALSE)
+  }
+  if (!label_by %in% colnames(object[[]])) {
+    stop(glue("`label_by` column '{label_by}' was not found in `object` metadata."), call. = FALSE)
+  }
+
+  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
+  if (!assay %in% names(object@assays)) {
+    stop(glue("Assay '{assay}' was not found."), call. = FALSE)
+  }
+
+  available_layers <- SeuratObject::Layers(object = object[[assay]])
+  if (is.null(layers)) {
+    layers <- switch(
+      method,
+      seurat = intersect(c("counts", "data"), available_layers),
+      scanvi = intersect("counts", available_layers),
+      scarches = intersect("counts", available_layers)
+    )
+    if (length(layers) == 0L) {
+      layers <- available_layers[1]
+    }
+  } else if (identical(layers, "all")) {
+    layers <- available_layers
+  }
+  missing_layers <- setdiff(layers, available_layers)
+  if (length(missing_layers) > 0L) {
+    stop(
+      "Layer(s) not found in assay '", assay, "': ",
+      paste(missing_layers, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  if (is.null(reduction) && identical(method, "seurat") && "pca" %in% names(object@reductions)) {
+    reduction <- "pca"
+  }
+  dimreducs <- reduction %||% character(0)
+
+  old_assay <- SeuratObject::DefaultAssay(object = object)
+  on.exit(SeuratObject::DefaultAssay(object = object) <- old_assay, add = TRUE)
+  SeuratObject::DefaultAssay(object = object) <- assay
+  reference <- Seurat::DietSeurat(
+    object = object,
+    assays = assay,
+    layers = layers,
+    features = features,
+    dimreducs = dimreducs,
+    graphs = character(0),
+    misc = FALSE
+  )
+
+  keep_cols <- unique(c(label_by, metadata_columns))
+  keep_cols <- intersect(keep_cols, colnames(reference[[]]))
+  reference@meta.data <- reference@meta.data[, keep_cols, drop = FALSE]
+  reference@misc$label_transfer_reference <- list(
+    method = method,
+    label_by = label_by,
+    assay = assay,
+    layers = layers,
+    features = features,
+    reduction = reduction
+  )
+  reference
+}
+
+.sn_write_label_transfer_reference <- function(reference,
+                                               path = NULL,
+                                               overwrite = FALSE,
+                                               ...) {
+  if (is.null(path)) {
+    return(reference)
+  }
+  if (file.exists(path) && !isTRUE(overwrite)) {
+    stop("`path` already exists. Set `overwrite = TRUE` to replace it: ", path, call. = FALSE)
+  }
+  sn_write(reference, path = path, ...)
+  reference
+}
+
+#' Prepare a compact label-transfer reference
+#'
+#' \code{sn_prepare_label_transfer_reference()} converts a full analysis object
+#' into a smaller reference object for \code{\link{sn_transfer_labels}}. For
+#' native Coralysis, it returns a minimal \code{SingleCellExperiment} containing
+#' the trained Coralysis models, PCA model, feature names, and selected
+#' reference labels, while dropping the large reference assays, reduced
+#' dimensions, and stored joint probabilities. For Seurat, scANVI, and scArches
+#' workflows, it returns a slim Seurat object with only the selected assay
+#' layers, labels, optional features, and optional reduction.
+#'
+#' @param object A Seurat object. For \code{method = "coralysis"}, an existing
+#'   Coralysis-trained \code{SingleCellExperiment} is also accepted.
+#' @param label_by Metadata column containing reference labels.
+#' @param method Label-transfer backend the reference should support.
+#' @param assay Assay to keep for Seurat/scANVI/scArches references.
+#' @param layers Layers to keep for Seurat/scANVI/scArches references. Defaults
+#'   to \code{counts} and \code{data} for Seurat transfer, and \code{counts} for
+#'   scANVI/scArches. Use \code{"all"} to retain all layers in \code{assay}.
+#' @param features Optional features to keep for Seurat/scANVI/scArches
+#'   references.
+#' @param reduction Optional dimensional reduction to keep. Defaults to
+#'   \code{"pca"} for Seurat references when available.
+#' @param metadata_columns Additional metadata columns to keep alongside
+#'   \code{label_by}.
+#' @param keep_umap_model For Coralysis references, keep the UMAP projection
+#'   model if present. This is only needed when using
+#'   \code{transfer_control = list(project.umap = TRUE)}.
+#' @param path Optional output path. Use \code{.qs2} for serialized reference
+#'   objects.
+#' @param overwrite Logical; overwrite an existing \code{path}.
+#' @param verbose Whether to print progress messages.
+#' @param ... Additional arguments passed to \code{\link{sn_write}} when
+#'   \code{path} is supplied.
+#'
+#' @return A compact Seurat or SingleCellExperiment reference object.
+#'
+#' @examples
+#' \dontrun{
+#' coral_ref <- sn_prepare_label_transfer_reference(
+#'   reference,
+#'   label_by = "cell_type",
+#'   method = "coralysis",
+#'   path = "data/processed/pbmc_coralysis_reference.qs2",
+#'   overwrite = TRUE
+#' )
+#'
+#' query <- sn_transfer_labels(
+#'   query,
+#'   reference = coral_ref,
+#'   label_by = "cell_type",
+#'   method = "coralysis"
+#' )
+#' }
+#' @export
+sn_prepare_label_transfer_reference <- function(object,
+                                                label_by,
+                                                method = c("coralysis", "seurat", "scanvi", "scarches"),
+                                                assay = NULL,
+                                                layers = NULL,
+                                                features = NULL,
+                                                reduction = NULL,
+                                                metadata_columns = NULL,
+                                                keep_umap_model = FALSE,
+                                                path = NULL,
+                                                overwrite = FALSE,
+                                                verbose = TRUE,
+                                                ...) {
+  method <- match.arg(method)
+  if (!is.character(label_by) || length(label_by) != 1L || !nzchar(label_by)) {
+    stop("`label_by` must be a non-empty metadata column name.", call. = FALSE)
+  }
+
+  reference <- if (identical(method, "coralysis")) {
+    .sn_prepare_coralysis_label_transfer_reference(
+      object = object,
+      label_by = label_by,
+      metadata_columns = metadata_columns,
+      keep_umap_model = keep_umap_model,
+      verbose = verbose
+    )
+  } else {
+    .sn_prepare_seurat_label_transfer_reference(
+      object = object,
+      label_by = label_by,
+      method = method,
+      assay = assay,
+      layers = layers,
+      features = features,
+      reduction = reduction,
+      metadata_columns = metadata_columns
+    )
+  }
+
+  .sn_write_label_transfer_reference(
+    reference = reference,
+    path = path,
+    overwrite = overwrite,
+    ...
   )
 }
 

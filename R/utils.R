@@ -370,6 +370,21 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   cleaned$idx
 }
 
+.sn_call_with_symbolic_object <- function(fun_call, object, args = list(), object_arg = "object", envir = parent.frame()) {
+  if (!is.list(args)) {
+    stop("`args` must be a named list.", call. = FALSE)
+  }
+  if (!is.character(object_arg) || length(object_arg) != 1L || !nzchar(object_arg)) {
+    stop("`object_arg` must be a non-empty character scalar.", call. = FALSE)
+  }
+
+  eval_env <- new.env(parent = envir)
+  eval_env[[object_arg]] <- object
+  args <- args[names(args) != object_arg]
+  call_args <- c(stats::setNames(list(as.name(object_arg)), object_arg), args)
+  eval(as.call(c(list(fun_call), call_args)), envir = eval_env)
+}
+
 .sn_log_seurat_command <- function(object, assay = NULL, name = NULL) {
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(
     object = object,

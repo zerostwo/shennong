@@ -15,6 +15,14 @@ Last updated: 2026-05-10
   Coralysis SingleCellExperiment and retained PCA model are stored under
   `object@misc$coralysis`, while users can opt out with `store_sce = FALSE` for
   clustering-only runs.
+- UMAP display geometry should be tunable separately from integration and
+  clustering. `sn_run_cluster()` therefore exposes `umap_control` for
+  `Seurat::RunUMAP()` arguments instead of overloading Coralysis or graph
+  clustering parameters when only the two-dimensional layout needs adjustment.
+- Shennong wrappers should not call Seurat object-mutating functions through
+  `do.call()` with the full object stored in the argument list. When dynamic
+  arguments are needed, construct a symbolic `object = object` call so Seurat's
+  command logger records compact call strings like direct Seurat usage.
 
 ## 2026-05-08
 

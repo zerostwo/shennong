@@ -66,6 +66,23 @@ neighbor graph, and UMAP, then recomputes only the cluster labels. Use
 `rerun_from = "integration"` after changing an integration backend, or
 `reuse = FALSE` when a completely fresh run is needed.
 
+UMAP geometry can be tuned independently from clustering with `umap_control`.
+This is useful when clusters are biologically separate but overlap visually in
+the two-dimensional embedding.
+
+```{r tune-umap, eval = FALSE}
+pbmc_umap <- sn_run_cluster(
+  pbmc,
+  umap_control = list(
+    n.neighbors = 20,
+    min.dist = 0.1,
+    spread = 1,
+    reduction.name = "umap_tuned"
+  ),
+  rerun_from = "umap"
+)
+```
+
 The result is a regular Seurat object. You can use Shennong plotting helpers or
 drop down to Seurat whenever needed.
 
@@ -343,6 +360,10 @@ pbmc_coral <- sn_run_cluster(
   integration_control = list(
     icp_args = list(L = 25, threads = 2),
     pca_args = list(p = 20)
+  ),
+  umap_control = list(
+    n.neighbors = 20,
+    min.dist = 0.1
   ),
   verbose = FALSE
 )

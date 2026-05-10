@@ -18,6 +18,13 @@ Last updated: 2026-05-10
   stores the trained Coralysis `SingleCellExperiment` under
   `object@misc$coralysis` unless `integration_control = list(store_sce = FALSE)`
   is supplied.
+- Added `umap_control` to `sn_run_cluster()` so UMAP geometry can be retuned
+  through `Seurat::RunUMAP()` arguments without changing the upstream
+  integration, neighbor graph, or cluster labels.
+- Updated configurable Seurat calls inside `sn_run_cluster()` to use symbolic
+  object calls instead of `do.call(object = object, ...)`, preventing
+  `FindClusters` and UMAP command-history entries from capturing the full
+  Seurat object in `object@commands`.
 
 ## 2026-05-08
 

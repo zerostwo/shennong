@@ -451,6 +451,37 @@ test_that("sn_write supports explicit format selection and custom writer dispatc
   expect_true(any(grepl("val$", list.files(bpcells_path))))
 })
 
+test_that("sn_convert_bpcells rebinds selected Seurat layers", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("BPCells")
+
+  counts <- methods::as(
+    Matrix::Matrix(matrix(c(1L, 0L, 2L, 3L), nrow = 2), sparse = TRUE),
+    "dgCMatrix"
+  )
+  rownames(counts) <- c("Gene1", "Gene2")
+  colnames(counts) <- c("Cell1", "Cell2")
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "bpcells")
+  bpcells_dir <- tempfile("seurat-bpcells-")
+
+  converted <- sn_convert_bpcells(
+    object,
+    directory = bpcells_dir,
+    layers = "counts",
+    overwrite = TRUE,
+    verbose = FALSE
+  )
+
+  expect_true(dir.exists(file.path(bpcells_dir, "RNA", "counts")))
+  expect_true(Shennong:::.sn_is_iterable_matrix(
+    SeuratObject::LayerData(converted, assay = "RNA", layer = "counts")
+  ))
+  expect_equal(
+    names(converted@misc$bpcells_layers),
+    "RNA/counts"
+  )
+})
+
 test_that("io helpers cover custom source passthrough and non-csv AnnData imports", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("rio")

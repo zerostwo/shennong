@@ -61,6 +61,7 @@ reference:
       - sn_list_10x_paths
       - sn_read
       - sn_write
+      - sn_convert_bpcells
       - sn_upload_zenodo
       - sn_add_data_from_anndata
   - title: Preprocessing and QC
@@ -80,6 +81,7 @@ reference:
       - sn_run_cluster
       - sn_run_scvi
       - sn_transfer_labels
+      - sn_prepare_label_transfer_reference
       - sn_simulate
       - sn_simulate_scdesign3
       - sn_sweep_cluster_resolution

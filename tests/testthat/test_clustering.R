@@ -94,6 +94,38 @@ test_that("sn_run_cluster clusters a single dataset with the standard workflow",
   expect_s4_class(clustered, "Seurat")
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_true("umap" %in% names(clustered@reductions))
+
+  command_sizes <- vapply(clustered@commands, function(command) as.numeric(object.size(command)), numeric(1))
+  umap_command <- grep("^RunUMAP", names(command_sizes), value = TRUE)
+  expect_lt(command_sizes[["FindClusters"]], 50000)
+  expect_true(length(umap_command) > 0L)
+  expect_lt(command_sizes[[umap_command[[1]]]], 50000)
+})
+
+test_that("sn_run_cluster forwards UMAP control arguments", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 3, prefix = "umapctl")
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    umap_control = list(
+      n.neighbors = 8,
+      min.dist = 0.05,
+      reduction.name = "tuned.umap",
+      reduction.key = "tunedUMAP_"
+    ),
+    verbose = FALSE
+  )
+
+  expect_true("tuned.umap" %in% names(clustered@reductions))
+  expect_equal(clustered@misc$sn_run_cluster$stages$umap$reduction, "tuned.umap")
+  expect_equal(clustered@misc$sn_run_cluster$stages$umap$signature$n.neighbors, 8)
+  expect_equal(clustered@misc$sn_run_cluster$stages$umap$signature$min.dist, 0.05)
 })
 
 test_that("sn_run_cluster supports CITE-seq WNN clustering", {
@@ -1921,6 +1953,76 @@ test_that("sn_transfer_labels supports Coralysis reference mapping", {
   expect_equal(unname(mapped$coral_ref_label), mapped_sce$pruned_coral_labels)
   expect_equal(mapped@misc$label_transfer$coral_ref$method, "coralysis")
   expect_equal(mapped@misc$label_transfer$coral_ref$transfer_control, list(k.nn = 5))
+})
+
+test_that("sn_prepare_label_transfer_reference creates compact Coralysis references", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("SummarizedExperiment")
+  skip_if_not_installed("S4Vectors")
+
+  reference <- make_test_object(seed = 215, prefix = "compactref", n_genes = 30, n_cells = 8)
+  reference$cell_type <- rep(c("T cell", "B cell"), each = 4)
+  reference$sample <- rep(c("s1", "s2"), times = 4)
+  reference <- Seurat::NormalizeData(reference, verbose = FALSE)
+  ref_sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(logcounts = SeuratObject::LayerData(reference, assay = "RNA", layer = "data")),
+    colData = reference[[]]
+  )
+  S4Vectors::metadata(ref_sce)$coralysis <- list(
+    models = list(list(W = matrix(1, nrow = 2, ncol = 2))),
+    pca.model = list(
+      x = matrix(0, nrow = ncol(reference), ncol = 2),
+      center = c(0, 0),
+      scale = c(1, 1),
+      rotation = matrix(1, nrow = 2, ncol = 2),
+      sdev = c(1, 0.5)
+    ),
+    pca.params = list(select.icp.tables = 1, extra = TRUE),
+    joint.probability = list(matrix(0, nrow = ncol(reference), ncol = 2))
+  )
+  reference@misc$coralysis <- ref_sce
+
+  compact <- sn_prepare_label_transfer_reference(
+    reference,
+    label_by = "cell_type",
+    method = "coralysis",
+    metadata_columns = "sample"
+  )
+
+  expect_s4_class(compact, "SingleCellExperiment")
+  expect_length(SummarizedExperiment::assayNames(compact), 0)
+  expect_equal(nrow(compact), nrow(ref_sce))
+  expect_equal(ncol(compact), ncol(ref_sce))
+  expect_equal(colnames(SummarizedExperiment::colData(compact)), c("cell_type", "sample"))
+  compact_md <- S4Vectors::metadata(compact)$coralysis
+  expect_true("models" %in% names(compact_md))
+  expect_true("pca.model" %in% names(compact_md))
+  expect_false("joint.probability" %in% names(compact_md))
+  expect_false("sdev" %in% names(compact_md$pca.model))
+  expect_equal(compact_md$pca.params, list(select.icp.tables = 1))
+})
+
+test_that("sn_prepare_label_transfer_reference creates slim Seurat references", {
+  skip_if_not_installed("Seurat")
+
+  reference <- make_test_object(seed = 216, prefix = "seuratref", n_genes = 30, n_cells = 8)
+  reference$cell_type <- rep(c("T cell", "B cell"), each = 4)
+  reference$sample <- rep(c("s1", "s2"), times = 4)
+  reference <- Seurat::NormalizeData(reference, verbose = FALSE)
+
+  compact <- sn_prepare_label_transfer_reference(
+    reference,
+    label_by = "cell_type",
+    method = "seurat",
+    metadata_columns = "sample"
+  )
+
+  expect_s4_class(compact, "Seurat")
+  expect_equal(colnames(compact[[]]), c("cell_type", "sample"))
+  expect_true(all(c("counts", "data") %in% SeuratObject::Layers(compact[["RNA"]])))
+  expect_false("scale.data" %in% SeuratObject::Layers(compact[["RNA"]]))
+  expect_equal(compact@misc$label_transfer_reference$method, "seurat")
 })
 
 test_that("sn_transfer_labels supports scANVI and scArches-style label transfer", {

@@ -72,9 +72,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
    artifacts under `~/.shennong/runs/`, and imports the latent reduction back
    into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
-   Coralysis stores only the compact Seurat reduction by default; add
-   `integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE))`
-   when a trained reference is needed for Coralysis label transfer.
+   Coralysis stores the trained reference SingleCellExperiment by default for
+   label transfer; use `integration_control = list(store_sce = FALSE)` only for
+   clustering-only runs.
    Use `sn_pixi_paths()` when users ask where Python environments live, use
    `sn_list_pixi_environments()` and `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`, and pass
@@ -85,6 +85,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    default; use `rerun_from = "integration"` or `reuse = FALSE` when a stage
 	   must be forced to recompute. Leiden clustering auto-installs `leidenbase` by
 	   default unless `auto_install = FALSE`.
+	   Use `umap_control = list(n.neighbors = ..., min.dist = ..., spread = ...)`
+	   with `rerun_from = "umap"` when only the two-dimensional embedding needs
+	   retuning.
 	   Use `normalization_method = "sctransform"` with `batch = ...` only when an
 	   SCTransform-normalized Harmony integration is requested.
 	   For CITE-seq objects with paired RNA and ADT assays, use
@@ -108,7 +111,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    `sn_transfer_labels(method = "coralysis")`; use
    `sn_transfer_labels(method = "scanvi")` or
    `sn_transfer_labels(method = "scarches")` when semi-supervised scVI-family
-   label transfer is requested. Optional external
+   label transfer is requested. Use
+   `sn_prepare_label_transfer_reference()` before saving a reusable reference
+   for later transfer. Optional external
    annotation with `sn_run_celltypist()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the

@@ -166,6 +166,21 @@ pbmc_cached
 column. This avoids ad hoc `read.csv(..., row.names = ...)` calls that are easy
 to forget in later scripts.
 
+For large Seurat objects, keep bulky assay layers on disk with BPCells before
+serializing the Seurat object. The returned object keeps the same Seurat layer
+interface, but the selected matrices live in BPCells directories.
+
+```{r bpcells-backed-layers, eval = FALSE}
+pbmc <- sn_convert_bpcells(
+  pbmc,
+  directory = file.path(outdir, "pbmc3k_bpcells"),
+  layers = c("counts", "data"),
+  overwrite = TRUE
+)
+
+sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
+```
+
 ## Prepare a reusable Zenodo upload
 
 When an intermediate object or reference dataset should be reused by another

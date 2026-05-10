@@ -51,12 +51,19 @@ user request to the right Shennong function family quickly.
 4. Use `sn_calculate_variance_explained(variables = c(...))` to rank platform,
    study, tissue, sample, or other metadata drivers of residual embedding
    variation.
-5. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
-6. Use `sn_transfer_labels()` when labels should be projected from a
+5. If clusters are stable but the two-dimensional display is hard to read, use
+   `umap_control = list(n.neighbors = ..., min.dist = ..., spread = ...)` and
+   `rerun_from = "umap"` to retune the UMAP without changing integration or
+   clustering.
+6. Use `sn_identify_challenging_groups()` or rare-cell helpers when needed.
+7. Use `sn_transfer_labels()` when labels should be projected from a
    reference to a query object. Use the default Seurat backend for anchor
    transfer, or `method = "coralysis"` when the reference was trained and
    stored with Coralysis. Use `method = "scanvi"` or `method = "scarches"`
    for semi-supervised scVI-family label transfer.
+8. Use `sn_prepare_label_transfer_reference()` before saving a reusable
+   reference. This avoids shipping a full analysis Seurat object when label
+   transfer only needs a compact backend-specific reference.
 
 ## Recipe: Simulate single-cell data
 

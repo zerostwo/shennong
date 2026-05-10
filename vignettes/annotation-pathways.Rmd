@@ -163,6 +163,30 @@ query <- sn_transfer_labels(
 )
 ```
 
+For durable handoffs, prepare a compact transfer-ready reference instead of
+saving the full analysis object. Coralysis references keep the trained models,
+PCA model, feature names, and selected labels while dropping the large
+reference assay matrices and joint-probability tables.
+
+```{r compact-label-transfer-reference, eval = FALSE}
+coral_reference <- sn_prepare_label_transfer_reference(
+  reference,
+  label_by = "cell_type",
+  method = "coralysis",
+  path = "data/processed/pbmc_coralysis_reference.qs2",
+  overwrite = TRUE
+)
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = coral_reference,
+  label_by = "cell_type",
+  method = "coralysis",
+  prediction_prefix = "coral_reference",
+  verbose = FALSE
+)
+```
+
 ## Discover and manage bundled signatures
 
 Shennong ships a signature catalog so blocking genes, marker sets, and report

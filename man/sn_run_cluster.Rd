@@ -53,6 +53,7 @@ sn_run_cluster(
   adt_npcs = 30,
   adt_dims = NULL,
   wnn_control = list(),
+  umap_control = list(),
   return_cluster = FALSE,
   verbose = TRUE,
   batch_by = NULL
@@ -270,6 +271,11 @@ graph construction. Defaults to \code{seq_len(min(18, adt_npcs))}.}
 \code{Seurat::FindMultiModalNeighbors()} arguments used only when
 \code{modality = "cite_seq"}. Values here override Shennong's generated
 defaults.}
+
+\item{umap_control}{Optional named list of additional
+\code{Seurat::RunUMAP()} arguments. Values here override Shennong's
+generated defaults, for example \code{n.neighbors}, \code{min.dist},
+\code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.}
 
 \item{return_cluster}{If \code{TRUE}, return only the cluster_by assignments.}
 

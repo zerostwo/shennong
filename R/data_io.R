@@ -544,6 +544,101 @@ sn_write <- function(x,
   invisible(path)
 }
 
+#' Convert Seurat assay layers to BPCells-backed matrices
+#'
+#' \code{sn_convert_bpcells()} writes selected Seurat assay layers to BPCells
+#' matrix directories and rebinds those layers in the returned Seurat object.
+#' This keeps large count or normalized-expression layers on disk while
+#' preserving the usual Seurat object interface.
+#'
+#' BPCells stores matrix directories outside the serialized Seurat object. If
+#' the object is moved to another machine, move the BPCells directory alongside
+#' it and rebind the layers with \code{BPCells::open_matrix_dir()} when needed.
+#'
+#' @param object A Seurat object.
+#' @param directory Output directory that will contain one BPCells matrix
+#'   directory per selected assay/layer.
+#' @param assays Assays to convert. Defaults to all assays.
+#' @param layers Layers to convert within each assay. Defaults to
+#'   \code{"counts"}. Use \code{NULL} to convert all layers in each selected
+#'   assay.
+#' @param overwrite Logical; overwrite existing BPCells matrix directories.
+#' @param verbose Whether to print progress messages.
+#'
+#' @return A Seurat object with selected layers backed by BPCells matrices.
+#'
+#' @examples
+#' \dontrun{
+#' pbmc <- sn_convert_bpcells(
+#'   pbmc,
+#'   directory = "data/processed/pbmc_bpcells",
+#'   layers = c("counts", "data"),
+#'   overwrite = TRUE
+#' )
+#' sn_write(pbmc, "data/processed/pbmc_bpcells_bound.qs2")
+#' }
+#' @export
+sn_convert_bpcells <- function(object,
+                               directory,
+                               assays = NULL,
+                               layers = "counts",
+                               overwrite = FALSE,
+                               verbose = TRUE) {
+  check_installed(pkg = c("SeuratObject", "BPCells"), reason = "to convert Seurat layers to BPCells.")
+
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.", call. = FALSE)
+  }
+  if (!is.character(directory) || length(directory) != 1L || !nzchar(directory)) {
+    stop("`directory` must be a non-empty output directory.", call. = FALSE)
+  }
+
+  assays <- assays %||% names(object@assays)
+  missing_assays <- setdiff(assays, names(object@assays))
+  if (length(missing_assays) > 0L) {
+    stop("Assay(s) not found: ", paste(missing_assays, collapse = ", "), call. = FALSE)
+  }
+
+  dir.create(directory, recursive = TRUE, showWarnings = FALSE)
+  converted <- list()
+
+  for (assay in assays) {
+    available_layers <- SeuratObject::Layers(object = object[[assay]])
+    selected_layers <- layers %||% available_layers
+    missing_layers <- setdiff(selected_layers, available_layers)
+    if (length(missing_layers) > 0L) {
+      stop(
+        "Layer(s) not found in assay '", assay, "': ",
+        paste(missing_layers, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    for (layer in selected_layers) {
+      layer_dir <- file.path(
+        directory,
+        .sn_metadata_suffix(assay),
+        .sn_metadata_suffix(layer)
+      )
+      if (dir.exists(layer_dir) && !isTRUE(overwrite)) {
+        stop("BPCells layer directory already exists: ", layer_dir, call. = FALSE)
+      }
+      dir.create(dirname(layer_dir), recursive = TRUE, showWarnings = FALSE)
+      if (verbose) {
+        .sn_log_info("Writing assay '{assay}' layer '{layer}' to BPCells: {layer_dir}.")
+      }
+      mat <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)
+      BPCells::write_matrix_dir(mat = mat, dir = layer_dir, overwrite = overwrite)
+      SeuratObject::LayerData(object = object, assay = assay, layer = layer) <-
+        BPCells::open_matrix_dir(dir = layer_dir)
+      converted[[paste(assay, layer, sep = "/")]] <- normalizePath(layer_dir, mustWork = FALSE)
+    }
+  }
+
+  object@misc$bpcells_layers <- c(object@misc$bpcells_layers %||% list(), converted)
+  object
+}
+
 .sn_ensure_sn_write_base_dependencies <- function(auto_install = TRUE,
                                                   repos = getOption("repos"),
                                                   ask = FALSE) {

@@ -32,9 +32,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   returned object can be used directly as a label-transfer reference. Set
   `integration_control = list(store_sce = FALSE)` only for clustering-only
   runs where the Coralysis reference object is not needed.
+- `sn_run_cluster()` now calls configurable Seurat steps such as
+  `FindClusters()` and `RunUMAP()` through symbolic object calls rather than
+  `do.call(object = object, ...)`, preventing `object@commands` entries from
+  serializing the full Seurat object into command-history call strings.
 
 ### Added
 
+- `sn_convert_bpcells()` now converts selected Seurat assay layers to
+  BPCells-backed matrix directories and rebinds those layers in the returned
+  object, helping large count or normalized-expression layers stay on disk.
+- `sn_prepare_label_transfer_reference()` now creates compact reference
+  objects for `sn_transfer_labels()`. For native Coralysis, it keeps only the
+  trained Coralysis models, PCA model, feature names, and selected labels while
+  dropping reference assays, reductions, and stored joint probabilities. For
+  Seurat, scANVI, and scArches workflows, it returns a slim Seurat reference
+  with selected assay layers and labels.
+- `sn_run_cluster()` now accepts `umap_control`, a named list of
+  `Seurat::RunUMAP()` arguments such as `n.neighbors`, `min.dist`, `spread`,
+  `metric`, `seed.use`, and `reduction.name`, so users can tune embedding
+  geometry without rerunning Coralysis, neighbor graph construction, or
+  clustering.
 - `sn_run_cluster(modality = "cite_seq")` now runs Seurat CITE-seq weighted
   nearest-neighbor clustering from paired RNA and ADT assays, including ADT CLR
   normalization, ADT PCA, `weighted.nn` / `wsnn` graph construction, clustering,
