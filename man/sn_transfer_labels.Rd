@@ -42,9 +42,10 @@ so the function can be used in pipes.}
 \item{label_by}{Metadata column in \code{reference} to transfer.}
 
 \item{method}{Label-transfer backend. \code{"seurat"} uses Seurat anchors;
-\code{"coralysis"} uses \code{Coralysis::ReferenceMapping()} and requires
-a Coralysis-trained reference stored under \code{reference@misc$coralysis};
-\code{"scanvi"} and \code{"scarches"} use the scVI-family pixi backend.}
+\code{"coralysis"} uses native \code{Coralysis::ReferenceMapping()} and
+requires a trained Coralysis reference stored under
+\code{reference@misc$coralysis}; \code{"scanvi"} and \code{"scarches"} use
+the scVI-family pixi backend.}
 
 \item{query}{Deprecated alias for \code{object}; retained for compatibility
 with the old reference-first call style.}
@@ -112,7 +113,7 @@ label_by and confidence score back to the query, and store a small provenance
 record in \code{query@misc$label_transfer}. The default \code{method =
 "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
 \code{TransferData()} workflow. \code{method = "coralysis"} projects the
-query onto a Coralysis-trained reference with
+query onto a native Coralysis-trained reference with
 \code{Coralysis::ReferenceMapping()}. \code{method = "scanvi"} and
 \code{method = "scarches"} use the managed scVI-family pixi backend to train
 a semi-supervised scANVI model with reference labels and query cells marked

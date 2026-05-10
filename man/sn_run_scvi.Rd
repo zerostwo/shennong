@@ -30,16 +30,13 @@ performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 internal constant batch key to the Python backend.}
 
 \item{integration_control}{Optional named list of backend-specific
-parameters. For \code{"coralysis"} and \code{"coralysis2"}, use
-\code{icp_args} for \code{RunParallelDivisiveICP()} arguments,
-\code{pca_args} for \code{RunPCA()} arguments, and \code{store_sce = TRUE}
-to keep the backend SingleCellExperiment under \code{object@misc$coralysis}
-or \code{object@misc$coralysis2}. For \code{"coralysis2"},
-\code{store.joint.probability = FALSE} is used by default to avoid storing
-full-cell probability tables, and default \code{build.train.params} are
-supplied from the selected feature set. Override these fields in
-\code{icp_args} when full probability tables or custom Coralysis training
-sets are required.
+parameters. For \code{"coralysis"}, use \code{icp_args} for
+\code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
+\code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
+trained Coralysis SingleCellExperiment should not be kept under
+\code{object@misc$coralysis}. The default is \code{store_sce = TRUE} so
+native Coralysis references can be used directly by
+\code{sn_transfer_labels(method = "coralysis")}.
 For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
 to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{"scanvi"}, common fields include \code{runtime_dir},

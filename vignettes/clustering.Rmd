@@ -190,8 +190,8 @@ sn_plot_dim(pbmc_cite, reduction = "wnn.umap", group_by = "seurat_clusters")
 
 For batch-aware CITE-seq integration, choose a multimodal backend explicitly.
 `multimodal_method = "totalvi"` runs scvi-tools totalVI on RNA counts and ADT
-counts. `multimodal_method = "coralysis"` or `"coralysis2"` runs the selected
-Coralysis backend on the ADT assay as a log-normalized protein matrix.
+counts. `multimodal_method = "coralysis"` runs native Coralysis on the ADT
+assay as a log-normalized protein matrix.
 `multimodal_method = "mmochi"` runs MMoCHi ADT landmark registration across
 the supplied `batch` column, or in single-sample mode when `batch = NULL`.
 It stores the corrected protein matrix as an assay layer when the local Seurat
@@ -223,11 +223,10 @@ sn_plot_dim(pbmc_totalvi, reduction = "umap", group_by = "seurat_clusters")
 pbmc_adt_coral <- sn_run_cluster(
   object = pbmc_cite,
   modality = "cite_seq",
-  multimodal_method = "coralysis2",
+  multimodal_method = "coralysis",
   batch = "library",
   adt_assay = "ADT",
   adt_dims = 1:18,
-  integration_control = list(store_sce = TRUE),
   verbose = FALSE
 )
 ```
@@ -325,7 +324,11 @@ pbmc_sct_integrated <- sn_run_cluster(
 For imbalanced datasets where a rare or unevenly distributed state may be
 washed out by conventional correction, Coralysis can be selected explicitly.
 Coralysis runs on the log-normalized feature set selected by Shennong and
-stores the integrated embedding as the `coralysis` reduction.
+stores the integrated embedding as the `coralysis` reduction. The trained
+Coralysis SingleCellExperiment is stored by default under
+`object@misc$coralysis`, so the returned object can be used later as a native
+Coralysis label-transfer reference. Set
+`integration_control = list(store_sce = FALSE)` only for clustering-only runs.
 
 ```{r coralysis-integration, eval = FALSE}
 pbmc_coral <- sn_run_cluster(
@@ -338,9 +341,8 @@ pbmc_coral <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   integration_control = list(
-    store_sce = TRUE,
     icp_args = list(L = 25, threads = 2),
-    pca_args = list(p = 20, return.model = TRUE)
+    pca_args = list(p = 20)
   ),
   verbose = FALSE
 )

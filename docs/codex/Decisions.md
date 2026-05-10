@@ -1,6 +1,20 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-08
+Last updated: 2026-05-10
+
+## 2026-05-10
+
+- `sn_run_cluster()` should treat PCA as a backend requirement, not as a
+  universal integration prerequisite. Harmony, Seurat CCA/RPCA, single-dataset
+  RNA clustering, and CITE-seq WNN need Seurat PCA; native Coralysis,
+  scVI/scANVI, totalVI, and MMoCHi produce or import their own latent
+  representation and should skip redundant Seurat PCA stages.
+- Coralysis support should target the native Coralysis package only for this
+  release path. Coralysis2 is not part of the public Shennong API.
+- Native Coralysis references should be transfer-ready by default. The trained
+  Coralysis SingleCellExperiment and retained PCA model are stored under
+  `object@misc$coralysis`, while users can opt out with `store_sce = FALSE` for
+  clustering-only runs.
 
 ## 2026-05-08
 
@@ -9,9 +23,9 @@ Last updated: 2026-05-08
   assay. This avoids surprising RNA-only clustering calls on multimodal objects.
 - CITE-seq backend selection should be explicit through `multimodal_method`.
   `wnn` remains the single-object default; `totalvi` owns joint RNA+ADT latent
-  integration; and `coralysis` / `coralysis2` run on the ADT assay as a
-  log-normalized protein matrix. This keeps protein-aware workflows discoverable
-  without overloading RNA-only `integration_method` semantics.
+  integration; and native `coralysis` runs on the ADT assay as a log-normalized
+  protein matrix. This keeps protein-aware workflows discoverable without
+  overloading RNA-only `integration_method` semantics.
 
 ## 2026-05-05
 
@@ -481,7 +495,7 @@ Last updated: 2026-05-08
 - Rare-aware feature discovery in `sn_run_cluster()` should stay small and understandable. The clustering wrapper now keeps `gini` for expression-sparsity discovery and `local_markers` for rare-group marker discovery, while removing less common `local_hvg` and PCA-dependent `ciara` modes from this path.
 - Manual and automatic feature priors should meet at one PCA feature set. `hvg_features` remains the explicit user prior, while `rare_feature_method` supplies automatic additions; both are merged with internal HVGs before scaling and PCA.
 - Reference label_by projection is common enough to deserve a Shennong wrapper. `sn_transfer_labels()` keeps the standard Seurat anchor workflow, uses the query object as the first argument for pipe-friendly calls, and records metadata/provenance in one reproducible call.
-- Coralysis reference mapping belongs in `sn_transfer_labels()` rather than a separate public function. The same query-first API now selects `method = "coralysis"` and expects a Coralysis-trained reference stored in `reference@misc$coralysis`, preserving the object-priority style while using the real Coralysis mapping backend.
+- Coralysis reference mapping belongs in `sn_transfer_labels()` rather than a separate public function. The same query-first API now selects `method = "coralysis"` and expects a native Coralysis-trained reference stored in `reference@misc$coralysis`, preserving the object-priority style while using the real Coralysis mapping backend.
 - Simulation should be method-based because scDesign3 is not the only possible backend. `sn_simulate(method = "scdesign3")` is the public entry point, while `sn_simulate_scdesign3()` remains the backend-specific implementation wrapper.
 - Label readability in `sn_plot_dim()` should be controllable. The white label_by halo/background is now optional through `label_halo`, and repel labels should remain repel-aware instead of being converted to fixed-position shadow text.
 - Focused marker heatmaps are a first-class visualization helper. `sn_plot_heatmap()` is intentionally gene-list driven and validates/scales the selected features instead of trying to infer markers automatically. It supports both cell-level inspection and group-averaged summaries because users need both raw heterogeneity and compact marker-panel comparisons.

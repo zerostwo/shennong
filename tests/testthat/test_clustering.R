@@ -124,7 +124,7 @@ test_that("sn_run_cluster supports CITE-seq WNN clustering", {
 test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
   skip_if_not_installed("Seurat")
 
-  for (backend in c("coralysis", "coralysis2")) {
+  for (backend in "coralysis") {
     object <- make_cite_seq_test_object()
     object$sample <- rep(c("A", "B"), each = ncol(object) / 2)
     captured <- NULL
@@ -168,9 +168,14 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
           npcs = npcs,
           integration_control = integration_control
         )
-        embeddings <- Seurat::Embeddings(object = object[[reduction]])[, seq_len(length(dims)), drop = FALSE]
-        new_reduction <- switch(backend, coralysis = "coralysis", coralysis2 = "coralysis2")
-        key <- switch(backend, coralysis = "CORALYSIS_", coralysis2 = "CORALYSIS2_")
+        embeddings <- matrix(
+          seq_len(ncol(object) * length(dims)),
+          nrow = ncol(object),
+          ncol = length(dims),
+          dimnames = list(colnames(object), paste0("mock_", seq_along(dims)))
+        )
+        new_reduction <- "coralysis"
+        key <- "CORALYSIS_"
         object[[new_reduction]] <- Seurat::CreateDimReducObject(
           embeddings = embeddings,
           key = key,
@@ -185,11 +190,14 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
     expect_equal(captured$method, backend)
     expect_equal(captured$batch, "sample")
     expect_equal(captured$assay, "ADT")
-    expect_equal(captured$reduction, "apca")
+    expect_null(captured$reduction)
     expect_equal(captured$features, paste0("ADT", 1:10))
     expect_equal(captured$dims, 1:3)
     expect_equal(captured$integration_control, list(example = backend))
-    expect_true(switch(backend, coralysis = "coralysis", coralysis2 = "coralysis2") %in% names(clustered@reductions))
+    expect_true("coralysis" %in% names(clustered@reductions))
+    expect_false("pca" %in% names(clustered@reductions))
+    expect_false("apca" %in% names(clustered@reductions))
+    expect_true(clustered@misc$sn_run_cluster$stages$integration$signature$store_sce)
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
     expect_equal(clustered@misc$integration$modality, "cite_seq")
     expect_equal(clustered@misc$integration$protein_assay, "ADT")
@@ -219,6 +227,12 @@ test_that("Coralysis protein integration resolves features from the ADT assay", 
     ),
     "Coralysis integration requires at least two selected features present"
   )
+})
+
+test_that("Coralysis backend object storage is opt-in", {
+  expect_true(.sn_coralysis_store_sce(list()))
+  expect_false(.sn_coralysis_store_sce(list(store_sce = FALSE)))
+  expect_true(.sn_coralysis_store_sce(list(store_sce = TRUE)))
 })
 
 test_that("sn_run_cluster reuses matching stages when only clustering resolution changes", {
@@ -881,7 +895,7 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
   object2$sample <- "pbmc3k"
   merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
 
-  for (backend in c("coralysis", "coralysis2", "seurat_cca", "seurat_rpca")) {
+  for (backend in c("coralysis", "seurat_cca", "seurat_rpca")) {
     captured <- NULL
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
@@ -915,18 +929,25 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
           features = features,
           integration_control = integration_control
         )
-        embeddings <- Seurat::Embeddings(object = object[[reduction]])
+        embeddings <- if (is.null(reduction)) {
+          matrix(
+            seq_len(ncol(object) * length(dims)),
+            nrow = ncol(object),
+            ncol = length(dims),
+            dimnames = list(colnames(object), paste0("mock_", seq_along(dims)))
+          )
+        } else {
+          Seurat::Embeddings(object = object[[reduction]])
+        }
         new_reduction <- switch(
           method,
           coralysis = "coralysis",
-          coralysis2 = "coralysis2",
           seurat_cca = "integrated.cca",
           seurat_rpca = "integrated.rpca"
         )
         key <- switch(
           method,
           coralysis = "CORALYSIS_",
-          coralysis2 = "CORALYSIS2_",
           seurat_cca = "INTCCA_",
           seurat_rpca = "INTRPCA_"
         )
@@ -942,17 +963,23 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
 
     expect_equal(captured$method, backend)
     expect_equal(captured$batch, "sample")
+    if (identical(backend, "coralysis")) {
+      expect_null(captured$reduction)
+    } else {
+      expect_equal(captured$reduction, "pca")
+    }
     expect_equal(captured$integration_control, list(example = backend))
     expect_true(switch(
       backend,
       coralysis = "coralysis",
-      coralysis2 = "coralysis2",
       seurat_cca = "integrated.cca",
       seurat_rpca = "integrated.rpca"
     ) %in% names(clustered@reductions))
-    if (backend %in% c("coralysis", "coralysis2")) {
+    if (identical(backend, "coralysis")) {
       expect_lt(length(captured$features), nrow(merged))
       expect_lte(length(captured$features), 50)
+      expect_false("pca" %in% names(clustered@reductions))
+      expect_true(clustered@misc$sn_run_cluster$stages$integration$signature$store_sce)
     }
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   }
@@ -1039,6 +1066,7 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
 
     expect_s4_class(clustered, "Seurat")
     expect_true(backend %in% names(clustered@reductions))
+    expect_false("pca" %in% names(clustered@reductions))
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
     expect_equal(clustered@misc$integration$method, backend)
     expect_equal(clustered@misc$integration$batch, "sample")
@@ -1123,6 +1151,8 @@ test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
 
   expect_s4_class(clustered, "Seurat")
   expect_true("totalvi" %in% names(clustered@reductions))
+  expect_false("pca" %in% names(clustered@reductions))
+  expect_false("apca" %in% names(clustered@reductions))
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_true("totalvi_qc" %in% colnames(clustered[[]]))
   expect_equal(clustered@misc$integration$method, "totalvi")
@@ -1207,6 +1237,8 @@ test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
 
   expect_s4_class(clustered, "Seurat")
   expect_true("mmochi" %in% names(clustered@reductions))
+  expect_false("pca" %in% names(clustered@reductions))
+  expect_false("apca" %in% names(clustered@reductions))
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_equal(clustered@misc$integration$method, "mmochi")
   expect_equal(clustered@misc$integration$modality, "cite_seq")
@@ -1295,6 +1327,8 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
   obs <- utils::read.csv(file.path(captured$input_dir, "obs.csv"), check.names = FALSE)
   expect_s4_class(clustered, "Seurat")
   expect_true("mmochi" %in% names(clustered@reductions))
+  expect_false("pca" %in% names(clustered@reductions))
+  expect_false("apca" %in% names(clustered@reductions))
   expect_null(clustered@misc$integration$batch_by)
   expect_match(clustered@misc$integration$backend_batch_key, "^\\.sn_mmochi_single_sample")
   expect_true(clustered@misc$integration$single_sample_batch)
@@ -1527,60 +1561,12 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
 
   expect_s4_class(clustered, "Seurat")
   expect_true("coralysis" %in% names(clustered@reductions))
+  expect_false("pca" %in% names(clustered@reductions))
   expect_true("seurat_clusters" %in% colnames(clustered[[]]))
   expect_true(inherits(clustered@misc$coralysis, "SingleCellExperiment"))
   expect_equal(clustered@misc$integration$method, "coralysis")
+  expect_true(clustered@misc$integration$stored_sce)
   expect_false("backend_package" %in% names(clustered@misc$integration))
-})
-
-test_that("sn_run_cluster runs Coralysis2 integration end to end", {
-  skip_if_not_installed("Seurat")
-  skip_if_not_installed("Coralysis2")
-  skip_if_not_installed("SingleCellExperiment")
-
-  object <- make_test_object(seed = 19, prefix = "coralysis2", n_genes = 120, n_cells = 30)
-  object$sample <- rep(c("A", "B", "C"), each = 10)
-
-  clustered <- suppressWarnings(sn_run_cluster(
-    object = object,
-    batch_by = "sample",
-    normalization_method = "seurat",
-    integration_method = "coralysis2",
-    nfeatures = 40,
-    block_genes = NULL,
-    npcs = 5,
-    dims = 1:5,
-    resolution = 0.2,
-    integration_control = list(
-      icp_args = list(
-        k = 2,
-        L = 3,
-        C = 1,
-        threads = 1,
-        train.with.bnn = FALSE,
-        train.k.nn.prop = NULL,
-        build.train.set = FALSE,
-        use.cluster.seed = FALSE,
-        ari.cutoff = 0.1
-      ),
-      pca_args = list(
-        p = 5,
-        pca.method = "stats",
-        return.model = TRUE
-      )
-    ),
-    verbose = FALSE
-  ))
-
-  expect_s4_class(clustered, "Seurat")
-  expect_true("coralysis2" %in% names(clustered@reductions))
-  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
-  expect_true(inherits(clustered@misc$coralysis2, "SingleCellExperiment"))
-  expect_equal(clustered@misc$integration$method, "coralysis2")
-  expect_equal(clustered@misc$integration$backend_package, "Coralysis2")
-  expect_lte(length(clustered@misc$integration$input_features), 40)
-  expect_false(S4Vectors::metadata(clustered@misc$coralysis2)$coralysis$store.joint.probability)
-  expect_false(is.list(S4Vectors::metadata(clustered@misc$coralysis2)$coralysis$joint.probability))
 })
 
 test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
@@ -1892,9 +1878,11 @@ test_that("sn_transfer_labels supports Coralysis reference mapping", {
   reference$cell_type <- rep(c("T cell", "B cell"), each = 5)
   reference <- Seurat::NormalizeData(reference, verbose = FALSE)
   query <- Seurat::NormalizeData(query, verbose = FALSE)
+  ref_coldata <- reference[[]]
+  ref_coldata$cell_type <- NULL
   ref_sce <- SingleCellExperiment::SingleCellExperiment(
     assays = list(logcounts = SeuratObject::LayerData(reference, assay = "RNA", layer = "data")),
-    colData = reference[[]]
+    colData = ref_coldata
   )
   reference@misc$coralysis <- ref_sce
 
@@ -1907,6 +1895,7 @@ test_that("sn_transfer_labels supports Coralysis reference mapping", {
       row.names = colnames(query)
     )
   )
+  captured <- NULL
 
   mapped <- testthat::with_mocked_bindings(
     sn_transfer_labels(
@@ -1919,6 +1908,7 @@ test_that("sn_transfer_labels supports Coralysis reference mapping", {
       verbose = FALSE
     ),
     .sn_coralysis_reference_mapping_backend = function(...) {
+      captured <<- list(...)
       mapped_sce
     },
     .package = "Shennong"
@@ -1926,6 +1916,8 @@ test_that("sn_transfer_labels supports Coralysis reference mapping", {
 
   expect_s4_class(mapped, "Seurat")
   expect_true(all(c("coral_ref_label", "coral_ref_score", "coral_ref_raw_label") %in% colnames(mapped[[]])))
+  expect_true("cell_type" %in% colnames(SummarizedExperiment::colData(captured$ref)))
+  expect_equal(captured$ref$cell_type, reference$cell_type)
   expect_equal(unname(mapped$coral_ref_label), mapped_sce$pruned_coral_labels)
   expect_equal(mapped@misc$label_transfer$coral_ref$method, "coralysis")
   expect_equal(mapped@misc$label_transfer$coral_ref$transfer_control, list(k.nn = 5))

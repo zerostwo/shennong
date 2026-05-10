@@ -1,6 +1,23 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-08
+Last updated: 2026-05-10
+
+## 2026-05-10
+
+- Refactored `sn_run_cluster()` so integration backends that do not consume a
+  Seurat PCA reduction no longer pay for redundant Seurat `ScaleData()` /
+  `RunPCA()` stages. This covers RNA Coralysis, scVI/scANVI, CITE-seq totalVI,
+  and protein-only Coralysis/MMoCHi paths.
+- Tightened CITE-seq protein workflows so WNN remains the only route that runs
+  ADT PCA; Coralysis and MMoCHi now use ADT CLR-normalized protein data
+  directly before their own backend-specific embedding steps.
+- Removed Coralysis2 from the Shennong public clustering and label-transfer
+  surface for this release path. Native Coralysis is now the only Coralysis
+  backend exposed by `sn_run_cluster()` and `sn_transfer_labels()`.
+- Kept native Coralysis references transfer-ready by default: `sn_run_cluster()`
+  stores the trained Coralysis `SingleCellExperiment` under
+  `object@misc$coralysis` unless `integration_control = list(store_sce = FALSE)`
+  is supplied.
 
 ## 2026-05-08
 
@@ -8,8 +25,8 @@ Last updated: 2026-05-08
   `modality = "cite_seq"`, with RNA PCA, ADT CLR normalization/PCA,
   `FindMultiModalNeighbors()`, `wsnn` clustering, and `wnn.umap` embedding.
 - Extended the CITE-seq interface with `multimodal_method`, adding
-  Coralysis/Coralysis2 protein-assay integration and scvi-tools totalVI
-  RNA+ADT latent integration under the same `sn_run_cluster()` entry point.
+  native Coralysis protein-assay integration and scvi-tools totalVI RNA+ADT
+  latent integration under the same `sn_run_cluster()` entry point.
 - Updated the clustering vignette, NEWS, and shipped package-skill API notes so
   the new RNA+ADT workflow is discoverable from package docs and Codex assets.
 

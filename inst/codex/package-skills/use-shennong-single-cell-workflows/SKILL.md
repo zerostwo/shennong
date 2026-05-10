@@ -63,7 +63,7 @@ single-cell tasks. This skill is the main entry point for package usage.
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
 2. Run clustering or batch integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
-   forced into the ScaleData/PCA feature set, use
+   forced into the backend feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
    automatically add rare-aware genes, and use
 	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
@@ -72,6 +72,9 @@ single-cell tasks. This skill is the main entry point for package usage.
    shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
    artifacts under `~/.shennong/runs/`, and imports the latent reduction back
    into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
+   Coralysis stores only the compact Seurat reduction by default; add
+   `integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE))`
+   when a trained reference is needed for Coralysis label transfer.
    Use `sn_pixi_paths()` when users ask where Python environments live, use
    `sn_list_pixi_environments()` and `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`, and pass
@@ -88,7 +91,7 @@ single-cell tasks. This skill is the main entry point for package usage.
 	   `modality = "cite_seq"` plus `multimodal_method = "wnn"` for Seurat
 	   weighted nearest-neighbor clustering on `weighted.nn` / `wsnn`,
 	   `multimodal_method = "totalvi"` for scvi-tools totalVI RNA+ADT latent
-	   integration, or `multimodal_method = "coralysis"` / `"coralysis2"` to run
+	   integration, or `multimodal_method = "coralysis"` to run native
 	   Coralysis on the ADT protein assay. Use `multimodal_method = "mmochi"`
 	   when ADT alignment should be driven by MMoCHi landmark registration
 	   before protein-only clustering; it can run with `batch = NULL` for a

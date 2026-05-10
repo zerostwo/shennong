@@ -42,8 +42,7 @@ user request to the right Shennong function family quickly.
 	   `normalization_method = "sctransform"` only with Harmony when that
 	   normalization is desired.
 	   For CITE-seq, use `modality = "cite_seq"` and select
-	   `multimodal_method = "wnn"`, `"totalvi"`, `"coralysis"`, `"coralysis2"`,
-	   or `"mmochi"`
+	   `multimodal_method = "wnn"`, `"totalvi"`, `"coralysis"`, or `"mmochi"`
 	   depending on whether the protein signal should enter through Seurat WNN,
 	   scvi-tools totalVI, Coralysis on the ADT assay, or MMoCHi landmark
 	   registration on the ADT assay. MMoCHi can run as a single-sample CITE-seq

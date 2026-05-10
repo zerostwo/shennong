@@ -139,8 +139,9 @@ head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
 
 The same query-first interface can use Coralysis reference mapping when the
 reference was trained with `sn_run_cluster(integration_method = "coralysis")`.
-For mapping, keep the Coralysis SingleCellExperiment and PCA model in the
-reference by leaving `store_sce = TRUE` and `return.model = TRUE`.
+By default, Shennong keeps the native Coralysis-trained SingleCellExperiment
+and PCA model under `reference@misc$coralysis`, so the returned object can be
+used directly as a label-transfer reference.
 
 ```{r coralysis-label-transfer, eval = FALSE}
 reference <- sn_run_cluster(
@@ -148,10 +149,6 @@ reference <- sn_run_cluster(
   batch = "sample_id",
   integration_method = "coralysis",
   normalization_method = "seurat",
-  integration_control = list(
-    store_sce = TRUE,
-    pca_args = list(return.model = TRUE)
-  ),
   verbose = FALSE
 )
 

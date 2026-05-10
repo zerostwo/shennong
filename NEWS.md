@@ -23,6 +23,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   before calling Seurat and auto-installs it through `sn_install_dependencies()`
   by default. Set `auto_install = FALSE` to keep the previous fail-fast
   behavior.
+- `sn_run_cluster()` now skips redundant Seurat PCA work for integration
+  backends that do not consume a Seurat PCA reduction, including Coralysis,
+  scVI/scANVI, totalVI, MMoCHi, and CITE-seq protein-only Coralysis/MMoCHi
+  paths.
+- Native Coralysis clustering now stores the trained
+  `SingleCellExperiment` under `object@misc$coralysis` by default, so the
+  returned object can be used directly as a label-transfer reference. Set
+  `integration_control = list(store_sce = FALSE)` only for clustering-only
+  runs where the Coralysis reference object is not needed.
 
 ### Added
 
@@ -32,9 +41,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   and `wnn.umap` embedding.
 - `sn_run_cluster(modality = "cite_seq", multimodal_method = ...)` now exposes
   a unified CITE-seq backend selector. In addition to Seurat WNN, users can run
-  Coralysis/Coralysis2 on the ADT protein assay, scvi-tools totalVI on paired
-  RNA and ADT counts, or MMoCHi ADT landmark registration through a managed
-  pixi backend.
+  native Coralysis on the ADT protein assay, scvi-tools totalVI on paired RNA
+  and ADT counts, or MMoCHi ADT landmark registration through a managed pixi
+  backend.
 - `sn_run_cluster(modality = "cite_seq", multimodal_method = "mmochi")` now
   supports single-sample CITE-seq runs with `batch = NULL` by passing a constant
   internal batch key to the MMoCHi backend instead of requiring a user-supplied
@@ -60,9 +69,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_transfer_labels()` now wraps reference mapping with a query-first API
   for pipe-friendly workflows. The default Seurat anchor workflow is retained,
   and `method = "coralysis"` now projects queries onto Coralysis-trained
-  references with `Coralysis::ReferenceMapping()`. `method = "scanvi"` and
-  `method = "scarches"` now provide semi-supervised scVI-family label transfer
-  through the pixi-managed scverse backend.
+  references with native `Coralysis::ReferenceMapping()`. `method = "scanvi"`
+  and `method = "scarches"` now provide semi-supervised scVI-family label
+  transfer through the pixi-managed scverse backend.
 - `sn_upload_zenodo()` now uploads reusable data files to Zenodo through
   `zen4R`, with a simple draft-first interface and an automatically uploaded
   Shennong manifest that records dataset version, package version, file sizes,

@@ -8,7 +8,7 @@
 .sn_resolve_multimodal_method <- function(multimodal_method = NULL,
                                           integration_method = "harmony",
                                           integration_method_supplied = FALSE) {
-  supported <- c("wnn", "coralysis", "coralysis2", "totalvi", "mmochi")
+  supported <- c("wnn", "coralysis", "totalvi", "mmochi")
   if (is.null(multimodal_method)) {
     if (isTRUE(integration_method_supplied) && integration_method %in% supported) {
       return(integration_method)
@@ -16,6 +16,44 @@
     return("wnn")
   }
   match.arg(multimodal_method, supported)
+}
+
+.sn_cluster_requires_rna_workflow <- function(modality, multimodal_method = NULL) {
+  !(identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "mmochi"))
+}
+
+.sn_cluster_requires_rna_pca <- function(modality,
+                                         multimodal_method = NULL,
+                                         batch = NULL,
+                                         integration_method = "harmony") {
+  if (identical(modality, "cite_seq")) {
+    return(identical(multimodal_method, "wnn"))
+  }
+  is.null(batch) || integration_method %in% c("harmony", "seurat_cca", "seurat_rpca")
+}
+
+.sn_cluster_requires_adt_data <- function(modality,
+                                          multimodal_method = NULL,
+                                          integration_control = list()) {
+  if (!identical(modality, "cite_seq")) {
+    return(FALSE)
+  }
+  if (multimodal_method %in% c("wnn", "coralysis")) {
+    return(TRUE)
+  }
+  if (identical(multimodal_method, "mmochi")) {
+    protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+    return(identical(protein_layer, "data"))
+  }
+  FALSE
+}
+
+.sn_cluster_requires_adt_pca <- function(modality, multimodal_method = NULL) {
+  identical(modality, "cite_seq") && identical(multimodal_method, "wnn")
+}
+
+.sn_coralysis_store_sce <- function(integration_control = list()) {
+  !identical(integration_control$store_sce, FALSE)
 }
 
 .sn_resolve_find_clusters_algorithm <- function(cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden")) {
@@ -177,21 +215,7 @@
       dims = dims,
       npcs = npcs,
       integration_control = integration_control,
-      verbose = verbose,
-      backend = "Coralysis",
-      method = "coralysis"
-    ),
-    coralysis2 = .sn_run_coralysis_integration(
-      object = object,
-      batch = batch,
-      assay = assay,
-      features = features,
-      dims = dims,
-      npcs = npcs,
-      integration_control = integration_control,
-      verbose = verbose,
-      backend = "Coralysis2",
-      method = "coralysis2"
+      verbose = verbose
     ),
     seurat_cca = .sn_run_seurat_layer_integration(
       object = object,
@@ -577,10 +601,10 @@
                                           dims,
                                           npcs,
                                           integration_control = list(),
-                                          verbose = TRUE,
-                                          backend = "Coralysis",
-                                          method = "coralysis") {
-  check_installed(c(backend, "SingleCellExperiment", "SummarizedExperiment"))
+                                          verbose = TRUE) {
+  backend <- "Coralysis"
+  method <- "coralysis"
+  check_installed(c("Coralysis", "SingleCellExperiment", "SummarizedExperiment"))
 
   feature_set <- .sn_resolve_integration_assay_features(
     object = object,
@@ -592,21 +616,9 @@
   prepare_data <- get("PrepareData", envir = coralysis_ns, inherits = FALSE)
   run_icp <- get("RunParallelDivisiveICP", envir = coralysis_ns, inherits = FALSE)
   run_pca <- get("RunPCA", envir = coralysis_ns, inherits = FALSE)
-  reduction_name <- switch(
-    method,
-    coralysis = "coralysis",
-    coralysis2 = "coralysis2"
-  )
-  reduction_key <- switch(
-    method,
-    coralysis = "CORALYSIS_",
-    coralysis2 = "CORALYSIS2_"
-  )
-  default_dimred_name <- switch(
-    method,
-    coralysis = "Coralysis",
-    coralysis2 = "Coralysis2"
-  )
+  reduction_name <- "coralysis"
+  reduction_key <- "CORALYSIS_"
+  default_dimred_name <- "Coralysis"
 
   expr <- SeuratObject::LayerData(object = object, assay = assay, layer = "data")
   expr <- expr[feature_set, colnames(object), drop = FALSE]
@@ -638,9 +650,6 @@
         nhvg = min(length(feature_set), 2000L),
         p = min(30L, max(1L, length(feature_set) - 1L), max(1L, min(batch_sizes) - 5L))
       )
-      if (identical(method, "coralysis2")) {
-        defaults$store.joint.probability <- FALSE
-      }
       defaults
     },
     control = integration_control$icp_args
@@ -676,7 +685,7 @@
     key = reduction_key,
     assay = assay
   )
-  store_sce <- integration_control$store_sce %||% TRUE
+  store_sce <- .sn_coralysis_store_sce(integration_control)
   integration_metadata <- list(
     method = method,
     batch_by = batch,
@@ -685,12 +694,11 @@
     coralysis_dimred = dimred_name,
     stored_sce = isTRUE(store_sce)
   )
-  if (!identical(method, "coralysis")) {
-    integration_metadata$backend_package <- backend
-  }
   object@misc$integration <- integration_metadata
   if (isTRUE(store_sce)) {
     object@misc[[reduction_name]] <- sce
+  } else {
+    object@misc[[reduction_name]] <- NULL
   }
 
   list(object = object, reduction = reduction_name)
@@ -2148,14 +2156,13 @@ sn_detect_rare_cells <- function(object,
 #'   \code{batch}.
 #' @param integration_method Batch-integration backend used when \code{batch}
 #'   is supplied. Supported values are \code{"harmony"},
-#'   \code{"coralysis"}, \code{"coralysis2"}, \code{"seurat_cca"},
-#'   \code{"seurat_rpca"}, \code{"scvi"}, \code{"scanvi"}, and
-#'   \code{"totalvi"}. \code{"mmochi"} is accepted as a CITE-seq convenience
-#'   alias and requires \code{modality = "cite_seq"}.
+#'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
+#'   \code{"scvi"}, \code{"scanvi"}, and \code{"totalvi"}. \code{"mmochi"} is
+#'   accepted as a CITE-seq convenience alias and requires
+#'   \code{modality = "cite_seq"}.
 #'   \code{"harmony"} preserves the historical Shennong behavior.
-#'   \code{"coralysis"} and \code{"coralysis2"} run the corresponding
-#'   Coralysis backend on the selected log-normalized feature set and store the
-#'   integrated embedding as the \code{"coralysis"} or \code{"coralysis2"}
+#'   \code{"coralysis"} runs native Coralysis on the selected log-normalized
+#'   feature set and stores the integrated embedding as the \code{"coralysis"}
 #'   reduction. \code{"scvi"} and \code{"scanvi"} export the selected count
 #'   matrix to a pixi-managed scverse environment under \code{~/.shennong/pixi/},
 #'   run the Python backend, and import the latent representation as a Seurat
@@ -2163,16 +2170,13 @@ sn_detect_rare_cells <- function(object,
 #'   usually selected through \code{modality = "cite_seq"} and
 #'   \code{multimodal_method = "totalvi"}.
 #' @param integration_control Optional named list of backend-specific
-#'   parameters. For \code{"coralysis"} and \code{"coralysis2"}, use
-#'   \code{icp_args} for \code{RunParallelDivisiveICP()} arguments,
-#'   \code{pca_args} for \code{RunPCA()} arguments, and \code{store_sce = TRUE}
-#'   to keep the backend SingleCellExperiment under \code{object@misc$coralysis}
-#'   or \code{object@misc$coralysis2}. For \code{"coralysis2"},
-#'   \code{store.joint.probability = FALSE} is used by default to avoid storing
-#'   full-cell probability tables, and default \code{build.train.params} are
-#'   supplied from the selected feature set. Override these fields in
-#'   \code{icp_args} when full probability tables or custom Coralysis training
-#'   sets are required.
+#'   parameters. For \code{"coralysis"}, use \code{icp_args} for
+#'   \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
+#'   \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
+#'   trained Coralysis SingleCellExperiment should not be kept under
+#'   \code{object@misc$coralysis}. The default is \code{store_sce = TRUE} so
+#'   native Coralysis references can be used directly by
+#'   \code{sn_transfer_labels(method = "coralysis")}.
 #'   For \code{"seurat_cca"} and \code{"seurat_rpca"}, values are forwarded
 #'   to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 #'   \code{"scanvi"}, common fields include \code{runtime_dir},
@@ -2200,7 +2204,8 @@ sn_detect_rare_cells <- function(object,
 #'   pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.
 #' @param nfeatures Number of variable features to select.
 #' @param hvg_features Optional character vector of user-supplied features to
-#'   force into the feature set used for scaling/PCA. These features are merged
+#'   force into the selected backend feature set. For PCA-based workflows this
+#'   is also the feature set used for scaling/PCA. These features are merged
 #'   with internally selected HVGs and any rare-aware features after validating
 #'   that they are present in \code{object}.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
@@ -2284,10 +2289,10 @@ sn_detect_rare_cells <- function(object,
 #' @param multimodal_method CITE-seq backend used when
 #'   \code{modality = "cite_seq"}. \code{"wnn"} combines RNA PCA with ADT PCA
 #'   using Seurat's weighted nearest-neighbor workflow and clusters on
-#'   \code{"wsnn"}. \code{"coralysis"} and \code{"coralysis2"} run the
-#'   corresponding Coralysis backend on the ADT assay as a log-normalized protein
-#'   matrix. \code{"totalvi"} runs scvi-tools totalVI on RNA counts plus ADT
-#'   counts and clusters on the imported totalVI latent representation.
+#'   \code{"wsnn"}. \code{"coralysis"} runs native Coralysis on the ADT assay
+#'   as a log-normalized protein matrix. \code{"totalvi"} runs scvi-tools
+#'   totalVI on RNA counts plus ADT counts and clusters on the imported totalVI
+#'   latent representation.
 #'   \code{"mmochi"} runs MMoCHi ADT landmark registration across batches, or
 #'   in single-sample mode when \code{batch = NULL}, stores the corrected
 #'   protein matrix when supported, computes a protein PCA reduction, and
@@ -2337,7 +2342,7 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "coralysis2", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
+                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
                            integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
@@ -2460,14 +2465,14 @@ sn_run_cluster <- function(object,
       stop(
         "`multimodal_method = \"wnn\"` currently supports single-object WNN clustering only. ",
         "For CITE-seq batch-aware workflows, use `multimodal_method = \"totalvi\"`, ",
-        "`\"coralysis\"`, `\"coralysis2\"`, or `\"mmochi\"`.",
+        "`\"coralysis\"`, or `\"mmochi\"`.",
         call. = FALSE
       )
     }
-    if (multimodal_method %in% c("coralysis", "coralysis2") && is.null(batch)) {
-      stop("`multimodal_method = \"coralysis\"` or `\"coralysis2\"` requires `batch`.", call. = FALSE)
+    if (identical(multimodal_method, "coralysis") && is.null(batch)) {
+      stop("`multimodal_method = \"coralysis\"` requires `batch`.", call. = FALSE)
     }
-    if (identical(normalization_method, "sctransform") && multimodal_method %in% c("coralysis", "coralysis2")) {
+    if (identical(normalization_method, "sctransform") && identical(multimodal_method, "coralysis")) {
       stop("CITE-seq Coralysis protein workflows currently require `normalization_method = \"seurat\"` or `\"scran\"`.", call. = FALSE)
     }
     if (!is.character(adt_assay) || length(adt_assay) != 1L) {
@@ -2493,6 +2498,26 @@ sn_run_cluster <- function(object,
   } else if (integration_method %in% c("totalvi", "mmochi")) {
     stop("`integration_method = \"totalvi\"` or `\"mmochi\"` requires `modality = \"cite_seq\"`.", call. = FALSE)
   }
+
+  needs_rna_workflow <- .sn_cluster_requires_rna_workflow(
+    modality = modality,
+    multimodal_method = multimodal_method
+  )
+  needs_rna_pca <- .sn_cluster_requires_rna_pca(
+    modality = modality,
+    multimodal_method = multimodal_method,
+    batch = batch,
+    integration_method = integration_method
+  )
+  needs_adt_data <- .sn_cluster_requires_adt_data(
+    modality = modality,
+    multimodal_method = multimodal_method,
+    integration_control = integration_control
+  )
+  needs_adt_pca <- .sn_cluster_requires_adt_pca(
+    modality = modality,
+    multimodal_method = multimodal_method
+  )
 
   prepared <- .sn_prepare_seurat_analysis_input(
     object = object,
@@ -2520,7 +2545,7 @@ sn_run_cluster <- function(object,
     }
   }
 
-  if (is_null(hvg_group_by) && !is_null(batch)) {
+  if (isTRUE(needs_rna_workflow) && is_null(hvg_group_by) && !is_null(batch)) {
     hvg_group_by <- batch
   }
 
@@ -2544,6 +2569,11 @@ sn_run_cluster <- function(object,
     "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
   )
 
+  if (!isTRUE(needs_rna_workflow)) {
+    block_genes <- NULL
+    rare_feature_method <- "none"
+  }
+
   if (normalization_method == "sctransform" && !is_null(block_genes)) {
     .sn_log_warn("`block_genes` is only applied in log-normalization workflows; ignoring it for SCTransform.")
     block_genes <- NULL
@@ -2553,7 +2583,7 @@ sn_run_cluster <- function(object,
     rare_feature_method <- "none"
   }
 
-  if (!is_null(block_genes)) {
+  if (isTRUE(needs_rna_workflow) && !is_null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
     if (verbose) .sn_log_info("Processing blocked genes.")
 
@@ -2585,6 +2615,10 @@ sn_run_cluster <- function(object,
     )
   }
 
+  hvg <- character(0)
+  hvg_signature <- NULL
+  pca_signature <- NULL
+
   normalization_signature <- list(
     method = normalization_method,
     assay = assay,
@@ -2608,7 +2642,14 @@ sn_run_cluster <- function(object,
     }
   )
 
-  if (normalization_method == "sctransform") {
+  if (!isTRUE(needs_rna_workflow)) {
+    if (verbose) {
+      .sn_log_info(
+        "[1/6] Skipping RNA normalization, feature selection, scaling, and PCA; ",
+        "{multimodal_method} uses the ADT/protein assay directly."
+      )
+    }
+  } else if (normalization_method == "sctransform") {
     if (can_reuse_normalization) {
       if (verbose) .sn_log_info("[1/5] Reusing SCTransform results.")
       SeuratObject::DefaultAssay(object = object) <- "SCT"
@@ -2660,33 +2701,37 @@ sn_run_cluster <- function(object,
       missing_user_features = user_hvg_info$missing
     )
 
-    pca_signature <- list(
-      method = "sctransform",
-      features = hvg,
-      npcs = npcs,
-      vars_to_regress = vars_to_regress,
-      normalization = normalization_signature,
-      hvg = hvg_signature
-    )
-    if (.sn_can_reuse_cluster_stage(
-      object = object,
-      stage = "pca",
-      signature = pca_signature,
-      reuse = reuse,
-      rerun_from = rerun_from,
-      required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
-    )) {
-      if (verbose) .sn_log_info("[3/5] Reusing PCA reduction.")
-    } else {
-      if (verbose) .sn_log_info("[3/5] Running PCA.")
-      object <- Seurat::RunPCA(
-        object,
-        npcs = npcs,
+    if (isTRUE(needs_rna_pca)) {
+      pca_signature <- list(
+        method = "sctransform",
         features = hvg,
-        verbose = verbose,
-        seed.use = 717
+        npcs = npcs,
+        vars_to_regress = vars_to_regress,
+        normalization = normalization_signature,
+        hvg = hvg_signature
       )
-      object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
+      if (.sn_can_reuse_cluster_stage(
+        object = object,
+        stage = "pca",
+        signature = pca_signature,
+        reuse = reuse,
+        rerun_from = rerun_from,
+        required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
+      )) {
+        if (verbose) .sn_log_info("[3/5] Reusing PCA reduction.")
+      } else {
+        if (verbose) .sn_log_info("[3/5] Running PCA.")
+        object <- Seurat::RunPCA(
+          object,
+          npcs = npcs,
+          features = hvg,
+          verbose = verbose,
+          seed.use = 717
+        )
+        object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
+      }
+    } else if (verbose) {
+      .sn_log_info("[3/5] Skipping RNA PCA; the selected backend imports or computes its own latent representation.")
     }
   } else {
     if (can_reuse_normalization) {
@@ -2835,46 +2880,50 @@ sn_run_cluster <- function(object,
       missing_user_features = user_hvg_info$missing
     )
 
-    pca_signature <- list(
-      method = normalization_method,
-      features = hvg,
-      vars_to_regress = vars_to_regress,
-      npcs = npcs,
-      normalization = normalization_signature,
-      hvg = hvg_signature
-    )
-    if (.sn_can_reuse_cluster_stage(
-      object = object,
-      stage = "pca",
-      signature = pca_signature,
-      reuse = reuse,
-      rerun_from = rerun_from,
-      required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
-    )) {
-      if (verbose) .sn_log_info("[4/6] Reusing scaled data and PCA reduction.")
-    } else {
-      if (verbose) .sn_log_info("[4/6] Scaling data.")
-      object <- Seurat::ScaleData(
-        object = object,
-        vars.to.regress = vars_to_regress,
+    if (isTRUE(needs_rna_pca)) {
+      pca_signature <- list(
+        method = normalization_method,
         features = hvg,
-        verbose = verbose
-      )
-
-      if (verbose) .sn_log_info("[5/6] Running PCA.")
-      object <- Seurat::RunPCA(
-        object,
+        vars_to_regress = vars_to_regress,
         npcs = npcs,
-        features = hvg,
-        verbose = verbose,
-        seed.use = 717
+        normalization = normalization_signature,
+        hvg = hvg_signature
       )
-      object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
+      if (.sn_can_reuse_cluster_stage(
+        object = object,
+        stage = "pca",
+        signature = pca_signature,
+        reuse = reuse,
+        rerun_from = rerun_from,
+        required = function(current_object, stage_info) "pca" %in% names(current_object@reductions)
+      )) {
+        if (verbose) .sn_log_info("[4/6] Reusing scaled data and PCA reduction.")
+      } else {
+        if (verbose) .sn_log_info("[4/6] Scaling data.")
+        object <- Seurat::ScaleData(
+          object = object,
+          vars.to.regress = vars_to_regress,
+          features = hvg,
+          verbose = verbose
+        )
+
+        if (verbose) .sn_log_info("[5/6] Running PCA.")
+        object <- Seurat::RunPCA(
+          object,
+          npcs = npcs,
+          features = hvg,
+          verbose = verbose,
+          seed.use = 717
+        )
+        object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
+      }
+    } else if (verbose) {
+      .sn_log_info("[4/6] Skipping RNA scaling and PCA; the selected backend does not use a Seurat PCA reduction.")
     }
   }
 
   adt_signature <- NULL
-  if (identical(modality, "cite_seq") && multimodal_method %in% c("wnn", "coralysis", "coralysis2", "mmochi")) {
+  if (isTRUE(needs_adt_data)) {
     adt_signature <- list(
       modality = modality,
       multimodal_method = multimodal_method,
@@ -2884,6 +2933,7 @@ sn_run_cluster <- function(object,
       normalization_method = "CLR",
       margin = 2L,
       npcs = adt_npcs,
+      run_pca = isTRUE(needs_adt_pca),
       features = adt_feature_set,
       missing_features = adt_feature_info$missing
     )
@@ -2894,8 +2944,12 @@ sn_run_cluster <- function(object,
       reuse = reuse,
       rerun_from = rerun_from,
       required = function(current_object, stage_info) {
-        "apca" %in% names(current_object@reductions) &&
-          .sn_has_seurat_layer(current_object, assay = adt_assay, layer = "data") &&
+        has_data <- .sn_has_seurat_layer(current_object, assay = adt_assay, layer = "data")
+        if (!isTRUE(needs_adt_pca)) {
+          return(has_data)
+        }
+        has_data &&
+          "apca" %in% names(current_object@reductions) &&
           .sn_has_seurat_layer(current_object, assay = adt_assay, layer = "scale.data")
       }
     )
@@ -2909,9 +2963,21 @@ sn_run_cluster <- function(object,
     adt_context <- adt_prepared$context
 
     if (can_reuse_adt) {
-      if (verbose) .sn_log_info("[5/6] Reusing ADT normalization and PCA.")
+      if (verbose) {
+        if (isTRUE(needs_adt_pca)) {
+          .sn_log_info("[5/6] Reusing ADT normalization and PCA.")
+        } else {
+          .sn_log_info("[5/6] Reusing ADT normalization.")
+        }
+      }
     } else {
-      if (verbose) .sn_log_info("[5/6] Running ADT CLR normalization and PCA.")
+      if (verbose) {
+        if (isTRUE(needs_adt_pca)) {
+          .sn_log_info("[5/6] Running ADT CLR normalization and PCA.")
+        } else {
+          .sn_log_info("[5/6] Running ADT CLR normalization.")
+        }
+      }
       object <- Seurat::NormalizeData(
         object = object,
         assay = adt_assay,
@@ -2919,25 +2985,29 @@ sn_run_cluster <- function(object,
         margin = 2,
         verbose = verbose
       )
-      object <- Seurat::ScaleData(
-        object = object,
-        assay = adt_assay,
-        features = adt_feature_set,
-        verbose = verbose
-      )
-      object <- Seurat::RunPCA(
-        object = object,
-        assay = adt_assay,
-        features = adt_feature_set,
-        npcs = adt_npcs,
-        reduction.name = "apca",
-        reduction.key = "apca_",
-        verbose = verbose,
-        seed.use = 717
-      )
-      object <- .sn_record_cluster_stage(object, "adt", adt_signature, reduction = "apca")
+      if (isTRUE(needs_adt_pca)) {
+        object <- Seurat::ScaleData(
+          object = object,
+          assay = adt_assay,
+          features = adt_feature_set,
+          verbose = verbose
+        )
+        object <- Seurat::RunPCA(
+          object = object,
+          assay = adt_assay,
+          features = adt_feature_set,
+          npcs = adt_npcs,
+          reduction.name = "apca",
+          reduction.key = "apca_",
+          verbose = verbose,
+          seed.use = 717
+        )
+        object <- .sn_record_cluster_stage(object, "adt", adt_signature, reduction = "apca")
+      } else {
+        object <- .sn_record_cluster_stage(object, "adt", adt_signature)
+      }
     }
-    SeuratObject::DefaultAssay(object = object) <- if (identical(normalization_method, "sctransform")) "SCT" else assay
+    SeuratObject::DefaultAssay(object = object) <- if (isTRUE(needs_rna_workflow) && identical(normalization_method, "sctransform")) "SCT" else assay
   }
 
   if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
@@ -2952,7 +3022,7 @@ sn_run_cluster <- function(object,
       pca = pca_signature,
       adt = adt_signature
     )
-  } else if (identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "coralysis2")) {
+  } else if (identical(modality, "cite_seq") && identical(multimodal_method, "coralysis")) {
     integration_signature <- list(
       method = paste0("cite_seq_", multimodal_method),
       batch = batch,
@@ -2962,6 +3032,7 @@ sn_run_cluster <- function(object,
       dims = adt_dims,
       npcs = adt_npcs,
       integration_control = integration_control,
+      store_sce = .sn_coralysis_store_sce(integration_control),
       adt = adt_signature
     )
     if (.sn_can_reuse_cluster_stage(
@@ -2982,7 +3053,7 @@ sn_run_cluster <- function(object,
         object = object,
         method = multimodal_method,
         batch = batch,
-        reduction = "apca",
+        reduction = NULL,
         features = adt_feature_set,
         assay = adt_assay,
         dims = adt_dims,
@@ -3113,6 +3184,11 @@ sn_run_cluster <- function(object,
       theta = theta,
       group_by_vars = group_by_vars,
       integration_control = integration_control,
+      store_sce = if (identical(integration_method, "coralysis")) {
+        .sn_coralysis_store_sce(integration_control)
+      } else {
+        NULL
+      },
       pca = pca_signature
     )
     if (is_null(x = batch)) {
@@ -3135,7 +3211,7 @@ sn_run_cluster <- function(object,
         object = object,
         method = integration_method,
         batch = batch,
-        reduction = "pca",
+        reduction = if (isTRUE(needs_rna_pca)) "pca" else NULL,
         features = hvg,
         assay = assay,
         dims = dims,
@@ -3166,7 +3242,7 @@ sn_run_cluster <- function(object,
       upstream = reduction_signature
     )
   } else {
-    reduction_dims <- if (identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "coralysis2", "mmochi")) {
+    reduction_dims <- if (identical(modality, "cite_seq") && multimodal_method %in% c("coralysis", "mmochi")) {
       adt_dims
     } else {
       dims
@@ -3504,10 +3580,27 @@ sn_run_cluster <- function(object,
   )
 }
 
+.sn_sync_coralysis_reference_label <- function(ref_sce,
+                                              reference = NULL,
+                                              label_col = NULL) {
+  if (
+    inherits(reference, "Seurat") &&
+      is.character(label_col) &&
+      length(label_col) == 1L &&
+      label_col %in% colnames(reference[[]])
+  ) {
+    labels <- reference[[label_col, drop = TRUE]]
+    names(labels) <- colnames(reference)
+    SummarizedExperiment::colData(ref_sce)[[label_col]] <- labels[colnames(ref_sce)]
+  }
+  ref_sce
+}
+
 .sn_get_coralysis_reference_sce <- function(reference,
                                            reference_assay = NULL,
                                            reference_layer = "data",
-                                           verbose = TRUE) {
+                                           verbose = TRUE,
+                                           label_col = NULL) {
   if (inherits(reference, "SingleCellExperiment")) {
     return(reference)
   }
@@ -3515,12 +3608,16 @@ sn_run_cluster <- function(object,
     stop("`reference` must be a Seurat or SingleCellExperiment object for Coralysis label_by transfer.", call. = FALSE)
   }
   if (inherits(reference@misc$coralysis, "SingleCellExperiment")) {
-    return(reference@misc$coralysis)
+    return(.sn_sync_coralysis_reference_label(
+      ref_sce = reference@misc$coralysis,
+      reference = reference,
+      label_col = label_col
+    ))
   }
   stop(
-    "Coralysis label_by transfer requires a Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
-    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\", ",
-    "integration_control = list(store_sce = TRUE, pca_args = list(return.model = TRUE)))` first.",
+    "Coralysis label_by transfer requires a native Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
+    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\")` first, ",
+    "or avoid `integration_control = list(store_sce = FALSE)` if the object should be used as a reference.",
     call. = FALSE
   )
 }
@@ -3548,7 +3645,8 @@ sn_run_cluster <- function(object,
     reference = reference,
     reference_assay = reference_assay,
     reference_layer = reference_layer,
-    verbose = verbose
+    verbose = verbose,
+    label_col = label_col
   )
   if (!label_col %in% colnames(SummarizedExperiment::colData(ref_sce))) {
     stop(glue("`label_col` column '{label_col}' was not found in Coralysis reference colData."), call. = FALSE)
@@ -3613,7 +3711,7 @@ sn_run_cluster <- function(object,
 #' record in \code{query@misc$label_transfer}. The default \code{method =
 #' "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
 #' \code{TransferData()} workflow. \code{method = "coralysis"} projects the
-#' query onto a Coralysis-trained reference with
+#' query onto a native Coralysis-trained reference with
 #' \code{Coralysis::ReferenceMapping()}. \code{method = "scanvi"} and
 #' \code{method = "scarches"} use the managed scVI-family pixi backend to train
 #' a semi-supervised scANVI model with reference labels and query cells marked
@@ -3625,9 +3723,10 @@ sn_run_cluster <- function(object,
 #' @param label_by Metadata column in \code{reference} to transfer.
 #' @param label_col Deprecated alias for \code{label_by}.
 #' @param method Label-transfer backend. \code{"seurat"} uses Seurat anchors;
-#'   \code{"coralysis"} uses \code{Coralysis::ReferenceMapping()} and requires
-#'   a Coralysis-trained reference stored under \code{reference@misc$coralysis};
-#'   \code{"scanvi"} and \code{"scarches"} use the scVI-family pixi backend.
+#'   \code{"coralysis"} uses native \code{Coralysis::ReferenceMapping()} and
+#'   requires a trained Coralysis reference stored under
+#'   \code{reference@misc$coralysis}; \code{"scanvi"} and \code{"scarches"} use
+#'   the scVI-family pixi backend.
 #' @param query Deprecated alias for \code{object}; retained for compatibility
 #'   with the old reference-first call style.
 #' @param prediction_prefix Prefix for metadata columns added to
@@ -3719,7 +3818,7 @@ sn_transfer_labels <- function(object = NULL,
     stop("Use either `object` or deprecated `query`, not both.", call. = FALSE)
   }
 
-  if (!inherits(reference, "Seurat") && !(method == "coralysis" && inherits(reference, "SingleCellExperiment"))) {
+  if (!inherits(reference, "Seurat") && !(identical(method, "coralysis") && inherits(reference, "SingleCellExperiment"))) {
     stop("`reference` must be a Seurat object.", call. = FALSE)
   }
   if (!inherits(object, "Seurat")) {
