@@ -1,6 +1,13 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-10
+Last updated: 2026-05-11
+
+## 2026-05-11
+
+- Added automatic SCTransform future-size handling. `sn_run_cluster()` and
+  `sn_normalize_data()` now temporarily set `future.globals.maxSize` from the
+  detected cgroup/system memory and object size before calling Seurat
+  SCTransform, then restore the caller's previous option.
 
 ## 2026-05-10
 

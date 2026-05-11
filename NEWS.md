@@ -40,6 +40,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   empty `hvg_group_by` labels and runs temporary per-group HVG calls on the
   selected assay only, avoiding spurious ADT assay removal messages on
   multimodal objects.
+- SCTransform workflows in `sn_run_cluster()` and `sn_normalize_data()` now
+  temporarily raise `future.globals.maxSize` from the detected system memory and
+  object size before calling Seurat, avoiding the default 500 MiB future export
+  limit on large objects while restoring the caller's option afterwards.
 
 ### Added
 

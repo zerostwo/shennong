@@ -1,6 +1,14 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-10
+Last updated: 2026-05-11
+
+## 2026-05-11
+
+- SCTransform may evaluate through `future` when users have a parallel plan
+  active, and the default 500 MiB global-export limit is too small for large
+  Seurat objects. Shennong should raise `future.globals.maxSize` temporarily
+  based on cgroup/system memory and object size for SCTransform calls, while
+  restoring the user's previous option after the call.
 
 ## 2026-05-10
 

@@ -51,6 +51,87 @@ test_that("sn_set_path creates a directory and returns its path", {
   expect_true(dir.exists(dir_path))
 })
 
+test_that("future globals max size is resolved from memory and existing options", {
+  old_override <- getOption("shennong.future.globals.maxSize", NULL)
+  on.exit(options(shennong.future.globals.maxSize = old_override), add = TRUE)
+  options(shennong.future.globals.maxSize = NULL)
+
+  gib <- 1024^3
+
+  expect_equal(
+    Shennong:::.sn_resolve_future_globals_max_size(
+      current = NULL,
+      memory_limit = 64 * gib,
+      min_size = 8 * gib,
+      cap = 128 * gib
+    ),
+    8 * gib
+  )
+
+  expect_equal(
+    Shennong:::.sn_resolve_future_globals_max_size(
+      current = NULL,
+      memory_limit = 4 * gib,
+      min_size = 8 * gib,
+      memory_fraction = 0.75,
+      cap = 128 * gib
+    ),
+    ceiling(3 * gib)
+  )
+
+  expect_equal(
+    Shennong:::.sn_resolve_future_globals_max_size(
+      current = 16 * gib,
+      memory_limit = 64 * gib,
+      min_size = 8 * gib,
+      cap = 128 * gib
+    ),
+    16 * gib
+  )
+
+  options(shennong.future.globals.maxSize = 12 * gib)
+  expect_equal(
+    Shennong:::.sn_resolve_future_globals_max_size(
+      current = NULL,
+      memory_limit = 64 * gib,
+      min_size = 8 * gib,
+      cap = 128 * gib
+    ),
+    12 * gib
+  )
+})
+
+test_that("future globals helper restores the caller option", {
+  old_future <- getOption("future.globals.maxSize", NULL)
+  old_override <- getOption("shennong.future.globals.maxSize", NULL)
+  on.exit({
+    options(future.globals.maxSize = old_future)
+    options(shennong.future.globals.maxSize = old_override)
+  }, add = TRUE)
+
+  options(future.globals.maxSize = 100)
+  options(shennong.future.globals.maxSize = 1024)
+  observed <- Shennong:::.sn_with_auto_future_globals(
+    getOption("future.globals.maxSize"),
+    context = "test future operation",
+    verbose = FALSE
+  )
+
+  expect_equal(observed, 1024)
+  expect_equal(getOption("future.globals.maxSize"), 100)
+
+  options(future.globals.maxSize = NULL)
+  options(shennong.future.globals.maxSize = 1024^3)
+  observed <- Shennong:::.sn_with_auto_future_globals(
+    getOption("future.globals.maxSize"),
+    context = "test future operation",
+    verbose = FALSE
+  )
+
+  expect_equal(observed, 1024^3)
+  expect_null(getOption("future.globals.maxSize", NULL))
+})
+
 test_that("sn_get_species returns the explicit species when provided", {
   expect_equal(sn_get_species(object = NULL, species = "human"), "human")
 })

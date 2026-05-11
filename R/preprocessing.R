@@ -469,11 +469,18 @@ sn_normalize_data <- function(
     assay = assay,
     layer = layer
   )
-  object <- Seurat::SCTransform(
+  sct_args <- list(...)
+  sct_args$verbose <- sct_args$verbose %||% TRUE
+  sct_args$seed.use <- sct_args$seed.use %||% 717
+  object <- .sn_with_auto_future_globals(
+    .sn_call_with_symbolic_object(
+      fun_call = quote(Seurat::SCTransform),
+      object = prepared$object,
+      args = sct_args
+    ),
     object = prepared$object,
-    verbose = TRUE,
-    seed.use = 717,
-    ...
+    context = "SCTransform",
+    verbose = isTRUE(sct_args$verbose)
   )
 
   if (isTRUE(prepared$context$needs_temp_counts)) {

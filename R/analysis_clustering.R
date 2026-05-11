@@ -2733,10 +2733,15 @@ sn_run_cluster <- function(object,
       if (length(user_hvg) > 0L) {
         sct_args$return.only.var.genes <- FALSE
       }
-      object <- .sn_call_with_symbolic_object(
-        fun_call = quote(Seurat::SCTransform),
+      object <- .sn_with_auto_future_globals(
+        .sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::SCTransform),
+          object = object,
+          args = sct_args
+        ),
         object = object,
-        args = sct_args
+        context = "SCTransform",
+        verbose = verbose
       )
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }

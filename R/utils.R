@@ -99,6 +99,139 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   .sn_log("error", ..., .envir = .envir)
 }
 
+.sn_format_bytes <- function(bytes) {
+  bytes <- suppressWarnings(as.numeric(bytes))
+  if (length(bytes) != 1L || is.na(bytes)) {
+    return("unknown")
+  }
+  if (!is.finite(bytes)) {
+    return("Inf")
+  }
+  units <- c("B", "KiB", "MiB", "GiB", "TiB")
+  scale <- 1
+  unit <- units[[1]]
+  for (candidate in units[-1]) {
+    if (abs(bytes) < scale * 1024) {
+      break
+    }
+    scale <- scale * 1024
+    unit <- candidate
+  }
+  paste0(format(round(bytes / scale, 2), trim = TRUE, scientific = FALSE), " ", unit)
+}
+
+.sn_read_numeric_file <- function(path) {
+  if (!file.exists(path)) {
+    return(NA_real_)
+  }
+  value <- tryCatch(readLines(path, warn = FALSE, n = 1L), error = function(e) NA_character_)
+  if (length(value) == 0L) {
+    return(NA_real_)
+  }
+  value <- trimws(value[[1]] %||% NA_character_)
+  if (is.na(value) || !nzchar(value) || identical(tolower(value), "max")) {
+    return(NA_real_)
+  }
+  suppressWarnings(as.numeric(value))
+}
+
+.sn_read_proc_meminfo_bytes <- function(keys = c("MemAvailable", "MemTotal")) {
+  if (!file.exists("/proc/meminfo")) {
+    return(NA_real_)
+  }
+  lines <- tryCatch(readLines("/proc/meminfo", warn = FALSE), error = function(e) character(0))
+  for (key in keys) {
+    hit <- grep(paste0("^", key, ":"), lines, value = TRUE)
+    if (length(hit) == 0L) {
+      next
+    }
+    kb <- suppressWarnings(as.numeric(sub("^.*?:\\s*([0-9]+)\\s+kB.*$", "\\1", hit[[1]])))
+    if (length(kb) == 1L && is.finite(kb) && kb > 0) {
+      return(kb * 1024)
+    }
+  }
+  NA_real_
+}
+
+.sn_detect_memory_limit_bytes <- function() {
+  limits <- c(
+    .sn_read_numeric_file("/sys/fs/cgroup/memory.max"),
+    .sn_read_numeric_file("/sys/fs/cgroup/memory/memory.limit_in_bytes")
+  )
+  # cgroup v1 sometimes reports a sentinel close to LONG_MAX when unlimited.
+  limits <- limits[is.finite(limits) & limits > 0 & limits < 2^60]
+  available <- .sn_read_proc_meminfo_bytes()
+  candidates <- c(limits, available)
+  candidates <- candidates[is.finite(candidates) & candidates > 0]
+  if (length(candidates) == 0L) {
+    return(NA_real_)
+  }
+  min(candidates)
+}
+
+.sn_resolve_future_globals_max_size <- function(object = NULL,
+                                                current = getOption("future.globals.maxSize"),
+                                                memory_limit = .sn_detect_memory_limit_bytes(),
+                                                min_size = 8 * 1024^3,
+                                                object_multiplier = 1.5,
+                                                memory_fraction = 0.75,
+                                                cap = 128 * 1024^3) {
+  override <- getOption("shennong.future.globals.maxSize", NULL)
+  if (!is.null(override)) {
+    override <- suppressWarnings(as.numeric(override))
+    if (length(override) == 1L && is.finite(override) && override > 0) {
+      return(override)
+    }
+  }
+
+  target <- min_size
+  if (!is.null(object)) {
+    object_size <- suppressWarnings(as.numeric(object.size(object)))
+    if (length(object_size) == 1L && is.finite(object_size) && object_size > 0) {
+      target <- max(target, object_size * object_multiplier)
+    }
+  }
+  if (length(memory_limit) == 1L && is.finite(memory_limit) && memory_limit > 0) {
+    target <- min(target, memory_limit * memory_fraction)
+  }
+  if (length(cap) == 1L && is.finite(cap) && cap > 0) {
+    target <- min(target, cap)
+  }
+
+  current_effective <- current %||% (500 * 1024^2)
+  current_effective <- suppressWarnings(as.numeric(current_effective))
+  if (length(current_effective) == 1L && is.finite(current_effective) && current_effective >= target) {
+    return(current_effective)
+  }
+  ceiling(target)
+}
+
+.sn_with_auto_future_globals <- function(expr,
+                                         object = NULL,
+                                         context = "future operation",
+                                         verbose = TRUE) {
+  old <- getOption("future.globals.maxSize", NULL)
+  target <- .sn_resolve_future_globals_max_size(object = object, current = old)
+  current_effective <- old %||% (500 * 1024^2)
+  current_effective <- suppressWarnings(as.numeric(current_effective))
+  changed <- length(target) == 1L &&
+    (is.infinite(target) || (is.finite(target) && target > 0)) &&
+    (length(current_effective) != 1L || is.na(current_effective) || target > current_effective)
+
+  if (isTRUE(changed)) {
+    options(future.globals.maxSize = target)
+    if (isTRUE(verbose)) {
+      .sn_log_info(
+        "Temporarily setting `future.globals.maxSize` to {.sn_format_bytes(target)} ",
+        "for {context} based on detected memory."
+      )
+    }
+    on.exit(options(future.globals.maxSize = old), add = TRUE)
+  }
+
+  force(expr)
+}
+
 .sn_resolve_legacy_arg <- function(value,
                                    legacy,
                                    value_name,

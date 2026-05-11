@@ -353,6 +353,31 @@ test_that("sn_normalize_data can normalize from a non-default layer", {
   )
 })
 
+test_that("sn_normalize_data SCTransform restores future globals option", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("glmGamPoi")
+
+  counts <- Matrix::Matrix(matrix(rpois(60 * 40, lambda = 4), nrow = 60), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  object <- sn_initialize_seurat_object(x = counts, project = "normalize-sct")
+
+  old_future <- getOption("future.globals.maxSize", NULL)
+  on.exit(options(future.globals.maxSize = old_future), add = TRUE)
+  options(future.globals.maxSize = 1024)
+
+  normalized <- sn_normalize_data(
+    object = object,
+    method = "sctransform",
+    assay = "RNA",
+    variable.features.n = 30,
+    verbose = FALSE
+  )
+
+  expect_true("SCT" %in% names(normalized@assays))
+  expect_equal(getOption("future.globals.maxSize"), 1024)
+})
+
 test_that("sn_get_species reads stored species and can infer from Seurat object features", {
   skip_if_not_installed("Seurat")
 
