@@ -10,8 +10,7 @@ sn_assess_qc(
   sample_by = NULL,
   store_name = "default",
   return_object = FALSE,
-  verbose = TRUE,
-  sample_col = NULL
+  verbose = TRUE
 )
 }
 \arguments{
@@ -32,8 +31,6 @@ available and otherwise treats the object as one sample.}
 Seurat object and return the updated object.}
 
 \item{verbose}{Logical; when \code{TRUE}, print a concise QC summary.}
-
-\item{sample_col}{Deprecated alias for \code{sample_by}.}
 }
 \value{
 A list with \code{overall}, \code{by_sample}, \code{comparison},

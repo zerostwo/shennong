@@ -12,8 +12,7 @@ sn_calculate_lisi(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 }
 \arguments{
@@ -36,8 +35,6 @@ LISI. When \code{NULL}, use all selected cells.}
 during subsampling. Defaults to the first requested \code{label}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per retained cell. The first column is
@@ -53,7 +50,7 @@ batch_by mixing or label_by separation after integration.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

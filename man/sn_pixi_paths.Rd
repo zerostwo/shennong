@@ -4,14 +4,11 @@
 \alias{sn_pixi_paths}
 \title{Inspect Shennong pixi runtime paths}
 \usage{
-sn_pixi_paths(environment = NULL, path = ".", runtime_dir = NULL)
+sn_pixi_paths(environment = NULL, runtime_dir = NULL)
 }
 \arguments{
 \item{environment}{Python environment name. Use
 \code{sn_list_pixi_environments()} to see bundled configs.}
-
-\item{path}{Deprecated; retained for compatibility and ignored unless
-\code{runtime_dir} is supplied explicitly.}
 
 \item{runtime_dir}{Optional explicit Shennong runtime directory. Defaults to
 \code{getOption("shennong.runtime_dir")}, \code{SHENNONG_RUNTIME_DIR},

@@ -1121,7 +1121,7 @@
   }
 
   if (identical(method, "scanvi")) {
-    labels_key <- integration_control$label_by %||% integration_control$labels_key %||% integration_control$label_col %||% NULL
+    labels_key <- integration_control$label_by %||% NULL
     if (is.null(labels_key) || !nzchar(labels_key) || !labels_key %in% colnames(object[[]])) {
       stop(
         "`integration_control$label_by` must name a metadata column when ",
@@ -1130,7 +1130,7 @@
       )
     }
   } else {
-    labels_key <- integration_control$label_by %||% integration_control$labels_key %||% NULL
+    labels_key <- integration_control$label_by %||% NULL
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
@@ -1256,14 +1256,7 @@
 sn_run_scvi <- function(object,
                         batch = NULL,
                         integration_control = list(),
-                        batch_by = NULL,
                         ...) {
-  if (!is.null(batch_by)) {
-    if (!is.null(batch) && !identical(batch, batch_by)) {
-      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
-    }
-    batch <- batch_by
-  }
   sn_run_cluster(
     object = object,
     batch = batch,
@@ -1278,14 +1271,7 @@ sn_run_scvi <- function(object,
 sn_run_scanvi <- function(object,
                           batch = NULL,
                           integration_control = list(),
-                          batch_by = NULL,
                           ...) {
-  if (!is.null(batch_by)) {
-    if (!is.null(batch) && !identical(batch, batch_by)) {
-      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
-    }
-    batch <- batch_by
-  }
   sn_run_cluster(
     object = object,
     batch = batch,
@@ -1447,10 +1433,7 @@ sn_run_scanvi <- function(object,
   utils::head(unique(unlist(local_markers, use.names = FALSE)), nfeatures)
 }
 
-.sn_resolve_rare_feature_control <- function(control = list(),
-                                             rare_group_max_fraction = NULL,
-                                             rare_group_max_cells = NULL,
-                                             rare_gene_max_fraction = NULL) {
+.sn_resolve_rare_feature_control <- function(control = list()) {
   if (is.null(control)) {
     control <- list()
   }
@@ -1472,19 +1455,6 @@ sn_run_scanvi <- function(object,
     )
   }
   resolved <- utils::modifyList(defaults, control)
-
-  if (!is.null(rare_group_max_fraction)) {
-    .sn_log_warn("`rare_group_max_fraction` is deprecated; use `rare_feature_control = list(group_max_fraction = ...)`.")
-    resolved$group_max_fraction <- rare_group_max_fraction
-  }
-  if (!is.null(rare_group_max_cells)) {
-    .sn_log_warn("`rare_group_max_cells` is deprecated; use `rare_feature_control = list(group_max_cells = ...)`.")
-    resolved$group_max_cells <- rare_group_max_cells
-  }
-  if (!is.null(rare_gene_max_fraction)) {
-    .sn_log_warn("`rare_gene_max_fraction` is deprecated; use `rare_feature_control = list(gene_max_fraction = ...)`.")
-    resolved$gene_max_fraction <- rare_gene_max_fraction
-  }
 
   resolved$group_max_fraction <- as.numeric(resolved$group_max_fraction)
   resolved$group_max_cells <- as.integer(resolved$group_max_cells)
@@ -1855,7 +1825,6 @@ sn_run_scanvi <- function(object,
 #'   \code{"challenging_groups"}.
 #' @param group_by Optional metadata column used with
 #'   \code{method = "challenging_groups"}.
-#' @param group Deprecated alias for \code{group_by}.
 #' @param reduction Reduction used by graph-based methods. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional embedding dimensions to use.
@@ -1919,17 +1888,10 @@ sn_detect_rare_cells <- function(object,
                                  sca_n_comps = 20,
                                  sca_iters = 3,
                                  sca_nbhd_size = 15,
-                                 sca_model = "wilcoxon",
-                                 group = NULL) {
+                                 sca_model = "wilcoxon") {
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.", call. = FALSE)
   }
-  group_by <- .sn_resolve_legacy_arg(
-    value = group_by,
-    legacy = group,
-    value_name = "group_by",
-    legacy_name = "group"
-  )
 
   method <- rlang::arg_match(method)
   expr <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
@@ -2205,7 +2167,6 @@ sn_detect_rare_cells <- function(object,
 #'   labels used for integration. If \code{NULL}, no RNA batch integration is
 #'   performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 #'   internal constant batch key to the Python backend.
-#' @param batch_by Compatibility alias for \code{batch}.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
 #'   \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
 #'   be followed by any supported \code{integration_method} when \code{batch}
@@ -2322,9 +2283,6 @@ sn_detect_rare_cells <- function(object,
 #' @param rare_feature_control Named list of advanced rare-feature thresholds.
 #'   Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 #'   \code{gene_max_fraction}, and \code{min_cells}.
-#' @param rare_group_max_fraction,rare_group_max_cells,rare_gene_max_fraction
-#'   Deprecated rare-feature thresholds. Use \code{rare_feature_control}
-#'   instead.
 #' @param block_genes Either a character vector of predefined bundled signature
 #'   categories (for example \code{c("ribo","mito")}) or a custom vector of
 #'   gene symbols to exclude from HVGs.
@@ -2429,9 +2387,6 @@ sn_run_cluster <- function(object,
                            rare_feature_group_by = NULL,
                            rare_feature_n = 200,
                            rare_feature_control = list(),
-                           rare_group_max_fraction = NULL,
-                           rare_group_max_cells = NULL,
-                           rare_gene_max_fraction = NULL,
                            block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
                            theta = 2,
                            group_by_vars = NULL,
@@ -2450,15 +2405,14 @@ sn_run_cluster <- function(object,
                            wnn_control = list(),
                            umap_control = list(),
                            return_cluster = FALSE,
-                           verbose = TRUE,
-                           batch_by = NULL) {
+                           verbose = TRUE) {
   check_installed("Seurat")
   check_installed("HGNChelper")
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
-  if (inherits(batch, "Seurat") || inherits(batch_by, "Seurat")) {
+  if (inherits(batch, "Seurat")) {
     stop(
       "`batch` received a Seurat object. ",
       "This usually means the input object was supplied twice, for example ",
@@ -2466,12 +2420,6 @@ sn_run_cluster <- function(object,
       "or `sn_run_cluster(object)` instead.",
       call. = FALSE
     )
-  }
-  if (!is.null(batch_by)) {
-    if (!is.null(batch) && !identical(batch, batch_by)) {
-      stop("`batch` and compatibility alias `batch_by` were both supplied with different values.", call. = FALSE)
-    }
-    batch <- batch_by
   }
   if (!is.null(batch) && (!is.character(batch) || length(batch) != 1L)) {
     stop("`batch` must be a single metadata column name or `NULL`.", call. = FALSE)
@@ -2514,12 +2462,7 @@ sn_run_cluster <- function(object,
     c("none", "gini", "local_markers"),
     several.ok = TRUE
   ))
-  rare_feature_control <- .sn_resolve_rare_feature_control(
-    control = rare_feature_control,
-    rare_group_max_fraction = rare_group_max_fraction,
-    rare_group_max_cells = rare_group_max_cells,
-    rare_gene_max_fraction = rare_gene_max_fraction
-  )
+  rare_feature_control <- .sn_resolve_rare_feature_control(control = rare_feature_control)
   if (!is_null(hvg_group_by) && !hvg_group_by %in% colnames(object[[]])) {
     stop(glue("`hvg_group_by` must be NULL or a metadata column name. '{hvg_group_by}' was not found."))
   }
@@ -3598,7 +3541,7 @@ sn_run_cluster <- function(object,
 
   integration_control <- transfer_control
   integration_control$label_by <- transfer_label_by
-  integration_control$labels_key <- transfer_label_by
+  integration_control$label_by <- transfer_label_by
   integration_control$unlabeled_category <- unlabeled_category
   integration_control$reduction <- integration_control$reduction %||% method_name
 
@@ -4073,16 +4016,13 @@ sn_prepare_label_transfer_reference <- function(object,
 #'   so the function can be used in pipes.
 #' @param reference A labeled Seurat reference object.
 #' @param label_by Metadata column in \code{reference} to transfer.
-#' @param label_col Deprecated alias for \code{label_by}.
 #' @param method Label-transfer backend. \code{"seurat"} uses Seurat anchors;
 #'   \code{"coralysis"} uses native \code{Coralysis::ReferenceMapping()} and
 #'   requires a trained Coralysis reference stored under
 #'   \code{reference@misc$coralysis}; \code{"scanvi"} and \code{"scarches"} use
 #'   the scVI-family pixi backend.
-#' @param query Deprecated alias for \code{object}; retained for compatibility
-#'   with the old reference-first call style.
 #' @param prediction_prefix Prefix for metadata columns added to
-#'   \code{query}. Defaults to \code{paste0(label_col, "_transfer")}.
+#'   \code{query}. Defaults to \code{paste0(label_by, "_transfer")}.
 #' @param normalization_method Normalization method passed to
 #'   \code{Seurat::FindTransferAnchors()}.
 #' @param reference_assay,query_assay Assays passed to
@@ -4134,7 +4074,6 @@ sn_transfer_labels <- function(object = NULL,
                                reference,
                                label_by = NULL,
                                method = c("seurat", "coralysis", "scanvi", "scarches"),
-                               query = NULL,
                                prediction_prefix = NULL,
                                normalization_method = "LogNormalize",
                                reference_assay = NULL,
@@ -4154,20 +4093,11 @@ sn_transfer_labels <- function(object = NULL,
                                return_anchors = FALSE,
                                transfer_control = list(),
                                verbose = TRUE,
-                               label_col = NULL,
                                ...) {
   check_installed("Seurat")
   method <- match.arg(method)
-  label_by <- .sn_resolve_legacy_arg(label_by, label_col, "label_by", "label_col")
-
   if (is.null(object)) {
-    if (is.null(query)) {
-      stop("`object` must be supplied as the query Seurat object.", call. = FALSE)
-    }
-    .sn_log_warn("`query` is deprecated; pass the query object as the first `object` argument.")
-    object <- query
-  } else if (!is.null(query)) {
-    stop("Use either `object` or deprecated `query`, not both.", call. = FALSE)
+    stop("`object` must be supplied as the query Seurat object.", call. = FALSE)
   }
 
   if (!inherits(reference, "Seurat") && !(identical(method, "coralysis") && inherits(reference, "SingleCellExperiment"))) {
@@ -4178,16 +4108,6 @@ sn_transfer_labels <- function(object = NULL,
   }
   if (!is.character(label_by) || length(label_by) != 1L || !nzchar(label_by)) {
     stop("`label_by` must be a non-empty metadata column name.", call. = FALSE)
-  }
-  if (
-    inherits(reference, "Seurat") &&
-    label_by %in% colnames(object[[]]) &&
-      !label_by %in% colnames(reference[[]])
-  ) {
-    .sn_log_warn("Detected the old positional call order `sn_transfer_labels(reference, query, ...)`; swapping the first two objects. Prefer `sn_transfer_labels(query, reference, ...)`.")
-    old_reference <- object
-    object <- reference
-    reference <- old_reference
   }
   if (method == "coralysis") {
     prediction_prefix <- prediction_prefix %||% paste0(label_by, "_coralysis")

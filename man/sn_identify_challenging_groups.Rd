@@ -19,8 +19,7 @@ sn_identify_challenging_groups(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  group = NULL
+  n_trees = 50
 )
 }
 \arguments{
@@ -61,8 +60,6 @@ used to flag difficult groups.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
-
-\item{group}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per group and rarity/separation flags.
@@ -78,7 +75,7 @@ visual inspection.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

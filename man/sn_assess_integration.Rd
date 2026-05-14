@@ -23,10 +23,7 @@ sn_assess_integration(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  batch = NULL,
-  label = NULL,
-  cluster = NULL
+  n_trees = 50
 )
 }
 \arguments{
@@ -68,7 +65,7 @@ Supported values are \code{"batch_lisi"}, \code{"label_lisi"},
 the metrics.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{batch}.}
+during subsampling. Defaults to \code{batch_by}.}
 
 \item{rare_fraction}{Fraction-of-cells threshold for flagging rare groups.}
 
@@ -80,12 +77,6 @@ used to flag difficult groups.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
-
-\item{batch}{Deprecated alias for \code{batch_by}.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
-
-\item{cluster}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A list with four top-level elements:
@@ -108,13 +99,13 @@ an exact fallback.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch_by = "sample",
+  batch = "sample",
   cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"

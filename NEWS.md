@@ -12,11 +12,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   no longer fail only because the containing directory does not exist.
 - `sn_write()` now auto-installs missing optional writer dependencies by
   default for custom formats such as `.qs2`, `.h5ad`, `.h5`, and BPCells.
-  Legacy `.qs` output now attempts to install `qs` from the GitHub remote
-  `qsbase/qs` for compatibility, while `.qs2` remains the recommended new
-  serialization format.
-- `sn_run_cluster()` now treats `batch` as the primary integration metadata
-  argument while retaining `batch_by` as a compatibility alias.
+  `.qs` output now attempts to install `qs` from the GitHub remote
+  `qsbase/qs`, while `.qs2` remains the recommended new serialization format.
+- `sn_run_cluster()` now uses `batch` as the only integration metadata
+  argument; the older `batch_by` alias has been removed from this entry point.
 - GitHub Actions now install `leidenbase` anywhere evaluated clustering
   examples or tests can request `cluster_algorithm = "leiden"`.
 - `sn_run_cluster(cluster_algorithm = "leiden")` now checks for `leidenbase`
@@ -44,6 +43,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   temporarily raise `future.globals.maxSize` from the detected system memory and
   object size before calling Seurat, avoiding the default 500 MiB future export
   limit on large objects while restoring the caller's option afterwards.
+- Package source builds now exclude local benchmark outputs and OmnipathR test
+  log directories, keeping `R CMD build` tarballs small and free of generated
+  validation artifacts.
 
 ### Added
 
@@ -235,20 +237,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
-- Standardized public metadata-selector arguments on the `*_by` family across
-  grouping, sample, batch, label, cluster, annotation, condition, reference,
-  and cell-type workflows. Deprecated aliases such as `group`, `group_col`,
-  `sample_col`, `batch`, `label`, `label_col`, `labels_key`,
-  `annotation_col`, `condition_col`, `cluster_col`, `reference_key`,
-  `cell_type_key`, `cell_type_col`, `cell_state_col`, `groupby`, and
-  `cnv_score_groupby` remain available for compatibility.
+- Standardized public metadata-selector arguments on the current API names and
+  removed old compatibility aliases such as `group`, `group_col`,
+  `sample_col`, `label_col`, `labels_key`, `annotation_col`, `condition_col`,
+  `cluster_col`, `reference_key`, `cell_type_key`, `cell_type_col`,
+  `cell_state_col`, `groupby`, and `cnv_score_groupby`. Backend-local config
+  keys may still use backend names when required by the external Python tools.
 - `sn_run_cluster()` now uses a simpler rare-feature interface. The supported
   automatic rare feature methods are `gini` and `local_markers`; less common
   `local_hvg` and `ciara` modes were removed from the clustering wrapper.
   Advanced thresholds are consolidated into `rare_feature_control =
   list(group_max_fraction = ..., group_max_cells = ..., gene_max_fraction =
-  ..., min_cells = ...)`. The old scalar threshold arguments remain as
-  deprecated compatibility aliases.
+  ..., min_cells = ...)`; the old scalar threshold arguments have been
+  removed.
 - `sn_plot_feature()` now silently replaces Seurat's default expression color
   scale when a Shennong palette is requested, avoiding the noisy duplicate
   colour-scale message.
@@ -277,7 +278,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   articles to explain why each Shennong function is used before showing the
   code. Heavy or credentialed chunks now remain opt-in through
   `SHENNONG_RUN_VIGNETTES=true` so local website builds stay fast.
-- `sn_run_cluster(normalization_method = "sctransform", batch_by = ...)` now runs
+- `sn_run_cluster(normalization_method = "sctransform", batch = ...)` now runs
   SCTransform followed by Harmony integration instead of rejecting
   SCTransform-based integration workflows.
 
@@ -400,7 +401,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_standardize_gene_symbols()` now also accepts character vectors of gene
   symbols or gene IDs and returns the standardized vector directly, while
   preserving the existing matrix and Seurat-object behavior.
-- `sn_run_cluster(normalization_method = "scran", batch_by = ...)` now runs
+- `sn_run_cluster(normalization_method = "scran", batch = ...)` now runs
   scran normalization before the selected batch-integration backend instead of
   rejecting batch workflows.
 - The repository now ships `scripts/check-prepush.R` so maintainers can run
@@ -408,9 +409,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `R CMD check --no-manual` in one local pre-push command.
 - Internal DE result storage now reuses the shared misc-result helper instead
   of maintaining a second collection-specific implementation.
-- `sn_install_shennong()` now prefers unified `source` / `ref` arguments for
-  GitHub and local installs while keeping `github_repo`, `github_ref`, and
-  `local_path` as compatibility aliases.
+- `sn_check_version()` and `sn_install_shennong()` now use the unified
+  `source` / `ref` arguments for GitHub and local source paths; the old
+  `github_repo`, `github_ref`, and `local_path` aliases have been removed.
 
 ### Fixed
 
@@ -622,8 +623,8 @@ Released 2026-03-18.
 
 ### Changed
 
-- Retained `sn_load_pbmc()` as a deprecated compatibility wrapper around
-  `sn_load_data()`.
+- Removed the old `sn_load_pbmc()` wrapper in favor of the primary
+  `sn_load_data()` entry point.
 - Refreshed generated documentation and package metadata as part of the
   modernization effort.
 

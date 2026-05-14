@@ -26,7 +26,6 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
-  sample_col = NULL,
   ...
 )
 }
@@ -85,8 +84,6 @@ pseudobulk profile to be retained.}
 stored DE results. Otherwise return the result table.}
 
 \item{verbose}{Whether to emit progress information.}
-
-\item{sample_col}{Deprecated alias for \code{sample_by}.}
 
 \item{...}{Additional arguments passed through to the selected DE method.}
 }

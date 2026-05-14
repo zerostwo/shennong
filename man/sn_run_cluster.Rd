@@ -34,9 +34,6 @@ sn_run_cluster(
   rare_feature_group_by = NULL,
   rare_feature_n = 200,
   rare_feature_control = list(),
-  rare_group_max_fraction = NULL,
-  rare_group_max_cells = NULL,
-  rare_gene_max_fraction = NULL,
   block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
   theta = 2,
   group_by_vars = NULL,
@@ -55,8 +52,7 @@ sn_run_cluster(
   wnn_control = list(),
   umap_control = list(),
   return_cluster = FALSE,
-  verbose = TRUE,
-  batch_by = NULL
+  verbose = TRUE
 )
 }
 \arguments{
@@ -208,9 +204,6 @@ before de-duplication.}
 Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 \code{gene_max_fraction}, and \code{min_cells}.}
 
-\item{rare_group_max_fraction, rare_group_max_cells, rare_gene_max_fraction}{Deprecated rare-feature thresholds. Use \code{rare_feature_control}
-instead.}
-
 \item{block_genes}{Either a character vector of predefined bundled signature
 categories (for example \code{c("ribo","mito")}) or a custom vector of
 gene symbols to exclude from HVGs.}
@@ -280,8 +273,6 @@ generated defaults, for example \code{n.neighbors}, \code{min.dist},
 \item{return_cluster}{If \code{TRUE}, return only the cluster_by assignments.}
 
 \item{verbose}{Whether to print/log progress messages.}
-
-\item{batch_by}{Compatibility alias for \code{batch}.}
 }
 \value{
 A \code{Seurat} object with clustering results and embeddings, or a

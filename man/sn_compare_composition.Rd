@@ -15,9 +15,7 @@ sn_compare_composition(
   test = c("wilcox", "none"),
   adjust_method = "BH",
   additional_cols = NULL,
-  return_sample_data = FALSE,
-  sample_col = NULL,
-  group_col = NULL
+  return_sample_data = FALSE
 )
 }
 \arguments{
@@ -51,10 +49,6 @@ intermediate composition table before comparison.}
 
 \item{return_sample_data}{Logical; if \code{TRUE}, return both the summary
 table and the completed sample-level composition table.}
-
-\item{sample_col}{Deprecated alias for \code{sample_by}.}
-
-\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per \code{variable} level. When

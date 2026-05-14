@@ -5,21 +5,9 @@
 \alias{sn_run_scanvi}
 \title{Run scVI or scANVI integration through Shennong}
 \usage{
-sn_run_scvi(
-  object,
-  batch = NULL,
-  integration_control = list(),
-  batch_by = NULL,
-  ...
-)
+sn_run_scvi(object, batch = NULL, integration_control = list(), ...)
 
-sn_run_scanvi(
-  object,
-  batch = NULL,
-  integration_control = list(),
-  batch_by = NULL,
-  ...
-)
+sn_run_scanvi(object, batch = NULL, integration_control = list(), ...)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
@@ -62,8 +50,6 @@ Use \code{sn_pixi_paths()} to inspect the
 generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
-
-\item{batch_by}{Compatibility alias for \code{batch}.}
 
 \item{...}{Additional arguments passed to \code{sn_run_cluster()}.}
 }

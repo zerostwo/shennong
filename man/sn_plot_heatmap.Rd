@@ -11,7 +11,6 @@ sn_plot_heatmap(
   split_by = NULL,
   assay = NULL,
   layer = "scale.data",
-  slot = NULL,
   mode = c("cells", "average"),
   scale_data = TRUE,
   max_cells = NULL,
@@ -29,7 +28,6 @@ sn_plot_heatmap(
   raster = TRUE,
   label_size = 8,
   label_angle = 45,
-  angle = NULL,
   group_palette = "Paired",
   group_colors = NULL,
   show_cell_names = FALSE,
@@ -60,8 +58,6 @@ for each split level and combined with patchwork.}
 \code{"scale.data"} for cell-level heatmaps. In \code{mode = "average"},
 use \code{"data"} to average normalized expression before optional
 feature-wise scaling.}
-
-\item{slot}{Deprecated alias for \code{layer}.}
 
 \item{mode}{One of \code{"cells"} or \code{"average"}. \code{"cells"}
 displays cells; \code{"average"} averages expression by \code{group_by}
@@ -95,8 +91,6 @@ heatmap panel.}
 
 \item{label_size, label_angle}{Size in points and rotation angle for the
 cell-level group labels drawn above the heatmap.}
-
-\item{angle}{Deprecated alias for \code{label_angle}.}
 
 \item{group_palette, group_colors}{Palette or explicit colors for the
 cell-level group label bar. Defaults to \code{"Paired"}.}

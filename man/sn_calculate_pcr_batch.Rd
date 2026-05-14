@@ -14,8 +14,7 @@ sn_calculate_pcr_batch(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  batch = NULL
+  seed = 717
 )
 }
 \arguments{
@@ -39,11 +38,9 @@ sn_calculate_pcr_batch(
 the metric.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{batch}.}
+during subsampling. Defaults to \code{batch_by}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
-
-\item{batch}{Deprecated alias for \code{batch_by}.}
 }
 \value{
 A one-row data frame containing the weighted batch_by variance explained
@@ -59,13 +56,13 @@ reports the improvement relative to the unintegrated state.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )
 sn_calculate_pcr_batch(
   pbmc,
-  batch_by = "sample",
+  batch = "sample",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

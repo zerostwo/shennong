@@ -29,7 +29,6 @@ sn_run_cell_communication(
   resource = NULL,
   store_name = "default",
   return_object = TRUE,
-  condition_col = NULL,
   ...
 )
 }
@@ -80,8 +79,6 @@ is considered expressed in NicheNet filtering.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object;
 otherwise return the stored-result list.}
-
-\item{condition_col}{Deprecated alias for \code{condition_by}.}
 
 \item{...}{Backend-specific arguments.}
 }

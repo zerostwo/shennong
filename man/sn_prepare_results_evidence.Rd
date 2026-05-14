@@ -11,8 +11,7 @@ sn_prepare_results_evidence(
   enrichment_name = NULL,
   cluster_by = NULL,
   n_markers = 5,
-  n_terms = 10,
-  cluster_col = NULL
+  n_terms = 10
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ sn_prepare_results_evidence(
 \item{n_markers}{Number of marker genes to retain per cluster.}
 
 \item{n_terms}{Number of enrichment terms to retain.}
-
-\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A structured list ready for prompt construction.
@@ -63,7 +60,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     obj,
     cluster_de_name = "celltype_markers",
     enrichment_name = "demo_gsea",
-    cluster_col = "cell_type"
+    cluster_by = "cell_type"
   )
   names(evidence)
 }

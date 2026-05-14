@@ -14,8 +14,7 @@ sn_calculate_isolated_label_score(
   stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 }
 \arguments{
@@ -35,7 +34,7 @@ the metric. Defaults to \code{3000} because silhouette needs a full
 distance matrix.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{label}.}
+during subsampling. Defaults to \code{label_by}.}
 
 \item{isolated_fraction}{Fraction-of-cells threshold used to flag isolated
 labels.}
@@ -43,8 +42,6 @@ labels.}
 \item{isolated_n}{Absolute cell-count threshold used to flag isolated labels.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per label_by and columns describing label
@@ -63,7 +60,7 @@ larger values indicate better preservation.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

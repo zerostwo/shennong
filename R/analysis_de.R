@@ -292,7 +292,6 @@
 #'   Defaults to all observed values in \code{subset_by}.
 #' @param sample_by Metadata column containing sample IDs. Required for
 #'   \code{"pseudobulk"} analyses.
-#' @param sample_col Deprecated alias for \code{sample_by}.
 #' @param assay Assay used for DE analysis. Defaults to \code{"RNA"}.
 #' @param layer Assay layer used for DE analysis. Defaults to \code{"data"} for
 #'   marker and contrast analyses and to \code{"counts"} for pseudobulk
@@ -385,14 +384,11 @@ sn_find_de <- function(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
-  sample_col = NULL,
   ...
 ) {
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
   }
-
-  sample_by <- .sn_resolve_legacy_arg(sample_by, sample_col, "sample_by", "sample_col")
 
   if (is_null(analysis)) {
     analysis <- if (!is_null(sample_by)) {

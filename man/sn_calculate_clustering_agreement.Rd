@@ -4,13 +4,7 @@
 \alias{sn_calculate_clustering_agreement}
 \title{Calculate agreement between clusters and reference labels}
 \usage{
-sn_calculate_clustering_agreement(
-  x,
-  cluster_by = NULL,
-  label_by = NULL,
-  cluster = NULL,
-  label = NULL
-)
+sn_calculate_clustering_agreement(x, cluster_by = NULL, label_by = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or data frame containing the required columns.}
@@ -18,10 +12,6 @@ sn_calculate_clustering_agreement(
 \item{cluster_by}{Metadata/data-frame column containing cluster_by labels.}
 
 \item{label_by}{Metadata/data-frame column containing reference labels.}
-
-\item{cluster}{Deprecated alias for \code{cluster_by}.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A one-row data frame with ARI and NMI.

@@ -1,15 +1,17 @@
 ---
 name: use-shennong-single-cell-workflows
-description: Use when working with Shennong preprocessing, clustering, differential expression, enrichment, or bundled signatures in single-cell analysis workflows built on Seurat objects.
+description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
 ---
 
 # use-shennong-single-cell-workflows
 
 ## Purpose
 
-Teach the agent how to use Shennong workflows for preprocessing, clustering,
-differential expression, enrichment, bulk deconvolution, and related
-single-cell tasks. This skill is the main entry point for package usage.
+Teach the agent how to use the current Shennong API for preprocessing,
+clustering/integration, CITE-seq, label transfer, differential expression,
+enrichment, composition, Milo, bulk deconvolution, communication, regulatory
+activity, simulation, visualization, IO, Python runtime helpers, and reporting.
+This skill is the main entry point for package usage.
 
 ## When To Use
 
@@ -46,6 +48,19 @@ single-cell tasks. This skill is the main entry point for package usage.
 - respect strict `sn_verb_noun` naming conventions
 - use the shared package API and workflow references instead of inventing
   partial wrapper logic
+- use current public argument names only; do not pass retired compatibility
+  names such as `group_col`, `sample_col`, `annotation_col`, `condition_col`,
+  `cluster_col`, `label_col`, `labels_key`, `groupby`, `cnv_score_groupby`,
+  scalar rare-feature threshold aliases, `slot`, `angle`, `query`, `github_repo`,
+  `github_ref`, or `local_path`
+- use `batch` for `sn_run_cluster()`, `sn_run_scvi()`, and `sn_run_scanvi()`;
+  use the documented `*_by` selectors for functions whose current formals use
+  them, such as composition, metrics, scArches, scPoli, and label transfer
+- use `layer` for Shennong expression-layer selectors; only internal calls to
+  backend packages should use backend-specific names such as Seurat's `slot`
+- call `sn_call_*()` helpers for direct managed-Python commands; reserve
+  `sn_run_*()` Python wrappers for object-level workflows that export/import a
+  Seurat object
 - if work is happening inside an initialized project, also respect the project
   `AGENTS.md`, `memory/`, and `docs/standards/`
 
@@ -123,15 +138,30 @@ single-cell tasks. This skill is the main entry point for package usage.
    `sn_deconvolve_bulk()` for
    comparative summaries across samples, conditions, annotations, or paired
    bulk RNA-seq mixtures.
-6. Build prompts or stored-result summaries with the interpretation helpers
+6. Use `sn_run_cell_communication()` for CellChat, NicheNet, or LIANA
+   communication workflows, and `sn_run_regulatory_activity()` for DoRothEA TF
+   or PROGENy pathway activity workflows.
+7. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
+   `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
+   `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
+   package-style plots; resolve reusable colors with `sn_list_palettes()` and
+   `sn_get_palette()`.
+8. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
-7. Simulate from real objects with `sn_simulate(method = "scdesign3")` when a
-   controlled Seurat or SingleCellExperiment output is needed for method
-   checks.
-8. Inspect and reuse bundled signatures with `sn_list_signatures()` and
+9. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
+   `sn_simulate_scdesign3()` when the task needs direct scDesign3 controls.
+10. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
-9. When the correct entry point is unclear, read
+11. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
+   `sn_list_pixi_environments()`, `sn_pixi_config_path()`,
+   `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`, and the
+   family-specific `sn_call_*()` helpers when a Python backend must be checked,
+   prepared, or invoked directly.
+12. Use `sn_check_version()`, `sn_install_shennong()`,
+   `sn_list_dependencies()`, and `sn_install_dependencies()` for package
+   maintenance tasks.
+13. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 
@@ -159,9 +189,14 @@ single-cell tasks. This skill is the main entry point for package usage.
 - `sn_run_milo()`
 - `sn_run_cell_communication(method = "cellchat")`
 - `sn_run_regulatory_activity(method = "dorothea")`
+- `sn_store_cell_communication()` / `sn_get_cell_communication_result()`
+- `sn_store_regulatory_activity()` / `sn_get_regulatory_activity_result()`
 - `sn_plot_dim()`
 - `sn_plot_feature()`
 - `sn_plot_heatmap()`
 - `sn_deconvolve_bulk(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
+- `sn_store_deconvolution()` / `sn_get_deconvolution_result()`
+- `sn_check_pixi()` / `sn_call_scvi()`
+- `sn_read()` / `sn_write()`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

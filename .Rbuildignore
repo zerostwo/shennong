@@ -15,3 +15,5 @@ dev
 ^pkgdown$
 ^site$
 ^scripts$
+^tests/testthat/omnipathr-log$
+^benchmarks$

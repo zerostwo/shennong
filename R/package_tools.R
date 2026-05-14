@@ -449,8 +449,6 @@ sn_ensure_pixi <- function(pixi = NULL,
 #'
 #' @param environment Python environment name. Use
 #'   \code{sn_list_pixi_environments()} to see bundled configs.
-#' @param path Deprecated; retained for compatibility and ignored unless
-#'   \code{runtime_dir} is supplied explicitly.
 #' @param runtime_dir Optional explicit Shennong runtime directory. Defaults to
 #'   \code{getOption("shennong.runtime_dir")}, \code{SHENNONG_RUNTIME_DIR},
 #'   \code{SHENNONG_HOME}, then \code{"~/.shennong"}.
@@ -462,7 +460,6 @@ sn_ensure_pixi <- function(pixi = NULL,
 #'
 #' @export
 sn_pixi_paths <- function(environment = NULL,
-                          path = ".",
                           runtime_dir = NULL) {
   requested_environment <- tolower(as.character(environment %||% "scvi"))
   environment <- .sn_normalize_pixi_environment(requested_environment)
@@ -778,8 +775,7 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' runner script, and import method outputs back into the object when the
 #' backend produces cell-level metadata or embeddings.
 #'
-#' @param object Optional Seurat object. When supplied to
-#'   \code{sn_run_*()} wrappers, Shennong writes the object to a Python
+#' @param object Seurat object. Shennong writes the object to a Python
 #'   interchange directory, runs the corresponding pixi script, and imports
 #'   supported results.
 #' @param reference_object Optional reference Seurat object for tools that map
@@ -789,31 +785,22 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' @param reference_signatures Optional file path or data frame of reference
 #'   cell-state signatures for cell2location.
 #' @param group_by Metadata column used by CellPhoneDB cell groups.
-#' @param groupby Deprecated alias for \code{group_by}.
 #' @param batch_by,label_by Metadata columns used by scArches/scPoli-style
 #'   object workflows.
-#' @param batch Deprecated alias for \code{batch_by}.
-#' @param labels_key Deprecated alias for \code{label_by}.
 #' @param spatial_cols Two metadata columns containing spatial coordinates for
 #'   spatial tools.
 #' @param cell_type_by Reference metadata column containing cell-type labels
 #'   for Tangram projection.
-#' @param cell_type_key Deprecated alias for \code{cell_type_by}.
 #' @param cluster_by Metadata column used by Squidpy neighborhood enrichment.
-#' @param cluster_key Deprecated alias for \code{cluster_by}.
 #' @param method_control Optional named list of backend-specific settings passed
 #'   to the Python runner config.
-#' @param command Command to run inside the selected pixi environment. Defaults
-#'   to \code{"python"}.
-#' @param args Character vector of command arguments.
 #' @param assay Assay used for object-level infercnvpy input.
 #' @param layer Assay layer used for object-level infercnvpy input. Defaults to
 #'   \code{"data"} when present and otherwise \code{"counts"}.
 #' @param species Species used to match bundled gene positions when
 #'   \code{gene_order} and \code{gtf_file} are not supplied.
 #' @param reference_by Metadata column containing normal/tumor annotations.
-#' @param reference_key Deprecated alias for \code{reference_by}.
-#' @param reference_cat One or more values in \code{reference_key} denoting
+#' @param reference_cat One or more values in \code{reference_by} denoting
 #'   normal reference cells.
 #' @param gene_order Optional data frame with gene positions. It must contain a
 #'   gene identifier column such as \code{feature}, \code{gene},
@@ -832,19 +819,16 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #'   downstream infercnvpy analysis steps.
 #' @param leiden_resolution Resolution passed to infercnvpy Leiden clustering.
 #' @param cnv_score_group_by Optional grouping column for infercnvpy CNV scores.
-#' @param cnv_score_groupby Deprecated alias for \code{cnv_score_group_by}.
 #' @param metadata_prefix Prefix added to imported infercnvpy metadata columns.
 #' @param result_name Name used under \code{object@misc$infercnvpy}.
 #' @param return_object Whether to return the updated object. If \code{FALSE},
 #'   return a run manifest list.
 #' @param ... Additional arguments passed to \code{sn_call_pixi_environment()}.
 #'
-#' @return Command wrappers invisibly return command output. Object-level
-#'   \code{sn_run_infercnvpy()} returns a Seurat object or a run manifest.
+#' @return A Seurat object or a run manifest.
 #'
 #' @examples
 #' \dontrun{
-#' sn_run_infercnvpy(args = "--version")
 #' object <- sn_run_infercnvpy(
 #'   object = object,
 #'   reference_by = "cell_type",
@@ -859,9 +843,7 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' }
 #'
 #' @export
-sn_run_scarches <- function(object = NULL,
-                            command = "python",
-                            args = character(),
+sn_run_scarches <- function(object,
                             assay = NULL,
                             layer = NULL,
                             batch_by = NULL,
@@ -872,36 +854,27 @@ sn_run_scarches <- function(object = NULL,
                             result_name = "scarches",
                             return_object = TRUE,
                             method_control = list(),
-                            batch = NULL,
-                            labels_key = NULL,
                             ...) {
-  if (!is.null(object)) {
-    batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
-    label_by <- .sn_resolve_legacy_arg(label_by, labels_key, "label_by", "labels_key")
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "scarches",
-      script_name = "scarches_run.py",
-      method = "scarches",
-      assay = assay,
-      layer = layer,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
-      ...
-    ))
-  }
-  sn_call_scarches(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scarches",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_scpoli <- function(object = NULL,
-                          command = "python",
-                          args = character(),
+sn_run_scpoli <- function(object,
                           assay = NULL,
                           layer = NULL,
                           batch_by = NULL,
@@ -912,36 +885,27 @@ sn_run_scpoli <- function(object = NULL,
                           result_name = "scpoli",
                           return_object = TRUE,
                           method_control = list(),
-                          batch = NULL,
-                          labels_key = NULL,
                           ...) {
-  if (!is.null(object)) {
-    batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
-    label_by <- .sn_resolve_legacy_arg(label_by, labels_key, "label_by", "labels_key")
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "scarches",
-      script_name = "scarches_run.py",
-      method = "scpoli",
-      assay = assay,
-      layer = layer,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
-      ...
-    ))
-  }
-  sn_call_scpoli(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scpoli",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_infercnvpy <- function(object = NULL,
-                              command = "python",
-                              args = character(),
+sn_run_infercnvpy <- function(object,
                               assay = NULL,
                               layer = NULL,
                               species = NULL,
@@ -972,27 +936,8 @@ sn_run_infercnvpy <- function(object = NULL,
                               metadata_prefix = "infercnvpy_",
                               result_name = "infercnvpy",
                               return_object = TRUE,
-                              reference_key = NULL,
-                              cnv_score_groupby = NULL,
                               ...) {
-  if (is.null(object)) {
-    return(sn_call_infercnvpy(command = command, args = args, ...))
-  }
-  if (length(args) > 0L || !identical(command, "python")) {
-    stop(
-      "`command` and `args` are only used when `object` is NULL. ",
-      "For object-level infercnvpy runs, use the named analysis parameters.",
-      call. = FALSE
-    )
-  }
   gtf_gene_id <- match.arg(gtf_gene_id)
-  reference_by <- .sn_resolve_legacy_arg(reference_by, reference_key, "reference_by", "reference_key")
-  cnv_score_group_by <- .sn_resolve_legacy_arg(
-    value = cnv_score_group_by,
-    legacy = cnv_score_groupby,
-    value_name = "cnv_score_group_by",
-    legacy_name = "cnv_score_groupby"
-  )
 
   .sn_run_infercnvpy_object(
     object = object,
@@ -1032,9 +977,7 @@ sn_run_infercnvpy <- function(object = NULL,
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_cellphonedb <- function(object = NULL,
-                               command = "cellphonedb",
-                               args = character(),
+sn_run_cellphonedb <- function(object,
                                assay = NULL,
                                layer = "counts",
                                group_by = NULL,
@@ -1043,42 +986,30 @@ sn_run_cellphonedb <- function(object = NULL,
                                result_name = "cellphonedb",
                                return_object = TRUE,
                                method_control = list(),
-                               groupby = NULL,
                                ...) {
-  if (!is.null(object)) {
-    group_by <- .sn_resolve_legacy_arg(
-      value = group_by,
-      legacy = groupby,
-      value_name = "group_by",
-      legacy_name = "groupby"
-    )
-    if (is.null(group_by) || !nzchar(group_by)) {
-      stop("`group_by` is required for `sn_run_cellphonedb(object = ...)`.", call. = FALSE)
-    }
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "cellphonedb",
-      script_name = "cellphonedb_run.py",
-      method = "cellphonedb",
-      assay = assay,
-      layer = layer,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = "cellphonedb_",
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(groupby = group_by), method_control),
-      ...
-    ))
+  if (is.null(group_by) || !nzchar(group_by)) {
+    stop("`group_by` is required for `sn_run_cellphonedb()`.", call. = FALSE)
   }
-  sn_call_cellphonedb(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "cellphonedb",
+    script_name = "cellphonedb_run.py",
+    method = "cellphonedb",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = "cellphonedb_",
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(groupby = group_by), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_cell2location <- function(object = NULL,
-                                 command = "python",
-                                 args = character(),
+sn_run_cell2location <- function(object,
                                  assay = NULL,
                                  layer = "counts",
                                  reference_signatures = NULL,
@@ -1090,32 +1021,27 @@ sn_run_cell2location <- function(object = NULL,
                                  return_object = TRUE,
                                  method_control = list(),
                                  ...) {
-  if (!is.null(object)) {
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "cell2location",
-      script_name = "cell2location_run.py",
-      method = "cell2location",
-      assay = assay,
-      layer = layer,
-      spatial_cols = spatial_cols,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(reference_signatures = reference_signatures), method_control),
-      ...
-    ))
-  }
-  sn_call_cell2location(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "cell2location",
+    script_name = "cell2location_run.py",
+    method = "cell2location",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(reference_signatures = reference_signatures), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_tangram <- function(object = NULL,
-                           command = "python",
-                           args = character(),
+sn_run_tangram <- function(object,
                            reference_object = NULL,
                            assay = NULL,
                            layer = NULL,
@@ -1129,41 +1055,34 @@ sn_run_tangram <- function(object = NULL,
                            result_name = "tangram",
                            return_object = TRUE,
                            method_control = list(),
-                           cell_type_key = NULL,
                            ...) {
-  if (!is.null(object)) {
-    cell_type_by <- .sn_resolve_legacy_arg(cell_type_by, cell_type_key, "cell_type_by", "cell_type_key")
-    if (is.null(reference_object)) {
-      stop("`reference_object` is required for `sn_run_tangram(object = ...)`.", call. = FALSE)
-    }
-    return(.sn_run_python_object_method(
-      object = object,
-      reference_object = reference_object,
-      environment = "tangram",
-      script_name = "tangram_run.py",
-      method = "tangram",
-      assay = assay,
-      layer = layer,
-      reference_assay = reference_assay,
-      reference_layer = reference_layer,
-      spatial_cols = spatial_cols,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(cell_type_key = cell_type_by), method_control),
-      ...
-    ))
+  if (is.null(reference_object)) {
+    stop("`reference_object` is required for `sn_run_tangram()`.", call. = FALSE)
   }
-  sn_call_tangram(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    reference_object = reference_object,
+    environment = "tangram",
+    script_name = "tangram_run.py",
+    method = "tangram",
+    assay = assay,
+    layer = layer,
+    reference_assay = reference_assay,
+    reference_layer = reference_layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(cell_type_key = cell_type_by), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_squidpy <- function(object = NULL,
-                           command = "python",
-                           args = character(),
+sn_run_squidpy <- function(object,
                            assay = NULL,
                            layer = NULL,
                            spatial_cols = NULL,
@@ -1174,35 +1093,28 @@ sn_run_squidpy <- function(object = NULL,
                            result_name = "squidpy",
                            return_object = TRUE,
                            method_control = list(),
-                           cluster_key = NULL,
                            ...) {
-  if (!is.null(object)) {
-    cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_key, "cluster_by", "cluster_key")
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "squidpy",
-      script_name = "squidpy_run.py",
-      method = "squidpy",
-      assay = assay,
-      layer = layer,
-      spatial_cols = spatial_cols,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = c(list(cluster_key = cluster_by), method_control),
-      ...
-    ))
-  }
-  sn_call_squidpy(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "squidpy",
+    script_name = "squidpy_run.py",
+    method = "squidpy",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(cluster_key = cluster_by), method_control),
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_spatialdata <- function(object = NULL,
-                               command = "python",
-                               args = character(),
+sn_run_spatialdata <- function(object,
                                assay = NULL,
                                layer = NULL,
                                spatial_cols = NULL,
@@ -1213,32 +1125,27 @@ sn_run_spatialdata <- function(object = NULL,
                                return_object = TRUE,
                                method_control = list(),
                                ...) {
-  if (!is.null(object)) {
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "spatialdata",
-      script_name = "spatialdata_run.py",
-      method = "spatialdata",
-      assay = assay,
-      layer = layer,
-      spatial_cols = spatial_cols,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = method_control,
-      ...
-    ))
-  }
-  sn_call_spatialdata(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "spatialdata",
+    script_name = "spatialdata_run.py",
+    method = "spatialdata",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = method_control,
+    ...
+  )
 }
 
 #' @rdname sn_run_scarches
 #' @export
-sn_run_stlearn <- function(object = NULL,
-                           command = "python",
-                           args = character(),
+sn_run_stlearn <- function(object,
                            assay = NULL,
                            layer = NULL,
                            spatial_cols = NULL,
@@ -1249,25 +1156,22 @@ sn_run_stlearn <- function(object = NULL,
                            return_object = TRUE,
                            method_control = list(),
                            ...) {
-  if (!is.null(object)) {
-    return(.sn_run_python_object_method(
-      object = object,
-      environment = "stlearn",
-      script_name = "stlearn_run.py",
-      method = "stlearn",
-      assay = assay,
-      layer = layer,
-      spatial_cols = spatial_cols,
-      output_dir = output_dir,
-      runtime_dir = runtime_dir,
-      metadata_prefix = metadata_prefix,
-      result_name = result_name,
-      return_object = return_object,
-      config = method_control,
-      ...
-    ))
-  }
-  sn_call_stlearn(command = command, args = args, ...)
+  .sn_run_python_object_method(
+    object = object,
+    environment = "stlearn",
+    script_name = "stlearn_run.py",
+    method = "stlearn",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = method_control,
+    ...
+  )
 }
 
 .sn_run_python_object_method <- function(object,
@@ -2090,8 +1994,9 @@ sn_configure_pixi_mirror <- function(mirror = c("default", "auto", "china", "tun
 #'
 #' @param channel One of \code{"auto"}, \code{"cran"}, or \code{"github"}.
 #' @param package Package name to check. Defaults to \code{"Shennong"}.
-#' @param github_repo GitHub repository in \code{"owner/repo"} format.
-#' @param github_ref GitHub ref to inspect. Defaults to \code{"main"}.
+#' @param source GitHub repository in \code{"owner/repo"} format when checking
+#'   the development channel.
+#' @param ref GitHub ref to inspect. Defaults to \code{"main"}.
 #' @param repos CRAN-like repositories used for version lookup.
 #' @param quiet Logical; if \code{TRUE}, suppress the summary message.
 #'
@@ -2109,15 +2014,15 @@ sn_configure_pixi_mirror <- function(mirror = c("default", "auto", "china", "tun
 sn_check_version <- function(
   channel = c("auto", "cran", "github"),
   package = "Shennong",
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
+  source = "zerostwo/shennong",
+  ref = "main",
   repos = getOption("repos"),
   quiet = FALSE
 ) {
   channel <- match.arg(channel)
   installed_version <- .sn_get_installed_version(package = package)
   cran_version <- .sn_get_cran_version(package = package, repos = repos)
-  github_version <- .sn_get_github_version(repo = github_repo, ref = github_ref)
+  github_version <- .sn_get_github_version(repo = source, ref = ref)
   resolved_channel <- .sn_resolve_release_channel(
     channel = channel,
     cran_version = cran_version,
@@ -2135,7 +2040,7 @@ sn_check_version <- function(
   install_command <- switch(
     resolved_channel,
     cran = sprintf('install.packages("%s")', package),
-    github = sprintf('remotes::install_github("%s", ref = "%s")', github_repo, github_ref)
+    github = sprintf('remotes::install_github("%s", ref = "%s")', source, ref)
   )
 
   result <- list(
@@ -2174,18 +2079,12 @@ sn_check_version <- function(
 #' @param channel One of \code{"auto"}, \code{"cran"}, \code{"github"}, or
 #'   \code{"local"}.
 #' @param package Package name. Defaults to \code{"Shennong"}.
-#' @param source Generic installation source. For \code{channel = "github"},
-#'   this should be an \code{"owner/repo"} string. For \code{channel = "local"},
-#'   this should be a local package directory or source tarball path. This is
-#'   the preferred source argument for non-CRAN installs.
-#' @param ref Generic ref argument. Used for \code{channel = "github"} and
-#'   preferred over \code{github_ref}.
-#' @param github_repo GitHub repository in \code{"owner/repo"} format.
-#'   Deprecated in favor of \code{source}.
-#' @param github_ref GitHub ref to install from. Defaults to \code{"main"}.
-#'   Deprecated in favor of \code{ref}.
-#' @param local_path Local package directory or source tarball used when
-#'   \code{channel = "local"}. Deprecated in favor of \code{source}.
+#' @param source Installation source. For \code{channel = "github"}, supply an
+#'   \code{"owner/repo"} string; when omitted, Shennong uses
+#'   \code{"zerostwo/shennong"}. For \code{channel = "local"}, supply a local
+#'   package directory or source tarball path.
+#' @param ref GitHub ref used for \code{channel = "github"}. Defaults to
+#'   \code{"main"}.
 #' @param repos CRAN-like repositories used by \code{install.packages()}.
 #' @param ... Additional arguments passed to \code{utils::install.packages()} or
 #'   \code{remotes::install_github()} / \code{remotes::install_local()}. For
@@ -2206,34 +2105,15 @@ sn_install_shennong <- function(
   channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
   source = NULL,
-  ref = NULL,
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
-  local_path = NULL,
+  ref = "main",
   repos = getOption("repos"),
   ...
 ) {
-  github_repo_supplied <- !missing(github_repo)
-  github_ref_supplied <- !missing(github_ref)
-  local_path_supplied <- !missing(local_path)
   channel <- match.arg(channel)
-  source <- .sn_resolve_install_source(
-    channel = channel,
-    source = source,
-    github_repo = github_repo,
-    local_path = local_path,
-    github_repo_supplied = github_repo_supplied,
-    local_path_supplied = local_path_supplied
-  )
-  ref <- .sn_resolve_install_ref(
-    ref = ref,
-    github_ref = github_ref,
-    github_ref_supplied = github_ref_supplied
-  )
 
   if (identical(channel, "local")) {
     if (is.null(source) || !nzchar(source)) {
-      stop("`source` (or `local_path`) must be supplied when `channel = \"local\"`.", call. = FALSE)
+      stop("`source` must be supplied when `channel = \"local\"`.", call. = FALSE)
     }
     check_installed("remotes", reason = "to install Shennong from a local path.")
     .sn_install_local_release(
@@ -2243,6 +2123,7 @@ sn_install_shennong <- function(
     return(invisible(channel))
   }
 
+  source <- source %||% "zerostwo/shennong"
   cran_version <- .sn_get_cran_version(package = package, repos = repos)
   github_version <- .sn_get_github_version(repo = source, ref = ref)
   resolved_channel <- .sn_resolve_release_channel(
@@ -2271,49 +2152,6 @@ sn_install_shennong <- function(
     args = github_args
   )
   invisible(resolved_channel)
-}
-
-.sn_resolve_install_source <- function(
-  channel,
-  source = NULL,
-  github_repo = NULL,
-  local_path = NULL,
-  github_repo_supplied = FALSE,
-  local_path_supplied = FALSE
-) {
-  legacy_source <- switch(
-    channel,
-    auto = github_repo,
-    cran = github_repo,
-    github = github_repo,
-    local = local_path,
-    NULL
-  )
-  legacy_supplied <- switch(
-    channel,
-    auto = github_repo_supplied,
-    cran = github_repo_supplied,
-    github = github_repo_supplied,
-    local = local_path_supplied,
-    FALSE
-  )
-
-  if (!is.null(source) && isTRUE(legacy_supplied) && !identical(source, legacy_source)) {
-    stop(
-      "Do not supply conflicting values through `source` and legacy install arguments.",
-      call. = FALSE
-    )
-  }
-
-  source %||% legacy_source
-}
-
-.sn_resolve_install_ref <- function(ref = NULL, github_ref = "main", github_ref_supplied = FALSE) {
-  if (!is.null(ref) && isTRUE(github_ref_supplied) && !identical(ref, github_ref)) {
-    stop("Do not supply conflicting values through `ref` and `github_ref`.", call. = FALSE)
-  }
-
-  ref %||% github_ref
 }
 
 .sn_install_github_release <- function(repo, ref, args = list()) {
@@ -2901,7 +2739,7 @@ sn_install_shennong <- function(
 
 .sn_get_github_version <- function(repo = "zerostwo/shennong", ref = "main") {
   if (length(strsplit(repo, "/", fixed = TRUE)[[1]]) != 2) {
-    stop("`github_repo` must use the form 'owner/repo'.", call. = FALSE)
+    stop("`source` must use the form 'owner/repo'.", call. = FALSE)
   }
 
   url <- sprintf(

@@ -9,6 +9,7 @@ inst/doc
 dev
 README.html
 tests/testthat/Rplots.pdf
+tests/testthat/omnipathr-log/
 *.tar.gz
 *.Rcheck/
 benchmarks/coralysis_capacity/results*/inputs/

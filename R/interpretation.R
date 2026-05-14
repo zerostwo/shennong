@@ -2594,7 +2594,6 @@ sn_store_enrichment <- function(object,
 #'   \code{"default"}, then a single available result, and otherwise the most
 #'   recent marker result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param n_markers Number of top markers to retain per cluster.
 #' @param marker_selection How to choose marker genes for annotation evidence:
 #'   \code{"specific"} prefers genes that are relatively unique to one cluster,
@@ -2642,7 +2641,7 @@ sn_store_enrichment <- function(object,
 #'   evidence <- sn_prepare_annotation_evidence(
 #'     obj,
 #'     de_name = "celltype_markers",
-#'     cluster_col = "cell_type"
+#'     cluster_by = "cell_type"
 #'   )
 #'   names(evidence)
 #' }
@@ -2657,12 +2656,10 @@ sn_prepare_annotation_evidence <- function(object,
                                            enrichment_selection = c("specific", "top"),
                                            include_qc = TRUE,
                                            reduction = "umap",
-                                           n_neighbor_clusters = 3,
-                                           cluster_col = NULL) {
+                                           n_neighbor_clusters = 3) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
   marker_selection <- match.arg(marker_selection)
   enrichment_selection <- match.arg(enrichment_selection)
@@ -2903,7 +2900,6 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #' @param contrast_de_name Optional stored contrast or pseudobulk result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param n_markers Number of marker genes to retain per cluster.
 #' @param n_terms Number of enrichment terms to retain.
 #'
@@ -2934,7 +2930,7 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #'     obj,
 #'     cluster_de_name = "celltype_markers",
 #'     enrichment_name = "demo_gsea",
-#'     cluster_col = "cell_type"
+#'     cluster_by = "cell_type"
 #'   )
 #'   names(evidence)
 #' }
@@ -2945,12 +2941,10 @@ sn_prepare_results_evidence <- function(object,
                                         enrichment_name = NULL,
                                         cluster_by = NULL,
                                         n_markers = 5,
-                                        n_terms = 10,
-                                        cluster_col = NULL) {
+                                        n_terms = 10) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
 
   evidence <- list(
@@ -3457,7 +3451,6 @@ sn_test_llm_provider <- function(name = NULL,
 #'   prefers \code{"default"}, then a single available result, and otherwise
 #'   the most recent marker result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param n_markers Number of top markers per cluster.
 #' @param marker_selection How to choose marker genes for annotation evidence:
 #'   \code{"specific"} prefers genes that are relatively unique to one cluster,
@@ -3545,7 +3538,7 @@ sn_test_llm_provider <- function(name = NULL,
 #'   prompt <- sn_interpret_annotation(
 #'     obj,
 #'     de_name = "celltype_markers",
-#'     cluster_col = "cell_type",
+#'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
 #'   prompt$task
@@ -3578,9 +3571,7 @@ sn_interpret_annotation <- function(object,
                                     store_name = "default",
                                     return_object = TRUE,
                                     show_progress = interactive(),
-                                    cluster_col = NULL,
                                     ...) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   marker_selection <- match.arg(marker_selection)
@@ -3879,7 +3870,6 @@ sn_interpret_enrichment <- function(object,
 #' @param contrast_de_name Optional stored contrast or pseudobulk result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
 #' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
@@ -3922,7 +3912,7 @@ sn_interpret_enrichment <- function(object,
 #'     obj,
 #'     cluster_de_name = "celltype_markers",
 #'     enrichment_name = "demo_gsea",
-#'     cluster_col = "cell_type",
+#'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
 #'   prompt$task
@@ -3941,9 +3931,7 @@ sn_write_results <- function(object,
                              store_name = "default",
                              return_object = TRUE,
                              show_progress = interactive(),
-                             cluster_col = NULL,
                              ...) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
@@ -3990,7 +3978,6 @@ sn_write_results <- function(object,
 #' @param cluster_de_name Optional stored cluster-marker result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
 #' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
@@ -4027,7 +4014,7 @@ sn_write_results <- function(object,
 #'   prompt <- sn_write_figure_legend(
 #'     obj,
 #'     cluster_de_name = "celltype_markers",
-#'     cluster_col = "cell_type",
+#'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
 #'   prompt$task
@@ -4045,9 +4032,7 @@ sn_write_figure_legend <- function(object,
                                    store_name = "default",
                                    return_object = TRUE,
                                    show_progress = interactive(),
-                                   cluster_col = NULL,
                                    ...) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
@@ -4094,7 +4079,6 @@ sn_write_figure_legend <- function(object,
 #' @param contrast_de_name Optional stored contrast or pseudobulk result.
 #' @param enrichment_name Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
-#' @param cluster_col Deprecated alias for \code{cluster_by}.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
 #' @param output_format One of \code{"llm"} for a model-ready prompt bundle or
@@ -4131,7 +4115,7 @@ sn_write_figure_legend <- function(object,
 #'   prompt <- sn_write_presentation_summary(
 #'     obj,
 #'     cluster_de_name = "celltype_markers",
-#'     cluster_col = "cell_type",
+#'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
 #'   prompt$task
@@ -4150,9 +4134,7 @@ sn_write_presentation_summary <- function(object,
                                           store_name = "default",
                                           return_object = TRUE,
                                           show_progress = interactive(),
-                                          cluster_col = NULL,
                                           ...) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster_col, "cluster_by", "cluster_col")
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(

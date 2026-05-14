@@ -8,10 +8,7 @@ sn_install_shennong(
   channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
   source = NULL,
-  ref = NULL,
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
-  local_path = NULL,
+  ref = "main",
   repos = getOption("repos"),
   ...
 )
@@ -22,22 +19,13 @@ sn_install_shennong(
 
 \item{package}{Package name. Defaults to \code{"Shennong"}.}
 
-\item{source}{Generic installation source. For \code{channel = "github"},
-this should be an \code{"owner/repo"} string. For \code{channel = "local"},
-this should be a local package directory or source tarball path. This is
-the preferred source argument for non-CRAN installs.}
+\item{source}{Installation source. For \code{channel = "github"}, supply an
+\code{"owner/repo"} string; when omitted, Shennong uses
+\code{"zerostwo/shennong"}. For \code{channel = "local"}, supply a local
+package directory or source tarball path.}
 
-\item{ref}{Generic ref argument. Used for \code{channel = "github"} and
-preferred over \code{github_ref}.}
-
-\item{github_repo}{GitHub repository in \code{"owner/repo"} format.
-Deprecated in favor of \code{source}.}
-
-\item{github_ref}{GitHub ref to install from. Defaults to \code{"main"}.
-Deprecated in favor of \code{ref}.}
-
-\item{local_path}{Local package directory or source tarball used when
-\code{channel = "local"}. Deprecated in favor of \code{source}.}
+\item{ref}{GitHub ref used for \code{channel = "github"}. Defaults to
+\code{"main"}.}
 
 \item{repos}{CRAN-like repositories used by \code{install.packages()}.}
 

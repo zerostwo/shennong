@@ -36,9 +36,7 @@ sn_deconvolve_bulk(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
-  return_object = TRUE,
-  cell_type_col = NULL,
-  cell_state_col = NULL
+  return_object = TRUE
 )
 }
 \arguments{
@@ -54,7 +52,7 @@ gene-by-cell matrix-like object.}
 \code{cell_type_labels} instead.}
 
 \item{cell_state_by}{Optional metadata column containing cell-state labels.
-Defaults to \code{cell_type_col}.}
+Defaults to \code{cell_type_by}.}
 
 \item{cell_type_labels}{Optional vector of cell-type labels for matrix
 references.}
@@ -120,10 +118,6 @@ signature matrix.}
 
 \item{return_object}{If \code{TRUE} and \code{x} is a \code{Seurat} object,
 return the updated object when a result table is available.}
-
-\item{cell_type_col}{Deprecated alias for \code{cell_type_by}.}
-
-\item{cell_state_col}{Deprecated alias for \code{cell_state_by}.}
 }
 \value{
 A stored-result list, an export-bundle list, or an updated

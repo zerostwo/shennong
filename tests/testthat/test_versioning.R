@@ -66,6 +66,11 @@ test_that("version comparison reports update states correctly", {
   )
 })
 
+test_that("version checks use current source/ref arguments", {
+  expect_true(all(c("source", "ref") %in% names(formals(Shennong::sn_check_version))))
+  expect_false(any(c("github_repo", "github_ref") %in% names(formals(Shennong::sn_check_version))))
+})
+
 test_that("sn_install_shennong uses conservative defaults for GitHub installs", {
   local_mocked_bindings(
     .sn_get_cran_version = function(...) NULL,
@@ -151,32 +156,12 @@ test_that("sn_install_shennong supports local installs", {
   expect_equal(captured$path, "/tmp/Shennong")
 })
 
-test_that("sn_install_shennong rejects conflicting source arguments", {
+test_that("sn_install_shennong requires source for local installs", {
   expect_error(
     Shennong::sn_install_shennong(
-      channel = "github",
-      source = "acme/shennong",
-      github_repo = "zerostwo/shennong"
+      channel = "local"
     ),
-    "conflicting values"
-  )
-
-  expect_error(
-    Shennong::sn_install_shennong(
-      channel = "local",
-      source = "/tmp/new",
-      local_path = "/tmp/old"
-    ),
-    "conflicting values"
-  )
-
-  expect_error(
-    Shennong::sn_install_shennong(
-      channel = "github",
-      ref = "dev",
-      github_ref = "main-release"
-    ),
-    "conflicting values"
+    "`source` must be supplied"
   )
 })
 

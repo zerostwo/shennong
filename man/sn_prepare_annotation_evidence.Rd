@@ -15,8 +15,7 @@ sn_prepare_annotation_evidence(
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
   reduction = "umap",
-  n_neighbor_clusters = 3,
-  cluster_col = NULL
+  n_neighbor_clusters = 3
 )
 }
 \arguments{
@@ -57,8 +56,6 @@ cluster neighborhood geometry, for example \code{"umap"}. Use
 reduction centroid distances.
 Canonical lineage heuristic hints derived from known marker programs are
 included automatically when the required genes are present.}
-
-\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
 A structured list ready for prompt construction.
@@ -89,7 +86,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_annotation_evidence(
     obj,
     de_name = "celltype_markers",
-    cluster_col = "cell_type"
+    cluster_by = "cell_type"
   )
   names(evidence)
 }

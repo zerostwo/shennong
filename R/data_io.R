@@ -729,7 +729,7 @@ sn_convert_bpcells <- function(object,
   }
 
   if ("qs" %in% packages) {
-    .sn_install_legacy_qs(repos = repos)
+    .sn_install_qs_serializer(repos = repos)
   }
 
   dependency_packages <- setdiff(packages, "qs")
@@ -746,12 +746,12 @@ sn_convert_bpcells <- function(object,
   invisible(packages)
 }
 
-.sn_install_legacy_qs <- function(repos = getOption("repos")) {
+.sn_install_qs_serializer <- function(repos = getOption("repos")) {
   if (rlang::is_installed("qs")) {
     return(invisible("qs"))
   }
 
-  .sn_log_info("Installing legacy `qs` writer dependency from GitHub: qsbase/qs.")
+  .sn_log_info("Installing `qs` writer dependency from GitHub: qsbase/qs.")
   tryCatch(
     .sn_install_github_packages(
       remotes = "qsbase/qs",
@@ -761,10 +761,10 @@ sn_convert_bpcells <- function(object,
     ),
     error = function(e) {
       stop(
-        "Failed to install legacy `qs` from GitHub remote `qsbase/qs`: ",
+        "Failed to install `qs` from GitHub remote `qsbase/qs`: ",
         conditionMessage(e),
         "\nUse a `.qs2` output path for the recommended modern serializer, ",
-        "or install `qs` manually if this environment needs the legacy format.",
+        "or install `qs` manually if this environment needs `.qs` output.",
         call. = FALSE
       )
     }

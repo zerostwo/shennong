@@ -333,7 +333,7 @@ test_that("sn_write auto-installs missing custom writer dependencies", {
     .sn_find_missing_packages = function(packages) {
       setdiff(packages, installed)
     },
-    .sn_install_legacy_qs = function(repos = getOption("repos")) {
+    .sn_install_qs_serializer = function(repos = getOption("repos")) {
       installed <<- union(installed, "qs")
       invisible("qs")
     },
@@ -363,7 +363,7 @@ test_that("sn_write can disable custom writer auto-installation", {
     testthat::with_mocked_bindings(
       sn_write(list(a = 1), tempfile(fileext = ".qs")),
       .sn_find_missing_packages = function(packages) packages,
-      .sn_install_legacy_qs = function(repos = getOption("repos")) {
+      .sn_install_qs_serializer = function(repos = getOption("repos")) {
         stop("qsbase/qs failed", call. = FALSE)
       },
       .package = "Shennong"

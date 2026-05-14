@@ -7,8 +7,8 @@
 sn_check_version(
   channel = c("auto", "cran", "github"),
   package = "Shennong",
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
+  source = "zerostwo/shennong",
+  ref = "main",
   repos = getOption("repos"),
   quiet = FALSE
 )
@@ -18,9 +18,10 @@ sn_check_version(
 
 \item{package}{Package name to check. Defaults to \code{"Shennong"}.}
 
-\item{github_repo}{GitHub repository in \code{"owner/repo"} format.}
+\item{source}{GitHub repository in \code{"owner/repo"} format when checking
+the development channel.}
 
-\item{github_ref}{GitHub ref to inspect. Defaults to \code{"main"}.}
+\item{ref}{GitHub ref to inspect. Defaults to \code{"main"}.}
 
 \item{repos}{CRAN-like repositories used for version lookup.}
 

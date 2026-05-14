@@ -16,8 +16,7 @@ sn_calculate_graph_connectivity(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 )
 }
 \arguments{
@@ -45,13 +44,11 @@ embeddings. Defaults to \code{"pca"}.}
 the metric.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{label}.}
+during subsampling. Defaults to \code{label_by}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per group and a
@@ -67,7 +64,7 @@ conservation after integration.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

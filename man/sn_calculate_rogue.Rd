@@ -16,9 +16,7 @@ sn_calculate_rogue(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10,
-  cluster = NULL,
-  sample = NULL
+  min_genes = 10
 )
 }
 \arguments{
@@ -50,16 +48,12 @@ during subsampling. Defaults to \code{sample} when supplied, otherwise
 
 \item{min_genes}{Minimum detected genes retained by the upstream
 \code{ROGUE::matr.filter()} step.}
-
-\item{cluster}{Deprecated alias for \code{cluster_by}.}
-
-\item{sample}{Deprecated alias for \code{sample_by}.}
 }
 \value{
-When neither \code{cluster} nor \code{sample} is supplied, returns a
+When neither \code{cluster_by} nor \code{sample_by} is supplied, returns a
 single numeric ROGUE score for the selected matrix. When
-\code{cluster} is supplied, returns a data frame with per-cluster ROGUE
-scores. When both \code{cluster} and \code{sample} are supplied, returns a
+\code{cluster_by} is supplied, returns a data frame with per-cluster ROGUE
+scores. When both \code{cluster_by} and \code{sample_by} are supplied, returns a
 tidy data frame with one row per sample-cluster combination.
 }
 \description{

@@ -9,7 +9,6 @@ sn_transfer_labels(
   reference,
   label_by = NULL,
   method = c("seurat", "coralysis", "scanvi", "scarches"),
-  query = NULL,
   prediction_prefix = NULL,
   normalization_method = "LogNormalize",
   reference_assay = NULL,
@@ -29,7 +28,6 @@ sn_transfer_labels(
   return_anchors = FALSE,
   transfer_control = list(),
   verbose = TRUE,
-  label_col = NULL,
   ...
 )
 }
@@ -47,11 +45,8 @@ requires a trained Coralysis reference stored under
 \code{reference@misc$coralysis}; \code{"scanvi"} and \code{"scarches"} use
 the scVI-family pixi backend.}
 
-\item{query}{Deprecated alias for \code{object}; retained for compatibility
-with the old reference-first call style.}
-
 \item{prediction_prefix}{Prefix for metadata columns added to
-\code{query}. Defaults to \code{paste0(label_col, "_transfer")}.}
+\code{query}. Defaults to \code{paste0(label_by, "_transfer")}.}
 
 \item{normalization_method}{Normalization method passed to
 \code{Seurat::FindTransferAnchors()}.}
@@ -97,8 +92,6 @@ SingleCellExperiment.}
 \code{install_pixi}.}
 
 \item{verbose}{Whether to print Seurat progress messages.}
-
-\item{label_col}{Deprecated alias for \code{label_by}.}
 
 \item{...}{Additional arguments passed to \code{Seurat::FindTransferAnchors()}.}
 }

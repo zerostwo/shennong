@@ -12,8 +12,7 @@ sn_calculate_silhouette(
   cells = NULL,
   max_cells = 3000,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 }
 \arguments{
@@ -33,11 +32,9 @@ the metric. Defaults to \code{3000} because silhouette needs a full
 distance matrix.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{label}.}
+during subsampling. Defaults to \code{label_by}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with per-cell silhouette widths.
@@ -51,7 +48,7 @@ metadata label_by in the selected embedding.
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

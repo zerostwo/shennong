@@ -15,8 +15,8 @@ sn_list_datasets(
 }
 \arguments{
 \item{source}{Which registry to list. \code{"public"} lists the current
-Shennong public Zenodo collection; \code{"examples"} lists the legacy PBMC
-examples; \code{"all"} returns both.}
+Shennong public Zenodo collection; \code{"examples"} lists the bundled
+PBMC examples; \code{"all"} returns both.}
 
 \item{record_id}{Zenodo record ID for the public Shennong collection.
 Defaults to option \code{shennong.public_data_record} or \code{"20044788"}.}

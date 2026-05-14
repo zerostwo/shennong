@@ -11,12 +11,13 @@ Core object rule:
 
 ## Data and Import
 
-- `sn_list_datasets()`: list sample-level datasets available through the current Shennong public Zenodo collection, plus legacy examples with `source = "all"`
-- `sn_load_data()`: load packaged or remote example datasets; vectorized legacy datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices. Public Shennong collection samples can be loaded by sample ID from `sn_list_datasets()` or by `study_id` plus `sample_id`; the study ZIP is cached and only the requested filtered/raw H5 or metrics file is extracted.
+- `sn_list_datasets()`: list sample-level datasets available through the current Shennong public Zenodo collection, plus bundled examples with `source = "all"`
+- `sn_load_data()`: load packaged or remote example datasets; vectorized bundled datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices. Public Shennong collection samples can be loaded by sample ID from `sn_list_datasets()` or by `study_id` plus `sample_id`; the study ZIP is cached and only the requested filtered/raw H5 or metrics file is extracted.
 - `sn_download_zenodo()`: download reusable files from public Zenodo records without a token, or from restricted/private records when a token is supplied
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
 - `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
 - `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
+- registered `rio` handlers: `.import.rio_10x()`, `.import.rio_10x_spatial()`, `.import.rio_starsolo()`, `.import.rio_gmt()`, `.import.rio_h5()`, `.import.rio_h5ad()`, `.import.rio_qs()`, `.import.rio_qs2()`, `.import.rio_bpcells()`, `.export.rio_h5()`, `.export.rio_h5ad()`, `.export.rio_qs()`, `.export.rio_qs2()`, and `.export.rio_bpcells()` are the package-level import/export hooks used by `sn_read()` and `sn_write()`
 - `sn_convert_bpcells()`: write selected Seurat assay layers to BPCells matrix directories and rebind those layers in the returned object
 - `sn_upload_zenodo()`: upload reusable data files to Zenodo through `zen4R`, with a Shennong checksum/version manifest for later reuse
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
@@ -49,6 +50,7 @@ Datasets:
 - `sn_transfer_labels()`: query-first reference `label_by` transfer wrapper. Defaults to Seurat anchors, can use `method = "coralysis"` for native Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment, and supports semi-supervised scVI-family transfer with `method = "scanvi"` or `method = "scarches"`.
 - `sn_prepare_label_transfer_reference()`: create compact transfer-ready references. Coralysis output is a minimal SingleCellExperiment with trained models, PCA model, feature names, and labels; Seurat/scANVI/scArches output is a slim Seurat reference with selected assay layers and labels.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
+- `sn_simulate_scdesign3()`: backend-specific scDesign3 wrapper when direct control of the scDesign3 design arguments is needed.
 - `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
 
 ## Python Runtime Helpers
@@ -58,9 +60,9 @@ Datasets:
 - `sn_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
 - `sn_list_pixi_environments()` / `sn_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
 - `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
-- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
+- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` and `mmochi` share the `scvi` environment; `scpoli` shares the `scarches` environment.
 - `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
-- The same `sn_run_*()` wrappers still support command mode when `object` is omitted, for example `sn_run_tangram(args = c("-c", "import tangram"))`.
+- Use the `sn_call_*()` helpers for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
 - `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
 - `sn_configure_pixi_mirror()`: write Shennong-level pixi mirror configuration for default, China, TUNA, USTC, or BFSU sources.
 
@@ -149,8 +151,8 @@ Datasets:
 
 ## Utilities and Project Setup
 
-- `sn_check_version()`: check package version
-- `sn_install_shennong()`: install Shennong
+- `sn_check_version()`: check package version against CRAN or a GitHub `source` / `ref`
+- `sn_install_shennong()`: install Shennong from CRAN, GitHub `source` / `ref`, or a local `source`
 - `sn_check_file()`: verify file paths
 - `sn_get_codex_skill_path()`: locate packaged skills and template assets
 - `sn_list_dependencies()`: list required and recommended package dependencies

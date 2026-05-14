@@ -13,7 +13,7 @@ user request to the right Shennong function family quickly.
 4. Infer or verify species with `sn_get_species()`.
 5. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
-## Recipe: Normalize and cluster_by a single dataset
+## Recipe: Normalize and cluster a single dataset
 
 1. `sn_normalize_data()` when explicit normalization control is needed.
 2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
@@ -21,7 +21,7 @@ user request to the right Shennong function family quickly.
    into the PCA feature set. Re-run the returned object with a new
    `resolution` to reuse normalization, feature selection, PCA, neighbors, and
    UMAP while recomputing cluster labels.
-3. `sn_plot_dim()` for cluster_by and metadata visualization.
+3. `sn_plot_dim()` for clusters and metadata visualization.
 
 ## Recipe: Integrate multiple samples
 
@@ -157,3 +157,11 @@ user request to the right Shennong function family quickly.
 - Prefer stored-result reuse over recomputation when the object already contains the needed analysis product.
 - Keep the main object as Seurat unless a function explicitly returns a table, matrix, or prompt bundle.
 - When a user asks for interpretation, separate evidence preparation from inference.
+- Use current Shennong public argument names only. Do not revive retired
+  compatibility aliases such as `group_col`, `sample_col`, `annotation_col`,
+  `condition_col`, `cluster_col`, `label_col`, `labels_key`, `groupby`,
+  `cnv_score_groupby`, `slot`, `angle`, `query`, `github_repo`,
+  `github_ref`, or `local_path`.
+- Use `sn_call_*()` for direct managed-Python command execution. Use
+  object-level `sn_run_*()` Python wrappers only when a Seurat object is being
+  exported to and imported back from the backend workflow.

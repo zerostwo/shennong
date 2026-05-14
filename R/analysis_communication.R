@@ -263,7 +263,6 @@
 #'   \code{condition_oi}, and \code{condition_reference}.
 #' @param background_genes Background expressed genes for NicheNet.
 #' @param condition_by Metadata column containing receiver conditions.
-#' @param condition_col Deprecated alias for \code{condition_by}.
 #' @param condition_oi,condition_reference Receiver condition contrast used to
 #'   derive \code{geneset} for NicheNet.
 #' @param ligand_target_matrix,lr_network NicheNet prior matrices/networks.
@@ -306,11 +305,9 @@ sn_run_cell_communication <- function(object,
                                       resource = NULL,
                                       store_name = "default",
                                       return_object = TRUE,
-                                      condition_col = NULL,
                                       ...) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  condition_by <- .sn_resolve_legacy_arg(condition_by, condition_col, "condition_by", "condition_col")
   if (is.null(group_by) || !group_by %in% colnames(object[[]])) {
     stop("`group_by` must identify a metadata column in `object`.", call. = FALSE)
   }

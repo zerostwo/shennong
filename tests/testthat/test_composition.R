@@ -481,20 +481,6 @@ test_that("sn_compare_composition compares sample-level proportions and fills ab
     test = "none",
     return_sample_data = TRUE
   )
-  expect_warning(
-    legacy_comparison <- sn_compare_composition(
-      x = meta_df,
-      sample_by = "sample",
-      group_col = "group",
-      variable = "cell_type",
-      contrast = c("case", "control"),
-      min_cells = 1,
-      test = "none",
-      return_sample_data = TRUE
-    ),
-    "`group_col` is deprecated"
-  )
-  expect_equal(legacy_comparison$summary, comparison$summary)
 
   expect_true(all(c("summary", "sample_data") %in% names(comparison)))
   expect_equal(nrow(comparison$sample_data), 8)

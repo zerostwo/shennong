@@ -141,8 +141,8 @@
 #' `UPLOAD_RULES.md` layout stored in the record.
 #'
 #' @param source Which registry to list. \code{"public"} lists the current
-#'   Shennong public Zenodo collection; \code{"examples"} lists the legacy PBMC
-#'   examples; \code{"all"} returns both.
+#'   Shennong public Zenodo collection; \code{"examples"} lists the bundled
+#'   PBMC examples; \code{"all"} returns both.
 #' @param record_id Zenodo record ID for the public Shennong collection.
 #'   Defaults to option \code{shennong.public_data_record} or \code{"20044788"}.
 #' @param save_dir Local cache directory used to store \code{shennong_index.json}.
@@ -501,7 +501,7 @@ sn_load_data <- function(dataset = "pbmc3k",
     }
     invalid <- setdiff(dataset, catalog$sample_id)
     stop(
-      "`dataset` must contain known sample IDs from `sn_list_datasets()` or legacy examples. Invalid value(s): ",
+      "`dataset` must contain known sample IDs from `sn_list_datasets()` or bundled examples. Invalid value(s): ",
       paste(invalid, collapse = ", "),
       ".",
       call. = FALSE

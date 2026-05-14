@@ -135,14 +135,14 @@
 
 .sn_feature_limits <- function(object,
                                features,
-                               slot = "data",
+                               layer = "data",
                                max_cutoff = NA,
                                cells = NULL) {
   data <- SeuratObject::FetchData(
     object = object,
     vars = features,
     cells = cells,
-    layer = slot
+    layer = layer
   )
 
   values <- unlist(data[features], use.names = FALSE)
@@ -1254,7 +1254,6 @@ sn_plot_composition <- function(data,
 #' @param milo_name Name of the stored milo result when \code{x} is a Seurat
 #'   object.
 #' @param annotation_by Optional column used to color points.
-#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param fdr_col FDR column used on the y-axis. Defaults to \code{"SpatialFDR"}.
 #' @param fdr_cutoff Horizontal significance threshold.
 #' @param logfc_cutoff Optional vertical threshold for effect size.
@@ -1289,9 +1288,7 @@ sn_plot_milo <- function(x,
                          y_label = expression(-log[10]("FDR")),
                          aspect_ratio = NULL,
                          panel_widths = NULL,
-                         panel_heights = NULL,
-                         annotation_col = NULL) {
-  annotation_by <- .sn_resolve_legacy_arg(annotation_by, annotation_col, "annotation_by", "annotation_col")
+                         panel_heights = NULL) {
   if (inherits(x, "Seurat")) {
     data <- sn_get_milo_result(x, milo_name = milo_name)
   } else if (is.data.frame(x)) {
@@ -1854,7 +1851,6 @@ sn_plot_violin <- function(object,
 #'   \code{"scale.data"} for cell-level heatmaps. In \code{mode = "average"},
 #'   use \code{"data"} to average normalized expression before optional
 #'   feature-wise scaling.
-#' @param slot Deprecated alias for \code{layer}.
 #' @param mode One of \code{"cells"} or \code{"average"}. \code{"cells"}
 #'   displays cells; \code{"average"} averages expression by \code{group_by}
 #'   and optional \code{split_by}.
@@ -1876,7 +1872,6 @@ sn_plot_violin <- function(object,
 #'   \code{mode = "cells"}. Rasterization is enabled by default.
 #' @param label_size,label_angle Size in points and rotation angle for the
 #'   cell-level group labels drawn above the heatmap.
-#' @param angle Deprecated alias for \code{label_angle}.
 #' @param group_palette,group_colors Palette or explicit colors for the
 #'   cell-level group label bar. Defaults to \code{"Paired"}.
 #' @param show_cell_names,show_ticks Whether to show cell-level x-axis labels
@@ -1906,7 +1901,6 @@ sn_plot_heatmap <- function(object,
                             split_by = NULL,
                             assay = NULL,
                             layer = "scale.data",
-                            slot = NULL,
                             mode = c("cells", "average"),
                             scale_data = TRUE,
                             max_cells = NULL,
@@ -1924,7 +1918,6 @@ sn_plot_heatmap <- function(object,
                             raster = TRUE,
                             label_size = 8,
                             label_angle = 45,
-                            angle = NULL,
                             group_palette = "Paired",
                             group_colors = NULL,
                             show_cell_names = FALSE,
@@ -1943,14 +1936,6 @@ sn_plot_heatmap <- function(object,
 
   mode <- match.arg(mode)
   average_fun <- match.arg(average_fun)
-  if (!is.null(slot)) {
-    .sn_log_warn("`slot` is deprecated; use `layer` instead.")
-    layer <- slot
-  }
-  if (!is.null(angle)) {
-    .sn_log_warn("`angle` is deprecated; use `label_angle` instead.")
-    label_angle <- angle
-  }
 
   features <- .sn_resolve_heatmap_features(object, features)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
@@ -2355,7 +2340,9 @@ sn_plot_dot <- function(x,
 #'   cells.
 #' @param alpha Point alpha passed to Seurat's \code{FeaturePlot()}.
 #' @param stroke_size Point stroke size passed to Seurat's \code{FeaturePlot()}.
-#' @param slot A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".
+#' @param layer A character string specifying which layer in the Seurat object
+#'   to use (for example, \code{"data"} or \code{"scale.data"}). Defaults to
+#'   \code{"data"}.
 #' @param min_cutoff A numeric value specifying the minimum expression cutoff.
 #'   Defaults to \code{NA}.
 #' @param max_cutoff A numeric value specifying the maximum expression cutoff. Defaults to NA.
@@ -2424,7 +2411,7 @@ sn_plot_feature <-
            pt_size = NULL,
            alpha = 1,
            stroke_size = NULL,
-           slot = "data",
+           layer = "data",
            min_cutoff = NA,
            max_cutoff = NA,
            shape_by = NULL,
@@ -2479,7 +2466,7 @@ sn_plot_feature <-
         object = object,
         features = feature_titles,
         assay = assay,
-        layer = slot
+        layer = layer
       )
       vars <- vars[cells, , drop = FALSE]
       density_objects <- lapply(
@@ -2558,7 +2545,7 @@ sn_plot_feature <-
         pt.size = pt_size,
         alpha = alpha,
         stroke.size = stroke_size,
-        slot = slot,
+        slot = layer,
         raster = featureplot_raster,
         raster.dpi = raster_dpi,
         order = TRUE,
@@ -2593,7 +2580,7 @@ sn_plot_feature <-
     feature_limits <- .sn_feature_limits(
       object = object,
       features = feature_titles,
-      slot = slot,
+      layer = layer,
       max_cutoff = max_cutoff,
       cells = cells
     )

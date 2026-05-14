@@ -293,16 +293,6 @@ test_that("graph-based diagnostics support annoy and exact fallbacks", {
     challenge_threshold = 0.25,
     k = 10
   )
-  expect_warning(
-    legacy_tbl <- sn_identify_challenging_groups(
-      object,
-      group = "cell_type",
-      reduction = "harmony",
-      neighbor_method = "exact",
-      k = 10
-    ),
-    "`group` is deprecated"
-  )
 
   expect_s3_class(exact_tbl, "data.frame")
   expect_equal(attr(exact_tbl, "graph_source"), "exact")
@@ -310,7 +300,6 @@ test_that("graph-based diagnostics support annoy and exact fallbacks", {
 
   expect_s3_class(annoy_tbl, "data.frame")
   expect_equal(attr(annoy_tbl, "graph_source"), "annoy")
-  expect_equal(colnames(legacy_tbl), colnames(annoy_tbl))
   expect_true(any(annoy_tbl$rare_group))
   expect_true(any(annoy_tbl$challenging_group))
 })

@@ -17,7 +17,7 @@ sn_plot_feature(
   pt_size = NULL,
   alpha = 1,
   stroke_size = NULL,
-  slot = "data",
+  layer = "data",
   min_cutoff = NA,
   max_cutoff = NA,
   shape_by = NULL,
@@ -79,7 +79,9 @@ cells.}
 
 \item{stroke_size}{Point stroke size passed to Seurat's \code{FeaturePlot()}.}
 
-\item{slot}{A character string specifying which slot in the Seurat object to use (e.g., "data", "scale.data", "integrated"). Defaults to "data".}
+\item{layer}{A character string specifying which layer in the Seurat object
+to use (for example, \code{"data"} or \code{"scale.data"}). Defaults to
+\code{"data"}.}
 
 \item{min_cutoff}{A numeric value specifying the minimum expression cutoff.
 Defaults to \code{NA}.}

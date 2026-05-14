@@ -17,9 +17,7 @@
 #'   \code{x} is a \code{Seurat} object. If \code{x} is a matrix, supply
 #'   \code{cell_type_labels} instead.
 #' @param cell_state_by Optional metadata column containing cell-state labels.
-#'   Defaults to \code{cell_type_col}.
-#' @param cell_type_col Deprecated alias for \code{cell_type_by}.
-#' @param cell_state_col Deprecated alias for \code{cell_state_by}.
+#'   Defaults to \code{cell_type_by}.
 #' @param cell_type_labels Optional vector of cell-type labels for matrix
 #'   references.
 #' @param cell_state_labels Optional vector of cell-state labels for matrix
@@ -120,14 +118,10 @@ sn_deconvolve_bulk <- function(x,
                                opt_control = list(),
                                n_cores = 1,
                                update_gibbs = TRUE,
-                               return_object = TRUE,
-                               cell_type_col = NULL,
-                               cell_state_col = NULL) {
+                               return_object = TRUE) {
   method <- match.arg(method)
   bulk_gene_axis <- match.arg(bulk_gene_axis)
   cibersortx_container <- match.arg(cibersortx_container)
-  cell_type_by <- .sn_resolve_legacy_arg(cell_type_by, cell_type_col, "cell_type_by", "cell_type_col")
-  cell_state_by <- .sn_resolve_legacy_arg(cell_state_by, cell_state_col, "cell_state_by", "cell_state_col")
 
   reference_info <- .sn_prepare_deconvolution_reference(
     x = x,

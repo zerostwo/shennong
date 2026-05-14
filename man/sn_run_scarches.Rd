@@ -13,9 +13,7 @@
 \title{Run a Python analysis command through a managed Shennong pixi environment}
 \usage{
 sn_run_scarches(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   batch_by = NULL,
@@ -26,15 +24,11 @@ sn_run_scarches(
   result_name = "scarches",
   return_object = TRUE,
   method_control = list(),
-  batch = NULL,
-  labels_key = NULL,
   ...
 )
 
 sn_run_scpoli(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   batch_by = NULL,
@@ -45,15 +39,11 @@ sn_run_scpoli(
   result_name = "scpoli",
   return_object = TRUE,
   method_control = list(),
-  batch = NULL,
-  labels_key = NULL,
   ...
 )
 
 sn_run_infercnvpy(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   species = NULL,
@@ -84,15 +74,11 @@ sn_run_infercnvpy(
   metadata_prefix = "infercnvpy_",
   result_name = "infercnvpy",
   return_object = TRUE,
-  reference_key = NULL,
-  cnv_score_groupby = NULL,
   ...
 )
 
 sn_run_cellphonedb(
-  object = NULL,
-  command = "cellphonedb",
-  args = character(),
+  object,
   assay = NULL,
   layer = "counts",
   group_by = NULL,
@@ -101,14 +87,11 @@ sn_run_cellphonedb(
   result_name = "cellphonedb",
   return_object = TRUE,
   method_control = list(),
-  groupby = NULL,
   ...
 )
 
 sn_run_cell2location(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = "counts",
   reference_signatures = NULL,
@@ -123,9 +106,7 @@ sn_run_cell2location(
 )
 
 sn_run_tangram(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   reference_object = NULL,
   assay = NULL,
   layer = NULL,
@@ -139,14 +120,11 @@ sn_run_tangram(
   result_name = "tangram",
   return_object = TRUE,
   method_control = list(),
-  cell_type_key = NULL,
   ...
 )
 
 sn_run_squidpy(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -157,14 +135,11 @@ sn_run_squidpy(
   result_name = "squidpy",
   return_object = TRUE,
   method_control = list(),
-  cluster_key = NULL,
   ...
 )
 
 sn_run_spatialdata(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -178,9 +153,7 @@ sn_run_spatialdata(
 )
 
 sn_run_stlearn(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -194,15 +167,9 @@ sn_run_stlearn(
 )
 }
 \arguments{
-\item{object}{Optional Seurat object. When supplied to
-\code{sn_run_*()} wrappers, Shennong writes the object to a Python
+\item{object}{Seurat object. Shennong writes the object to a Python
 interchange directory, runs the corresponding pixi script, and imports
 supported results.}
-
-\item{command}{Command to run inside the selected pixi environment. Defaults
-to \code{"python"}.}
-
-\item{args}{Character vector of command arguments.}
 
 \item{assay}{Assay used for object-level infercnvpy input.}
 
@@ -227,10 +194,6 @@ return a run manifest list.}
 \item{method_control}{Optional named list of backend-specific settings passed
 to the Python runner config.}
 
-\item{batch}{Deprecated alias for \code{batch_by}.}
-
-\item{labels_key}{Deprecated alias for \code{label_by}.}
-
 \item{...}{Additional arguments passed to \code{sn_call_pixi_environment()}.}
 
 \item{species}{Species used to match bundled gene positions when
@@ -238,7 +201,7 @@ to the Python runner config.}
 
 \item{reference_by}{Metadata column containing normal/tumor annotations.}
 
-\item{reference_cat}{One or more values in \code{reference_key} denoting
+\item{reference_cat}{One or more values in \code{reference_by} denoting
 normal reference cells.}
 
 \item{gene_order}{Optional data frame with gene positions. It must contain a
@@ -263,13 +226,7 @@ downstream infercnvpy analysis steps.}
 
 \item{cnv_score_group_by}{Optional grouping column for infercnvpy CNV scores.}
 
-\item{reference_key}{Deprecated alias for \code{reference_by}.}
-
-\item{cnv_score_groupby}{Deprecated alias for \code{cnv_score_group_by}.}
-
 \item{group_by}{Metadata column used by CellPhoneDB cell groups.}
-
-\item{groupby}{Deprecated alias for \code{group_by}.}
 
 \item{reference_signatures}{Optional file path or data frame of reference
 cell-state signatures for cell2location.}
@@ -286,15 +243,10 @@ a query/spatial object against a single-cell reference, such as Tangram.}
 \item{cell_type_by}{Reference metadata column containing cell-type labels
 for Tangram projection.}
 
-\item{cell_type_key}{Deprecated alias for \code{cell_type_by}.}
-
 \item{cluster_by}{Metadata column used by Squidpy neighborhood enrichment.}
-
-\item{cluster_key}{Deprecated alias for \code{cluster_by}.}
 }
 \value{
-Command wrappers invisibly return command output. Object-level
-\code{sn_run_infercnvpy()} returns a Seurat object or a run manifest.
+A Seurat object or a run manifest.
 }
 \description{
 These are analysis-oriented wrappers around \code{sn_call_pixi_environment()}.
@@ -306,7 +258,6 @@ backend produces cell-level metadata or embeddings.
 }
 \examples{
 \dontrun{
-sn_run_infercnvpy(args = "--version")
 object <- sn_run_infercnvpy(
   object = object,
   reference_by = "cell_type",

@@ -4,13 +4,7 @@
 \alias{sn_calculate_cluster_purity}
 \title{Calculate cluster purity against a reference label}
 \usage{
-sn_calculate_cluster_purity(
-  x,
-  cluster_by = NULL,
-  label_by = NULL,
-  cluster = NULL,
-  label = NULL
-)
+sn_calculate_cluster_purity(x, cluster_by = NULL, label_by = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or data frame containing the required columns.}
@@ -18,10 +12,6 @@ sn_calculate_cluster_purity(
 \item{cluster_by}{Metadata/data-frame column containing cluster_by labels.}
 
 \item{label_by}{Metadata/data-frame column containing reference labels.}
-
-\item{cluster}{Deprecated alias for \code{cluster_by}.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A data frame with one row per cluster_by and purity diagnostics in

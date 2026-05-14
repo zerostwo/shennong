@@ -17,8 +17,7 @@ sn_plot_milo(
   y_label = expression(-log[10]("FDR")),
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL,
-  annotation_col = NULL
+  panel_heights = NULL
 )
 }
 \arguments{
@@ -46,8 +45,6 @@ panel dimension automatically.}
 
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}
-
-\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
 }
 \value{
 A ggplot object.

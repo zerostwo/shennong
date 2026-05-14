@@ -19,8 +19,7 @@ sn_sweep_cluster_resolution(
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   k = 20,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 )
 }
 \arguments{
@@ -65,8 +64,6 @@ graph from embeddings.}
 
 \item{n_trees}{Number of Annoy trees used by graph connectivity when
 \code{neighbor_method = "annoy"}.}
-
-\item{label}{Deprecated alias for \code{label_by}.}
 }
 \value{
 A list with a per-resolution summary table and the recommended

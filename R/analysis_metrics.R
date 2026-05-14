@@ -9,7 +9,6 @@
 #'   \code{"pca"}.
 #' @param label_by Character vector of metadata column names passed to
 #'   \code{lisi::compute_lisi()}.
-#' @param label Deprecated alias for \code{label_by}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
 #' @param cells Optional character vector of cell names to score.
 #' @param max_cells Optional integer cap used to subsample cells before running
@@ -28,7 +27,7 @@
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -49,11 +48,9 @@ sn_calculate_lisi <- function(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 ) {
   check_installed_github(pkg = "lisi", repo = "immunogenomics/lisi")
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   label_by <- label_by %||% "sample"
   stratify_by <- stratify_by %||% label_by[[1]]
   metric_input <- .sn_prepare_metric_input(
@@ -84,7 +81,6 @@ sn_calculate_lisi <- function(
 #'
 #' @param x A Seurat object.
 #' @param label_by Metadata column used as the grouping label.
-#' @param label Deprecated alias for \code{label_by}.
 #' @param reduction Reduction name used to extract embeddings. Defaults to
 #'   \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -93,7 +89,7 @@ sn_calculate_lisi <- function(
 #'   the metric. Defaults to \code{3000} because silhouette needs a full
 #'   distance matrix.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{label}.
+#'   during subsampling. Defaults to \code{label_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #'
 #' @return A data frame with per-cell silhouette widths.
@@ -105,7 +101,7 @@ sn_calculate_lisi <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -126,10 +122,8 @@ sn_calculate_silhouette <- function(
   cells = NULL,
   max_cells = 3000,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 ) {
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -163,7 +157,6 @@ sn_calculate_silhouette <- function(
 #'
 #' @param x A Seurat object.
 #' @param label_by Metadata column used to define groups.
-#' @param label Deprecated alias for \code{label_by}.
 #' @param graph Optional graph name stored in \code{x@graphs}. If \code{NULL},
 #'   the function tries to reuse an existing nearest-neighbor graph and falls
 #'   back to a kNN graph built from the selected embedding.
@@ -177,7 +170,7 @@ sn_calculate_silhouette <- function(
 #' @param max_cells Optional integer cap used to subsample cells before running
 #'   the metric.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{label}.
+#'   during subsampling. Defaults to \code{label_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #' @param n_trees Number of Annoy trees when \code{neighbor_method = "annoy"}.
 #'
@@ -189,7 +182,7 @@ sn_calculate_silhouette <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -214,10 +207,8 @@ sn_calculate_graph_connectivity <- function(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 ) {
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -263,7 +254,6 @@ sn_calculate_graph_connectivity <- function(
 #'
 #' @param x A Seurat object.
 #' @param batch_by Metadata column containing batch labels.
-#' @param batch Deprecated alias for \code{batch_by}.
 #' @param reduction Reduction name used for the primary score. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -274,7 +264,7 @@ sn_calculate_graph_connectivity <- function(
 #' @param max_cells Optional integer cap used to subsample cells before running
 #'   the metric.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{batch}.
+#'   during subsampling. Defaults to \code{batch_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #'
 #' @return A one-row data frame containing the weighted batch_by variance explained
@@ -285,13 +275,13 @@ sn_calculate_graph_connectivity <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' sn_calculate_pcr_batch(
 #'   pbmc,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   reduction = "harmony",
 #'   baseline_reduction = "pca"
 #' )
@@ -308,10 +298,8 @@ sn_calculate_pcr_batch <- function(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  batch = NULL
+  seed = 717
 ) {
-  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
   if (is.null(batch_by)) {
     stop("`batch_by` must be supplied.", call. = FALSE)
   }
@@ -620,8 +608,6 @@ sn_calculate_variance_explained <- function(
 #' @param x A Seurat object or data frame containing the required columns.
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing reference labels.
-#' @param cluster Deprecated alias for \code{cluster_by}.
-#' @param label Deprecated alias for \code{label_by}.
 #'
 #' @return A one-row data frame with ARI and NMI.
 #'
@@ -633,9 +619,7 @@ sn_calculate_variance_explained <- function(
 #' sn_calculate_clustering_agreement(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = NULL) {
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -676,7 +660,6 @@ sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = N
 #'
 #' @param x A Seurat object.
 #' @param label_by Metadata column containing biological labels.
-#' @param label Deprecated alias for \code{label_by}.
 #' @param reduction Reduction name used to extract embeddings. Defaults to
 #'   \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param dims Optional integer vector of embedding dimensions to retain.
@@ -685,7 +668,7 @@ sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = N
 #'   the metric. Defaults to \code{3000} because silhouette needs a full
 #'   distance matrix.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{label}.
+#'   during subsampling. Defaults to \code{label_by}.
 #' @param isolated_fraction Fraction-of-cells threshold used to flag isolated
 #'   labels.
 #' @param isolated_n Absolute cell-count threshold used to flag isolated labels.
@@ -701,7 +684,7 @@ sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = N
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -724,10 +707,8 @@ sn_calculate_isolated_label_score <- function(
   stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717,
-  label = NULL
+  seed = 717
 ) {
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -797,8 +778,6 @@ sn_calculate_isolated_label_score <- function(
 #' @param x A Seurat object or data frame containing the required columns.
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing reference labels.
-#' @param cluster Deprecated alias for \code{cluster_by}.
-#' @param label Deprecated alias for \code{label_by}.
 #'
 #' @return A data frame with one row per cluster_by and purity diagnostics in
 #'   \code{[0, 1]}.
@@ -811,9 +790,7 @@ sn_calculate_isolated_label_score <- function(
 #' sn_calculate_cluster_purity(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL) {
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -860,8 +837,6 @@ sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL, c
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing the label_by to evaluate
 #'   within each cluster.
-#' @param cluster Deprecated alias for \code{cluster_by}.
-#' @param label Deprecated alias for \code{label_by}.
 #'
 #' @return A data frame with one row per cluster, including raw entropy and a
 #'   normalized entropy score in \code{[0, 1]}.
@@ -874,9 +849,7 @@ sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL, c
 #' sn_calculate_cluster_entropy(meta, cluster_by = "cluster", label_by = "batch")
 #'
 #' @export
-sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL, cluster = NULL, label = NULL) {
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
+sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL) {
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -926,7 +899,6 @@ sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL, 
 #'
 #' @param x A Seurat object.
 #' @param group_by Metadata column defining the groups to inspect.
-#' @param group Deprecated alias for \code{group_by}.
 #' @param graph Optional graph name stored in \code{x@graphs}. If \code{NULL},
 #'   the function tries to reuse an existing nearest-neighbor graph and falls
 #'   back to a kNN graph built from the selected embedding.
@@ -956,7 +928,7 @@ sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL, 
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -984,15 +956,8 @@ sn_identify_challenging_groups <- function(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  group = NULL
+  n_trees = 50
 ) {
-  group_by <- .sn_resolve_legacy_arg(
-    value = group_by,
-    legacy = group,
-    value_name = "group_by",
-    legacy_name = "group"
-  )
   if (is.null(group_by)) {
     stop("`group_by` must be supplied.", call. = FALSE)
   }
@@ -1110,9 +1075,6 @@ sn_identify_challenging_groups <- function(
 #' @param label_by Optional metadata column containing biological labels such as
 #'   cell type annotations.
 #' @param cluster_by Optional metadata column containing the current clustering.
-#' @param batch Deprecated alias for \code{batch_by}.
-#' @param label Deprecated alias for \code{label_by}.
-#' @param cluster Deprecated alias for \code{cluster_by}.
 #' @param reduction Reduction name used for the primary integrated embedding.
 #'   Defaults to \code{"harmony"} when present, otherwise \code{"pca"}.
 #' @param baseline Optional Seurat object used as the baseline reference for
@@ -1133,7 +1095,7 @@ sn_identify_challenging_groups <- function(
 #' @param max_cells Optional integer cap used to subsample cells before running
 #'   the metrics.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{batch}.
+#'   during subsampling. Defaults to \code{batch_by}.
 #' @param rare_fraction Fraction-of-cells threshold for flagging rare groups.
 #' @param rare_n Absolute cell-count threshold for flagging rare groups.
 #' @param challenge_threshold Threshold on the derived \code{challenge_score}
@@ -1155,13 +1117,13 @@ sn_identify_challenging_groups <- function(
 #' data("pbmc_small", package = "Shennong")
 #' pbmc <- sn_run_cluster(
 #'   pbmc_small,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' metrics <- sn_assess_integration(
 #'   pbmc,
-#'   batch_by = "sample",
+#'   batch = "sample",
 #'   cluster_by = "seurat_clusters",
 #'   reduction = "harmony",
 #'   baseline_reduction = "pca"
@@ -1189,14 +1151,8 @@ sn_assess_integration <- function(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  batch = NULL,
-  label = NULL,
-  cluster = NULL
+  n_trees = 50
 ) {
-  batch_by <- .sn_resolve_legacy_arg(batch_by, batch, "batch_by", "batch")
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
   cluster_by <- cluster_by %||% "seurat_clusters"
   if (is.null(batch_by)) {
     stop("`batch_by` must be supplied.", call. = FALSE)
@@ -1609,8 +1565,6 @@ sn_assess_integration <- function(
 #' @param x A Seurat object.
 #' @param cluster_by Column name in metadata specifying cluster_by labels.
 #' @param sample_by Column name in metadata specifying sample labels.
-#' @param cluster Deprecated alias for \code{cluster_by}.
-#' @param sample Deprecated alias for \code{sample_by}.
 #' @param span The span parameter for rogue estimation.
 #' @param assay Assay used for ROGUE calculation. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
@@ -1626,10 +1580,10 @@ sn_assess_integration <- function(
 #' @param min_genes Minimum detected genes retained by the upstream
 #'   \code{ROGUE::matr.filter()} step.
 #'
-#' @return When neither \code{cluster} nor \code{sample} is supplied, returns a
+#' @return When neither \code{cluster_by} nor \code{sample_by} is supplied, returns a
 #'   single numeric ROGUE score for the selected matrix. When
-#'   \code{cluster} is supplied, returns a data frame with per-cluster ROGUE
-#'   scores. When both \code{cluster} and \code{sample} are supplied, returns a
+#'   \code{cluster_by} is supplied, returns a data frame with per-cluster ROGUE
+#'   scores. When both \code{cluster_by} and \code{sample_by} are supplied, returns a
 #'   tidy data frame with one row per sample-cluster combination.
 #'
 #' @examples
@@ -1652,16 +1606,12 @@ sn_calculate_rogue <- function(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10,
-  cluster = NULL,
-  sample = NULL
+  min_genes = 10
 ) {
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")
   }
-  cluster_by <- .sn_resolve_legacy_arg(cluster_by, cluster, "cluster_by", "cluster")
-  sample_by <- .sn_resolve_legacy_arg(sample_by, sample, "sample_by", "sample")
   stratify_by <- stratify_by %||% sample_by %||% cluster_by
 
   metadata <- x@meta.data
@@ -1816,7 +1766,6 @@ sn_calculate_rogue <- function(
 #'   \code{"clustering_agreement"}, and \code{"rogue"}.
 #' @param label_by Optional metadata column containing reference labels. Required
 #'   for \code{"cluster_purity"} and \code{"clustering_agreement"}.
-#' @param label Deprecated alias for \code{label_by}.
 #' @param max_cells Optional integer cap used by expensive embedding-based
 #'   metrics such as silhouette.
 #' @param rogue_max_cells Optional integer cap used by \code{"rogue"}.
@@ -1861,10 +1810,8 @@ sn_sweep_cluster_resolution <- function(
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   k = 20,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 ) {
-  label_by <- .sn_resolve_legacy_arg(label_by, label, "label_by", "label")
   check_installed("Seurat")
   if (!inherits(x, "Seurat")) {
     stop("Input `x` must be a Seurat object.")
@@ -2415,10 +2362,8 @@ sn_calculate_roe <- function(x,
 #'
 #' @param x A Seurat object or a data frame containing cell-level metadata.
 #' @param sample_by Column defining biological samples.
-#' @param sample_col Deprecated alias for \code{sample_by}.
 #' @param group_by Column defining the group or condition to compare between
 #'   samples.
-#' @param group_col Deprecated alias for \code{group_by}.
 #' @param variable Column whose composition should be compared, for example cell
 #'   type or cell-cycle phase.
 #' @param contrast Character vector of length 2 giving the group levels as
@@ -2462,21 +2407,7 @@ sn_compare_composition <- function(x,
                                    test = c("wilcox", "none"),
                                    adjust_method = "BH",
                                    additional_cols = NULL,
-                                   return_sample_data = FALSE,
-                                   sample_col = NULL,
-                                   group_col = NULL) {
-  sample_by <- .sn_resolve_legacy_arg(
-    value = sample_by,
-    legacy = sample_col,
-    value_name = "sample_by",
-    legacy_name = "sample_col"
-  )
-  group_by <- .sn_resolve_legacy_arg(
-    value = group_by,
-    legacy = group_col,
-    value_name = "group_by",
-    legacy_name = "group_col"
-  )
+                                   return_sample_data = FALSE) {
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.character(variable), length(variable) == 1L)
@@ -2653,8 +2584,6 @@ sn_compare_composition <- function(x,
 #' @param x A Seurat object.
 #' @param sample_by Metadata column defining biological samples.
 #' @param group_by Metadata column defining the sample-level comparison group.
-#' @param sample_col Deprecated alias for \code{sample_by}.
-#' @param group_col Deprecated alias for \code{group_by}.
 #' @param contrast Optional character vector of length 2 giving the comparison
 #'   as \code{c(case, control)}. When omitted, \code{group_by} must contain
 #'   exactly two levels in the selected cells.
@@ -2665,7 +2594,7 @@ sn_compare_composition <- function(x,
 #' @param max_cells Optional integer cap used to subsample cells before
 #'   neighborhood construction.
 #' @param stratify_by Optional metadata column used to preserve representation
-#'   during subsampling. Defaults to \code{sample_col}.
+#'   during subsampling. Defaults to \code{sample_by}.
 #' @param k Number of neighbors for graph and neighborhood construction.
 #' @param d Number of embedding dimensions passed to miloR. Defaults to the
 #'   selected embedding dimensionality.
@@ -2678,7 +2607,6 @@ sn_compare_composition <- function(x,
 #'   formula alongside \code{group_by}.
 #' @param annotation_by Optional cell-level metadata column used to annotate
 #'   neighborhoods with \code{miloR::annotateNhoods()}.
-#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param fdr_weighting FDR weighting strategy passed to
 #'   \code{miloR::testNhoods()}.
 #' @param min_mean Minimum mean count threshold passed to
@@ -2692,8 +2620,6 @@ sn_compare_composition <- function(x,
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
-#' @param group_col Deprecated alias for \code{group_by}.
-#'
 #' @return By default, a data frame of neighborhood-level DA statistics. When
 #'   \code{return_intermediate = TRUE}, a list with \code{table},
 #'   \code{design_df}, and \code{milo} is returned.
@@ -2732,29 +2658,8 @@ sn_run_milo <- function(x,
                         store_name = NULL,
                         return_object = FALSE,
                         return_intermediate = FALSE,
-                        verbose = TRUE,
-                        sample_col = NULL,
-                        annotation_col = NULL,
-                        group_col = NULL) {
+                        verbose = TRUE) {
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
-  sample_by <- .sn_resolve_legacy_arg(
-    value = sample_by,
-    legacy = sample_col,
-    value_name = "sample_by",
-    legacy_name = "sample_col"
-  )
-  group_by <- .sn_resolve_legacy_arg(
-    value = group_by,
-    legacy = group_col,
-    value_name = "group_by",
-    legacy_name = "group_col"
-  )
-  annotation_by <- .sn_resolve_legacy_arg(
-    value = annotation_by,
-    legacy = annotation_col,
-    value_name = "annotation_by",
-    legacy_name = "annotation_col"
-  )
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.null(contrast) || (is.character(contrast) && length(contrast) == 2L))
@@ -2892,7 +2797,7 @@ sn_run_milo <- function(x,
       object = x,
       result = da_table,
       store_name = store_name,
-      sample_col = sample_by,
+      sample_by = sample_by,
       group_by = group_by,
       comparison = da_table$comparison[[1]],
       reduction = reduction,
@@ -2932,13 +2837,10 @@ sn_run_milo <- function(x,
 #' @param store_name Name used under \code{object@misc$milo_results}.
 #' @param sample_by Sample column used for the design.
 #' @param group_by Group column used for the design.
-#' @param sample_col Deprecated alias for \code{sample_by}.
-#' @param group_col Deprecated alias for \code{group_by}.
 #' @param comparison Human-readable comparison label.
 #' @param reduction Reduction used to build the milo neighborhoods.
 #' @param dims Optional embedding dimension names or indices used for milo.
 #' @param annotation_by Optional neighborhood annotation column.
-#' @param annotation_col Deprecated alias for \code{annotation_by}.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A \code{Seurat} object or stored-result list.
@@ -2952,31 +2854,10 @@ sn_store_milo <- function(object,
                           reduction = "pca",
                           dims = NULL,
                           annotation_by = NULL,
-                          return_object = TRUE,
-                          sample_col = NULL,
-                          annotation_col = NULL,
-                          group_col = NULL) {
+                          return_object = TRUE) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
-  sample_by <- .sn_resolve_legacy_arg(
-    value = sample_by,
-    legacy = sample_col,
-    value_name = "sample_by",
-    legacy_name = "sample_col"
-  )
-  group_by <- .sn_resolve_legacy_arg(
-    value = group_by,
-    legacy = group_col,
-    value_name = "group_by",
-    legacy_name = "group_col"
-  )
-  annotation_by <- .sn_resolve_legacy_arg(
-    value = annotation_by,
-    legacy = annotation_col,
-    value_name = "annotation_by",
-    legacy_name = "annotation_col"
-  )
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
 
@@ -3302,7 +3183,6 @@ sn_get_milo_result <- function(object,
 #' @param sample_by Optional metadata column defining samples. When
 #'   \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 #'   available and otherwise treats the object as one sample.
-#' @param sample_col Deprecated alias for \code{sample_by}.
 #' @param store_name Name used when storing the assessment under
 #'   \code{object@misc$qc_assessments}.
 #' @param return_object Logical; when \code{TRUE}, store the assessment in the
@@ -3326,8 +3206,7 @@ sn_assess_qc <- function(object,
                          sample_by = NULL,
                          store_name = "default",
                          return_object = FALSE,
-                         verbose = TRUE,
-                         sample_col = NULL) {
+                         verbose = TRUE) {
   check_installed("SeuratObject")
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.", call. = FALSE)
@@ -3336,7 +3215,6 @@ sn_assess_qc <- function(object,
     stop("`reference` must be NULL or a Seurat object.", call. = FALSE)
   }
 
-  sample_by <- .sn_resolve_legacy_arg(sample_by, sample_col, "sample_by", "sample_col")
   sample_by <- .sn_qc_assessment_sample_col(object, sample_col = sample_by)
   by_sample <- .sn_qc_current_summary(object@meta.data, sample_col = sample_by)
   comparison <- if (!is_null(reference)) {

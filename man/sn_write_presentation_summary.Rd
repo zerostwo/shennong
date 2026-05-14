@@ -18,7 +18,6 @@ sn_write_presentation_summary(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
-  cluster_col = NULL,
   ...
 )
 }
@@ -54,8 +53,6 @@ the provider.}
 and, when \pkg{cli} is available, a console progress bar while waiting for
 the LLM response.}
 
-\item{cluster_col}{Deprecated alias for \code{cluster_by}.}
-
 \item{...}{Additional arguments forwarded to \code{provider}.}
 }
 \value{
@@ -83,7 +80,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_presentation_summary(
     obj,
     cluster_de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task

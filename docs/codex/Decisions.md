@@ -9,6 +9,11 @@ Last updated: 2026-05-11
   Seurat objects. Shennong should raise `future.globals.maxSize` temporarily
   based on cgroup/system memory and object size for SCTransform calls, while
   restoring the user's previous option after the call.
+- Current Shennong should favor one public spelling per concept over a
+  compatibility-alias layer. Keep backend-local keys such as Python script
+  config names only where the external backend requires them, but remove old R
+  function aliases and retired public parameters from documentation, tests,
+  and shipped Codex skills.
 
 ## 2026-05-10
 
@@ -71,25 +76,25 @@ Last updated: 2026-05-11
   consistent across `rio` formats, `.qs`/`.qs2`, `.h5ad`, `.h5`, and BPCells.
 - Custom writer dependencies should be installed opportunistically by
   `sn_write()` in interactive workflows, using Shennong's dependency table so
-  CRAN, Bioconductor, and GitHub sources stay consistent. Legacy `.qs` should
-  remain supported for existing workflows by attempting `qsbase/qs` from
-  GitHub, while new examples should prefer `.qs2`.
+  CRAN, Bioconductor, and GitHub sources stay consistent. `.qs` can remain a
+  supported serializer by attempting `qsbase/qs` from GitHub, while new
+  examples should prefer `.qs2`.
 - For clustering/integration entry points, `batch` is clearer than `batch_by`
   because users are naming the batch column itself, not applying a generic
-  grouping operation. `sn_run_cluster()` should therefore document `batch` as
-  the primary argument while retaining `batch_by` as a compatibility alias.
+  grouping operation. `sn_run_cluster()` should therefore document and accept
+  `batch` only.
 - `sn_run_cluster()` should expose the common `FindClusters()` controls instead
   of hard-coding Seurat defaults. Named algorithm values are preferred for user
-  readability, with numeric Seurat algorithm IDs retained for compatibility.
+  readability, with numeric Seurat algorithm IDs accepted because Seurat
+  accepts them.
 
 ## 2026-05-04
 
-- Public arguments that name metadata columns should prefer the `*_by` family:
-  `group_by`, `sample_by`, `batch_by`, `label_by`, `cluster_by`,
+- Public arguments that name metadata columns should use the current canonical
+  Shennong names such as `group_by`, `sample_by`, `label_by`, `cluster_by`,
   `annotation_by`, `condition_by`, `reference_by`, `cell_type_by`, and
-  `cell_state_by`. Older names stay as deprecated aliases when they are
-  already shipped, but new examples and docs should use canonical `*_by`
-  arguments so package-facing workflows remain consistent.
+  `cell_state_by`, while `sn_run_cluster()` uses `batch`. Older public aliases
+  should not be kept in the current API.
 - Label transfer should expose scANVI/scArches through the existing
   `sn_transfer_labels()` contract rather than a separate public transfer API.
   The query receives imported prediction metadata and provenance under
@@ -401,9 +406,12 @@ Last updated: 2026-05-11
 - The first technical modernization slice after scaffolding will prioritize additional tests and metadata alignment because they reduce risk for every later refactor.
 - For `sn_calculate_composition()`, the documented behavior was treated as the compatibility source of truth: inconsistent `additional_cols` values now trigger a warning while still using the first value per group.
 - The repository-level `docs` ignore rule was narrowed so `docs/codex/` can be versioned while generated pkgdown output under `docs/` remains ignored.
-- For the current task, `sn_load_data()` will become the primary public example-data loader. `sn_load_pbmc()` should be retained only as a compatibility bridge if that can be done without re-introducing duplicate implementation.
+- For the current task, `sn_load_data()` will become the primary public
+  example-data loader. The old `sn_load_pbmc()` wrapper should not remain part
+  of the current public API.
 - `sn_quick_cluster()` will no longer remain as a separate clustering implementation; its non-integration workflow should be absorbed by `sn_run_cluster()`.
-- `sn_load_pbmc()` was retained as a deprecated wrapper around `sn_load_data()` to avoid an unnecessary hard break while still moving the public examples toward the generalized loader.
+- `sn_load_pbmc()` was removed after `sn_load_data()` became the generalized
+  example-data loader.
 - `sn_run_cluster()` now owns both single-dataset clustering and Harmony integration. The integration path was simplified to a shared HVG/PCA workflow before Harmony instead of the previous split/join-plus-`SelectIntegrationFeatures5()` path because the simpler flow validated reliably on real PBMC data.
 - `sn_remove_ambient_contamination()` now uses a common API for SoupX and decontX: shared input coercion, shared optional cluster_by injection, SoupX-specific `raw` requirement, and Seurat-object round-tripping only when the caller actually supplied a Seurat object.
 - `DESCRIPTION` was updated to reflect the packages touched in this task, and the minimum R version was raised to `R (>= 4.1.0)` because the package already uses base pipe syntax.
@@ -502,7 +510,8 @@ Last updated: 2026-05-11
   installer returns after a non-zero package status, Shennong should report the
   remaining missing package names directly.
 
-- Default workflow remains local commit only; for installer ergonomics, `sn_install_shennong()` should prefer unified `source` / `ref` arguments and keep legacy aliases only for compatibility.
+- Default workflow remains local commit only; for installer ergonomics,
+  `sn_install_shennong()` should use unified `source` / `ref` arguments.
 
 - Composition filtering and composition comparison need separate thresholds: `sn_calculate_composition()` should filter returned categories by count, while `sn_compare_composition()` should keep `min_cells` as a sample-level replicate filter and expose a simple ordered direction label_by derived from `log2_fc`.
 - Any new exported function must update `_pkgdown.yml` in the same change set. Pkgdown reference-index omissions are now a known recurring failure mode, so local pre-push validation should include `pkgdown::build_reference_index()`.

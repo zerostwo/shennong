@@ -27,10 +27,7 @@ sn_run_milo(
   store_name = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
-  verbose = TRUE,
-  sample_col = NULL,
-  annotation_col = NULL,
-  group_col = NULL
+  verbose = TRUE
 )
 }
 \arguments{
@@ -55,7 +52,7 @@ exactly two levels in the selected cells.}
 neighborhood construction.}
 
 \item{stratify_by}{Optional metadata column used to preserve representation
-during subsampling. Defaults to \code{sample_col}.}
+during subsampling. Defaults to \code{sample_by}.}
 
 \item{k}{Number of neighbors for graph and neighborhood construction.}
 
@@ -95,12 +92,6 @@ supplied, return the updated Seurat object.}
 DA table, design data, and milo object.}
 
 \item{verbose}{Logical; if \code{TRUE}, emit progress logs.}
-
-\item{sample_col}{Deprecated alias for \code{sample_by}.}
-
-\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
-
-\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 By default, a data frame of neighborhood-level DA statistics. When

@@ -405,10 +405,7 @@ test_that("sn_run_cluster treats batch as the primary integration argument", {
   )
 
   expect_equal(clustered@misc$integration$batch_by, "sample")
-  expect_error(
-    sn_run_cluster(object, batch = "sample", batch_by = "other", verbose = FALSE),
-    "different values"
-  )
+  expect_false("batch_by" %in% names(formals(sn_run_cluster)))
 })
 
 test_that("sn_run_cluster can return cluster assignments directly and supports scran batch workflows", {
@@ -665,20 +662,8 @@ test_that("rare-cell helper functions support challenging-groups and mocked back
     dims = 1:10,
     k = 5
   )
-  expect_warning(
-    legacy_challenging <- sn_detect_rare_cells(
-      object = object,
-      method = "challenging_groups",
-      group = "seed_cluster",
-      reduction = "pca",
-      dims = 1:10,
-      k = 5
-    ),
-    "`group` is deprecated"
-  )
 
   expect_s3_class(challenging, "data.frame")
-  expect_equal(colnames(legacy_challenging), colnames(challenging))
   expect_true(all(c("cell_id", "method", "rare_score", "rare_cell") %in% colnames(challenging)))
   expect_equal(unique(challenging$method), "challenging_groups")
 
@@ -878,7 +863,7 @@ test_that("sn_run_cluster supports SCTransform followed by Harmony integration",
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     normalization_method = "sctransform",
     nfeatures = 50,
     npcs = 10,
@@ -904,7 +889,7 @@ test_that("sn_run_cluster integrates batches with harmony", {
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     normalization_method = "seurat",
     nfeatures = 50,
     block_genes = NULL,
@@ -932,7 +917,7 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
         object = merged,
-        batch_by = "sample",
+        batch = "sample",
         normalization_method = "seurat",
         integration_method = backend,
         integration_control = list(example = backend),
@@ -1038,13 +1023,13 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
       write_h5ad = FALSE
     )
     if (identical(backend, "scanvi")) {
-      control$labels_key <- "cell_label"
+      control$label_by <- "cell_label"
     }
 
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
         object = merged,
-        batch_by = "sample",
+        batch = "sample",
         normalization_method = "seurat",
         integration_method = backend,
         integration_control = control,
@@ -1524,32 +1509,6 @@ test_that("python method wrappers accept Seurat object inputs", {
     }
   }
 
-  legacy_captured <- NULL
-  expect_warning(
-    testthat::with_mocked_bindings(
-      sn_run_cellphonedb(object = object, groupby = "cell_type", install_pixi = FALSE),
-      .sn_execute_python_object_pixi = function(environment,
-                                                script,
-                                                input_dir,
-                                                output_dir,
-                                                config_path,
-                                                ...) {
-        legacy_captured <<- jsonlite::read_json(config_path, simplifyVector = TRUE)
-        dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-        obs <- utils::read.csv(file.path(input_dir, "query", "obs.csv"), stringsAsFactors = FALSE)
-        metadata <- data.frame(method_score = seq_len(nrow(obs)), row.names = obs$cell_id)
-        utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
-        jsonlite::write_json(
-          list(output_h5ad = file.path(output_dir, "cellphonedb.h5ad")),
-          file.path(output_dir, "manifest.json"),
-          auto_unbox = TRUE
-        )
-      },
-      .package = "Shennong"
-    ),
-    "`groupby` is deprecated"
-  )
-  expect_equal(legacy_captured$groupby, "cell_type")
 })
 
 test_that("sn_run_cluster runs Coralysis integration end to end", {
@@ -1562,7 +1521,7 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
 
   clustered <- suppressWarnings(sn_run_cluster(
     object = object,
-    batch_by = "sample",
+    batch = "sample",
     normalization_method = "seurat",
     integration_method = "coralysis",
     nfeatures = 40,
@@ -1610,7 +1569,7 @@ test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
   expect_error(
     sn_run_cluster(
       object = object,
-      batch_by = "sample",
+      batch = "sample",
       normalization_method = "sctransform",
       integration_method = "coralysis",
       nfeatures = 50,
@@ -1634,7 +1593,7 @@ test_that("sn_run_cluster can select HVGs by metadata group during integration",
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     normalization_method = "seurat",
     hvg_group_by = "sample",
     nfeatures = 50,
@@ -1670,7 +1629,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
 
   sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     normalization_method = "seurat",
     nfeatures = 30,
     block_genes = NULL,
@@ -1692,7 +1651,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
 
   sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     hvg_group_by = "orig.ident",
     normalization_method = "seurat",
     nfeatures = 30,
@@ -1770,7 +1729,7 @@ test_that("sn_run_cluster handles merged split layers with differing feature set
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch_by = "sample",
+    batch = "sample",
     hvg_group_by = "sample",
     normalization_method = "seurat",
     nfeatures = 50,
@@ -2113,11 +2072,11 @@ test_that("sn_transfer_labels supports scANVI and scArches-style label transfer"
           method = method,
           batch = batch,
           features = features,
-          labels_key = integration_control$labels_key,
+          labels_key = integration_control$label_by,
           unlabeled_category = integration_control$unlabeled_category
         )
         transfer_role <- object[[".sn_transfer_role"]][, 1]
-        transfer_label <- object[[integration_control$labels_key]][, 1]
+        transfer_label <- object[[integration_control$label_by]][, 1]
         prediction <- ifelse(transfer_role == "query", "T cell", transfer_label)
         object$scanvi_prediction <- prediction
         object@misc$integration <- list(run_dir = tempfile("scanvi-run-"), output_h5ad = tempfile("scanvi-.h5ad"))
@@ -2237,7 +2196,7 @@ test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not o
   expect_no_error(
     clustered <- suppressWarnings(sn_run_cluster(
       object = merged,
-      batch_by = "sample",
+      batch = "sample",
       species = "human",
       normalization_method = "seurat",
       nfeatures = 50,

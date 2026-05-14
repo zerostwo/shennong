@@ -29,8 +29,7 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon",
-  group = NULL
+  sca_model = "wilcoxon"
 )
 }
 \arguments{
@@ -91,8 +90,6 @@ matrix internally.}
 \item{sca_nbhd_size}{Neighborhood size passed to SCA.}
 
 \item{sca_model}{Scoring model passed to SCA.}
-
-\item{group}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A data frame with one row per cell, including a \code{rare_score}

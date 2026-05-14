@@ -8,6 +8,24 @@ Last updated: 2026-05-11
   `sn_normalize_data()` now temporarily set `future.globals.maxSize` from the
   detected cgroup/system memory and object size before calling Seurat
   SCTransform, then restore the caller's previous option.
+- Removed the public compatibility-alias layer from current Shennong APIs.
+  Canonical metadata selectors, `sn_run_cluster(batch = ...)`, nested
+  `rare_feature_control`, `sn_plot_feature(layer = ...)`, and package
+  maintenance `source` / `ref` arguments are now the only documented public
+  interfaces for those workflows.
+- Simplified object-level Python wrappers so `sn_run_*()` entries require
+  object workflows; direct managed-Python command execution is routed through
+  the matching `sn_call_*()` helpers.
+- Updated the shipped package skills under `inst/codex/package-skills/` so
+  agents learn the current Shennong feature surface instead of retired aliases.
+- Updated `.Rbuildignore` / `.gitignore` so benchmark outputs and generated
+  OmnipathR test logs do not enter source builds or pollute the worktree.
+- Validated with the retired-formals audit, exported-symbol coverage audit for
+  `inst/codex/package-skills/_shared/references/package_api_map.md`, targeted
+  Milo/utils tests, the full `testthat::test_local(stop_on_failure = TRUE)`
+  suite (`FAIL 0 | WARN 2 | SKIP 0 | PASS 1402`), `pkgdown::build_site(new_process
+  = FALSE)`, `R CMD build .`, and `R CMD check --no-manual
+  Shennong_0.1.4.tar.gz` (`Status: OK`).
 
 ## 2026-05-10
 
@@ -67,26 +85,23 @@ Last updated: 2026-05-11
   dispatch. This covers both ordinary `rio::export()` paths and custom
   Shennong writers such as `.qs`, `.h5ad`, `.h5`, and BPCells directories.
 - Added default auto-installation for missing custom writer dependencies in
-  `sn_write()`, including `.qs2`, `.h5ad`, `.h5`, and BPCells outputs. Legacy
-  `.qs` output now attempts the GitHub remote `qsbase/qs` for compatibility,
-  while `.qs2` remains the recommended new serializer.
+  `sn_write()`, including `.qs2`, `.h5ad`, `.h5`, and BPCells outputs. `.qs`
+  output now attempts the GitHub remote `qsbase/qs`, while `.qs2` remains the
+  recommended new serializer.
 - Extended `sn_run_cluster()` with `Seurat::FindClusters()` controls for
   Leiden/Louvain/SLM algorithm selection, cluster column naming, random seed,
   iteration controls, singleton handling, and Leiden-specific options.
-- Re-centered the clustering integration API on `batch`, while preserving
-  `batch_by` as a compatibility alias for existing scripts.
+- Re-centered the clustering integration API on `batch` and later removed the
+  old `batch_by` alias from `sn_run_cluster()`.
 - Added a focused IO regression test that writes to nested tabular and custom
   writer paths without pre-creating the containing directories.
 
 ## 2026-05-04
 
-- Standardized public metadata-selector arguments on the `*_by` family across
-  grouping, sample, batch, label, cluster, annotation, condition, reference,
-  and cell-type workflows. Legacy names such as `group`, `group_col`,
-  `sample_col`, `batch`, `label`, `label_col`, `labels_key`, `annotation_col`,
-  `condition_col`, `cluster_col`, `reference_key`, `cell_type_key`,
-  `cell_type_col`, `cell_state_col`, `groupby`, and `cnv_score_groupby`
-  remain as deprecated compatibility aliases.
+- Standardized public metadata-selector arguments on the current API names
+  across grouping, sample, batch, label, cluster, annotation, condition,
+  reference, and cell-type workflows. The old alias layer was removed in the
+  2026-05-11 cleanup.
 - Added `sn_transfer_labels(method = "scanvi")` and
   `sn_transfer_labels(method = "scarches")` as semi-supervised scVI-family
   label-transfer paths alongside the existing Seurat and Coralysis methods.
@@ -521,7 +536,8 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Narrowed `.gitignore` so `docs/codex/` is not hidden behind the repo-wide `docs` ignore rule.
 - Updated `sn_calculate_composition()` so it now warns when `additional_cols` are not constant within a `group_by` group, matching the existing documentation contract.
 - Added regression tests for inconsistent `additional_cols` behavior and the `min_cells` no-results error path.
-- Added `sn_load_data()` as the generalized example-data loader and retained `sn_load_pbmc()` as a compatibility wrapper.
+- Added `sn_load_data()` as the generalized example-data loader and removed
+  the old `sn_load_pbmc()` wrapper from the current public API.
 - Removed the separate `sn_quick_cluster()` implementation and folded single-dataset clustering into `sn_run_cluster()`.
 - Reworked `sn_remove_ambient_contamination()` into a unified SoupX/decontX interface with shared input and cluster_by handling.
 - Added new unit tests for data loading, clustering, and ambient contamination, plus a PBMC smoke script covering `pbmc1k` and `pbmc3k`.
@@ -539,7 +555,9 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Imported `methods::slot` and `slot<-` explicitly so `R CMD check` no longer reports namespace notes for command logging.
 - Refined `sn_remove_ambient_contamination()` so decontX-generated zero-count cells no longer receive synthetic counts. Affected cells are restored from the original counts by default, can optionally be removed, and now produce corrected `nCount_*` / `nFeature_*` metadata columns.
 - Updated `sn_initialize_seurat_object()` to accept optional `sample_name` and `study` metadata at object creation time.
-- Replaced the overloaded `pipeline` argument in `sn_run_cluster()` with `normalization_method`, while retaining a deprecated compatibility alias. The same normalization vocabulary is now used by `sn_normalize_data()`.
+- Replaced the overloaded `pipeline` argument in `sn_run_cluster()` with
+  `normalization_method`. The same normalization vocabulary is now used by
+  `sn_normalize_data()`.
 - Hardened cell-cycle scoring so clustering skips that step with a warning when the requested species markers do not overlap the selected assay features, avoiding a low-level `sample.int()` failure.
 - Added `sn_check_version()` and `sn_install_shennong()` so users can check whether their installation is current and install either the CRAN release or GitHub development version once both channels exist.
 - Changed pkgdown output to `site/`, expanded the reference index to cover all user-facing documented topics, and locally validated a successful site build.
@@ -602,13 +620,13 @@ Current milestone: DE API consolidation and CI deployment hardening
 
 ## Remaining High-Priority Work
 
-- Review the remaining stale worktree deletions and doc/export mismatches outside this task, especially removed `grn` and legacy upstream files.
+- Review the remaining stale worktree deletions and doc/export mismatches outside this task, especially removed `grn` and upstream files.
 - Decide whether to suppress or explicitly document known Seurat/HGNChelper runtime warnings in tests and smoke paths.
 - Decide whether `sn_remove_ambient_contamination()` should also gain an explicit input `assay`/`layer` pair for Seurat objects, matching the newer downstream layer-aware APIs.
 - Add deeper coverage for enrichment, DE, CellTypist, and other heavyweight optional integrations when stable fixtures are available.
 - Revisit `scDblFinder`-originating warnings in tests; they are upstream warnings today, but some deprecation notices may require argument updates in a future compatibility pass.
 
-- Standardized `sn_install_shennong()` around `source` / `ref` for non-CRAN installs, while preserving compatibility aliases and rejecting conflicting mixed arguments.
+- Standardized `sn_install_shennong()` around `source` / `ref` for non-CRAN installs.
 
 - `sn_calculate_composition()` now treats `min_cells` as a threshold on returned composition categories, while `sn_compare_composition()` keeps `min_cells` as a per-sample filter and annotates effect direction through an ordered `change` factor.
 - Added pkgdown reference-index validation to `scripts/check-prepush.R` and documented that new exported functions must be added to `_pkgdown.yml` in the same change set.
@@ -621,7 +639,9 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Extended `sn_run_cluster()` so SCTransform workflows can run Harmony integration when `batch` is supplied.
 - Added `hvg_features` to `sn_run_cluster()` so user-supplied marker genes are validated and merged into the final scaling/PCA feature set alongside internal HVGs and rare-aware features.
 - Fixed `sn_standardize_gene_symbols()` to preserve unresolved valid symbols as their original names instead of returning or propagating `NA` row names.
-- Simplified `sn_run_cluster()` rare-aware feature selection to the stable `gini` and `local_markers` modes, with advanced thresholds consolidated under `rare_feature_control` and deprecated scalar threshold aliases retained for compatibility.
+- Simplified `sn_run_cluster()` rare-aware feature selection to the stable
+  `gini` and `local_markers` modes, with advanced thresholds consolidated
+  under `rare_feature_control`.
 - Added `sn_transfer_labels()` as a query-first Seurat label-transfer wrapper that writes predicted labels, confidence scores, and provenance to the query object.
 - Extended `sn_transfer_labels()` with `method = "coralysis"` so queries can be projected onto Coralysis-trained references via `Coralysis::ReferenceMapping()`.
 - Added `sn_simulate()` as a method-based simulation entry point with `method = "scdesign3"` routed to the scDesign3 backend; `sn_simulate_scdesign3()` remains available as a backend-specific wrapper.
@@ -632,4 +652,6 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Quieted the user-visible `sn_plot_feature()` rasterization warning and duplicate expression color-scale message while preserving other warnings.
 - Added `sn_run_cell_communication()` plus store/get helpers for CellChat, NicheNet, and LIANA communication workflows, with NicheNet requiring explicit ligand-target and ligand-receptor priors.
 - Added `sn_run_regulatory_activity()` plus store/get helpers for fast DoRothEA TF activity and PROGENy pathway activity inference through decoupleR.
-- Extended `sn_run_cluster()` with `integration_method` so batch_by workflows can choose Harmony, Coralysis, Seurat CCA, or Seurat RPCA while preserving Harmony as the default.
+- Extended `sn_run_cluster()` with `integration_method` so batch workflows can
+  choose Harmony, Coralysis, Seurat CCA, or Seurat RPCA while preserving
+  Harmony as the default.

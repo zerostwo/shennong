@@ -14,10 +14,7 @@ sn_store_milo(
   reduction = "pca",
   dims = NULL,
   annotation_by = NULL,
-  return_object = TRUE,
-  sample_col = NULL,
-  annotation_col = NULL,
-  group_col = NULL
+  return_object = TRUE
 )
 }
 \arguments{
@@ -40,12 +37,6 @@ sn_store_milo(
 \item{annotation_by}{Optional neighborhood annotation column.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
-
-\item{sample_col}{Deprecated alias for \code{sample_by}.}
-
-\item{annotation_col}{Deprecated alias for \code{annotation_by}.}
-
-\item{group_col}{Deprecated alias for \code{group_by}.}
 }
 \value{
 A \code{Seurat} object or stored-result list.
