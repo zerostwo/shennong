@@ -490,6 +490,11 @@ Last updated: 2026-05-11
   pass a constant internal backend batch key rather than requiring users to
   create artificial batch labels or derive a pseudo batch from biological
   annotations.
+- Marker-class prioritization should be a lightweight annotation layer on top
+  of marker/DE tables, not a replacement for DE or TF-activity inference.
+  `sn_annotate_de_features()` therefore stores an annotated copy of an existing
+  DE result under `object@misc$de_results` and keeps `sn_run_regulatory_activity()`
+  as the API for footprint-style TF activity.
 
 ## 2026-03-28
 

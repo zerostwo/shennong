@@ -188,6 +188,78 @@ test_that("sn_find_de supports COSGR markers", {
   expect_equal(object@misc$de_results$cosgr_markers$method, "COSGR")
 })
 
+test_that("sn_annotate_de_features annotates marker tables with custom resources", {
+  marker_tbl <- tibble::tibble(
+    gene = c("TBX21", "CXCL10", "IL7R", "ACTB"),
+    cluster = c("Tcell", "Myeloid", "Tcell", "Bcell"),
+    avg_log2FC = c(2.1, 1.8, 1.2, 0.4)
+  )
+  custom_resource <- tibble::tibble(
+    gene = c("TBX21", "CXCL10", "IL7R", "IL7R"),
+    feature_class = c("transcription_factor", "chemokine", "surface_membrane", "cytokine"),
+    feature_class_source = "test"
+  )
+
+  result <- sn_annotate_de_features(
+    marker_tbl,
+    species = "human",
+    resource = "custom",
+    custom_resource = custom_resource
+  )
+
+  expect_true(all(c(
+    "feature_classes",
+    "is_transcription_factor",
+    "is_surface_membrane",
+    "is_cytokine",
+    "is_chemokine"
+  ) %in% colnames(result)))
+  expect_true(result$is_transcription_factor[result$gene == "TBX21"])
+  expect_true(result$is_chemokine[result$gene == "CXCL10"])
+  expect_true(result$is_surface_membrane[result$gene == "IL7R"])
+  expect_true(result$is_cytokine[result$gene == "IL7R"])
+  expect_false(result$is_chemokine[result$gene == "ACTB"])
+})
+
+test_that("sn_annotate_de_features stores annotated DE results on Seurat objects", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_de_test_object()
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    min_pct = 0,
+    logfc_threshold = 0,
+    store_name = "celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+  custom_resource <- tibble::tibble(
+    gene = c("CD3D", "MS4A1"),
+    feature_class = c("surface_membrane", "surface_membrane"),
+    feature_class_source = "test"
+  )
+
+  object <- sn_annotate_de_features(
+    object,
+    de_name = "celltype_markers",
+    resource = "custom",
+    custom_resource = custom_resource,
+    return_object = TRUE
+  )
+
+  expect_true("celltype_markers_feature_classes" %in% names(object@misc$de_results))
+  stored <- sn_get_de_result(object, de_name = "celltype_markers_feature_classes")
+  expect_true("is_surface_membrane" %in% colnames(stored))
+  expect_true(any(stored$is_surface_membrane, na.rm = TRUE))
+  expect_equal(
+    object@misc$de_results$celltype_markers_feature_classes$feature_annotation$source_de_name,
+    "celltype_markers"
+  )
+})
+
 test_that("sn_enrich supports GSEA from ranked marker tables", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("org.Hs.eg.db")

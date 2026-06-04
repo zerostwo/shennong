@@ -122,6 +122,8 @@ This skill is the main entry point for package usage.
    isolated labels, or difficult-to-separate populations matter.
 4. Move to downstream biological interpretation:
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
+   marker-class prioritization with `sn_annotate_de_features()` for TF,
+   surface/plasma-membrane, cytokine, and chemokine hits,
    optional reference annotation with `sn_transfer_labels()` or
    `sn_transfer_labels(method = "coralysis")`; use
    `sn_transfer_labels(method = "scanvi")` or
@@ -183,6 +185,7 @@ This skill is the main entry point for package usage.
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
+- `sn_annotate_de_features(object, de_name = "cluster_markers")`
 - `sn_enrich(x = object, source_de_name = "cluster_markers")`
 - `sn_calculate_composition()`
 - `sn_calculate_roe()`

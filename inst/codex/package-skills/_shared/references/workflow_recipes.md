@@ -78,7 +78,10 @@ user request to the right Shennong function family quickly.
 
 1. Use `sn_find_de()`.
 2. Prefer `return_object = TRUE` when the result should be stored.
-3. Reuse later with `sn_get_de_result()` or plotting helpers.
+3. Use `sn_annotate_de_features()` when the next step is to prioritize
+   transcription factors, surface/plasma-membrane genes, cytokines, or
+   chemokines from the marker/DE table.
+4. Reuse later with `sn_get_de_result()` or plotting helpers.
 
 ## Recipe: Run pathway analysis
 

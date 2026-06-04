@@ -617,6 +617,16 @@ Current milestone: DE API consolidation and CI deployment hardening
   `batch = NULL`. Shennong now supplies a constant internal backend batch key
   for the Python API, records that key in `object@misc$integration`, and drops
   the temporary metadata column from the returned Seurat object by default.
+- Added `sn_annotate_de_features()` for post-marker/DE prioritization of
+  transcription factors, cell-surface or plasma-membrane genes, cytokines, and
+  chemokines. The helper can annotate direct tables or create a derived stored
+  DE result retrievable with `sn_get_de_result()`.
+- Validated the marker-class annotation change with `git diff --check`,
+  focused `testthat::test_local(filter = "de_enrich", stop_on_failure = TRUE)`,
+  the full `testthat::test_local(stop_on_failure = TRUE)` suite (`FAIL 0 |
+  WARN 2 | SKIP 0 | PASS 1412`), `pkgdown::build_site(new_process = FALSE)`,
+  `R CMD build .`, and `R CMD check --no-manual Shennong_0.1.4.tar.gz`
+  (`Status: OK`).
 
 ## Remaining High-Priority Work
 

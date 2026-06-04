@@ -104,6 +104,7 @@ reference:
     contents:
       - sn_run_celltypist
       - sn_find_de
+      - sn_annotate_de_features
       - sn_enrich
       - sn_list_signatures
       - sn_get_signatures

@@ -52,6 +52,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_convert_bpcells()` now converts selected Seurat assay layers to
   BPCells-backed matrix directories and rebinds those layers in the returned
   object, helping large count or normalized-expression layers stay on disk.
+- `sn_annotate_de_features()` now flags stored marker/DE genes that encode
+  transcription factors, cell-surface or plasma-membrane proteins, cytokines,
+  and chemokines. It can annotate direct DE tables or store annotated tables
+  back under `object@misc$de_results` for retrieval with `sn_get_de_result()`.
 - `sn_prepare_label_transfer_reference()` now creates compact reference
   objects for `sn_transfer_labels()`. For native Coralysis, it keeps only the
   trained Coralysis models, PCA model, feature names, and selected labels while

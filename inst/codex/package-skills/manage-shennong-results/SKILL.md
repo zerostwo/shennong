@@ -70,6 +70,7 @@ package API.
 
 - `sn_list_results(object)`
 - `sn_get_de_result(object, de_name = "cluster_markers")`
+- `sn_annotate_de_features(object, de_name = "cluster_markers")`
 - `sn_store_enrichment(object, result, enrichment_name = "cluster_pathways")`
 - `sn_get_enrichment_result(object, enrichment_name = "cluster_pathways")`
 - `sn_store_milo(object, result, milo_name = "condition_da")`

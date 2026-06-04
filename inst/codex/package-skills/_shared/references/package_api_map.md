@@ -87,6 +87,7 @@ Datasets:
 
 - `sn_run_celltypist()`: external CellTypist-based annotation
 - `sn_find_de()`: markers, contrasts, and pseudobulk DE
+- `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
 - `sn_enrich()`: ORA or GSEA from vectors, tables, or stored DE
 - `sn_list_signatures()`: list bundled signatures
 - `sn_get_signatures()`: retrieve signatures by path or category

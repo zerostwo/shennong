@@ -79,6 +79,39 @@ head(marker_tbl)
 names(pbmc@misc$de_results)
 ```
 
+## Prioritize interpretable marker classes
+
+Marker tables often contain hundreds of significant genes. Use
+`sn_annotate_de_features()` to flag marker genes that are especially useful for
+mechanistic interpretation or validation, such as transcription factors,
+surface or plasma-membrane genes, cytokines, and chemokines. When called on a
+Seurat object, the annotated table is stored as another DE result, so it can be
+discovered and retrieved with the same result helpers.
+
+```{r annotate-marker-classes}
+pbmc <- sn_annotate_de_features(
+  pbmc,
+  de_name = "cluster_markers",
+  species = "human"
+)
+
+sn_list_results(pbmc)
+
+sn_get_de_result(
+  pbmc,
+  de_name = "cluster_markers_feature_classes",
+  top_n = 5
+) |>
+  dplyr::select(
+    cluster,
+    gene,
+    avg_log2FC,
+    feature_classes,
+    starts_with("is_")
+  ) |>
+  head()
+```
+
 ## Plot stored markers without hand-copying gene lists
 
 Because the DE result is stored, `sn_plot_dot()` can select top markers per
