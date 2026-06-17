@@ -80,7 +80,9 @@ This skill is the main entry point for package usage.
    `hvg_features = c(...)` when the user has known marker genes that should be
    forced into the backend feature set, use
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
-   automatically add rare-aware genes, and use
+   automatically add rare-aware genes, use `block_genes = c(...)` to exclude
+   bundled signature queries such as `cellCycle.G2M`, `ribo`, or `mito` and/or
+   custom gene symbols from internally selected HVGs, and use
 	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
 	   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
 	   batch-integration backend is requested. For scVI/scANVI, Shennong manages a

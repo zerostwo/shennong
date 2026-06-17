@@ -204,9 +204,12 @@ before de-duplication.}
 Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 \code{gene_max_fraction}, and \code{min_cells}.}
 
-\item{block_genes}{Either a character vector of predefined bundled signature
-categories (for example \code{c("ribo","mito")}) or a custom vector of
-gene symbols to exclude from HVGs.}
+\item{block_genes}{Character vector of bundled signature queries and/or
+custom gene symbols to exclude from internally selected HVGs. Signature
+queries can use leaf names such as \code{"ribo"} and
+\code{"cellCycle.G2M"} or full paths such as
+\code{"Programs/cellCycle.G1S"}; \code{"g1s"} and \code{"g2m"} are kept as
+short aliases for the cell-cycle signatures.}
 
 \item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction. Used only when

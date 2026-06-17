@@ -98,9 +98,11 @@ sn_plot_dim(
 
 ## Block unhelpful feature families
 
-Single-cell clustering can be dominated by mitochondrial, ribosomal,
-immunoglobulin, or heat-shock genes. `block_genes` makes that choice explicit
-instead of hiding it inside a custom variable-feature script.
+Single-cell clustering can be dominated by cell-cycle, mitochondrial,
+ribosomal, immunoglobulin, pseudogene, or heat-shock genes. `block_genes`
+makes that choice explicit instead of hiding it inside a custom
+variable-feature script. The vector can mix bundled signature names, full
+signature paths, and custom gene symbols.
 
 ```{r block-genes}
 pbmc_blocked <- sn_run_cluster(
@@ -110,7 +112,7 @@ pbmc_blocked <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   species = "human",
-  block_genes = c("mito", "ribo", "immunoglobulins"),
+  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo", "MYC"),
   verbose = FALSE
 )
 ```

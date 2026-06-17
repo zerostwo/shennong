@@ -60,6 +60,34 @@ make_rare_test_object <- function() {
   object
 }
 
+make_block_gene_test_object <- function() {
+  blocked_features <- c(
+    "ANLN", "AURKA", "CDC20",
+    "ATAD2", "BLM", "CDC45",
+    "BBS10", "RPL10", "MT-ND1", "A2MP1"
+  )
+  background_features <- paste0("BG", seq_len(120))
+  features <- c(blocked_features, background_features)
+  n_cells <- 50
+
+  set.seed(91)
+  counts <- matrix(rpois(length(features) * n_cells, lambda = 2), nrow = length(features), ncol = n_cells)
+  counts[seq_along(blocked_features), seq_len(n_cells / 2)] <-
+    counts[seq_along(blocked_features), seq_len(n_cells / 2)] + 25
+  counts[(length(blocked_features) + 1):30, (n_cells / 2 + 1):n_cells] <-
+    counts[(length(blocked_features) + 1):30, (n_cells / 2 + 1):n_cells] + 8
+  counts <- Matrix::Matrix(counts, sparse = TRUE)
+  rownames(counts) <- features
+  colnames(counts) <- paste0("block_cell", seq_len(n_cells))
+
+  object <- sn_initialize_seurat_object(
+    x = counts,
+    project = "block"
+  )
+  object$sample <- rep(c("A", "B"), each = n_cells / 2)
+  object
+}
+
 make_fake_python_runner <- function(payload_expr) {
   script_path <- tempfile("fake-python-")
   lines <- c(
@@ -501,6 +529,59 @@ test_that("clustering helper functions normalize dims and select HVGs by group",
     ),
     "hvg_group_by"
   )
+})
+
+test_that("block gene resolver expands bundled signatures and custom genes", {
+  skip_if_not_installed("HGNChelper")
+
+  resolved <- Shennong:::.sn_resolve_block_genes(
+    block_genes = c("g1s", "cellCycle.G2M", "ribo", "CD3D"),
+    species = "human",
+    verbose = FALSE
+  )
+
+  expect_true(all(c("ATAD2", "ANLN", "RPL10", "CD3D") %in% resolved))
+  expect_false(any(c("g1s", "cellCycle.G2M", "ribo") %in% resolved))
+})
+
+test_that("sn_run_cluster removes bundled block signatures from final HVGs", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("HGNChelper")
+
+  object <- make_block_gene_test_object()
+  block_queries <- c(
+    "cellCycle.G2M",
+    "cellCycle.G1S",
+    "heatshock",
+    "ribo",
+    "mito",
+    "pseudogenes"
+  )
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    hvg_group_by = "sample",
+    nfeatures = 20,
+    block_genes = block_queries,
+    species = "human",
+    npcs = 5,
+    dims = 1:5,
+    verbose = FALSE
+  )
+  blocked_genes <- Shennong:::.sn_resolve_block_genes(
+    block_genes = block_queries,
+    species = "human",
+    verbose = FALSE
+  )
+  blocked_features <- intersect(blocked_genes, rownames(clustered))
+
+  expect_true(all(c(
+    "ANLN", "AURKA", "CDC20", "ATAD2", "BLM", "CDC45",
+    "BBS10", "RPL10", "MT-ND1", "A2MP1"
+  ) %in% blocked_features))
+  expect_length(intersect(Seurat::VariableFeatures(clustered), blocked_features), 0)
+  expect_length(intersect(clustered@misc$hvg_selection$selected_features, blocked_features), 0)
+  expect_equal(length(Seurat::VariableFeatures(clustered)), 20)
 })
 
 test_that("rare-feature helper functions cover gini, local markers, and grouped selection", {

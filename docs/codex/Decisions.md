@@ -1,6 +1,16 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-05-11
+Last updated: 2026-06-17
+
+## 2026-06-17
+
+- `block_genes` in `sn_run_cluster()` should be parsed per entry rather than
+  requiring the whole vector to be either bundled signatures or custom genes.
+  Users commonly mix signature families and explicit genes in one HVG blocklist,
+  and signature leaf names such as `cellCycle.G2M` should resolve the same way
+  they do through `sn_get_signatures()`. The final stored HVG set should reflect
+  the filtered feature set unless users explicitly add a feature back through
+  `hvg_features`.
 
 ## 2026-05-11
 

@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- `sn_run_cluster(block_genes = ...)` now resolves each entry independently, so
+  bundled signature queries such as `cellCycle.G2M`, `cellCycle.G1S`, `ribo`,
+  `mito`, `heatshock`, and `pseudogenes` can be mixed with custom gene symbols
+  and are removed from the final stored HVG set.
 - `sn_write()` now creates missing parent directories before dispatching both
   rio and custom writers, so nested `.qs`, `.h5ad`, `.h5`, and BPCells outputs
   no longer fail only because the containing directory does not exist.

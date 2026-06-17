@@ -2125,6 +2125,104 @@ sn_detect_rare_cells <- function(object,
   list(features = present, missing = missing)
 }
 
+.sn_normalize_block_signature_query <- function(query) {
+  aliases <- c(
+    g1s = "Programs/cellCycle.G1S",
+    g2m = "Programs/cellCycle.G2M"
+  )
+  normalized_query <- .sn_signature_normalize_key(query)
+  alias <- unname(aliases[normalized_query])
+  if (!is.na(alias)) alias else query
+}
+
+.sn_match_signature_query <- function(query, leaf_table) {
+  query <- .sn_normalize_block_signature_query(query)
+
+  current_matches <- which(leaf_table$path == query)
+  if (length(current_matches) == 0L) {
+    current_matches <- which(leaf_table$name == query)
+  }
+  if (length(current_matches) == 0L) {
+    normalized_query <- .sn_signature_normalize_key(query)
+    normalized_path <- .sn_signature_normalize_key(leaf_table$path)
+    normalized_name <- .sn_signature_normalize_key(leaf_table$name)
+    current_matches <- which(normalized_path == normalized_query)
+    if (length(current_matches) == 0L) {
+      current_matches <- which(normalized_name == normalized_query)
+    }
+  }
+
+  if (length(current_matches) > 1L) {
+    stop(
+      glue(
+        "Signature query '{query}' is ambiguous. ",
+        "Use one of the full paths instead: ",
+        "{paste(leaf_table$path[current_matches], collapse = ', ')}."
+      ),
+      call. = FALSE
+    )
+  }
+
+  current_matches
+}
+
+.sn_resolve_block_genes <- function(block_genes,
+                                    species = c("human", "mouse"),
+                                    verbose = TRUE) {
+  if (is_null(block_genes)) {
+    return(NULL)
+  }
+  if (!is.character(block_genes)) {
+    stop("`block_genes` must be NULL or a character vector.", call. = FALSE)
+  }
+
+  block_genes <- unique(trimws(block_genes[!is.na(block_genes) & nzchar(block_genes)]))
+  if (length(block_genes) == 0L) {
+    return(character(0))
+  }
+
+  species <- rlang::arg_match(species, c("human", "mouse"))
+  leaf_table <- .sn_signature_leaf_table(species = species)
+  signature_matches <- lapply(block_genes, .sn_match_signature_query, leaf_table = leaf_table)
+  matched_signature <- lengths(signature_matches) > 0L
+  signature_queries <- block_genes[matched_signature]
+  custom_queries <- block_genes[!matched_signature]
+  signature_rows <- unique(unlist(signature_matches[matched_signature], use.names = FALSE))
+  signature_genes <- unique(unlist(leaf_table$genes[signature_rows], use.names = FALSE))
+
+  custom_genes <- character(0)
+  if (length(custom_queries) > 0L) {
+    checked <- HGNChelper::checkGeneSymbols(custom_queries, species = species)
+    suggested <- checked$Suggested.Symbol
+    valid <- !is.na(suggested) & nzchar(suggested)
+    custom_genes <- unique(suggested[valid])
+    invalid <- custom_queries[!valid]
+
+    if (length(invalid) > 0L) {
+      .sn_log_warn(
+        "Removed {length(invalid)} invalid genes from block list ",
+        "(e.g. {paste(utils::head(invalid, 3), collapse=', ')})."
+      )
+    }
+  }
+
+  resolved <- unique(c(signature_genes, custom_genes))
+  if (verbose) {
+    if (length(signature_queries) > 0L) {
+      .sn_log_info(
+        "Loaded {length(signature_genes)} blocked genes from ",
+        "{length(signature_queries)} built-in signature query(s)."
+      )
+    }
+    if (length(custom_genes) > 0L) {
+      .sn_log_info("Using {length(custom_genes)} custom blocked genes.")
+    }
+    .sn_log_info("Resolved {length(resolved)} blocked genes total.")
+  }
+
+  resolved
+}
+
 .sn_resolve_assay_features <- function(object,
                                        assay,
                                        features = NULL,
@@ -2283,9 +2381,12 @@ sn_detect_rare_cells <- function(object,
 #' @param rare_feature_control Named list of advanced rare-feature thresholds.
 #'   Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 #'   \code{gene_max_fraction}, and \code{min_cells}.
-#' @param block_genes Either a character vector of predefined bundled signature
-#'   categories (for example \code{c("ribo","mito")}) or a custom vector of
-#'   gene symbols to exclude from HVGs.
+#' @param block_genes Character vector of bundled signature queries and/or
+#'   custom gene symbols to exclude from internally selected HVGs. Signature
+#'   queries can use leaf names such as \code{"ribo"} and
+#'   \code{"cellCycle.G2M"} or full paths such as
+#'   \code{"Programs/cellCycle.G1S"}; \code{"g1s"} and \code{"g2m"} are kept as
+#'   short aliases for the cell-cycle signatures.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction. Used only when
 #'   \code{integration_method = "harmony"}.
@@ -2573,11 +2674,6 @@ sn_run_cluster <- function(object,
   )
   user_hvg <- user_hvg_info$features
 
-  predefined_genesets <- c(
-    "tcr", "immunoglobulins", "ribo", "mito",
-    "heatshock", "noncoding", "pseudogenes", "g1s", "g2m"
-  )
-
   if (!isTRUE(needs_rna_workflow)) {
     block_genes <- NULL
     rare_feature_method <- "none"
@@ -2595,25 +2691,11 @@ sn_run_cluster <- function(object,
   if (isTRUE(needs_rna_workflow) && !is_null(block_genes)) {
     species <- sn_get_species(object = object, species = species)
     if (verbose) .sn_log_info("Processing blocked genes.")
-
-    if (is_character(block_genes) && all(block_genes %in% predefined_genesets)) {
-      block_genes <- sn_get_signatures(species = species, category = block_genes)
-      if (verbose) {
-        .sn_log_info("Loaded {length(block_genes)} blocked genes from built-in sets.")
-      }
-    } else {
-      checked <- HGNChelper::checkGeneSymbols(block_genes, species = species)
-      valid_genes <- checked$Suggested.Symbol[!is_na(checked$Suggested.Symbol)]
-      invalid <- setdiff(block_genes, valid_genes)
-
-      if (length(invalid) > 0) {
-        .sn_log_warn(
-          "Removed {length(invalid)} invalid genes from block list (e.g. {paste(utils::head(invalid, 3), collapse=', ')})."
-        )
-      }
-      block_genes <- unique(valid_genes)
-      if (verbose) .sn_log_info("Using {length(block_genes)} custom blocked genes.")
-    }
+    block_genes <- .sn_resolve_block_genes(
+      block_genes = block_genes,
+      species = species,
+      verbose = verbose
+    )
   }
 
   hvg_candidate_nfeatures <- nfeatures

@@ -18,7 +18,9 @@ user request to the right Shennong function family quickly.
 1. `sn_normalize_data()` when explicit normalization control is needed.
 2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
    `hvg_features = c(...)` when known rare-population markers should be forced
-   into the PCA feature set. Re-run the returned object with a new
+   into the PCA feature set, and use `block_genes = c(...)` when cell-cycle,
+   ribosomal, mitochondrial, or other signature/custom genes should be excluded
+   from internally selected HVGs. Re-run the returned object with a new
    `resolution` to reuse normalization, feature selection, PCA, neighbors, and
    UMAP while recomputing cluster labels.
 3. `sn_plot_dim()` for clusters and metadata visualization.

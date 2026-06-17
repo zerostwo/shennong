@@ -1,6 +1,18 @@
 # Shennong Modernization Status
 
-Last updated: 2026-05-11
+Last updated: 2026-06-17
+
+## 2026-06-17
+
+- Fixed `sn_run_cluster(block_genes = ...)` so block entries are resolved
+  independently as bundled signature queries or custom gene symbols before HVG
+  filtering. This covers mixed vectors such as
+  `c("cellCycle.G2M", "cellCycle.G1S", "heatshock", "ribo", "mito",
+  "pseudogenes")` and keeps the final `VariableFeatures()` / stored HVG set
+  free of the resolved blocked genes.
+- Added focused clustering regression tests and updated the clustering vignette,
+  package-skill workflow notes, shared API map, and NEWS entry for the corrected
+  block-gene behavior.
 
 ## 2026-05-11
 
