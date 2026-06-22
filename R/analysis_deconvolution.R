@@ -414,13 +414,40 @@ sn_set_cibersortx_credentials <- function(email, token) {
   binary
 }
 
+.sn_cibersortx_display_command <- function(executable,
+                                           args,
+                                           sensitive_flags = c("--username", "--token")) {
+  display_args <- as.character(args)
+  for (flag in sensitive_flags) {
+    idx <- which(display_args == flag)
+    value_idx <- idx + 1L
+    value_idx <- value_idx[value_idx <= length(display_args)]
+    display_args[value_idx] <- "<redacted>"
+  }
+  paste(c(shQuote(executable), shQuote(display_args)), collapse = " ")
+}
+
+.sn_cibersortx_command_spec <- function(executable, args) {
+  list(
+    executable = executable,
+    args = as.character(args),
+    display = .sn_cibersortx_display_command(executable, args)
+  )
+}
+
 .sn_run_command <- function(command, dry_run = FALSE, verbose = FALSE) {
-  if (isTRUE(dry_run)) {
-    return(list(status = 0L, command = command))
+  if (is.list(command) && !is.null(command$executable) && !is.null(command$args)) {
+    display <- command$display %||% .sn_cibersortx_display_command(command$executable, command$args)
+    if (isTRUE(dry_run)) {
+      return(list(status = 0L, command = display))
+    }
+
+    output_target <- if (isTRUE(verbose)) "" else FALSE
+    status <- system2(command = command$executable, args = command$args, stdout = output_target, stderr = output_target)
+    return(list(status = status, command = display))
   }
 
-  status <- system(command, ignore.stdout = !verbose, ignore.stderr = !verbose)
-  list(status = status, command = command)
+  stop("Internal command execution requires a structured command spec.", call. = FALSE)
 }
 
 .sn_transform_and_save_cibersortx_single_cell <- function(reference_genes_by_cells, cell_type_labels, path) {
@@ -464,53 +491,72 @@ sn_set_cibersortx_credentials <- function(email, token) {
   method <- match.arg(method)
 
   if (identical(container, "docker")) {
-    base <- paste0(
-      "docker run -v ", shQuote(normalizePath(input_dir)), ":/src/data:z -v ",
-      shQuote(normalizePath(output_dir)), ":/src/outdir:z cibersortx/fractions --single_cell TRUE"
+    executable <- "docker"
+    base_args <- c(
+      "run",
+      "-v", paste0(normalizePath(input_dir), ":/src/data:z"),
+      "-v", paste0(normalizePath(output_dir), ":/src/outdir:z"),
+      "cibersortx/fractions",
+      "--single_cell", "TRUE"
     )
   } else {
     if (is.null(container_path) || !file.exists(path.expand(container_path))) {
       stop("`cibersortx_container_path` must point to an existing Apptainer image.", call. = FALSE)
     }
-    base <- paste0(
-      "apptainer exec --no-home -c -B ", shQuote(paste0(normalizePath(input_dir), "/:/src/data")),
-      " -B ", shQuote(paste0(normalizePath(output_dir), "/:/src/outdir")),
-      " ", shQuote(normalizePath(path.expand(container_path))), " /src/CIBERSORTxFractions --single_cell TRUE"
+    executable <- "apptainer"
+    base_args <- c(
+      "exec",
+      "--no-home",
+      "-c",
+      "-B", paste0(normalizePath(input_dir), "/:/src/data"),
+      "-B", paste0(normalizePath(output_dir), "/:/src/outdir"),
+      normalizePath(path.expand(container_path)),
+      "/src/CIBERSORTxFractions",
+      "--single_cell", "TRUE"
     )
   }
 
   if (isTRUE(verbose)) {
-    base <- paste(base, "--verbose TRUE")
+    base_args <- c(base_args, "--verbose", "TRUE")
   }
-  credentials <- paste("--username", shQuote(email), "--token", shQuote(token))
+  credentials <- c("--username", email, "--token", token)
 
   options <- if (identical(method, "create_sig")) {
-    paste(
-      "--refsample", shQuote(refsample),
-      "--G.min 300 --G.max 500 --q.value 0.01 --filter FALSE",
-      "--k.max", as.integer(k_max),
-      "--remake FALSE --replicates 5 --sampling 0.5 --fraction 0.75"
+    c(
+      "--refsample", refsample,
+      "--G.min", "300",
+      "--G.max", "500",
+      "--q.value", "0.01",
+      "--filter", "FALSE",
+      "--k.max", as.character(as.integer(k_max)),
+      "--remake", "FALSE",
+      "--replicates", "5",
+      "--sampling", "0.5",
+      "--fraction", "0.75"
     )
   } else {
-    option_string <- paste(
-      "--mixture", shQuote(mixture),
-      "--sigmatrix", shQuote(sigmatrix),
-      "--perm", as.integer(perm),
-      "--label", shQuote(label_by),
+    option_string <- c(
+      "--mixture", mixture,
+      "--sigmatrix", sigmatrix,
+      "--perm", as.character(as.integer(perm)),
+      "--label", label_by,
       "--rmbatchBmode", toupper(as.character(isTRUE(rmbatch_b_mode))),
       "--rmbatchSmode", toupper(as.character(isTRUE(rmbatch_s_mode))),
-      "--sourceGEPs", shQuote(sigmatrix),
+      "--sourceGEPs", sigmatrix,
       "--QN", toupper(as.character(isTRUE(qn))),
       "--absolute", toupper(as.character(isTRUE(absolute))),
-      "--abs_method", shQuote(abs_method)
+      "--abs_method", abs_method
     )
     if (isTRUE(rmbatch_b_mode) || isTRUE(rmbatch_s_mode)) {
-      option_string <- paste(option_string, "--refsample", shQuote(refsample))
+      option_string <- c(option_string, "--refsample", refsample)
     }
     option_string
   }
 
-  paste(base, credentials, options)
+  .sn_cibersortx_command_spec(
+    executable = executable,
+    args = c(base_args, credentials, options)
+  )
 }
 
 .sn_run_cibersortx_local <- function(reference_genes_by_cells,
@@ -618,9 +664,10 @@ sn_set_cibersortx_credentials <- function(email, token) {
     ),
     artifacts = list(
       commands = list(
-        create_signature = signature_command,
-        deconvolve = fractions_command
+        create_signature = signature_run$command,
+        deconvolve = fractions_run$command
       ),
+      commands_redacted = TRUE,
       dry_run = dry_run,
       container = container
     ),

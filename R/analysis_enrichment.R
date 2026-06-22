@@ -263,7 +263,16 @@
   withCallingHandlers(
     expr,
     warning = function(w) {
-      if (grepl("No enrichment found", conditionMessage(w), fixed = TRUE)) {
+      message <- conditionMessage(w)
+      benign_patterns <- c(
+        "No enrichment found",
+        "pathways for which P-values were not calculated properly",
+        "Invalid p-values detected",
+        "NA values detected in gene set IDs",
+        "Duplicate gene set IDs detected",
+        "input gene IDs are fail to map"
+      )
+      if (any(vapply(benign_patterns, grepl, logical(1), x = message, fixed = TRUE))) {
         invokeRestart("muffleWarning")
       }
     }

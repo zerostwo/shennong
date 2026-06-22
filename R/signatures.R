@@ -340,6 +340,172 @@
   parts[nzchar(parts)]
 }
 
+.sn_signature_tree_get_node <- function(node, path_parts = character(0)) {
+  if (length(path_parts) == 0) {
+    return(node)
+  }
+
+  children <- node$children %||% list()
+  child <- children[[path_parts[[1]]]]
+  if (is.null(child)) {
+    return(NULL)
+  }
+
+  .sn_signature_tree_get_node(child, path_parts[-1])
+}
+
+.sn_signature_tree_group_node <- function(name, source = "custom") {
+  out <- list(
+    name = name,
+    kind = "group",
+    children = list()
+  )
+  if (!is.null(source)) {
+    out$source <- source
+  }
+  out
+}
+
+.sn_signature_tree_leaf_node <- function(name, genes, source = "custom") {
+  out <- list(
+    name = name,
+    kind = "signature",
+    children = list(),
+    genes = .sn_signature_as_character(genes)
+  )
+  if (!is.null(source)) {
+    out$source <- source
+  }
+  out
+}
+
+.sn_signature_tree_add_leaf <- function(node,
+                                        path_parts,
+                                        genes,
+                                        source = "custom",
+                                        overwrite = FALSE) {
+  current_name <- path_parts[[1]]
+  children <- node$children %||% list()
+
+  if (length(path_parts) == 1) {
+    existing <- children[[current_name]]
+    if (!is.null(existing)) {
+      if (length(existing$children %||% list()) > 0 || identical(.sn_signature_node_kind(existing), "group")) {
+        stop(glue("Path '{current_name}' refers to a group node, not a leaf signature."), call. = FALSE)
+      }
+      if (!isTRUE(overwrite)) {
+        stop(glue("Signature path '{current_name}' already exists. Use `overwrite = TRUE` to replace it."), call. = FALSE)
+      }
+    }
+
+    children[[current_name]] <- .sn_signature_tree_leaf_node(
+      name = current_name,
+      genes = genes,
+      source = source
+    )
+    node$children <- children
+    node$kind <- "group"
+    return(node)
+  }
+
+  child <- children[[current_name]]
+  if (is.null(child)) {
+    child <- .sn_signature_tree_group_node(name = current_name, source = source)
+  }
+  if (length(child$children %||% list()) == 0 && identical(.sn_signature_node_kind(child), "signature")) {
+    stop(glue("Path '{current_name}' refers to a leaf signature and cannot contain child signatures."), call. = FALSE)
+  }
+
+  children[[current_name]] <- .sn_signature_tree_add_leaf(
+    node = child,
+    path_parts = path_parts[-1],
+    genes = genes,
+    source = source,
+    overwrite = overwrite
+  )
+  node$children <- children
+  node$kind <- "group"
+  node
+}
+
+.sn_signature_tree_remove_leaf <- function(node, path_parts) {
+  current_name <- path_parts[[1]]
+  children <- node$children %||% list()
+  child <- children[[current_name]]
+
+  if (is.null(child)) {
+    stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
+  }
+
+  if (length(path_parts) == 1) {
+    if (length(child$children %||% list()) > 0 || identical(.sn_signature_node_kind(child), "group")) {
+      stop(glue("Path '{current_name}' refers to a group node, not a leaf signature."), call. = FALSE)
+    }
+    children[[current_name]] <- NULL
+    node$children <- children
+    return(node)
+  }
+
+  if (length(child$children %||% list()) == 0 && identical(.sn_signature_node_kind(child), "signature")) {
+    stop(glue("Path '{current_name}' refers to a leaf signature and cannot contain child signatures."), call. = FALSE)
+  }
+
+  children[[current_name]] <- .sn_signature_tree_remove_leaf(
+    node = child,
+    path_parts = path_parts[-1]
+  )
+  node$children <- children
+  node
+}
+
+.sn_signature_tree_update_leaf <- function(node,
+                                           path_parts,
+                                           genes = NULL,
+                                           rename_to = NULL,
+                                           source = NULL) {
+  existing <- .sn_signature_tree_get_node(node, path_parts)
+  if (is.null(existing)) {
+    stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
+  }
+  if (length(existing$children %||% list()) > 0 || identical(.sn_signature_node_kind(existing), "group")) {
+    stop(
+      glue("Path '{paste(path_parts, collapse = '/')}' refers to a group node, not a leaf signature."),
+      call. = FALSE
+    )
+  }
+
+  updated_genes <- if (is.null(genes)) {
+    .sn_signature_as_character(existing$genes)
+  } else {
+    .sn_signature_as_character(genes)
+  }
+  if (length(updated_genes) == 0) {
+    stop("`genes` must contain at least one gene symbol.", call. = FALSE)
+  }
+
+  old_name <- path_parts[[length(path_parts)]]
+  new_name <- if (!is.null(rename_to) && nzchar(rename_to)) rename_to else old_name
+  new_name_parts <- .sn_signature_split_path(new_name)
+  if (length(new_name_parts) != 1L) {
+    stop("`rename_to` must be a single non-empty terminal signature name.", call. = FALSE)
+  }
+  new_source <- source %||% existing$source %||% NA_character_
+  parent_parts <- path_parts[-length(path_parts)]
+  new_path <- c(parent_parts, new_name_parts[[1]])
+
+  node <- .sn_signature_tree_add_leaf(
+    node = node,
+    path_parts = new_path,
+    genes = updated_genes,
+    source = new_source,
+    overwrite = TRUE
+  )
+  if (!identical(new_path, path_parts)) {
+    node <- .sn_signature_tree_remove_leaf(node = node, path_parts = path_parts)
+  }
+  node
+}
+
 #' List bundled Shennong signatures
 #'
 #' @param species Optional species filter. Use \code{NULL} to return all
@@ -437,24 +603,13 @@ sn_add_signature <- function(species = "human",
   }
 
   catalog <- .sn_signature_catalog(path = catalog_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
-  parent_parts <- path_parts[-length(path_parts)]
-  signatur_db <- .sn_signature_signatur_ensure_path(
-    db = signatur_db,
-    species = species,
-    path_parts = parent_parts,
-    reference = source
-  )
-  parent_node <- .sn_signature_signatur_get_node(signatur_db, species, parent_parts)
-  signatur_db <- SignatuR::AddSignature(
-    db = signatur_db,
-    node = parent_node,
-    name = path_parts[[length(path_parts)]],
-    signature = .sn_signature_as_character(genes),
-    reference = source %||% NA_character_,
+  catalog$tree[[species]] <- .sn_signature_tree_add_leaf(
+    node = catalog$tree[[species]],
+    path_parts = path_parts,
+    genes = genes,
+    source = source,
     overwrite = overwrite
   )
-  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
   .sn_write_signature_catalog(catalog, path = catalog_path)
 }
 
@@ -492,48 +647,13 @@ sn_update_signature <- function(species = "human",
   }
 
   catalog <- .sn_signature_catalog(path = catalog_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
-  existing_node <- .sn_signature_signatur_get_node(signatur_db, species, path_parts)
-  if (is.null(existing_node)) {
-    stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
-  }
-  if (length(existing_node$children %||% list()) > 0) {
-    stop(
-      glue("Path '{paste(path_parts, collapse = '/')}' refers to a group node, not a leaf signature."),
-      call. = FALSE
-    )
-  }
-
-  updated_genes <- if (is_null(genes)) {
-    unique(unname(as.character(unlist(SignatuR::GetSignature(existing_node), use.names = FALSE))))
-  } else {
-    .sn_signature_as_character(genes)
-  }
-  if (length(updated_genes) == 0) {
-    stop("`genes` must contain at least one gene symbol.", call. = FALSE)
-  }
-
-  parent_parts <- path_parts[-length(path_parts)]
-  old_name <- path_parts[[length(path_parts)]]
-  new_name <- if (!is_null(rename_to) && nzchar(rename_to)) rename_to else old_name
-  parent_node <- .sn_signature_signatur_get_node(signatur_db, species, parent_parts)
-  current_reference <- existing_node$Get("Reference")
-  updated_reference <- source %||% if (length(current_reference) > 0 && !is.na(current_reference)) current_reference else NA_character_
-
-  signatur_db <- SignatuR::AddSignature(
-    db = signatur_db,
-    node = parent_node,
-    name = new_name,
-    signature = updated_genes,
-    reference = updated_reference,
-    overwrite = TRUE
+  catalog$tree[[species]] <- .sn_signature_tree_update_leaf(
+    node = catalog$tree[[species]],
+    path_parts = path_parts,
+    genes = genes,
+    rename_to = rename_to,
+    source = source
   )
-  if (!identical(new_name, old_name)) {
-    old_node <- .sn_signature_signatur_get_node(signatur_db, species, path_parts)
-    SignatuR::RemoveSignature(old_node)
-  }
-
-  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
   .sn_write_signature_catalog(catalog, path = catalog_path)
 }
 
@@ -563,12 +683,9 @@ sn_delete_signature <- function(species = "human",
   }
 
   catalog <- .sn_signature_catalog(path = catalog_path)
-  signatur_db <- .sn_signature_tree_to_signatur_db(catalog$tree)
-  target_node <- .sn_signature_signatur_get_node(signatur_db, species, path_parts)
-  if (is.null(target_node)) {
-    stop(glue("Signature path '{paste(path_parts, collapse = '/')}' was not found."), call. = FALSE)
-  }
-  SignatuR::RemoveSignature(target_node)
-  catalog$tree <- .sn_signature_signatur_db_to_tree(signatur_db)
+  catalog$tree[[species]] <- .sn_signature_tree_remove_leaf(
+    node = catalog$tree[[species]],
+    path_parts = path_parts
+  )
   .sn_write_signature_catalog(catalog, path = catalog_path)
 }

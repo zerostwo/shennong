@@ -1561,11 +1561,20 @@ sn_find_doublets <- function(
     verbose = verbose
   )
 
-  sce <- celda::decontX(
-    x = sce,
-    z = z,
-    background = background,
-    ...
+  sce <- withCallingHandlers(
+    celda::decontX(
+      x = sce,
+      z = z,
+      background = background,
+      ...
+    ),
+    warning = function(w) {
+      message <- conditionMessage(w)
+      benign_patterns <- c("librarySizeFactors", "normalizeCounts")
+      if (any(vapply(benign_patterns, grepl, logical(1), x = message, fixed = TRUE))) {
+        invokeRestart("muffleWarning")
+      }
+    }
   )
   out <- round(celda::decontXcounts(sce))
   out <- .sn_handle_zero_count_cells(

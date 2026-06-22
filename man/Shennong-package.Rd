@@ -20,5 +20,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Songqi Duan \email{duan@songqi.org} (\href{https://orcid.org/0000-0002-0822-5883}{ORCID})
 
+Authors:
+\itemize{
+  \item Songqi Duan \email{duan@songqi.org} (\href{https://orcid.org/0000-0002-0822-5883}{ORCID})
+}
+
 }
 \keyword{internal}

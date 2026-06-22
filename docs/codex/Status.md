@@ -1,6 +1,52 @@
 # Shennong Modernization Status
 
-Last updated: 2026-06-17
+Last updated: 2026-06-22
+
+## 2026-06-22
+
+- Completed a CodeGraph-based package audit and recorded findings in
+  `docs/codex/CodeGraphAudit-2026-06-22.md`.
+- Fixed the two reproducible local test failures found by the audit:
+  `.qs` writer parent-directory tests no longer attempt live GitHub installs,
+  and signature add/update/delete helpers no longer require the optional
+  upstream `SignatuR` runtime package.
+- Added `.codegraph/` to git and source-build ignore rules so local CodeGraph
+  indexes stay out of package artifacts.
+- Updated pkgdown reference grouping so exported pixi/Python backend helpers are
+  no longer omitted from `_pkgdown.yml`.
+- Validation: focused `data_io_contracts|signatures` tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 98`; full local tests pass with
+  `FAIL 0 | WARN 23 | SKIP 2 | PASS 1405`; `R CMD build .` succeeds; full
+  `R CMD check --no-manual` stops only when forcing all unavailable optional
+  Suggests, while `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual
+  Shennong_0.1.4.tar.gz` reports `Status: OK`.
+- pkgdown reference pages were rebuilt successfully with local system-font
+  overrides. Full `pkgdown::build_site()` remains blocked in this environment by
+  outbound TLS failures while downloading Google Fonts and checking remote
+  package links.
+- Hardened local CIBERSORTx command execution: container invocations now use
+  structured `system2()` arguments, dry-run artifacts redact account email and
+  token values, and focused deconvolution tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 16`.
+- Profiled local test timing from the current environment. The full suite takes
+  about 341 seconds; the slowest files are `test_de_enrich.R` (~162s) and
+  `test_clustering.R` (~130s), which together account for roughly 85% of local
+  test runtime. `R CMD check` also reruns that suite unless told not to, so the
+  pre-push helper now avoids that duplicate pass by default and provides a
+  `--quick` mode for focused edit loops.
+- Validation after the check-path optimization: full `test_local()` passes with
+  `FAIL 0 | WARN 23 | SKIP 2 | PASS 1408`; quick pre-push mode for the
+  deconvolution filter completes successfully in about 74 seconds; and
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --timings --no-tests
+  Shennong_0.1.4.tar.gz` reports `Status: OK` in about 80 seconds.
+- Closed the remaining high-risk audit items that were practical in this pass:
+  added a central shared-misc registry/schema validator, added direct `sn_run_llm()`
+  provider-normalization tests, documented the rio adapter export decision,
+  verified vignette chunks are gated by `SHENNONG_RUN_VIGNETTES` or explicit
+  `eval = FALSE`, and muffled known benign enrichment warnings from tiny package
+  examples. Focused validation for stored-result, interpretation, metrics, Milo,
+  communication, and deconvolution paths passes with `FAIL 0 | WARN 0`; focused
+  enrichment validation passes with `FAIL 0 | WARN 0 | SKIP 0 | PASS 88`.
 
 ## 2026-06-17
 

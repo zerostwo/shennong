@@ -50,6 +50,30 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Package source builds now exclude local benchmark outputs and OmnipathR test
   log directories, keeping `R CMD build` tarballs small and free of generated
   validation artifacts.
+- Package source builds and git status now ignore local `.codegraph/`,
+  `.agents/`, and `.codex/` agent artifacts, keeping analysis state out of
+  source builds and commits.
+- Signature catalog add/update/delete helpers now edit the packaged Shennong
+  signature tree directly, so custom signature maintenance no longer requires
+  the optional upstream `SignatuR` package at runtime.
+- The `.qs` writer parent-directory regression test now mocks optional writer
+  dependency detection completely, avoiding live GitHub installation attempts
+  during local tests.
+- Local CIBERSORTx execution now uses structured `system2()` calls instead of a
+  pasted shell command, and dry-run/stored command artifacts redact CIBERSORTx
+  account email and token values.
+- `scripts/check-prepush.R` now reports per-step timings, defaults local checks
+  to `_R_CHECK_FORCE_SUGGESTS_=false`, skips duplicate test execution inside
+  `R CMD check` after a successful full `test_local()` pass, and adds a
+  `--quick` edit-loop mode.
+- Stored-result writes through Shennong's shared `object@misc` helper now pass
+  through a central collection registry and schema validator. Malformed stored
+  DE/enrichment/interpretation/deconvolution/Milo/communication/regulatory/QC
+  entries now fail early with an actionable schema error, and `sn_list_results()`
+  also reports stored QC assessments.
+- Enrichment wrappers now muffle known benign `clusterProfiler`/`fgsea` warnings
+  produced by tiny deterministic examples, keeping local test and package-check
+  output warning-clean while preserving hard errors.
 
 ### Added
 

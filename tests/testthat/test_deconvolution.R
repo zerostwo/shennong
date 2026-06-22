@@ -54,6 +54,9 @@ test_that("sn_deconvolve_bulk prepares local CIBERSORTx commands from a Seurat r
   expect_true(file.exists(bundle$files$mixture))
   expect_match(bundle$artifacts$commands$create_signature, "cibersortx/fractions|CIBERSORTxFractions")
   expect_match(bundle$artifacts$commands$deconvolve, "--label")
+  expect_false(grepl("fake-token", paste(bundle$artifacts$commands, collapse = " "), fixed = TRUE))
+  expect_false(grepl("demo@example.org", paste(bundle$artifacts$commands, collapse = " "), fixed = TRUE))
+  expect_true(bundle$artifacts$commands_redacted)
 })
 
 test_that("sn_deconvolve_bulk can import a CIBERSORTx fractions table and store it", {

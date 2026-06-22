@@ -80,11 +80,38 @@ reference:
     contents:
       - sn_run_cluster
       - sn_run_scvi
+      - sn_run_scanvi
+      - sn_run_scarches
+      - sn_run_scpoli
       - sn_transfer_labels
       - sn_prepare_label_transfer_reference
       - sn_simulate
       - sn_simulate_scdesign3
       - sn_sweep_cluster_resolution
+  - title: Python and Pixi Backends
+    contents:
+      - sn_install_pixi
+      - sn_ensure_pixi
+      - sn_call_pixi_environment
+      - sn_call_scvi
+      - sn_call_scanvi
+      - sn_call_scarches
+      - sn_call_scpoli
+      - sn_call_infercnvpy
+      - sn_call_cellphonedb
+      - sn_call_cell2location
+      - sn_call_tangram
+      - sn_call_squidpy
+      - sn_call_spatialdata
+      - sn_call_stlearn
+      - sn_call_mmochi
+      - sn_run_infercnvpy
+      - sn_run_cellphonedb
+      - sn_run_cell2location
+      - sn_run_tangram
+      - sn_run_squidpy
+      - sn_run_spatialdata
+      - sn_run_stlearn
   - title: Diagnostics and Benchmarking
     contents:
       - sn_assess_integration

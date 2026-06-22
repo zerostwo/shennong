@@ -1,4 +1,130 @@
+.sn_misc_result_registry <- function() {
+  tibble::tibble(
+    collection = c(
+      "de_results",
+      "cell_communication_results",
+      "deconvolution_results",
+      "milo_results",
+      "qc_assessments",
+      "regulatory_activity_results",
+      "enrichment_results",
+      "interpretation_results",
+      "sn_run_cluster",
+      "integration",
+      "mmochi",
+      "bpcells_layers",
+      "infercnvpy",
+      "input_source"
+    ),
+    type = c(
+      "de",
+      "cell_communication",
+      "deconvolution",
+      "milo",
+      "qc_assessment",
+      "regulatory_activity",
+      "enrichment",
+      "interpretation",
+      "clustering_stage_cache",
+      "integration_artifact",
+      "mmochi_artifact",
+      "bpcells_artifact",
+      "infercnvpy_artifact",
+      "input_source"
+    ),
+    schema_version = c(rep("1.0.0", 8), rep(NA_character_, 6)),
+    required_fields = I(c(
+      list(c("schema_version", "package_version", "created_at", "table", "analysis")),
+      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
+      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
+      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
+      list(c("schema_version", "package_version", "created_at", "overall", "by_sample")),
+      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
+      list(c("schema_version", "package_version", "created_at", "table", "analysis", "database")),
+      list(c("schema_version", "package_version", "created_at", "task", "evidence", "prompt", "response")),
+      list(character()),
+      list(character()),
+      list(character()),
+      list(character()),
+      list(character()),
+      list(character())
+    )),
+    listable = c(rep(TRUE, 8), rep(FALSE, 6)),
+    table_required = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, rep(FALSE, 6)),
+    reader = c(
+      "sn_get_de_result",
+      "sn_get_cell_communication_result",
+      "sn_get_deconvolution_result",
+      "sn_get_milo_result",
+      NA_character_,
+      "sn_get_regulatory_activity_result",
+      "sn_get_enrichment_result",
+      "sn_get_interpretation_result",
+      rep(NA_character_, 6)
+    ),
+    writer = c(
+      "sn_find_de/sn_store_de_result",
+      "sn_store_cell_communication",
+      "sn_store_deconvolution",
+      "sn_store_milo",
+      "sn_assess_qc",
+      "sn_store_regulatory_activity",
+      "sn_store_enrichment",
+      "sn_interpret_*",
+      rep(NA_character_, 6)
+    )
+  )
+}
+
+.sn_misc_registry_entry <- function(collection) {
+  registry <- .sn_misc_result_registry()
+  entry <- registry[registry$collection == collection, , drop = FALSE]
+  if (nrow(entry) == 0L) {
+    return(NULL)
+  }
+  entry[1, , drop = FALSE]
+}
+
+.sn_validate_misc_result <- function(collection, store_name, result) {
+  entry <- .sn_misc_registry_entry(collection)
+  if (is_null(entry)) {
+    stop("Unknown Shennong misc collection: ", collection, call. = FALSE)
+  }
+
+  required_fields <- entry$required_fields[[1]]
+  if (length(required_fields) > 0L) {
+    missing_fields <- setdiff(required_fields, names(result))
+    if (length(missing_fields) > 0L) {
+      stop(
+        "Stored result '", store_name, "' in collection '", collection,
+        "' does not match schema; missing required field(s): ",
+        paste(missing_fields, collapse = ", "),
+        call. = FALSE
+      )
+    }
+  }
+
+  if (isTRUE(entry$table_required[[1]]) && !is.data.frame(result$table)) {
+    stop(
+      "Stored result '", store_name, "' in collection '", collection,
+      "' does not match schema; `table` must be a data frame or tibble.",
+      call. = FALSE
+    )
+  }
+
+  if ("schema_version" %in% required_fields && (!is.character(result$schema_version) || length(result$schema_version) != 1L || !nzchar(result$schema_version))) {
+    stop(
+      "Stored result '", store_name, "' in collection '", collection,
+      "' does not match schema; `schema_version` must be a non-empty character scalar.",
+      call. = FALSE
+    )
+  }
+
+  invisible(TRUE)
+}
+
 .sn_store_misc_result <- function(object, collection, store_name, result) {
+  .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
   misc_data <- methods::slot(object, "misc")
   misc_data[[collection]] <- misc_data[[collection]] %||% list()
   misc_data[[collection]][[store_name]] <- result
@@ -12,7 +138,9 @@
   if (!store_name %in% names(collection_data)) {
     stop(glue("No stored result named '{store_name}' was found in `object@misc${collection}`."))
   }
-  collection_data[[store_name]]
+  result <- collection_data[[store_name]]
+  .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
+  result
 }
 
 .sn_resolve_misc_result_name <- function(object,
@@ -69,12 +197,28 @@
   resolved_name
 }
 
-.sn_compact_collection_summary <- function(object, collection, type_label) {
+.sn_result_n_rows <- function(result) {
+  if (is.data.frame(result$table)) {
+    return(nrow(result$table))
+  }
+  if (is.data.frame(result$by_sample)) {
+    return(nrow(result$by_sample))
+  }
+  if (is.data.frame(result$overall)) {
+    return(nrow(result$overall))
+  }
+  0L
+}
+
+.sn_compact_collection_summary <- function(object, collection, type_label = NULL) {
   misc_data <- methods::slot(object, "misc")
   collection_data <- misc_data[[collection]] %||% list()
   if (length(collection_data) == 0) {
     return(tibble::tibble())
   }
+
+  entry <- .sn_misc_registry_entry(collection)
+  type_label <- type_label %||% if (!is_null(entry)) entry$type[[1]] else collection
 
   entries <- names(collection_data)
   tibble::tibble(
@@ -84,7 +228,7 @@
     analysis = vapply(entries, function(entry) collection_data[[entry]]$analysis %||% NA_character_, character(1)),
     method = vapply(entries, function(entry) collection_data[[entry]]$method %||% NA_character_, character(1)),
     created_at = vapply(entries, function(entry) collection_data[[entry]]$created_at %||% NA_character_, character(1)),
-    n_rows = vapply(entries, function(entry) nrow(collection_data[[entry]]$table %||% tibble::tibble()), integer(1)),
+    n_rows = vapply(entries, function(entry) .sn_result_n_rows(collection_data[[entry]]), integer(1)),
     source = vapply(entries, function(entry) collection_data[[entry]]$source_de_name %||% NA_character_, character(1))
   )
 }
@@ -136,8 +280,9 @@
 #'
 #' @param object A \code{Seurat} object.
 #'
-#' @return A tibble describing stored DE, enrichment, and interpretation
-#'   results.
+#' @return A tibble describing registered Shennong stored-result collections,
+#'   including DE, enrichment, interpretation, deconvolution, Milo,
+#'   communication, regulatory activity, and QC assessment entries when present.
 #'
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
@@ -167,15 +312,13 @@ sn_list_results <- function(object) {
     stop("`object` must be a Seurat object.")
   }
 
-  dplyr::bind_rows(
-    .sn_compact_collection_summary(object, "de_results", "de"),
-    .sn_compact_collection_summary(object, "cell_communication_results", "cell_communication"),
-    .sn_compact_collection_summary(object, "deconvolution_results", "deconvolution"),
-    .sn_compact_collection_summary(object, "milo_results", "milo"),
-    .sn_compact_collection_summary(object, "regulatory_activity_results", "regulatory_activity"),
-    .sn_compact_collection_summary(object, "enrichment_results", "enrichment"),
-    .sn_compact_collection_summary(object, "interpretation_results", "interpretation")
-  ) |>
+  registry <- .sn_misc_result_registry()
+  listable_collections <- registry$collection[registry$listable]
+
+  lapply(listable_collections, function(collection) {
+    .sn_compact_collection_summary(object, collection)
+  }) |>
+    dplyr::bind_rows() |>
     dplyr::arrange(.data$collection, .data$name)
 }
 

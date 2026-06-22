@@ -1,6 +1,40 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-06-17
+Last updated: 2026-06-22
+
+## 2026-06-22
+
+- Signature registry maintenance should be testable and usable without the
+  optional upstream `SignatuR` runtime package. Shennong still builds its
+  bundled snapshot from upstream during development, but add/update/delete
+  helpers now mutate the package-owned tree representation directly so local
+  tests do not require GitHub-only dependencies.
+- Local CodeGraph indexes are analysis artifacts, not package source. Keep
+  `.codegraph/` ignored by git and excluded from source builds while retaining
+  CodeGraph audit notes under `docs/codex/`.
+- Exported pixi/Python backend helpers should be discoverable on the pkgdown
+  reference site. Group low-level `sn_call_*` helpers and backend-specific
+  `sn_run_*` wrappers in a dedicated reference section rather than leaving them
+  as undocumented reference orphans.
+- Local CIBERSORTx execution should not be assembled as one shell string and
+  should not persist credentials in dry-run or stored command artifacts.
+  Structured `system2()` calls are safer for user-supplied paths/labels, while
+  redacted display commands remain useful for auditing.
+- Local package validation should avoid duplicate expensive work. The full
+  `testthat::test_local()` suite is the dominant cost, especially clustering
+  and DE/enrichment tests, so the pre-push helper should skip `R CMD check`
+  tests after the suite already passed unless the maintainer explicitly asks
+  for a maximal `--check-tests` run.
+- Shared `object@misc` result collections should be registered centrally before
+  they are written or retrieved. The registry intentionally distinguishes
+  listable result collections from direct workflow artifacts such as clustering
+  stage caches, integration manifests, BPCells layer paths, and input-source
+  provenance, so malformed listable results fail early while backend artifacts
+  remain documented but not exposed as analysis results.
+- Dot-prefixed rio adapter exports remain exported by design because rio-style
+  custom dispatch needs package-visible `.import.rio_*` / `.export.rio_*`
+  symbols. Keep them documented under `sn_read()` / `sn_write()` instead of as
+  independent user-facing workflows.
 
 ## 2026-06-17
 

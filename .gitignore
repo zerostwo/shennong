@@ -1,4 +1,7 @@
 .Rproj.user
+.agents/
+.codex/
+.codegraph/
 .Rhistory
 .Renviron
 docs/*
@@ -14,3 +17,4 @@ tests/testthat/omnipathr-log/
 *.Rcheck/
 benchmarks/coralysis_capacity/results*/inputs/
 benchmarks/coralysis_capacity/results*/runs/
+.positai

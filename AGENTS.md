@@ -16,7 +16,9 @@
 - `Rscript -e 'testthat::test_local(filter = "composition", stop_on_failure = TRUE)'` runs the current focused tests while iterating on composition-related changes.
 - `Rscript -e 'if (requireNamespace("devtools", quietly = TRUE)) devtools::document() else stop("devtools not installed")'` regenerates `NAMESPACE` and `man/` after roxygen changes.
 - `R CMD build .` builds the package tarball.
-- `R CMD check --no-manual Shennong_*.tar.gz` is the preferred package check after a successful build.
+- `R CMD check --no-manual Shennong_*.tar.gz` is the full package check after a successful build. In local environments without optional Suggests, use `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual Shennong_*.tar.gz`.
+- `Rscript scripts/check-prepush.R --filter="deconvolution" --quick` runs a fast edit-loop check: targeted tests, source build, and structural `R CMD check` without re-running examples/vignettes/full tests.
+- `Rscript scripts/check-prepush.R --filter="deconvolution"` runs the standard local pre-push path. It avoids re-running tests inside `R CMD check` after `test_local()` unless `--check-tests` is supplied.
 
 ## Coding Style & Naming Conventions
 

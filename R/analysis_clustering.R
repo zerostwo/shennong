@@ -1657,12 +1657,12 @@ sn_run_scanvi <- function(object,
   writeLines(runner_lines, con = runner_path, useBytes = TRUE)
 
   status <- tryCatch(
-    system2(
+    suppressWarnings(system2(
       command = python,
       args = c(shQuote(runner_path)),
       stdout = TRUE,
       stderr = TRUE
-    ),
+    )),
     error = function(e) {
       stop(
         "SCA execution failed. Ensure the Python executable and the `shannonca` package are available. ",
@@ -1788,12 +1788,12 @@ sn_run_scanvi <- function(object,
   writeLines(runner_lines, con = runner_path, useBytes = TRUE)
 
   status <- tryCatch(
-    system2(
+    suppressWarnings(system2(
       command = python,
       args = c(shQuote(runner_path)),
       stdout = TRUE,
       stderr = TRUE
-    ),
+    )),
     error = function(e) {
       stop(
         "SCA execution failed. Ensure the Python executable and the `shannonca` package are available. ",

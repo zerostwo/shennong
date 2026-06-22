@@ -649,23 +649,31 @@ test_that("misc-result helpers create collections and report missing stored resu
   object <- make_interpretation_base_object()
   stored_object <- Shennong:::.sn_store_misc_result(
     object = object,
-    collection = "custom_results",
+    collection = "interpretation_results",
     store_name = "demo",
-    result = list(value = 1, label = "stored")
+    result = list(
+      schema_version = "1.0.0",
+      package_version = "0.0.0",
+      created_at = "2026-06-22 00:00:00 UTC",
+      task = "demo",
+      evidence = list(),
+      prompt = list(text = "demo"),
+      response = list(text = "stored")
+    )
   )
 
   stored_result <- Shennong:::.sn_get_misc_result(
     object = stored_object,
-    collection = "custom_results",
+    collection = "interpretation_results",
     store_name = "demo"
   )
 
-  expect_equal(stored_result$value, 1)
-  expect_equal(stored_result$label, "stored")
+  expect_equal(stored_result$task, "demo")
+  expect_equal(stored_result$response$text, "stored")
   expect_error(
     Shennong:::.sn_get_misc_result(
       object = stored_object,
-      collection = "custom_results",
+      collection = "interpretation_results",
       store_name = "missing"
     ),
     "No stored result named 'missing'"

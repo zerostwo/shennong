@@ -22,10 +22,14 @@ args <- commandArgs(trailingOnly = TRUE)
       "",
       "Options:",
       "  --filter=<regex>       Run a targeted test pass before the full suite.",
+      "  --quick                Fast local loop: targeted tests, build, and structural check.",
       "  --skip-document        Skip devtools::document().",
       "  --skip-tests           Skip all testthat runs.",
+      "  --skip-full-tests      Skip the full testthat suite but keep targeted tests.",
       "  --skip-build           Skip R CMD build.",
       "  --skip-check           Skip R CMD check --no-manual.",
+      "  --check-tests          Also run tests inside R CMD check after test_local().",
+      "  --force-suggests       Require every Suggests package during R CMD check.",
       "  --skip-pkgdown         Skip pkgdown reference-index validation.",
       "  --help                 Show this message.",
       sep = "\n"
@@ -40,23 +44,32 @@ if (.parse_flag("help")) {
 }
 
 filter <- .parse_value("filter")
+quick <- .parse_flag("quick")
 skip_document <- .parse_flag("skip-document")
 skip_tests <- .parse_flag("skip-tests")
+skip_full_tests <- .parse_flag("skip-full-tests")
 skip_build <- .parse_flag("skip-build")
 skip_check <- .parse_flag("skip-check")
+check_tests <- .parse_flag("check-tests")
+force_suggests <- .parse_flag("force-suggests")
 skip_pkgdown <- .parse_flag("skip-pkgdown")
 
 run_step <- function(label, expr) {
+  start <- Sys.time()
   message("==> ", label)
+  on.exit({
+    elapsed <- difftime(Sys.time(), start, units = "secs")
+    message(sprintf("<== %s completed in %.1fs", label, as.numeric(elapsed)))
+  }, add = TRUE)
   force(expr)
   invisible(TRUE)
 }
 
-run_cmd <- function(args, wd = getwd()) {
+run_cmd <- function(args, wd = getwd(), env = character()) {
   r_bin <- file.path(R.home("bin"), "R")
   oldwd <- setwd(wd)
   on.exit(setwd(oldwd), add = TRUE)
-  status <- system2(r_bin, args = args, stdout = "", stderr = "", wait = TRUE, env = character())
+  status <- system2(r_bin, args = args, stdout = "", stderr = "", wait = TRUE, env = env)
   if (!identical(status, 0L)) {
     stop("Command failed: ", paste(c(r_bin, args), collapse = " "), call. = FALSE)
   }
@@ -86,9 +99,13 @@ if (!skip_tests) {
     }
   })
 
-  run_step("Running full test suite", {
-    testthat::test_local(stop_on_failure = TRUE)
-  })
+  if (!isTRUE(skip_full_tests) && !isTRUE(quick)) {
+    run_step("Running full test suite", {
+      testthat::test_local(stop_on_failure = TRUE)
+    })
+  } else {
+    message("Skipping full test suite; run without `--quick` / `--skip-full-tests` before pushing release-scale changes.")
+  }
 }
 
 if (!skip_build) {
@@ -108,7 +125,15 @@ if (!skip_check) {
     if (!file.exists(tarball)) {
       stop("Tarball not found. Run the build step before check.", call. = FALSE)
     }
-    run_cmd(c("CMD", "check", "--no-manual", basename(tarball)))
+    check_args <- c("CMD", "check", "--no-manual", "--timings")
+    full_tests_ran <- !isTRUE(skip_tests) && !isTRUE(skip_full_tests) && !isTRUE(quick)
+    if (isTRUE(quick)) {
+      check_args <- c(check_args, "--no-tests", "--no-examples", "--ignore-vignettes")
+    } else if (full_tests_ran && !isTRUE(check_tests)) {
+      check_args <- c(check_args, "--no-tests")
+    }
+    check_env <- if (isTRUE(force_suggests)) character() else "_R_CHECK_FORCE_SUGGESTS_=false"
+    run_cmd(c(check_args, basename(tarball)), env = check_env)
   })
 }
 

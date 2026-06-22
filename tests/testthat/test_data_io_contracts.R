@@ -288,6 +288,7 @@ test_that("sn_write creates parent directories before dispatching writers", {
   qs_path <- file.path(root, "custom", "objects", "payload.qs")
   testthat::with_mocked_bindings(
     sn_write(list(a = 1), qs_path),
+    .sn_find_missing_packages = function(packages) character(0),
     .export.rio_qs = function(file, x, ...) {
       saveRDS(x, file = file)
     },

@@ -3244,6 +3244,9 @@ sn_assess_qc <- function(object,
   )
 
   report <- list(
+    schema_version = "1.0.0",
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     overall = overall,
     by_sample = by_sample,
     comparison = comparison,

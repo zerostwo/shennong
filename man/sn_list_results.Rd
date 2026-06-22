@@ -10,8 +10,9 @@ sn_list_results(object)
 \item{object}{A \code{Seurat} object.}
 }
 \value{
-A tibble describing stored DE, enrichment, and interpretation
-results.
+A tibble describing registered Shennong stored-result collections,
+including DE, enrichment, interpretation, deconvolution, Milo,
+communication, regulatory activity, and QC assessment entries when present.
 }
 \description{
 List stored Shennong analysis and interpretation results on a Seurat object

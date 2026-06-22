@@ -2,6 +2,9 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.agents
+^\.codex
+^\.codegraph
 dev
 ^LICENSE\.md$
 ^README\.Rmd$
@@ -17,3 +20,5 @@ dev
 ^scripts$
 ^tests/testthat/omnipathr-log$
 ^benchmarks$
+^\.positai$
+^\.claude$
