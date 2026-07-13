@@ -1,6 +1,15 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-06-22
+Last updated: 2026-07-13
+
+## 2026-07-13
+
+- Dot plots should preserve fixed coordinates for flat feature vectors, but
+  grouped feature lists must defer to Seurat's free-width facet layout because
+  ggplot2 does not allow free facet scales with a fixed coordinate ratio.
+- Plot regression tests must build the rendered gtable when failures can occur
+  during facet panel drawing; checking only the returned `ggplot` class is not
+  sufficient for coordinate/facet compatibility.
 
 ## 2026-06-22
 

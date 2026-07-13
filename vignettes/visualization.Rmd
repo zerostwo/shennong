@@ -229,6 +229,24 @@ sn_plot_dot(
 )
 ```
 
+For a curated marker panel, pass a named list. Each list element becomes a
+free-width facet, so marker families remain visually separated even when the
+groups contain different numbers of genes.
+
+```{r plot-dot-groups}
+level1_markers <- list(
+  "Lymphoid" = c("CD3D", "CD3E", "MS4A1"),
+  "Myeloid" = c("LYZ", "FCGR3A"),
+  "Platelets" = c("PPBP")
+)
+
+sn_plot_dot(
+  x = pbmc,
+  features = level1_markers,
+  group_by = "seurat_clusters"
+)
+```
+
 ## Composition plots for sample-level summaries
 
 `sn_calculate_composition()` creates the table; `sn_plot_composition()` displays

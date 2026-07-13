@@ -1,6 +1,23 @@
 # Shennong Modernization Status
 
-Last updated: 2026-06-22
+Last updated: 2026-07-13
+
+## 2026-07-13
+
+- Fixed `sn_plot_dot()` rendering for named feature lists. Grouped marker lists
+  now keep Seurat's free-width facet layout without the incompatible
+  `coord_fixed()` ratio, while flat feature vectors retain fixed coordinates.
+- Added a rendering-level regression test with `ggplot2::ggplotGrob()` and a
+  concrete grouped-marker example to the visualization article and shipped
+  package-skill API map.
+- Validation: the focused visualization tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 100`; an eight-group, 40-feature synthetic
+  reproduction matching the reported HCC marker-panel shape renders
+  successfully; the full local suite passes with
+  `FAIL 0 | WARN 1 | SKIP 5 | PASS 1412`; pkgdown rebuilds successfully;
+  `R CMD build .` succeeds; and a clean-source
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-tests` reports
+  `Status: OK` after the already completed full test run.
 
 ## 2026-06-22
 

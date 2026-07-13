@@ -142,7 +142,8 @@ Datasets:
 - `sn_plot_feature()`: feature plot or density-style feature map with rasterized points that preserve `pt_size`
 - `sn_plot_heatmap()`: selected-gene heatmap in cell-level or group-averaged mode
 - `sn_plot_violin()`: violin plot
-- `sn_plot_dot()`: dot plot
+- `sn_plot_dot()`: dot plot; pass a named feature list for separate free-width
+  marker-group panels
 - `sn_plot_boxplot()`: box plot
 - `sn_plot_barplot()`: bar plot
 - `sn_plot_composition()`: composition bar charts

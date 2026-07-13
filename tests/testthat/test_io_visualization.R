@@ -355,6 +355,27 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
   )
 })
 
+test_that("sn_plot_dot renders grouped feature lists with free facet scales", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_dotplot_test_object()
+  marker_groups <- list(
+    T_cells = c("CD3D", "CD3E"),
+    B_cells = c("MS4A1", "CD79A")
+  )
+
+  grouped_plot <- suppressWarnings(sn_plot_dot(object, features = marker_groups))
+  grouped_grob <- suppressWarnings(ggplot2::ggplotGrob(grouped_plot))
+  flat_plot <- suppressWarnings(
+    sn_plot_dot(object, features = unlist(marker_groups, use.names = FALSE))
+  )
+
+  expect_s3_class(grouped_plot, "ggplot")
+  expect_null(grouped_plot$coordinates$ratio)
+  expect_s3_class(grouped_grob, "gtable")
+  expect_equal(flat_plot$coordinates$ratio, 1)
+})
+
 test_that("palette helpers list and resolve palettes", {
   expect_no_error(sn_list_palettes())
   expect_no_error(sn_list_palettes(display = "plot", source = "ggokabeito"))

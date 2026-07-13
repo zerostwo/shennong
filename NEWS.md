@@ -7,6 +7,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- `sn_plot_dot()` now renders named feature lists as Seurat's free-width marker
+  facets without adding an incompatible fixed coordinate ratio; ordinary
+  feature vectors retain the existing fixed-coordinate layout.
 - `sn_run_cluster(block_genes = ...)` now resolves each entry independently, so
   bundled signature queries such as `cellCycle.G2M`, `cellCycle.G1S`, `ribo`,
   `mito`, `heatshock`, and `pseudogenes` can be mixed with custom gene symbols
