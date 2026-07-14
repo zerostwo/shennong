@@ -4,6 +4,17 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Standalone bulk analysis uses feature-by-sample matrices with metadata
+  aligned by sample ID and returns the common analysis-result contract directly;
+  it does not force bulk data into a Seurat object or hide design metadata in a
+  plotting wrapper.
+- Bulk DE method selection is driven by data scale and design: integer counts
+  default to edgeR, continuous normalized expression to limma, and formulas
+  with random effects to dream. The numerator/denominator contrast direction is
+  always explicit and retained with design/filter diagnostics.
+- WGCNA module-trait, Cox survival, pathway, and clinical association workflows
+  keep biological samples as the inferential unit. Their plotting helpers
+  consume retained result tables and do not recompute evidence.
 - Spatial coordinates are first-class stored evidence, and every spatial plot
   preserves their aspect ratio. Local KNN construction is memory-bounded by
   computing one query location at a time rather than allocating an all-by-all

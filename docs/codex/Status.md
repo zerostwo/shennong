@@ -19,6 +19,14 @@ Last updated: 2026-07-15
 
 - Work is active on `feat/analysis-publication-roadmap` against the
   `shennong_analysis_and_publication_figure_roadmap.md` specification.
+- Milestone C now includes standalone bulk QC, fixed/mixed-design differential
+  expression through edgeR, DESeq2, limma, and dream, pathway scores, WGCNA,
+  Cox survival, clinical associations, six result-aware plot families, and a
+  matrix/list/`SummarizedExperiment` input contract. The focused suite passes
+  with `FAIL 0 | WARN 0 | SKIP 0 | PASS 39`, including real DESeq2, dream, and
+  WGCNA backend runs. The quick pre-push source build and structural
+  `R CMD check` pass with `Status: OK`, and the complete pkgdown site includes
+  the new article and all thirteen bulk reference pages.
 - Milestone A now has a shipped method registry, availability diagnostics, and
   a common analysis-result schema with generic store/get/list/delete/validate
   APIs. Existing registered result collections are upgraded compatibly rather

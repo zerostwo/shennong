@@ -105,6 +105,25 @@ user request to the right Shennong function family quickly.
 2. If enriching a direct table, supply `gene_clusters = gene ~ cluster` for grouped ORA or `gene ~ log2fc` for ranked GSEA.
 3. Store reusable results with `sn_store_enrichment()` when needed.
 
+## Recipe: Analyze standalone bulk transcriptomics
+
+1. Supply a feature-by-sample matrix plus row-named sample metadata, a list
+   containing those objects, or a `SummarizedExperiment`.
+2. Run `sn_assess_bulk_qc()` first and review `tables$samples`,
+   `embeddings$pca`, and `tables$correlation`; do not remove a sample solely
+   because one automatic outlier flag is true.
+3. Use `sn_find_bulk_de(design = ..., contrast = c(variable, numerator,
+   denominator))`. Keep `method = "auto"` unless the statistical backend is
+   prespecified: integer counts choose edgeR, continuous expression chooses
+   limma, and mixed-effects designs choose dream.
+4. Use `sn_score_bulk_pathways()` for sample pathway scores and inspect
+   `tables$coverage`. Use `sn_run_wgcna()` for modules/eigengenes and
+   sample-level trait associations.
+5. Use `sn_run_survival()` for adjusted Cox models and
+   `sn_run_clinical_association()` for numeric or categorical phenotype tests.
+   Retrieve evidence from each returned result's named `tables` rather than
+   recomputing statistics inside plotting code.
+
 ## Recipe: Score and compare gene programs
 
 1. Use `sn_score_programs(method = "ucell")` for sparse per-cell scoring.

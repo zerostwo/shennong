@@ -1,7 +1,7 @@
 [
   {
     "name": "auto", "task": "bulk_de", "runtime": "r", "package": "Shennong",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Design-aware selection among edgeR, DESeq2, limma-voom, and dream.",
     "input_requirements": ["count or expression matrix", "sample metadata", "design", "contrast"],
     "outputs": ["DE table", "design diagnostics", "contrast diagnostics", "provenance"],
@@ -11,7 +11,7 @@
   },
   {
     "name": "edger", "task": "bulk_de", "runtime": "r", "package": "edgeR",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Negative-binomial GLM differential expression for raw counts.",
     "input_requirements": ["integer counts", "sample metadata", "design", "contrast"],
     "outputs": ["DE table", "dispersion diagnostics", "filtering diagnostics"],
@@ -21,7 +21,7 @@
   },
   {
     "name": "deseq2", "task": "bulk_de", "runtime": "r", "package": "DESeq2",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Negative-binomial differential expression with shrinkage for raw counts.",
     "input_requirements": ["integer counts", "sample metadata", "design", "contrast"],
     "outputs": ["DE table", "size factors", "dispersion diagnostics"],
@@ -31,7 +31,7 @@
   },
   {
     "name": "limma", "task": "bulk_de", "runtime": "r", "package": "limma",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Linear modeling for normalized continuous expression or voom-transformed counts.",
     "input_requirements": ["normalized expression or counts", "sample metadata", "design", "contrast"],
     "outputs": ["DE table", "mean-variance diagnostics"],
@@ -41,7 +41,7 @@
   },
   {
     "name": "dream", "task": "bulk_de", "runtime": "r", "package": "variancePartition",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Linear mixed modeling for repeated-measures transcriptomics designs.",
     "input_requirements": ["expression", "sample metadata", "mixed-effects design", "contrast"],
     "outputs": ["DE table", "variance components", "model diagnostics"],
@@ -61,17 +61,17 @@
   },
   {
     "name": "wgcna", "task": "bulk_network", "runtime": "r", "package": "WGCNA",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Weighted co-expression network and phenotype-module association.",
     "input_requirements": ["normalized expression", "sample metadata"],
     "outputs": ["modules", "eigengenes", "trait associations", "diagnostics"],
     "supports": {"clinical_association": true},
-    "cpu_gpu": "CPU", "install": "BiocManager::install('WGCNA')",
+    "cpu_gpu": "CPU", "install": "install.packages('WGCNA')",
     "citation": "Langfelder and Horvath. BMC Bioinformatics 2008"
   },
   {
     "name": "cox", "task": "bulk_survival", "runtime": "r", "package": "survival",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Cox proportional-hazards modeling with transparent covariate handling.",
     "input_requirements": ["survival time", "event indicator", "features or scores", "covariates"],
     "outputs": ["hazard ratios", "confidence intervals", "model diagnostics"],

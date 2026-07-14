@@ -44,6 +44,7 @@ articles:
       - visualization
       - composition-analysis
       - bulk-deconvolution
+      - bulk-transcriptomics
       - layered-workflows
       - interpretation-workflows
       - analysis-results-and-methods
@@ -217,6 +218,21 @@ reference:
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution
       - sn_get_deconvolution_result
+  - title: Bulk Transcriptomics
+    contents:
+      - sn_run_bulk
+      - sn_assess_bulk_qc
+      - sn_find_bulk_de
+      - sn_score_bulk_pathways
+      - sn_run_wgcna
+      - sn_run_survival
+      - sn_run_clinical_association
+      - sn_plot_bulk_qc
+      - sn_plot_bulk_pca
+      - sn_plot_sample_correlation
+      - sn_plot_bulk_de
+      - sn_plot_wgcna
+      - sn_plot_survival
   - title: Communication and Regulatory Activity
     contents:
       - sn_run_cell_communication

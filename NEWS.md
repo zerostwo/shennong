@@ -91,6 +91,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added a standalone bulk transcriptomics mainline for matrix/list/
+  `SummarizedExperiment` inputs: sample QC, design-aware edgeR/DESeq2/limma/
+  dream differential expression, pathway scoring, WGCNA module-trait analysis,
+  Cox survival models, clinical associations, and result-aware plots.
 - Added `sn_run_spatial()` as a dispatcher plus explicit spatial feature,
   domain, neighborhood, deconvolution, mapping, integration, and communication
   entry points. Local Moran's I and memory-bounded KNN workflows retain spatial

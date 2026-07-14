@@ -5,6 +5,8 @@ the right `sn_*` entry point without scanning the whole package.
 
 Core object rule:
 - Current workflows are centered on Seurat objects.
+- Standalone bulk workflows accept feature-by-sample matrices, lists, and
+  `SummarizedExperiment` objects and return the same validated result contract.
 - Prefer Shennong APIs over raw Seurat calls when the package already exposes
   the needed behavior.
 - Prefer stored-result workflows over ad hoc `object@misc` access.
@@ -151,6 +153,24 @@ Datasets:
   group distance evidence and optional distance filtering
 - `sn_plot_spatial*()`: result-aware coordinate, SVG, domain, neighborhood,
   deconvolution, and communication figures with fixed spatial aspect
+
+## Bulk Transcriptomics
+
+- `sn_run_bulk()`: dispatcher for standalone QC, DE, pathway, network, and
+  survival workflows
+- `sn_assess_bulk_qc()`: library size, detected features, distributions, PCA,
+  sample correlation, and robust outlier evidence
+- `sn_find_bulk_de()`: validated fixed/mixed design and explicit contrast with
+  automatic or direct edgeR, DESeq2, limma-voom, limma, and dream backends
+- `sn_score_bulk_pathways()`: mean, GSVA, or ssGSEA sample scores with gene-set
+  coverage diagnostics
+- `sn_run_wgcna()`: weighted co-expression modules, eigengenes, soft-power
+  evidence, and sample trait associations
+- `sn_run_survival()` / `sn_run_clinical_association()`: sample-level Cox and
+  phenotype models using expression features or metadata scores
+- `sn_plot_bulk_qc()` / `sn_plot_bulk_pca()` /
+  `sn_plot_sample_correlation()` / `sn_plot_bulk_de()` / `sn_plot_wgcna()` /
+  `sn_plot_survival()`: result-aware bulk figures
 
 ## Differential Abundance and State Priority
 

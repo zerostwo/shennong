@@ -36,6 +36,7 @@ Depends:
     R (>= 4.1.0)
 Suggests: 
     anndataR,
+    apeglm,
     aplot,
     AUCell,
     BayesPrism,
@@ -117,6 +118,9 @@ Suggests:
     testthat (>= 3.0.0),
     tradeSeq,
     UCell,
+    variancePartition,
+    WGCNA,
+    survival,
     zen4R
 Remotes:
     github::navinlabcode/copykat,
