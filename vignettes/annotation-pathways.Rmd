@@ -377,6 +377,89 @@ sn_delete_signature(
 )
 ```
 
+## Score programs in cells and samples
+
+`sn_score_programs()` accepts named gene-set lists, program/gene tables, named
+gene vectors, or bundled signature queries. UCell is the default for per-cell
+work because its rank-based score works directly with sparse expression and is
+less sensitive to dataset composition than a raw mean. AUCell is useful when
+area-under-recovery-curve activity is the intended statistic, but its ranking
+step is more expensive. GSVA and ssGSEA are intended primarily for samples or
+aggregated groups; supply `group_by` for large single-cell objects. The `mean`
+backend is dependency-free and transparent, but it is more sensitive to assay
+scale and signature size.
+
+```{r score-programs}
+immune_programs <- list(
+  B_cell = c("MS4A1", "CD79A", "CD37", "CD74"),
+  T_cell = c("CD3D", "CD3E", "TRAC", "LTB"),
+  Myeloid = c("LYZ", "FCN1", "S100A8", "CTSS")
+)
+
+pbmc <- sn_score_programs(
+  pbmc,
+  signatures = immune_programs,
+  method = "ucell",
+  assay = "RNA",
+  layer = "data",
+  name = "immune_programs",
+  min_genes = 2
+)
+
+program_result <- sn_get_result(
+  pbmc,
+  type = "program_scoring",
+  name = "immune_programs"
+)
+
+program_result$tables$coverage
+head(program_result$tables$scores)
+```
+
+UCell and AUCell require their optional Bioconductor packages and run on CPU.
+GSVA/ssGSEA require `GSVA` and run on CPU; Shennong blocks per-cell GSVA on more
+than 5,000 sparse columns unless users aggregate explicitly. Cite UCell
+(Andreatta and Carmona, 2021), AUCell (Aibar et al., 2017), GSVA (Hänzelmann et
+al., 2013), or ssGSEA (Barbie et al., 2009) according to the selected backend.
+
+```{r plot-programs}
+sn_plot_program_activity(
+  pbmc,
+  name = "immune_programs",
+  group_by = "seurat_clusters"
+)
+
+sn_plot_program_heatmap(
+  pbmc,
+  name = "immune_programs",
+  group_by = "seurat_clusters"
+)
+```
+
+For comparative studies, preserve the sample or patient as the inferential
+unit. `sn_test_programs()` first averages cell scores within each
+sample/condition/stratum, then runs the selected test; omitting `sample_by` is
+explicitly marked as exploratory cell-level inference.
+
+```{r test-programs, eval = FALSE}
+pbmc <- sn_test_programs(
+  pbmc,
+  score_name = "immune_programs",
+  condition_by = "condition",
+  sample_by = "patient",
+  group_by = "cell_type",
+  contrast = c("treated", "control"),
+  method = "limma",
+  store_name = "immune_program_condition"
+)
+
+sn_get_result(
+  pbmc,
+  type = "program_comparison",
+  name = "immune_program_condition"
+)$tables$primary
+```
+
 ## Run enrichment from stored marker results
 
 `sn_enrich()` can accept a gene vector, a ranked vector, a data frame, or a

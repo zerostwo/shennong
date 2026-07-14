@@ -143,6 +143,10 @@ This skill is the main entry point for package usage.
    `sn_prepare_label_transfer_reference()` before saving a reusable reference
    for later transfer. Optional external
    annotation with `sn_run_celltypist()`.
+   Score named or bundled gene programs with `sn_score_programs()`; use UCell
+   for sparse per-cell scoring, GSVA/ssGSEA with `group_by` for aggregated
+   profiles, and `sn_test_programs(sample_by = ...)` for replicate-aware
+   condition tests.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
@@ -202,6 +206,9 @@ This skill is the main entry point for package usage.
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_annotate_de_features(object, de_name = "cluster_markers")`
 - `sn_enrich(x = object, source_de_name = "cluster_markers")`
+- `sn_score_programs(object, signatures, method = "ucell")`
+- `sn_test_programs(object, score_name, condition_by, sample_by)`
+- `sn_plot_program_activity()` / `sn_plot_program_heatmap()`
 - `sn_calculate_composition()`
 - `sn_calculate_roe()`
 - `sn_run_milo()`

@@ -105,6 +105,18 @@ user request to the right Shennong function family quickly.
 2. If enriching a direct table, supply `gene_clusters = gene ~ cluster` for grouped ORA or `gene ~ log2fc` for ranked GSEA.
 3. Store reusable results with `sn_store_enrichment()` when needed.
 
+## Recipe: Score and compare gene programs
+
+1. Use `sn_score_programs(method = "ucell")` for sparse per-cell scoring.
+2. Use `method = "gsva"` or `"ssgsea"` with `group_by = "sample"` for
+   aggregated profiles; do not force large sparse cell matrices through a
+   dense pathway-scoring backend.
+3. Inspect `result$tables$coverage` before interpreting a program with poor
+   feature overlap.
+4. Use `sn_test_programs(sample_by = "patient", condition_by = ...)` so
+   biological samples, not cells, are the inferential units.
+5. Retrieve the score and comparison results with `sn_get_result()`.
+
 ## Recipe: Summarize composition shifts
 
 1. Use `sn_calculate_composition(group_by = ..., variable = ..., measure = "both")` for grouped counts and percentages.

@@ -4,6 +4,13 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Program scoring uses UCell as the per-cell default, retains AUCell as an
+  alternative rank-based statistic, and positions GSVA/ssGSEA for aggregated
+  samples or groups. Large sparse per-cell GSVA is rejected before an implicit
+  dense conversion; users should aggregate or select UCell instead.
+- Program differential tests aggregate cells to `sample_by` before inference.
+  Cell-level testing remains possible only as an explicitly warned exploratory
+  path, not as a silent substitute for biological replication.
 - Annotation uses one public `sn_run_annotation()` entry point rather than one
   exported wrapper per backend. Consensus always preserves marker and reference
   evidence separately, confidence exposes the runner-up and margin, and LLM

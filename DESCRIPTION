@@ -37,6 +37,7 @@ Depends:
 Suggests: 
     anndataR,
     aplot,
+    AUCell,
     BayesPrism,
     BiocManager,
     BiocParallel,
@@ -58,6 +59,7 @@ Suggests:
     ggrepel,
     ggrastr,
     glmGamPoi,
+    GSVA,
     harmony,
     hdf5r,
     HGNChelper,
@@ -102,6 +104,7 @@ Suggests:
     symphony,
     tidytemplate,
     testthat (>= 3.0.0),
+    UCell,
     zen4R
 Remotes:
     github::genecell/COSGR,

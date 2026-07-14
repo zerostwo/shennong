@@ -156,6 +156,10 @@ reference:
       - sn_add_signature
       - sn_update_signature
       - sn_delete_signature
+      - sn_score_programs
+      - sn_test_programs
+      - sn_plot_program_activity
+      - sn_plot_program_heatmap
   - title: Composition and Comparative Analysis
     contents:
       - sn_calculate_composition

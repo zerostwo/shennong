@@ -27,6 +27,9 @@ Last updated: 2026-07-15
   SingleR/CellTypist/Seurat/Symphony/scmap/scANVI adapters, confidence and
   runner-up calibration, hierarchical labels, a versioned Cell Ontology
   mapping, low-confidence review, and three result-aware diagnostic plots.
+- Milestone B2 now has UCell/AUCell/GSVA/ssGSEA/mean program scoring, signature
+  coverage diagnostics, cell metadata storage, sample-aware program tests, and
+  result-aware activity/heatmap plots.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -47,6 +50,14 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Program-scoring tests currently pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 29`, including all five scoring backends,
+  sparse mean scoring, coverage/drop behavior, sample-level inference, and
+  rendered ggplot grobs.
+- `scripts/check-prepush.R --filter=program-scoring --quick` passes the source
+  build, structural R CMD check, and reference-index validation with
+  `Status: OK`; the complete pkgdown site also rebuilds with the program
+  scoring/comparison documentation and four new reference pages.
 - Annotation workflow tests currently pass with
   `FAIL 0 | WARN 0 | SKIP 1 | PASS 39`; scmap is the single skip because the
   optional package is not installed locally. SingleR and Symphony CPU paths run

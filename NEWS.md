@@ -91,6 +91,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_score_programs()` with UCell (default per-cell), AUCell, GSVA,
+  ssGSEA, and sparse-aware mean-expression backends. It records signature
+  feature coverage, stores long-form scores in the unified result contract,
+  and adds cell-level scores to Seurat metadata without silently converting
+  large sparse matrices for GSVA.
+- Added `sn_test_programs()` for condition comparisons that aggregate to the
+  sample/patient level before inference when `sample_by` is supplied, plus
+  `sn_plot_program_activity()` and `sn_plot_program_heatmap()` for stored
+  score results.
 - Added `sn_run_annotation()` as the stable annotation entry point with
   marker-only consensus plus optional SingleR, CellTypist, Seurat transfer,
   Symphony, scmap, and scANVI backends. It stores cell- and cluster-level

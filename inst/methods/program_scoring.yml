@@ -1,7 +1,7 @@
 [
   {
     "name": "ucell", "task": "program_scoring", "runtime": "r", "package": "UCell",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Rank-based per-cell signature scoring that avoids dense matrix conversion.",
     "input_requirements": ["expression matrix", "named signatures"],
     "outputs": ["score matrix", "cell metadata", "coverage diagnostics"],
@@ -11,7 +11,7 @@
   },
   {
     "name": "aucell", "task": "program_scoring", "runtime": "r", "package": "AUCell",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Area-under-recovery-curve scoring of active gene sets in individual cells.",
     "input_requirements": ["expression matrix", "named signatures"],
     "outputs": ["AUC matrix", "coverage diagnostics"],
@@ -21,7 +21,7 @@
   },
   {
     "name": "gsva", "task": "program_scoring", "runtime": "r", "package": "GSVA",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "GSVA scoring for sample-level or aggregated expression profiles.",
     "input_requirements": ["normalized continuous expression", "named signatures"],
     "outputs": ["pathway score matrix", "coverage diagnostics"],
@@ -31,7 +31,7 @@
   },
   {
     "name": "ssgsea", "task": "program_scoring", "runtime": "r", "package": "GSVA",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Single-sample GSEA scoring through GSVA.",
     "input_requirements": ["normalized continuous expression", "named signatures"],
     "outputs": ["pathway score matrix", "coverage diagnostics"],
@@ -41,7 +41,7 @@
   },
   {
     "name": "mean", "task": "program_scoring", "runtime": "r", "package": "Shennong",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Dependency-free mean-expression scoring with explicit feature coverage.",
     "input_requirements": ["normalized expression", "named signatures"],
     "outputs": ["score matrix", "coverage diagnostics"],

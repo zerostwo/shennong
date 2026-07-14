@@ -105,6 +105,12 @@ Datasets:
 - `sn_add_signature()`: add a signature to the editable registry
 - `sn_update_signature()`: update a signature in the editable registry
 - `sn_delete_signature()`: delete a signature from the editable registry
+- `sn_score_programs()`: UCell, AUCell, GSVA, ssGSEA, or mean program scoring
+  with feature-coverage diagnostics, stored long-form scores, and cell metadata
+- `sn_test_programs()`: sample-aware program activity comparisons; when
+  `sample_by` is present, cells are aggregated before inference
+- `sn_plot_program_activity()` / `sn_plot_program_heatmap()`: result-aware
+  program score distributions and heatmaps
 
 ## Composition and Comparative Analysis
 
