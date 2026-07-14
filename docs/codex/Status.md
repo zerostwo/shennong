@@ -29,6 +29,10 @@ Last updated: 2026-07-14
   minimal-dependency vector fallback for feature plots without `ggrastr`.
 - Aligned the pending data-server integration with the installed ShennongData
   0.2 client contract.
+- Declared `msigdbr` in the pkgdown workflow's explicit website dependency
+  list so the feature-annotation vignette can execute on a clean CI runner.
+- Marked the CITE-seq WNN template as non-executing because the article does
+  not construct or ship the required multimodal `pbmc_cite` input object.
 
 ## Validation
 
@@ -51,6 +55,9 @@ Last updated: 2026-07-14
   have no exact source occurrences.
 - PR #4 passed `R-CMD-check`, `test-coverage`, and both Codecov statuses before
   merging into `main`.
+- Post-merge pkgdown deployments exposed a missing website-only `msigdbr`
+  installation and an unseeded CITE-seq example after a transient jsDelivr SSL
+  failure; both reproducibility fixes are being validated on GitHub Actions.
 
 ## Deferred local data
 

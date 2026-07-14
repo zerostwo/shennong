@@ -28,11 +28,13 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
+          # Keep optional packages here when executable articles require them.
           extra-packages: |
             any::pkgdown
             any::knitr
             any::rmarkdown
             github::tidyverse/tidytemplate
+            any::msigdbr
             any::Seurat
             any::hdf5r
             any::leidenbase
