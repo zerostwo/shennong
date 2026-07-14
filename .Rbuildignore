@@ -5,6 +5,7 @@
 ^\.Renviron$
 ^\.agents
 ^\.codex
+^\.codegraph$
 ^\.codegraph(/.*)?$
 dev
 ^LICENSE\.md$

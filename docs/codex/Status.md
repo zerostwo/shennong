@@ -17,6 +17,15 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
+- Full source-package checking exposed that excluding only CodeGraph contents
+  could still leave an empty top-level `.codegraph` directory in the tarball.
+  The root directory now has an explicit build-ignore rule, the active index
+  socket was stopped before packaging, tarball audit confirms the directory is
+  absent, and the rebuilt source completes full `R CMD check --no-manual` with
+  `Status: OK`.
+- The final pre-merge `testthat::test_local(stop_on_failure = TRUE)` run passes
+  with `FAIL 0 | WARN 0 | SKIP 6 | PASS 1906`. Skips are limited to unavailable
+  optional lisi, ROGUE, scmap, and zen4R dependencies.
 - Pre-merge validation exposed one stale registry expectation and one benign
   `enrichit` qvalue fallback warning on a tiny deterministic ORA fixture. The
   registry test now matches the implemented Slingshot state, and the exact

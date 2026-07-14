@@ -4,6 +4,8 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Development indexes must be excluded at both the root-directory and child
+  path levels because `R CMD build` can preserve an empty ignored directory.
 - Warning suppression remains message-specific. The `enrichit` qvalue fallback
   is benign when it explicitly returns missing q values for a tiny result, but
   other qvalue, enrichment, and mapping warnings remain visible.
