@@ -134,6 +134,24 @@ Datasets:
 - `sn_run_fate()` / `sn_plot_fate()`: CellRank GPCCA terminal states, fate
   probabilities, and optional lineage drivers from a stored velocity result
 
+## Spatial Workflows
+
+- `sn_run_spatial()`: dispatch QC, SVG, domain, neighborhood, deconvolution,
+  mapping, integration, or communication tasks
+- `sn_find_spatial_features()`: Moran's I with permutation evidence, nnSVG,
+  or explicit SPARK-X adapters
+- `sn_find_spatial_domains()`: optional BANKSY or explicit
+  stLearn/BayesSpace/CellCharter adapters
+- `sn_run_spatial_neighborhood()`: memory-bounded KNN graph, permutation
+  enrichment, and distance-bin co-occurrence
+- `sn_run_spatial_deconvolution()` / `sn_run_spatial_mapping()`: stable aliases
+  for the existing cell2location and Tangram object workflows
+- `sn_integrate_spatial()`: explicit STAligner/Harmony/custom result adapter
+- `sn_run_spatial_communication()`: augment a stored communication result with
+  group distance evidence and optional distance filtering
+- `sn_plot_spatial*()`: result-aware coordinate, SVG, domain, neighborhood,
+  deconvolution, and communication figures with fixed spatial aspect
+
 ## Differential Abundance and State Priority
 
 - `sn_test_abundance()`: sample-level Propeller/permutation or

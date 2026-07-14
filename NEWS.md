@@ -91,6 +91,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_run_spatial()` as a dispatcher plus explicit spatial feature,
+  domain, neighborhood, deconvolution, mapping, integration, and communication
+  entry points. Local Moran's I and memory-bounded KNN workflows retain spatial
+  graphs, permutation evidence, co-occurrence, coordinates, and diagnostics;
+  nnSVG/BANKSY run when installed and heavyweight alternatives use explicit
+  result adapters.
+- Added spatial coordinate, feature, domain, SVG, neighborhood,
+  deconvolution, and distance-aware communication plots that preserve tissue
+  aspect ratio.
 - Added `sn_run_velocity()` and `sn_plot_velocity()` with a managed scVelo
   pixi backend for spliced/unspliced preprocessing, projected velocity vectors,
   velocity pseudotime/confidence, transition edges, and retained H5AD evidence.

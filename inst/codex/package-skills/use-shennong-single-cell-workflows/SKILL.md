@@ -186,6 +186,10 @@ This skill is the main entry point for package usage.
    malignancy scores, subclones, and sample summaries with `sn_plot_cnv()`.
    Use `sn_run_metabolism()` with UCell by default and `sample_by` before any
    condition claim; scFEA/Compass require an explicit runner or parsed result.
+   For spatial data, preserve coordinate metadata and use `sn_run_spatial()`
+   or the explicit feature/domain/neighborhood functions. Run communication
+   inference before adding distance constraints; proximity is supporting
+   evidence, not a substitute interaction score.
 8. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
    `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for

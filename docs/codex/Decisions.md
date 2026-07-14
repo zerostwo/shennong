@@ -4,6 +4,18 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Spatial coordinates are first-class stored evidence, and every spatial plot
+  preserves their aspect ratio. Local KNN construction is memory-bounded by
+  computing one query location at a time rather than allocating an all-by-all
+  distance matrix; larger projects can use the existing Squidpy backend.
+- Spatially constrained communication augments a previously computed unified
+  communication result with mean nearest-group distance. It filters evidence;
+  it does not rerun ligand-receptor inference or claim that proximity alone is
+  communication.
+- BANKSY and nnSVG are direct optional Bioconductor paths. BayesSpace,
+  CellCharter, stLearn domain imports, SPARK-X, and STAligner remain explicit
+  runner/result adapters so package-specific objects and external runtimes are
+  not silently replaced by approximate local algorithms.
 - RNA velocity and fate mapping share one isolated CPU pixi environment but
   remain separate result types. scVelo consumes explicit spliced/unspliced
   layers and stores its H5AD artifact for CellRank; CellRank GPCCA consumes the

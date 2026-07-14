@@ -235,6 +235,19 @@ user request to the right Shennong function family quickly.
    only with explicit gene-by-bulk-sample expression and corresponding bulk
    phenotype; cell metadata is not a valid replacement.
 
+## Recipe: Run a spatial analysis
+
+1. Put two finite coordinate columns in metadata or pass `spatial_cols`.
+2. Start with `sn_find_spatial_features(method = "morans_i")` and inspect the
+   permutation null; use nnSVG when its Gaussian-process model is required.
+3. Use `sn_find_spatial_domains(method = "banksy")` when BANKSY is installed,
+   or pass an explicit result from stLearn, BayesSpace, or CellCharter.
+4. Use `sn_run_spatial_neighborhood(group_by = ...)` to retain the graph,
+   permutation enrichment, and distance-bin co-occurrence together.
+5. Run ordinary communication first, then call
+   `sn_run_spatial_communication()` to add proximity evidence. Do not interpret
+   proximity as ligand-receptor evidence by itself.
+
 ## Recipe: Reuse stored results
 
 1. Discover assets with `sn_list_results()`.

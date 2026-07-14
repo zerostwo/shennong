@@ -49,6 +49,12 @@ Last updated: 2026-07-15
   spliced/unspliced velocity inference, projected vectors and transition
   evidence, GPCCA terminal states/fate probabilities/lineage-driver import,
   and two result-aware dynamics plots.
+- Milestones C1/C2 now have one spatial dispatcher plus explicit feature,
+  domain, neighborhood, deconvolution, mapping, integration, and communication
+  APIs. The local path includes Moran's I with permutation evidence,
+  memory-bounded KNN graphs, neighborhood enrichment/co-occurrence, and
+  distance-constrained communication; nnSVG/BANKSY and existing Python
+  backends remain discoverable optional paths.
 - The CNV/malignancy/metabolism milestone now wraps inferCNVpy and CopyKAT in
   one stored result, exports chromosome evidence from the pixi backend, derives
   reference-calibrated malignancy/subclone/sample diagnostics, and adds a
@@ -73,6 +79,11 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Spatial workflow tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 46`, covering spatial autocorrelation,
+  adapters, domains, metadata storage, graph/enrichment/co-occurrence evidence,
+  communication distance filtering, integration, the dispatcher, registry,
+  and eight rendered plot types.
 - Velocity/fate R contract tests pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 20`. A real CPU pixi smoke run using
   scVelo 0.3.4 and CellRank 2.3.2 completed end to end on 80 synthetic cells,

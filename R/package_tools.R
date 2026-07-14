@@ -2619,9 +2619,9 @@ sn_install_shennong <- function(
 
 .sn_bioconductor_packages <- function() {
   c(
-    "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR", "GENIE3",
-    "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
-    "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "Nebulosa",
+    "Banksy", "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR", "GENIE3",
+    "glmGamPoi", "miloR", "nnSVG", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
+    "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "SpatialExperiment", "Nebulosa",
     "SummarizedExperiment", "limma"
   )
 }

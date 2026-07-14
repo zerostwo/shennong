@@ -90,6 +90,10 @@ package API.
 - `object <- sn_delete_result(object, "trajectory", "cd8")`
 - `sn_get_result(object, "velocity", "velocity")`
 - `sn_get_result(object, "fate", "fate")`
+- `sn_get_result(object, "spatial_features", "spatial_features")`
+- `sn_get_result(object, "spatial_domains", "spatial_domains")`
+- `sn_get_result(object, "spatial_neighborhood", "spatial_neighborhood")`
+- `sn_get_result(object, "spatial_communication", "spatial_communication")`
 - `sn_get_result(object, "cnv", "cnv")$tables$sample_summary`
 - `sn_get_result(object, "metabolism", "metabolism")$tables$differential`
 - `sn_get_de_result(object, de_name = "cluster_markers")`

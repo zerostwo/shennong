@@ -52,6 +52,7 @@ articles:
       - abundance-priority
       - communication-consensus
       - cnv-metabolism
+      - spatial-workflows
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -183,6 +184,23 @@ reference:
       - sn_plot_dynamic_heatmap
       - sn_plot_gene_trend
       - sn_plot_branch_comparison
+  - title: Spatial Analysis
+    contents:
+      - sn_run_spatial
+      - sn_find_spatial_features
+      - sn_find_spatial_domains
+      - sn_run_spatial_neighborhood
+      - sn_run_spatial_deconvolution
+      - sn_run_spatial_mapping
+      - sn_integrate_spatial
+      - sn_run_spatial_communication
+      - sn_plot_spatial
+      - sn_plot_spatial_feature
+      - sn_plot_spatial_domain
+      - sn_plot_spatial_svg
+      - sn_plot_spatial_neighborhood
+      - sn_plot_spatial_deconvolution
+      - sn_plot_spatial_communication
   - title: Composition and Comparative Analysis
     contents:
       - sn_test_abundance
