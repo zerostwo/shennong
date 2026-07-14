@@ -82,10 +82,14 @@ package API.
 - `sn_list_results(object)`
 - `sn_list_methods("trajectory")`
 - `sn_method_status("slingshot", task = "trajectory")`
+- `sn_method_status("scvelo", task = "velocity")`
+- `sn_method_status("cellrank", task = "fate")`
 - `sn_validate_result(result, error = FALSE)`
 - `object <- sn_store_result(object, "trajectory", "cd8", result)`
 - `sn_get_result(object, "trajectory", "cd8")`
 - `object <- sn_delete_result(object, "trajectory", "cd8")`
+- `sn_get_result(object, "velocity", "velocity")`
+- `sn_get_result(object, "fate", "fate")`
 - `sn_get_result(object, "cnv", "cnv")$tables$sample_summary`
 - `sn_get_result(object, "metabolism", "metabolism")$tables$differential`
 - `sn_get_de_result(object, de_name = "cluster_markers")`

@@ -158,6 +158,10 @@ This skill is the main entry point for package usage.
    pseudotime/probabilities before using tradeSeq dynamic or branch tables.
    Set `dynamic_features` to an explicit auditable feature set for formal
    analyses, and use `test_dynamic = FALSE` only for topology review.
+   Run `sn_run_velocity()` only when raw spliced and unspliced layers are
+   present. Review stored transition/confidence evidence before passing the
+   retained H5AD artifact to `sn_run_fate()` for CellRank GPCCA terminal states
+   and fate probabilities.
    Test cell-type abundance with `sn_test_abundance()` using `sample_by` as the
    biological replicate; use Propeller by default, permutation for transparent
    validation, and Milo for neighborhood effects. Use

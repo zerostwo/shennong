@@ -732,6 +732,12 @@ sn_call_infercnvpy <- function(command, args = character(), ...) {
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
+sn_call_trajectory <- function(command, args = character(), ...) {
+  sn_call_pixi_environment("trajectory", command = command, args = args, ...)
+}
+
+#' @rdname sn_prepare_pixi_environment
+#' @export
 sn_call_cellphonedb <- function(command, args = character(), ...) {
   sn_call_pixi_environment("cellphonedb", command = command, args = args, ...)
 }

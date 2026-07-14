@@ -207,6 +207,19 @@ user request to the right Shennong function family quickly.
    `sn_plot_branch_comparison()` for result-backed review; retrieve the durable
    result with `sn_get_result(object, "trajectory", store_name)`.
 
+## Recipe: Estimate RNA velocity and fate
+
+1. Keep raw spliced and unspliced counts in explicit Seurat layers and verify
+   cell/feature overlap before calling `sn_run_velocity()`.
+2. Review velocity confidence, projected vectors, and transition edges. A
+   visually smooth arrow field is not sufficient evidence by itself.
+3. Run `sn_run_fate(velocity_name = ...)` so CellRank consumes the retained
+   scVelo H5AD transition evidence. Use the stability terminal-state rule by
+   default; set `terminal_method = "top_n"` or `terminal_states` only with a
+   documented biological rationale.
+4. Retrieve `velocity` and `fate` results separately with `sn_get_result()`;
+   plot them with `sn_plot_velocity()` and `sn_plot_fate()`.
+
 ## Recipe: Test abundance and prioritize states
 
 1. Use `sn_test_abundance(sample_by = ..., condition_by = ...,

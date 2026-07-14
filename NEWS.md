@@ -91,6 +91,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_run_velocity()` and `sn_plot_velocity()` with a managed scVelo
+  pixi backend for spliced/unspliced preprocessing, projected velocity vectors,
+  velocity pseudotime/confidence, transition edges, and retained H5AD evidence.
+- Added `sn_run_fate()` and `sn_plot_fate()` with a managed CellRank GPCCA
+  backend for terminal-state discovery, fate probabilities, optional lineage
+  drivers, metadata storage, and explicit terminal-state controls.
 - Added `sn_discover_programs()` and `sn_plot_discovered_programs()` for
   multi-restart NMF with reconstruction/stability diagnostics plus explicit
   cNMF and Hotspot result adapters. Discovered gene weights and per-cell

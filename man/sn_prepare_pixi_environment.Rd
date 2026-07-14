@@ -9,6 +9,7 @@
 \alias{sn_call_scarches}
 \alias{sn_call_scpoli}
 \alias{sn_call_infercnvpy}
+\alias{sn_call_trajectory}
 \alias{sn_call_cellphonedb}
 \alias{sn_call_cell2location}
 \alias{sn_call_tangram}
@@ -65,6 +66,8 @@ sn_call_scarches(command, args = character(), ...)
 sn_call_scpoli(command, args = character(), ...)
 
 sn_call_infercnvpy(command, args = character(), ...)
+
+sn_call_trajectory(command, args = character(), ...)
 
 sn_call_cellphonedb(command, args = character(), ...)
 

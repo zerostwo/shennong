@@ -48,6 +48,7 @@ articles:
       - interpretation-workflows
       - analysis-results-and-methods
       - trajectory-dynamics
+      - velocity-fate
       - abundance-priority
       - communication-consensus
       - cnv-metabolism
@@ -172,6 +173,10 @@ reference:
   - title: Trajectory and Dynamic Genes
     contents:
       - sn_run_trajectory
+      - sn_run_velocity
+      - sn_plot_velocity
+      - sn_run_fate
+      - sn_plot_fate
       - sn_plot_trajectory
       - sn_plot_pseudotime
       - sn_plot_lineage_probability

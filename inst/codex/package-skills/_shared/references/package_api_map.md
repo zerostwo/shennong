@@ -60,7 +60,7 @@ Datasets:
 - `sn_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
 - `sn_list_pixi_environments()` / `sn_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
 - `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
-- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` and `mmochi` share the `scvi` environment; `scpoli` shares the `scarches` environment.
+- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
 - `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
 - Use the `sn_call_*()` helpers for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
 - `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
@@ -128,6 +128,11 @@ Datasets:
   `sn_plot_lineage_probability()`: embedding views backed by the stored result
 - `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
   `sn_plot_branch_comparison()`: tradeSeq trend and branch-test views
+- `sn_run_velocity()` / `sn_plot_velocity()`: managed scVelo inference from
+  spliced/unspliced layers with projected vectors, transition evidence,
+  pseudotime, and confidence
+- `sn_run_fate()` / `sn_plot_fate()`: CellRank GPCCA terminal states, fate
+  probabilities, and optional lineage drivers from a stored velocity result
 
 ## Differential Abundance and State Priority
 

@@ -4,6 +4,15 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- RNA velocity and fate mapping share one isolated CPU pixi environment but
+  remain separate result types. scVelo consumes explicit spliced/unspliced
+  layers and stores its H5AD artifact for CellRank; CellRank GPCCA consumes the
+  directed transition kernel and never reconstructs fate from plotted arrows.
+- Terminal-state selection remains explicit and auditable. CellRank's
+  stability rule is the default; users can select `top_n` or declared terminal
+  states when the stability threshold has no valid macrostate. Synthetic smoke
+  tests use deterministic velocity and `top_n` only to make backend execution
+  reproducible, not as universal biological defaults.
 - Program discovery uses a dependency-free multi-restart NMF implementation
   with explicit dense-size guards and restart diagnostics. cNMF and Hotspot
   remain external adapters because their environments and graph construction

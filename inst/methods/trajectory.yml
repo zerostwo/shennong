@@ -41,7 +41,7 @@
   },
   {
     "name": "scvelo", "task": "velocity", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "RNA velocity inference with scVelo.",
     "input_requirements": ["spliced counts", "unspliced counts", "neighbors"],
     "outputs": ["velocity vectors", "velocity graph", "latent time"],
@@ -51,7 +51,7 @@
   },
   {
     "name": "cellrank", "task": "fate", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Fate probabilities and terminal-state inference with CellRank.",
     "input_requirements": ["AnnData", "transition kernel"],
     "outputs": ["terminal states", "fate probabilities", "lineage drivers"],

@@ -45,6 +45,10 @@ Last updated: 2026-07-15
   adapters, a real optional GENIE3 backend, explicit pySCENIC/SCENIC/GRNBoost2
   adapters, regulon activity and group-specificity summaries, and six
   result-aware program/GRN plot modes.
+- Milestone B7 now has a managed scVelo/CellRank pixi environment, real
+  spliced/unspliced velocity inference, projected vectors and transition
+  evidence, GPCCA terminal states/fate probabilities/lineage-driver import,
+  and two result-aware dynamics plots.
 - The CNV/malignancy/metabolism milestone now wraps inferCNVpy and CopyKAT in
   one stored result, exports chromosome evidence from the pixi backend, derives
   reference-calibrated malignancy/subclone/sample diagnostics, and adds a
@@ -69,6 +73,11 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Velocity/fate R contract tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 20`. A real CPU pixi smoke run using
+  scVelo 0.3.4 and CellRank 2.3.2 completed end to end on 80 synthetic cells,
+  returning 80 velocity vectors, 2,594 transition edges, and 80 CellRank fate
+  probabilities.
 - Program-discovery and GRN focused tests pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 79`, covering local NMF, external program
   adapters, GRN edge standardization, derived and supplied regulon activity,
