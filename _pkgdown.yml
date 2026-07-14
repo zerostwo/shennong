@@ -49,6 +49,7 @@ articles:
       - trajectory-dynamics
       - abundance-priority
       - communication-consensus
+      - cnv-metabolism
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -199,6 +200,13 @@ reference:
       - sn_run_regulatory_activity
       - sn_store_regulatory_activity
       - sn_get_regulatory_activity_result
+  - title: CNV, Malignancy, and Metabolism
+    contents:
+      - sn_run_cnv
+      - sn_plot_cnv
+      - sn_metabolic_signatures
+      - sn_run_metabolism
+      - sn_plot_metabolism
   - title: Interpretation and Reporting
     contents:
       - sn_get_de_result

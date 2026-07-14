@@ -1,6 +1,6 @@
 ---
 name: use-shennong-single-cell-workflows
-description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
+description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, CNV, metabolism, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
 ---
 
 # use-shennong-single-cell-workflows
@@ -9,7 +9,7 @@ description: Use when working with current Shennong single-cell, CITE-seq, spati
 
 Teach the agent how to use the current Shennong API for preprocessing,
 clustering/integration, CITE-seq, label transfer, differential expression,
-enrichment, composition, Milo, bulk deconvolution, communication, regulatory
+enrichment, composition, Milo, bulk deconvolution, communication, CNV, metabolism, regulatory
 activity, simulation, visualization, IO, Python runtime helpers, and reporting.
 This skill is the main entry point for package usage.
 
@@ -172,27 +172,32 @@ This skill is the main entry point for package usage.
    concordance, sample evidence, condition effects, and ligand-target tables.
    Use `sn_run_regulatory_activity()` for DoRothEA TF or PROGENy pathway
    activity workflows.
-7. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
+7. Use `sn_run_cnv()` only with explicit normal references; include
+   `sample_by` for multi-patient data and review chromosome evidence,
+   malignancy scores, subclones, and sample summaries with `sn_plot_cnv()`.
+   Use `sn_run_metabolism()` with UCell by default and `sample_by` before any
+   condition claim; scFEA/Compass require an explicit runner or parsed result.
+8. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
    `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
    package-style plots; resolve reusable colors with `sn_list_palettes()` and
    `sn_get_palette()`.
-8. Build prompts or stored-result summaries with the interpretation helpers
+9. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
-9. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
+10. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
    `sn_simulate_scdesign3()` when the task needs direct scDesign3 controls.
-10. Inspect and reuse bundled signatures with `sn_list_signatures()` and
+11. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
-11. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
+12. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
    `sn_list_pixi_environments()`, `sn_pixi_config_path()`,
    `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`, and the
    family-specific `sn_call_*()` helpers when a Python backend must be checked,
    prepared, or invoked directly.
-12. Use `sn_check_version()`, `sn_install_shennong()`,
+13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks.
-13. When the correct entry point is unclear, read
+14. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 

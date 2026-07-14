@@ -91,6 +91,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_run_cnv()` and `sn_plot_cnv()` as the unified inferCNVpy/CopyKAT
+  workflow. Stored results now include reference-calibrated malignancy scores,
+  malignant calls, subclones, sample summaries, chromosome-level CNV, optional
+  CNV UMAP coordinates, and CNV-expression associations.
+- Added `sn_metabolic_signatures()`, `sn_run_metabolism()`, and
+  `sn_plot_metabolism()` for curated UCell/GSVA/ssGSEA/mean pathway activity,
+  sample-level differential metabolism, scMetabolism, and standardized
+  scFEA/Compass result adapters.
 - Expanded `sn_run_cell_communication()` into a multi-backend communication
   workflow for LIANA, CellChat, CellPhoneDB, NicheNet, and MultiNicheNet. All
   backends now map to a shared ligand-receptor schema with method concordance,

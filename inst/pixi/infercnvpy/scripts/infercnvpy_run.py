@@ -86,6 +86,19 @@ def _write_matrix_csv(matrix, index, path: Path) -> None:
     pd.DataFrame(arr, index=index).to_csv(path)
 
 
+def _write_chromosome_summary(adata: ad.AnnData, key_added: str, path: Path) -> None:
+    matrix = adata.obsm[f"X_{key_added}"]
+    chromosome_starts = adata.uns[key_added]["chr_pos"]
+    ordered = sorted(chromosome_starts.items(), key=lambda item: int(item[1]))
+    summary = {}
+    for index, (chromosome, start) in enumerate(ordered):
+        end = int(ordered[index + 1][1]) if index + 1 < len(ordered) else matrix.shape[1]
+        block = matrix[:, int(start):end]
+        values = np.asarray(block.mean(axis=1)).reshape(-1)
+        summary[str(chromosome)] = values
+    pd.DataFrame(summary, index=adata.obs_names).to_csv(path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", required=True)
@@ -158,6 +171,7 @@ def main() -> None:
         _write_matrix_csv(adata.obsm[pca_key], adata.obs_names, output_dir / "cnv_pca.csv")
     if "X_cnv_umap" in adata.obsm:
         _write_matrix_csv(adata.obsm["X_cnv_umap"], adata.obs_names, output_dir / "cnv_umap.csv")
+    _write_chromosome_summary(adata, key_added, output_dir / "cnv_chromosome.csv")
 
     output_h5ad = output_dir / "infercnvpy.h5ad"
     if config.get("write_h5ad", True):
@@ -171,6 +185,7 @@ def main() -> None:
         "obs_path": str(output_dir / "obs.csv"),
         "cnv_pca_path": str(output_dir / "cnv_pca.csv"),
         "cnv_umap_path": str(output_dir / "cnv_umap.csv"),
+        "cnv_chromosome_path": str(output_dir / "cnv_chromosome.csv"),
         "output_h5ad": str(output_h5ad),
     }
     with (output_dir / "manifest.json").open("w", encoding="utf-8") as handle:

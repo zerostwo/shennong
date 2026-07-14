@@ -131,6 +131,20 @@ Datasets:
   bulk-input Scissor, or RareQ discovery plus sample-level association
 - `sn_plot_state_priority()`: ranked state-priority view
 
+## CNV, Malignancy, and Metabolism
+
+- `sn_run_cnv()`: unified inferCNVpy/CopyKAT analysis with declared normal
+  references, malignancy scores/calls, subclones, chromosome evidence, sample
+  summaries, CNV UMAP, and expression association
+- `sn_plot_cnv()`: chromosome heatmap, CNV UMAP, malignancy distribution,
+  sample summary, or CNV-expression association from a stored result
+- `sn_metabolic_signatures()`: curated core metabolic pathway gene sets
+- `sn_run_metabolism()`: UCell/GSVA/ssGSEA/mean pathway scoring plus
+  scMetabolism or explicit scFEA/Compass adapters; condition tests aggregate to
+  `sample_by` first
+- `sn_plot_metabolism()`: pathway activity, sample heatmap, sample comparison,
+  and differential-effect views
+
 ## Composition and Comparative Analysis
 
 - `sn_calculate_composition()`: grouped counts and proportions

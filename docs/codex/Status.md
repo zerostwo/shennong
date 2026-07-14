@@ -41,6 +41,10 @@ Last updated: 2026-07-15
   CellChat, CellPhoneDB, NicheNet, and MultiNicheNet; cross-method consensus and
   concordance; sample-level LR evidence and condition comparisons; retained
   ligand-target evidence; and seven result-aware plot modes.
+- The CNV/malignancy/metabolism milestone now wraps inferCNVpy and CopyKAT in
+  one stored result, exports chromosome evidence from the pixi backend, derives
+  reference-calibrated malignancy/subclone/sample diagnostics, and adds a
+  curated sample-aware metabolism workflow plus optional heavy-backend adapters.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -61,6 +65,14 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- CNV/metabolism tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 56`, covering
+  the actual inferCNVpy import adapter, CopyKAT-style predictions, reference
+  calibration, all CNV plots, curated and external metabolism backends,
+  sample-level contrasts, registry discovery, and all metabolism plots.
+- `scripts/check-prepush.R --filter=cnv-metabolism --quick` passes source build,
+  structural `R CMD check` with `Status: OK`, and reference-index validation;
+  the complete pkgdown site also rebuilds with the new article and five new
+  reference pages.
 - Communication tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 48` against
   real NicheNet and MultiNicheNet backends,
   synthetic CellChat/LIANA standardization, CellPhoneDB file parsing,

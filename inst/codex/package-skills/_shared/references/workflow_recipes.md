@@ -141,6 +141,24 @@ user request to the right Shennong function family quickly.
 5. Retrieve stored outputs with `sn_get_cell_communication_result()` or
    `sn_get_regulatory_activity_result()`.
 
+## Recipe: Infer CNV and compare metabolic activity
+
+1. Define trustworthy normal cells explicitly, then run
+   `sn_run_cnv(reference_cells = ...)` or use `reference_by` plus
+   `reference_cat`; do not infer malignancy without an auditable reference.
+2. Supply `sample_by` for multi-patient tumors. Review `tables$primary`,
+   `chromosome`, `sample_summary`, and `expression_association` before using a
+   malignant call or subclone in downstream figures.
+3. Use `sn_plot_cnv()` for the chromosome, CNV UMAP, malignancy, sample, and
+   expression-association views. Retrieve with
+   `sn_get_result(object, "cnv", store_name)`.
+4. Start metabolism with `sn_run_metabolism(scoring_method = "ucell")` and
+   curated signatures. Supply `sample_by`, `condition_by`, and optionally
+   `group_by` so differential activity is estimated from samples, not cells.
+5. Inspect signature coverage and sample scores. Use explicit
+   `backend_control$runner` or `backend_control$result` when standardizing
+   scFEA/Compass output, then plot with `sn_plot_metabolism()`.
+
 ## Recipe: Build annotation evidence
 
 1. Use `sn_run_annotation(method = "consensus")` for marker-only annotation,

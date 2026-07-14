@@ -1,0 +1,22 @@
+[
+  {
+    "name": "infercnvpy", "task": "cnv", "runtime": "pixi", "package": "Shennong", "environment": "infercnvpy",
+    "implemented": true, "default": true,
+    "description": "Reference-aware CNV inference with chromosome summaries, CNV embedding, malignancy scoring, and subclones.",
+    "input_requirements": ["normalized expression", "genomic positions", "normal reference cells"],
+    "outputs": ["cell CNV scores", "chromosome CNV", "malignancy calls", "subclones", "CNV UMAP"],
+    "supports": {"sample_level": true, "reference_cells": true, "umap": true},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('infercnvpy', install_environment = TRUE)",
+    "citation": "Sturm et al. Bioinformatics 2020"
+  },
+  {
+    "name": "copykat", "task": "cnv", "runtime": "r", "package": "copykat",
+    "implemented": true, "default": false,
+    "description": "Sample-wise CopyKAT inference with aneuploid/diploid calls and standardized chromosome evidence.",
+    "input_requirements": ["raw counts", "normal reference cells", "sample labels recommended"],
+    "outputs": ["aneuploid predictions", "chromosome CNV", "malignancy calls", "subclones"],
+    "supports": {"sample_level": true, "reference_cells": true},
+    "cpu_gpu": "CPU", "install": "remotes::install_github('navinlabcode/copykat')",
+    "citation": "Gao et al. Nature Biotechnology 2021"
+  }
+]

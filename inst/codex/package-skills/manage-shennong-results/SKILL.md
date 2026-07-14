@@ -14,7 +14,7 @@ package API.
 
 - discovering whether a registered analysis backend is implemented and available
 - storing any versioned analysis result, including DE, enrichment, trajectory,
-  annotation, programs, Milo, deconvolution, communication, regulatory activity,
+  annotation, programs, Milo, deconvolution, communication, CNV, metabolism, regulatory activity,
   or interpretation outputs
 - retrieving stored results for downstream plots or interpretation
 - auditing what is available on a Seurat object
@@ -85,6 +85,8 @@ package API.
 - `object <- sn_store_result(object, "trajectory", "cd8", result)`
 - `sn_get_result(object, "trajectory", "cd8")`
 - `object <- sn_delete_result(object, "trajectory", "cd8")`
+- `sn_get_result(object, "cnv", "cnv")$tables$sample_summary`
+- `sn_get_result(object, "metabolism", "metabolism")$tables$differential`
 - `sn_get_de_result(object, de_name = "cluster_markers")`
 - `sn_annotate_de_features(object, de_name = "cluster_markers")`
 - `sn_store_enrichment(object, result, enrichment_name = "cluster_pathways")`

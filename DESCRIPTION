@@ -49,6 +49,7 @@ Suggests:
     Coralysis,
     Coralysis2,
     COSG,
+    copykat,
     data.table,
     DESeq2,
     decoupleR,
@@ -92,6 +93,7 @@ Suggests:
     S4Vectors,
     scDblFinder,
     scDesign3,
+    scMetabolism,
     scran,
     scmap,
     Scissor,
@@ -113,6 +115,7 @@ Suggests:
     UCell,
     zen4R
 Remotes:
+    github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,
     github::sunduanchen/Scissor,
     github::genecell/COSGR,
@@ -127,6 +130,7 @@ Remotes:
     github::saezlab/liana,
     github::saeyslab/nichenetr,
     github::saeyslab/multinichenetr,
+    github::wu-yc/scMetabolism,
     github::scverse/anndataR,
     github::tidyverse/tidytemplate
 VignetteBuilder: knitr

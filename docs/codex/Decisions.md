@@ -4,6 +4,15 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- CNV malignancy calls are calibrated against user-declared normal cells, not
+  an unlabeled global threshold. Backend CNV evidence remains auditable at the
+  chromosome level; CopyKAT is run sample-wise, and inferCNVpy exports compact
+  chromosome summaries instead of duplicating a full bin matrix in Seurat.
+- Metabolic condition claims aggregate pathway scores by biological sample
+  before testing. Curated UCell/GSVA scoring is the lightweight default;
+  scMetabolism is optional, while scFEA and Compass enter through explicit
+  runner/result adapters so their heavyweight environments are not hidden R
+  dependencies.
 - Communication backends retain native artifacts but expose a common primary
   schema. Multi-method consensus uses within-method percentile ranks;
   condition comparisons recompute ligand-receptor evidence within biological

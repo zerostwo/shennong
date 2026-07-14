@@ -1,0 +1,42 @@
+[
+  {
+    "name": "geneset", "task": "metabolism", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Curated metabolic pathway scoring with UCell, GSVA, ssGSEA, or sparse-aware means.",
+    "input_requirements": ["normalized expression", "curated or user-provided signatures"],
+    "outputs": ["cell pathway scores", "sample scores", "differential activity", "coverage diagnostics"],
+    "supports": {"sample_level": true, "condition_comparison": true, "custom_signatures": true},
+    "cpu_gpu": "CPU", "install": "Install UCell or GSVA for the selected scoring method.",
+    "citation": "Andreatta and Carmona. Computational and Structural Biotechnology Journal 2021"
+  },
+  {
+    "name": "scmetabolism", "task": "metabolism", "runtime": "r", "package": "scMetabolism",
+    "implemented": true, "default": false,
+    "description": "Adapter for KEGG or Reactome activity from scMetabolism.",
+    "input_requirements": ["count matrix"],
+    "outputs": ["cell pathway scores", "sample scores", "differential activity"],
+    "supports": {"sample_level": true, "condition_comparison": true},
+    "cpu_gpu": "CPU", "install": "remotes::install_github('wu-yc/scMetabolism')",
+    "citation": "Wu et al. Cancer Discovery 2022"
+  },
+  {
+    "name": "scfea", "task": "metabolism", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Import or custom-runner adapter for scFEA metabolic flux output.",
+    "input_requirements": ["scFEA pathway-by-cell output or runner"],
+    "outputs": ["cell flux scores", "sample scores", "differential activity"],
+    "supports": {"sample_level": true, "condition_comparison": true, "external_runner": true},
+    "cpu_gpu": "CPU/GPU backend-dependent", "install": "Install scFEA separately and pass its output or a runner through backend_control.",
+    "citation": "Alghamdi et al. Genome Research 2021"
+  },
+  {
+    "name": "compass", "task": "metabolism", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Import or custom-runner adapter for Compass reaction/pathway activity output.",
+    "input_requirements": ["Compass pathway-by-cell output or runner"],
+    "outputs": ["cell metabolic scores", "sample scores", "differential activity"],
+    "supports": {"sample_level": true, "condition_comparison": true, "external_runner": true},
+    "cpu_gpu": "CPU", "install": "Install Compass separately and pass its output or a runner through backend_control.",
+    "citation": "Wagner et al. Cell 2021"
+  }
+]
