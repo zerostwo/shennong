@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/zerostwo/shennong/blob/agent/fix-pkgdown-msigdbr/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/zerostwo/shennong/blob/main/DESCRIPTION)
 
 Duan S (2026). *Shennong: Toolkit for Interpreting Omics Data*. R
 package version 0.1.4, <https://songqi.org/shennong>.

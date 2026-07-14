@@ -81,9 +81,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
-#> INFO [2026-07-14 06:11:22] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-14 06:11:22] Running QC metrics for human.
-#> INFO [2026-07-14 06:11:22] Seurat object initialization complete.
+#> INFO [2026-07-14 06:29:09] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:29:10] Running QC metrics for human.
+#> INFO [2026-07-14 06:29:10] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> [1] "task"               "dataset"            "cluster_summary"   
 #> [4] "cluster_markers"    "enrichment_summary"

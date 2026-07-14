@@ -19,9 +19,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-14 06:11:50] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:11:50] Running QC metrics for human.
-#> INFO [2026-07-14 06:11:50] Seurat object initialization complete.
+#> INFO [2026-07-14 06:29:34] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:29:34] Running QC metrics for human.
+#> INFO [2026-07-14 06:29:35] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -320,7 +320,7 @@ pbmc <- sn_enrich(
   store_name = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-07-14 06:13:14] Running ORA analysis for the GOBP database.
+#> INFO [2026-07-14 06:30:40] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,

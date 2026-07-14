@@ -25,9 +25,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data(dataset = "pbmc3k")
-#> INFO [2026-07-14 06:21:54] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:21:55] Running QC metrics for human.
-#> INFO [2026-07-14 06:21:55] Seurat object initialization complete.
+#> INFO [2026-07-14 06:38:27] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:38:28] Running QC metrics for human.
+#> INFO [2026-07-14 06:38:28] Seurat object initialization complete.
 
 pbmc_h5 <- sn_load_data(
   dataset = "pbmc3k",
@@ -38,12 +38,12 @@ pbmc_h5
 #> [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 
 pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-#> INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc1k.
-#> INFO [2026-07-14 06:22:09] Running QC metrics for human.
-#> INFO [2026-07-14 06:22:09] Seurat object initialization complete.
-#> INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:22:10] Running QC metrics for human.
-#> INFO [2026-07-14 06:22:10] Seurat object initialization complete.
+#> INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc1k.
+#> INFO [2026-07-14 06:38:39] Running QC metrics for human.
+#> INFO [2026-07-14 06:38:39] Seurat object initialization complete.
+#> INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:38:40] Running QC metrics for human.
+#> INFO [2026-07-14 06:38:40] Seurat object initialization complete.
 table(pbmc_merged$sample)
 #> 
 #> pbmc1k pbmc3k 
@@ -140,9 +140,9 @@ pbmc <- sn_initialize_seurat_object(
   study = "10x_pbmc",
   species = "human"
 )
-#> INFO [2026-07-14 06:22:11] Initializing Seurat object for project: pbmc3k_demo.
-#> INFO [2026-07-14 06:22:12] Running QC metrics for human.
-#> INFO [2026-07-14 06:22:12] Seurat object initialization complete.
+#> INFO [2026-07-14 06:38:41] Initializing Seurat object for project: pbmc3k_demo.
+#> INFO [2026-07-14 06:38:41] Running QC metrics for human.
+#> INFO [2026-07-14 06:38:42] Seurat object initialization complete.
 
 pbmc
 #> An object of class Seurat 
@@ -272,9 +272,9 @@ zenodo_plan$files[, c("file", "size", "md5")]
 #>   file                      size md5                             
 #>   <chr>                    <dbl> <chr>                           
 #> 1 pbmc3k_metadata.csv     252144 30e88b334de6ed4d04a0393921f0f216
-#> 2 pbmc3k_initialized.qs2 6229208 d29bb6be776337aaf083b061561a6c2b
+#> 2 pbmc3k_initialized.qs2 6229208 8f982b37f3dd01235364273240af1e2a
 zenodo_plan$manifest_path
-#> [1] "/tmp/RtmpE5YFGz/shennong_zenodo_manifest.json"
+#> [1] "/tmp/RtmpQhdMA8/shennong_zenodo_manifest.json"
 ```
 
 In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and

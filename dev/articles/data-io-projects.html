@@ -78,7 +78,7 @@ Duan</h4>
       
                   
       
-      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/agent/fix-pkgdown-msigdbr/vignettes/data-io-projects.Rmd" class="external-link"><code>vignettes/data-io-projects.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/main/vignettes/data-io-projects.Rmd" class="external-link"><code>vignettes/data-io-projects.Rmd</code></a></small>
       <div class="d-none name"><code>data-io-projects.Rmd</code></div>
     </div>
 
@@ -108,9 +108,9 @@ the <code>sample</code> metadata column.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:21:54] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:21:55] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:21:55] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:27] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:28] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:28] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc_h5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
 <span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
@@ -121,12 +121,12 @@ the <code>sample</code> metadata column.</p>
 <span><span class="co">#&gt; [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"</span></span>
 <span></span>
 <span><span class="va">pbmc_merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc1k"</span>, <span class="st">"pbmc3k"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc1k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Seurat object initialization complete.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:10] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:10] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc1k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:40] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:40] Seurat object initialization complete.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_merged</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; pbmc1k pbmc3k </span></span>
@@ -210,9 +210,9 @@ make the metadata decision explicit in
 <span>  study <span class="op">=</span> <span class="st">"10x_pbmc"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:11] Initializing Seurat object for project: pbmc3k_demo.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:12] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:22:12] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:41] Initializing Seurat object for project: pbmc3k_demo.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:41] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:38:42] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
@@ -323,9 +323,9 @@ only when the record is ready.</p>
 <span><span class="co">#&gt;   file                      size md5                             </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                           </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> pbmc3k_metadata.csv     <span style="text-decoration: underline;">252</span>144 30e88b334de6ed4d04a0393921f0f216</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> pbmc3k_initialized.qs2 6<span style="text-decoration: underline;">229</span>208 d29bb6be776337aaf083b061561a6c2b</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> pbmc3k_initialized.qs2 6<span style="text-decoration: underline;">229</span>208 8f982b37f3dd01235364273240af1e2a</span></span>
 <span><span class="va">zenodo_plan</span><span class="op">$</span><span class="va">manifest_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpE5YFGz/shennong_zenodo_manifest.json"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpQhdMA8/shennong_zenodo_manifest.json"</span></span></code></pre></div>
 <p>In a real upload, set <code>ZENODO_TOKEN</code> or
 <code>ZENODO_SANDBOX_TOKEN</code> and remove
 <code>dry_run = TRUE</code>. The uploaded
