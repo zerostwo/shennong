@@ -153,6 +153,11 @@ This skill is the main entry point for package usage.
    pseudotime/probabilities before using tradeSeq dynamic or branch tables.
    Set `dynamic_features` to an explicit auditable feature set for formal
    analyses, and use `test_dynamic = FALSE` only for topology review.
+   Test cell-type abundance with `sn_test_abundance()` using `sample_by` as the
+   biological replicate; use Propeller by default, permutation for transparent
+   validation, and Milo for neighborhood effects. Use
+   `sn_prioritize_states()` for perturbation separability, RareQ topology, or
+   Scissor only when matched bulk expression and phenotype are supplied.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.

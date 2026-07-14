@@ -91,6 +91,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_test_abundance()` as the stable differential-abundance entry point
+  for sample-level Propeller, transparent sample-label permutation, and
+  neighborhood-level Milo. Results include standardized effects, adjusted
+  significance, completed sample proportions, sample contributions, design
+  data, backend evidence, and permutation nulls where applicable.
+- Added `sn_prioritize_states()` for sample-aware Augur-style held-out
+  separability, explicit bulk-input Scissor selection, and RareQ topology
+  discovery followed by sample-level phenotype association. State rankings,
+  cell scores, uncertainty, null distributions, and sample contributions use
+  the shared result contract; `sn_plot_abundance()` and
+  `sn_plot_state_priority()` render stored results.
 - Added `sn_run_trajectory()` with Slingshot lineage inference and optional
   tradeSeq dynamic-gene, branch-pattern, differential-end, convergence, and
   fitted-trend outputs. Per-lineage pseudotime/probability, principal curves,

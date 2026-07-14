@@ -166,6 +166,21 @@ user request to the right Shennong function family quickly.
    `sn_plot_branch_comparison()` for result-backed review; retrieve the durable
    result with `sn_get_result(object, "trajectory", store_name)`.
 
+## Recipe: Test abundance and prioritize states
+
+1. Use `sn_test_abundance(sample_by = ..., condition_by = ...,
+   cell_type_by = ...)`; every condition and design covariate must be constant
+   within a biological sample.
+2. Start with Propeller, validate important effects with sample-label
+   permutation, and use Milo only when neighborhood-level resolution is needed.
+3. Audit completed zero-count rows, sample proportions, contributions, and
+   adjusted significance in the stored result before plotting.
+4. Use `sn_prioritize_states(method = "augur")` for state-wise condition
+   separability, with `sample_by` so entire samples are held out.
+5. Use RareQ when topology-supported rare states are the target. Use Scissor
+   only with explicit gene-by-bulk-sample expression and corresponding bulk
+   phenotype; cell metadata is not a valid replacement.
+
 ## Recipe: Reuse stored results
 
 1. Discover assets with `sn_list_results()`.

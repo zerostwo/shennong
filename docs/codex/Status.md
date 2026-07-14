@@ -33,6 +33,10 @@ Last updated: 2026-07-15
 - Milestone B3 now has Slingshot topology/pseudotime/lineage probabilities,
   terminal-state and curve storage, optional tradeSeq dynamic/branch tests,
   fitted trends and convergence diagnostics, plus six result-aware plots.
+- Milestone B4 now has unified Propeller/permutation/Milo abundance tests,
+  sample-level evidence and contributions, Augur-style sample-held-out state
+  separability, real Scissor bulk integration, RareQ topology discovery plus
+  phenotype association, and two result-aware plots.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -53,6 +57,13 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Abundance and state-priority tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 34`. The suite runs real speckle Propeller,
+  miloR, RareQ, and Scissor backends plus sample-label permutation and
+  sample-held-out separability on deterministic synthetic data.
+- The quick pre-push source build and structural check pass with `Status: OK`,
+  and the complete pkgdown site rebuilt with the abundance/state-priority
+  article and four new reference pages.
 - Trajectory tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 29`, including
   deterministic branching and linear Slingshot paths, real tradeSeq GAM fits,
   result-contract retrieval, convergence/trend tables, and rendered ggplot

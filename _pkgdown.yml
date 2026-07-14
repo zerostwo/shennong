@@ -47,6 +47,7 @@ articles:
       - interpretation-workflows
       - analysis-results-and-methods
       - trajectory-dynamics
+      - abundance-priority
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -172,6 +173,10 @@ reference:
       - sn_plot_branch_comparison
   - title: Composition and Comparative Analysis
     contents:
+      - sn_test_abundance
+      - sn_plot_abundance
+      - sn_prioritize_states
+      - sn_plot_state_priority
       - sn_calculate_composition
       - sn_calculate_roe
       - sn_compare_composition

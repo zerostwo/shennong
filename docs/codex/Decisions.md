@@ -4,6 +4,15 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Differential abundance treats samples as replicates. Propeller is the
+  cell-type default, Milo retains neighborhood-level inference, and the
+  permutation backend shuffles sample labels rather than cells. Completed zero
+  counts and per-sample contributions remain stored for audit.
+- State priority keeps three input contracts separate: Augur-style
+  separability uses state and phenotype metadata with sample-held-out folds;
+  Scissor requires explicit bulk expression plus bulk phenotype; RareQ finds
+  topology-supported states before sample-level phenotype association. The
+  package does not silently substitute one scientific question for another.
 - Slingshot is the P1 trajectory default and tradeSeq is the dynamic-gene
   backend. Shennong stores compact curves, topology, test tables, convergence,
   and fitted trends rather than duplicating full backend model objects inside

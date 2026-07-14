@@ -122,6 +122,15 @@ Datasets:
 - `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
   `sn_plot_branch_comparison()`: tradeSeq trend and branch-test views
 
+## Differential Abundance and State Priority
+
+- `sn_test_abundance()`: sample-level Propeller/permutation or
+  neighborhood-level Milo through one versioned result contract
+- `sn_plot_abundance()`: standardized effect view for stored abundance results
+- `sn_prioritize_states()`: sample-held-out perturbation separability, explicit
+  bulk-input Scissor, or RareQ discovery plus sample-level association
+- `sn_plot_state_priority()`: ranked state-priority view
+
 ## Composition and Comparative Analysis
 
 - `sn_calculate_composition()`: grouped counts and proportions

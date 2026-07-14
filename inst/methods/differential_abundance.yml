@@ -1,7 +1,7 @@
 [
   {
     "name": "propeller", "task": "differential_abundance", "runtime": "r", "package": "speckle",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Sample-level differential testing of transformed cell-type proportions.",
     "input_requirements": ["sample labels", "condition labels", "cell-type labels"],
     "outputs": ["effect estimates", "p values", "adjusted p values", "sample proportions"],
@@ -31,7 +31,7 @@
   },
   {
     "name": "permutation", "task": "differential_abundance", "runtime": "r", "package": "Shennong",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Sample-aware permutation test used as a transparent validation backend.",
     "input_requirements": ["sample labels", "condition labels", "cell-type labels"],
     "outputs": ["effect estimates", "permutation null", "empirical p values"],
