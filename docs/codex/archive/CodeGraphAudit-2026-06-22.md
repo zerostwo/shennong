@@ -1,4 +1,4 @@
-# CodeGraph audit — 2026-06-22
+# CodeGraph audit — 2026-06-22 (archived snapshot)
 
 ## Scope
 

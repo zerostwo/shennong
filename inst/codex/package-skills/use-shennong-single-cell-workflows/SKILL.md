@@ -45,6 +45,9 @@ This skill is the main entry point for package usage.
 - use vectorized `sn_load_data(dataset = c(...))` when several Shennong
   example datasets should be loaded together; filtered inputs return a merged
   Seurat object and raw inputs return a named list
+- use `sn_load_data(dataset = ..., backend = "api")` for lazy Shennong Data
+  Server resources; select assay/layer views through `api_args`, and set
+  `lazy = FALSE` only when the user explicitly wants materialization
 - respect strict `sn_verb_noun` naming conventions
 - use the shared package API and workflow references instead of inventing
   partial wrapper logic
@@ -82,7 +85,8 @@ This skill is the main entry point for package usage.
    `rare_feature_method = "gini"` or `"local_markers"` when Shennong should
    automatically add rare-aware genes, use `block_genes = c(...)` to exclude
    bundled signature queries such as `cellCycle.G2M`, `ribo`, or `mito` and/or
-   custom gene symbols from internally selected HVGs, and use
+   custom gene symbols from internally selected HVGs in log-normalization or
+   SCTransform workflows, and use
 	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
 	   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
 	   batch-integration backend is requested. For scVI/scANVI, Shennong manages a

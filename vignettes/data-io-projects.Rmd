@@ -86,6 +86,40 @@ sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
 sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
 ```
 
+## Use the Shennong Data Server lazily
+
+For resources exposed by a Shennong Data Server, `backend = "api"` returns a
+metadata-first `ShennongData` handle without downloading the full matrix. The
+wrapper creates a non-default connection for `server_url`, then uses the
+resource, assay, and layer contracts from ShennongData 0.2.
+
+```{r data-server, eval=FALSE}
+remote <- sn_load_data(
+  dataset = "toil",
+  backend = "api",
+  server_url = "https://data.example.org",
+  api_args = list(
+    assay = "rna",
+    layer = "expression"
+  )
+)
+
+materialized <- sn_load_data(
+  dataset = "toil",
+  backend = "api",
+  server_url = "https://data.example.org",
+  lazy = FALSE,
+  api_args = list(
+    assay = "rna",
+    layer = "expression",
+    collect_args = list(allow_large = TRUE)
+  )
+)
+```
+
+Keep `backend = "auto"` when local/Zenodo fallback is desired. Use
+`backend = "local"` when a workflow must never contact the data server.
+
 ## Read once, then initialize with metadata
 
 `sn_read()` handles common tabular files, serialized objects, 10x matrices,

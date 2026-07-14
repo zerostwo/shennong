@@ -1,4 +1,4 @@
-# Shennong Modernization Plan
+# Shennong Modernization Plan (archived)
 
 Last updated: 2026-03-18
 

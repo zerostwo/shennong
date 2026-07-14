@@ -205,7 +205,6 @@ reference:
       - sn_list_pixi_environments
       - sn_pixi_config_path
       - sn_prepare_pixi_environment
-      - sn_run_scarches
       - sn_detect_accelerator
       - sn_configure_pixi_mirror
       - sn_initialize_project

@@ -6,7 +6,7 @@ root_dir <- if (length(args) == 0L) {
   args[[1]]
 }
 
-benchmark_dir <- file.path(root_dir, "scripts", "benchmarks")
+benchmark_dir <- file.path(root_dir, "benchmarks", "workflow_surface")
 script_dir <- file.path(benchmark_dir, "scripts")
 result_dir <- file.path(benchmark_dir, "results")
 
@@ -51,7 +51,7 @@ measure_script <- function(name, path) {
 
   data.frame(
     workflow = name,
-    file = normalizePath(path, winslash = "/", mustWork = TRUE),
+    file = file.path("benchmarks", "workflow_surface", "scripts", basename(path)),
     executable_lines = length(lines),
     assignment_steps = count_regex(lines, "<-"),
     unique_function_calls = length(unique(calls)),

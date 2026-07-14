@@ -577,17 +577,6 @@
   })
 }
 
-.sn_galaxy_palette <- function(n = 256L, direction = 1) {
-  values <- grDevices::colorRampPalette(c(
-    "#030711", "#0B1F3A", "#1D4E89", "#2E7DAA",
-    "#26A69A", "#FFD166", "#FF9F1C", "#FFF3C4"
-  ))(n)
-  if (identical(direction, -1)) {
-    values <- rev(values)
-  }
-  values
-}
-
 .sn_density_galaxy_theme <- function() {
   ggplot2::theme(
     panel.background = ggplot2::element_rect(fill = "#030711", colour = NA),
@@ -2641,11 +2630,6 @@ sn_plot_feature <-
   }
 
 
-add_palette <- function(p, palette, n) {
-  .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "color")
-}
-
-
 palette_db <- vector("list")
 palette_source_db <- c()
 
@@ -2780,22 +2764,3 @@ sn_get_palette <- function(palette = "Paired",
 
   .sn_resolve_discrete_palette(palette = palette, n = n)
 }
-
-.all_palettes <- c(names(palette_db), row.names(RColorBrewer::brewer.pal.info))
-
-#
-# c("#efcec9", "#ff8c72", "#fd70a9", "#ffba64", "#f73a41", "#a6846a",
-#   "#23676e", "#4194d0", "#3284b8", "#49548f", "#34405c", "#8dd3c9", "#3aa08e", "#83c066",
-#   "#aa96c0", "#726f83")
-#
-#
-# colorspace::swatchplot(
-#     x = RColorBrewer::brewer.pal(n = 12, "Paired")
-# )
-
-# p <- iris |>
-#     ggplot(aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
-#     geom_point()
-# p
-# bb <- ggplot_build(p)
-# bb$data[[1]] |> head()

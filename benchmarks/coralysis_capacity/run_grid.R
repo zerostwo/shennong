@@ -115,7 +115,14 @@ prepare_input <- function(base, input_path, n_cells, n_batches, assay, layer, se
 
 args <- parse_args(commandArgs(trailingOnly = TRUE))
 
-base_path <- args$base %||% "/home/sduan/projects/immune-atlas/data/processed/pbmc.qs"
+base_path <- args$base %||% Sys.getenv("SHENNONG_BENCHMARK_BASE", unset = "")
+if (!nzchar(base_path)) {
+  stop(
+    "Supply `--base /path/to/object.qs` or set `SHENNONG_BENCHMARK_BASE`.",
+    call. = FALSE
+  )
+}
+base_path <- normalizePath(base_path, winslash = "/", mustWork = TRUE)
 outdir <- args$outdir %||% file.path(getwd(), "benchmarks", "coralysis_capacity", "results")
 shennong_path <- args$shennong_path %||% getwd()
 assay <- args$assay %||% "RNA"

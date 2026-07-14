@@ -13,6 +13,19 @@ user request to the right Shennong function family quickly.
 4. Infer or verify species with `sn_get_species()`.
 5. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
+## Recipe: Open a Shennong Data Server resource
+
+1. Use `sn_load_data(dataset = ..., backend = "api")` for a lazy
+   ShennongData 0.2 resource handle.
+2. Select an assay or layer with
+   `api_args = list(assay = ..., layer = ...)` when the default resource view
+   is not sufficient.
+3. Keep `lazy = TRUE` for query planning. Set `lazy = FALSE` and supply
+   `api_args = list(collect_args = list(...))` only when materialization is
+   explicitly required.
+4. Use `backend = "auto"` for server-first discovery with local/Zenodo
+   fallback, or `backend = "local"` to prohibit server access.
+
 ## Recipe: Normalize and cluster a single dataset
 
 1. `sn_normalize_data()` when explicit normalization control is needed.
@@ -20,7 +33,8 @@ user request to the right Shennong function family quickly.
    `hvg_features = c(...)` when known rare-population markers should be forced
    into the PCA feature set, and use `block_genes = c(...)` when cell-cycle,
    ribosomal, mitochondrial, or other signature/custom genes should be excluded
-   from internally selected HVGs. Re-run the returned object with a new
+   from internally selected HVGs in log-normalization or SCTransform workflows.
+   Re-run the returned object with a new
    `resolution` to reuse normalization, feature selection, PCA, neighbors, and
    UMAP while recomputing cluster labels.
 3. `sn_plot_dim()` for clusters and metadata visualization.

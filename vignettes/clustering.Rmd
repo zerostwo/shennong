@@ -102,7 +102,8 @@ Single-cell clustering can be dominated by cell-cycle, mitochondrial,
 ribosomal, immunoglobulin, pseudogene, or heat-shock genes. `block_genes`
 makes that choice explicit instead of hiding it inside a custom
 variable-feature script. The vector can mix bundled signature names, full
-signature paths, and custom gene symbols.
+signature paths, and custom gene symbols, and is applied to internally selected
+HVGs in both log-normalization and SCTransform workflows.
 
 ```{r block-genes}
 pbmc_blocked <- sn_run_cluster(

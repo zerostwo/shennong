@@ -444,3 +444,83 @@ test_that("sn_load_data validates vectorized dataset and species inputs", {
     "same length"
   )
 })
+
+test_that("ShennongData backend uses the current resource-client contract", {
+  skip_if_not_installed("ShennongData")
+
+  calls <- new.env(parent = emptyenv())
+  lazy_handle <- with_mocked_bindings(
+    Shennong:::.sn_load_data_api(
+      dataset = "toil",
+      version = "2026.1",
+      assay = "rna",
+      layer = "expression",
+      server_url = "https://data.example.test",
+      lazy = TRUE,
+      api_args = list(view = "resource", validate = "capabilities")
+    ),
+    sn_connect = function(url, set_default, ...) {
+      calls$connect <- list(url = url, set_default = set_default)
+      "connection"
+    },
+    sn_load_data = function(resource, version, view, connection, refresh, validate, ...) {
+      calls$load <- list(
+        resource = resource,
+        version = version,
+        view = view,
+        connection = connection,
+        refresh = refresh,
+        validate = validate
+      )
+      "resource-handle"
+    },
+    sn_assay = function(x, assay, layer) {
+      calls$assay <- list(x = x, assay = assay, layer = layer)
+      "assay-handle"
+    },
+    collect = function(x, ...) {
+      calls$collect <- list(x = x, args = list(...))
+      "collected"
+    },
+    .package = "ShennongData"
+  )
+
+  expect_identical(lazy_handle, "assay-handle")
+  expect_identical(calls$connect$url, "https://data.example.test")
+  expect_false(calls$connect$set_default)
+  expect_identical(calls$load$resource, "toil")
+  expect_identical(calls$load$view, "resource")
+  expect_identical(calls$load$validate, "capabilities")
+  expect_identical(calls$assay$assay, "rna")
+  expect_identical(calls$assay$layer, "expression")
+  expect_false(exists("collect", envir = calls, inherits = FALSE))
+
+  collected <- with_mocked_bindings(
+    Shennong:::.sn_load_data_api(
+      dataset = "toil",
+      version = NULL,
+      assay = NULL,
+      layer = NULL,
+      server_url = "https://data.example.test",
+      lazy = FALSE,
+      api_args = list(
+        connection = "existing-connection",
+        collect_args = list(shape = "wide", allow_large = TRUE)
+      )
+    ),
+    sn_load_data = function(resource, version, view, connection, refresh, validate, ...) {
+      expect_identical(connection, "existing-connection")
+      "resource-handle"
+    },
+    collect = function(x, ...) {
+      calls$collect <- list(x = x, args = list(...))
+      "collected"
+    },
+    .package = "ShennongData"
+  )
+
+  expect_identical(collected, "collected")
+  expect_identical(calls$collect$x, "resource-handle")
+  expect_identical(calls$collect$args$shape, "wide")
+  expect_true(calls$collect$args$allow_large)
+})

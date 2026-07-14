@@ -2386,7 +2386,9 @@ sn_detect_rare_cells <- function(object,
 #'   queries can use leaf names such as \code{"ribo"} and
 #'   \code{"cellCycle.G2M"} or full paths such as
 #'   \code{"Programs/cellCycle.G1S"}; \code{"g1s"} and \code{"g2m"} are kept as
-#'   short aliases for the cell-cycle signatures.
+#'   short aliases for the cell-cycle signatures. Applies to both
+#'   log-normalization and SCTransform workflows; explicit \code{hvg_features}
+#'   are preserved even when they overlap a blocked signature.
 #' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction. Used only when
 #'   \code{integration_method = "harmony"}.
@@ -2527,6 +2529,7 @@ sn_run_cluster <- function(object,
   }
 
   integration_method_supplied <- !missing(integration_method)
+  block_genes_supplied <- !missing(block_genes)
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
   modality <- match.arg(modality)
@@ -2679,23 +2682,37 @@ sn_run_cluster <- function(object,
     rare_feature_method <- "none"
   }
 
-  if (normalization_method == "sctransform" && !is_null(block_genes)) {
-    .sn_log_warn("`block_genes` is only applied in log-normalization workflows; ignoring it for SCTransform.")
-    block_genes <- NULL
-  }
   if (normalization_method == "sctransform" && !identical(rare_feature_method, "none")) {
     .sn_log_warn("`rare_feature_method` is only applied in log-normalization workflows; ignoring it for SCTransform.")
     rare_feature_method <- "none"
   }
 
   if (isTRUE(needs_rna_workflow) && !is_null(block_genes)) {
-    species <- sn_get_species(object = object, species = species)
-    if (verbose) .sn_log_info("Processing blocked genes.")
-    block_genes <- .sn_resolve_block_genes(
-      block_genes = block_genes,
-      species = species,
-      verbose = verbose
+    species <- tryCatch(
+      sn_get_species(object = object, species = species),
+      error = function(error) {
+        if (identical(normalization_method, "sctransform") && !isTRUE(block_genes_supplied)) {
+          if (verbose) {
+            .sn_log_warn(
+              "Skipping default `block_genes` in the SCTransform workflow because species could not be inferred. ",
+              "Provide `species` to enable blocked HVG filtering."
+            )
+          }
+          return(NULL)
+        }
+        stop(error)
+      }
     )
+    if (is_null(species)) {
+      block_genes <- NULL
+    } else {
+      if (verbose) .sn_log_info("Processing blocked genes.")
+      block_genes <- .sn_resolve_block_genes(
+        block_genes = block_genes,
+        species = species,
+        verbose = verbose
+      )
+    }
   }
 
   hvg_candidate_nfeatures <- nfeatures
@@ -2704,6 +2721,13 @@ sn_run_cluster <- function(object,
       nrow(object),
       nfeatures + length(intersect(block_genes, rownames(object)))
     )
+    if (identical(normalization_method, "sctransform")) {
+      hvg_candidate_nfeatures <- min(
+        hvg_candidate_nfeatures,
+        nrow(object),
+        max(nfeatures, nfeatures * 2L)
+      )
+    }
   }
 
   hvg <- character(0)
@@ -2716,6 +2740,7 @@ sn_run_cluster <- function(object,
     layer = layer,
     layer_source_version = 2L,
     nfeatures = if (identical(normalization_method, "sctransform")) nfeatures else NULL,
+    hvg_candidate_nfeatures = if (identical(normalization_method, "sctransform")) hvg_candidate_nfeatures else NULL,
     vars_to_regress = if (identical(normalization_method, "sctransform")) vars_to_regress else NULL,
     user_hvg = if (identical(normalization_method, "sctransform")) user_hvg else NULL
   )
@@ -2750,7 +2775,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[1/5] Running SCTransform.")
       sct_args <- list(
         object = object,
-        variable.features.n = nfeatures,
+        variable.features.n = hvg_candidate_nfeatures,
         vars.to.regress = vars_to_regress,
         verbose = verbose,
         seed.use = 717
@@ -2774,6 +2799,8 @@ sn_run_cluster <- function(object,
     hvg_signature <- list(
       method = "sctransform",
       nfeatures = nfeatures,
+      hvg_candidate_nfeatures = hvg_candidate_nfeatures,
+      block_genes = block_genes,
       user_hvg = user_hvg,
       missing_user_hvg = user_hvg_info$missing,
       normalization = normalization_signature
@@ -2789,14 +2816,45 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[2/5] Reusing SCTransform feature set.")
       hvg <- object@misc$sn_run_cluster$stages$hvg$selected_features
     } else {
-      hvg <- unique(c(Seurat::VariableFeatures(object = object), user_hvg))
-      object <- .sn_record_cluster_stage(object, "hvg", hvg_signature, selected_features = hvg)
+      base_hvg <- Seurat::VariableFeatures(object = object)
+      blocked_hvg <- character(0)
+      if (!is_null(block_genes)) {
+        n_before <- length(base_hvg)
+        blocked_hvg <- intersect(base_hvg, block_genes)
+        base_hvg <- setdiff(base_hvg, block_genes)
+        base_hvg <- utils::head(base_hvg, nfeatures)
+
+        if (verbose) {
+          .sn_log_info(
+            "  Removed {length(blocked_hvg)} genes ({round(length(blocked_hvg)/n_before*100,1)}%) via block_genes"
+          )
+        }
+
+        if (length(base_hvg) < nfeatures) {
+          .sn_log_warn(
+            "Only {length(base_hvg)} SCTransform HVGs left after block_genes filtering ",
+            "(< requested {nfeatures}). Consider adjusting 'nfeatures' or 'block_genes'."
+          )
+        }
+      } else {
+        base_hvg <- utils::head(base_hvg, nfeatures)
+      }
+      hvg <- unique(c(base_hvg, user_hvg))
+      object <- .sn_record_cluster_stage(
+        object,
+        "hvg",
+        hvg_signature,
+        selected_features = hvg,
+        blocked_features = blocked_hvg
+      )
     }
     Seurat::VariableFeatures(object = object) <- hvg
     object@misc$hvg_selection <- list(
       method = "sctransform",
       base_hvg_n = nfeatures,
+      hvg_candidate_nfeatures = hvg_candidate_nfeatures,
       selected_features = hvg,
+      blocked_features = object@misc$sn_run_cluster$stages$hvg$blocked_features %||% character(0),
       user_features = user_hvg,
       missing_user_features = user_hvg_info$missing
     )

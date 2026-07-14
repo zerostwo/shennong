@@ -511,106 +511,6 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   NULL
 }
 
-.sn_http_content_type <- function(headers_text) {
-  if (!is.character(headers_text) || length(headers_text) != 1L || is.na(headers_text)) {
-    return(NA_character_)
-  }
-  match <- stringr::str_match(
-    headers_text,
-    "(?im)^content-type:\\s*([^;\\r\\n]+)"
-  )[, 2]
-  match %||% NA_character_
-}
-
-.sn_http_body_preview <- function(body_text, max_chars = 200) {
-  if (!is.character(body_text) || length(body_text) != 1L || is.na(body_text) || !nzchar(body_text)) {
-    return("")
-  }
-  preview <- stringr::str_squish(body_text)
-  if (nchar(preview) > max_chars) {
-    preview <- paste0(substr(preview, 1, max_chars), "...")
-  }
-  preview
-}
-
-.sn_is_probably_html <- function(body_text, content_type = NA_character_) {
-  if (is.character(content_type) && length(content_type) == 1L && grepl("html", content_type, ignore.case = TRUE)) {
-    return(TRUE)
-  }
-  if (!is.character(body_text) || length(body_text) != 1L || is.na(body_text)) {
-    return(FALSE)
-  }
-  grepl("^\\s*<!DOCTYPE html|^\\s*<html\\b", body_text, ignore.case = TRUE)
-}
-
-.sn_parse_openai_http_response <- function(response,
-                                           endpoint,
-                                           wire_api,
-                                           resolved_model) {
-  status_code <- response$status_code %||% 200L
-  headers_text <- tryCatch(rawToChar(response$headers), error = function(...) "")
-  body_text <- tryCatch(rawToChar(response$content), error = function(...) "")
-  content_type <- .sn_http_content_type(headers_text)
-  preview <- .sn_http_body_preview(body_text)
-
-  if (status_code >= 500L) {
-    return(list(
-      ok = FALSE,
-      retryable = TRUE,
-      message = glue(
-        "OpenAI-style endpoint '{endpoint}' returned HTTP {status_code}. ",
-        "Body preview: {preview}"
-      )
-    ))
-  }
-
-  if (.sn_is_probably_html(body_text = body_text, content_type = content_type)) {
-    return(list(
-      ok = FALSE,
-      retryable = TRUE,
-      message = glue(
-        "OpenAI-style endpoint '{endpoint}' returned HTML instead of JSON",
-        if (!is.na(content_type) && nzchar(content_type)) glue(" (content-type: {content_type})") else "",
-        ". This usually means the base URL is wrong or the upstream gateway returned an error page. ",
-        "Body preview: {preview}"
-      )
-    ))
-  }
-
-  parsed <- tryCatch(
-    jsonlite::fromJSON(body_text, simplifyVector = FALSE),
-    error = identity
-  )
-  if (inherits(parsed, "error")) {
-    return(list(
-      ok = FALSE,
-      retryable = TRUE,
-      message = glue(
-        "Failed to parse JSON from '{endpoint}'",
-        if (!is.na(content_type) && nzchar(content_type)) glue(" (content-type: {content_type})") else "",
-        ": {conditionMessage(parsed)}. Body preview: {preview}"
-      )
-    ))
-  }
-
-  text <- .sn_text_scalar(.sn_extract_openai_response_text(parsed = parsed, wire_api = wire_api))
-  if (is.null(text)) {
-    return(list(
-      ok = FALSE,
-      retryable = FALSE,
-      message = glue("OpenAI-style response from '{endpoint}' did not contain extractable text.")
-    ))
-  }
-
-  list(
-    ok = TRUE,
-    retryable = FALSE,
-    parsed = parsed,
-    text = text,
-    model = parsed$model %||% resolved_model
-  )
-}
-
 .sn_parse_annotation_response <- function(response) {
   if (is.list(response) && !is.null(response$structured)) {
     parsed <- response$structured
@@ -918,21 +818,6 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 
 .sn_annotation_hint_family <- function(hint) {
   .sn_annotation_label_family(hint)
-}
-
-.sn_annotation_broad_label_from_family <- function(family) {
-  switch(
-    family %||% "",
-    ilc = "Innate Lymphoid",
-    t = "Lymphoid",
-    nk = "Lymphoid",
-    cytotoxic_mixed = "Lymphoid",
-    b = "Lymphoid",
-    apc = "Myeloid/APC",
-    mast_basophil = "Mast/Basophil",
-    contamination = "Contamination",
-    NA_character_
-  )
 }
 
 .sn_annotation_has_ilc_prior <- function(label_candidates = NULL,

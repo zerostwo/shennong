@@ -931,6 +931,45 @@ test_that("sn_run_cluster supports the SCTransform workflow for a single dataset
   expect_length(clusters, ncol(object))
 })
 
+test_that("sn_run_cluster applies block genes to SCTransform HVGs", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("glmGamPoi")
+  skip_if_not_installed("HGNChelper")
+
+  object <- make_block_gene_test_object()
+  block_queries <- c(
+    "cellCycle.G2M",
+    "cellCycle.G1S",
+    "ribo",
+    "mito",
+    "pseudogenes"
+  )
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "sctransform",
+    nfeatures = 20,
+    hvg_features = "RPL10",
+    block_genes = block_queries,
+    species = "human",
+    npcs = 5,
+    dims = 1:5,
+    verbose = FALSE
+  )
+  blocked_genes <- Shennong:::.sn_resolve_block_genes(
+    block_genes = block_queries,
+    species = "human",
+    verbose = FALSE
+  )
+  blocked_features <- intersect(blocked_genes, rownames(clustered))
+  selected_features <- clustered@misc$hvg_selection$selected_features
+
+  expect_true("RPL10" %in% selected_features)
+  expect_length(intersect(selected_features, setdiff(blocked_features, "RPL10")), 0)
+  expect_length(intersect(clustered@misc$hvg_selection$selected_features, setdiff(blocked_features, "RPL10")), 0)
+  expect_true("RPL10" %in% clustered@misc$hvg_selection$user_features)
+  expect_true("hvg_candidate_nfeatures" %in% names(clustered@misc$hvg_selection))
+})
+
 test_that("sn_run_cluster supports SCTransform followed by Harmony integration", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("glmGamPoi")
