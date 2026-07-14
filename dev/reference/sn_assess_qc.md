@@ -16,8 +16,7 @@ sn_assess_qc(
   sample_by = NULL,
   store_name = "default",
   return_object = FALSE,
-  verbose = TRUE,
-  sample_col = NULL
+  verbose = TRUE
 )
 ```
 
@@ -52,10 +51,6 @@ sn_assess_qc(
 - verbose:
 
   Logical; when `TRUE`, print a concise QC summary.
-
-- sample_col:
-
-  Deprecated alias for `sample_by`.
 
 ## Value
 

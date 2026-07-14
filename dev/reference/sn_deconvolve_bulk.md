@@ -38,9 +38,7 @@ sn_deconvolve_bulk(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
-  return_object = TRUE,
-  cell_type_col = NULL,
-  cell_state_col = NULL
+  return_object = TRUE
 )
 ```
 
@@ -67,7 +65,7 @@ sn_deconvolve_bulk(
 - cell_state_by:
 
   Optional metadata column containing cell-state labels. Defaults to
-  `cell_type_col`.
+  `cell_type_by`.
 
 - cell_type_labels:
 
@@ -184,14 +182,6 @@ sn_deconvolve_bulk(
   If `TRUE` and `x` is a `Seurat` object, return the updated object when
   a result table is available.
 
-- cell_type_col:
-
-  Deprecated alias for `cell_type_by`.
-
-- cell_state_col:
-
-  Deprecated alias for `cell_state_by`.
-
 ## Value
 
 A stored-result list, an export-bundle list, or an updated `Seurat`
@@ -230,9 +220,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(bundle$files)
 }
-#> INFO [2026-05-05 23:42:55] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:42:56] Running QC metrics for human.
-#> INFO [2026-05-05 23:42:56] Seurat object initialization complete.
+#> INFO [2026-07-14 06:10:50] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:10:50] Running QC metrics for human.
+#> INFO [2026-07-14 06:10:50] Seurat object initialization complete.
 #> [1] "single_cell_reference" "mixture"              
 #> [3] "signature_matrix"      "result"               
 ```

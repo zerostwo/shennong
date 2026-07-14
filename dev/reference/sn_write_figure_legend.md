@@ -18,7 +18,6 @@ sn_write_figure_legend(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
-  cluster_col = NULL,
   ...
 )
 ```
@@ -76,10 +75,6 @@ sn_write_figure_legend(
   Logical; if `TRUE`, emit step-wise progress logs and, when cli is
   available, a console progress bar while waiting for the LLM response.
 
-- cluster_col:
-
-  Deprecated alias for `cluster_by`.
-
 - ...:
 
   Additional arguments forwarded to `provider`.
@@ -109,19 +104,18 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_write_figure_legend(
     obj,
     cluster_de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-05-05 23:43:34] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:34] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:34] Seurat object initialization complete.
+#> INFO [2026-07-14 06:11:29] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:11:29] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:29] Seurat object initialization complete.
 #> Warning: No DE genes identified
-#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
-#> INFO [2026-05-05 23:43:36] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-05-05 23:43:36] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-05-05 23:43:36] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.0s).
-#> INFO [2026-05-05 23:43:36] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-07-14 06:11:30] [sn_write_figure_legend] Starting interpretation workflow.
+#> INFO [2026-07-14 06:11:30] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
+#> INFO [2026-07-14 06:11:30] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).
+#> INFO [2026-07-14 06:11:30] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
 #> [1] "figure_legend"
 ```

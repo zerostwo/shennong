@@ -18,8 +18,7 @@ sn_calculate_pcr_batch(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  batch = NULL
+  seed = 717
 )
 ```
 
@@ -63,15 +62,11 @@ sn_calculate_pcr_batch(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `batch`.
+  subsampling. Defaults to `batch_by`.
 
 - seed:
 
   Random seed used when `max_cells` triggers subsampling.
-
-- batch:
-
-  Deprecated alias for `batch_by`.
 
 ## Value
 
@@ -85,13 +80,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )
 sn_calculate_pcr_batch(
   pbmc,
-  batch_by = "sample",
+  batch = "sample",
   reduction = "harmony",
   baseline_reduction = "pca"
 )

@@ -19,8 +19,7 @@ sn_calculate_graph_connectivity(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 )
 ```
 
@@ -70,7 +69,7 @@ sn_calculate_graph_connectivity(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `label`.
+  subsampling. Defaults to `label_by`.
 
 - seed:
 
@@ -79,10 +78,6 @@ sn_calculate_graph_connectivity(
 - n_trees:
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 
@@ -96,7 +91,7 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

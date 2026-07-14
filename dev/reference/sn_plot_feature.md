@@ -19,7 +19,7 @@ sn_plot_feature(
   pt_size = NULL,
   alpha = 1,
   stroke_size = NULL,
-  slot = "data",
+  layer = "data",
   min_cutoff = NA,
   max_cutoff = NA,
   shape_by = NULL,
@@ -110,10 +110,10 @@ sn_plot_feature(
 
   Point stroke size passed to Seurat's `FeaturePlot()`.
 
-- slot:
+- layer:
 
-  A character string specifying which slot in the Seurat object to use
-  (e.g., "data", "scale.data", "integrated"). Defaults to "data".
+  A character string specifying which layer in the Seurat object to use
+  (for example, `"data"` or `"scale.data"`). Defaults to `"data"`.
 
 - min_cutoff:
 

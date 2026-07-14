@@ -28,6 +28,7 @@
 <url><loc>https://songqi.org/shennong/dev/reference/shennong_signature_catalog.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_add_data_from_anndata.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_add_signature.html</loc></url>
+<url><loc>https://songqi.org/shennong/dev/reference/sn_annotate_de_features.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_assess_integration.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_assess_qc.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_build_prompt.html</loc></url>
@@ -48,6 +49,7 @@
 <url><loc>https://songqi.org/shennong/dev/reference/sn_check_version.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_compare_composition.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_configure_pixi_mirror.html</loc></url>
+<url><loc>https://songqi.org/shennong/dev/reference/sn_convert_bpcells.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_deconvolve_bulk.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_delete_signature.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_detect_accelerator.html</loc></url>
@@ -102,6 +104,7 @@
 <url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_annotation_evidence.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_de_evidence.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_enrichment_evidence.html</loc></url>
+<url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_label_transfer_reference.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_prepare_results_evidence.html</loc></url>
 <url><loc>https://songqi.org/shennong/dev/reference/sn_read.html</loc></url>

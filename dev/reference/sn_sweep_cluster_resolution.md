@@ -23,8 +23,7 @@ sn_sweep_cluster_resolution(
   neighbor_method = c("auto", "graph", "annoy", "exact"),
   k = 20,
   seed = 717,
-  n_trees = 50,
-  label = NULL
+  n_trees = 50
 )
 ```
 
@@ -99,10 +98,6 @@ sn_sweep_cluster_resolution(
 
   Number of Annoy trees used by graph connectivity when
   `neighbor_method = "annoy"`.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 

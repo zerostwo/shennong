@@ -25,9 +25,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data(dataset = "pbmc3k")
-#> INFO [2026-05-05 23:58:06] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 23:58:07] Running QC metrics for human.
-#> INFO [2026-05-05 23:58:07] Seurat object initialization complete.
+#> INFO [2026-07-14 06:21:54] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:21:55] Running QC metrics for human.
+#> INFO [2026-07-14 06:21:55] Seurat object initialization complete.
 
 pbmc_h5 <- sn_load_data(
   dataset = "pbmc3k",
@@ -38,12 +38,12 @@ pbmc_h5
 #> [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 
 pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-#> INFO [2026-05-05 23:58:11] Initializing Seurat object for project: pbmc1k.
-#> INFO [2026-05-05 23:58:12] Running QC metrics for human.
-#> INFO [2026-05-05 23:58:12] Seurat object initialization complete.
-#> INFO [2026-05-05 23:58:12] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 23:58:12] Running QC metrics for human.
-#> INFO [2026-05-05 23:58:13] Seurat object initialization complete.
+#> INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc1k.
+#> INFO [2026-07-14 06:22:09] Running QC metrics for human.
+#> INFO [2026-07-14 06:22:09] Seurat object initialization complete.
+#> INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:22:10] Running QC metrics for human.
+#> INFO [2026-07-14 06:22:10] Seurat object initialization complete.
 table(pbmc_merged$sample)
 #> 
 #> pbmc1k pbmc3k 
@@ -85,6 +85,42 @@ sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
 sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
 ```
 
+## Use the Shennong Data Server lazily
+
+For resources exposed by a Shennong Data Server, `backend = "api"`
+returns a metadata-first `ShennongData` handle without downloading the
+full matrix. The wrapper creates a non-default connection for
+`server_url`, then uses the resource, assay, and layer contracts from
+ShennongData 0.2.
+
+``` r
+
+remote <- sn_load_data(
+  dataset = "toil",
+  backend = "api",
+  server_url = "https://data.example.org",
+  api_args = list(
+    assay = "rna",
+    layer = "expression"
+  )
+)
+
+materialized <- sn_load_data(
+  dataset = "toil",
+  backend = "api",
+  server_url = "https://data.example.org",
+  lazy = FALSE,
+  api_args = list(
+    assay = "rna",
+    layer = "expression",
+    collect_args = list(allow_large = TRUE)
+  )
+)
+```
+
+Keep `backend = "auto"` when local/Zenodo fallback is desired. Use
+`backend = "local"` when a workflow must never contact the data server.
+
 ## Read once, then initialize with metadata
 
 [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
@@ -104,9 +140,9 @@ pbmc <- sn_initialize_seurat_object(
   study = "10x_pbmc",
   species = "human"
 )
-#> INFO [2026-05-05 23:58:14] Initializing Seurat object for project: pbmc3k_demo.
-#> INFO [2026-05-05 23:58:15] Running QC metrics for human.
-#> INFO [2026-05-05 23:58:15] Seurat object initialization complete.
+#> INFO [2026-07-14 06:22:11] Initializing Seurat object for project: pbmc3k_demo.
+#> INFO [2026-07-14 06:22:12] Running QC metrics for human.
+#> INFO [2026-07-14 06:22:12] Seurat object initialization complete.
 
 pbmc
 #> An object of class Seurat 
@@ -194,6 +230,23 @@ pbmc_cached
 column. This avoids ad hoc `read.csv(..., row.names = ...)` calls that
 are easy to forget in later scripts.
 
+For large Seurat objects, keep bulky assay layers on disk with BPCells
+before serializing the Seurat object. The returned object keeps the same
+Seurat layer interface, but the selected matrices live in BPCells
+directories.
+
+``` r
+
+pbmc <- sn_convert_bpcells(
+  pbmc,
+  directory = file.path(outdir, "pbmc3k_bpcells"),
+  layers = c("counts", "data"),
+  overwrite = TRUE
+)
+
+sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
+```
+
 ## Prepare a reusable Zenodo upload
 
 When an intermediate object or reference dataset should be reused by
@@ -219,9 +272,9 @@ zenodo_plan$files[, c("file", "size", "md5")]
 #>   file                      size md5                             
 #>   <chr>                    <dbl> <chr>                           
 #> 1 pbmc3k_metadata.csv     252144 30e88b334de6ed4d04a0393921f0f216
-#> 2 pbmc3k_initialized.qs2 6229213 bbb8358e83de591fdc9a3bcda75d8c68
+#> 2 pbmc3k_initialized.qs2 6229208 d29bb6be776337aaf083b061561a6c2b
 zenodo_plan$manifest_path
-#> [1] "/tmp/RtmpX9EYhQ/shennong_zenodo_manifest.json"
+#> [1] "/tmp/RtmpE5YFGz/shennong_zenodo_manifest.json"
 ```
 
 In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and

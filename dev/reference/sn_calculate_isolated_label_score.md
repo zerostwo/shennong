@@ -18,8 +18,7 @@ sn_calculate_isolated_label_score(
   stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 ```
 
@@ -55,7 +54,7 @@ sn_calculate_isolated_label_score(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `label`.
+  subsampling. Defaults to `label_by`.
 
 - isolated_fraction:
 
@@ -68,10 +67,6 @@ sn_calculate_isolated_label_score(
 - seed:
 
   Random seed used when `max_cells` triggers subsampling.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 
@@ -87,7 +82,7 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

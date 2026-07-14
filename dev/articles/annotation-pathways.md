@@ -19,9 +19,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 23:43:48] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 23:43:48] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:49] Seurat object initialization complete.
+#> INFO [2026-07-14 06:11:50] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:11:50] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:50] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -69,6 +69,58 @@ head(marker_tbl)
 #> 6 4.22e-102       2.49 0.512 0.118  2.31e-97 1       CCR7
 names(pbmc@misc$de_results)
 #> [1] "cluster_markers"
+```
+
+## Prioritize interpretable marker classes
+
+Marker tables often contain hundreds of significant genes. Use
+[`sn_annotate_de_features()`](https://songqi.org/shennong/dev/reference/sn_annotate_de_features.md)
+to flag marker genes that are especially useful for mechanistic
+interpretation or validation, such as transcription factors, surface or
+plasma-membrane genes, cytokines, and chemokines. When called on a
+Seurat object, the annotated table is stored as another DE result, so it
+can be discovered and retrieved with the same result helpers.
+
+``` r
+
+pbmc <- sn_annotate_de_features(
+  pbmc,
+  de_name = "cluster_markers",
+  species = "human"
+)
+
+sn_list_results(pbmc)
+#> # A tibble: 2 × 8
+#>   collection type  name        analysis method created_at n_rows source
+#>   <chr>      <chr> <chr>       <chr>    <chr>  <chr>       <int> <chr> 
+#> 1 de_results de    cluster_ma… markers  wilcox 2026-07-1…   4670 NA    
+#> 2 de_results de    cluster_ma… markers  wilcox 2026-07-1…   4670 NA
+
+sn_get_de_result(
+  pbmc,
+  de_name = "cluster_markers_feature_classes",
+  top_n = 5
+) |>
+  dplyr::select(
+    cluster,
+    gene,
+    avg_log2FC,
+    feature_classes,
+    starts_with("is_")
+  ) |>
+  head()
+#> # A tibble: 6 × 8
+#>   cluster gene   avg_log2FC feature_classes      is_transcription_fac…¹
+#>   <fct>   <chr>       <dbl> <chr>                <lgl>                 
+#> 1 0       AQP3         2.52 surface_membrane     FALSE                 
+#> 2 0       CD40LG       2.49 surface_membrane;cy… FALSE                 
+#> 3 0       LMNA         2.38 NA                   FALSE                 
+#> 4 0       TRADD        1.81 NA                   FALSE                 
+#> 5 0       TRAT1        1.78 NA                   FALSE                 
+#> 6 1       CCR7         2.49 surface_membrane     FALSE                 
+#> # ℹ abbreviated name: ¹​is_transcription_factor
+#> # ℹ 3 more variables: is_surface_membrane <lgl>, is_cytokine <lgl>,
+#> #   is_chemokine <lgl>
 ```
 
 ## Plot stored markers without hand-copying gene lists
@@ -140,9 +192,10 @@ head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
 
 The same query-first interface can use Coralysis reference mapping when
 the reference was trained with
-`sn_run_cluster(integration_method = "coralysis")`. For mapping, keep
-the Coralysis SingleCellExperiment and PCA model in the reference by
-leaving `store_sce = TRUE` and `return.model = TRUE`.
+`sn_run_cluster(integration_method = "coralysis")`. By default, Shennong
+keeps the native Coralysis-trained SingleCellExperiment and PCA model
+under `reference@misc$coralysis`, so the returned object can be used
+directly as a label-transfer reference.
 
 ``` r
 
@@ -151,10 +204,6 @@ reference <- sn_run_cluster(
   batch = "sample_id",
   integration_method = "coralysis",
   normalization_method = "seurat",
-  integration_control = list(
-    store_sce = TRUE,
-    pca_args = list(return.model = TRUE)
-  ),
   verbose = FALSE
 )
 
@@ -165,6 +214,32 @@ query <- sn_transfer_labels(
   method = "coralysis",
   prediction_prefix = "coral_reference",
   transfer_control = list(k.nn = 10),
+  verbose = FALSE
+)
+```
+
+For durable handoffs, prepare a compact transfer-ready reference instead
+of saving the full analysis object. Coralysis references keep the
+trained models, PCA model, feature names, and selected labels while
+dropping the large reference assay matrices and joint-probability
+tables.
+
+``` r
+
+coral_reference <- sn_prepare_label_transfer_reference(
+  reference,
+  label_by = "cell_type",
+  method = "coralysis",
+  path = "data/processed/pbmc_coralysis_reference.qs2",
+  overwrite = TRUE
+)
+
+query <- sn_transfer_labels(
+  object = query,
+  reference = coral_reference,
+  label_by = "cell_type",
+  method = "coralysis",
+  prediction_prefix = "coral_reference",
   verbose = FALSE
 )
 ```
@@ -245,7 +320,7 @@ pbmc <- sn_enrich(
   store_name = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-05-05 23:44:54] Running ORA analysis for the GOBP database.
+#> INFO [2026-07-14 06:13:14] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,

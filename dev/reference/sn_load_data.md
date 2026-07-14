@@ -21,7 +21,12 @@ sn_load_data(
   overwrite = FALSE,
   quiet = FALSE,
   record_id = NULL,
-  validate = FALSE
+  validate = FALSE,
+  backend = c("auto", "local", "api"),
+  server_url = getOption("ShennongData.server_url", getOption("shennong.data.server_url",
+    "http://127.0.0.1:18000")),
+  lazy = TRUE,
+  api_args = list()
 )
 ```
 
@@ -101,9 +106,36 @@ sn_load_data(
   Logical; if `TRUE`, validate extracted public collection files against
   `manifest.tsv` MD5 checksums.
 
+- backend:
+
+  Character scalar. `"auto"` uses the Shennong Data Server when the
+  requested single dataset is present in the server catalog and falls
+  back to legacy local/Zenodo loading otherwise. `"api"` forces the
+  server-backed lazy client. `"local"` forces legacy loading.
+
+- server_url:
+
+  Shennong Data Server URL used when `backend` resolves to `"api"`.
+
+- lazy:
+
+  Logical. For API-backed datasets, return a lazy remote table without
+  downloading data. Set to `FALSE` only when also passing
+  materialization arguments through `api_args`.
+
+- api_args:
+
+  Named list controlling the ShennongData client. Supported entries are
+  `connection`, `connect_args`, `version`, `view`, `validate`,
+  `refresh`, `assay`, `layer`, and `collect_args`. When `lazy = FALSE`,
+  `collect_args` are forwarded to `ShennongData::collect()`.
+
 ## Value
 
 One of:
+
+- If `backend = "api"`: a lazy ShennongData resource handle, or a
+  collected result when `lazy = FALSE`.
 
 - If `matrix_type == "filtered"` and `return_object = TRUE`: a Seurat
   object. Multiple datasets are returned as one merged Seurat object.
@@ -207,5 +239,8 @@ pbmc4k <- sn_load_data(
 # 6. Load a sample from the Shennong public Zenodo collection:
 data_index <- sn_list_datasets()
 sample_obj <- sn_load_data(dataset = data_index$dataset[[1]])
+
+# 7. Open a lazy Shennong Data Server resource:
+remote <- sn_load_data("toil", backend = "api")
 } # }
 ```

@@ -20,9 +20,7 @@ sn_compare_composition(
   test = c("wilcox", "none"),
   adjust_method = "BH",
   additional_cols = NULL,
-  return_sample_data = FALSE,
-  sample_col = NULL,
-  group_col = NULL
+  return_sample_data = FALSE
 )
 ```
 
@@ -80,14 +78,6 @@ sn_compare_composition(
 
   Logical; if `TRUE`, return both the summary table and the completed
   sample-level composition table.
-
-- sample_col:
-
-  Deprecated alias for `sample_by`.
-
-- group_col:
-
-  Deprecated alias for `group_by`.
 
 ## Value
 

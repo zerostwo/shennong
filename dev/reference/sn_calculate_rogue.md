@@ -17,9 +17,7 @@ sn_calculate_rogue(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10,
-  cluster = NULL,
-  sample = NULL
+  min_genes = 10
 )
 ```
 
@@ -76,21 +74,13 @@ sn_calculate_rogue(
   Minimum detected genes retained by the upstream `ROGUE::matr.filter()`
   step.
 
-- cluster:
-
-  Deprecated alias for `cluster_by`.
-
-- sample:
-
-  Deprecated alias for `sample_by`.
-
 ## Value
 
-When neither `cluster` nor `sample` is supplied, returns a single
-numeric ROGUE score for the selected matrix. When `cluster` is supplied,
-returns a data frame with per-cluster ROGUE scores. When both `cluster`
-and `sample` are supplied, returns a tidy data frame with one row per
-sample-cluster combination.
+When neither `cluster_by` nor `sample_by` is supplied, returns a single
+numeric ROGUE score for the selected matrix. When `cluster_by` is
+supplied, returns a data frame with per-cluster ROGUE scores. When both
+`cluster_by` and `sample_by` are supplied, returns a tidy data frame
+with one row per sample-cluster combination.
 
 ## Examples
 

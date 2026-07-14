@@ -9,7 +9,7 @@ package.
 ## Usage
 
 ``` r
-sn_pixi_paths(environment = NULL, path = ".", runtime_dir = NULL)
+sn_pixi_paths(environment = NULL, runtime_dir = NULL)
 ```
 
 ## Arguments
@@ -19,11 +19,6 @@ sn_pixi_paths(environment = NULL, path = ".", runtime_dir = NULL)
   Python environment name. Use
   [`sn_list_pixi_environments()`](https://songqi.org/shennong/dev/reference/sn_list_pixi_environments.md)
   to see bundled configs.
-
-- path:
-
-  Deprecated; retained for compatibility and ignored unless
-  `runtime_dir` is supplied explicitly.
 
 - runtime_dir:
 
@@ -46,27 +41,27 @@ sn_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
 #> [1] "scvi"
 #> 
 #> $runtime_dir
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a"
 #> 
 #> $pixi_root
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/pixi"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/pixi"
 #> 
 #> $pixi_home
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/pixi/home"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/pixi/home"
 #> 
 #> $project_dir
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/pixi/scvi"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/pixi/scvi"
 #> 
 #> $source_config_path
 #> [1] "/home/runner/work/_temp/Library/Shennong/pixi/scvi/pixi.toml"
 #> 
 #> $manifest_path
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/pixi/scvi/pixi.toml"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/pixi/scvi/pixi.toml"
 #> 
 #> $workspace_env_dir
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/pixi/scvi/.pixi/envs"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/pixi/scvi/.pixi/envs"
 #> 
 #> $runs_dir
-#> [1] "/tmp/RtmpvOjCeK/shennong-home-1c69285f08a/runs"
+#> [1] "/tmp/RtmphhhD9P/shennong-home-1dc410d15f5a/runs"
 #> 
 ```

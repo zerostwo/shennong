@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Data input, output, and project setup • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -78,7 +78,7 @@ Duan</h4>
       
                   
       
-      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/main/vignettes/data-io-projects.Rmd" class="external-link"><code>vignettes/data-io-projects.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/agent/fix-pkgdown-msigdbr/vignettes/data-io-projects.Rmd" class="external-link"><code>vignettes/data-io-projects.Rmd</code></a></small>
       <div class="d-none name"><code>data-io-projects.Rmd</code></div>
     </div>
 
@@ -108,9 +108,9 @@ the <code>sample</code> metadata column.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:06] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:07] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:07] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:21:54] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:21:55] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:21:55] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc_h5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
 <span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
@@ -121,12 +121,12 @@ the <code>sample</code> metadata column.</p>
 <span><span class="co">#&gt; [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"</span></span>
 <span></span>
 <span><span class="va">pbmc_merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc1k"</span>, <span class="st">"pbmc3k"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:11] Initializing Seurat object for project: pbmc1k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:12] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:12] Seurat object initialization complete.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:12] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:12] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:13] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc1k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:09] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:10] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:10] Seurat object initialization complete.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_merged</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; pbmc1k pbmc3k </span></span>
@@ -158,6 +158,41 @@ cached locally, and only the requested sample file is extracted.</p>
 <span><span class="va">sample_metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="va">datasets</span><span class="op">$</span><span class="va">dataset</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, matrix_type <span class="op">=</span> <span class="st">"metrics"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="use-the-shennong-data-server-lazily">Use the Shennong Data Server lazily<a class="anchor" aria-label="anchor" href="#use-the-shennong-data-server-lazily"></a>
+</h2>
+<p>For resources exposed by a Shennong Data Server,
+<code>backend = "api"</code> returns a metadata-first
+<code>ShennongData</code> handle without downloading the full matrix.
+The wrapper creates a non-default connection for
+<code>server_url</code>, then uses the resource, assay, and layer
+contracts from ShennongData 0.2.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">remote</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
+<span>  dataset <span class="op">=</span> <span class="st">"toil"</span>,</span>
+<span>  backend <span class="op">=</span> <span class="st">"api"</span>,</span>
+<span>  server_url <span class="op">=</span> <span class="st">"https://data.example.org"</span>,</span>
+<span>  api_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    assay <span class="op">=</span> <span class="st">"rna"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"expression"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">materialized</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
+<span>  dataset <span class="op">=</span> <span class="st">"toil"</span>,</span>
+<span>  backend <span class="op">=</span> <span class="st">"api"</span>,</span>
+<span>  server_url <span class="op">=</span> <span class="st">"https://data.example.org"</span>,</span>
+<span>  lazy <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  api_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    assay <span class="op">=</span> <span class="st">"rna"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"expression"</span>,</span>
+<span>    collect_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>allow_large <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Keep <code>backend = "auto"</code> when local/Zenodo fallback is
+desired. Use <code>backend = "local"</code> when a workflow must never
+contact the data server.</p>
+</div>
+<div class="section level2">
 <h2 id="read-once-then-initialize-with-metadata">Read once, then initialize with metadata<a class="anchor" aria-label="anchor" href="#read-once-then-initialize-with-metadata"></a>
 </h2>
 <p><code><a href="../reference/sn_read.html">sn_read()</a></code> handles common tabular files, serialized
@@ -165,7 +200,7 @@ objects, 10x matrices, H5/H5AD, GMT files, and Shennong’s custom
 dispatchers. For a 10x H5 matrix, you can read counts directly and then
 make the metadata decision explicit in
 <code><a href="../reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="va">pbmc_h5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span></span>
@@ -175,9 +210,9 @@ make the metadata decision explicit in
 <span>  study <span class="op">=</span> <span class="st">"10x_pbmc"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:14] Initializing Seurat object for project: pbmc3k_demo.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:15] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:58:15] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:11] Initializing Seurat object for project: pbmc3k_demo.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:12] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:22:12] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
@@ -188,7 +223,7 @@ make the metadata decision explicit in
 project name. <code>sample_name</code>, <code>study</code>, and
 <code>species</code> are separate inputs, so downstream composition,
 integration, and interpretation steps can reuse them.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="st">"study"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"nFeature_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  sample    study nCount_RNA nFeature_RNA percent.mt</span></span>
 <span><span class="co">#&gt; AAACATACAACCAC-1 pbmc3k 10x_pbmc       2844         1046  2.7777778</span></span>
@@ -205,7 +240,7 @@ integration, and interpretation steps can reuse them.</p>
 <code><a href="../reference/sn_list_10x_paths.html">sn_list_10x_paths()</a></code> scans a directory tree and returns the
 paths Shennong can feed back into
 <code><a href="../reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tenx_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_10x_paths.html">sn_list_10x_paths</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"data/cellranger"</span>,</span>
 <span>  what <span class="op">=</span> <span class="st">"filtered"</span></span>
@@ -225,7 +260,7 @@ biological metadata explicit after discovery.</p>
 <p>Use <code><a href="../reference/sn_write.html">sn_write()</a></code> and <code><a href="../reference/sn_read.html">sn_read()</a></code> together for
 analysis handoffs. The same API works for tables and serialized R
 objects; Shennong chooses the writer from the file extension.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outdir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_set_path.html">sn_set_path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-pbmc3k-io"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">metadata_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_metadata.csv"</span><span class="op">)</span></span>
@@ -251,6 +286,19 @@ objects; Shennong chooses the writer from the file extension.</p>
 as a regular column. This avoids ad hoc
 <code>read.csv(..., row.names = ...)</code> calls that are easy to
 forget in later scripts.</p>
+<p>For large Seurat objects, keep bulky assay layers on disk with
+BPCells before serializing the Seurat object. The returned object keeps
+the same Seurat layer interface, but the selected matrices live in
+BPCells directories.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_convert_bpcells.html">sn_convert_bpcells</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  directory <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_bpcells"</span><span class="op">)</span>,</span>
+<span>  layers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"counts"</span>, <span class="st">"data"</span><span class="op">)</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_bpcells_bound.qs2"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="prepare-a-reusable-zenodo-upload">Prepare a reusable Zenodo upload<a class="anchor" aria-label="anchor" href="#prepare-a-reusable-zenodo-upload"></a>
@@ -260,7 +308,7 @@ another project, upload the exact files and a versioned manifest to
 Zenodo with <code><a href="../reference/sn_upload_zenodo.html">sn_upload_zenodo()</a></code>. The default is draft-first:
 inspect the Zenodo draft, then rerun with <code>publish = TRUE</code>
 only when the record is ready.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zenodo_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_upload_zenodo.html">sn_upload_zenodo</a></span><span class="op">(</span></span>
 <span>  files <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">metadata_path</span>, <span class="va">object_path</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"PBMC3k initialized Shennong example"</span>,</span>
@@ -275,9 +323,9 @@ only when the record is ready.</p>
 <span><span class="co">#&gt;   file                      size md5                             </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                           </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> pbmc3k_metadata.csv     <span style="text-decoration: underline;">252</span>144 30e88b334de6ed4d04a0393921f0f216</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> pbmc3k_initialized.qs2 6<span style="text-decoration: underline;">229</span>213 bbb8358e83de591fdc9a3bcda75d8c68</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> pbmc3k_initialized.qs2 6<span style="text-decoration: underline;">229</span>208 d29bb6be776337aaf083b061561a6c2b</span></span>
 <span><span class="va">zenodo_plan</span><span class="op">$</span><span class="va">manifest_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpX9EYhQ/shennong_zenodo_manifest.json"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpE5YFGz/shennong_zenodo_manifest.json"</span></span></code></pre></div>
 <p>In a real upload, set <code>ZENODO_TOKEN</code> or
 <code>ZENODO_SANDBOX_TOKEN</code> and remove
 <code>dry_run = TRUE</code>. The uploaded
@@ -291,7 +339,7 @@ verify they are reusing the same data release.</p>
 <p>When a Python workflow exports AnnData metadata or embeddings, use
 <code><a href="../reference/sn_add_data_from_anndata.html">sn_add_data_from_anndata()</a></code> to merge those files back into
 the Seurat object with one explicit import step.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_add_data_from_anndata.html">sn_add_data_from_anndata</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  metadata <span class="op">=</span> <span class="st">"results/scanpy/obs.csv"</span>,</span>
@@ -307,14 +355,14 @@ instead of leaving them as undocumented slot edits.</p>
 creates a lightweight project scaffold with Shennong/Codex-oriented
 governance files. Use it when the analysis itself needs to be
 reproducible, not just the R object.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_initialize_project.html">sn_initialize_project</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"~/projects/pbmc3k-shennong-demo"</span>,</span>
 <span>  project_name <span class="op">=</span> <span class="st">"pbmc3k-shennong-demo"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Before installing optional backends, inspect what Shennong considers
 required, recommended, or optional for your workflow.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_check_version.html">sn_check_version</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_install_shennong.html">sn_install_shennong</a></span><span class="op">(</span>source <span class="op">=</span> <span class="st">"github"</span>, ref <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span>
@@ -331,7 +379,7 @@ install <code>qs</code> on current R releases.</p>
 <p>The package also ships Codex skill assets for Shennong-style analysis
 projects. These helpers expose their installed locations without making
 users search the package directory manually.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_get_codex_skill_path.html">sn_get_codex_skill_path</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span>destination <span class="op">=</span> <span class="st">".codex/skills"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -348,7 +396,7 @@ users search the package directory manually.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

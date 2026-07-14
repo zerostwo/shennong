@@ -7,13 +7,7 @@ indicates stronger within-cluster batch mixing.
 ## Usage
 
 ``` r
-sn_calculate_cluster_entropy(
-  x,
-  cluster_by = NULL,
-  label_by = NULL,
-  cluster = NULL,
-  label = NULL
-)
+sn_calculate_cluster_entropy(x, cluster_by = NULL, label_by = NULL)
 ```
 
 ## Arguments
@@ -30,14 +24,6 @@ sn_calculate_cluster_entropy(
 
   Metadata/data-frame column containing the label_by to evaluate within
   each cluster.
-
-- cluster:
-
-  Deprecated alias for `cluster_by`.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 

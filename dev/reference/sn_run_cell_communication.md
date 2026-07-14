@@ -33,7 +33,6 @@ sn_run_cell_communication(
   resource = NULL,
   store_name = "default",
   return_object = TRUE,
-  condition_col = NULL,
   ...
 )
 ```
@@ -121,10 +120,6 @@ sn_run_cell_communication(
 
   If `TRUE`, return the updated Seurat object; otherwise return the
   stored-result list.
-
-- condition_col:
-
-  Deprecated alias for `condition_by`.
 
 - ...:
 

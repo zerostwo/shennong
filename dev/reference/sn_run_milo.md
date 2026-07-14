@@ -32,10 +32,7 @@ sn_run_milo(
   store_name = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
-  verbose = TRUE,
-  sample_col = NULL,
-  annotation_col = NULL,
-  group_col = NULL
+  verbose = TRUE
 )
 ```
 
@@ -79,7 +76,7 @@ sn_run_milo(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `sample_col`.
+  subsampling. Defaults to `sample_by`.
 
 - k:
 
@@ -142,18 +139,6 @@ sn_run_milo(
 - verbose:
 
   Logical; if `TRUE`, emit progress logs.
-
-- sample_col:
-
-  Deprecated alias for `sample_by`.
-
-- annotation_col:
-
-  Deprecated alias for `annotation_by`.
-
-- group_col:
-
-  Deprecated alias for `group_by`.
 
 ## Value
 

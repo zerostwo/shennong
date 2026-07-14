@@ -11,8 +11,8 @@ GitHub.
 sn_check_version(
   channel = c("auto", "cran", "github"),
   package = "Shennong",
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
+  source = "zerostwo/shennong",
+  ref = "main",
   repos = getOption("repos"),
   quiet = FALSE
 )
@@ -28,11 +28,12 @@ sn_check_version(
 
   Package name to check. Defaults to `"Shennong"`.
 
-- github_repo:
+- source:
 
-  GitHub repository in `"owner/repo"` format.
+  GitHub repository in `"owner/repo"` format when checking the
+  development channel.
 
-- github_ref:
+- ref:
 
   GitHub ref to inspect. Defaults to `"main"`.
 

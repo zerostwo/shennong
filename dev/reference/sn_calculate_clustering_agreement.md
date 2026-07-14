@@ -7,13 +7,7 @@ how well clustering preserves known cell identities.
 ## Usage
 
 ``` r
-sn_calculate_clustering_agreement(
-  x,
-  cluster_by = NULL,
-  label_by = NULL,
-  cluster = NULL,
-  label = NULL
-)
+sn_calculate_clustering_agreement(x, cluster_by = NULL, label_by = NULL)
 ```
 
 ## Arguments
@@ -29,14 +23,6 @@ sn_calculate_clustering_agreement(
 - label_by:
 
   Metadata/data-frame column containing reference labels.
-
-- cluster:
-
-  Deprecated alias for `cluster_by`.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 

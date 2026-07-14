@@ -21,9 +21,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-05 23:47:19] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-05 23:47:19] Running QC metrics for human.
-#> INFO [2026-05-05 23:47:19] Seurat object initialization complete.
+#> INFO [2026-07-14 06:15:19] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:15:19] Running QC metrics for human.
+#> INFO [2026-07-14 06:15:20] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -54,6 +54,24 @@ recomputes only the cluster labels. Use `rerun_from = "integration"`
 after changing an integration backend, or `reuse = FALSE` when a
 completely fresh run is needed.
 
+UMAP geometry can be tuned independently from clustering with
+`umap_control`. This is useful when clusters are biologically separate
+but overlap visually in the two-dimensional embedding.
+
+``` r
+
+pbmc_umap <- sn_run_cluster(
+  pbmc,
+  umap_control = list(
+    n.neighbors = 20,
+    min.dist = 0.1,
+    spread = 1,
+    reduction.name = "umap_tuned"
+  ),
+  rerun_from = "umap"
+)
+```
+
 The result is a regular Seurat object. You can use Shennong plotting
 helpers or drop down to Seurat whenever needed.
 
@@ -72,9 +90,13 @@ sn_plot_dim(
 
 ## Block unhelpful feature families
 
-Single-cell clustering can be dominated by mitochondrial, ribosomal,
-immunoglobulin, or heat-shock genes. `block_genes` makes that choice
-explicit instead of hiding it inside a custom variable-feature script.
+Single-cell clustering can be dominated by cell-cycle, mitochondrial,
+ribosomal, immunoglobulin, pseudogene, or heat-shock genes.
+`block_genes` makes that choice explicit instead of hiding it inside a
+custom variable-feature script. The vector can mix bundled signature
+names, full signature paths, and custom gene symbols, and is applied to
+internally selected HVGs in both log-normalization and SCTransform
+workflows.
 
 ``` r
 
@@ -85,7 +107,7 @@ pbmc_blocked <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   species = "human",
-  block_genes = c("mito", "ribo", "immunoglobulins"),
+  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo", "MYC"),
   verbose = FALSE
 )
 ```
@@ -165,6 +187,98 @@ pbmc_manual@misc$hvg_selection$user_features
 This is different from `rare_feature_method`: `rare_feature_method` asks
 Shennong to discover rare-aware features, while `hvg_features` records a
 user-provided feature prior.
+
+## CITE-seq RNA and protein workflows
+
+For CITE-seq objects with paired RNA and ADT assays, set
+`modality = "cite_seq"`. The default `multimodal_method = "wnn"` runs
+the standard RNA PCA path, normalizes the ADT assay with CLR, computes
+ADT PCA, then uses Seurat weighted nearest neighbors to cluster on the
+`wsnn` graph and create a `wnn.umap` embedding. The template below
+assumes `pbmc_cite` is a prepared Seurat object containing both assays,
+so it is not executed during site builds.
+
+``` r
+
+pbmc_cite <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  assay = "RNA",
+  adt_assay = "ADT",
+  normalization_method = "seurat",
+  nfeatures = 2000,
+  dims = 1:20,
+  adt_dims = 1:18,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+sn_plot_dim(pbmc_cite, reduction = "wnn.umap", group_by = "seurat_clusters")
+```
+
+For batch-aware CITE-seq integration, choose a multimodal backend
+explicitly. `multimodal_method = "totalvi"` runs scvi-tools totalVI on
+RNA counts and ADT counts. `multimodal_method = "coralysis"` runs native
+Coralysis on the ADT assay as a log-normalized protein matrix.
+`multimodal_method = "mmochi"` runs MMoCHi ADT landmark registration
+across the supplied `batch` column, or in single-sample mode when
+`batch = NULL`. It stores the corrected protein matrix as an assay layer
+when the local Seurat object supports arbitrary layers and otherwise
+under `object@misc$mmochi$corrected_protein`, computes a protein-derived
+`mmochi` reduction, and clusters from that reduction. The full MMoCHi
+hierarchy classifier remains an advanced Python workflow because it
+requires an explicit user-defined hierarchy.
+
+``` r
+
+pbmc_totalvi <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "totalvi",
+  batch = "library",
+  assay = "RNA",
+  adt_assay = "ADT",
+  normalization_method = "seurat",
+  nfeatures = 3000,
+  dims = 1:30,
+  integration_control = list(max_epochs = 100),
+  verbose = FALSE
+)
+
+sn_plot_dim(pbmc_totalvi, reduction = "umap", group_by = "seurat_clusters")
+```
+
+``` r
+
+pbmc_adt_coral <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "coralysis",
+  batch = "library",
+  adt_assay = "ADT",
+  adt_dims = 1:18,
+  verbose = FALSE
+)
+```
+
+``` r
+
+pbmc_adt_mmochi <- sn_run_cluster(
+  object = pbmc_cite,
+  modality = "cite_seq",
+  multimodal_method = "mmochi",
+  batch = NULL,
+  adt_assay = "ADT",
+  adt_dims = 1:18,
+  integration_control = list(
+    protein_layer = "data",
+    marker_bandwidths = list(CD3 = 0.25),
+    store_corrected_layer = TRUE
+  ),
+  verbose = FALSE
+)
+```
 
 ## Choose resolution empirically
 
@@ -261,7 +375,11 @@ For imbalanced datasets where a rare or unevenly distributed state may
 be washed out by conventional correction, Coralysis can be selected
 explicitly. Coralysis runs on the log-normalized feature set selected by
 Shennong and stores the integrated embedding as the `coralysis`
-reduction.
+reduction. The trained Coralysis SingleCellExperiment is stored by
+default under `object@misc$coralysis`, so the returned object can be
+used later as a native Coralysis label-transfer reference. Set
+`integration_control = list(store_sce = FALSE)` only for clustering-only
+runs.
 
 ``` r
 
@@ -275,9 +393,12 @@ pbmc_coral <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   integration_control = list(
-    store_sce = TRUE,
     icp_args = list(L = 25, threads = 2),
-    pca_args = list(p = 20, return.model = TRUE)
+    pca_args = list(p = 20)
+  ),
+  umap_control = list(
+    n.neighbors = 20,
+    min.dist = 0.1
   ),
   verbose = FALSE
 )

@@ -25,7 +25,7 @@ sn_list_datasets(
 - source:
 
   Which registry to list. `"public"` lists the current Shennong public
-  Zenodo collection; `"examples"` lists the legacy PBMC examples;
+  Zenodo collection; `"examples"` lists the bundled PBMC examples;
   `"all"` returns both.
 
 - record_id:

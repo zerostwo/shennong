@@ -241,8 +241,9 @@ Released 2026-03-18.
 
 #### Changed
 
-- Retained `sn_load_pbmc()` as a deprecated compatibility wrapper around
-  [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md).
+- Removed the old `sn_load_pbmc()` wrapper in favor of the primary
+  [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
+  entry point.
 - Refreshed generated documentation and package metadata as part of the
   modernization effort.
 

@@ -6,11 +6,11 @@ predicted label_by and confidence score back to the query, and store a
 small provenance record in `query@misc$label_transfer`. The default
 `method = "seurat"` wraps Seurat's `FindTransferAnchors()` and
 `TransferData()` workflow. `method = "coralysis"` projects the query
-onto a Coralysis-trained reference with `Coralysis::ReferenceMapping()`.
-`method = "scanvi"` and `method = "scarches"` use the managed
-scVI-family pixi backend to train a semi-supervised scANVI model with
-reference labels and query cells marked as unlabeled, then import the
-predicted query labels.
+onto a native Coralysis-trained reference with
+`Coralysis::ReferenceMapping()`. `method = "scanvi"` and
+`method = "scarches"` use the managed scVI-family pixi backend to train
+a semi-supervised scANVI model with reference labels and query cells
+marked as unlabeled, then import the predicted query labels.
 
 ## Usage
 
@@ -20,7 +20,6 @@ sn_transfer_labels(
   reference,
   label_by = NULL,
   method = c("seurat", "coralysis", "scanvi", "scarches"),
-  query = NULL,
   prediction_prefix = NULL,
   normalization_method = "LogNormalize",
   reference_assay = NULL,
@@ -40,7 +39,6 @@ sn_transfer_labels(
   return_anchors = FALSE,
   transfer_control = list(),
   verbose = TRUE,
-  label_col = NULL,
   ...
 )
 ```
@@ -63,19 +61,14 @@ sn_transfer_labels(
 - method:
 
   Label-transfer backend. `"seurat"` uses Seurat anchors; `"coralysis"`
-  uses `Coralysis::ReferenceMapping()` and requires a Coralysis-trained
-  reference stored under `reference@misc$coralysis`; `"scanvi"` and
-  `"scarches"` use the scVI-family pixi backend.
-
-- query:
-
-  Deprecated alias for `object`; retained for compatibility with the old
-  reference-first call style.
+  uses native `Coralysis::ReferenceMapping()` and requires a trained
+  Coralysis reference stored under `reference@misc$coralysis`;
+  `"scanvi"` and `"scarches"` use the scVI-family pixi backend.
 
 - prediction_prefix:
 
   Prefix for metadata columns added to `query`. Defaults to
-  `paste0(label_col, "_transfer")`.
+  `paste0(label_by, "_transfer")`.
 
 - normalization_method:
 
@@ -147,10 +140,6 @@ sn_transfer_labels(
 - verbose:
 
   Whether to print Seurat progress messages.
-
-- label_col:
-
-  Deprecated alias for `label_by`.
 
 - ...:
 

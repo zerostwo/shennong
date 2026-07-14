@@ -27,9 +27,23 @@ Rscript scripts/check-prepush.R --filter="utils|de_enrich"
 ```
 
 This runs documentation refresh, an optional targeted test pass, the
-full test suite, `R CMD build`, `R CMD check --no-manual`, and pkgdown
-reference-index validation in one command. Use `--help` to see the
-available `--skip-*` options.
+full test suite, `R CMD build`, a non-duplicating
+`R CMD check --no-manual`, and pkgdown reference-index validation in one
+command. Because the full `test_local()` suite already ran, the helper
+skips tests inside `R CMD check` unless `--check-tests` is supplied. It
+also defaults `_R_CHECK_FORCE_SUGGESTS_=false` for local developer
+machines that do not have every optional backend installed.
+
+For a faster edit loop after a focused change, run:
+
+``` sh
+Rscript scripts/check-prepush.R --filter="utils|de_enrich" --quick
+```
+
+The quick mode runs the targeted test filter, builds the source tarball,
+and runs a structural package check with tests, examples, and vignette
+checks disabled. Use the standard command before pushing release-scale
+changes. Use `--help` to see all `--skip-*` and check-tuning options.
 
 ## Documentation
 

@@ -15,8 +15,7 @@ sn_calculate_lisi(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 ```
 
@@ -57,10 +56,6 @@ sn_calculate_lisi(
 
   Random seed used when `max_cells` triggers subsampling.
 
-- label:
-
-  Deprecated alias for `label_by`.
-
 ## Value
 
 A data frame with one row per retained cell. The first column is
@@ -73,7 +68,7 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

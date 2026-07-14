@@ -16,8 +16,7 @@ sn_prepare_annotation_evidence(
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
   reduction = "umap",
-  n_neighbor_clusters = 3,
-  cluster_col = NULL
+  n_neighbor_clusters = 3
 )
 ```
 
@@ -82,10 +81,6 @@ sn_prepare_annotation_evidence(
   programs are included automatically when the required genes are
   present.
 
-- cluster_col:
-
-  Deprecated alias for `cluster_by`.
-
 ## Value
 
 A structured list ready for prompt construction.
@@ -115,14 +110,13 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   evidence <- sn_prepare_annotation_evidence(
     obj,
     de_name = "celltype_markers",
-    cluster_col = "cell_type"
+    cluster_by = "cell_type"
   )
   names(evidence)
 }
-#> INFO [2026-05-05 23:43:23] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:23] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:23] Seurat object initialization complete.
-#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
+#> INFO [2026-07-14 06:11:18] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:11:18] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:19] Seurat object initialization complete.
 #>  [1] "task"                      "cluster_col"              
 #>  [3] "source_de_name"            "source_enrichment_name"   
 #>  [5] "analysis_method"           "species"                  

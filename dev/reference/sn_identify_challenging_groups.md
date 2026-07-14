@@ -23,8 +23,7 @@ sn_identify_challenging_groups(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  group = NULL
+  n_trees = 50
 )
 ```
 
@@ -97,10 +96,6 @@ sn_identify_challenging_groups(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
-- group:
-
-  Deprecated alias for `group_by`.
-
 ## Value
 
 A data frame with one row per group and rarity/separation flags.
@@ -112,7 +107,7 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

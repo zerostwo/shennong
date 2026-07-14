@@ -19,7 +19,6 @@ sn_write_results(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
-  cluster_col = NULL,
   ...
 )
 ```
@@ -81,10 +80,6 @@ sn_write_results(
   Logical; if `TRUE`, emit step-wise progress logs and, when cli is
   available, a console progress bar while waiting for the LLM response.
 
-- cluster_col:
-
-  Deprecated alias for `cluster_by`.
-
 - ...:
 
   Additional arguments forwarded to `provider`.
@@ -120,19 +115,18 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     obj,
     cluster_de_name = "celltype_markers",
     enrichment_name = "demo_gsea",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-05-05 23:43:37] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:37] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:37] Seurat object initialization complete.
+#> INFO [2026-07-14 06:11:32] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:11:32] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:32] Seurat object initialization complete.
 #> Warning: No DE genes identified
-#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
-#> INFO [2026-05-05 23:43:39] [sn_write_results] Starting interpretation workflow.
-#> INFO [2026-05-05 23:43:39] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
-#> INFO [2026-05-05 23:43:39] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.0s).
-#> INFO [2026-05-05 23:43:39] [sn_write_results] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-07-14 06:11:33] [sn_write_results] Starting interpretation workflow.
+#> INFO [2026-07-14 06:11:33] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).
+#> INFO [2026-07-14 06:11:33] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.1s).
+#> INFO [2026-07-14 06:11:33] [sn_write_results] Prompt prepared (total elapsed 0.1s).
 #> [1] "results"
 ```

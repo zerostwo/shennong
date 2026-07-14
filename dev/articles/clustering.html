@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Clustering and integration with PBMC3k • Shennong</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -78,7 +78,7 @@ Duan</h4>
       
                   
       
-      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/main/vignettes/clustering.Rmd" class="external-link"><code>vignettes/clustering.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/zerostwo/shennong/blob/agent/fix-pkgdown-msigdbr/vignettes/clustering.Rmd" class="external-link"><code>vignettes/clustering.Rmd</code></a></small>
       <div class="d-none name"><code>clustering.Rmd</code></div>
     </div>
 
@@ -104,9 +104,9 @@ species.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:47:19] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:47:19] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-05-05 23:47:19] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:15:19] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:15:19] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-14 06:15:20] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -134,9 +134,23 @@ normalization, HVGs, PCA, the neighbor graph, and UMAP, then recomputes
 only the cluster labels. Use <code>rerun_from = "integration"</code>
 after changing an integration backend, or <code>reuse = FALSE</code>
 when a completely fresh run is needed.</p>
+<p>UMAP geometry can be tuned independently from clustering with
+<code>umap_control</code>. This is useful when clusters are biologically
+separate but overlap visually in the two-dimensional embedding.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  umap_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    n.neighbors <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>    min.dist <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>    spread <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    reduction.name <span class="op">=</span> <span class="st">"umap_tuned"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  rerun_from <span class="op">=</span> <span class="st">"umap"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>The result is a regular Seurat object. You can use Shennong plotting
 helpers or drop down to Seurat whenever needed.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -149,11 +163,14 @@ helpers or drop down to Seurat whenever needed.</p>
 <div class="section level2">
 <h2 id="block-unhelpful-feature-families">Block unhelpful feature families<a class="anchor" aria-label="anchor" href="#block-unhelpful-feature-families"></a>
 </h2>
-<p>Single-cell clustering can be dominated by mitochondrial, ribosomal,
-immunoglobulin, or heat-shock genes. <code>block_genes</code> makes that
-choice explicit instead of hiding it inside a custom variable-feature
-script.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Single-cell clustering can be dominated by cell-cycle, mitochondrial,
+ribosomal, immunoglobulin, pseudogene, or heat-shock genes.
+<code>block_genes</code> makes that choice explicit instead of hiding it
+inside a custom variable-feature script. The vector can mix bundled
+signature names, full signature paths, and custom gene symbols, and is
+applied to internally selected HVGs in both log-normalization and
+SCTransform workflows.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_blocked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -161,7 +178,7 @@ script.</p>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
-<span>  block_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mito"</span>, <span class="st">"ribo"</span>, <span class="st">"immunoglobulins"</span><span class="op">)</span>,</span>
+<span>  block_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cellCycle.G2M"</span>, <span class="st">"cellCycle.G1S"</span>, <span class="st">"mito"</span>, <span class="st">"ribo"</span>, <span class="st">"MYC"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use this when a technical or lineage-specific gene family is
@@ -173,7 +190,7 @@ overwhelming the structure you want to resolve.</p>
 <p>Small populations can disappear when variable genes are selected only
 by global variance. Shennong can append rare-aware features before
 PCA.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_rare</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -190,7 +207,7 @@ PCA.</p>
 <p>The key idea is simple: keep the global HVGs, then add a small number
 of genes that help preserve rare groups. The rare-cell scoring helper
 can be used independently to inspect which cells look unusual.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rare_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"gini"</span>,</span>
@@ -214,7 +231,7 @@ population, but those genes are too sparse to rank among the global
 HVGs. Use <code>hvg_features</code> to merge those genes into the final
 ScaleData/PCA feature set after Shennong validates that they exist in
 the object.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -234,13 +251,97 @@ features, while <code>hvg_features</code> records a user-provided
 feature prior.</p>
 </div>
 <div class="section level2">
+<h2 id="cite-seq-rna-and-protein-workflows">CITE-seq RNA and protein workflows<a class="anchor" aria-label="anchor" href="#cite-seq-rna-and-protein-workflows"></a>
+</h2>
+<p>For CITE-seq objects with paired RNA and ADT assays, set
+<code>modality = "cite_seq"</code>. The default
+<code>multimodal_method = "wnn"</code> runs the standard RNA PCA path,
+normalizes the ADT assay with CLR, computes ADT PCA, then uses Seurat
+weighted nearest neighbors to cluster on the <code>wsnn</code> graph and
+create a <code>wnn.umap</code> embedding. The template below assumes
+<code>pbmc_cite</code> is a prepared Seurat object containing both
+assays, so it is not executed during site builds.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_cite</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
+<span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">18</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_cite</span>, reduction <span class="op">=</span> <span class="st">"wnn.umap"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></code></pre></div>
+<p>For batch-aware CITE-seq integration, choose a multimodal backend
+explicitly. <code>multimodal_method = "totalvi"</code> runs scvi-tools
+totalVI on RNA counts and ADT counts.
+<code>multimodal_method = "coralysis"</code> runs native Coralysis on
+the ADT assay as a log-normalized protein matrix.
+<code>multimodal_method = "mmochi"</code> runs MMoCHi ADT landmark
+registration across the supplied <code>batch</code> column, or in
+single-sample mode when <code>batch = NULL</code>. It stores the
+corrected protein matrix as an assay layer when the local Seurat object
+supports arbitrary layers and otherwise under
+<code>object@misc$mmochi$corrected_protein</code>, computes a
+protein-derived <code>mmochi</code> reduction, and clusters from that
+reduction. The full MMoCHi hierarchy classifier remains an advanced
+Python workflow because it requires an explicit user-defined
+hierarchy.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_totalvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
+<span>  multimodal_method <span class="op">=</span> <span class="st">"totalvi"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
+<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max_epochs <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_totalvi</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_adt_coral</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
+<span>  multimodal_method <span class="op">=</span> <span class="st">"coralysis"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">18</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_adt_mmochi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
+<span>  multimodal_method <span class="op">=</span> <span class="st">"mmochi"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">18</span>,</span>
+<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    protein_layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>    marker_bandwidths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CD3 <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span>,</span>
+<span>    store_corrected_layer <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="choose-resolution-empirically">Choose resolution empirically<a class="anchor" aria-label="anchor" href="#choose-resolution-empirically"></a>
 </h2>
 <p>Instead of treating <code>resolution = 0.8</code> as a magic number,
 <code><a href="../reference/sn_sweep_cluster_resolution.html">sn_sweep_cluster_resolution()</a></code> reruns clustering over a
 small grid and reports diagnostics such as cluster count, silhouette,
 and graph connectivity.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sweep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_sweep_cluster_resolution.html">sn_sweep_cluster_resolution</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  resolutions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">1.0</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
@@ -275,7 +376,7 @@ marker genes.</p>
 <p>PBMC3k is one dataset, so the example below creates a teaching-only
 pseudo batch column. In a real experiment, <code>batch</code> would be a
 donor, library, chemistry, or dataset column.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span><span class="op">$</span><span class="va">library</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library_a"</span>, <span class="st">"library_b"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
@@ -303,7 +404,7 @@ integration, and <code>integration_method</code> names the backend.
 Harmony is the default because it is fast and broadly useful.</p>
 <p>The same integration switch can be used with SCTransform
 normalization:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_sct_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
@@ -318,8 +419,13 @@ normalization:</p>
 may be washed out by conventional correction, Coralysis can be selected
 explicitly. Coralysis runs on the log-normalized feature set selected by
 Shennong and stores the integrated embedding as the
-<code>coralysis</code> reduction.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code>coralysis</code> reduction. The trained Coralysis
+SingleCellExperiment is stored by default under
+<code>object@misc$coralysis</code>, so the returned object can be used
+later as a native Coralysis label-transfer reference. Set
+<code>integration_control = list(store_sce = FALSE)</code> only for
+clustering-only runs.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_coral</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
@@ -330,15 +436,18 @@ Shennong and stores the integrated embedding as the
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    store_sce <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>    icp_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">25</span>, threads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
-<span>    pca_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">20</span>, return.model <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    pca_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  umap_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    n.neighbors <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>    min.dist <span class="op">=</span> <span class="fl">0.1</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Seurat layer integration methods are also available when users want
 to compare against familiar anchor-based workflows:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_cca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
@@ -396,7 +505,7 @@ family under <code>inst/pixi/&lt;family&gt;/scripts/</code>. For
 example, inferCNVpy can be run directly on a Seurat object and will
 import cell-level CNV metadata and CNV reductions back into that
 object:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_infercnvpy</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">tumor</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
@@ -407,7 +516,7 @@ object:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Other Python tools follow the same Seurat-first pattern. Tools that
 need additional biological inputs make those inputs explicit:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_cellphonedb</a></span><span class="op">(</span><span class="va">object</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">spatial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_tangram</a></span><span class="op">(</span></span>
@@ -425,7 +534,7 @@ need additional biological inputs make those inputs explicit:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">spatial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_squidpy</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">spatial</span>, spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_pixi_environments.html">sn_list_pixi_environments</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_pixi_paths.html">sn_pixi_paths</a></span><span class="op">(</span><span class="st">"scvi"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_check_pixi.html">sn_ensure_pixi</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -477,7 +586,7 @@ need additional biological inputs make those inputs explicit:</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
   </div></footer>

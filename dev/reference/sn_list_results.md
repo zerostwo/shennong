@@ -17,7 +17,10 @@ sn_list_results(object)
 
 ## Value
 
-A tibble describing stored DE, enrichment, and interpretation results.
+A tibble describing registered Shennong stored-result collections,
+including DE, enrichment, interpretation, deconvolution, Milo,
+communication, regulatory activity, and QC assessment entries when
+present.
 
 ## Examples
 
@@ -43,9 +46,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   sn_list_results(obj)
 }
-#> INFO [2026-05-05 23:43:17] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:17] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:18] Seurat object initialization complete.
+#> INFO [2026-07-14 06:11:12] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:11:12] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:12] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> Warning: The following tests were not performed: 
 #> Warning: When testing Shennong versus all:
@@ -53,5 +56,5 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
 #> # A tibble: 1 × 8
 #>   collection type  name    analysis method created_at     n_rows source
 #>   <chr>      <chr> <chr>   <chr>    <chr>  <chr>           <int> <chr> 
-#> 1 de_results de    default markers  wilcox 2026-05-05 23…      0 NA    
+#> 1 de_results de    default markers  wilcox 2026-07-14 06…      0 NA    
 ```

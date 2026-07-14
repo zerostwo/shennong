@@ -18,8 +18,7 @@ sn_plot_milo(
   y_label = expression(-log[10]("FDR")),
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL,
-  annotation_col = NULL
+  panel_heights = NULL
 )
 ```
 
@@ -69,10 +68,6 @@ sn_plot_milo(
   Optional panel size arguments forwarded to
   [`catplot::theme_cat()`](https://rdrr.io/pkg/catplot/man/theme_cat.html)
   when available.
-
-- annotation_col:
-
-  Deprecated alias for `annotation_by`.
 
 ## Value
 

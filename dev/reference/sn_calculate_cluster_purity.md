@@ -7,13 +7,7 @@ clustering preserves known cell identities after integration.
 ## Usage
 
 ``` r
-sn_calculate_cluster_purity(
-  x,
-  cluster_by = NULL,
-  label_by = NULL,
-  cluster = NULL,
-  label = NULL
-)
+sn_calculate_cluster_purity(x, cluster_by = NULL, label_by = NULL)
 ```
 
 ## Arguments
@@ -29,14 +23,6 @@ sn_calculate_cluster_purity(
 - label_by:
 
   Metadata/data-frame column containing reference labels.
-
-- cluster:
-
-  Deprecated alias for `cluster_by`.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 

@@ -15,7 +15,6 @@ sn_plot_heatmap(
   split_by = NULL,
   assay = NULL,
   layer = "scale.data",
-  slot = NULL,
   mode = c("cells", "average"),
   scale_data = TRUE,
   max_cells = NULL,
@@ -33,7 +32,6 @@ sn_plot_heatmap(
   raster = TRUE,
   label_size = 8,
   label_angle = 45,
-  angle = NULL,
   group_palette = "Paired",
   group_colors = NULL,
   show_cell_names = FALSE,
@@ -77,10 +75,6 @@ sn_plot_heatmap(
   Data layer used for expression retrieval. Defaults to `"scale.data"`
   for cell-level heatmaps. In `mode = "average"`, use `"data"` to
   average normalized expression before optional feature-wise scaling.
-
-- slot:
-
-  Deprecated alias for `layer`.
 
 - mode:
 
@@ -137,10 +131,6 @@ sn_plot_heatmap(
 
   Size in points and rotation angle for the cell-level group labels
   drawn above the heatmap.
-
-- angle:
-
-  Deprecated alias for `label_angle`.
 
 - group_palette, group_colors:
 

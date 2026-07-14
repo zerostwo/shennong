@@ -12,9 +12,7 @@ backend produces cell-level metadata or embeddings.
 
 ``` r
 sn_run_scarches(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   batch_by = NULL,
@@ -25,15 +23,11 @@ sn_run_scarches(
   result_name = "scarches",
   return_object = TRUE,
   method_control = list(),
-  batch = NULL,
-  labels_key = NULL,
   ...
 )
 
 sn_run_scpoli(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   batch_by = NULL,
@@ -44,15 +38,11 @@ sn_run_scpoli(
   result_name = "scpoli",
   return_object = TRUE,
   method_control = list(),
-  batch = NULL,
-  labels_key = NULL,
   ...
 )
 
 sn_run_infercnvpy(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   species = NULL,
@@ -83,15 +73,11 @@ sn_run_infercnvpy(
   metadata_prefix = "infercnvpy_",
   result_name = "infercnvpy",
   return_object = TRUE,
-  reference_key = NULL,
-  cnv_score_groupby = NULL,
   ...
 )
 
 sn_run_cellphonedb(
-  object = NULL,
-  command = "cellphonedb",
-  args = character(),
+  object,
   assay = NULL,
   layer = "counts",
   group_by = NULL,
@@ -100,14 +86,11 @@ sn_run_cellphonedb(
   result_name = "cellphonedb",
   return_object = TRUE,
   method_control = list(),
-  groupby = NULL,
   ...
 )
 
 sn_run_cell2location(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = "counts",
   reference_signatures = NULL,
@@ -122,9 +105,7 @@ sn_run_cell2location(
 )
 
 sn_run_tangram(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   reference_object = NULL,
   assay = NULL,
   layer = NULL,
@@ -138,14 +119,11 @@ sn_run_tangram(
   result_name = "tangram",
   return_object = TRUE,
   method_control = list(),
-  cell_type_key = NULL,
   ...
 )
 
 sn_run_squidpy(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -156,14 +134,11 @@ sn_run_squidpy(
   result_name = "squidpy",
   return_object = TRUE,
   method_control = list(),
-  cluster_key = NULL,
   ...
 )
 
 sn_run_spatialdata(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -177,9 +152,7 @@ sn_run_spatialdata(
 )
 
 sn_run_stlearn(
-  object = NULL,
-  command = "python",
-  args = character(),
+  object,
   assay = NULL,
   layer = NULL,
   spatial_cols = NULL,
@@ -197,18 +170,9 @@ sn_run_stlearn(
 
 - object:
 
-  Optional Seurat object. When supplied to `sn_run_*()` wrappers,
-  Shennong writes the object to a Python interchange directory, runs the
-  corresponding pixi script, and imports supported results.
-
-- command:
-
-  Command to run inside the selected pixi environment. Defaults to
-  `"python"`.
-
-- args:
-
-  Character vector of command arguments.
+  Seurat object. Shennong writes the object to a Python interchange
+  directory, runs the corresponding pixi script, and imports supported
+  results.
 
 - assay:
 
@@ -249,14 +213,6 @@ sn_run_stlearn(
   Optional named list of backend-specific settings passed to the Python
   runner config.
 
-- batch:
-
-  Deprecated alias for `batch_by`.
-
-- labels_key:
-
-  Deprecated alias for `label_by`.
-
 - ...:
 
   Additional arguments passed to
@@ -273,7 +229,7 @@ sn_run_stlearn(
 
 - reference_cat:
 
-  One or more values in `reference_key` denoting normal reference cells.
+  One or more values in `reference_by` denoting normal reference cells.
 
 - gene_order:
 
@@ -315,21 +271,9 @@ sn_run_stlearn(
 
   Optional grouping column for infercnvpy CNV scores.
 
-- reference_key:
-
-  Deprecated alias for `reference_by`.
-
-- cnv_score_groupby:
-
-  Deprecated alias for `cnv_score_group_by`.
-
 - group_by:
 
   Metadata column used by CellPhoneDB cell groups.
-
-- groupby:
-
-  Deprecated alias for `group_by`.
 
 - reference_signatures:
 
@@ -354,28 +298,18 @@ sn_run_stlearn(
   Reference metadata column containing cell-type labels for Tangram
   projection.
 
-- cell_type_key:
-
-  Deprecated alias for `cell_type_by`.
-
 - cluster_by:
 
   Metadata column used by Squidpy neighborhood enrichment.
 
-- cluster_key:
-
-  Deprecated alias for `cluster_by`.
-
 ## Value
 
-Command wrappers invisibly return command output. Object-level
-`sn_run_infercnvpy()` returns a Seurat object or a run manifest.
+A Seurat object or a run manifest.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-sn_run_infercnvpy(args = "--version")
 object <- sn_run_infercnvpy(
   object = object,
   reference_by = "cell_type",

@@ -34,7 +34,6 @@ sn_interpret_annotation(
   store_name = "default",
   return_object = TRUE,
   show_progress = interactive(),
-  cluster_col = NULL,
   ...
 )
 ```
@@ -183,10 +182,6 @@ sn_interpret_annotation(
   Logical; if `TRUE`, emit step-wise progress logs and, when cli is
   available, a console progress bar while waiting for the LLM response.
 
-- cluster_col:
-
-  Deprecated alias for `cluster_by`.
-
 - ...:
 
   Additional arguments forwarded to `provider`.
@@ -220,20 +215,19 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_annotation(
     obj,
     de_name = "celltype_markers",
-    cluster_col = "cell_type",
+    cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-05-05 23:43:04] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:04] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:04] Seurat object initialization complete.
-#> Warning: `cluster_col` is deprecated; use `cluster_by` instead.
-#> INFO [2026-05-05 23:43:04] [sn_interpret_annotation] Starting interpretation workflow.
-#> INFO [2026-05-05 23:43:04] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
+#> INFO [2026-07-14 06:10:59] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:10:59] Running QC metrics for human.
+#> INFO [2026-07-14 06:10:59] Seurat object initialization complete.
+#> INFO [2026-07-14 06:10:59] [sn_interpret_annotation] Starting interpretation workflow.
+#> INFO [2026-07-14 06:10:59] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
 #> As of Seurat v5, we recommend using AggregateExpression to perform pseudo-bulk analysis.
 #> This message is displayed once per session.
-#> INFO [2026-05-05 23:43:04] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
-#> INFO [2026-05-05 23:43:04] [sn_interpret_annotation] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-07-14 06:10:59] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
+#> INFO [2026-07-14 06:10:59] [sn_interpret_annotation] Prompt prepared (total elapsed 0.1s).
 #> [1] "annotation"
 ```

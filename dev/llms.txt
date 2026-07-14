@@ -197,6 +197,8 @@ early versions.
   [`.export.rio_qs()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   [`.export.rio_qs2()`](https://songqi.org/shennong/dev/reference/sn_write.md)
   : Write tabular and bioinformatics file formats
+- [`sn_convert_bpcells()`](https://songqi.org/shennong/dev/reference/sn_convert_bpcells.md)
+  : Convert Seurat assay layers to BPCells-backed matrices
 - [`sn_upload_zenodo()`](https://songqi.org/shennong/dev/reference/sn_upload_zenodo.md)
   : Upload reusable data files to Zenodo
 - [`sn_add_data_from_anndata()`](https://songqi.org/shennong/dev/reference/sn_add_data_from_anndata.md)
@@ -232,8 +234,21 @@ early versions.
 - [`sn_run_scvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
   [`sn_run_scanvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
   : Run scVI or scANVI integration through Shennong
+- [`sn_run_scarches()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_scpoli()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cell2location()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_tangram()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_squidpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_stlearn()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  : Run a Python analysis command through a managed Shennong pixi
+  environment
 - [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md)
   : Transfer labels from a Seurat reference to a query object
+- [`sn_prepare_label_transfer_reference()`](https://songqi.org/shennong/dev/reference/sn_prepare_label_transfer_reference.md)
+  : Prepare a compact label-transfer reference
 - [`sn_simulate()`](https://songqi.org/shennong/dev/reference/sn_simulate.md)
   : Simulate single-cell counts with scDesign3
 - [`sn_simulate_scdesign3()`](https://songqi.org/shennong/dev/reference/sn_simulate_scdesign3.md)
@@ -241,6 +256,39 @@ early versions.
 - [`sn_sweep_cluster_resolution()`](https://songqi.org/shennong/dev/reference/sn_sweep_cluster_resolution.md)
   : Sweep clustering resolutions and summarize cluster-quality
   diagnostics
+
+## Python and Pixi Backends
+
+- [`sn_check_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  [`sn_install_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  [`sn_ensure_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+  : Check, install, and configure pixi for Shennong Python backends
+- [`sn_prepare_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scanvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_mmochi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scarches()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_scpoli()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_cell2location()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_tangram()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_squidpy()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_stlearn()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  : Prepare or call a Shennong pixi environment
+- [`sn_run_scarches()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_scpoli()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_cell2location()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_tangram()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_squidpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  [`sn_run_stlearn()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  : Run a Python analysis command through a managed Shennong pixi
+  environment
 
 ## Diagnostics and Benchmarking
 
@@ -277,6 +325,8 @@ early versions.
   : Run CellTypist for automated cell type annotation
 - [`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md)
   : Run differential expression analysis on a Seurat object
+- [`sn_annotate_de_features()`](https://songqi.org/shennong/dev/reference/sn_annotate_de_features.md)
+  : Annotate DE or marker genes by feature class
 - [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
   : Run gene set enrichment analysis
 - [`sn_list_signatures()`](https://songqi.org/shennong/dev/reference/sn_list_signatures.md)
@@ -444,6 +494,7 @@ early versions.
   [`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_scvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_scanvi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  [`sn_call_mmochi()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_scarches()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_scpoli()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
@@ -454,17 +505,6 @@ early versions.
   [`sn_call_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   [`sn_call_stlearn()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
   : Prepare or call a Shennong pixi environment
-- [`sn_run_scarches()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_scpoli()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_infercnvpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_cellphonedb()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_cell2location()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_tangram()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_squidpy()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_spatialdata()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  [`sn_run_stlearn()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
-  : Run a Python analysis command through a managed Shennong pixi
-  environment
 - [`sn_detect_accelerator()`](https://songqi.org/shennong/dev/reference/sn_detect_accelerator.md)
   : Detect local accelerator support for pixi-managed Python methods
 - [`sn_configure_pixi_mirror()`](https://songqi.org/shennong/dev/reference/sn_configure_pixi_mirror.md)

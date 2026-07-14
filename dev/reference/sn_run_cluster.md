@@ -2,8 +2,9 @@
 
 This function is the main clustering entry point in `Shennong`. When
 `batch = NULL`, it performs single-dataset clustering with either the
-standard Seurat workflow or an SCTransform workflow. When `batch` is
-supplied, it performs batch integration followed by clustering and UMAP.
+standard Seurat workflow, an SCTransform workflow, or a single-sample
+CITE-seq workflow. When `batch` is supplied, it performs batch
+integration followed by clustering and UMAP.
 
 ## Usage
 
@@ -13,7 +14,7 @@ sn_run_cluster(
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
-    "scanvi"),
+    "scanvi", "totalvi", "mmochi"),
   integration_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
@@ -38,9 +39,6 @@ sn_run_cluster(
   rare_feature_group_by = NULL,
   rare_feature_n = 200,
   rare_feature_control = list(),
-  rare_group_max_fraction = NULL,
-  rare_group_max_cells = NULL,
-  rare_gene_max_fraction = NULL,
   block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
   theta = 2,
   group_by_vars = NULL,
@@ -49,9 +47,17 @@ sn_run_cluster(
   species = NULL,
   assay = "RNA",
   layer = "counts",
+  modality = c("rna", "cite_seq"),
+  multimodal_method = NULL,
+  adt_assay = "ADT",
+  adt_layer = "counts",
+  adt_features = NULL,
+  adt_npcs = 30,
+  adt_dims = NULL,
+  wnn_control = list(),
+  umap_control = list(),
   return_cluster = FALSE,
-  verbose = TRUE,
-  batch_by = NULL
+  verbose = TRUE
 )
 ```
 
@@ -64,7 +70,9 @@ sn_run_cluster(
 - batch:
 
   A column name in `object@meta.data` specifying the batch labels used
-  for integration. If `NULL`, no integration is performed.
+  for integration. If `NULL`, no RNA batch integration is performed.
+  CITE-seq MMoCHi runs in single-sample mode by passing an internal
+  constant batch key to the Python backend.
 
 - normalization_method:
 
@@ -78,28 +86,46 @@ sn_run_cluster(
 
   Batch-integration backend used when `batch` is supplied. Supported
   values are `"harmony"`, `"coralysis"`, `"seurat_cca"`,
-  `"seurat_rpca"`, `"scvi"`, and `"scanvi"`. `"harmony"` preserves the
-  historical Shennong behavior. `"coralysis"` runs Coralysis multi-level
-  integration on the selected log-normalized feature set and stores the
-  integrated embedding as the `"coralysis"` reduction. `"scvi"` and
-  `"scanvi"` export the selected count matrix to a pixi-managed scverse
-  environment under `~/.shennong/pixi/`, run the Python backend, and
-  import the latent representation as a Seurat reduction.
+  `"seurat_rpca"`, `"scvi"`, `"scanvi"`, and `"totalvi"`. `"mmochi"` is
+  accepted as a CITE-seq convenience alias and requires
+  `modality = "cite_seq"`. `"harmony"` preserves the historical Shennong
+  behavior. `"coralysis"` runs native Coralysis on the selected
+  log-normalized feature set and stores the integrated embedding as the
+  `"coralysis"` reduction. `"scvi"` and `"scanvi"` export the selected
+  count matrix to a pixi-managed scverse environment under
+  `~/.shennong/pixi/`, run the Python backend, and import the latent
+  representation as a Seurat reduction. `"totalvi"` is used for RNA+ADT
+  CITE-seq workflows and is usually selected through
+  `modality = "cite_seq"` and `multimodal_method = "totalvi"`.
 
 - integration_control:
 
   Optional named list of backend-specific parameters. For `"coralysis"`,
-  use `icp_args` for `Coralysis::RunParallelDivisiveICP()` arguments,
-  `pca_args` for `Coralysis::RunPCA()` arguments, and `store_sce = TRUE`
-  to keep the Coralysis SingleCellExperiment under
-  `object@misc$coralysis`. For `"seurat_cca"` and `"seurat_rpca"`,
-  values are forwarded to
+  use `icp_args` for `RunParallelDivisiveICP()` arguments, `pca_args`
+  for `RunPCA()` arguments, and `store_sce = FALSE` only when the
+  trained Coralysis SingleCellExperiment should not be kept under
+  `object@misc$coralysis`. The default is `store_sce = TRUE` so native
+  Coralysis references can be used directly by
+  `sn_transfer_labels(method = "coralysis")`. For `"seurat_cca"` and
+  `"seurat_rpca"`, values are forwarded to
   [`Seurat::IntegrateLayers()`](https://satijalab.org/seurat/reference/IntegrateLayers.html).
   For `"scvi"` and `"scanvi"`, common fields include `runtime_dir`,
   `pixi_project`, `pixi_home`, `run_dir`, `pixi`, `manifest_path`,
   `install_pixi`, `accelerator`, `cuda_version`, `mirror`, `n_latent`,
   `max_epochs`, `model_args`, `train_args`, and `write_h5ad`; `"scanvi"`
-  additionally requires `label_by` and accepts `unlabeled_category`. Use
+  additionally requires `label_by` and accepts `unlabeled_category`.
+  `"totalvi"` additionally accepts `totalvi_model_args`,
+  `totalvi_train_args`, and `protein_obsm_key`. `"mmochi"` additionally
+  accepts `protein_layer`, `single_peaks`, `marker_bandwidths`,
+  `peak_overrides`, `inclusion_mask`, `landmark_args`,
+  `corrected_layer`, `store_corrected_layer`, `single_sample_batch_key`,
+  and `keep_single_sample_batch`; Shennong runs MMoCHi's ADT landmark
+  registration and imports the corrected protein matrix as a
+  protein-derived reduction. When `batch = NULL`, Shennong uses a
+  constant internal backend batch key for single-sample registration.
+  When Seurat accepts arbitrary assay layers, the corrected matrix is
+  stored as `corrected_layer`; otherwise it is kept under
+  `object@misc$mmochi$corrected_protein`. Use
   [`sn_pixi_paths()`](https://songqi.org/shennong/dev/reference/sn_pixi_paths.md)
   to inspect the generated directory layout,
   [`sn_pixi_config_path()`](https://songqi.org/shennong/dev/reference/sn_pixi_config_path.md)
@@ -116,6 +142,7 @@ sn_run_cluster(
 - hvg_features:
 
   Optional character vector of user-supplied features to force into the
+  selected backend feature set. For PCA-based workflows this is also the
   feature set used for scaling/PCA. These features are merged with
   internally selected HVGs and any rare-aware features after validating
   that they are present in `object`.
@@ -187,8 +214,8 @@ sn_run_cluster(
 
   Optional stage name forcing recomputation from that stage onward while
   still allowing earlier matching stages to be reused. Supported values
-  are `"normalize"`, `"cell_cycle"`, `"hvg"`, `"pca"`, `"integration"`,
-  `"neighbors"`, `"clusters"`, and `"umap"`.
+  are `"normalize"`, `"cell_cycle"`, `"hvg"`, `"pca"`, `"adt"`,
+  `"integration"`, `"neighbors"`, `"clusters"`, and `"umap"`.
 
 - auto_install:
 
@@ -237,16 +264,15 @@ sn_run_cluster(
   `group_max_fraction`, `group_max_cells`, `gene_max_fraction`, and
   `min_cells`.
 
-- rare_group_max_fraction, rare_group_max_cells, rare_gene_max_fraction:
-
-  Deprecated rare-feature thresholds. Use `rare_feature_control`
-  instead.
-
 - block_genes:
 
-  Either a character vector of predefined bundled signature categories
-  (for example `c("ribo","mito")`) or a custom vector of gene symbols to
-  exclude from HVGs.
+  Character vector of bundled signature queries and/or custom gene
+  symbols to exclude from internally selected HVGs. Signature queries
+  can use leaf names such as `"ribo"` and `"cellCycle.G2M"` or full
+  paths such as `"Programs/cellCycle.G1S"`; `"g1s"` and `"g2m"` are kept
+  as short aliases for the cell-cycle signatures. Applies to both
+  log-normalization and SCTransform workflows; explicit `hvg_features`
+  are preserved even when they overlap a blocked signature.
 
 - theta:
 
@@ -283,6 +309,65 @@ sn_run_cluster(
 
   Layer used as the input count matrix. Defaults to `"counts"`.
 
+- modality:
+
+  Workflow modality. `"rna"` runs the standard RNA-only workflow.
+  `"cite_seq"` enables paired RNA+ADT workflows selected by
+  `multimodal_method`.
+
+- multimodal_method:
+
+  CITE-seq backend used when `modality = "cite_seq"`. `"wnn"` combines
+  RNA PCA with ADT PCA using Seurat's weighted nearest-neighbor workflow
+  and clusters on `"wsnn"`. `"coralysis"` runs native Coralysis on the
+  ADT assay as a log-normalized protein matrix. `"totalvi"` runs
+  scvi-tools totalVI on RNA counts plus ADT counts and clusters on the
+  imported totalVI latent representation. `"mmochi"` runs MMoCHi ADT
+  landmark registration across batches, or in single-sample mode when
+  `batch = NULL`, stores the corrected protein matrix when supported,
+  computes a protein PCA reduction, and clusters on that reduction. When
+  `NULL`, Shennong keeps the historical CITE-seq default `"wnn"` unless
+  `integration_method` was explicitly set to one of the supported
+  multimodal backends.
+
+- adt_assay:
+
+  Assay containing antibody-derived tag counts for
+  `modality = "cite_seq"`.
+
+- adt_layer:
+
+  Layer in `adt_assay` used as ADT counts.
+
+- adt_features:
+
+  Optional ADT/protein features used by CITE-seq backends. Defaults to
+  all features in `adt_assay`.
+
+- adt_npcs:
+
+  Number of ADT PCs to compute for `modality = "cite_seq"`.
+
+- adt_dims:
+
+  Numeric vector of ADT PCs used in weighted nearest-neighbor graph
+  construction. Defaults to `seq_len(min(18, adt_npcs))`.
+
+- wnn_control:
+
+  Optional named list of additional
+  [`Seurat::FindMultiModalNeighbors()`](https://satijalab.org/seurat/reference/FindMultiModalNeighbors.html)
+  arguments used only when `modality = "cite_seq"`. Values here override
+  Shennong's generated defaults.
+
+- umap_control:
+
+  Optional named list of additional
+  [`Seurat::RunUMAP()`](https://satijalab.org/seurat/reference/RunUMAP.html)
+  arguments. Values here override Shennong's generated defaults, for
+  example `n.neighbors`, `min.dist`, `spread`, `metric`, `seed.use`, or
+  `reduction.name`.
+
 - return_cluster:
 
   If `TRUE`, return only the cluster_by assignments.
@@ -290,10 +375,6 @@ sn_run_cluster(
 - verbose:
 
   Whether to print/log progress messages.
-
-- batch_by:
-
-  Compatibility alias for `batch`.
 
 ## Value
 

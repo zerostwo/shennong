@@ -12,10 +12,7 @@ sn_install_shennong(
   channel = c("auto", "cran", "github", "local"),
   package = "Shennong",
   source = NULL,
-  ref = NULL,
-  github_repo = "zerostwo/shennong",
-  github_ref = "main",
-  local_path = NULL,
+  ref = "main",
   repos = getOption("repos"),
   ...
 )
@@ -33,30 +30,14 @@ sn_install_shennong(
 
 - source:
 
-  Generic installation source. For `channel = "github"`, this should be
-  an `"owner/repo"` string. For `channel = "local"`, this should be a
-  local package directory or source tarball path. This is the preferred
-  source argument for non-CRAN installs.
+  Installation source. For `channel = "github"`, supply an
+  `"owner/repo"` string; when omitted, Shennong uses
+  `"zerostwo/shennong"`. For `channel = "local"`, supply a local package
+  directory or source tarball path.
 
 - ref:
 
-  Generic ref argument. Used for `channel = "github"` and preferred over
-  `github_ref`.
-
-- github_repo:
-
-  GitHub repository in `"owner/repo"` format. Deprecated in favor of
-  `source`.
-
-- github_ref:
-
-  GitHub ref to install from. Defaults to `"main"`. Deprecated in favor
-  of `ref`.
-
-- local_path:
-
-  Local package directory or source tarball used when
-  `channel = "local"`. Deprecated in favor of `source`.
+  GitHub ref used for `channel = "github"`. Defaults to `"main"`.
 
 - repos:
 

@@ -27,10 +27,7 @@ sn_assess_integration(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50,
-  batch = NULL,
-  label = NULL,
-  cluster = NULL
+  n_trees = 50
 )
 ```
 
@@ -101,7 +98,7 @@ sn_assess_integration(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `batch`.
+  subsampling. Defaults to `batch_by`.
 
 - rare_fraction:
 
@@ -124,18 +121,6 @@ sn_assess_integration(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
-- batch:
-
-  Deprecated alias for `batch_by`.
-
-- label:
-
-  Deprecated alias for `label_by`.
-
-- cluster:
-
-  Deprecated alias for `cluster_by`.
-
 ## Value
 
 A list with four top-level elements:
@@ -156,13 +141,13 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch_by = "sample",
+  batch = "sample",
   cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"

@@ -24,9 +24,9 @@ library(dplyr)
 library(ggplot2)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-05-06 00:00:54] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-05-06 00:00:55] Running QC metrics for human.
-#> INFO [2026-05-06 00:00:55] Seurat object initialization complete.
+#> INFO [2026-07-14 06:24:01] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-14 06:24:01] Running QC metrics for human.
+#> INFO [2026-07-14 06:24:02] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -95,7 +95,8 @@ sizing. Rasterization is enabled by default; when `ggrastr` is available
 the point layer is rasterized after the regular ggplot point size is
 applied, so small values such as `pt_size = 0.01` behave like ordinary
 [`geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)
-sizes.
+sizes. When `ggrastr` is unavailable, the plot remains usable through
+the vector point layer.
 
 ``` r
 
@@ -254,6 +255,27 @@ sn_plot_dot(
 ```
 
 ![](visualization_files/figure-html/plot-dot-1.png)
+
+For a curated marker panel, pass a named list. Each list element becomes
+a free-width facet, so marker families remain visually separated even
+when the groups contain different numbers of genes.
+
+``` r
+
+level1_markers <- list(
+  "Lymphoid" = c("CD3D", "CD3E", "MS4A1"),
+  "Myeloid" = c("LYZ", "FCGR3A"),
+  "Platelets" = c("PPBP")
+)
+
+sn_plot_dot(
+  x = pbmc,
+  features = level1_markers,
+  group_by = "seurat_clusters"
+)
+```
+
+![](visualization_files/figure-html/plot-dot-groups-1.png)
 
 ## Composition plots for sample-level summaries
 

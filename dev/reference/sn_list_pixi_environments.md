@@ -17,7 +17,7 @@ under `inst/pixi/`.
 
 ``` r
 sn_list_pixi_environments()
-#> [1] "cell2location" "cellphonedb"   "infercnvpy"    "scarches"     
-#> [5] "scvi"          "spatialdata"   "squidpy"       "stlearn"      
-#> [9] "tangram"      
+#>  [1] "cell2location" "cellphonedb"   "infercnvpy"    "mmochi"       
+#>  [5] "scarches"      "scvi"          "spatialdata"   "squidpy"      
+#>  [9] "stlearn"       "tangram"      
 ```

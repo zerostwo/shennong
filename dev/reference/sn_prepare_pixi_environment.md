@@ -49,6 +49,8 @@ sn_call_scvi(command, args = character(), ...)
 
 sn_call_scanvi(command, args = character(), ...)
 
+sn_call_mmochi(command, args = character(), ...)
+
 sn_call_scarches(command, args = character(), ...)
 
 sn_call_scpoli(command, args = character(), ...)

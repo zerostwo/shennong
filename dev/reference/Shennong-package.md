@@ -23,3 +23,8 @@ Useful links:
 
 **Maintainer**: Songqi Duan <duan@songqi.org>
 ([ORCID](https://orcid.org/0000-0002-0822-5883))
+
+Authors:
+
+- Songqi Duan <duan@songqi.org>
+  ([ORCID](https://orcid.org/0000-0002-0822-5883))

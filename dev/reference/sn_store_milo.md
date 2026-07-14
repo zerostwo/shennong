@@ -15,10 +15,7 @@ sn_store_milo(
   reduction = "pca",
   dims = NULL,
   annotation_by = NULL,
-  return_object = TRUE,
-  sample_col = NULL,
-  annotation_col = NULL,
-  group_col = NULL
+  return_object = TRUE
 )
 ```
 
@@ -63,18 +60,6 @@ sn_store_milo(
 - return_object:
 
   If `TRUE`, return the updated object.
-
-- sample_col:
-
-  Deprecated alias for `sample_by`.
-
-- annotation_col:
-
-  Deprecated alias for `annotation_by`.
-
-- group_col:
-
-  Deprecated alias for `group_by`.
 
 ## Value
 

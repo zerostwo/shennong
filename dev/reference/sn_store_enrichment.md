@@ -90,8 +90,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
   names(obj@misc$enrichment_results)
 }
-#> INFO [2026-05-05 23:43:32] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:32] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:32] Seurat object initialization complete.
+#> INFO [2026-07-14 06:11:28] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:11:28] Running QC metrics for human.
+#> INFO [2026-07-14 06:11:28] Seurat object initialization complete.
 #> [1] "demo_gsea"
 ```

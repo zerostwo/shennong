@@ -14,8 +14,7 @@ sn_calculate_silhouette(
   cells = NULL,
   max_cells = 3000,
   stratify_by = NULL,
-  seed = 717,
-  label = NULL
+  seed = 717
 )
 ```
 
@@ -50,15 +49,11 @@ sn_calculate_silhouette(
 - stratify_by:
 
   Optional metadata column used to preserve representation during
-  subsampling. Defaults to `label`.
+  subsampling. Defaults to `label_by`.
 
 - seed:
 
   Random seed used when `max_cells` triggers subsampling.
-
-- label:
-
-  Deprecated alias for `label_by`.
 
 ## Value
 
@@ -71,7 +66,7 @@ if (FALSE) { # \dontrun{
 data("pbmc_small", package = "Shennong")
 pbmc <- sn_run_cluster(
   pbmc_small,
-  batch_by = "sample",
+  batch = "sample",
   species = "human",
   verbose = FALSE
 )

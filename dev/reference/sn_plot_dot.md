@@ -50,8 +50,9 @@ sn_plot_dot(
 
 - features:
 
-  A character vector of feature names to plot, or `"top_markers"` to
-  automatically use the top stored DE markers from
+  A character vector of feature names to plot, a named list of feature
+  vectors to display in separate free-width panels, or `"top_markers"`
+  to automatically use the top stored DE markers from
   `object@misc$de_results[[de_name]]`.
 
 - de_name:

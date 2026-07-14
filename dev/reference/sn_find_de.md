@@ -33,7 +33,6 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
-  sample_col = NULL,
   ...
 )
 ```
@@ -128,10 +127,6 @@ sn_find_de(
 
   Whether to emit progress information.
 
-- sample_col:
-
-  Deprecated alias for `sample_by`.
-
 - ...:
 
   Additional arguments passed through to the selected DE method.
@@ -192,9 +187,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(obj@misc$de_results)
 }
-#> INFO [2026-05-05 23:43:00] Initializing Seurat object for project: Shennong.
-#> INFO [2026-05-05 23:43:00] Running QC metrics for human.
-#> INFO [2026-05-05 23:43:00] Seurat object initialization complete.
+#> INFO [2026-07-14 06:10:54] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-14 06:10:54] Running QC metrics for human.
+#> INFO [2026-07-14 06:10:54] Seurat object initialization complete.
 #> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
 #> (default method for FindMarkers) please install the presto package
 #> --------------------------------------------

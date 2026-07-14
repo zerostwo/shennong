@@ -30,8 +30,7 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon",
-  group = NULL
+  sca_model = "wilcoxon"
 )
 ```
 
@@ -140,10 +139,6 @@ sn_detect_rare_cells(
 - sca_model:
 
   Scoring model passed to SCA.
-
-- group:
-
-  Deprecated alias for `group_by`.
 
 ## Value
 
