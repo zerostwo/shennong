@@ -116,7 +116,14 @@ Datasets:
 
 ## Interpretation and Reporting
 
-- `sn_list_results()`: list stored DE, enrichment, milo, deconvolution, communication, regulatory activity, and interpretation results
+- `sn_list_methods()` / `sn_method_status()`: discover registered current and
+  roadmap backends, their default status, runtime, dependencies, install action,
+  requirements, outputs, and current availability
+- `sn_store_result()` / `sn_get_result()` / `sn_delete_result()`: manage any
+  versioned Shennong result type through the generic analysis-result contract
+- `sn_validate_result()`: validate schema, typed containers, and provenance
+- `sn_list_results()`: list registered and generic stored results, optionally
+  filtered by analysis `type`
 - `sn_get_de_result()`: retrieve stored DE
 - `sn_get_enrichment_result()`: retrieve stored enrichment
 - `sn_get_interpretation_result()`: retrieve stored interpretation
@@ -174,7 +181,8 @@ Datasets:
 - If the task is pathways:
   use `sn_enrich()`
 - If the task is result reuse:
-  use `sn_list_results()` plus `sn_get_*_result()`
+  use `sn_list_results()` plus `sn_get_result()` or a specialized
+  `sn_get_*_result()`
 - If the task is annotation or interpretation:
   use `sn_prepare_*_evidence()` and `sn_interpret_*()`
 - If the task is project bootstrap:

@@ -91,6 +91,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added a shipped method registry with `sn_list_methods()` and
+  `sn_method_status()`. It records runtime, optional dependency, installation
+  action, input/output contract, CPU/GPU expectations, citations, and whether
+  each current or planned backend is actually implemented and available.
+- Added the versioned generic analysis-result contract and
+  `sn_store_result()`, `sn_get_result()`, `sn_delete_result()`, and
+  `sn_validate_result()`. Existing registered DE, enrichment, Milo,
+  communication, deconvolution, regulatory, QC, and interpretation results are
+  upgraded on write/read without breaking their specialized getters.
+- `sn_list_results()` now accepts an optional `type` filter and includes new
+  generic result types stored under `object@misc$analysis_results`.
 - `sn_load_data()` can open lazy Shennong Data Server resources with
   `backend = "api"`, select assay/layer views through `api_args`, and
   materialize explicitly with `lazy = FALSE`.

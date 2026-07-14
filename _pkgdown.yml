@@ -45,8 +45,18 @@ articles:
       - bulk-deconvolution
       - layered-workflows
       - interpretation-workflows
+      - analysis-results-and-methods
 
 reference:
+  - title: Analysis Methods and Result Contract
+    contents:
+      - sn_list_methods
+      - sn_method_status
+      - sn_store_result
+      - sn_get_result
+      - sn_list_results
+      - sn_delete_result
+      - sn_validate_result
   - title: Data and Import
     contents:
       - marker_genes
@@ -160,7 +170,6 @@ reference:
       - sn_get_regulatory_activity_result
   - title: Interpretation and Reporting
     contents:
-      - sn_list_results
       - sn_get_de_result
       - sn_get_enrichment_result
       - sn_get_interpretation_result

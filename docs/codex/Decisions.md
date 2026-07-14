@@ -1,6 +1,23 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
+
+## 2026-07-15
+
+- The analysis roadmap is implemented in its declared order, beginning with a
+  method registry and a versioned result contract before new analytical
+  backends. Registry YAML files use the JSON subset of YAML so the imported
+  `jsonlite` parser is sufficient and package installation does not gain a new
+  mandatory YAML dependency.
+- Registry discovery distinguishes `implemented` from `available`: planned
+  methods remain discoverable without being advertised as runnable, while
+  availability checks inspect optional R packages, executables, or pixi itself
+  without installing anything.
+- New results use one contract for tables, embeddings, graphs, models,
+  diagnostics, parameters, input summaries, warnings, and provenance. Existing
+  listable `object@misc` collections remain the compatibility storage boundary;
+  their writes and reads are upgraded to the common contract rather than
+  duplicating large payloads in a second collection.
 
 ## 2026-07-14
 

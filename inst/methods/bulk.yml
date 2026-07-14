@@ -1,0 +1,82 @@
+[
+  {
+    "name": "auto", "task": "bulk_de", "runtime": "r", "package": "Shennong",
+    "implemented": false, "default": true,
+    "description": "Design-aware selection among edgeR, DESeq2, limma-voom, and dream.",
+    "input_requirements": ["count or expression matrix", "sample metadata", "design", "contrast"],
+    "outputs": ["DE table", "design diagnostics", "contrast diagnostics", "provenance"],
+    "supports": {"covariates": true, "repeated_measures": true},
+    "cpu_gpu": "CPU", "install": "Install the selected optional Bioconductor backend.",
+    "citation": "Shennong bulk DE decision workflow"
+  },
+  {
+    "name": "edger", "task": "bulk_de", "runtime": "r", "package": "edgeR",
+    "implemented": false, "default": false,
+    "description": "Negative-binomial GLM differential expression for raw counts.",
+    "input_requirements": ["integer counts", "sample metadata", "design", "contrast"],
+    "outputs": ["DE table", "dispersion diagnostics", "filtering diagnostics"],
+    "supports": {"covariates": true, "complex_design": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('edgeR')",
+    "citation": "Chen et al. F1000Research 2016"
+  },
+  {
+    "name": "deseq2", "task": "bulk_de", "runtime": "r", "package": "DESeq2",
+    "implemented": false, "default": false,
+    "description": "Negative-binomial differential expression with shrinkage for raw counts.",
+    "input_requirements": ["integer counts", "sample metadata", "design", "contrast"],
+    "outputs": ["DE table", "size factors", "dispersion diagnostics"],
+    "supports": {"covariates": true, "shrinkage": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('DESeq2')",
+    "citation": "Love et al. Genome Biology 2014"
+  },
+  {
+    "name": "limma", "task": "bulk_de", "runtime": "r", "package": "limma",
+    "implemented": false, "default": false,
+    "description": "Linear modeling for normalized continuous expression or voom-transformed counts.",
+    "input_requirements": ["normalized expression or counts", "sample metadata", "design", "contrast"],
+    "outputs": ["DE table", "mean-variance diagnostics"],
+    "supports": {"covariates": true, "complex_design": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('limma')",
+    "citation": "Ritchie et al. Nucleic Acids Research 2015"
+  },
+  {
+    "name": "dream", "task": "bulk_de", "runtime": "r", "package": "variancePartition",
+    "implemented": false, "default": false,
+    "description": "Linear mixed modeling for repeated-measures transcriptomics designs.",
+    "input_requirements": ["expression", "sample metadata", "mixed-effects design", "contrast"],
+    "outputs": ["DE table", "variance components", "model diagnostics"],
+    "supports": {"repeated_measures": true, "random_effects": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('variancePartition')",
+    "citation": "Hoffman and Roussos. Bioinformatics 2021"
+  },
+  {
+    "name": "bayesprism", "task": "bulk_deconvolution", "runtime": "r", "package": "BayesPrism",
+    "implemented": true, "default": true,
+    "description": "Bayesian bulk deconvolution exposed by sn_deconvolve_bulk().",
+    "input_requirements": ["bulk counts", "single-cell reference", "cell labels"],
+    "outputs": ["cell fractions", "expression estimates", "diagnostics"],
+    "supports": {"tumor": true},
+    "cpu_gpu": "CPU", "install": "Install the optional BayesPrism package.",
+    "citation": "Chu et al. Nature Cancer 2022"
+  },
+  {
+    "name": "wgcna", "task": "bulk_network", "runtime": "r", "package": "WGCNA",
+    "implemented": false, "default": true,
+    "description": "Weighted co-expression network and phenotype-module association.",
+    "input_requirements": ["normalized expression", "sample metadata"],
+    "outputs": ["modules", "eigengenes", "trait associations", "diagnostics"],
+    "supports": {"clinical_association": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('WGCNA')",
+    "citation": "Langfelder and Horvath. BMC Bioinformatics 2008"
+  },
+  {
+    "name": "cox", "task": "bulk_survival", "runtime": "r", "package": "survival",
+    "implemented": false, "default": true,
+    "description": "Cox proportional-hazards modeling with transparent covariate handling.",
+    "input_requirements": ["survival time", "event indicator", "features or scores", "covariates"],
+    "outputs": ["hazard ratios", "confidence intervals", "model diagnostics"],
+    "supports": {"covariates": true},
+    "cpu_gpu": "CPU", "install": "install.packages('survival')",
+    "citation": "Cox. Journal of the Royal Statistical Society B 1972"
+  }
+]

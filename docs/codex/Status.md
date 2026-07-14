@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
 ## Current structure
 
@@ -16,6 +16,13 @@ Last updated: 2026-07-14
   scripts live under `scripts/smoke/` and are not installed with the package.
 
 ## Latest cleanup
+
+- Work is active on `feat/analysis-publication-roadmap` against the
+  `shennong_analysis_and_publication_figure_roadmap.md` specification.
+- Milestone A now has a shipped method registry, availability diagnostics, and
+  a common analysis-result schema with generic store/get/list/delete/validate
+  APIs. Existing registered result collections are upgraded compatibly rather
+  than copied.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -36,6 +43,15 @@ Last updated: 2026-07-14
 
 ## Validation
 
+- The Milestone A result/registry plus interpretation compatibility tests pass
+  with `FAIL 0 | WARN 0 | SKIP 0 | PASS 142`.
+- pkgdown was rebuilt from an installed copy of the current source; the new
+  analysis-method/result-contract article and all existing references rendered
+  successfully.
+- `scripts/check-prepush.R --filter=analysis-registry-result --quick` passed
+  its targeted tests, source build, tarball audit, structural
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check`, and pkgdown reference-index
+  validation with `Status: OK`.
 - `devtools::document()` completed and updated regulatory Rd source pointers
   after the module split.
 - Focused tests for signatures, communication/regulatory activity,

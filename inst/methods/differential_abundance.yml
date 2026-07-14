@@ -1,0 +1,42 @@
+[
+  {
+    "name": "propeller", "task": "differential_abundance", "runtime": "r", "package": "speckle",
+    "implemented": false, "default": true,
+    "description": "Sample-level differential testing of transformed cell-type proportions.",
+    "input_requirements": ["sample labels", "condition labels", "cell-type labels"],
+    "outputs": ["effect estimates", "p values", "adjusted p values", "sample proportions"],
+    "supports": {"covariates": true, "sample_level": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('speckle')",
+    "citation": "Phipson et al. Bioinformatics 2022"
+  },
+  {
+    "name": "milo", "task": "differential_abundance", "runtime": "r", "package": "miloR",
+    "implemented": true, "default": false,
+    "description": "Neighborhood-level differential abundance exposed by sn_run_milo().",
+    "input_requirements": ["single-cell embedding", "sample labels", "design"],
+    "outputs": ["neighborhood effects", "spatial FDR", "graph diagnostics"],
+    "supports": {"covariates": true, "neighborhood_level": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('miloR')",
+    "citation": "Dann et al. Nature Biotechnology 2022"
+  },
+  {
+    "name": "sccoda", "task": "differential_abundance", "runtime": "pixi", "package": "Shennong", "environment": "abundance",
+    "implemented": false, "default": false,
+    "description": "Bayesian compositional differential abundance with scCODA.",
+    "input_requirements": ["sample-by-cell-type counts", "condition labels"],
+    "outputs": ["credible effects", "inclusion probabilities", "diagnostics"],
+    "supports": {"compositional": true, "sample_level": true},
+    "cpu_gpu": "CPU", "install": "Prepare the planned abundance pixi environment.",
+    "citation": "Buttner et al. Nature Communications 2021"
+  },
+  {
+    "name": "permutation", "task": "differential_abundance", "runtime": "r", "package": "Shennong",
+    "implemented": false, "default": false,
+    "description": "Sample-aware permutation test used as a transparent validation backend.",
+    "input_requirements": ["sample labels", "condition labels", "cell-type labels"],
+    "outputs": ["effect estimates", "permutation null", "empirical p values"],
+    "supports": {"sample_level": true},
+    "cpu_gpu": "CPU", "install": "No additional dependency.",
+    "citation": "Shennong permutation workflow"
+  }
+]
