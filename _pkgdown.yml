@@ -98,6 +98,7 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_run_multimodal
       - sn_run_scvi
       - sn_run_scanvi
       - sn_run_scarches

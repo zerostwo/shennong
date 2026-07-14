@@ -4,6 +4,17 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Backend-specific annotation, trajectory, and fate functions remain internal
+  adapters selected by stable workflow entry points. Multimodal analysis has a
+  separate public entry point because modality is a research-level workflow
+  choice, not only a backend toggle.
+- Monocle 3 is an optional direct R backend because its graph-learning and
+  ordering API can consume the package's count and reduction contracts.
+  Palantir and scCODA remain explicit runner/result adapters so Python runtime
+  ownership and backend-native fitting choices stay visible and auditable.
+- Registry `implemented = true` means Shennong provides either a tested direct
+  backend or a tested, documented standardization boundary. It does not imply
+  that every optional third-party runtime is installed in the R library.
 - Publication figures remain native ggplot/patchwork/ComplexHeatmap objects;
   Shennong attaches a versioned specification attribute rather than introducing
   a composition-breaking figure class.

@@ -21,12 +21,12 @@
   },
   {
     "name": "sccoda", "task": "differential_abundance", "runtime": "pixi", "package": "Shennong", "environment": "abundance",
-    "implemented": false, "default": false,
-    "description": "Bayesian compositional differential abundance with scCODA.",
+    "implemented": true, "default": false,
+    "description": "Bayesian compositional differential abundance through the standardized scCODA/pertpy runner-result adapter.",
     "input_requirements": ["sample-by-cell-type counts", "condition labels"],
     "outputs": ["credible effects", "inclusion probabilities", "diagnostics"],
     "supports": {"compositional": true, "sample_level": true},
-    "cpu_gpu": "CPU", "install": "Prepare the planned abundance pixi environment.",
+    "cpu_gpu": "CPU", "install": "Supply a scCODA/pertpy runner or result through backend_control.",
     "citation": "Buttner et al. Nature Communications 2021"
   },
   {

@@ -11,18 +11,18 @@
   },
   {
     "name": "monocle3", "task": "trajectory", "runtime": "r", "package": "monocle3",
-    "implemented": false, "default": false,
-    "description": "Graph learning and pseudotime with Monocle 3.",
+    "implemented": true, "default": false,
+    "description": "Direct graph learning and pseudotime with Monocle 3 through sn_run_trajectory(method = 'monocle3').",
     "input_requirements": ["expression", "reduced dimensions", "root cells"],
     "outputs": ["principal graph", "pseudotime", "partitions"],
     "supports": {"branching": true},
-    "cpu_gpu": "CPU", "install": "Install the optional monocle3 package.",
+    "cpu_gpu": "CPU", "install": "remotes::install_github('cole-trapnell-lab/monocle3')",
     "citation": "Cao et al. Nature 2019"
   },
   {
     "name": "palantir", "task": "trajectory", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
-    "implemented": false, "default": false,
-    "description": "Diffusion-based pseudotime and terminal-state probabilities.",
+    "implemented": true, "default": false,
+    "description": "Standardized Palantir runner/result adapter selected by sn_run_trajectory(method = 'palantir').",
     "input_requirements": ["expression", "embedding", "start cell"],
     "outputs": ["pseudotime", "branch probabilities", "terminal states"],
     "supports": {"branching": true, "gpu": false},

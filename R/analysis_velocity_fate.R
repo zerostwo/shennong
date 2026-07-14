@@ -245,6 +245,10 @@ sn_run_velocity <- function(object,
   )
 }
 
+.sn_trajectory_cellrank <- function(velocity_result, backend_control = list()) {
+  .sn_run_fate_pixi(velocity_result, backend_control)
+}
+
 .sn_standardize_fate <- function(output, object) {
   if (!is.list(output)) stop("Fate backend output must be a list.", call. = FALSE)
   probabilities <- tibble::as_tibble(output$probabilities %||% output$fate_probabilities)
@@ -301,7 +305,7 @@ sn_run_fate <- function(object,
     backend_control$result
   } else {
     if (is_null(velocity)) stop("Run `sn_run_velocity()` first or supply a CellRank runner/result.", call. = FALSE)
-    .sn_run_fate_pixi(velocity, backend_control)
+    .sn_trajectory_cellrank(velocity, backend_control)
   }
   standardized <- .sn_standardize_fate(output, object)
   probabilities <- standardized$probabilities

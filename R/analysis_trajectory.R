@@ -118,6 +118,145 @@
   }))
 }
 
+.sn_trajectory_backend_matrix <- function(value, cells, value_name) {
+  if (is.vector(value) && !is.list(value)) {
+    names_value <- names(value)
+    matrix_value <- matrix(as.numeric(value), ncol = 1L, dimnames = list(names_value %||% cells, "Lineage1"))
+  } else if (is.data.frame(value) && all(c("cell", "lineage", value_name) %in% names(value))) {
+    lineages <- unique(as.character(value$lineage))
+    matrix_value <- matrix(NA_real_, nrow = length(cells), ncol = length(lineages), dimnames = list(cells, lineages))
+    row <- match(as.character(value$cell), cells); column <- match(as.character(value$lineage), lineages)
+    valid <- !is.na(row) & !is.na(column)
+    matrix_value[cbind(row[valid], column[valid])] <- as.numeric(value[[value_name]][valid])
+  } else if (is.data.frame(value) && "cell" %in% names(value)) {
+    rownames(value) <- as.character(value$cell); value$cell <- NULL
+    matrix_value <- as.matrix(value)
+  } else {
+    matrix_value <- as.matrix(value)
+  }
+  storage.mode(matrix_value) <- "double"
+  if (is_null(rownames(matrix_value))) rownames(matrix_value) <- cells
+  missing <- setdiff(cells, rownames(matrix_value))
+  if (length(missing) > 0L) stop("Trajectory backend output is missing cell(s): ", paste(utils::head(missing, 5), collapse = ", "), ".", call. = FALSE)
+  matrix_value <- matrix_value[cells, , drop = FALSE]
+  if (is_null(colnames(matrix_value))) colnames(matrix_value) <- paste0("Lineage", seq_len(ncol(matrix_value)))
+  matrix_value
+}
+
+.sn_standardize_trajectory_backend <- function(output, embedding, clusters, requested, start, end, method) {
+  if (!is.list(output)) stop("Trajectory backend output must be a list.", call. = FALSE)
+  pseudotime_value <- output$pseudotime %||% output$pseudotimes %||% output$cell_pseudotime
+  if (is_null(pseudotime_value)) stop("Trajectory backend output requires `pseudotime`.", call. = FALSE)
+  pseudotime <- .sn_trajectory_backend_matrix(pseudotime_value, rownames(embedding), "pseudotime")
+  weights_value <- output$weights %||% output$lineage_weights %||% output$probabilities
+  weights <- if (is_null(weights_value)) {
+    matrix(as.numeric(is.finite(pseudotime)), nrow = nrow(pseudotime), dimnames = dimnames(pseudotime))
+  } else .sn_trajectory_backend_matrix(weights_value, rownames(embedding), "weight")
+  if (ncol(weights) != ncol(pseudotime)) stop("Trajectory weights and pseudotime must have the same number of lineages.", call. = FALSE)
+  if (any(weights < 0, na.rm = TRUE)) stop("Trajectory lineage weights cannot be negative.", call. = FALSE)
+  weights[!is.finite(weights)] <- 0
+  colnames(weights) <- colnames(pseudotime)
+  lineages <- output$lineages %||% requested
+  if (is_null(lineages)) {
+    lineages <- lapply(seq_len(ncol(pseudotime)), function(index) {
+      scores <- tapply(pseudotime[, index], clusters[rownames(pseudotime)], stats::median, na.rm = TRUE)
+      names(sort(scores[is.finite(scores)]))
+    })
+    names(lineages) <- colnames(pseudotime)
+  }
+  lineages <- lapply(lineages, as.character)
+  if (length(lineages) != ncol(pseudotime) || any(lengths(lineages) == 0L)) {
+    stop("Trajectory lineages must provide one non-empty cluster path per pseudotime column.", call. = FALSE)
+  }
+  if (is_null(names(lineages)) || any(!nzchar(names(lineages)))) names(lineages) <- colnames(pseudotime)
+  if (!identical(names(lineages), colnames(pseudotime)) && length(lineages) == ncol(pseudotime)) names(lineages) <- colnames(pseudotime)
+  cells <- .sn_trajectory_cell_table(embedding, clusters, pseudotime, weights)
+  curves <- output$curves %||% tibble::tibble()
+  if (!is.data.frame(curves)) stop("Trajectory backend `curves` must be a data frame when supplied.", call. = FALSE)
+  terminals <- output$terminal_states %||% .sn_trajectory_terminal_table(lineages, cells)
+  list(
+    pseudotime = pseudotime, weights = weights, lineages = lineages,
+    cells = cells, terminals = tibble::as_tibble(terminals), curves = tibble::as_tibble(curves),
+    backend_cells = tibble::as_tibble(output$cell_metadata %||% tibble::tibble()),
+    graphs = output$graphs %||% list(),
+    model = output$model %||% NULL, warnings = as.character(output$warnings %||% character()),
+    diagnostics = output$diagnostics %||% list(),
+    backend = output$backend %||% method
+  )
+}
+
+.sn_run_monocle3_trajectory <- function(object, embedding, clusters, start, assay, counts_layer, backend_control) {
+  check_installed("monocle3", reason = "to run Monocle 3 trajectory inference.")
+  check_installed("SingleCellExperiment", reason = "to store Monocle 3 reduced dimensions.")
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  counts <- .sn_get_seurat_layer_data(object, assay = assay, layer = counts_layer)
+  cell_metadata <- object[[]][colnames(counts), , drop = FALSE]
+  gene_metadata <- data.frame(gene_short_name = rownames(counts), row.names = rownames(counts))
+  cds <- monocle3::new_cell_data_set(counts, cell_metadata = cell_metadata, gene_metadata = gene_metadata)
+  umap <- embedding[, seq_len(2L), drop = FALSE]
+  rownames(umap) <- rownames(embedding)
+  SingleCellExperiment::reducedDim(cds, "UMAP") <- umap
+  cluster_args <- utils::modifyList(list(cds = cds, reduction_method = "UMAP", verbose = FALSE), backend_control$monocle3$cluster %||% list(), keep.null = TRUE)
+  cds <- do.call(monocle3::cluster_cells, cluster_args)
+  graph_args <- utils::modifyList(list(cds = cds, use_partition = backend_control$monocle3$use_partition %||% TRUE, verbose = FALSE), backend_control$monocle3$learn_graph %||% list(), keep.null = TRUE)
+  cds <- do.call(monocle3::learn_graph, graph_args)
+  root_cells <- backend_control$monocle3$root_cells %||% if (length(start) > 0L) names(clusters)[clusters %in% start] else NULL
+  if (is_null(root_cells) || length(root_cells) == 0L) {
+    stop("Monocle 3 requires `start` cluster(s) or `backend_control$monocle3$root_cells`.", call. = FALSE)
+  }
+  cds <- monocle3::order_cells(cds, reduction_method = "UMAP", root_cells = root_cells)
+  pseudotime <- monocle3::pseudotime(cds)
+  partitions <- monocle3::partitions(cds, reduction_method = "UMAP")
+  monocle_clusters <- monocle3::clusters(cds, reduction_method = "UMAP")
+  cluster_medians <- tapply(pseudotime, clusters[names(pseudotime)], stats::median, na.rm = TRUE)
+  cluster_order <- names(sort(cluster_medians[is.finite(cluster_medians)]))
+  list(
+    pseudotime = pseudotime,
+    weights = stats::setNames(as.numeric(is.finite(pseudotime)), names(pseudotime)),
+    lineages = list(Lineage1 = cluster_order),
+    curves = tibble::tibble(),
+    cell_metadata = tibble::tibble(
+      cell = names(pseudotime),
+      monocle_cluster = as.character(monocle_clusters[names(pseudotime)]),
+      partition = as.character(partitions[names(pseudotime)])
+    ),
+    graphs = list(principal_graph = monocle3::principal_graph(cds)[["UMAP"]]),
+    model = list(class = class(cds), principal_graph = TRUE),
+    diagnostics = list(
+      partitions = length(unique(partitions)),
+      monocle_clusters = length(unique(monocle_clusters)),
+      finite_pseudotime_cells = sum(is.finite(pseudotime))
+    ),
+    backend = "monocle3"
+  )
+}
+
+.sn_trajectory_slingshot <- function(embedding, clusters, start, end, backend_control = list()) {
+  check_installed("slingshot", reason = "to run trajectory inference.")
+  defaults <- list(
+    data = embedding,
+    clusterLabels = unname(clusters[rownames(embedding)]),
+    start.clus = start,
+    end.clus = end
+  )
+  fit <- do.call(
+    slingshot::slingshot,
+    utils::modifyList(defaults, backend_control, keep.null = TRUE)
+  )
+  pseudotime <- slingshot::slingPseudotime(fit, na = FALSE)
+  weights <- slingshot::slingCurveWeights(fit)
+  rownames(pseudotime) <- rownames(weights) <- rownames(embedding)
+  lineages <- slingshot::slingLineages(fit)
+  list(
+    pseudotime = pseudotime,
+    weights = weights,
+    lineages = lineages,
+    curves = .sn_trajectory_curve_table(slingshot::slingCurves(fit)),
+    model = list(class = class(fit), lineage_names = names(lineages)),
+    backend = "slingshot"
+  )
+}
+
 .sn_trajectory_test_table <- function(table, test) {
   table <- as.data.frame(table)
   table$feature <- rownames(table)
@@ -222,8 +361,8 @@
 #' The returned result follows the unified Shennong analysis-result contract.
 #'
 #' @param object A Seurat object with a dimensional reduction and cluster labels.
-#' @param method Trajectory backend. Slingshot is currently implemented;
-#'   Monocle 3 and Palantir remain discoverable planned backends.
+#' @param method Trajectory backend. Slingshot and Monocle 3 run directly;
+#'   Palantir accepts a standardized external runner or result.
 #' @param reduction Reduction used for inference. Defaults to PCA, then UMAP or
 #'   the first available reduction.
 #' @param cluster_by Metadata column containing cluster labels. Defaults to
@@ -241,7 +380,10 @@
 #' @param nknots Number of tradeSeq spline knots.
 #' @param trend_features Features for which fitted trends are retained.
 #' @param trend_points Number of fitted points per lineage and feature.
-#' @param backend_control Named `slingshot` and `tradeSeq` argument lists.
+#' @param backend_control Backend controls. Use named `slingshot`, `monocle3`,
+#'   and `tradeSeq` argument lists for direct backends. Palantir accepts
+#'   `runner` or `result`; the same explicit adapter boundary can override
+#'   Monocle 3 for externally managed execution.
 #' @param return_object Return the updated object instead of the result.
 #'
 #' @return A Seurat object or a unified trajectory result.
@@ -278,10 +420,6 @@ sn_run_trajectory <- function(object,
                               return_object = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
-  if (!identical(method, "slingshot")) {
-    stop("Trajectory method '", method, "' is registered but not implemented yet; use `sn_method_status()` for setup details.", call. = FALSE)
-  }
-  check_installed("slingshot", reason = "to run trajectory inference.")
   embedding <- .sn_trajectory_embedding(object, reduction = reduction, dims = dims)
   clusters <- .sn_trajectory_clusters(object, cluster_by = cluster_by)
   requested <- .sn_validate_requested_lineages(lineages, clusters$values)
@@ -294,21 +432,36 @@ sn_run_trajectory <- function(object,
     stop("Trajectory endpoint cluster(s) were not found: ", paste(invalid_endpoints, collapse = ", "), ".", call. = FALSE)
   }
 
-  defaults <- list(
-    data = embedding$matrix,
-    clusterLabels = unname(clusters$values[rownames(embedding$matrix)]),
-    start.clus = start,
-    end.clus = end
-  )
-  fit <- do.call(slingshot::slingshot, utils::modifyList(defaults, backend_control$slingshot %||% list(), keep.null = TRUE))
-  pseudotime <- slingshot::slingPseudotime(fit, na = FALSE)
-  weights <- slingshot::slingCurveWeights(fit)
-  inferred_lineages <- slingshot::slingLineages(fit)
-  curves <- slingshot::slingCurves(fit)
-  rownames(pseudotime) <- rownames(weights) <- rownames(embedding$matrix)
-  cells <- .sn_trajectory_cell_table(embedding$matrix, clusters$values, pseudotime, weights)
-  terminals <- .sn_trajectory_terminal_table(inferred_lineages, cells)
-  curve_table <- .sn_trajectory_curve_table(curves)
+  output <- if (identical(method, "slingshot")) {
+    .sn_trajectory_slingshot(
+      embedding = embedding$matrix,
+      clusters = clusters$values,
+      start = start,
+      end = end,
+      backend_control = backend_control$slingshot %||% list()
+    )
+  } else if (is.function(backend_control$runner)) {
+      backend_control$runner(
+        object = object, method = method, embedding = embedding$matrix,
+        clusters = clusters$values, start = start, end = end,
+        lineages = requested, backend_control = backend_control
+      )
+  } else if (!is_null(backend_control$result)) {
+    backend_control$result
+  } else if (identical(method, "monocle3")) {
+    .sn_run_monocle3_trajectory(object, embedding$matrix, clusters$values, start, assay, counts_layer, backend_control)
+  } else {
+    stop("Trajectory method '", method, "' requires `backend_control$runner` or `backend_control$result`.", call. = FALSE)
+  }
+  standardized <- .sn_standardize_trajectory_backend(output, embedding$matrix, clusters$values, requested, start, end, method)
+  pseudotime <- standardized$pseudotime; weights <- standardized$weights
+  inferred_lineages <- standardized$lineages; cells <- standardized$cells
+  terminals <- standardized$terminals; curve_table <- standardized$curves
+  backend_model <- standardized$model; backend_name <- standardized$backend
+  backend_warnings <- standardized$warnings
+  backend_cells <- standardized$backend_cells
+  backend_graphs <- standardized$graphs
+  backend_diagnostics <- standardized$diagnostics
 
   requested_warning <- character()
   if (!is_null(requested)) {
@@ -347,7 +500,7 @@ sn_run_trajectory <- function(object,
     analysis_type = "trajectory",
     name = store_name,
     method = method,
-    backend = if (isTRUE(test_dynamic)) "slingshot+tradeSeq" else "slingshot",
+    backend = if (isTRUE(test_dynamic)) paste0(backend_name, "+tradeSeq") else backend_name,
     input = list(
       cells = nrow(embedding$matrix),
       reduction = embedding$reduction,
@@ -372,21 +525,24 @@ sn_run_trajectory <- function(object,
       dynamic_genes = dynamics$association,
       branch_genes = dynamics$branch,
       fitted_trends = dynamics$trends,
-      convergence = dynamics$convergence
+      convergence = dynamics$convergence,
+      backend_cells = backend_cells
     ),
     embeddings = list(reduction = embedding$matrix),
-    graphs = list(lineages = inferred_lineages),
+    graphs = c(list(lineages = inferred_lineages), backend_graphs),
     models = list(
-      slingshot = list(class = class(fit), lineage_names = names(inferred_lineages)),
+      trajectory = backend_model,
+      slingshot = if (identical(method, "slingshot")) backend_model else NULL,
       tradeSeq = dynamics$diagnostics
     ),
     diagnostics = list(
       n_lineages = ncol(pseudotime),
       assigned_cells = sum(!is.na(cells$primary_lineage)),
       unassigned_cells = sum(is.na(cells$primary_lineage)),
-      dynamic = dynamics$diagnostics
+      dynamic = dynamics$diagnostics,
+      backend = backend_diagnostics
     ),
-    warnings = c(requested_warning, dynamics$warnings),
+    warnings = c(requested_warning, backend_warnings, dynamics$warnings),
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)

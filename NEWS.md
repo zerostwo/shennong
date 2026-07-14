@@ -91,6 +91,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added the explicit `sn_run_multimodal()` CITE-seq entry point while keeping
+  annotation, trajectory, and fate backend adapters internal to their unified
+  workflow APIs.
+- Added direct optional Monocle 3 trajectory inference plus standardized
+  Palantir runner/result and scCODA/pertpy runner/result adapters. All shipped
+  method-registry entries are now implemented, and scCODA retains biological
+  samples as the inferential unit.
 - Added a publication figure engine with generic screen/column/page/slide
   profiles, automatic size/point/raster/layout/pagination specifications,
   structured figure QA, deterministic PDF/SVG/TIFF/PNG export, and reproducible

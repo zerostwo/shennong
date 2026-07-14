@@ -224,6 +224,11 @@ type is absent.
 | scmap | Conservative projection to indexed expression centroids | Shared features and annotated reference; CPU; optional `scmap` | Label, similarity, and unassigned status |
 | scANVI | Semi-supervised mapping with batch structure | Raw counts, labels, batch metadata; CPU or CUDA through pixi | Labels and managed backend artifacts |
 
+Backend-specific functions stay internal rather than creating parallel result
+types. Select the backend with `sn_run_annotation(method = ...)` and retrieve
+every result with the same `sn_get_result(object, "annotation", name)`
+contract.
+
 The underlying methods should be cited in publications: SingleR (Aran et al.,
 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping (Hao et al.,
 2021), Symphony (Kang et al., 2021), scmap (Kiselev et al., 2018), and scANVI

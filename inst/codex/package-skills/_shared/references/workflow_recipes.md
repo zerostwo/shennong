@@ -231,6 +231,9 @@ user request to the right Shennong function family quickly.
 1. Choose a biologically defensible reduction and cluster label, then call
    `sn_run_trajectory(start = ..., end = ...)`; do not infer orientation from
    an unlabeled embedding alone.
+   Use `method = "monocle3"` for the direct optional R backend or
+   `method = "palantir"` with `backend_control = list(result = ...)` for an
+   explicit external-runtime result boundary.
 2. Review `sn_plot_trajectory()` and the stored `graphs$lineages`,
    `tables$terminal_states`, and warnings before interpreting pseudotime.
 3. Inspect per-lineage pseudotime and probabilities with
@@ -262,7 +265,9 @@ user request to the right Shennong function family quickly.
    cell_type_by = ...)`; every condition and design covariate must be constant
    within a biological sample.
 2. Start with Propeller, validate important effects with sample-label
-   permutation, and use Milo only when neighborhood-level resolution is needed.
+   permutation, use scCODA for Bayesian compositional inference, and use Milo
+   only when neighborhood-level resolution is needed. scCODA/pertpy results
+   must enter through `backend_control$runner` or `backend_control$result`.
 3. Audit completed zero-count rows, sample proportions, contributions, and
    adjusted significance in the stored result before plotting.
 4. Use `sn_prioritize_states(method = "augur")` for state-wise condition

@@ -29,8 +29,8 @@ sn_run_trajectory(
 \arguments{
 \item{object}{A Seurat object with a dimensional reduction and cluster labels.}
 
-\item{method}{Trajectory backend. Slingshot is currently implemented;
-Monocle 3 and Palantir remain discoverable planned backends.}
+\item{method}{Trajectory backend. Slingshot and Monocle 3 run directly;
+Palantir accepts a standardized external runner or result.}
 
 \item{reduction}{Reduction used for inference. Defaults to PCA, then UMAP or
 the first available reduction.}
@@ -63,7 +63,10 @@ constrain Slingshot and inferred paths are checked against them.}
 
 \item{trend_points}{Number of fitted points per lineage and feature.}
 
-\item{backend_control}{Named \code{slingshot} and \code{tradeSeq} argument lists.}
+\item{backend_control}{Backend controls. Use named \code{slingshot}, \code{monocle3},
+and \code{tradeSeq} argument lists for direct backends. Palantir accepts
+\code{runner} or \code{result}; the same explicit adapter boundary can override
+Monocle 3 for externally managed execution.}
 
 \item{return_object}{Return the updated object instead of the result.}
 }

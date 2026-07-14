@@ -19,6 +19,16 @@ Last updated: 2026-07-15
 
 - Work is active on `feat/analysis-publication-roadmap` against the
   `shennong_analysis_and_publication_figure_roadmap.md` specification.
+- The final roadmap adapter pass adds the explicit multimodal entry point,
+  keeps backend-specific annotation/trajectory/CellRank functions internal,
+  adds direct optional Monocle 3 inference, standardizes external Palantir and
+  scCODA/pertpy results, and leaves no method-registry entry marked
+  unimplemented. Focused adapter tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 34`, including a real Monocle 3 principal
+  graph and pseudotime run. The combined abundance/trajectory/adapter quick
+  suite passes 97 assertions, its structural `R CMD check` reports
+  `Status: OK`, and the complete pkgdown site rebuild includes the multimodal,
+  abundance, and trajectory documentation.
 - Milestone D now has six generic figure profiles, automatic specifications for
   500 through 5,000,000 simulated points, publication preflight QA,
   PDF/SVG/TIFF/PNG export, reproducible bundles, result-aware DE/enrichment/GSEA

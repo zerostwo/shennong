@@ -48,6 +48,9 @@ Datasets:
 ## Clustering and Integration
 
 - `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, and pixi-managed scVI/scANVI/totalVI/MMoCHi integration. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform integration currently uses Harmony. Coralysis, scVI/scANVI, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. For `integration_method = "scvi"` or `"scanvi"`, Shennong writes selected counts/metadata under `~/.shennong/runs/`, manages the shared scVI-family pixi project under `~/.shennong/pixi/scvi/`, imports the learned latent reduction, then continues Seurat neighbors/clustering/UMAP; scANVI requires `integration_control = list(label_by = ...)`. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. Use `umap_control = list(...)` to tune `Seurat::RunUMAP()` arguments such as `n.neighbors`, `min.dist`, `spread`, and `reduction.name` without changing the clustering graph. Re-running on the returned object reuses matching stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
+- `sn_run_multimodal()`: explicit CITE-seq wrapper over `sn_run_cluster()` for
+  WNN, totalVI, Coralysis, or MMoCHi; it preserves the clustering return
+  contract and forwards all workflow controls.
 - `sn_run_scvi()` / `sn_run_scanvi()`: explicit wrappers for the corresponding `sn_run_cluster()` integration methods.
 - `sn_transfer_labels()`: query-first reference `label_by` transfer wrapper. Defaults to Seurat anchors, can use `method = "coralysis"` for native Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment, and supports semi-supervised scVI-family transfer with `method = "scanvi"` or `method = "scarches"`.
 - `sn_prepare_label_transfer_reference()`: create compact transfer-ready references. Coralysis output is a minimal SingleCellExperiment with trained models, PCA model, feature names, and labels; Seurat/scANVI/scArches output is a slim Seurat reference with selected assay layers and labels.
@@ -123,9 +126,10 @@ Datasets:
 
 ## Trajectory and Dynamic Genes
 
-- `sn_run_trajectory()`: Slingshot lineage topology, per-cell pseudotime and
-  lineage probabilities, terminal states, and optional tradeSeq dynamic/branch
-  tests plus fitted trends
+- `sn_run_trajectory()`: direct Slingshot or Monocle 3 inference and an
+  explicit Palantir runner/result adapter, with per-cell pseudotime, lineage
+  probabilities, terminal states, and optional tradeSeq dynamic/branch tests
+  plus fitted trends
 - `sn_plot_trajectory()` / `sn_plot_pseudotime()` /
   `sn_plot_lineage_probability()`: embedding views backed by the stored result
 - `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
@@ -196,8 +200,10 @@ Datasets:
 
 ## Differential Abundance and State Priority
 
-- `sn_test_abundance()`: sample-level Propeller/permutation or
-  neighborhood-level Milo through one versioned result contract
+- `sn_test_abundance()`: sample-level Propeller/permutation/scCODA or
+  neighborhood-level Milo through one versioned result contract; scCODA and
+  pertpy outputs enter through an explicit runner/result adapter, and posterior
+  inclusion probabilities are never relabeled as frequentist p values
 - `sn_plot_abundance()`: standardized effect view for stored abundance results
 - `sn_prioritize_states()`: sample-held-out perturbation separability, explicit
   bulk-input Scissor, or RareQ discovery plus sample-level association

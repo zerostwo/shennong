@@ -53,6 +53,25 @@ milo <- sn_test_abundance(
 )
 ```
 
+For Bayesian compositional inference, run scCODA or pertpy in the Python
+environment owned by the project and pass its effect table through the explicit
+adapter. The table needs a `feature` or `cell_type` column and an `effect` or
+`estimate` column; inclusion probabilities and credible-effect flags are
+retained when supplied. The adapter does not convert posterior inclusion
+probabilities into frequentist p values; those fields remain missing unless the
+backend explicitly provides them.
+
+```{r, eval=FALSE}
+sccoda <- sn_test_abundance(
+  object, method = "sccoda", sample_by = "patient",
+  condition_by = "response", cell_type_by = "cell_type",
+  contrast = c("responder", "nonresponder"),
+  backend_control = list(result = list(table = sccoda_effects)),
+  return_object = FALSE
+)
+sccoda$tables$primary
+```
+
 Discover and retrieve the durable result:
 
 ```{r, eval=FALSE}

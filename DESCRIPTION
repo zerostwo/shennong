@@ -76,6 +76,7 @@ Suggests:
     lisi,
     limma,
     miloR,
+    monocle3,
     msigdbr,
     multinichenetr,
     Nebulosa,
@@ -127,6 +128,7 @@ Suggests:
     withr,
     zen4R
 Remotes:
+    github::cole-trapnell-lab/monocle3,
     github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,
     github::sunduanchen/Scissor,

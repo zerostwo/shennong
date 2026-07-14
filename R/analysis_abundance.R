@@ -222,6 +222,52 @@
   tibble::as_tibble(table)
 }
 
+.sn_standardize_sccoda_abundance <- function(output) {
+  table <- output$table %||% output$effects %||% output
+  if (!is.data.frame(table)) stop("scCODA adapter output must contain a result table.", call. = FALSE)
+  table <- as.data.frame(table, check.names = FALSE)
+  feature_col <- intersect(c("feature", "cell_type", "Cell Type", "covariate"), names(table))
+  estimate_col <- intersect(c("estimate", "effect", "Final Parameter", "log2_fold_change", "log2_fc"), names(table))
+  inclusion_col <- intersect(c("inclusion_probability", "Inclusion probability", "inclusion_prob", "probability"), names(table))
+  log2_col <- intersect(c("log2_fold_change", "log2-fold change", "log2_fc"), names(table))
+  credible_col <- intersect(c("credible", "is_credible"), names(table))
+  p_value_col <- intersect(c("p_value", "p.value", "pvalue"), names(table))
+  adjusted_col <- intersect(c("adjusted_p_value", "padj", "FDR", "q_value"), names(table))
+  if (length(feature_col) == 0L || length(estimate_col) == 0L) {
+    stop("scCODA result table requires feature/cell_type and effect/estimate columns.", call. = FALSE)
+  }
+  inclusion <- if (length(inclusion_col) > 0L) as.numeric(table[[inclusion_col[[1]]]]) else rep(NA_real_, nrow(table))
+  estimate_name <- estimate_col[[1]]
+  estimate <- as.numeric(table[[estimate_name]])
+  log2_fc <- if (length(log2_col) > 0L) {
+    as.numeric(table[[log2_col[[1]]]])
+  } else if (estimate_name %in% c("effect", "Final Parameter")) {
+    estimate / log(2)
+  } else {
+    rep(NA_real_, nrow(table))
+  }
+  supplied_credible <- output$credible_effects %||% NULL
+  credible <- if (length(credible_col) > 0L) {
+    as.logical(table[[credible_col[[1]]]])
+  } else if (is.logical(supplied_credible) && length(supplied_credible) == nrow(table)) {
+    as.logical(supplied_credible)
+  } else if (identical(estimate_name, "Final Parameter")) {
+    estimate != 0
+  } else {
+    rep(NA, nrow(table))
+  }
+  p_value <- if (length(p_value_col) > 0L) as.numeric(table[[p_value_col[[1]]]]) else rep(NA_real_, nrow(table))
+  adjusted_p_value <- if (length(adjusted_col) > 0L) as.numeric(table[[adjusted_col[[1]]]]) else rep(NA_real_, nrow(table))
+  standardized <- tibble::tibble(
+    feature = as.character(table[[feature_col[[1]]]]), estimate = estimate,
+    log2_fc = log2_fc, inclusion_probability = inclusion,
+    credible = as.logical(credible),
+    p_value = p_value,
+    adjusted_p_value = adjusted_p_value
+  )
+  list(table = standardized, raw = tibble::as_tibble(table))
+}
+
 #' Test differential abundance across biological samples
 #'
 #' Provides one stable entry point for sample-level Propeller or permutation
@@ -269,9 +315,6 @@ sn_test_abundance <- function(object,
                               return_object = TRUE) {
   method <- match.arg(method)
   transform <- match.arg(transform)
-  if (identical(method, "sccoda")) {
-    stop("scCODA is registered as a planned pixi backend but is not implemented yet.", call. = FALSE)
-  }
   design_columns <- if (inherits(design, "formula")) all.vars(design) else if (is.character(design)) design else NULL
   inputs <- .sn_abundance_inputs(object, sample_by, condition_by, cell_type_by, contrast, extra_columns = design_columns)
   summaries <- .sn_abundance_summary(inputs, sample_by, condition_by, cell_type_by)
@@ -292,6 +335,22 @@ sn_test_abundance <- function(object,
     primary <- dplyr::left_join(summaries$summary, backend$statistics, by = "feature")
     raw <- tibble::tibble()
     null <- backend$null
+  } else if (identical(method, "sccoda")) {
+    output <- if (is.function(backend_control$runner)) {
+      backend_control$runner(
+        sample_counts = inputs$sample_data, sample_metadata = inputs$sample_info,
+        sample_by = sample_by, condition_by = condition_by, cell_type_by = cell_type_by,
+        contrast = inputs$contrast, design = design, backend_control = backend_control
+      )
+    } else if (!is_null(backend_control$result)) {
+      backend_control$result
+    } else {
+      stop("scCODA requires `backend_control$runner` or `backend_control$result` from a scCODA/pertpy run.", call. = FALSE)
+    }
+    standardized <- .sn_standardize_sccoda_abundance(output)
+    observed <- dplyr::rename(summaries$summary, observed_estimate = "estimate")
+    primary <- dplyr::left_join(observed, standardized$table, by = "feature")
+    raw <- standardized$raw
   } else {
     milo_args <- utils::modifyList(list(
       x = object,
@@ -313,7 +372,7 @@ sn_test_abundance <- function(object,
     analysis_type = "differential_abundance",
     name = store_name,
     method = method,
-    backend = if (identical(method, "milo")) "miloR" else if (identical(method, "propeller")) "speckle" else "Shennong",
+    backend = if (identical(method, "milo")) "miloR" else if (identical(method, "propeller")) "speckle" else if (identical(method, "sccoda")) "scCODA" else "Shennong",
     input = list(
       cells = nrow(inputs$metadata),
       samples = nrow(inputs$sample_info),
