@@ -91,6 +91,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added a publication figure engine with generic screen/column/page/slide
+  profiles, automatic size/point/raster/layout/pagination specifications,
+  structured figure QA, deterministic PDF/SVG/TIFF/PNG export, and reproducible
+  figure bundles containing source data, specs, sessions, manifests, and
+  checksums.
+- Added result-aware DE/GSEA/enrichment figures plus QC threshold, doublet,
+  ambient correction, HVG, elbow, cluster tree, resolution sweep, integration,
+  and reference-projection diagnostics. Core dimensional, feature, dot,
+  heatmap, violin, box, bar, composition, Milo, and bulk plots now carry figure
+  specifications without changing their native plot classes.
 - Added a standalone bulk transcriptomics mainline for matrix/list/
   `SummarizedExperiment` inputs: sample QC, design-aware edgeR/DESeq2/limma/
   dream differential expression, pathway scoring, WGCNA module-trait analysis,

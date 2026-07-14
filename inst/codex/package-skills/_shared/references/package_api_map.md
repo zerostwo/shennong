@@ -172,6 +172,28 @@ Datasets:
   `sn_plot_sample_correlation()` / `sn_plot_bulk_de()` / `sn_plot_wgcna()` /
   `sn_plot_survival()`: result-aware bulk figures
 
+## Publication Figures
+
+- `sn_list_figure_profiles()`: inspect generic screen, column, page, and slide
+  constraints; journal requirements must still be checked at submission time
+- `sn_figure_spec()` / `sn_recommend_figure_size()`: calculate canvas, point,
+  alpha, font, line, legend, raster, layout, and pagination recommendations
+  from plot/data metadata without rendering large synthetic inputs
+- `sn_apply_figure_profile()`: attach profile styling/specification while
+  preserving the native ggplot/patchwork class
+- `sn_validate_figure()`: structured preflight checks and suggested actions
+- `sn_save_figure()` / `sn_export_figure()`: deterministic PDF, SVG, TIFF, or
+  PNG output independent of the interactive device
+- `sn_export_figure_bundle()`: figures plus available source data, spec,
+  session, checksums, validation, and JSON manifest
+- `sn_plot_de()` / `sn_plot_enrichment()` / `sn_plot_gsea()`: standardized
+  result-aware plots whose evidence tables can be exported in the bundle
+- `sn_plot_qc*()` / `sn_plot_doublets()` /
+  `sn_plot_ambient_correction()` / `sn_plot_hvg()` / `sn_plot_elbow()` /
+  `sn_plot_cluster_tree()` / `sn_plot_resolution_sweep()` /
+  `sn_plot_integration()` / `sn_plot_reference_projection()`: core diagnostic
+  figure surface
+
 ## Differential Abundance and State Priority
 
 - `sn_test_abundance()`: sample-level Propeller/permutation or

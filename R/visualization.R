@@ -877,7 +877,12 @@ sn_plot_boxplot <- function(data,
       title = title
     )
 
-  p
+  x_name <- rlang::as_name(rlang::ensym(x))
+  .sn_attach_figure_spec(
+    p, "box",
+    list(n_points = nrow(data), n_categories = length(unique(data[[x_name]])), labels = unique(as.character(data[[x_name]]))),
+    source_data = data
+  )
 }
 
 #' Create a bar plot from a data frame
@@ -1080,7 +1085,11 @@ sn_plot_barplot <- function(data,
     )
 
   if (fill_missing) {
-    return(p)
+    return(.sn_attach_figure_spec(
+      p, "bar",
+      list(n_points = nrow(data), n_categories = length(unique(data[[discrete_col]])), labels = unique(as.character(data[[discrete_col]]))),
+      source_data = plot_data
+    ))
   }
 
   n_fill <- length(unique(stats::na.omit(as.character(plot_data[[fill_name]]))))
@@ -1088,7 +1097,12 @@ sn_plot_barplot <- function(data,
   if (summarize && isTRUE(show_points)) {
     p <- .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "color")
   }
-  p
+  .sn_attach_figure_spec(
+    p, "bar",
+    list(n_points = nrow(data), n_categories = length(unique(data[[discrete_col]])), n_groups = n_fill,
+         labels = c(unique(as.character(data[[discrete_col]])), unique(as.character(data[[fill_name]])))),
+    source_data = plot_data
+  )
 }
 
 #' Plot grouped composition-style bar charts
@@ -1233,7 +1247,13 @@ sn_plot_composition <- function(data,
   }
 
   n_fill <- length(unique(stats::na.omit(as.character(data[[fill_name]]))))
-  .sn_add_discrete_palette(plot, palette = palette, n = n_fill, aesthetic = "fill")
+  plot <- .sn_add_discrete_palette(plot, palette = palette, n = n_fill, aesthetic = "fill")
+  .sn_attach_figure_spec(
+    plot, "composition",
+    list(n_points = nrow(data), n_categories = length(unique(data[[x_name]])), n_groups = n_fill,
+         labels = c(unique(as.character(data[[x_name]])), unique(as.character(data[[fill_name]])))),
+    source_data = data
+  )
 }
 
 #' Plot miloR neighborhood differential-abundance results
@@ -1336,7 +1356,11 @@ sn_plot_milo <- function(x,
     p <- .sn_add_discrete_palette(p, palette = palette, n = n_col, aesthetic = "color")
   }
 
-  p
+  .sn_attach_figure_spec(
+    p, "effect",
+    list(n_points = nrow(data), n_groups = if (is_null(annotation_by)) 1L else length(unique(data[[annotation_by]]))),
+    source_data = data
+  )
 }
 
 #' Create a dimensionality reduction plot for categorical data
@@ -1558,7 +1582,13 @@ sn_plot_dim <- function(
       axis.line = element_blank()
     ))
   }
-  return(p)
+  return(.sn_attach_figure_spec(
+    p, "embedding",
+    list(n_points = length(cells %||% colnames(object)), n_groups = n,
+         n_panels = if (is_null(split_by)) 1L else length(unique(object[[split_by, drop = TRUE]])),
+         labels = unique(as.character(object[[group_by, drop = TRUE]]))),
+    overrides = list(point_size = pt_size, rasterize = raster, raster_dpi = max(raster_dpi))
+  ))
 }
 
 #' Plot a violin plot with categorical groups
@@ -1641,7 +1671,12 @@ sn_plot_violin <- function(object,
       title = title
     )
   p <- .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "fill")
-  return(p)
+  return(.sn_attach_figure_spec(
+    p, "violin",
+    list(n_points = ncol(object) * length(features), n_groups = n, n_panels = length(features),
+         n_categories = n, n_features = length(features), labels = c(features, unique(as.character(object[[group_by, drop = TRUE]])))),
+    source_data = if (inherits(p, "ggplot")) p$data else NULL
+  ))
 }
 
 .sn_resolve_heatmap_features <- function(object, features) {
@@ -2067,7 +2102,14 @@ sn_plot_heatmap <- function(object,
   }
 
   if (is.null(split_by)) {
-    return(build_one(colnames(object), panel_title = title))
+    plot <- build_one(colnames(object), panel_title = title)
+    return(.sn_attach_figure_spec(
+      plot, "heatmap",
+      list(n_points = length(features) * ncol(object), n_rows = length(features),
+           n_columns = if (identical(mode, "average")) length(unique(object[[group_by, drop = TRUE]])) else ncol(object),
+           n_features = length(features), labels = features),
+      overrides = list(rasterize = isTRUE(raster))
+    ))
   }
 
   split_values <- object[[split_by, drop = TRUE]]
@@ -2081,7 +2123,12 @@ sn_plot_heatmap <- function(object,
   if (isTRUE(collect_legend)) {
     p <- .sn_collect_patchwork_guides(p)
   }
-  p
+  .sn_attach_figure_spec(
+    p, "heatmap",
+    list(n_points = length(features) * ncol(object), n_rows = length(features), n_columns = ncol(object),
+         n_panels = length(split_levels), n_features = length(features), labels = features),
+    overrides = list(rasterize = isTRUE(raster))
+  )
 }
 
 .sn_resolve_dotplot_features <- function(object,
@@ -2310,7 +2357,13 @@ sn_plot_dot <- function(x,
         labels = color_labels
       )
   ))
-  return(p)
+  return(.sn_attach_figure_spec(
+    p, "dot",
+    list(n_points = nrow(p$data), n_groups = length(unique(p$data$id)),
+         n_features = length(unique(p$data$features.plot)), n_rows = length(unique(p$data$features.plot)),
+         labels = c(as.character(unique(p$data$id)), as.character(unique(p$data$features.plot)))),
+    source_data = p$data
+  ))
 }
 
 #' Plot feature expression in reduced dimensions
@@ -2519,7 +2572,11 @@ sn_plot_feature <-
       if (isTRUE(collect_legend)) {
         p <- .sn_collect_patchwork_guides(p)
       }
-      return(p)
+      return(.sn_attach_figure_spec(
+        p, "feature",
+        list(n_points = length(cells) * length(features), n_panels = length(features), n_features = length(features), labels = features),
+        overrides = list(point_size = pt_size, rasterize = isTRUE(raster), raster_dpi = max(raster_dpi))
+      ))
     }
 
     # Seurat requires ggrastr for ordered rasterization. Build the ordinary
@@ -2626,7 +2683,11 @@ sn_plot_feature <-
         axis.line = element_blank()
       ))
     }
-    return(p)
+    return(.sn_attach_figure_spec(
+      p, "feature",
+      list(n_points = length(cells) * length(features), n_panels = length(features), n_features = length(features), labels = features),
+      overrides = list(point_size = pt_size, alpha = alpha, rasterize = isTRUE(raster), raster_dpi = max(raster_dpi))
+    ))
   }
 
 

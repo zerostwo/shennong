@@ -19,6 +19,14 @@ Last updated: 2026-07-15
 
 - Work is active on `feat/analysis-publication-roadmap` against the
   `shennong_analysis_and_publication_figure_roadmap.md` specification.
+- Milestone D now has six generic figure profiles, automatic specifications for
+  500 through 5,000,000 simulated points, publication preflight QA,
+  PDF/SVG/TIFF/PNG export, reproducible bundles, result-aware DE/enrichment/GSEA
+  figures, core QC/clustering/integration diagnostics, and spec migration for
+  the established core and bulk plot families. Figure-engine tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 34`; the quick structural check passes with
+  `Status: OK`, and the full pkgdown site includes the publication-figure
+  article and all new reference pages.
 - Milestone C now includes standalone bulk QC, fixed/mixed-design differential
   expression through edgeR, DESeq2, limma, and dream, pathway scores, WGCNA,
   Cox survival, clinical associations, six result-aware plot families, and a

@@ -155,3 +155,15 @@ in `memory/Decisions.md`.
   cells, or technical replicates as independent patients.
 - Retain QC, design, filtering, model, and multiple-testing diagnostics with
   the published result tables.
+
+## 13. Publication Figures
+
+- Fix the intended output profile and physical dimensions before final styling;
+  do not rely on the interactive graphics-device size.
+- Keep text and geometric annotations vector in PDF/SVG output. Rasterize only
+  dense point clouds or heatmap bodies at an explicit DPI.
+- Validate legends, labels, minimum text size, panel dimensions, category
+  counts, aspect ratio, and pagination, then perform a final visual review.
+- Deliver the plotted source table, figure specification, session information,
+  and checksums with final figures whenever the analysis is intended to be
+  reproducible or submitted.

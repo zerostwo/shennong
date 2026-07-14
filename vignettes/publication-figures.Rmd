@@ -1,0 +1,102 @@
+---
+title: "Publication figure specifications and export bundles"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Publication figure specifications and export bundles}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(Shennong)
+```
+
+Shennong figures remain native `ggplot`, patchwork, or ComplexHeatmap objects.
+The publication engine attaches a lightweight specification instead of
+introducing a new plotting class, so ordinary `+ theme(...)` composition keeps
+working.
+
+## Profiles and automatic sizing
+
+Generic profiles describe screen, column, page, and slide constraints. They do
+not claim to replace current journal artwork instructions; verify those before
+submission.
+
+```{r profiles}
+sn_list_figure_profiles()
+
+large_spec <- sn_figure_spec(
+  plot_type = "embedding",
+  data_summary = list(
+    n_points = 5000000,
+    n_groups = 18,
+    n_panels = 1,
+    max_label_chars = 16
+  ),
+  profile = "single_column"
+)
+large_spec$recommended
+```
+
+The five-million-point example calculates metadata only; it does not allocate
+or render five million rows. Point size follows a clamped power rule, and
+high-density layers are recommended for rasterization while text and geometry
+remain vector in PDF/SVG output.
+
+## Inspect and apply a specification
+
+Core Shennong plots attach `shennong_figure_spec` automatically. Any native
+plot can also be profiled after construction.
+
+```{r apply}
+plot <- ggplot2::ggplot(
+  mtcars,
+  ggplot2::aes(wt, mpg, color = factor(cyl))
+) +
+  ggplot2::geom_point()
+
+plot <- sn_apply_figure_profile(plot, "single_column")
+sn_figure_spec(plot)$recommended
+sn_validate_figure(plot)
+```
+
+Validation reports calculated dimensions, text and raster settings, small
+panels, category/legend overload, long labels, pagination, extreme aspect
+ratios, and dense networks. It predicts likely problems; final visual review is
+still required.
+
+## Deterministic export
+
+`sn_save_figure()` supports PDF, SVG, TIFF, and PNG without depending on the
+current RStudio graphics device. Explicit dimensions override automatic values.
+
+```{r save, eval=FALSE}
+sn_save_figure(
+  plot,
+  "figures/Figure_1A.pdf",
+  profile = "single_column"
+)
+```
+
+For a reproducible handoff, export the rendering, source table, calculated
+specification, session information, checksums, and validation result together.
+
+```{r bundle, eval=FALSE}
+manifest <- sn_export_figure_bundle(
+  plot,
+  path = "figures/Figure_1A",
+  formats = c("pdf", "png"),
+  include_data = TRUE,
+  include_spec = TRUE,
+  include_session = TRUE,
+  profile = "single_column"
+)
+manifest$files
+```
+
+Result-aware `sn_plot_de()`, `sn_plot_enrichment()`, and `sn_plot_gsea()` attach
+their standardized plotting tables as bundle source data. The QC, clustering,
+integration, annotation projection, bulk, dimensional, feature, dot, heatmap,
+violin, box, bar, composition, and Milo helpers also expose figure metadata for
+automatic sizing and QA.

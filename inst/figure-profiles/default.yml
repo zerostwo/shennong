@@ -1,0 +1,46 @@
+{
+  "screen": {
+    "width_mm": 160,
+    "height_mm": 100,
+    "max_height_mm": 180,
+    "base_font_pt": 10,
+    "min_font_pt": 8,
+    "raster_dpi": 150
+  },
+  "single_column": {
+    "width_mm": 85,
+    "max_height_mm": 120,
+    "base_font_pt": 7,
+    "min_font_pt": 6,
+    "raster_dpi": 600
+  },
+  "one_half_column": {
+    "width_mm": 120,
+    "max_height_mm": 160,
+    "base_font_pt": 7,
+    "min_font_pt": 6,
+    "raster_dpi": 600
+  },
+  "double_column": {
+    "width_mm": 180,
+    "max_height_mm": 220,
+    "base_font_pt": 7,
+    "min_font_pt": 6,
+    "raster_dpi": 600
+  },
+  "supplement_page": {
+    "width_mm": 180,
+    "max_height_mm": 240,
+    "base_font_pt": 7,
+    "min_font_pt": 6,
+    "raster_dpi": 450
+  },
+  "slide_16_9": {
+    "width_mm": 254,
+    "height_mm": 143,
+    "max_height_mm": 143,
+    "base_font_pt": 16,
+    "min_font_pt": 12,
+    "raster_dpi": 180
+  }
+}

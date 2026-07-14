@@ -4,6 +4,16 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Publication figures remain native ggplot/patchwork/ComplexHeatmap objects;
+  Shennong attaches a versioned specification attribute rather than introducing
+  a composition-breaking figure class.
+- Generic profiles are stable layout presets, not claims about current journal
+  requirements. Automatic sizing uses auditable heuristics for points, panels,
+  categories, labels, heatmaps, networks, and spatial aspect ratios, with
+  explicit user overrides taking precedence.
+- Figure bundles are the reproducible delivery unit: rendered formats, plotted
+  source data when available, calculated spec, session, QA report, byte size,
+  and MD5 checksums share one manifest.
 - Standalone bulk analysis uses feature-by-sample matrices with metadata
   aligned by sample ID and returns the common analysis-result contract directly;
   it does not force bulk data into a Seurat object or hide design metadata in a

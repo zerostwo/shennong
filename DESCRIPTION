@@ -48,6 +48,7 @@ Suggests:
     celda,
     CellChat,
     clusterProfiler,
+    ComplexHeatmap,
     Coralysis,
     Coralysis2,
     COSG,
@@ -61,6 +62,7 @@ Suggests:
     GapClust,
     GENIE3,
     ggrepel,
+    ggridges,
     ggrastr,
     glmGamPoi,
     GSVA,
@@ -114,6 +116,7 @@ Suggests:
     speckle,
     SpatialExperiment,
     symphony,
+    svglite,
     tidytemplate,
     testthat (>= 3.0.0),
     tradeSeq,
@@ -121,6 +124,7 @@ Suggests:
     variancePartition,
     WGCNA,
     survival,
+    withr,
     zen4R
 Remotes:
     github::navinlabcode/copykat,

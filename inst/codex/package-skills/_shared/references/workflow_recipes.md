@@ -124,6 +124,23 @@ user request to the right Shennong function family quickly.
    Retrieve evidence from each returned result's named `tables` rather than
    recomputing statistics inside plotting code.
 
+## Recipe: Export a publication figure
+
+1. Build a native Shennong/ggplot figure and inspect `sn_figure_spec(plot)`.
+   Use `sn_apply_figure_profile()` when an unattached plot needs a column,
+   page, screen, or slide profile.
+2. Run `sn_validate_figure()` and resolve category/legend overload, long labels,
+   small panels, pagination, low raster DPI, or dense-network warnings. Treat
+   this as preflight evidence, not a substitute for visual review.
+3. Use `sn_save_figure()` for deterministic PDF, SVG, TIFF, or PNG output.
+   Keep automatic dimensions unless a verified author guideline requires an
+   explicit override.
+4. Use `sn_export_figure_bundle()` for deliverables that need the rendered
+   figure, source data, figure spec, session information, file checksums, and a
+   JSON manifest together.
+5. Use `sn_plot_de()`, `sn_plot_enrichment()`, or `sn_plot_gsea()` on retained
+   result tables so exported source data match the plotted evidence.
+
 ## Recipe: Score and compare gene programs
 
 1. Use `sn_score_programs(method = "ucell")` for sparse per-cell scoring.

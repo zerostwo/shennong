@@ -42,6 +42,7 @@ articles:
       - annotation-pathways
       - program-discovery-grn
       - visualization
+      - publication-figures
       - composition-analysis
       - bulk-deconvolution
       - bulk-transcriptomics
@@ -273,6 +274,27 @@ reference:
       - sn_write_presentation_summary
   - title: Visualization
     contents:
+      - sn_list_figure_profiles
+      - sn_figure_spec
+      - sn_recommend_figure_size
+      - sn_apply_figure_profile
+      - sn_validate_figure
+      - sn_save_figure
+      - sn_export_figure
+      - sn_export_figure_bundle
+      - sn_plot_qc
+      - sn_plot_qc_thresholds
+      - sn_plot_doublets
+      - sn_plot_ambient_correction
+      - sn_plot_hvg
+      - sn_plot_elbow
+      - sn_plot_cluster_tree
+      - sn_plot_resolution_sweep
+      - sn_plot_integration
+      - sn_plot_reference_projection
+      - sn_plot_de
+      - sn_plot_enrichment
+      - sn_plot_gsea
       - sn_plot_dim
       - sn_plot_feature
       - sn_plot_heatmap
