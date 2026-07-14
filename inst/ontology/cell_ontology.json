@@ -1,0 +1,25 @@
+{
+  "ontology": "Cell Ontology",
+  "version": "2026-06-08",
+  "source": "http://purl.obolibrary.org/obo/cl/releases/2026-06-08/cl.owl",
+  "terms": [
+    {"id": "CL:0000037", "label": "hematopoietic stem cell", "aliases": ["HSC", "HSC/MPP", "hematopoietic stem cells"]},
+    {"id": "CL:0000057", "label": "fibroblast", "aliases": ["fibroblasts"]},
+    {"id": "CL:0000066", "label": "epithelial cell", "aliases": ["epithelial cells"]},
+    {"id": "CL:0000084", "label": "T cell", "aliases": ["T cells", "T-cell", "T lymphocyte", "T lymphocytes"]},
+    {"id": "CL:0000094", "label": "granulocyte", "aliases": ["granulocytes"]},
+    {"id": "CL:0000097", "label": "mast cell", "aliases": ["mast cells"]},
+    {"id": "CL:0000115", "label": "endothelial cell", "aliases": ["endothelial cells"]},
+    {"id": "CL:0000232", "label": "erythrocyte", "aliases": ["erythrocytes", "red blood cell", "red blood cells"]},
+    {"id": "CL:0000233", "label": "platelet", "aliases": ["platelets", "megakaryocytes/platelets"]},
+    {"id": "CL:0000235", "label": "macrophage", "aliases": ["macrophages", "mono-mac"]},
+    {"id": "CL:0000236", "label": "B cell", "aliases": ["B cells", "B-cell", "B-cell lineage", "B lymphocyte", "B lymphocytes"]},
+    {"id": "CL:0000451", "label": "dendritic cell", "aliases": ["dendritic cells", "DC"]},
+    {"id": "CL:0000556", "label": "megakaryocyte", "aliases": ["megakaryocytes", "megakaryocyte precursor", "early MK"]},
+    {"id": "CL:0000576", "label": "monocyte", "aliases": ["monocytes", "monocyte precursor", "classical monocytes", "non-classical monocytes"]},
+    {"id": "CL:0000623", "label": "natural killer cell", "aliases": ["NK cell", "NK cells", "natural killer cells", "CD16+ NK cells", "CD16- NK cells"]},
+    {"id": "CL:0000775", "label": "neutrophil", "aliases": ["neutrophils"]},
+    {"id": "CL:0000784", "label": "plasmacytoid dendritic cell", "aliases": ["pDC", "plasmacytoid dendritic cells"]},
+    {"id": "CL:0000786", "label": "plasma cell", "aliases": ["plasma cells", "plasmablast", "plasmablasts"]}
+  ]
+}

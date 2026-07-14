@@ -139,6 +139,14 @@ reference:
       - sn_calculate_rogue
   - title: Annotation, Markers, and Pathways
     contents:
+      - sn_run_annotation
+      - sn_annotation_consensus
+      - sn_annotation_confidence
+      - sn_map_cell_ontology
+      - sn_review_annotation
+      - sn_plot_annotation_confidence
+      - sn_plot_annotation_markers
+      - sn_plot_annotation_confusion
       - sn_run_celltypist
       - sn_find_de
       - sn_annotate_de_features

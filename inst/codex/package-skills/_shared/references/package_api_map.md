@@ -85,6 +85,17 @@ Datasets:
 
 ## Annotation, Markers, and Pathways
 
+- `sn_run_annotation()`: marker/reference annotation mainline with consensus,
+  SingleR, CellTypist, Seurat, Symphony, scmap, and scANVI backends; stores
+  cell/cluster labels, confidence, hierarchy, evidence, ontology IDs, raw
+  backend predictions, diagnostics, and provenance
+- `sn_annotation_consensus()` / `sn_annotation_confidence()`: combine and
+  calibrate long-form marker/reference evidence without LLM label overrides
+- `sn_map_cell_ontology()`: map labels against the bundled versioned Cell
+  Ontology snapshot or a project mapping
+- `sn_review_annotation()`: inspect low-confidence cells/clusters and evidence
+- `sn_plot_annotation_confidence()` / `sn_plot_annotation_markers()` /
+  `sn_plot_annotation_confusion()`: result-aware annotation diagnostics
 - `sn_run_celltypist()`: external CellTypist-based annotation
 - `sn_find_de()`: markers, contrasts, and pseudobulk DE
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines

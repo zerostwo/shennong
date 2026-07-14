@@ -4,6 +4,17 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Annotation uses one public `sn_run_annotation()` entry point rather than one
+  exported wrapper per backend. Consensus always preserves marker and reference
+  evidence separately, confidence exposes the runner-up and margin, and LLM
+  interpretation is downstream-only.
+- The package ships a deliberately small Cell Ontology lookup snapshot with its
+  release version and source. Unmapped labels remain explicit `NA` values; the
+  package does not invent ontology identifiers, and projects can supply a
+  larger audited mapping.
+- Reference adapters retain their native prediction tables/evidence and add
+  only compact model summaries to stored results. Large reference models are
+  not duplicated inside every query object's result collection.
 - The analysis roadmap is implemented in its declared order, beginning with a
   method registry and a versioned result contract before new analytical
   backends. Registry YAML files use the JSON subset of YAML so the imported

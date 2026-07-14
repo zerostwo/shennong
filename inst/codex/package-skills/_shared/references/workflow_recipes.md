@@ -124,10 +124,18 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Build annotation evidence
 
-1. Start from stored marker results.
-2. Use `sn_prepare_annotation_evidence()`.
-3. Optionally add enrichment and QC evidence.
-4. For automated annotation, use `sn_interpret_annotation()`.
+1. Use `sn_run_annotation(method = "consensus")` for marker-only annotation,
+   or supply `reference`, `reference_label_by`, and a reference backend when a
+   biologically matched atlas is available.
+2. Discover and retrieve the result with
+   `sn_list_results(object, type = "annotation")` and
+   `sn_get_result(object, "annotation", store_name)`.
+3. Review `sn_review_annotation()` plus the confidence and marker plots before
+   accepting low-margin labels.
+4. Use `sn_prepare_annotation_evidence()` when stored DE/enrichment/QC evidence
+   is needed for narrative interpretation.
+5. `sn_interpret_annotation()` may explain or rank evidence, but must not
+   overwrite the computational labels stored by `sn_run_annotation()`.
 
 ## Recipe: Reuse stored results
 

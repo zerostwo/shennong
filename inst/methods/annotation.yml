@@ -1,7 +1,7 @@
 [
   {
     "name": "consensus", "task": "annotation", "runtime": "r", "package": "Shennong",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Consensus annotation from reference predictions, marker evidence, conflicts, and ontology mapping.",
     "input_requirements": ["Seurat object", "cluster or cell metadata", "normalized expression"],
     "outputs": ["cell predictions", "cluster predictions", "confidence", "evidence", "ontology identifiers"],
@@ -11,7 +11,7 @@
   },
   {
     "name": "singleR", "task": "annotation", "runtime": "r", "package": "SingleR",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Reference-based annotation with SingleR and retained per-label scores.",
     "input_requirements": ["query expression", "annotated reference"],
     "outputs": ["labels", "scores", "pruned labels", "reference coverage"],
@@ -41,7 +41,7 @@
   },
   {
     "name": "symphony", "task": "annotation", "runtime": "r", "package": "symphony",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Reference mapping through a compressed Symphony reference.",
     "input_requirements": ["query expression", "Symphony reference"],
     "outputs": ["reference embedding", "labels", "mapping diagnostics"],
@@ -51,7 +51,7 @@
   },
   {
     "name": "scmap", "task": "annotation", "runtime": "r", "package": "scmap",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Cell- or cluster-level projection to a SingleCellExperiment reference.",
     "input_requirements": ["query SingleCellExperiment", "indexed reference"],
     "outputs": ["labels", "similarity", "unassigned flags"],

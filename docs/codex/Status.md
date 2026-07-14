@@ -23,6 +23,10 @@ Last updated: 2026-07-15
   a common analysis-result schema with generic store/get/list/delete/validate
   APIs. Existing registered result collections are upgraded compatibly rather
   than copied.
+- Milestone B1 now has the unified annotation API, marker/reference consensus,
+  SingleR/CellTypist/Seurat/Symphony/scmap/scANVI adapters, confidence and
+  runner-up calibration, hierarchical labels, a versioned Cell Ontology
+  mapping, low-confidence review, and three result-aware diagnostic plots.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -43,6 +47,16 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Annotation workflow tests currently pass with
+  `FAIL 0 | WARN 0 | SKIP 1 | PASS 39`; scmap is the single skip because the
+  optional package is not installed locally. SingleR and Symphony CPU paths run
+  against deterministic synthetic query/reference objects.
+- `scripts/check-prepush.R --filter=annotation-workflow --quick` passes the
+  annotation tests, source build, tarball audit, structural R CMD check, and
+  pkgdown reference-index validation with `Status: OK`.
+- The complete pkgdown site was rebuilt from an installed copy of the current
+  source; the expanded annotation article and all eight new reference pages
+  rendered successfully.
 - The Milestone A result/registry plus interpretation compatibility tests pass
   with `FAIL 0 | WARN 0 | SKIP 0 | PASS 142`.
 - pkgdown was rebuilt from an installed copy of the current source; the new

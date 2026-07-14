@@ -142,6 +142,117 @@ sn_plot_dot(
 )
 ```
 
+## Run traceable consensus annotation
+
+`sn_run_annotation()` is the stable annotation entry point. Its default
+`method = "consensus"` scores the bundled canonical marker database, retains
+the best and second-best candidate, calibrates a confidence margin, assigns
+hierarchical labels, and maps known labels to a versioned Cell Ontology
+snapshot. It supports both cluster- and cell-level output; without a reference,
+each cell inherits the traceable consensus of its cluster.
+
+```{r consensus-annotation}
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "consensus",
+  species = "human",
+  tissue = "peripheral blood",
+  ontology = TRUE,
+  store_name = "pbmc_consensus"
+)
+
+annotation_index <- sn_list_results(pbmc, type = "annotation")
+annotation_index
+
+annotation <- sn_get_result(
+  pbmc,
+  type = "annotation",
+  name = "pbmc_consensus"
+)
+
+head(annotation$tables$clusters)
+head(annotation$tables$cells)
+annotation$diagnostics
+```
+
+Every final label remains linked to marker support, conflicts, reference
+coverage, confidence, and provenance. LLM helpers can explain this evidence but
+cannot replace the stored computational label. Review uncertain assignments
+before using them as biological truth.
+
+```{r annotation-review-plots}
+sn_review_annotation(pbmc, "pbmc_consensus")
+
+sn_plot_annotation_confidence(
+  pbmc,
+  store_name = "pbmc_consensus",
+  level = "cluster"
+)
+
+sn_plot_annotation_markers(
+  pbmc,
+  store_name = "pbmc_consensus",
+  top_n = 5
+)
+```
+
+If trusted labels are present, a confusion heatmap makes disagreements visible.
+
+```{r annotation-confusion, eval = FALSE}
+sn_plot_annotation_confusion(
+  pbmc,
+  truth = "curated_cell_type",
+  store_name = "pbmc_consensus"
+)
+```
+
+## Choose a reference backend deliberately
+
+Use `sn_list_methods("annotation")` and `sn_method_status()` to inspect current
+availability. Reference methods should not be used when tissue, disease,
+species, assay chemistry, or cell-state coverage is badly mismatched; a high
+similarity to an incomplete reference is not evidence that the missing cell
+type is absent.
+
+| Backend | Best use | Input and runtime | Stored output |
+|---|---|---|---|
+| SingleR | Default reference prediction with per-label scores | Query and annotated Seurat/SummarizedExperiment reference; CPU; optional `SingleR` | Full score evidence, pruned label, delta, coverage |
+| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and consensus evidence |
+| Seurat | Anchor transfer from a compatible Seurat reference | Query/reference assays and labels; CPU; optional `Seurat` | Transferred labels and all returned score columns |
+| Symphony | Repeated mapping to a compressed atlas | Built reference or Seurat reference; CPU; optional `symphony` | kNN confidence and mapped embedding |
+| scmap | Conservative projection to indexed expression centroids | Shared features and annotated reference; CPU; optional `scmap` | Label, similarity, and unassigned status |
+| scANVI | Semi-supervised mapping with batch structure | Raw counts, labels, batch metadata; CPU or CUDA through pixi | Labels and managed backend artifacts |
+
+The underlying methods should be cited in publications: SingleR (Aran et al.,
+2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping (Hao et al.,
+2021), Symphony (Kang et al., 2021), scmap (Kiselev et al., 2018), and scANVI
+(Xu et al., 2021). Cell Ontology identifiers come from the bundled 2026-06-08
+CL snapshot; verify current author and ontology guidelines when preparing a
+submission.
+
+```{r singleR-annotation, eval = FALSE}
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "consensus",
+  reference = reference,
+  reference_label_by = "cell_type",
+  consensus_reference_method = "singleR",
+  species = "human",
+  store_name = "pbmc_reference_consensus"
+)
+
+reference_result <- sn_get_result(
+  pbmc,
+  type = "annotation",
+  name = "pbmc_reference_consensus"
+)
+
+head(reference_result$tables$backend_predictions)
+head(reference_result$tables$backend_evidence)
+```
+
 ## Transfer labels from a reference
 
 Marker tables are useful when you want to name clusters manually. When a

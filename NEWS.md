@@ -91,6 +91,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_run_annotation()` as the stable annotation entry point with
+  marker-only consensus plus optional SingleR, CellTypist, Seurat transfer,
+  Symphony, scmap, and scANVI backends. It stores cell- and cluster-level
+  hierarchical labels, calibrated confidence/margin, runner-up labels, marker
+  support/conflicts, reference coverage, raw backend predictions, diagnostics,
+  and provenance in the unified result contract.
+- Added `sn_annotation_consensus()`, `sn_annotation_confidence()`,
+  `sn_map_cell_ontology()`, and `sn_review_annotation()` for transparent
+  evidence aggregation, a versioned bundled Cell Ontology snapshot, and
+  explicit low-confidence review without allowing LLM output to overwrite
+  computational labels.
+- Added result-aware annotation confidence, marker-evidence, and confusion
+  plots through `sn_plot_annotation_confidence()`,
+  `sn_plot_annotation_markers()`, and `sn_plot_annotation_confusion()`.
 - Added a shipped method registry with `sn_list_methods()` and
   `sn_method_status()`. It records runtime, optional dependency, installation
   action, input/output contract, CPU/GPU expectations, citations, and whether

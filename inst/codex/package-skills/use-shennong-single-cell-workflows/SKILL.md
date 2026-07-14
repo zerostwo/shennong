@@ -130,7 +130,12 @@ This skill is the main entry point for package usage.
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
    marker-class prioritization with `sn_annotate_de_features()` for TF,
    surface/plasma-membrane, cytokine, and chemokine hits,
-   optional reference annotation with `sn_transfer_labels()` or
+   traceable annotation with `sn_run_annotation()`; use its default consensus
+   for marker evidence with optional SingleR/reference support, then inspect
+   low-confidence cells/clusters with `sn_review_annotation()` and retrieve the
+   stored result with `sn_get_result(object, "annotation", name)`. Use
+   `sn_map_cell_ontology()` for explicit ontology mapping. Lower-level
+   reference annotation remains available with `sn_transfer_labels()` or
    `sn_transfer_labels(method = "coralysis")`; use
    `sn_transfer_labels(method = "scanvi")` or
    `sn_transfer_labels(method = "scarches")` when semi-supervised scVI-family
@@ -185,6 +190,10 @@ This skill is the main entry point for package usage.
 - `sn_initialize_seurat_object()`
 - `sn_run_cluster()`
 - `sn_transfer_labels()`
+- `sn_run_annotation()`
+- `sn_review_annotation()`
+- `sn_plot_annotation_confidence()`
+- `sn_plot_annotation_markers()`
 - `sn_simulate(method = "scdesign3")`
 - `sn_assess_integration()`
 - `sn_calculate_variance_explained()`
