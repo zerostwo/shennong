@@ -17,6 +17,11 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
+- Pre-merge validation exposed one stale registry expectation and one benign
+  `enrichit` qvalue fallback warning on a tiny deterministic ORA fixture. The
+  registry test now matches the implemented Slingshot state, and the exact
+  backend fallback is muffled without hiding other enrichment warnings;
+  focused regression tests pass 116 assertions without warnings.
 - Work is active on `feat/analysis-publication-roadmap` against the
   `shennong_analysis_and_publication_figure_roadmap.md` specification.
 - The final roadmap adapter pass adds the explicit multimodal entry point,

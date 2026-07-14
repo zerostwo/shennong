@@ -270,7 +270,8 @@
         "Invalid p-values detected",
         "NA values detected in gene set IDs",
         "Duplicate gene set IDs detected",
-        "input gene IDs are fail to map"
+        "input gene IDs are fail to map",
+        "qvalue::qvalue() failed, returning NA for qvalue."
       )
       if (any(vapply(benign_patterns, grepl, logical(1), x = message, fixed = TRUE))) {
         invokeRestart("muffleWarning")

@@ -4,6 +4,9 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Warning suppression remains message-specific. The `enrichit` qvalue fallback
+  is benign when it explicitly returns missing q values for a tiny result, but
+  other qvalue, enrichment, and mapping warnings remain visible.
 - Backend-specific annotation, trajectory, and fate functions remain internal
   adapters selected by stable workflow entry points. Multimodal analysis has a
   separate public entry point because modality is a research-level workflow

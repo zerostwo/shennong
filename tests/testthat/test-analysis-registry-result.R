@@ -27,7 +27,7 @@ test_that("method registry is unique, queryable, and reports roadmap backends", 
   status <- sn_method_status("slingshot", task = "trajectory")
   expect_equal(status$runtime, "r")
   expect_equal(status$package, "slingshot")
-  expect_false(status$implemented)
+  expect_true(status$implemented)
   expect_match(status$install_action, "slingshot", ignore.case = TRUE)
 
   expect_error(sn_method_status("not-a-method"), "Unknown Shennong method")

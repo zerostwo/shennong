@@ -87,7 +87,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   also reports stored QC assessments.
 - Enrichment wrappers now muffle known benign `clusterProfiler`/`fgsea` warnings
   produced by tiny deterministic examples, keeping local test and package-check
-  output warning-clean while preserving hard errors.
+  output warning-clean while preserving hard errors, including the current
+  `enrichit` qvalue fallback when a tiny result cannot estimate q values.
 
 ### Added
 
