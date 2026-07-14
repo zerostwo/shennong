@@ -4,6 +4,15 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Slingshot is the P1 trajectory default and tradeSeq is the dynamic-gene
+  backend. Shennong stores compact curves, topology, test tables, convergence,
+  and fitted trends rather than duplicating full backend model objects inside
+  every Seurat object. Raw counts remain sparse until the optional backend
+  controls its own conversion.
+- A supplied trajectory `lineages` list constrains start/end clusters and is
+  audited against inferred Slingshot paths. It does not replace statistical
+  inference with a user-drawn curve; mismatches remain explicit result
+  warnings.
 - Program scoring uses UCell as the per-cell default, retains AUCell as an
   alternative rank-based statistic, and positions GSVA/ssGSEA for aggregated
   samples or groups. Large sparse per-cell GSVA is rejected before an implicit

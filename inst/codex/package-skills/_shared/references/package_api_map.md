@@ -112,6 +112,16 @@ Datasets:
 - `sn_plot_program_activity()` / `sn_plot_program_heatmap()`: result-aware
   program score distributions and heatmaps
 
+## Trajectory and Dynamic Genes
+
+- `sn_run_trajectory()`: Slingshot lineage topology, per-cell pseudotime and
+  lineage probabilities, terminal states, and optional tradeSeq dynamic/branch
+  tests plus fitted trends
+- `sn_plot_trajectory()` / `sn_plot_pseudotime()` /
+  `sn_plot_lineage_probability()`: embedding views backed by the stored result
+- `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
+  `sn_plot_branch_comparison()`: tradeSeq trend and branch-test views
+
 ## Composition and Comparative Analysis
 
 - `sn_calculate_composition()`: grouped counts and proportions

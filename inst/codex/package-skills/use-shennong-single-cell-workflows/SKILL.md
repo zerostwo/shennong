@@ -147,6 +147,12 @@ This skill is the main entry point for package usage.
    for sparse per-cell scoring, GSVA/ssGSEA with `group_by` for aggregated
    profiles, and `sn_test_programs(sample_by = ...)` for replicate-aware
    condition tests.
+   Infer cluster-aware lineage structure with `sn_run_trajectory()`; provide
+   explicit `start`/`end` cluster labels, retrieve the complete result with
+   `sn_get_result(object, "trajectory", store_name)`, and inspect per-lineage
+   pseudotime/probabilities before using tradeSeq dynamic or branch tables.
+   Set `dynamic_features` to an explicit auditable feature set for formal
+   analyses, and use `test_dynamic = FALSE` only for topology review.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.

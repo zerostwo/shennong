@@ -99,11 +99,13 @@ Suggests:
     SignatuR,
     SingleR,
     SingleCellExperiment,
+    slingshot,
     SummarizedExperiment,
     SoupX,
     symphony,
     tidytemplate,
     testthat (>= 3.0.0),
+    tradeSeq,
     UCell,
     zen4R
 Remotes:

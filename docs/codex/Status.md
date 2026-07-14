@@ -30,6 +30,9 @@ Last updated: 2026-07-15
 - Milestone B2 now has UCell/AUCell/GSVA/ssGSEA/mean program scoring, signature
   coverage diagnostics, cell metadata storage, sample-aware program tests, and
   result-aware activity/heatmap plots.
+- Milestone B3 now has Slingshot topology/pseudotime/lineage probabilities,
+  terminal-state and curve storage, optional tradeSeq dynamic/branch tests,
+  fitted trends and convergence diagnostics, plus six result-aware plots.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -50,6 +53,13 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Trajectory tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 29`, including
+  deterministic branching and linear Slingshot paths, real tradeSeq GAM fits,
+  result-contract retrieval, convergence/trend tables, and rendered ggplot
+  grobs. The quick pre-push path passed source build and structural check; the
+  initial Rd markup note was corrected before the final validation pass.
+- The complete pkgdown site rebuilt successfully with the trajectory article
+  and all seven new trajectory/dynamic-gene reference pages.
 - Program-scoring tests currently pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 29`, including all five scoring backends,
   sparse mean scoring, coverage/drop behavior, sample-level inference, and

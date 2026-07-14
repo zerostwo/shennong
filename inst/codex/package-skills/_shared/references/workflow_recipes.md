@@ -149,6 +149,23 @@ user request to the right Shennong function family quickly.
 5. `sn_interpret_annotation()` may explain or rank evidence, but must not
    overwrite the computational labels stored by `sn_run_annotation()`.
 
+## Recipe: Infer a trajectory and test dynamic genes
+
+1. Choose a biologically defensible reduction and cluster label, then call
+   `sn_run_trajectory(start = ..., end = ...)`; do not infer orientation from
+   an unlabeled embedding alone.
+2. Review `sn_plot_trajectory()` and the stored `graphs$lineages`,
+   `tables$terminal_states`, and warnings before interpreting pseudotime.
+3. Inspect per-lineage pseudotime and probabilities with
+   `sn_plot_pseudotime()` and `sn_plot_lineage_probability()` rather than using
+   only the primary-lineage metadata shortcut.
+4. For a formal tradeSeq analysis, supply `dynamic_features`, verify
+   `tables$convergence`, and use BH-adjusted values from `dynamic_genes` and
+   `branch_genes`.
+5. Use `sn_plot_dynamic_heatmap()`, `sn_plot_gene_trend()`, and
+   `sn_plot_branch_comparison()` for result-backed review; retrieve the durable
+   result with `sn_get_result(object, "trajectory", store_name)`.
+
 ## Recipe: Reuse stored results
 
 1. Discover assets with `sn_list_results()`.

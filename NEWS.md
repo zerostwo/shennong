@@ -91,6 +91,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_run_trajectory()` with Slingshot lineage inference and optional
+  tradeSeq dynamic-gene, branch-pattern, differential-end, convergence, and
+  fitted-trend outputs. Per-lineage pseudotime/probability, principal curves,
+  terminal states, topology, diagnostics, and provenance use the unified
+  analysis-result contract, while primary lineage/pseudotime are also added to
+  Seurat metadata.
+- Added result-aware trajectory, pseudotime, lineage-probability,
+  dynamic-heatmap, gene-trend, and branch-comparison plots through
+  `sn_plot_trajectory()`, `sn_plot_pseudotime()`,
+  `sn_plot_lineage_probability()`, `sn_plot_dynamic_heatmap()`,
+  `sn_plot_gene_trend()`, and `sn_plot_branch_comparison()`.
 - Added `sn_score_programs()` with UCell (default per-cell), AUCell, GSVA,
   ssGSEA, and sparse-aware mean-expression backends. It records signature
   feature coverage, stores long-form scores in the unified result contract,

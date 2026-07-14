@@ -46,6 +46,7 @@ articles:
       - layered-workflows
       - interpretation-workflows
       - analysis-results-and-methods
+      - trajectory-dynamics
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -160,6 +161,15 @@ reference:
       - sn_test_programs
       - sn_plot_program_activity
       - sn_plot_program_heatmap
+  - title: Trajectory and Dynamic Genes
+    contents:
+      - sn_run_trajectory
+      - sn_plot_trajectory
+      - sn_plot_pseudotime
+      - sn_plot_lineage_probability
+      - sn_plot_dynamic_heatmap
+      - sn_plot_gene_trend
+      - sn_plot_branch_comparison
   - title: Composition and Comparative Analysis
     contents:
       - sn_calculate_composition

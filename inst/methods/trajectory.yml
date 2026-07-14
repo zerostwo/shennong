@@ -1,7 +1,7 @@
 [
   {
     "name": "slingshot", "task": "trajectory", "runtime": "r", "package": "slingshot",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Cluster-aware simultaneous lineage and pseudotime inference.",
     "input_requirements": ["reduced dimensions", "cluster labels", "optional start/end states"],
     "outputs": ["pseudotime", "lineage weights", "principal curves", "diagnostics"],
@@ -31,7 +31,7 @@
   },
   {
     "name": "tradeseq", "task": "dynamic_genes", "runtime": "r", "package": "tradeSeq",
-    "implemented": false, "default": true,
+    "implemented": true, "default": true,
     "description": "Negative-binomial GAM testing along one or more lineages.",
     "input_requirements": ["counts", "pseudotime", "lineage weights"],
     "outputs": ["association tests", "branch tests", "fitted trends"],
