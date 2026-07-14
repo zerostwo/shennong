@@ -111,6 +111,13 @@ Datasets:
   `sample_by` is present, cells are aggregated before inference
 - `sn_plot_program_activity()` / `sn_plot_program_heatmap()`: result-aware
   program score distributions and heatmaps
+- `sn_discover_programs()`: multi-restart NMF discovery or explicit cNMF and
+  Hotspot adapters; retrieve weights and activity with
+  `sn_get_result(object, "program_discovery", name)`
+- `sn_plot_discovered_programs()`: gene-weight, activity, and restart plots
+- `sn_run_grn()`: GENIE3 inference or explicit pySCENIC/SCENIC/GRNBoost2
+  adapters with unified edge, regulon, activity, and specificity tables
+- `sn_plot_regulon()`: network, activity, and group-specificity plots
 
 ## Trajectory and Dynamic Genes
 

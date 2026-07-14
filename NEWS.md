@@ -91,6 +91,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_discover_programs()` and `sn_plot_discovered_programs()` for
+  multi-restart NMF with reconstruction/stability diagnostics plus explicit
+  cNMF and Hotspot result adapters. Discovered gene weights and per-cell
+  activities use the shared result contract and can be stratified by metadata.
+- Added `sn_run_grn()` and `sn_plot_regulon()` for real GENIE3 inference and
+  explicit pySCENIC, legacy SCENIC, and GRNBoost2 adapters. Results standardize
+  regulatory edges, regulons, per-cell activity, and transparent group
+  specificity without hiding external motif databases or Python runtimes.
 - Added `sn_run_cnv()` and `sn_plot_cnv()` as the unified inferCNVpy/CopyKAT
   workflow. Stored results now include reference-calibrated malignancy scores,
   malignant calls, subclones, sample summaries, chromosome-level CNV, optional

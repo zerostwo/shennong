@@ -40,6 +40,7 @@ articles:
       - clustering
       - metrics-diagnostics
       - annotation-pathways
+      - program-discovery-grn
       - visualization
       - composition-analysis
       - bulk-deconvolution
@@ -164,6 +165,10 @@ reference:
       - sn_test_programs
       - sn_plot_program_activity
       - sn_plot_program_heatmap
+      - sn_discover_programs
+      - sn_plot_discovered_programs
+      - sn_run_grn
+      - sn_plot_regulon
   - title: Trajectory and Dynamic Genes
     contents:
       - sn_run_trajectory

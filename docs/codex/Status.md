@@ -41,6 +41,10 @@ Last updated: 2026-07-15
   CellChat, CellPhoneDB, NicheNet, and MultiNicheNet; cross-method consensus and
   concordance; sample-level LR evidence and condition comparisons; retained
   ligand-target evidence; and seven result-aware plot modes.
+- Milestone B6 now has multi-restart local NMF discovery, cNMF/Hotspot
+  adapters, a real optional GENIE3 backend, explicit pySCENIC/SCENIC/GRNBoost2
+  adapters, regulon activity and group-specificity summaries, and six
+  result-aware program/GRN plot modes.
 - The CNV/malignancy/metabolism milestone now wraps inferCNVpy and CopyKAT in
   one stored result, exports chromosome evidence from the pixi backend, derives
   reference-calibrated malignancy/subclone/sample diagnostics, and adds a
@@ -65,6 +69,10 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Program-discovery and GRN focused tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 79`, covering local NMF, external program
+  adapters, GRN edge standardization, derived and supplied regulon activity,
+  group specificity, method discovery, metadata storage, and all plots.
 - CNV/metabolism tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 56`, covering
   the actual inferCNVpy import adapter, CopyKAT-style predictions, reference
   calibration, all CNV plots, curated and external metabolism backends,
@@ -93,7 +101,7 @@ Last updated: 2026-07-15
 - The complete pkgdown site rebuilt successfully with the trajectory article
   and all seven new trajectory/dynamic-gene reference pages.
 - Program-scoring tests currently pass with
-  `FAIL 0 | WARN 0 | SKIP 0 | PASS 29`, including all five scoring backends,
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 50`, including all five scoring backends,
   sparse mean scoring, coverage/drop behavior, sample-level inference, and
   rendered ggplot grobs.
 - `scripts/check-prepush.R --filter=program-scoring --quick` passes the source

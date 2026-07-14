@@ -4,6 +4,15 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Program discovery uses a dependency-free multi-restart NMF implementation
+  with explicit dense-size guards and restart diagnostics. cNMF and Hotspot
+  remain external adapters because their environments and graph construction
+  should not be hidden behind an R-package dependency.
+- GENIE3 is the directly runnable GRN backend. pySCENIC is the preferred full
+  motif-pruned workflow through explicit runner/result adapters; deprecated R
+  SCENIC is retained only for compatibility. Shennong calls its transparent
+  group effect-size summary `eta_squared`, not SCENIC regulon-specificity
+  score, so the two statistics cannot be confused.
 - CNV malignancy calls are calibrated against user-declared normal cells, not
   an unlabeled global threshold. Backend CNV evidence remains auditable at the
   chromosome level; CopyKAT is run sample-wise, and inferCNVpy exports compact

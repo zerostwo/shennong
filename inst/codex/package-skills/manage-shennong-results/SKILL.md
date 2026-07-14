@@ -14,8 +14,9 @@ package API.
 
 - discovering whether a registered analysis backend is implemented and available
 - storing any versioned analysis result, including DE, enrichment, trajectory,
-  annotation, programs, Milo, deconvolution, communication, CNV, metabolism, regulatory activity,
-  or interpretation outputs
+  annotation, program scoring/discovery, GRN, Milo, deconvolution,
+  communication, CNV, metabolism, regulatory activity, or interpretation
+  outputs
 - retrieving stored results for downstream plots or interpretation
 - auditing what is available on a Seurat object
 

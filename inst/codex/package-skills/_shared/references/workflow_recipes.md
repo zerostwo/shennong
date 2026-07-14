@@ -117,6 +117,22 @@ user request to the right Shennong function family quickly.
    biological samples, not cells, are the inferential units.
 5. Retrieve the score and comparison results with `sn_get_result()`.
 
+## Recipe: Discover programs and infer regulons
+
+1. Use `sn_discover_programs(method = "nmf")` for a lightweight local
+   discovery run and inspect both `tables$fit_diagnostics` and
+   `tables$stability` before naming programs.
+2. Supply `group_by` only when each stratum contains enough cells and features
+   for an independent factorization. cNMF and Hotspot results enter through an
+   explicit `backend_control$runner` or `backend_control$result` adapter.
+3. Use `sn_run_grn(method = "genie3", regulators = ...)` for direct R
+   inference. Use pySCENIC through an explicit adapter when motif pruning and
+   AUCell activity are required; keep motif-database provenance with the
+   adapter result.
+4. Retrieve `sn_get_result(object, "grn", name)` and inspect
+   `tables$edges`, `tables$regulons`, `tables$activity`, and
+   `tables$specificity` before plotting with `sn_plot_regulon()`.
+
 ## Recipe: Summarize composition shifts
 
 1. Use `sn_calculate_composition(group_by = ..., variable = ..., measure = "both")` for grouped counts and percentages.

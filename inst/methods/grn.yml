@@ -1,0 +1,42 @@
+[
+  {
+    "name": "genie3", "task": "grn", "runtime": "r", "package": "GENIE3",
+    "implemented": true, "default": true,
+    "description": "Tree-ensemble regulatory network inference with unified regulon activity and specificity summaries.",
+    "input_requirements": ["expression matrix", "recommended regulator list"],
+    "outputs": ["weighted edges", "regulons", "cell activity", "group specificity"],
+    "supports": {"external_runner": true, "group_specificity": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('GENIE3')",
+    "citation": "Huynh-Thu et al. PLoS One 2010"
+  },
+  {
+    "name": "pyscenic", "task": "grn", "runtime": "external", "package": "pySCENIC",
+    "implemented": true, "default": false,
+    "description": "Explicit adapter for pySCENIC GRN, motif-pruning, and AUCell output.",
+    "input_requirements": ["pySCENIC output or runner", "motif databases"],
+    "outputs": ["weighted edges", "regulons", "AUCell activity"],
+    "supports": {"external_runner": true, "motif_pruning": true},
+    "cpu_gpu": "CPU", "install": "Install pySCENIC and its motif databases separately.",
+    "citation": "Van de Sande et al. Nature Protocols 2020"
+  },
+  {
+    "name": "scenic", "task": "grn", "runtime": "external", "package": "SCENIC",
+    "implemented": true, "default": false,
+    "description": "Compatibility adapter for existing R SCENIC results; new workflows should prefer pySCENIC.",
+    "input_requirements": ["SCENIC output or runner"],
+    "outputs": ["weighted edges", "regulons", "activity"],
+    "supports": {"external_runner": true, "legacy_results": true},
+    "cpu_gpu": "CPU", "install": "Use an existing SCENIC installation or result export.",
+    "citation": "Aibar et al. Nature Methods 2017"
+  },
+  {
+    "name": "grnboost2", "task": "grn", "runtime": "external", "package": "arboreto",
+    "implemented": true, "default": false,
+    "description": "Explicit adapter for GRNBoost2 weighted edge output.",
+    "input_requirements": ["GRNBoost2 edge output or runner"],
+    "outputs": ["weighted edges", "derived regulons", "cell activity"],
+    "supports": {"external_runner": true},
+    "cpu_gpu": "CPU", "install": "Install arboreto or pySCENIC separately.",
+    "citation": "Moerman et al. Bioinformatics 2019"
+  }
+]

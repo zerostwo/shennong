@@ -137,3 +137,71 @@ test_that("program activity and heatmap plots render", {
   expect_silent(ggplot2::ggplotGrob(activity))
   expect_silent(ggplot2::ggplotGrob(heatmap))
 })
+
+test_that("NMF discovers stable weighted programs and cell activities", {
+  object <- make_program_test_object()
+  updated <- sn_discover_programs(
+    object, method = "nmf", n_programs = 2, name = "latent",
+    features = paste0("G", 1:6),
+    backend_control = list(nrun = 3, max_iter = 100, seed = 19, top_genes = 3)
+  )
+  result <- sn_get_result(updated, "program_discovery", "latent")
+
+  expect_true(sn_validate_result(result, error = FALSE)$valid)
+  expect_equal(result$diagnostics$programs, 2L)
+  expect_equal(nrow(result$tables$activity), 2L * ncol(object))
+  expect_equal(nrow(result$tables$gene_weights), 2L * 6L)
+  expect_equal(nrow(result$tables$fit_diagnostics), 3L)
+  expect_equal(sum(result$tables$fit_diagnostics$selected), 1L)
+  expect_true(all(is.finite(result$tables$activity$score)))
+  expect_true(any(grepl("^latent_program_", colnames(updated[[]]))))
+})
+
+test_that("grouped NMF names programs by discovery stratum", {
+  object <- make_program_test_object()
+  result <- sn_discover_programs(
+    object, method = "nmf", n_programs = 2, group_by = "cell_type",
+    features = paste0("G", 1:6), return_object = FALSE,
+    backend_control = list(nrun = 2, max_iter = 60, seed = 21)
+  )
+  expect_equal(result$diagnostics$groups, 2L)
+  expect_true(all(grepl("type_[ab]_program", unique(result$tables$activity$program))))
+})
+
+test_that("cNMF and Hotspot adapters standardize external program outputs", {
+  object <- make_program_test_object()
+  output <- list(
+    weights = tibble::tibble(
+      program = rep(c("p1", "p2"), each = 3),
+      feature = rep(paste0("G", 1:3), 2), weight = seq(0.1, 0.6, length.out = 6)
+    ),
+    activity = transform(
+      expand.grid(cell = colnames(object), program = c("p1", "p2"), stringsAsFactors = FALSE),
+      score = seq_len(2L * ncol(object)) / 10
+    )
+  )
+  for (method in c("cnmf", "hotspot")) {
+    result <- sn_discover_programs(
+      object, method = method, backend_control = list(result = output), return_object = FALSE
+    )
+    expect_equal(result$method, method)
+    expect_equal(nrow(result$tables$activity), 2L * ncol(object))
+  }
+})
+
+test_that("discovered program plots render weights, activity, and stability", {
+  object <- make_program_test_object()
+  result <- sn_discover_programs(
+    object, n_programs = 2, features = paste0("G", 1:6), return_object = FALSE,
+    backend_control = list(nrun = 2, max_iter = 60, seed = 31)
+  )
+  for (type in c("weights", "activity", "stability")) {
+    plot <- sn_plot_discovered_programs(result, type = type, n = 3)
+    expect_s3_class(plot, "ggplot")
+    expect_silent(ggplot2::ggplotGrob(plot))
+  }
+})
+
+test_that("program discovery methods are registered", {
+  expect_true(all(c("nmf", "cnmf", "hotspot") %in% sn_list_methods("program_discovery")$name))
+})

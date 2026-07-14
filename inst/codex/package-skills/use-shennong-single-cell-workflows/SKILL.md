@@ -147,6 +147,11 @@ This skill is the main entry point for package usage.
    for sparse per-cell scoring, GSVA/ssGSEA with `group_by` for aggregated
    profiles, and `sn_test_programs(sample_by = ...)` for replicate-aware
    condition tests.
+   Discover latent programs with `sn_discover_programs()` and review restart
+   diagnostics before interpreting NMF factors. Infer regulatory networks with
+   `sn_run_grn()`; GENIE3 is directly runnable, while pySCENIC, legacy SCENIC,
+   GRNBoost2, cNMF, and Hotspot require explicit runner/result adapters so
+   external runtime and database provenance remain visible.
    Infer cluster-aware lineage structure with `sn_run_trajectory()`; provide
    explicit `start`/`end` cluster labels, retrieve the complete result with
    `sn_get_result(object, "trajectory", store_name)`, and inspect per-lineage

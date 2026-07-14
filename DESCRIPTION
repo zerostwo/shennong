@@ -57,6 +57,7 @@ Suggests:
     edgeR,
     ellmer,
     GapClust,
+    GENIE3,
     ggrepel,
     ggrastr,
     glmGamPoi,
