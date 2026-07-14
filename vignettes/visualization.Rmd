@@ -96,7 +96,9 @@ cluster_cols
 same function handles legends, shared scales, rasterization, and panel sizing.
 Rasterization is enabled by default; when `ggrastr` is available the point layer
 is rasterized after the regular ggplot point size is applied, so small values
-such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes.
+such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes. When
+`ggrastr` is unavailable, the plot remains usable through the vector point
+layer.
 
 ```{r plot-feature-expression}
 sn_plot_feature(

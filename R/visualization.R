@@ -2533,7 +2533,9 @@ sn_plot_feature <-
       return(p)
     }
 
-    featureplot_raster <- if (isTRUE(raster) && rlang::is_installed("ggrastr")) FALSE else raster
+    # Seurat requires ggrastr for ordered rasterization. Build the ordinary
+    # vector layer first, then rasterize it below only when ggrastr is present.
+    featureplot_raster <- FALSE
     p <- withCallingHandlers(
       Seurat::FeaturePlot(
         object = object,

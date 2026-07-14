@@ -197,6 +197,19 @@ test_that("Seurat plotting helpers return ggplot objects", {
     pt_size = 0.01,
     raster = TRUE
   )
+  is_installed <- rlang::is_installed
+  feature_plot_without_ggrastr <- with_mocked_bindings(
+    sn_plot_feature(
+      object,
+      features = "CD3D",
+      reduction = "umap",
+      raster = TRUE
+    ),
+    is_installed = function(pkg, ...) {
+      if (identical(pkg, "ggrastr")) FALSE else is_installed(pkg, ...)
+    },
+    .package = "rlang"
+  )
   expect_message(
     sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", raster = FALSE),
     NA
@@ -233,6 +246,8 @@ test_that("Seurat plotting helpers return ggplot objects", {
 
   expect_s3_class(feature_plot, "ggplot")
   expect_s3_class(feature_plot_small, "ggplot")
+  expect_s3_class(feature_plot_without_ggrastr, "ggplot")
+  expect_no_error(ggplot2::ggplotGrob(feature_plot_without_ggrastr))
   expect_s3_class(multi_feature_plot, "ggplot")
   expect_s3_class(heatmap_plot, "ggplot")
   expect_s3_class(average_heatmap, "ggplot")

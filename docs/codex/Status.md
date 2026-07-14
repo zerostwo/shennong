@@ -1,6 +1,17 @@
 # Shennong Modernization Status
 
-Last updated: 2026-07-13
+Last updated: 2026-07-14
+
+## 2026-07-14
+
+- Fixed the optional-raster dependency path so
+  `sn_plot_feature(raster = TRUE)` remains renderable when `ggrastr` is not
+  installed. A mocked missing-dependency regression test passes through
+  `ggplot2::ggplotGrob()`.
+- Validation: visualization tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 102`; the complete pkgdown site rebuilds;
+  and the quick pre-push source check completes with only the known worktree
+  `.git` packaging note that the structure-cleanup branch removes.
 
 ## 2026-07-13
 
@@ -734,6 +745,8 @@ Current milestone: DE API consolidation and CI deployment hardening
 - Updated `sn_plot_dot()` colorbar styling to use black frame/tick elements and suppress the duplicate colour-scale replacement message.
 - Added `sn_plot_heatmap()` for focused user-selected gene heatmaps with cell-level and group-averaged modes, grouping/splitting, feature validation, default rasterization, hidden cell names/ticks, 8 pt group labels, Paired group-bar colors, and automatic scaling of requested genes.
 - Updated `sn_plot_feature()` to expose more Seurat `FeaturePlot()` arguments and to use `ggrastr` post-rasterization when available, preserving `pt_size` behavior under `raster = TRUE`.
+- Added a vector fallback for `sn_plot_feature(raster = TRUE)` when optional
+  package `ggrastr` is unavailable.
 - Quieted the user-visible `sn_plot_feature()` rasterization warning and duplicate expression color-scale message while preserving other warnings.
 - Added `sn_run_cell_communication()` plus store/get helpers for CellChat, NicheNet, and LIANA communication workflows, with NicheNet requiring explicit ligand-target and ligand-receptor priors.
 - Added `sn_run_regulatory_activity()` plus store/get helpers for fast DoRothEA TF activity and PROGENy pathway activity inference through decoupleR.

@@ -139,7 +139,7 @@ Datasets:
 ## Visualization
 
 - `sn_plot_dim()`: embedding plot for categorical labels
-- `sn_plot_feature()`: feature plot or density-style feature map with rasterized points that preserve `pt_size`
+- `sn_plot_feature()`: feature plot or density-style feature map; rasterized points preserve `pt_size`, with a vector fallback when `ggrastr` is unavailable
 - `sn_plot_heatmap()`: selected-gene heatmap in cell-level or group-averaged mode
 - `sn_plot_violin()`: violin plot
 - `sn_plot_dot()`: dot plot; pass a named feature list for separate free-width
