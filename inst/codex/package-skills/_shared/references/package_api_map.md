@@ -143,9 +143,15 @@ Datasets:
 - `sn_set_cibersortx_credentials()`: store CIBERSORTx credentials
 - `sn_store_deconvolution()`: persist deconvolution results
 - `sn_get_deconvolution_result()`: retrieve deconvolution results
-- `sn_run_cell_communication()`: run CellChat, NicheNet, or LIANA communication inference
+- `sn_run_cell_communication()`: run LIANA, CellChat, CellPhoneDB, NicheNet, or
+  MultiNicheNet alone or as a cross-method consensus, with optional
+  sample-level condition comparison
 - `sn_store_cell_communication()`: persist communication results
 - `sn_get_cell_communication_result()`: retrieve communication results
+- `sn_plot_communication()`: bubble, heatmap, network, chord, or river view of
+  standardized interactions
+- `sn_plot_ligand_target()` / `sn_plot_communication_comparison()`: inspect
+  ligand-target evidence and sample-level condition effects
 - `sn_run_regulatory_activity()`: infer DoRothEA TF activity or PROGENy pathway activity with decoupleR
 - `sn_store_regulatory_activity()`: persist regulatory activity results
 - `sn_get_regulatory_activity_result()`: retrieve regulatory activity results

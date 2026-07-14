@@ -48,6 +48,7 @@ articles:
       - analysis-results-and-methods
       - trajectory-dynamics
       - abundance-priority
+      - communication-consensus
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -192,6 +193,9 @@ reference:
       - sn_run_cell_communication
       - sn_store_cell_communication
       - sn_get_cell_communication_result
+      - sn_plot_communication
+      - sn_plot_ligand_target
+      - sn_plot_communication_comparison
       - sn_run_regulatory_activity
       - sn_store_regulatory_activity
       - sn_get_regulatory_activity_result

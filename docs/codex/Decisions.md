@@ -4,6 +4,13 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- Communication backends retain native artifacts but expose a common primary
+  schema. Multi-method consensus uses within-method percentile ranks;
+  condition comparisons recompute ligand-receptor evidence within biological
+  samples, never cells. MultiNicheNet delegates to its official sample-aware
+  pseudobulk workflow, while the reserved `spatial_distance` field keeps the
+  contract extensible without pretending that expression alone is spatial
+  evidence.
 - Differential abundance treats samples as replicates. Propeller is the
   cell-type default, Milo retains neighborhood-level inference, and the
   permutation backend shuffles sample labels rather than cells. Completed zero

@@ -93,8 +93,9 @@ package API.
 - `sn_get_milo_result(object, milo_name = "condition_da")`
 - `sn_store_deconvolution(object, result, deconvolution_name = "bulk_mix")`
 - `sn_get_deconvolution_result(object, deconvolution_name = "bulk_mix")`
-- `sn_store_cell_communication(object, result, communication_name = "cellchat")`
+- `sn_store_cell_communication(object, result, store_name = "cellchat")`
 - `sn_get_cell_communication_result(object, communication_name = "cellchat")`
+- `sn_get_cell_communication_result(object, communication_name = "cellchat", with_metadata = TRUE)$tables$consensus`
 - `sn_store_regulatory_activity(object, result, activity_name = "dorothea")`
 - `sn_get_regulatory_activity_result(object, activity_name = "dorothea")`
 - `sn_get_interpretation_result(object, interpretation_name = "annotation_note")`

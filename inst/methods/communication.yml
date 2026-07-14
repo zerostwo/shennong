@@ -5,7 +5,7 @@
     "description": "Ligand-receptor inference and method aggregation through LIANA.",
     "input_requirements": ["normalized expression", "cell labels"],
     "outputs": ["ligand-receptor table", "scores", "ranks", "consensus"],
-    "supports": {"consensus": true, "condition_comparison": false},
+    "supports": {"consensus": true, "condition_comparison": true, "sample_level": true},
     "cpu_gpu": "CPU", "install": "Install the optional liana package.",
     "citation": "Dimitrov et al. Nature Communications 2022"
   },
@@ -15,7 +15,7 @@
     "description": "Pathway-aware communication inference through CellChat.",
     "input_requirements": ["normalized expression", "cell labels"],
     "outputs": ["ligand-receptor table", "pathway networks", "probabilities"],
-    "supports": {"pathways": true, "condition_comparison": false},
+    "supports": {"pathways": true, "condition_comparison": true, "sample_level": true},
     "cpu_gpu": "CPU", "install": "Install the optional CellChat package.",
     "citation": "Jin et al. Nature Communications 2021"
   },
@@ -25,7 +25,7 @@
     "description": "CellPhoneDB inference through a managed pixi environment.",
     "input_requirements": ["counts", "cell labels"],
     "outputs": ["means", "p values", "significant interactions"],
-    "supports": {"permutation": true},
+    "supports": {"permutation": true, "condition_comparison": true, "sample_level": true},
     "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('cellphonedb', install_environment = TRUE)",
     "citation": "Efremova et al. Nature Protocols 2020"
   },
@@ -35,18 +35,18 @@
     "description": "Ligand-to-target prioritization through NicheNet.",
     "input_requirements": ["sender and receiver labels", "receiver gene set"],
     "outputs": ["ligand activity", "ligand-target links", "prioritized interactions"],
-    "supports": {"target_genes": true},
+    "supports": {"target_genes": true, "condition_comparison": true, "sample_level": true},
     "cpu_gpu": "CPU", "install": "Install the optional nichenetr package.",
     "citation": "Browaeys et al. Nature Methods 2020"
   },
   {
     "name": "multinichenet", "task": "communication", "runtime": "r", "package": "multinichenetr",
-    "implemented": false, "default": false,
+    "implemented": true, "default": false,
     "description": "Sample-aware differential communication with MultiNicheNet.",
     "input_requirements": ["sample labels", "condition labels", "cell labels"],
     "outputs": ["differential ligands", "sender-receiver contrasts", "target links"],
     "supports": {"sample_level": true, "condition_comparison": true},
     "cpu_gpu": "CPU", "install": "Install the optional multinichenetr package.",
-    "citation": "Browaeys et al. bioRxiv 2023"
+    "citation": "Browaeys et al. Nature Methods 2024"
   }
 ]

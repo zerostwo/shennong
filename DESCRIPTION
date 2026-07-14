@@ -71,6 +71,7 @@ Suggests:
     limma,
     miloR,
     msigdbr,
+    multinichenetr,
     Nebulosa,
     nichenetr,
     org.Hs.eg.db,
@@ -125,6 +126,7 @@ Remotes:
     github::immunogenomics/lisi,
     github::saezlab/liana,
     github::saeyslab/nichenetr,
+    github::saeyslab/multinichenetr,
     github::scverse/anndataR,
     github::tidyverse/tidytemplate
 VignetteBuilder: knitr

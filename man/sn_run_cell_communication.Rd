@@ -6,7 +6,7 @@
 \usage{
 sn_run_cell_communication(
   object,
-  method = c("cellchat", "nichenetr", "liana"),
+  method = c("liana", "cellchat", "cellphonedb", "nichenet", "multinichenet"),
   group_by,
   assay = NULL,
   layer = "data",
@@ -27,6 +27,10 @@ sn_run_cell_communication(
   population_size = FALSE,
   raw_use = TRUE,
   resource = NULL,
+  sample_by = NULL,
+  consensus = TRUE,
+  contrast = NULL,
+  backend_control = list(),
   store_name = "default",
   return_object = TRUE,
   ...
@@ -35,8 +39,9 @@ sn_run_cell_communication(
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{method}{One of \code{"cellchat"}, \code{"nichenetr"}, or
-\code{"liana"}.}
+\item{method}{One or more of \code{"liana"}, \code{"cellchat"},
+\code{"cellphonedb"}, \code{"nichenet"}, or \code{"multinichenet"}.
+The legacy alias \code{"nichenetr"} is accepted.}
 
 \item{group_by}{Metadata column defining sender/receiver cell groups.}
 
@@ -60,7 +65,7 @@ receiver differential expression is computed from \code{condition_by},
 derive \code{geneset} for NicheNet.}
 
 \item{ligand_target_matrix, lr_network}{NicheNet prior matrices/networks.
-These must be supplied for \code{method = "nichenetr"}.}
+These must be supplied for \code{method = "nichenet"}.}
 
 \item{expressed_pct}{Minimum fraction of cells expressing a gene before it
 is considered expressed in NicheNet filtering.}
@@ -75,6 +80,18 @@ is considered expressed in NicheNet filtering.}
 
 \item{resource}{Optional LIANA resource.}
 
+\item{sample_by}{Metadata column defining biological samples. When supplied,
+ligand and receptor expression is aggregated within each sample before
+condition comparison.}
+
+\item{consensus}{If \code{TRUE} and multiple methods are requested, use the
+cross-method consensus ranking as the primary result table.}
+
+\item{contrast}{Optional length-two condition contrast, with case first and
+reference second.}
+
+\item{backend_control}{Named list of method-specific argument lists.}
+
 \item{store_name}{Name used under \code{object@misc$cell_communication_results}.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object;
@@ -87,7 +104,6 @@ A Seurat object or stored-result list.
 }
 \description{
 \code{sn_run_cell_communication()} wraps established communication
-backends: CellChat for global interaction networks, NicheNet for
-sender-to-receiver ligand activity, and LIANA for consensus ligand-receptor
-scoring when the optional package is installed.
+backends and stores a comparable ligand-receptor schema. Multiple backends
+can be run together to calculate method concordance and a consensus rank.
 }

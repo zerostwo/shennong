@@ -91,6 +91,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Expanded `sn_run_cell_communication()` into a multi-backend communication
+  workflow for LIANA, CellChat, CellPhoneDB, NicheNet, and MultiNicheNet. All
+  backends now map to a shared ligand-receptor schema with method concordance,
+  consensus ranks, sample-level expression evidence, condition contrasts,
+  ligand-target links, retained backend artifacts, and a reserved spatial
+  distance field. Added bubble, heatmap, network, chord, river,
+  ligand-target, and differential-communication plots.
 - Added `sn_test_abundance()` as the stable differential-abundance entry point
   for sample-level Propeller, transparent sample-label permutation, and
   neighborhood-level Milo. Results include standardized effects, adjusted

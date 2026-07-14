@@ -57,8 +57,8 @@
 }
 
 .sn_lr_columns <- function(lr_network) {
-  ligand_col <- intersect(c("ligand", "from", "source"), colnames(lr_network))[[1]] %||% NULL
-  receptor_col <- intersect(c("receptor", "to", "target"), colnames(lr_network))[[1]] %||% NULL
+  ligand_col <- .sn_communication_column(lr_network, c("ligand", "from", "source"))
+  receptor_col <- .sn_communication_column(lr_network, c("receptor", "to", "target"))
   if (is.null(ligand_col) || is.null(receptor_col)) {
     stop("`lr_network` must contain ligand/receptor columns such as `ligand`/`receptor` or `from`/`to`.", call. = FALSE)
   }
@@ -81,38 +81,53 @@
   mat <- .sn_expression_matrix(object = object, assay = assay, layer = layer)
   meta <- object[[]][colnames(mat), , drop = FALSE]
   meta$shennong_group <- as.character(meta[[group_by]])
+  if (!"samples" %in% names(meta)) meta$samples <- "sample1"
   keep <- !is.na(meta$shennong_group) & nzchar(meta$shennong_group)
   mat <- mat[, keep, drop = FALSE]
   meta <- meta[keep, , drop = FALSE]
 
-  cellchat <- CellChat::createCellChat(
-    object = mat,
-    meta = meta,
-    group.by = "shennong_group",
-    assay = assay
+  db <- cellchat_db
+  if (is_null(db)) {
+    database_name <- if (identical(species, "human")) "CellChatDB.human" else "CellChatDB.mouse"
+    database_environment <- new.env(parent = emptyenv())
+    utils::data(list = database_name, package = "CellChat", envir = database_environment)
+    db <- database_environment[[database_name]]
+    if (is_null(db)) stop("Could not load the CellChat database `", database_name, "`.", call. = FALSE)
+  }
+  backend_warnings <- character()
+  cellchat <- withCallingHandlers(
+    {
+      current <- CellChat::createCellChat(
+        object = mat,
+        meta = meta,
+        group.by = "shennong_group",
+        assay = assay
+      )
+      current@DB <- db
+      current <- CellChat::subsetData(current)
+      current <- CellChat::identifyOverExpressedGenes(current)
+      current <- CellChat::identifyOverExpressedInteractions(current)
+      current <- CellChat::computeCommunProb(
+        current,
+        raw.use = raw_use,
+        population.size = population_size,
+        ...
+      )
+      current <- CellChat::filterCommunication(current, min.cells = min_cells)
+      current <- CellChat::computeCommunProbPathway(current)
+      CellChat::aggregateNet(current)
+    },
+    warning = function(warning) {
+      backend_warnings <<- c(backend_warnings, conditionMessage(warning))
+      invokeRestart("muffleWarning")
+    }
   )
-  db <- cellchat_db %||% get(
-    if (identical(species, "human")) "CellChatDB.human" else "CellChatDB.mouse",
-    envir = asNamespace("CellChat")
-  )
-  cellchat@DB <- db
-  cellchat <- CellChat::subsetData(cellchat)
-  cellchat <- CellChat::identifyOverExpressedGenes(cellchat)
-  cellchat <- CellChat::identifyOverExpressedInteractions(cellchat)
-  cellchat <- CellChat::computeCommunProb(
-    cellchat,
-    raw.use = raw_use,
-    population.size = population_size,
-    ...
-  )
-  cellchat <- CellChat::filterCommunication(cellchat, min.cells = min_cells)
-  cellchat <- CellChat::computeCommunProbPathway(cellchat)
-  cellchat <- CellChat::aggregateNet(cellchat)
 
   table <- tibble::as_tibble(CellChat::subsetCommunication(cellchat))
   list(
     table = table,
     backend_result = cellchat,
+    warnings = unique(backend_warnings),
     artifacts = list(cellchat = cellchat)
   )
 }
@@ -199,12 +214,29 @@
     dplyr::arrange(dplyr::desc(.data$pearson)) |>
     dplyr::mutate(source = paste(sender, collapse = ","), target = paste(receiver, collapse = ",")) |>
     dplyr::relocate(dplyr::all_of(c("source", "target")))
+  ligand_column <- .sn_communication_column(activities, c("test_ligand", "ligand"))
+  ligand_receptors <- lr_tbl |>
+    dplyr::filter(.data[[lr_cols$ligand]] %in% activities[[ligand_column]]) |>
+    dplyr::transmute(
+      test_ligand = as.character(.data[[lr_cols$ligand]]),
+      receptor = as.character(.data[[lr_cols$receptor]])
+    ) |>
+    dplyr::distinct()
+  if (!identical(ligand_column, "test_ligand")) names(ligand_receptors)[[1]] <- ligand_column
+  activities <- dplyr::left_join(activities, ligand_receptors, by = ligand_column)
   if (!is.null(top_n)) {
     activities <- utils::head(activities, top_n)
   }
+  ligand_targets <- .sn_nichenet_target_links(
+    ligand_target_matrix,
+    ligands = activities[[ligand_column]],
+    geneset = geneset,
+    top_n = max(20L, top_n %||% 50L)
+  )
   list(
     table = activities,
     backend_result = activities,
+    ligand_targets = ligand_targets,
     artifacts = list(
       geneset = geneset,
       background_genes = background_genes,
@@ -221,33 +253,225 @@
                           ...) {
   check_installed("liana", reason = "to run LIANA cell-cell communication inference.")
   liana_wrap <- get("liana_wrap", envir = asNamespace("liana"), inherits = FALSE)
-  result <- do.call(
-    liana_wrap,
-    c(
-      list(
-        seurat_object = object,
-        idents_col = group_by,
-        assay = assay,
-        layer = layer,
-        resource = resource
-      ),
-      list(...)
-    )
+  if (identical(tolower(resource %||% ""), "consensus")) resource <- "Consensus"
+  input_name <- if ("sce" %in% names(formals(liana_wrap))) "sce" else "seurat_object"
+  input_object <- object
+  liana_assay <- assay
+  if (identical(input_name, "sce")) {
+    check_installed("SingleCellExperiment", reason = "to adapt Seurat v5 objects for current LIANA releases.")
+    assay <- assay %||% Seurat::DefaultAssay(object)
+    input_object <- suppressWarnings(Seurat::as.SingleCellExperiment(object, assay = assay))
+    available_assays <- SummarizedExperiment::assayNames(input_object)
+    liana_assay <- if (identical(layer, "counts") && "counts" %in% available_assays) {
+      "counts"
+    } else if ("logcounts" %in% available_assays) {
+      "logcounts"
+    } else {
+      available_assays[[1]]
+    }
+  }
+  input <- list(input_object)
+  names(input) <- input_name
+  args <- utils::modifyList(
+    c(input, list(idents_col = group_by, assay = liana_assay, resource = resource, verbose = FALSE)),
+    list(...),
+    keep.null = TRUE
+  )
+  backend_warnings <- character()
+  result <- withCallingHandlers(
+    do.call(liana_wrap, args),
+    warning = function(warning) {
+      backend_warnings <<- c(backend_warnings, conditionMessage(warning))
+      invokeRestart("muffleWarning")
+    }
   )
   table <- if (is.data.frame(result)) tibble::as_tibble(result) else tibble::as_tibble(result[[1]])
-  list(table = table, backend_result = result, artifacts = list(liana = result))
+  list(
+    table = table,
+    backend_result = result,
+    warnings = unique(backend_warnings),
+    artifacts = list(liana = result)
+  )
+}
+
+.sn_multinichenet_label_map <- function(values) {
+  original <- unique(as.character(values))
+  encoded <- make.unique(make.names(original))
+  list(
+    encoded = stats::setNames(encoded, original),
+    decoded = stats::setNames(original, encoded)
+  )
+}
+
+.sn_run_multinichenet <- function(object,
+                                  group_by,
+                                  sample_by,
+                                  condition_by,
+                                  assay,
+                                  sender,
+                                  receiver,
+                                  condition_oi,
+                                  condition_reference,
+                                  contrast,
+                                  ligand_target_matrix,
+                                  lr_network,
+                                  min_cells = 10,
+                                  top_n = 250,
+                                  ...) {
+  check_installed("multinichenetr", reason = "to run the MultiNicheNet communication backend.")
+  check_installed("SingleCellExperiment", reason = "to prepare MultiNicheNet input.")
+  if (is_null(sample_by) || is_null(condition_by)) {
+    stop("MultiNicheNet requires both `sample_by` and `condition_by`.", call. = FALSE)
+  }
+  if (is_null(ligand_target_matrix) || is_null(lr_network)) {
+    stop("MultiNicheNet requires `ligand_target_matrix` and `lr_network`.", call. = FALSE)
+  }
+  metadata <- object[[]]
+  .sn_validate_constant_within_sample(metadata, sample_col = sample_by, group_col = condition_by)
+  conditions <- unique(as.character(metadata[[condition_by]]))
+  contrast <- contrast %||% if (!is_null(condition_oi) && !is_null(condition_reference)) {
+    c(condition_oi, condition_reference)
+  } else if (length(conditions) == 2L) {
+    conditions
+  } else {
+    NULL
+  }
+  if (is_null(contrast) || length(contrast) != 2L || any(!contrast %in% conditions)) {
+    stop("MultiNicheNet requires a two-condition `contrast` present in `condition_by`.", call. = FALSE)
+  }
+
+  assay <- assay %||% Seurat::DefaultAssay(object)
+  sce <- suppressWarnings(Seurat::as.SingleCellExperiment(object, assay = assay))
+  group_map <- .sn_multinichenet_label_map(metadata[[group_by]])
+  sample_map <- .sn_multinichenet_label_map(metadata[[sample_by]])
+  condition_map <- .sn_multinichenet_label_map(metadata[[condition_by]])
+  SummarizedExperiment::colData(sce)$.sn_celltype <- unname(group_map$encoded[as.character(metadata[[group_by]])])
+  SummarizedExperiment::colData(sce)$.sn_sample <- unname(sample_map$encoded[as.character(metadata[[sample_by]])])
+  SummarizedExperiment::colData(sce)$.sn_condition <- unname(condition_map$encoded[as.character(metadata[[condition_by]])])
+  encoded_contrast <- unname(condition_map$encoded[contrast])
+  contrast_name <- paste(encoded_contrast, collapse = "-")
+  args <- utils::modifyList(list(
+    sce = sce,
+    celltype_id = ".sn_celltype",
+    sample_id = ".sn_sample",
+    group_id = ".sn_condition",
+    batches = NA_character_,
+    covariates = NA_character_,
+    lr_network = tibble::as_tibble(lr_network),
+    ligand_target_matrix = ligand_target_matrix,
+    contrasts_oi = paste0("'", contrast_name, "'"),
+    contrast_tbl = tibble::tibble(contrast = contrast_name, group = encoded_contrast[[1]]),
+    senders_oi = if (is_null(sender)) NULL else unname(group_map$encoded[as.character(sender)]),
+    receivers_oi = if (is_null(receiver)) NULL else unname(group_map$encoded[as.character(receiver)]),
+    min_cells = min_cells,
+    top_n_target = top_n,
+    verbose = FALSE
+  ), list(...), keep.null = TRUE)
+  backend_warnings <- character()
+  result <- withCallingHandlers(
+    do.call(multinichenetr::multi_nichenet_analysis, args),
+    warning = function(warning) {
+      backend_warnings <<- c(backend_warnings, conditionMessage(warning))
+      invokeRestart("muffleWarning")
+    }
+  )
+  table <- result$combined_prioritization_tables$group_prioritization_tbl %||%
+    result$prioritization_tables$group_prioritization_tbl
+  if (!is.data.frame(table)) stop("MultiNicheNet did not return a prioritization table.", call. = FALSE)
+  table <- tibble::as_tibble(table)
+  for (column in intersect(c("sender", "receiver"), names(table))) {
+    table[[column]] <- unname(group_map$decoded[as.character(table[[column]])])
+  }
+  if ("group" %in% names(table)) table$group <- unname(condition_map$decoded[as.character(table$group)])
+  ligand_targets <- result$lr_target_prior_cor %||% tibble::tibble()
+  if (is.data.frame(ligand_targets)) ligand_targets <- tibble::as_tibble(ligand_targets)
+  list(
+    table = table,
+    backend_result = result,
+    ligand_targets = ligand_targets,
+    warnings = unique(backend_warnings),
+    artifacts = list(multinichenet = result, contrast = contrast)
+  )
+}
+
+.sn_run_communication_backend <- function(object,
+                                          method,
+                                          group_by,
+                                          assay,
+                                          layer,
+                                          species,
+                                          sender,
+                                          receiver,
+                                          geneset,
+                                          background_genes,
+                                          condition_by,
+                                          condition_oi,
+                                          condition_reference,
+                                          sample_by,
+                                          contrast,
+                                          ligand_target_matrix,
+                                          lr_network,
+                                          expressed_pct,
+                                          top_n,
+                                          cellchat_db,
+                                          min_cells,
+                                          population_size,
+                                          raw_use,
+                                          resource,
+                                          controls) {
+  switch(
+    method,
+    cellchat = do.call(.sn_run_cellchat, utils::modifyList(list(
+      object = object, group_by = group_by, assay = assay, layer = layer,
+      species = species, cellchat_db = cellchat_db, min_cells = min_cells,
+      population_size = population_size, raw_use = raw_use
+    ), controls, keep.null = TRUE)),
+    nichenet = do.call(.sn_run_nichenetr, utils::modifyList(list(
+      object = object, group_by = group_by, assay = assay, layer = layer,
+      sender = sender, receiver = receiver, geneset = geneset,
+      background_genes = background_genes, condition_col = condition_by,
+      condition_oi = condition_oi, condition_reference = condition_reference,
+      ligand_target_matrix = ligand_target_matrix, lr_network = lr_network,
+      expressed_pct = expressed_pct, top_n = top_n
+    ), controls, keep.null = TRUE)),
+    liana = do.call(.sn_run_liana, utils::modifyList(list(
+      object = object, group_by = group_by, assay = assay, layer = layer,
+      resource = resource
+    ), controls, keep.null = TRUE)),
+    cellphonedb = {
+      manifest <- do.call(sn_run_cellphonedb, utils::modifyList(list(
+        object = object,
+        assay = assay,
+        layer = "counts",
+        group_by = group_by,
+        result_name = paste0("communication_", format(Sys.time(), "%Y%m%d%H%M%S")),
+        return_object = FALSE,
+        method_control = controls$method_control %||% list()
+      ), controls[setdiff(names(controls), "method_control")], keep.null = TRUE))
+      parsed <- .sn_read_cellphonedb_output(manifest$output_dir)
+      list(table = parsed$table, backend_result = parsed$raw, artifacts = list(manifest = manifest))
+    },
+    multinichenet = do.call(.sn_run_multinichenet, utils::modifyList(list(
+      object = object, group_by = group_by, sample_by = sample_by,
+      condition_by = condition_by, assay = assay, sender = sender,
+      receiver = receiver, condition_oi = condition_oi,
+      condition_reference = condition_reference, contrast = contrast,
+      ligand_target_matrix = ligand_target_matrix, lr_network = lr_network,
+      min_cells = min_cells, top_n = top_n
+    ), controls, keep.null = TRUE))
+  )
 }
 
 #' Run cell-cell communication inference
 #'
 #' \code{sn_run_cell_communication()} wraps established communication
-#' backends: CellChat for global interaction networks, NicheNet for
-#' sender-to-receiver ligand activity, and LIANA for consensus ligand-receptor
-#' scoring when the optional package is installed.
+#' backends and stores a comparable ligand-receptor schema. Multiple backends
+#' can be run together to calculate method concordance and a consensus rank.
 #'
 #' @param object A Seurat object.
-#' @param method One of \code{"cellchat"}, \code{"nichenetr"}, or
-#'   \code{"liana"}.
+#' @param method One or more of \code{"liana"}, \code{"cellchat"},
+#'   \code{"cellphonedb"}, \code{"nichenet"}, or \code{"multinichenet"}.
+#'   The legacy alias \code{"nichenetr"} is accepted.
 #' @param group_by Metadata column defining sender/receiver cell groups.
 #' @param assay,layer Assay and layer used to retrieve expression.
 #' @param species Species passed to species-aware resources. Defaults to
@@ -262,7 +486,7 @@
 #' @param condition_oi,condition_reference Receiver condition contrast used to
 #'   derive \code{geneset} for NicheNet.
 #' @param ligand_target_matrix,lr_network NicheNet prior matrices/networks.
-#'   These must be supplied for \code{method = "nichenetr"}.
+#'   These must be supplied for \code{method = "nichenet"}.
 #' @param expressed_pct Minimum fraction of cells expressing a gene before it
 #'   is considered expressed in NicheNet filtering.
 #' @param top_n Number of top NicheNet ligands to keep.
@@ -270,6 +494,14 @@
 #' @param min_cells Minimum cells per group passed to CellChat filtering.
 #' @param population_size,raw_use CellChat communication-probability controls.
 #' @param resource Optional LIANA resource.
+#' @param sample_by Metadata column defining biological samples. When supplied,
+#'   ligand and receptor expression is aggregated within each sample before
+#'   condition comparison.
+#' @param consensus If \code{TRUE} and multiple methods are requested, use the
+#'   cross-method consensus ranking as the primary result table.
+#' @param contrast Optional length-two condition contrast, with case first and
+#'   reference second.
+#' @param backend_control Named list of method-specific argument lists.
 #' @param store_name Name used under \code{object@misc$cell_communication_results}.
 #' @param return_object If \code{TRUE}, return the updated Seurat object;
 #'   otherwise return the stored-result list.
@@ -278,7 +510,7 @@
 #' @return A Seurat object or stored-result list.
 #' @export
 sn_run_cell_communication <- function(object,
-                                      method = c("cellchat", "nichenetr", "liana"),
+                                      method = c("liana", "cellchat", "cellphonedb", "nichenet", "multinichenet"),
                                       group_by,
                                       assay = NULL,
                                       layer = "data",
@@ -299,67 +531,89 @@ sn_run_cell_communication <- function(object,
                                       population_size = FALSE,
                                       raw_use = TRUE,
                                       resource = NULL,
+                                      sample_by = NULL,
+                                      consensus = TRUE,
+                                      contrast = NULL,
+                                      backend_control = list(),
                                       store_name = "default",
                                       return_object = TRUE,
                                       ...) {
   .sn_validate_seurat_object(object)
-  method <- match.arg(method)
+  if (missing(method)) method <- "liana"
+  requested_method <- tolower(as.character(method))
+  method <- tolower(as.character(method))
+  method[method == "nichenetr"] <- "nichenet"
+  supported <- c("liana", "cellchat", "cellphonedb", "nichenet", "multinichenet")
+  invalid <- setdiff(method, supported)
+  if (length(invalid) > 0L) stop("Unsupported communication method(s): ", paste(invalid, collapse = ", "), ".", call. = FALSE)
+  method <- unique(method)
   if (is.null(group_by) || !group_by %in% colnames(object[[]])) {
     stop("`group_by` must identify a metadata column in `object`.", call. = FALSE)
   }
-
-  result <- switch(
-    method,
-    cellchat = .sn_run_cellchat(
-      object = object,
-      group_by = group_by,
-      assay = assay,
-      layer = layer,
-      species = species,
-      cellchat_db = cellchat_db,
-      min_cells = min_cells,
-      population_size = population_size,
-      raw_use = raw_use,
-      ...
-    ),
-    nichenetr = .sn_run_nichenetr(
-      object = object,
-      group_by = group_by,
-      assay = assay,
-      layer = layer,
-      sender = sender,
-      receiver = receiver,
-      geneset = geneset,
-      background_genes = background_genes,
-      condition_col = condition_by,
-      condition_oi = condition_oi,
-      condition_reference = condition_reference,
-      ligand_target_matrix = ligand_target_matrix,
-      lr_network = lr_network,
-      expressed_pct = expressed_pct,
-      top_n = top_n,
-      ...
-    ),
-    liana = .sn_run_liana(
-      object = object,
-      group_by = group_by,
-      assay = assay,
-      layer = layer,
-      resource = resource,
-      ...
+  if (!is_null(sample_by) && !sample_by %in% colnames(object[[]])) stop("`sample_by` was not found in object metadata.", call. = FALSE)
+  if (!is_null(condition_by) && !condition_by %in% colnames(object[[]])) stop("`condition_by` was not found in object metadata.", call. = FALSE)
+  dots <- list(...)
+  if (length(method) > 1L && length(dots) > 0L) {
+    stop("For multiple communication methods, place method-specific arguments under `backend_control`.", call. = FALSE)
+  }
+  results <- lapply(method, function(current) {
+    controls <- backend_control[[current]] %||% if (length(method) == 1L) dots else list()
+    .sn_run_communication_backend(
+      object, current, group_by, assay, layer, species, sender, receiver,
+      geneset, background_genes, condition_by, condition_oi,
+      condition_reference, sample_by, contrast, ligand_target_matrix, lr_network, expressed_pct,
+      top_n, cellchat_db, min_cells, population_size, raw_use, resource,
+      controls
     )
+  })
+  names(results) <- method
+  standardized <- dplyr::bind_rows(lapply(method, function(current) {
+    .sn_standardize_communication(
+      results[[current]]$table,
+      method = current,
+      sender = paste(sender %||% NA_character_, collapse = ","),
+      receiver = paste(receiver %||% NA_character_, collapse = ",")
+    )
+  }))
+  consensus_table <- .sn_communication_consensus(standardized)
+  primary <- if (isTRUE(consensus) && length(method) > 1L) consensus_table else standardized
+  concordance <- .sn_communication_concordance(standardized)
+  assay_resolved <- assay %||% Seurat::DefaultAssay(object)
+  sample_evidence <- .sn_communication_sample_evidence(
+    object, primary, group_by, sample_by, condition_by, assay_resolved, layer
   )
-
+  comparison_contrast <- contrast %||% if (!is_null(condition_oi) && !is_null(condition_reference)) c(condition_oi, condition_reference) else NULL
+  comparison <- .sn_compare_communication_samples(sample_evidence, contrast = comparison_contrast)
+  ligand_targets <- dplyr::bind_rows(lapply(results, function(result) result$ligand_targets %||% tibble::tibble()))
+  backend_warnings <- unique(unlist(lapply(results, function(result) result$warnings %||% character()), use.names = FALSE))
+  artifacts <- lapply(results, `[[`, "artifacts")
+  stored_method <- if (length(method) > 1L && isTRUE(consensus)) {
+    "consensus"
+  } else if (length(requested_method) == 1L && identical(requested_method, "nichenetr")) {
+    "nichenetr"
+  } else {
+    paste(method, collapse = "+")
+  }
   stored <- sn_store_cell_communication(
     object = object,
-    result = result$table,
+    result = primary,
     store_name = store_name,
-    method = method,
+    method = stored_method,
+    backend = paste(method, collapse = "+"),
     group_by = group_by,
     sender = sender,
     receiver = receiver,
     species = species,
-    artifacts = result$artifacts,
+    artifacts = artifacts,
+    raw_result = standardized,
+    consensus_result = consensus_table,
+    sample_evidence = sample_evidence,
+    comparison = comparison,
+    concordance = concordance,
+    ligand_targets = ligand_targets,
+    warnings = backend_warnings,
+    sample_by = sample_by,
+    condition_by = condition_by,
     return_object = return_object
   )
   stored
@@ -371,11 +625,17 @@ sn_run_cell_communication <- function(object,
 #' @param result Communication result table.
 #' @param store_name Name used under
 #'   \code{object@misc$cell_communication_results}.
-#' @param method Communication backend.
+#' @param method User-facing communication method label.
+#' @param backend Canonical backend identifier. This differs from \code{method}
+#'   only when preserving a legacy alias such as \code{"nichenetr"}.
 #' @param group_by Metadata column used for groups.
 #' @param sender,receiver Optional sender/receiver labels.
 #' @param species Optional species label.
 #' @param artifacts Optional backend-specific artifacts.
+#' @param raw_result,consensus_result,sample_evidence,comparison,concordance,ligand_targets
+#'   Optional standardized secondary tables stored in the unified result.
+#' @param warnings Character vector of backend warnings retained for audit.
+#' @param sample_by,condition_by Optional sample and condition metadata columns.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A Seurat object or stored-result list.
@@ -384,18 +644,64 @@ sn_store_cell_communication <- function(object,
                                         result,
                                         store_name = "default",
                                         method = "cellchat",
+                                        backend = method,
                                         group_by = NULL,
                                         sender = NULL,
                                         receiver = NULL,
                                         species = NULL,
                                         artifacts = NULL,
+                                        raw_result = NULL,
+                                        consensus_result = NULL,
+                                        sample_evidence = NULL,
+                                        comparison = NULL,
+                                        concordance = NULL,
+                                        ligand_targets = NULL,
+                                        warnings = character(),
+                                        sample_by = NULL,
+                                        condition_by = NULL,
                                         return_object = TRUE) {
   .sn_validate_seurat_object(object)
+  result <- if (all(c("source", "target", "ligand", "receptor", "score", "method") %in% names(result))) {
+    tibble::as_tibble(result)
+  } else {
+    .sn_standardize_communication(result, method = method, sender = sender, receiver = receiver)
+  }
+  method <- paste(as.character(method), collapse = "+")
+  backend <- paste(as.character(backend), collapse = "+")
+  sample_count <- if (is.data.frame(sample_evidence) && "sample" %in% names(sample_evidence)) {
+    length(unique(sample_evidence$sample))
+  } else {
+    0L
+  }
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = "1.0",
+    analysis_type = "cell_communication",
+    name = store_name,
+    backend = backend,
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
-    table = tibble::as_tibble(result),
+    table = result,
+    input = list(group_by = group_by, sample_by = sample_by, condition_by = condition_by, species = species),
+    parameters = list(sender = sender, receiver = receiver),
+    tables = list(
+      primary = result,
+      backend_raw = raw_result %||% result,
+      consensus = consensus_result %||% tibble::tibble(),
+      sample_evidence = sample_evidence %||% tibble::tibble(),
+      condition_comparison = comparison %||% tibble::tibble(),
+      method_concordance = concordance %||% tibble::tibble(),
+      ligand_targets = ligand_targets %||% tibble::tibble()
+    ),
+    embeddings = list(),
+    graphs = list(),
+    models = list(artifact_names = names(artifacts %||% list())),
+    diagnostics = list(
+      interactions = nrow(result),
+      methods = unique(result$method),
+      samples = sample_count
+    ),
+    warnings = as.character(warnings),
+    provenance = .sn_analysis_provenance(),
     analysis = "cell_communication",
     method = method,
     group_by = group_by,
@@ -440,8 +746,8 @@ sn_get_cell_communication_result <- function(object,
     return(stored)
   }
   table <- tibble::as_tibble(stored$table)
-  source_col <- intersect(c("source", "sender", "source_cell", "cell_type1"), colnames(table))[[1]] %||% NULL
-  target_col <- intersect(c("target", "receiver", "target_cell", "cell_type2"), colnames(table))[[1]] %||% NULL
+  source_col <- .sn_communication_column(table, c("source", "sender", "source_cell", "cell_type1"))
+  target_col <- .sn_communication_column(table, c("target", "receiver", "target_cell", "cell_type2"))
   if (!is.null(sources) && !is.null(source_col)) {
     table <- dplyr::filter(table, .data[[source_col]] %in% sources)
   }

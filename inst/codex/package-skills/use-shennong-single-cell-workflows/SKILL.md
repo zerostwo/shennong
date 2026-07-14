@@ -166,9 +166,12 @@ This skill is the main entry point for package usage.
    `sn_deconvolve_bulk()` for
    comparative summaries across samples, conditions, annotations, or paired
    bulk RNA-seq mixtures.
-6. Use `sn_run_cell_communication()` for CellChat, NicheNet, or LIANA
-   communication workflows, and `sn_run_regulatory_activity()` for DoRothEA TF
-   or PROGENy pathway activity workflows.
+6. Use `sn_run_cell_communication()` for LIANA, CellChat, CellPhoneDB,
+   NicheNet, MultiNicheNet, or cross-method consensus. Supply `sample_by` and
+   `condition_by` for replicate-aware comparisons, then inspect the stored
+   concordance, sample evidence, condition effects, and ligand-target tables.
+   Use `sn_run_regulatory_activity()` for DoRothEA TF or PROGENy pathway
+   activity workflows.
 7. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
    `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for

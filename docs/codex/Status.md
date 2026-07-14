@@ -37,6 +37,10 @@ Last updated: 2026-07-15
   sample-level evidence and contributions, Augur-style sample-held-out state
   separability, real Scissor bulk integration, RareQ topology discovery plus
   phenotype association, and two result-aware plots.
+- Milestone B5 now has one comparable communication schema across LIANA,
+  CellChat, CellPhoneDB, NicheNet, and MultiNicheNet; cross-method consensus and
+  concordance; sample-level LR evidence and condition comparisons; retained
+  ligand-target evidence; and seven result-aware plot modes.
 
 - Removed internal helpers that had no callers and removed the now-unused
   `data.tree` and `later` dependencies.
@@ -57,6 +61,11 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- Communication tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 48` against
+  real NicheNet and MultiNicheNet backends,
+  synthetic CellChat/LIANA standardization, CellPhoneDB file parsing,
+  sample-level contrasts, consensus/concordance, unified result storage, and
+  all communication plots.
 - Abundance and state-priority tests pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 34`. The suite runs real speckle Propeller,
   miloR, RareQ, and Scissor backends plus sample-label permutation and

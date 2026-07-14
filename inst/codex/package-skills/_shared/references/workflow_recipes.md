@@ -125,13 +125,20 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Run communication or regulatory activity analysis
 
-1. Use `sn_run_cell_communication(method = "cellchat")` for global
-   interaction networks, `method = "nichenetr"` for sender-to-receiver ligand
-   activity with supplied NicheNet priors, or `method = "liana"` for LIANA
-   consensus scoring when the optional package is installed.
-2. Use `sn_run_regulatory_activity(method = "dorothea")` for TF activity and
+1. Use `sn_run_cell_communication(method = c("liana", "cellchat"),
+   consensus = TRUE)` for cross-method ranking, `method = "nichenet"` for
+   ligand-target inference, or `method = "multinichenet"` with `sample_by`,
+   `condition_by`, and a two-level `contrast` for official sample-aware
+   differential communication.
+2. Supply `sample_by` for any backend when a condition claim should be based on
+   biological-sample LR expression rather than cell counts. Inspect
+   `result$tables$sample_evidence`, `condition_comparison`,
+   `method_concordance`, and `ligand_targets`.
+3. Use `sn_plot_communication()`, `sn_plot_ligand_target()`, and
+   `sn_plot_communication_comparison()` for result-aware figures.
+4. Use `sn_run_regulatory_activity(method = "dorothea")` for TF activity and
    `method = "progeny"` for pathway activity.
-3. Retrieve stored outputs with `sn_get_cell_communication_result()` or
+5. Retrieve stored outputs with `sn_get_cell_communication_result()` or
    `sn_get_regulatory_activity_result()`.
 
 ## Recipe: Build annotation evidence
