@@ -40,13 +40,32 @@ articles:
       - clustering
       - metrics-diagnostics
       - annotation-pathways
+      - program-discovery-grn
       - visualization
+      - publication-figures
       - composition-analysis
       - bulk-deconvolution
+      - bulk-transcriptomics
       - layered-workflows
       - interpretation-workflows
+      - analysis-results-and-methods
+      - trajectory-dynamics
+      - velocity-fate
+      - abundance-priority
+      - communication-consensus
+      - cnv-metabolism
+      - spatial-workflows
 
 reference:
+  - title: Analysis Methods and Result Contract
+    contents:
+      - sn_list_methods
+      - sn_method_status
+      - sn_store_result
+      - sn_get_result
+      - sn_list_results
+      - sn_delete_result
+      - sn_validate_result
   - title: Data and Import
     contents:
       - marker_genes
@@ -79,6 +98,7 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_run_multimodal
       - sn_run_scvi
       - sn_run_scanvi
       - sn_run_scarches
@@ -129,6 +149,14 @@ reference:
       - sn_calculate_rogue
   - title: Annotation, Markers, and Pathways
     contents:
+      - sn_run_annotation
+      - sn_annotation_consensus
+      - sn_annotation_confidence
+      - sn_map_cell_ontology
+      - sn_review_annotation
+      - sn_plot_annotation_confidence
+      - sn_plot_annotation_markers
+      - sn_plot_annotation_confusion
       - sn_run_celltypist
       - sn_find_de
       - sn_annotate_de_features
@@ -138,8 +166,50 @@ reference:
       - sn_add_signature
       - sn_update_signature
       - sn_delete_signature
+      - sn_score_programs
+      - sn_test_programs
+      - sn_plot_program_activity
+      - sn_plot_program_heatmap
+      - sn_discover_programs
+      - sn_plot_discovered_programs
+      - sn_run_grn
+      - sn_plot_regulon
+  - title: Trajectory and Dynamic Genes
+    contents:
+      - sn_run_trajectory
+      - sn_run_velocity
+      - sn_plot_velocity
+      - sn_run_fate
+      - sn_plot_fate
+      - sn_plot_trajectory
+      - sn_plot_pseudotime
+      - sn_plot_lineage_probability
+      - sn_plot_dynamic_heatmap
+      - sn_plot_gene_trend
+      - sn_plot_branch_comparison
+  - title: Spatial Analysis
+    contents:
+      - sn_run_spatial
+      - sn_find_spatial_features
+      - sn_find_spatial_domains
+      - sn_run_spatial_neighborhood
+      - sn_run_spatial_deconvolution
+      - sn_run_spatial_mapping
+      - sn_integrate_spatial
+      - sn_run_spatial_communication
+      - sn_plot_spatial
+      - sn_plot_spatial_feature
+      - sn_plot_spatial_domain
+      - sn_plot_spatial_svg
+      - sn_plot_spatial_neighborhood
+      - sn_plot_spatial_deconvolution
+      - sn_plot_spatial_communication
   - title: Composition and Comparative Analysis
     contents:
+      - sn_test_abundance
+      - sn_plot_abundance
+      - sn_prioritize_states
+      - sn_plot_state_priority
       - sn_calculate_composition
       - sn_calculate_roe
       - sn_compare_composition
@@ -150,17 +220,41 @@ reference:
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution
       - sn_get_deconvolution_result
+  - title: Bulk Transcriptomics
+    contents:
+      - sn_run_bulk
+      - sn_assess_bulk_qc
+      - sn_find_bulk_de
+      - sn_score_bulk_pathways
+      - sn_run_wgcna
+      - sn_run_survival
+      - sn_run_clinical_association
+      - sn_plot_bulk_qc
+      - sn_plot_bulk_pca
+      - sn_plot_sample_correlation
+      - sn_plot_bulk_de
+      - sn_plot_wgcna
+      - sn_plot_survival
   - title: Communication and Regulatory Activity
     contents:
       - sn_run_cell_communication
       - sn_store_cell_communication
       - sn_get_cell_communication_result
+      - sn_plot_communication
+      - sn_plot_ligand_target
+      - sn_plot_communication_comparison
       - sn_run_regulatory_activity
       - sn_store_regulatory_activity
       - sn_get_regulatory_activity_result
+  - title: CNV, Malignancy, and Metabolism
+    contents:
+      - sn_run_cnv
+      - sn_plot_cnv
+      - sn_metabolic_signatures
+      - sn_run_metabolism
+      - sn_plot_metabolism
   - title: Interpretation and Reporting
     contents:
-      - sn_list_results
       - sn_get_de_result
       - sn_get_enrichment_result
       - sn_get_interpretation_result
@@ -181,6 +275,27 @@ reference:
       - sn_write_presentation_summary
   - title: Visualization
     contents:
+      - sn_list_figure_profiles
+      - sn_figure_spec
+      - sn_recommend_figure_size
+      - sn_apply_figure_profile
+      - sn_validate_figure
+      - sn_save_figure
+      - sn_export_figure
+      - sn_export_figure_bundle
+      - sn_plot_qc
+      - sn_plot_qc_thresholds
+      - sn_plot_doublets
+      - sn_plot_ambient_correction
+      - sn_plot_hvg
+      - sn_plot_elbow
+      - sn_plot_cluster_tree
+      - sn_plot_resolution_sweep
+      - sn_plot_integration
+      - sn_plot_reference_projection
+      - sn_plot_de
+      - sn_plot_enrichment
+      - sn_plot_gsea
       - sn_plot_dim
       - sn_plot_feature
       - sn_plot_heatmap

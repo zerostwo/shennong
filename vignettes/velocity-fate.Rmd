@@ -1,0 +1,82 @@
+---
+title: "RNA Velocity and Fate Mapping"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{RNA Velocity and Fate Mapping}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+Shennong runs scVelo and CellRank in a managed, isolated CPU pixi environment.
+The two stages remain separate stored analyses: velocity estimates a directed
+transition process from spliced/unspliced counts, while fate mapping analyzes
+that transition process with CellRank's GPCCA estimator.
+
+## Prepare the backend
+
+```{r setup-pixi}
+sn_prepare_pixi_environment(
+  "trajectory",
+  install_environment = TRUE
+)
+```
+
+The Seurat object must contain raw `spliced` and `unspliced` layers with shared
+features and cells, plus a dimensional reduction used only to project the
+high-dimensional velocity vectors.
+
+## Estimate velocity
+
+```{r velocity}
+object <- sn_run_velocity(
+  object,
+  spliced_layer = "spliced",
+  unspliced_layer = "unspliced",
+  reduction = "umap",
+  store_name = "velocity",
+  backend_control = list(
+    velocity_mode = "stochastic",
+    n_neighbors = 30,
+    seed = 717
+  )
+)
+
+velocity <- sn_get_result(object, "velocity", "velocity")
+head(velocity$tables$cells)
+head(velocity$tables$transition_edges)
+velocity$diagnostics
+sn_plot_velocity(object, "velocity", color_by = "confidence")
+```
+
+Low confidence, weak splicing signal, or unstable directionality must remain
+visible in interpretation. The H5AD artifact recorded in `models$artifacts`
+contains the transition evidence consumed by CellRank.
+
+## Estimate terminal states and fate
+
+```{r fate}
+object <- sn_run_fate(
+  object,
+  velocity_name = "velocity",
+  store_name = "fate",
+  backend_control = list(
+    n_states = 6,
+    terminal_method = "stability"
+  )
+)
+
+fate <- sn_get_result(object, "fate", "fate")
+head(fate$tables$terminal_states)
+head(fate$tables$probabilities)
+head(fate$tables$lineage_drivers)
+sn_plot_fate(object, "fate")
+```
+
+If no macrostate meets the default stability threshold, CellRank raises an
+actionable error. A documented workflow may use `terminal_method = "top_n"`,
+`terminal_n_states`, or explicit `terminal_states`; Shennong records those
+choices in the result parameters rather than silently relaxing the rule.

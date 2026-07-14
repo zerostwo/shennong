@@ -9,11 +9,21 @@ sn_store_cell_communication(
   result,
   store_name = "default",
   method = "cellchat",
+  backend = method,
   group_by = NULL,
   sender = NULL,
   receiver = NULL,
   species = NULL,
   artifacts = NULL,
+  raw_result = NULL,
+  consensus_result = NULL,
+  sample_evidence = NULL,
+  comparison = NULL,
+  concordance = NULL,
+  ligand_targets = NULL,
+  warnings = character(),
+  sample_by = NULL,
+  condition_by = NULL,
   return_object = TRUE
 )
 }
@@ -25,7 +35,10 @@ sn_store_cell_communication(
 \item{store_name}{Name used under
 \code{object@misc$cell_communication_results}.}
 
-\item{method}{Communication backend.}
+\item{method}{User-facing communication method label.}
+
+\item{backend}{Canonical backend identifier. This differs from \code{method}
+only when preserving a legacy alias such as \code{"nichenetr"}.}
 
 \item{group_by}{Metadata column used for groups.}
 
@@ -34,6 +47,12 @@ sn_store_cell_communication(
 \item{species}{Optional species label.}
 
 \item{artifacts}{Optional backend-specific artifacts.}
+
+\item{raw_result, consensus_result, sample_evidence, comparison, concordance, ligand_targets}{Optional standardized secondary tables stored in the unified result.}
+
+\item{warnings}{Character vector of backend warnings retained for audit.}
+
+\item{sample_by, condition_by}{Optional sample and condition metadata columns.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
 }

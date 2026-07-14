@@ -1,0 +1,115 @@
+---
+title: "Analysis methods and stored-result contracts"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analysis methods and stored-result contracts}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Shennong separates method discovery from method execution. The registry shows
+the preferred backend, its requirements, whether the adapter has been
+implemented, and whether the current machine can run it. A method can therefore
+remain visible in the roadmap without being misrepresented as available.
+
+## Discover methods before running a workflow
+
+```{r method-registry}
+library(Shennong)
+
+sn_list_methods("trajectory")[, c(
+  "name", "default", "implemented", "available", "runtime", "package"
+)]
+
+sn_method_status("slingshot", task = "trajectory")
+```
+
+Use `implemented` to distinguish a shipped Shennong adapter from a roadmap
+entry. Use `available` to determine whether its optional R package, executable,
+or pixi runtime is present in the current environment. Installation is always
+explicit; discovery never installs software.
+
+## The common result shape
+
+New workflows store results with one versioned contract. Tables, embeddings,
+graphs, models, diagnostics, warnings, parameters, input summaries, and
+provenance have stable locations.
+
+```{r result-contract}
+result <- list(
+  schema_version = "1.0",
+  analysis_type = "trajectory",
+  name = "cd8_slingshot",
+  method = "slingshot",
+  backend = "slingshot",
+  input = list(reduction = "pca", cells = 4L, features = 2L),
+  parameters = list(start = "naive"),
+  tables = list(
+    primary = data.frame(
+      cell = paste0("cell", 1:4),
+      pseudotime = c(0, 0.3, 0.7, 1)
+    )
+  ),
+  embeddings = list(),
+  graphs = list(),
+  models = list(),
+  diagnostics = list(converged = TRUE),
+  warnings = character(),
+  provenance = list(
+    package_versions = list(Shennong = as.character(packageVersion("Shennong"))),
+    random_seed = 1L,
+    timestamp = "2026-07-15 UTC"
+  )
+)
+
+sn_validate_result(result, error = FALSE)
+```
+
+## Store, discover, and retrieve from Seurat
+
+The generic functions support new result types while existing helpers such as
+`sn_get_de_result()` remain available. Registered legacy result writers are
+upgraded to the same contract on write and read.
+
+```{r stored-results, eval = FALSE}
+object <- sn_store_result(
+  object,
+  type = "trajectory",
+  name = "cd8_slingshot",
+  result = result
+)
+
+sn_list_results(object)
+sn_list_results(object, type = "trajectory")
+
+trajectory <- sn_get_result(
+  object,
+  type = "trajectory",
+  name = "cd8_slingshot"
+)
+
+trajectory$tables$primary
+trajectory$provenance
+
+object <- sn_delete_result(
+  object,
+  type = "trajectory",
+  name = "cd8_slingshot"
+)
+```
+
+Prefer these APIs over direct `object@misc` access. Stable names and explicit
+provenance make stored results discoverable by scripts, reports, and future
+agent integrations without allowing an LLM to overwrite computational output.

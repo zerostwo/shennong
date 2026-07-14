@@ -1,0 +1,32 @@
+[
+  {
+    "name": "augur", "task": "state_priority", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Sample-aware held-out condition separability inspired by Augur.",
+    "input_requirements": ["expression", "state labels", "phenotype labels", "optional sample labels"],
+    "outputs": ["AUC priority", "permutation null", "uncertainty", "sample contribution"],
+    "supports": {"sample_level_cv": true, "permutation": true},
+    "cpu_gpu": "CPU", "install": "No additional dependency for the Shennong sample-aware implementation.",
+    "citation": "Skinnider et al. Nature Biotechnology 2021"
+  },
+  {
+    "name": "scissor", "task": "state_priority", "runtime": "r", "package": "Scissor",
+    "implemented": true, "default": false,
+    "description": "Bulk-phenotype-guided selection of positively and negatively associated cells.",
+    "input_requirements": ["single-cell expression", "bulk expression", "bulk phenotype"],
+    "outputs": ["cell coefficients", "selected cells", "state ranking"],
+    "supports": {"binomial": true, "gaussian": true, "cox": true},
+    "cpu_gpu": "CPU", "install": "remotes::install_github('sunduanchen/Scissor')",
+    "citation": "Sun et al. Nature Biotechnology 2022"
+  },
+  {
+    "name": "rareq", "task": "state_priority", "runtime": "r", "package": "RareQ",
+    "implemented": true, "default": false,
+    "description": "Topology-aware rare-state discovery followed by sample-level phenotype association.",
+    "input_requirements": ["Seurat neighbors or reduction", "sample labels", "phenotype labels"],
+    "outputs": ["RareQ states", "abundance association", "priority ranking", "permutation null"],
+    "supports": {"rare_cells": true, "sample_level": true},
+    "cpu_gpu": "CPU", "install": "remotes::install_github('xiaolab-xjtu/RareQ')",
+    "citation": "Fa et al. Nature Communications 2026"
+  }
+]

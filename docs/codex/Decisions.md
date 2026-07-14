@@ -1,6 +1,142 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
+
+## 2026-07-15
+
+- Development indexes must be excluded at both the root-directory and child
+  path levels because `R CMD build` can preserve an empty ignored directory.
+- Warning suppression remains message-specific. The `enrichit` qvalue fallback
+  is benign when it explicitly returns missing q values for a tiny result, but
+  other qvalue, enrichment, and mapping warnings remain visible.
+- Backend-specific annotation, trajectory, and fate functions remain internal
+  adapters selected by stable workflow entry points. Multimodal analysis has a
+  separate public entry point because modality is a research-level workflow
+  choice, not only a backend toggle.
+- Monocle 3 is an optional direct R backend because its graph-learning and
+  ordering API can consume the package's count and reduction contracts.
+  Palantir and scCODA remain explicit runner/result adapters so Python runtime
+  ownership and backend-native fitting choices stay visible and auditable.
+- Registry `implemented = true` means Shennong provides either a tested direct
+  backend or a tested, documented standardization boundary. It does not imply
+  that every optional third-party runtime is installed in the R library.
+- Publication figures remain native ggplot/patchwork/ComplexHeatmap objects;
+  Shennong attaches a versioned specification attribute rather than introducing
+  a composition-breaking figure class.
+- Generic profiles are stable layout presets, not claims about current journal
+  requirements. Automatic sizing uses auditable heuristics for points, panels,
+  categories, labels, heatmaps, networks, and spatial aspect ratios, with
+  explicit user overrides taking precedence.
+- Figure bundles are the reproducible delivery unit: rendered formats, plotted
+  source data when available, calculated spec, session, QA report, byte size,
+  and MD5 checksums share one manifest.
+- Standalone bulk analysis uses feature-by-sample matrices with metadata
+  aligned by sample ID and returns the common analysis-result contract directly;
+  it does not force bulk data into a Seurat object or hide design metadata in a
+  plotting wrapper.
+- Bulk DE method selection is driven by data scale and design: integer counts
+  default to edgeR, continuous normalized expression to limma, and formulas
+  with random effects to dream. The numerator/denominator contrast direction is
+  always explicit and retained with design/filter diagnostics.
+- WGCNA module-trait, Cox survival, pathway, and clinical association workflows
+  keep biological samples as the inferential unit. Their plotting helpers
+  consume retained result tables and do not recompute evidence.
+- Spatial coordinates are first-class stored evidence, and every spatial plot
+  preserves their aspect ratio. Local KNN construction is memory-bounded by
+  computing one query location at a time rather than allocating an all-by-all
+  distance matrix; larger projects can use the existing Squidpy backend.
+- Spatially constrained communication augments a previously computed unified
+  communication result with mean nearest-group distance. It filters evidence;
+  it does not rerun ligand-receptor inference or claim that proximity alone is
+  communication.
+- BANKSY and nnSVG are direct optional Bioconductor paths. BayesSpace,
+  CellCharter, stLearn domain imports, SPARK-X, and STAligner remain explicit
+  runner/result adapters so package-specific objects and external runtimes are
+  not silently replaced by approximate local algorithms.
+- RNA velocity and fate mapping share one isolated CPU pixi environment but
+  remain separate result types. scVelo consumes explicit spliced/unspliced
+  layers and stores its H5AD artifact for CellRank; CellRank GPCCA consumes the
+  directed transition kernel and never reconstructs fate from plotted arrows.
+- Terminal-state selection remains explicit and auditable. CellRank's
+  stability rule is the default; users can select `top_n` or declared terminal
+  states when the stability threshold has no valid macrostate. Synthetic smoke
+  tests use deterministic velocity and `top_n` only to make backend execution
+  reproducible, not as universal biological defaults.
+- Program discovery uses a dependency-free multi-restart NMF implementation
+  with explicit dense-size guards and restart diagnostics. cNMF and Hotspot
+  remain external adapters because their environments and graph construction
+  should not be hidden behind an R-package dependency.
+- GENIE3 is the directly runnable GRN backend. pySCENIC is the preferred full
+  motif-pruned workflow through explicit runner/result adapters; deprecated R
+  SCENIC is retained only for compatibility. Shennong calls its transparent
+  group effect-size summary `eta_squared`, not SCENIC regulon-specificity
+  score, so the two statistics cannot be confused.
+- CNV malignancy calls are calibrated against user-declared normal cells, not
+  an unlabeled global threshold. Backend CNV evidence remains auditable at the
+  chromosome level; CopyKAT is run sample-wise, and inferCNVpy exports compact
+  chromosome summaries instead of duplicating a full bin matrix in Seurat.
+- Metabolic condition claims aggregate pathway scores by biological sample
+  before testing. Curated UCell/GSVA scoring is the lightweight default;
+  scMetabolism is optional, while scFEA and Compass enter through explicit
+  runner/result adapters so their heavyweight environments are not hidden R
+  dependencies.
+- Communication backends retain native artifacts but expose a common primary
+  schema. Multi-method consensus uses within-method percentile ranks;
+  condition comparisons recompute ligand-receptor evidence within biological
+  samples, never cells. MultiNicheNet delegates to its official sample-aware
+  pseudobulk workflow, while the reserved `spatial_distance` field keeps the
+  contract extensible without pretending that expression alone is spatial
+  evidence.
+- Differential abundance treats samples as replicates. Propeller is the
+  cell-type default, Milo retains neighborhood-level inference, and the
+  permutation backend shuffles sample labels rather than cells. Completed zero
+  counts and per-sample contributions remain stored for audit.
+- State priority keeps three input contracts separate: Augur-style
+  separability uses state and phenotype metadata with sample-held-out folds;
+  Scissor requires explicit bulk expression plus bulk phenotype; RareQ finds
+  topology-supported states before sample-level phenotype association. The
+  package does not silently substitute one scientific question for another.
+- Slingshot is the P1 trajectory default and tradeSeq is the dynamic-gene
+  backend. Shennong stores compact curves, topology, test tables, convergence,
+  and fitted trends rather than duplicating full backend model objects inside
+  every Seurat object. Raw counts remain sparse until the optional backend
+  controls its own conversion.
+- A supplied trajectory `lineages` list constrains start/end clusters and is
+  audited against inferred Slingshot paths. It does not replace statistical
+  inference with a user-drawn curve; mismatches remain explicit result
+  warnings.
+- Program scoring uses UCell as the per-cell default, retains AUCell as an
+  alternative rank-based statistic, and positions GSVA/ssGSEA for aggregated
+  samples or groups. Large sparse per-cell GSVA is rejected before an implicit
+  dense conversion; users should aggregate or select UCell instead.
+- Program differential tests aggregate cells to `sample_by` before inference.
+  Cell-level testing remains possible only as an explicitly warned exploratory
+  path, not as a silent substitute for biological replication.
+- Annotation uses one public `sn_run_annotation()` entry point rather than one
+  exported wrapper per backend. Consensus always preserves marker and reference
+  evidence separately, confidence exposes the runner-up and margin, and LLM
+  interpretation is downstream-only.
+- The package ships a deliberately small Cell Ontology lookup snapshot with its
+  release version and source. Unmapped labels remain explicit `NA` values; the
+  package does not invent ontology identifiers, and projects can supply a
+  larger audited mapping.
+- Reference adapters retain their native prediction tables/evidence and add
+  only compact model summaries to stored results. Large reference models are
+  not duplicated inside every query object's result collection.
+- The analysis roadmap is implemented in its declared order, beginning with a
+  method registry and a versioned result contract before new analytical
+  backends. Registry YAML files use the JSON subset of YAML so the imported
+  `jsonlite` parser is sufficient and package installation does not gain a new
+  mandatory YAML dependency.
+- Registry discovery distinguishes `implemented` from `available`: planned
+  methods remain discoverable without being advertised as runnable, while
+  availability checks inspect optional R packages, executables, or pixi itself
+  without installing anything.
+- New results use one contract for tables, embeddings, graphs, models,
+  diagnostics, parameters, input summaries, warnings, and provenance. Existing
+  listable `object@misc` collections remain the compatibility storage boundary;
+  their writes and reads are upgraded to the common contract rather than
+  duplicating large payloads in a second collection.
 
 ## 2026-07-14
 

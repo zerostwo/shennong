@@ -87,10 +87,126 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   also reports stored QC assessments.
 - Enrichment wrappers now muffle known benign `clusterProfiler`/`fgsea` warnings
   produced by tiny deterministic examples, keeping local test and package-check
-  output warning-clean while preserving hard errors.
+  output warning-clean while preserving hard errors, including the current
+  `enrichit` qvalue fallback when a tiny result cannot estimate q values.
 
 ### Added
 
+- Added the explicit `sn_run_multimodal()` CITE-seq entry point while keeping
+  annotation, trajectory, and fate backend adapters internal to their unified
+  workflow APIs.
+- Added direct optional Monocle 3 trajectory inference plus standardized
+  Palantir runner/result and scCODA/pertpy runner/result adapters. All shipped
+  method-registry entries are now implemented, and scCODA retains biological
+  samples as the inferential unit.
+- Added a publication figure engine with generic screen/column/page/slide
+  profiles, automatic size/point/raster/layout/pagination specifications,
+  structured figure QA, deterministic PDF/SVG/TIFF/PNG export, and reproducible
+  figure bundles containing source data, specs, sessions, manifests, and
+  checksums.
+- Added result-aware DE/GSEA/enrichment figures plus QC threshold, doublet,
+  ambient correction, HVG, elbow, cluster tree, resolution sweep, integration,
+  and reference-projection diagnostics. Core dimensional, feature, dot,
+  heatmap, violin, box, bar, composition, Milo, and bulk plots now carry figure
+  specifications without changing their native plot classes.
+- Added a standalone bulk transcriptomics mainline for matrix/list/
+  `SummarizedExperiment` inputs: sample QC, design-aware edgeR/DESeq2/limma/
+  dream differential expression, pathway scoring, WGCNA module-trait analysis,
+  Cox survival models, clinical associations, and result-aware plots.
+- Added `sn_run_spatial()` as a dispatcher plus explicit spatial feature,
+  domain, neighborhood, deconvolution, mapping, integration, and communication
+  entry points. Local Moran's I and memory-bounded KNN workflows retain spatial
+  graphs, permutation evidence, co-occurrence, coordinates, and diagnostics;
+  nnSVG/BANKSY run when installed and heavyweight alternatives use explicit
+  result adapters.
+- Added spatial coordinate, feature, domain, SVG, neighborhood,
+  deconvolution, and distance-aware communication plots that preserve tissue
+  aspect ratio.
+- Added `sn_run_velocity()` and `sn_plot_velocity()` with a managed scVelo
+  pixi backend for spliced/unspliced preprocessing, projected velocity vectors,
+  velocity pseudotime/confidence, transition edges, and retained H5AD evidence.
+- Added `sn_run_fate()` and `sn_plot_fate()` with a managed CellRank GPCCA
+  backend for terminal-state discovery, fate probabilities, optional lineage
+  drivers, metadata storage, and explicit terminal-state controls.
+- Added `sn_discover_programs()` and `sn_plot_discovered_programs()` for
+  multi-restart NMF with reconstruction/stability diagnostics plus explicit
+  cNMF and Hotspot result adapters. Discovered gene weights and per-cell
+  activities use the shared result contract and can be stratified by metadata.
+- Added `sn_run_grn()` and `sn_plot_regulon()` for real GENIE3 inference and
+  explicit pySCENIC, legacy SCENIC, and GRNBoost2 adapters. Results standardize
+  regulatory edges, regulons, per-cell activity, and transparent group
+  specificity without hiding external motif databases or Python runtimes.
+- Added `sn_run_cnv()` and `sn_plot_cnv()` as the unified inferCNVpy/CopyKAT
+  workflow. Stored results now include reference-calibrated malignancy scores,
+  malignant calls, subclones, sample summaries, chromosome-level CNV, optional
+  CNV UMAP coordinates, and CNV-expression associations.
+- Added `sn_metabolic_signatures()`, `sn_run_metabolism()`, and
+  `sn_plot_metabolism()` for curated UCell/GSVA/ssGSEA/mean pathway activity,
+  sample-level differential metabolism, scMetabolism, and standardized
+  scFEA/Compass result adapters.
+- Expanded `sn_run_cell_communication()` into a multi-backend communication
+  workflow for LIANA, CellChat, CellPhoneDB, NicheNet, and MultiNicheNet. All
+  backends now map to a shared ligand-receptor schema with method concordance,
+  consensus ranks, sample-level expression evidence, condition contrasts,
+  ligand-target links, retained backend artifacts, and a reserved spatial
+  distance field. Added bubble, heatmap, network, chord, river,
+  ligand-target, and differential-communication plots.
+- Added `sn_test_abundance()` as the stable differential-abundance entry point
+  for sample-level Propeller, transparent sample-label permutation, and
+  neighborhood-level Milo. Results include standardized effects, adjusted
+  significance, completed sample proportions, sample contributions, design
+  data, backend evidence, and permutation nulls where applicable.
+- Added `sn_prioritize_states()` for sample-aware Augur-style held-out
+  separability, explicit bulk-input Scissor selection, and RareQ topology
+  discovery followed by sample-level phenotype association. State rankings,
+  cell scores, uncertainty, null distributions, and sample contributions use
+  the shared result contract; `sn_plot_abundance()` and
+  `sn_plot_state_priority()` render stored results.
+- Added `sn_run_trajectory()` with Slingshot lineage inference and optional
+  tradeSeq dynamic-gene, branch-pattern, differential-end, convergence, and
+  fitted-trend outputs. Per-lineage pseudotime/probability, principal curves,
+  terminal states, topology, diagnostics, and provenance use the unified
+  analysis-result contract, while primary lineage/pseudotime are also added to
+  Seurat metadata.
+- Added result-aware trajectory, pseudotime, lineage-probability,
+  dynamic-heatmap, gene-trend, and branch-comparison plots through
+  `sn_plot_trajectory()`, `sn_plot_pseudotime()`,
+  `sn_plot_lineage_probability()`, `sn_plot_dynamic_heatmap()`,
+  `sn_plot_gene_trend()`, and `sn_plot_branch_comparison()`.
+- Added `sn_score_programs()` with UCell (default per-cell), AUCell, GSVA,
+  ssGSEA, and sparse-aware mean-expression backends. It records signature
+  feature coverage, stores long-form scores in the unified result contract,
+  and adds cell-level scores to Seurat metadata without silently converting
+  large sparse matrices for GSVA.
+- Added `sn_test_programs()` for condition comparisons that aggregate to the
+  sample/patient level before inference when `sample_by` is supplied, plus
+  `sn_plot_program_activity()` and `sn_plot_program_heatmap()` for stored
+  score results.
+- Added `sn_run_annotation()` as the stable annotation entry point with
+  marker-only consensus plus optional SingleR, CellTypist, Seurat transfer,
+  Symphony, scmap, and scANVI backends. It stores cell- and cluster-level
+  hierarchical labels, calibrated confidence/margin, runner-up labels, marker
+  support/conflicts, reference coverage, raw backend predictions, diagnostics,
+  and provenance in the unified result contract.
+- Added `sn_annotation_consensus()`, `sn_annotation_confidence()`,
+  `sn_map_cell_ontology()`, and `sn_review_annotation()` for transparent
+  evidence aggregation, a versioned bundled Cell Ontology snapshot, and
+  explicit low-confidence review without allowing LLM output to overwrite
+  computational labels.
+- Added result-aware annotation confidence, marker-evidence, and confusion
+  plots through `sn_plot_annotation_confidence()`,
+  `sn_plot_annotation_markers()`, and `sn_plot_annotation_confusion()`.
+- Added a shipped method registry with `sn_list_methods()` and
+  `sn_method_status()`. It records runtime, optional dependency, installation
+  action, input/output contract, CPU/GPU expectations, citations, and whether
+  each current or planned backend is actually implemented and available.
+- Added the versioned generic analysis-result contract and
+  `sn_store_result()`, `sn_get_result()`, `sn_delete_result()`, and
+  `sn_validate_result()`. Existing registered DE, enrichment, Milo,
+  communication, deconvolution, regulatory, QC, and interpretation results are
+  upgraded on write/read without breaking their specialized getters.
+- `sn_list_results()` now accepts an optional `type` filter and includes new
+  generic result types stored under `object@misc$analysis_results`.
 - `sn_load_data()` can open lazy Shennong Data Server resources with
   `backend = "api"`, select assay/layer views through `api_args`, and
   materialize explicitly with `lazy = FALSE`.

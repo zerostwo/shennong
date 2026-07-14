@@ -141,3 +141,29 @@ Examples include:
 
 If the project relies on them operationally, the agent must also summarize them
 in `memory/Decisions.md`.
+
+## 12. Bulk Transcriptomics
+
+- Keep columns as biological samples and align sample metadata by explicit
+  sample identifiers before any model is fitted.
+- Preserve raw integer counts for count-based differential-expression methods;
+  record normalization or transformation separately.
+- Declare the complete design formula and contrast direction. Repeated samples
+  from one subject require a paired or mixed-effects design.
+- Treat pathway scores, module eigengenes, and clinical associations as
+  sample-level evidence. Do not inflate the inferential unit by treating genes,
+  cells, or technical replicates as independent patients.
+- Retain QC, design, filtering, model, and multiple-testing diagnostics with
+  the published result tables.
+
+## 13. Publication Figures
+
+- Fix the intended output profile and physical dimensions before final styling;
+  do not rely on the interactive graphics-device size.
+- Keep text and geometric annotations vector in PDF/SVG output. Rasterize only
+  dense point clouds or heatmap bodies at an explicit DPI.
+- Validate legends, labels, minimum text size, panel dimensions, category
+  counts, aspect ratio, and pagination, then perform a final visual review.
+- Deliver the plotted source table, figure specification, session information,
+  and checksums with final figures whenever the analysis is intended to be
+  reproducible or submitted.

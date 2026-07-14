@@ -125,6 +125,15 @@
 
 .sn_store_misc_result <- function(object, collection, store_name, result) {
   .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
+  entry <- .sn_misc_registry_entry(collection)
+  if (!is_null(entry) && isTRUE(entry$listable[[1]])) {
+    result <- .sn_upgrade_analysis_result(
+      result,
+      analysis_type = entry$type[[1]],
+      name = store_name
+    )
+    sn_validate_result(result)
+  }
   misc_data <- methods::slot(object, "misc")
   misc_data[[collection]] <- misc_data[[collection]] %||% list()
   misc_data[[collection]][[store_name]] <- result
@@ -140,6 +149,15 @@
   }
   result <- collection_data[[store_name]]
   .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
+  entry <- .sn_misc_registry_entry(collection)
+  if (!is_null(entry) && isTRUE(entry$listable[[1]])) {
+    result <- .sn_upgrade_analysis_result(
+      result,
+      analysis_type = entry$type[[1]],
+      name = store_name
+    )
+    sn_validate_result(result)
+  }
   result
 }
 
@@ -279,6 +297,7 @@
 #' List stored Shennong analysis and interpretation results on a Seurat object
 #'
 #' @param object A \code{Seurat} object.
+#' @param type Optional analysis type used to filter the result inventory.
 #'
 #' @return A tibble describing registered Shennong stored-result collections,
 #'   including DE, enrichment, interpretation, deconvolution, Milo,
@@ -307,7 +326,7 @@
 #'   sn_list_results(obj)
 #' }
 #' @export
-sn_list_results <- function(object) {
+sn_list_results <- function(object, type = NULL) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
@@ -315,10 +334,15 @@ sn_list_results <- function(object) {
   registry <- .sn_misc_result_registry()
   listable_collections <- registry$collection[registry$listable]
 
-  lapply(listable_collections, function(collection) {
+  result <- lapply(listable_collections, function(collection) {
     .sn_compact_collection_summary(object, collection)
   }) |>
-    dplyr::bind_rows() |>
+    dplyr::bind_rows(.sn_generic_result_summary(object))
+  if (!is_null(type)) {
+    requested_types <- tolower(as.character(type))
+    result <- dplyr::filter(result, .data$type %in% .env$requested_types)
+  }
+  result |>
     dplyr::arrange(.data$collection, .data$name)
 }
 

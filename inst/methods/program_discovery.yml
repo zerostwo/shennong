@@ -1,0 +1,32 @@
+[
+  {
+    "name": "nmf", "task": "program_discovery", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Multi-restart non-negative matrix factorization with gene weights, cell activity, and stability diagnostics.",
+    "input_requirements": ["non-negative expression matrix"],
+    "outputs": ["gene weights", "cell activity", "restart diagnostics", "stability"],
+    "supports": {"group_by": true, "sparse_input": true},
+    "cpu_gpu": "CPU", "install": "No additional dependency.",
+    "citation": "Lee and Seung. Nature 1999"
+  },
+  {
+    "name": "cnmf", "task": "program_discovery", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Explicit runner/result adapter for consensus NMF programs.",
+    "input_requirements": ["cNMF output or runner"],
+    "outputs": ["gene weights", "cell activity", "stability"],
+    "supports": {"external_runner": true, "consensus": true},
+    "cpu_gpu": "CPU", "install": "Install cNMF separately and pass a runner/result.",
+    "citation": "Kotliar et al. eLife 2019"
+  },
+  {
+    "name": "hotspot", "task": "program_discovery", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Explicit runner/result adapter for graph-autocorrelated Hotspot modules.",
+    "input_requirements": ["Hotspot module and activity output or runner"],
+    "outputs": ["module weights", "cell activity", "graph diagnostics"],
+    "supports": {"external_runner": true, "graph_aware": true},
+    "cpu_gpu": "CPU", "install": "Install Hotspot separately and pass a runner/result.",
+    "citation": "DeTomaso and Yosef. Cell Systems 2021"
+  }
+]

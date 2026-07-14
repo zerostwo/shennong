@@ -1,6 +1,6 @@
 ---
 name: use-shennong-single-cell-workflows
-description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
+description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, CNV, metabolism, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
 ---
 
 # use-shennong-single-cell-workflows
@@ -9,7 +9,7 @@ description: Use when working with current Shennong single-cell, CITE-seq, spati
 
 Teach the agent how to use the current Shennong API for preprocessing,
 clustering/integration, CITE-seq, label transfer, differential expression,
-enrichment, composition, Milo, bulk deconvolution, communication, regulatory
+enrichment, composition, Milo, bulk deconvolution, communication, CNV, metabolism, regulatory
 activity, simulation, visualization, IO, Python runtime helpers, and reporting.
 This skill is the main entry point for package usage.
 
@@ -130,7 +130,12 @@ This skill is the main entry point for package usage.
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
    marker-class prioritization with `sn_annotate_de_features()` for TF,
    surface/plasma-membrane, cytokine, and chemokine hits,
-   optional reference annotation with `sn_transfer_labels()` or
+   traceable annotation with `sn_run_annotation()`; use its default consensus
+   for marker evidence with optional SingleR/reference support, then inspect
+   low-confidence cells/clusters with `sn_review_annotation()` and retrieve the
+   stored result with `sn_get_result(object, "annotation", name)`. Use
+   `sn_map_cell_ontology()` for explicit ontology mapping. Lower-level
+   reference annotation remains available with `sn_transfer_labels()` or
    `sn_transfer_labels(method = "coralysis")`; use
    `sn_transfer_labels(method = "scanvi")` or
    `sn_transfer_labels(method = "scarches")` when semi-supervised scVI-family
@@ -138,6 +143,30 @@ This skill is the main entry point for package usage.
    `sn_prepare_label_transfer_reference()` before saving a reusable reference
    for later transfer. Optional external
    annotation with `sn_run_celltypist()`.
+   Score named or bundled gene programs with `sn_score_programs()`; use UCell
+   for sparse per-cell scoring, GSVA/ssGSEA with `group_by` for aggregated
+   profiles, and `sn_test_programs(sample_by = ...)` for replicate-aware
+   condition tests.
+   Discover latent programs with `sn_discover_programs()` and review restart
+   diagnostics before interpreting NMF factors. Infer regulatory networks with
+   `sn_run_grn()`; GENIE3 is directly runnable, while pySCENIC, legacy SCENIC,
+   GRNBoost2, cNMF, and Hotspot require explicit runner/result adapters so
+   external runtime and database provenance remain visible.
+   Infer cluster-aware lineage structure with `sn_run_trajectory()`; provide
+   explicit `start`/`end` cluster labels, retrieve the complete result with
+   `sn_get_result(object, "trajectory", store_name)`, and inspect per-lineage
+   pseudotime/probabilities before using tradeSeq dynamic or branch tables.
+   Set `dynamic_features` to an explicit auditable feature set for formal
+   analyses, and use `test_dynamic = FALSE` only for topology review.
+   Run `sn_run_velocity()` only when raw spliced and unspliced layers are
+   present. Review stored transition/confidence evidence before passing the
+   retained H5AD artifact to `sn_run_fate()` for CellRank GPCCA terminal states
+   and fate probabilities.
+   Test cell-type abundance with `sn_test_abundance()` using `sample_by` as the
+   biological replicate; use Propeller by default, permutation for transparent
+   validation, and Milo for neighborhood effects. Use
+   `sn_prioritize_states()` for perturbation separability, RareQ topology, or
+   Scissor only when matched bulk expression and phenotype are supplied.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
@@ -146,30 +175,42 @@ This skill is the main entry point for package usage.
    `sn_deconvolve_bulk()` for
    comparative summaries across samples, conditions, annotations, or paired
    bulk RNA-seq mixtures.
-6. Use `sn_run_cell_communication()` for CellChat, NicheNet, or LIANA
-   communication workflows, and `sn_run_regulatory_activity()` for DoRothEA TF
-   or PROGENy pathway activity workflows.
-7. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
+6. Use `sn_run_cell_communication()` for LIANA, CellChat, CellPhoneDB,
+   NicheNet, MultiNicheNet, or cross-method consensus. Supply `sample_by` and
+   `condition_by` for replicate-aware comparisons, then inspect the stored
+   concordance, sample evidence, condition effects, and ligand-target tables.
+   Use `sn_run_regulatory_activity()` for DoRothEA TF or PROGENy pathway
+   activity workflows.
+7. Use `sn_run_cnv()` only with explicit normal references; include
+   `sample_by` for multi-patient data and review chromosome evidence,
+   malignancy scores, subclones, and sample summaries with `sn_plot_cnv()`.
+   Use `sn_run_metabolism()` with UCell by default and `sample_by` before any
+   condition claim; scFEA/Compass require an explicit runner or parsed result.
+   For spatial data, preserve coordinate metadata and use `sn_run_spatial()`
+   or the explicit feature/domain/neighborhood functions. Run communication
+   inference before adding distance constraints; proximity is supporting
+   evidence, not a substitute interaction score.
+8. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
    `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
    package-style plots; resolve reusable colors with `sn_list_palettes()` and
    `sn_get_palette()`.
-8. Build prompts or stored-result summaries with the interpretation helpers
+9. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
-9. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
+10. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
    `sn_simulate_scdesign3()` when the task needs direct scDesign3 controls.
-10. Inspect and reuse bundled signatures with `sn_list_signatures()` and
+11. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
-11. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
+12. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
    `sn_list_pixi_environments()`, `sn_pixi_config_path()`,
    `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`, and the
    family-specific `sn_call_*()` helpers when a Python backend must be checked,
    prepared, or invoked directly.
-12. Use `sn_check_version()`, `sn_install_shennong()`,
+13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks.
-13. When the correct entry point is unclear, read
+14. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 
@@ -185,6 +226,10 @@ This skill is the main entry point for package usage.
 - `sn_initialize_seurat_object()`
 - `sn_run_cluster()`
 - `sn_transfer_labels()`
+- `sn_run_annotation()`
+- `sn_review_annotation()`
+- `sn_plot_annotation_confidence()`
+- `sn_plot_annotation_markers()`
 - `sn_simulate(method = "scdesign3")`
 - `sn_assess_integration()`
 - `sn_calculate_variance_explained()`
@@ -193,6 +238,9 @@ This skill is the main entry point for package usage.
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_annotate_de_features(object, de_name = "cluster_markers")`
 - `sn_enrich(x = object, source_de_name = "cluster_markers")`
+- `sn_score_programs(object, signatures, method = "ucell")`
+- `sn_test_programs(object, score_name, condition_by, sample_by)`
+- `sn_plot_program_activity()` / `sn_plot_program_heatmap()`
 - `sn_calculate_composition()`
 - `sn_calculate_roe()`
 - `sn_run_milo()`

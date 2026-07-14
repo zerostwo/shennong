@@ -1,0 +1,78 @@
+---
+title: "Program Discovery and Gene Regulatory Networks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Program Discovery and Gene Regulatory Networks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+Shennong separates latent program discovery from gene-set scoring and from
+regulatory-network inference. All three workflows store versioned results in
+the Seurat object, but their evidence is not interchangeable.
+
+## Discover latent programs
+
+The local NMF backend uses several random restarts, retains the best
+reconstruction, and stores restart and cross-run stability diagnostics.
+
+```{r discover}
+object <- sn_discover_programs(
+  object,
+  method = "nmf",
+  n_programs = 6,
+  name = "tumor_programs",
+  backend_control = list(nrun = 10, seed = 717)
+)
+
+programs <- sn_get_result(object, "program_discovery", "tumor_programs")
+head(programs$tables$gene_weights)
+programs$tables$fit_diagnostics
+programs$tables$stability
+
+sn_plot_discovered_programs(object, "tumor_programs", type = "weights")
+sn_plot_discovered_programs(object, "tumor_programs", type = "activity")
+```
+
+Use `group_by` only when each stratum can support an independent
+factorization. cNMF and Hotspot require an explicit runner or imported result;
+their external environment is never installed silently.
+
+## Infer and inspect regulons
+
+GENIE3 is the directly runnable R backend. Supplying a curated regulator list
+usually produces a more interpretable network and reduces compute cost.
+
+```{r genie3}
+object <- sn_run_grn(
+  object,
+  method = "genie3",
+  regulators = transcription_factors,
+  group_by = "cell_type",
+  name = "tumor_grn"
+)
+
+grn <- sn_get_result(object, "grn", "tumor_grn")
+head(grn$tables$edges)
+head(grn$tables$regulons)
+head(grn$tables$activity)
+head(grn$tables$specificity)
+
+sn_plot_regulon(object, "tumor_grn", type = "network")
+sn_plot_regulon(object, "tumor_grn", type = "specificity")
+```
+
+For pySCENIC, run the motif-pruning workflow in its audited Python environment
+and pass the edge/AUCell tables through `backend_control$runner` or
+`backend_control$result`. The legacy R SCENIC adapter exists for prior result
+exports; it is not presented as the default runtime.
+
+The default derived activity is the mean expression of each regulon's retained
+targets. `backend_control = list(activity_method = "ucell")` selects rank-based
+activity. When `group_by` is supplied, Shennong reports an eta-squared effect
+size alongside group means; it deliberately does not label this statistic as
+SCENIC's regulon-specificity score.

@@ -732,6 +732,12 @@ sn_call_infercnvpy <- function(command, args = character(), ...) {
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
+sn_call_trajectory <- function(command, args = character(), ...) {
+  sn_call_pixi_environment("trajectory", command = command, args = args, ...)
+}
+
+#' @rdname sn_prepare_pixi_environment
+#' @export
 sn_call_cellphonedb <- function(command, args = character(), ...) {
   sn_call_pixi_environment("cellphonedb", command = command, args = args, ...)
 }
@@ -2584,10 +2590,10 @@ sn_install_shennong <- function(
   data.frame(
     package = c(
       "anndataR", "BayesPrism", "BPCells", "COSG", "CellChat", "GapClust",
-      "ROGUE", "SignatuR", "catplot", "harmony", "liana", "lisi",
-      "nichenetr", "tidytemplate"
+      "ROGUE", "SignatuR", "catplot", "copykat", "harmony", "liana", "lisi",
+      "nichenetr", "multinichenetr", "scMetabolism", "tidytemplate"
     ),
-    source = rep("GitHub", 14),
+    source = rep("GitHub", 17),
     remote = c(
       "scverse/anndataR",
       "Danko-Lab/BayesPrism/BayesPrism",
@@ -2598,10 +2604,13 @@ sn_install_shennong <- function(
       "PaulingLiu/ROGUE",
       "carmonalab/SignatuR",
       "catplot/catplot",
+      "navinlabcode/copykat",
       "immunogenomics/harmony@harmony2",
       "saezlab/liana",
       "immunogenomics/lisi",
       "saeyslab/nichenetr",
+      "saeyslab/multinichenetr",
+      "wu-yc/scMetabolism",
       "tidyverse/tidytemplate"
     ),
     stringsAsFactors = FALSE
@@ -2610,10 +2619,10 @@ sn_install_shennong <- function(
 
 .sn_bioconductor_packages <- function() {
   c(
-    "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR",
-    "glmGamPoi", "miloR", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
-    "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "Nebulosa",
-    "SummarizedExperiment", "limma"
+    "apeglm", "Banksy", "BiocParallel", "celda", "clusterProfiler", "Coralysis", "decoupleR", "DESeq2", "dorothea", "edgeR", "GENIE3",
+    "glmGamPoi", "miloR", "nnSVG", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
+    "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "SpatialExperiment", "Nebulosa",
+    "SummarizedExperiment", "limma", "variancePartition"
   )
 }
 

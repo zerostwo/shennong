@@ -1,0 +1,62 @@
+[
+  {
+    "name": "slingshot", "task": "trajectory", "runtime": "r", "package": "slingshot",
+    "implemented": true, "default": true,
+    "description": "Cluster-aware simultaneous lineage and pseudotime inference.",
+    "input_requirements": ["reduced dimensions", "cluster labels", "optional start/end states"],
+    "outputs": ["pseudotime", "lineage weights", "principal curves", "diagnostics"],
+    "supports": {"branching": true, "large_data": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('slingshot')",
+    "citation": "Street et al. BMC Genomics 2018"
+  },
+  {
+    "name": "monocle3", "task": "trajectory", "runtime": "r", "package": "monocle3",
+    "implemented": true, "default": false,
+    "description": "Direct graph learning and pseudotime with Monocle 3 through sn_run_trajectory(method = 'monocle3').",
+    "input_requirements": ["expression", "reduced dimensions", "root cells"],
+    "outputs": ["principal graph", "pseudotime", "partitions"],
+    "supports": {"branching": true},
+    "cpu_gpu": "CPU", "install": "remotes::install_github('cole-trapnell-lab/monocle3')",
+    "citation": "Cao et al. Nature 2019"
+  },
+  {
+    "name": "palantir", "task": "trajectory", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
+    "implemented": true, "default": false,
+    "description": "Standardized Palantir runner/result adapter selected by sn_run_trajectory(method = 'palantir').",
+    "input_requirements": ["expression", "embedding", "start cell"],
+    "outputs": ["pseudotime", "branch probabilities", "terminal states"],
+    "supports": {"branching": true, "gpu": false},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('trajectory', install_environment = TRUE)",
+    "citation": "Setty et al. Nature Biotechnology 2019"
+  },
+  {
+    "name": "tradeseq", "task": "dynamic_genes", "runtime": "r", "package": "tradeSeq",
+    "implemented": true, "default": true,
+    "description": "Negative-binomial GAM testing along one or more lineages.",
+    "input_requirements": ["counts", "pseudotime", "lineage weights"],
+    "outputs": ["association tests", "branch tests", "fitted trends"],
+    "supports": {"branching": true, "sample_covariates": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('tradeSeq')",
+    "citation": "Van den Berge et al. Nature Communications 2020"
+  },
+  {
+    "name": "scvelo", "task": "velocity", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
+    "implemented": true, "default": true,
+    "description": "RNA velocity inference with scVelo.",
+    "input_requirements": ["spliced counts", "unspliced counts", "neighbors"],
+    "outputs": ["velocity vectors", "velocity graph", "latent time"],
+    "supports": {"gpu": false},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('trajectory', install_environment = TRUE)",
+    "citation": "Bergen et al. Nature Biotechnology 2020"
+  },
+  {
+    "name": "cellrank", "task": "fate", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
+    "implemented": true, "default": true,
+    "description": "Fate probabilities and terminal-state inference with CellRank.",
+    "input_requirements": ["AnnData", "transition kernel"],
+    "outputs": ["terminal states", "fate probabilities", "lineage drivers"],
+    "supports": {"velocity_kernel": true, "pseudotime_kernel": true},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('trajectory', install_environment = TRUE)",
+    "citation": "Lange et al. Nature Methods 2022"
+  }
+]

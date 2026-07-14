@@ -1,0 +1,122 @@
+[
+  {
+    "name": "morans_i", "task": "spatial_svg", "runtime": "pixi", "package": "Shennong", "environment": "squidpy",
+    "implemented": true, "default": true,
+    "description": "Moran's I spatial-autocorrelation testing through Squidpy.",
+    "input_requirements": ["spatial coordinates", "expression", "spatial graph"],
+    "outputs": ["SVG table", "spatial statistics", "graph artifacts"],
+    "supports": {"visium": true, "single_cell": true},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('squidpy', install_environment = TRUE)",
+    "citation": "Palla et al. Nature Methods 2022"
+  },
+  {
+    "name": "nnsvg", "task": "spatial_svg", "runtime": "r", "package": "nnSVG",
+    "implemented": true, "default": false,
+    "description": "Nearest-neighbor Gaussian-process testing of spatially variable genes.",
+    "input_requirements": ["spatial coordinates", "expression"],
+    "outputs": ["SVG table", "effect estimates", "adjusted p values"],
+    "supports": {"visium": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('nnSVG')",
+    "citation": "Weber et al. Nature Communications 2023"
+  },
+  {
+    "name": "banksy", "task": "spatial_domain", "runtime": "r", "package": "BANKSY",
+    "implemented": true, "default": true,
+    "description": "Spatial-domain identification with BANKSY neighborhood features.",
+    "input_requirements": ["counts", "spatial coordinates"],
+    "outputs": ["domains", "embedding", "neighborhood diagnostics"],
+    "supports": {"visium": true, "single_cell": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('Banksy')",
+    "citation": "Singhal et al. Nature Genetics 2024"
+  },
+  {
+    "name": "stlearn", "task": "spatial_domain", "runtime": "pixi", "package": "Shennong", "environment": "stlearn",
+    "implemented": true, "default": false,
+    "description": "Spatial-domain and morphology-aware workflows through stLearn.",
+    "input_requirements": ["expression", "spatial coordinates", "optional image"],
+    "outputs": ["domains", "spatial embedding", "backend artifacts"],
+    "supports": {"image": true},
+    "cpu_gpu": "CPU or GPU", "install": "sn_prepare_pixi_environment('stlearn', install_environment = TRUE)",
+    "citation": "Pham et al. bioRxiv 2020"
+  },
+  {
+    "name": "squidpy", "task": "spatial_neighborhood", "runtime": "pixi", "package": "Shennong", "environment": "squidpy",
+    "implemented": true, "default": false,
+    "description": "Spatial graph, neighborhood enrichment, and co-occurrence through Squidpy.",
+    "input_requirements": ["spatial coordinates", "cell or spot labels"],
+    "outputs": ["spatial graph", "enrichment", "co-occurrence"],
+    "supports": {"distance_constraints": true},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('squidpy', install_environment = TRUE)",
+    "citation": "Palla et al. Nature Methods 2022"
+  },
+  {
+    "name": "knn", "task": "spatial_neighborhood", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Memory-bounded spatial k-nearest-neighbor graph with permutation enrichment and distance-bin co-occurrence.",
+    "input_requirements": ["spatial coordinates", "group labels"],
+    "outputs": ["spatial graph", "permutation enrichment", "co-occurrence"],
+    "supports": {"distance_constraints": true, "permutation": true},
+    "cpu_gpu": "CPU", "install": "No additional dependency.",
+    "citation": "Shennong method"
+  },
+  {
+    "name": "cell2location", "task": "spatial_deconvolution", "runtime": "pixi", "package": "Shennong", "environment": "cell2location",
+    "implemented": true, "default": true,
+    "description": "Bayesian spatial deconvolution through cell2location.",
+    "input_requirements": ["spatial counts", "single-cell reference"],
+    "outputs": ["cell-type abundance", "model diagnostics", "backend artifacts"],
+    "supports": {"gpu": true},
+    "cpu_gpu": "CPU or CUDA GPU", "install": "sn_prepare_pixi_environment('cell2location', install_environment = TRUE)",
+    "citation": "Kleshchevnikov et al. Nature Biotechnology 2022"
+  },
+  {
+    "name": "tangram", "task": "spatial_mapping", "runtime": "pixi", "package": "Shennong", "environment": "tangram",
+    "implemented": true, "default": true,
+    "description": "Single-cell-to-space mapping through Tangram.",
+    "input_requirements": ["single-cell expression", "spatial expression"],
+    "outputs": ["mapping probabilities", "projected annotations", "diagnostics"],
+    "supports": {"gpu": true},
+    "cpu_gpu": "CPU or CUDA GPU", "install": "sn_prepare_pixi_environment('tangram', install_environment = TRUE)",
+    "citation": "Biancalani et al. Nature Methods 2021"
+  },
+  {
+    "name": "sparkx", "task": "spatial_svg", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Explicit adapter for SPARK-X spatial-feature result tables.",
+    "input_requirements": ["SPARK-X result or runner"],
+    "outputs": ["SVG table", "adjusted p values"],
+    "supports": {"external_runner": true},
+    "cpu_gpu": "CPU", "install": "Install SPARK separately and pass a runner/result.",
+    "citation": "Zhu et al. Nature Communications 2021"
+  },
+  {
+    "name": "bayesspace", "task": "spatial_domain", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Explicit adapter for BayesSpace domain assignments.",
+    "input_requirements": ["BayesSpace result or runner"],
+    "outputs": ["domains", "backend diagnostics"],
+    "supports": {"external_runner": true},
+    "cpu_gpu": "CPU", "install": "Install BayesSpace separately and pass a runner/result.",
+    "citation": "Zhao et al. Nature Biotechnology 2021"
+  },
+  {
+    "name": "cellcharter", "task": "spatial_domain", "runtime": "external", "package": "Shennong",
+    "implemented": true, "default": false,
+    "description": "Explicit adapter for CellCharter domain assignments.",
+    "input_requirements": ["CellCharter result or runner"],
+    "outputs": ["domains", "embedding"],
+    "supports": {"external_runner": true},
+    "cpu_gpu": "CPU or GPU", "install": "Install CellCharter separately and pass a runner/result.",
+    "citation": "Varrone et al. Nature Genetics 2024"
+  },
+  {
+    "name": "distance", "task": "spatial_communication", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Distance-aware filtering and evidence augmentation for unified communication results.",
+    "input_requirements": ["communication result", "spatial coordinates", "group labels"],
+    "outputs": ["spatial interactions", "group distances", "filter diagnostics"],
+    "supports": {"sample_aware_input": true, "distance_constraints": true},
+    "cpu_gpu": "CPU", "install": "No additional dependency.",
+    "citation": "Shennong method"
+  }
+]

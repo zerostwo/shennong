@@ -1,0 +1,72 @@
+[
+  {
+    "name": "consensus", "task": "annotation", "runtime": "r", "package": "Shennong",
+    "implemented": true, "default": true,
+    "description": "Consensus annotation from reference predictions, marker evidence, conflicts, and ontology mapping.",
+    "input_requirements": ["Seurat object", "cluster or cell metadata", "normalized expression"],
+    "outputs": ["cell predictions", "cluster predictions", "confidence", "evidence", "ontology identifiers"],
+    "supports": {"cluster_level": true, "cell_level": true, "reference_optional": true},
+    "cpu_gpu": "CPU", "install": "No extra runtime; install optional component backends as needed.",
+    "citation": "Shennong consensus workflow"
+  },
+  {
+    "name": "singleR", "task": "annotation", "runtime": "r", "package": "SingleR",
+    "implemented": true, "default": false,
+    "description": "Reference-based annotation with SingleR and retained per-label scores.",
+    "input_requirements": ["query expression", "annotated reference"],
+    "outputs": ["labels", "scores", "pruned labels", "reference coverage"],
+    "supports": {"cluster_level": true, "cell_level": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('SingleR')",
+    "citation": "Aran et al. Nature Immunology 2019"
+  },
+  {
+    "name": "celltypist", "task": "annotation", "runtime": "cli", "package": "Shennong", "executable": "celltypist",
+    "implemented": true, "default": false,
+    "description": "CellTypist command-line reference classification exposed by sn_run_celltypist().",
+    "input_requirements": ["counts", "CellTypist model"],
+    "outputs": ["predicted labels", "confidence", "majority-vote labels"],
+    "supports": {"cluster_level": true, "cell_level": true},
+    "cpu_gpu": "CPU", "install": "Install CellTypist and ensure the celltypist executable is on PATH.",
+    "citation": "Dominguez Conde et al. Science 2022"
+  },
+  {
+    "name": "seurat", "task": "annotation", "runtime": "r", "package": "Seurat",
+    "implemented": true, "default": false,
+    "description": "Seurat anchor-based label transfer exposed by sn_transfer_labels().",
+    "input_requirements": ["Seurat query", "annotated Seurat reference"],
+    "outputs": ["predicted labels", "prediction scores", "mapping diagnostics"],
+    "supports": {"cluster_level": false, "cell_level": true},
+    "cpu_gpu": "CPU", "install": "install.packages('Seurat')",
+    "citation": "Hao et al. Cell 2021"
+  },
+  {
+    "name": "symphony", "task": "annotation", "runtime": "r", "package": "symphony",
+    "implemented": true, "default": false,
+    "description": "Reference mapping through a compressed Symphony reference.",
+    "input_requirements": ["query expression", "Symphony reference"],
+    "outputs": ["reference embedding", "labels", "mapping diagnostics"],
+    "supports": {"cell_level": true},
+    "cpu_gpu": "CPU", "install": "Install the optional symphony package.",
+    "citation": "Kang et al. Nature Communications 2021"
+  },
+  {
+    "name": "scmap", "task": "annotation", "runtime": "r", "package": "scmap",
+    "implemented": true, "default": false,
+    "description": "Cell- or cluster-level projection to a SingleCellExperiment reference.",
+    "input_requirements": ["query SingleCellExperiment", "indexed reference"],
+    "outputs": ["labels", "similarity", "unassigned flags"],
+    "supports": {"cluster_level": true, "cell_level": true},
+    "cpu_gpu": "CPU", "install": "BiocManager::install('scmap')",
+    "citation": "Kiselev et al. Nature Methods 2018"
+  },
+  {
+    "name": "scanvi", "task": "annotation", "runtime": "pixi", "package": "Shennong", "environment": "scvi",
+    "implemented": true, "default": false,
+    "description": "Semi-supervised scANVI annotation through Shennong's pixi scvi environment.",
+    "input_requirements": ["raw counts", "partial labels", "batch metadata"],
+    "outputs": ["latent embedding", "predicted labels", "model artifacts"],
+    "supports": {"cell_level": true, "gpu": true},
+    "cpu_gpu": "CPU or CUDA GPU", "install": "sn_prepare_pixi_environment('scvi', install_environment = TRUE)",
+    "citation": "Xu et al. Molecular Systems Biology 2021"
+  }
+]

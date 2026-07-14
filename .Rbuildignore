@@ -5,6 +5,7 @@
 ^\.Renviron$
 ^\.agents
 ^\.codex
+^\.codegraph$
 ^\.codegraph(/.*)?$
 dev
 ^LICENSE\.md$
@@ -20,6 +21,8 @@ dev
 ^site$
 ^scripts$
 ^tests/testthat/omnipathr-log$
+^omnipathr-log$
+^vignettes/omnipathr-log$
 ^tests/testthat/Rplots\.pdf$
 ^benchmarks$
 ^\.positai$

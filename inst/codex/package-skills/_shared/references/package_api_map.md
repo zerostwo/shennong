@@ -5,6 +5,8 @@ the right `sn_*` entry point without scanning the whole package.
 
 Core object rule:
 - Current workflows are centered on Seurat objects.
+- Standalone bulk workflows accept feature-by-sample matrices, lists, and
+  `SummarizedExperiment` objects and return the same validated result contract.
 - Prefer Shennong APIs over raw Seurat calls when the package already exposes
   the needed behavior.
 - Prefer stored-result workflows over ad hoc `object@misc` access.
@@ -46,6 +48,9 @@ Datasets:
 ## Clustering and Integration
 
 - `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, and pixi-managed scVI/scANVI/totalVI/MMoCHi integration. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform integration currently uses Harmony. Coralysis, scVI/scANVI, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. For `integration_method = "scvi"` or `"scanvi"`, Shennong writes selected counts/metadata under `~/.shennong/runs/`, manages the shared scVI-family pixi project under `~/.shennong/pixi/scvi/`, imports the learned latent reduction, then continues Seurat neighbors/clustering/UMAP; scANVI requires `integration_control = list(label_by = ...)`. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. Use `umap_control = list(...)` to tune `Seurat::RunUMAP()` arguments such as `n.neighbors`, `min.dist`, `spread`, and `reduction.name` without changing the clustering graph. Re-running on the returned object reuses matching stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
+- `sn_run_multimodal()`: explicit CITE-seq wrapper over `sn_run_cluster()` for
+  WNN, totalVI, Coralysis, or MMoCHi; it preserves the clustering return
+  contract and forwards all workflow controls.
 - `sn_run_scvi()` / `sn_run_scanvi()`: explicit wrappers for the corresponding `sn_run_cluster()` integration methods.
 - `sn_transfer_labels()`: query-first reference `label_by` transfer wrapper. Defaults to Seurat anchors, can use `method = "coralysis"` for native Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment, and supports semi-supervised scVI-family transfer with `method = "scanvi"` or `method = "scarches"`.
 - `sn_prepare_label_transfer_reference()`: create compact transfer-ready references. Coralysis output is a minimal SingleCellExperiment with trained models, PCA model, feature names, and labels; Seurat/scANVI/scArches output is a slim Seurat reference with selected assay layers and labels.
@@ -60,7 +65,7 @@ Datasets:
 - `sn_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
 - `sn_list_pixi_environments()` / `sn_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
 - `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
-- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` and `mmochi` share the `scvi` environment; `scpoli` shares the `scarches` environment.
+- `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
 - `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
 - Use the `sn_call_*()` helpers for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
 - `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
@@ -85,6 +90,17 @@ Datasets:
 
 ## Annotation, Markers, and Pathways
 
+- `sn_run_annotation()`: marker/reference annotation mainline with consensus,
+  SingleR, CellTypist, Seurat, Symphony, scmap, and scANVI backends; stores
+  cell/cluster labels, confidence, hierarchy, evidence, ontology IDs, raw
+  backend predictions, diagnostics, and provenance
+- `sn_annotation_consensus()` / `sn_annotation_confidence()`: combine and
+  calibrate long-form marker/reference evidence without LLM label overrides
+- `sn_map_cell_ontology()`: map labels against the bundled versioned Cell
+  Ontology snapshot or a project mapping
+- `sn_review_annotation()`: inspect low-confidence cells/clusters and evidence
+- `sn_plot_annotation_confidence()` / `sn_plot_annotation_markers()` /
+  `sn_plot_annotation_confusion()`: result-aware annotation diagnostics
 - `sn_run_celltypist()`: external CellTypist-based annotation
 - `sn_find_de()`: markers, contrasts, and pseudobulk DE
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
@@ -94,6 +110,118 @@ Datasets:
 - `sn_add_signature()`: add a signature to the editable registry
 - `sn_update_signature()`: update a signature in the editable registry
 - `sn_delete_signature()`: delete a signature from the editable registry
+- `sn_score_programs()`: UCell, AUCell, GSVA, ssGSEA, or mean program scoring
+  with feature-coverage diagnostics, stored long-form scores, and cell metadata
+- `sn_test_programs()`: sample-aware program activity comparisons; when
+  `sample_by` is present, cells are aggregated before inference
+- `sn_plot_program_activity()` / `sn_plot_program_heatmap()`: result-aware
+  program score distributions and heatmaps
+- `sn_discover_programs()`: multi-restart NMF discovery or explicit cNMF and
+  Hotspot adapters; retrieve weights and activity with
+  `sn_get_result(object, "program_discovery", name)`
+- `sn_plot_discovered_programs()`: gene-weight, activity, and restart plots
+- `sn_run_grn()`: GENIE3 inference or explicit pySCENIC/SCENIC/GRNBoost2
+  adapters with unified edge, regulon, activity, and specificity tables
+- `sn_plot_regulon()`: network, activity, and group-specificity plots
+
+## Trajectory and Dynamic Genes
+
+- `sn_run_trajectory()`: direct Slingshot or Monocle 3 inference and an
+  explicit Palantir runner/result adapter, with per-cell pseudotime, lineage
+  probabilities, terminal states, and optional tradeSeq dynamic/branch tests
+  plus fitted trends
+- `sn_plot_trajectory()` / `sn_plot_pseudotime()` /
+  `sn_plot_lineage_probability()`: embedding views backed by the stored result
+- `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
+  `sn_plot_branch_comparison()`: tradeSeq trend and branch-test views
+- `sn_run_velocity()` / `sn_plot_velocity()`: managed scVelo inference from
+  spliced/unspliced layers with projected vectors, transition evidence,
+  pseudotime, and confidence
+- `sn_run_fate()` / `sn_plot_fate()`: CellRank GPCCA terminal states, fate
+  probabilities, and optional lineage drivers from a stored velocity result
+
+## Spatial Workflows
+
+- `sn_run_spatial()`: dispatch QC, SVG, domain, neighborhood, deconvolution,
+  mapping, integration, or communication tasks
+- `sn_find_spatial_features()`: Moran's I with permutation evidence, nnSVG,
+  or explicit SPARK-X adapters
+- `sn_find_spatial_domains()`: optional BANKSY or explicit
+  stLearn/BayesSpace/CellCharter adapters
+- `sn_run_spatial_neighborhood()`: memory-bounded KNN graph, permutation
+  enrichment, and distance-bin co-occurrence
+- `sn_run_spatial_deconvolution()` / `sn_run_spatial_mapping()`: stable aliases
+  for the existing cell2location and Tangram object workflows
+- `sn_integrate_spatial()`: explicit STAligner/Harmony/custom result adapter
+- `sn_run_spatial_communication()`: augment a stored communication result with
+  group distance evidence and optional distance filtering
+- `sn_plot_spatial*()`: result-aware coordinate, SVG, domain, neighborhood,
+  deconvolution, and communication figures with fixed spatial aspect
+
+## Bulk Transcriptomics
+
+- `sn_run_bulk()`: dispatcher for standalone QC, DE, pathway, network, and
+  survival workflows
+- `sn_assess_bulk_qc()`: library size, detected features, distributions, PCA,
+  sample correlation, and robust outlier evidence
+- `sn_find_bulk_de()`: validated fixed/mixed design and explicit contrast with
+  automatic or direct edgeR, DESeq2, limma-voom, limma, and dream backends
+- `sn_score_bulk_pathways()`: mean, GSVA, or ssGSEA sample scores with gene-set
+  coverage diagnostics
+- `sn_run_wgcna()`: weighted co-expression modules, eigengenes, soft-power
+  evidence, and sample trait associations
+- `sn_run_survival()` / `sn_run_clinical_association()`: sample-level Cox and
+  phenotype models using expression features or metadata scores
+- `sn_plot_bulk_qc()` / `sn_plot_bulk_pca()` /
+  `sn_plot_sample_correlation()` / `sn_plot_bulk_de()` / `sn_plot_wgcna()` /
+  `sn_plot_survival()`: result-aware bulk figures
+
+## Publication Figures
+
+- `sn_list_figure_profiles()`: inspect generic screen, column, page, and slide
+  constraints; journal requirements must still be checked at submission time
+- `sn_figure_spec()` / `sn_recommend_figure_size()`: calculate canvas, point,
+  alpha, font, line, legend, raster, layout, and pagination recommendations
+  from plot/data metadata without rendering large synthetic inputs
+- `sn_apply_figure_profile()`: attach profile styling/specification while
+  preserving the native ggplot/patchwork class
+- `sn_validate_figure()`: structured preflight checks and suggested actions
+- `sn_save_figure()` / `sn_export_figure()`: deterministic PDF, SVG, TIFF, or
+  PNG output independent of the interactive device
+- `sn_export_figure_bundle()`: figures plus available source data, spec,
+  session, checksums, validation, and JSON manifest
+- `sn_plot_de()` / `sn_plot_enrichment()` / `sn_plot_gsea()`: standardized
+  result-aware plots whose evidence tables can be exported in the bundle
+- `sn_plot_qc*()` / `sn_plot_doublets()` /
+  `sn_plot_ambient_correction()` / `sn_plot_hvg()` / `sn_plot_elbow()` /
+  `sn_plot_cluster_tree()` / `sn_plot_resolution_sweep()` /
+  `sn_plot_integration()` / `sn_plot_reference_projection()`: core diagnostic
+  figure surface
+
+## Differential Abundance and State Priority
+
+- `sn_test_abundance()`: sample-level Propeller/permutation/scCODA or
+  neighborhood-level Milo through one versioned result contract; scCODA and
+  pertpy outputs enter through an explicit runner/result adapter, and posterior
+  inclusion probabilities are never relabeled as frequentist p values
+- `sn_plot_abundance()`: standardized effect view for stored abundance results
+- `sn_prioritize_states()`: sample-held-out perturbation separability, explicit
+  bulk-input Scissor, or RareQ discovery plus sample-level association
+- `sn_plot_state_priority()`: ranked state-priority view
+
+## CNV, Malignancy, and Metabolism
+
+- `sn_run_cnv()`: unified inferCNVpy/CopyKAT analysis with declared normal
+  references, malignancy scores/calls, subclones, chromosome evidence, sample
+  summaries, CNV UMAP, and expression association
+- `sn_plot_cnv()`: chromosome heatmap, CNV UMAP, malignancy distribution,
+  sample summary, or CNV-expression association from a stored result
+- `sn_metabolic_signatures()`: curated core metabolic pathway gene sets
+- `sn_run_metabolism()`: UCell/GSVA/ssGSEA/mean pathway scoring plus
+  scMetabolism or explicit scFEA/Compass adapters; condition tests aggregate to
+  `sample_by` first
+- `sn_plot_metabolism()`: pathway activity, sample heatmap, sample comparison,
+  and differential-effect views
 
 ## Composition and Comparative Analysis
 
@@ -107,16 +235,29 @@ Datasets:
 - `sn_set_cibersortx_credentials()`: store CIBERSORTx credentials
 - `sn_store_deconvolution()`: persist deconvolution results
 - `sn_get_deconvolution_result()`: retrieve deconvolution results
-- `sn_run_cell_communication()`: run CellChat, NicheNet, or LIANA communication inference
+- `sn_run_cell_communication()`: run LIANA, CellChat, CellPhoneDB, NicheNet, or
+  MultiNicheNet alone or as a cross-method consensus, with optional
+  sample-level condition comparison
 - `sn_store_cell_communication()`: persist communication results
 - `sn_get_cell_communication_result()`: retrieve communication results
+- `sn_plot_communication()`: bubble, heatmap, network, chord, or river view of
+  standardized interactions
+- `sn_plot_ligand_target()` / `sn_plot_communication_comparison()`: inspect
+  ligand-target evidence and sample-level condition effects
 - `sn_run_regulatory_activity()`: infer DoRothEA TF activity or PROGENy pathway activity with decoupleR
 - `sn_store_regulatory_activity()`: persist regulatory activity results
 - `sn_get_regulatory_activity_result()`: retrieve regulatory activity results
 
 ## Interpretation and Reporting
 
-- `sn_list_results()`: list stored DE, enrichment, milo, deconvolution, communication, regulatory activity, and interpretation results
+- `sn_list_methods()` / `sn_method_status()`: discover registered current and
+  roadmap backends, their default status, runtime, dependencies, install action,
+  requirements, outputs, and current availability
+- `sn_store_result()` / `sn_get_result()` / `sn_delete_result()`: manage any
+  versioned Shennong result type through the generic analysis-result contract
+- `sn_validate_result()`: validate schema, typed containers, and provenance
+- `sn_list_results()`: list registered and generic stored results, optionally
+  filtered by analysis `type`
 - `sn_get_de_result()`: retrieve stored DE
 - `sn_get_enrichment_result()`: retrieve stored enrichment
 - `sn_get_interpretation_result()`: retrieve stored interpretation
@@ -174,7 +315,8 @@ Datasets:
 - If the task is pathways:
   use `sn_enrich()`
 - If the task is result reuse:
-  use `sn_list_results()` plus `sn_get_*_result()`
+  use `sn_list_results()` plus `sn_get_result()` or a specialized
+  `sn_get_*_result()`
 - If the task is annotation or interpretation:
   use `sn_prepare_*_evidence()` and `sn_interpret_*()`
 - If the task is project bootstrap:
