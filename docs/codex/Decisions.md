@@ -24,6 +24,13 @@ Last updated: 2026-07-14
   contract. Connections, resource discovery, assay/layer selection, and
   collection must use exported client functions rather than retired schema
   endpoint helpers.
+- The pkgdown workflow keeps `dependencies: 'hard'` and explicitly installs
+  optional packages used by executable articles. This avoids installing every
+  heavyweight Suggests package while ensuring clean runners can render the
+  `msigdbr`-backed feature-annotation example.
+- Vignette chunks may execute only when the article constructs or loads every
+  required input. Templates that depend on user-supplied multimodal objects,
+  such as `pbmc_cite`, remain visible but use `eval = FALSE` in site builds.
 
 ## 2026-07-13
 
