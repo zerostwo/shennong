@@ -96,7 +96,9 @@ cluster_cols
 same function handles legends, shared scales, rasterization, and panel sizing.
 Rasterization is enabled by default; when `ggrastr` is available the point layer
 is rasterized after the regular ggplot point size is applied, so small values
-such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes.
+such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes. When
+`ggrastr` is unavailable, the plot remains usable through the vector point
+layer.
 
 ```{r plot-feature-expression}
 sn_plot_feature(
@@ -226,6 +228,24 @@ sn_plot_dot(
   group_by = "seurat_clusters",
   n = 4,
   palette = "Purples"
+)
+```
+
+For a curated marker panel, pass a named list. Each list element becomes a
+free-width facet, so marker families remain visually separated even when the
+groups contain different numbers of genes.
+
+```{r plot-dot-groups}
+level1_markers <- list(
+  "Lymphoid" = c("CD3D", "CD3E", "MS4A1"),
+  "Myeloid" = c("LYZ", "FCGR3A"),
+  "Platelets" = c("PPBP")
+)
+
+sn_plot_dot(
+  x = pbmc,
+  features = level1_markers,
+  group_by = "seurat_clusters"
 )
 ```
 

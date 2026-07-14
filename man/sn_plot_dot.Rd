@@ -40,7 +40,8 @@ sn_plot_dot(
 
 \item{assay}{The assay to plot. Defaults to the default assay.}
 
-\item{features}{A character vector of feature names to plot, or
+\item{features}{A character vector of feature names to plot, a named list of
+feature vectors to display in separate free-width panels, or
 \code{"top_markers"} to automatically use the top stored DE markers from
 \code{object@misc$de_results[[de_name]]}.}
 

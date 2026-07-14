@@ -2153,7 +2153,8 @@ sn_plot_heatmap <- function(object,
 #'
 #' @param x A Seurat object containing the data to plot.
 #' @param assay The assay to plot. Defaults to the default assay.
-#' @param features A character vector of feature names to plot, or
+#' @param features A character vector of feature names to plot, a named list of
+#'   feature vectors to display in separate free-width panels, or
 #'   \code{"top_markers"} to automatically use the top stored DE markers from
 #'   \code{object@misc$de_results[[de_name]]}.
 #' @param de_name Name of the stored DE result to use when
@@ -2247,40 +2248,42 @@ sn_plot_dot <- function(x,
   )
   color_breaks <- colorbar_info$breaks
   color_labels <- colorbar_info$labels
-  p <- suppressMessages(
-    Seurat::DotPlot(
-      object = x,
-      assay = assay,
-      features = features,
-      col.min = col_min,
-      col.max = col_max,
-      dot.min = dot_min,
-      dot.scale = dot_scale,
-      idents = idents,
-      group.by = group_by,
-      split.by = split_by,
-      cluster.idents = cluster_idents,
-      scale = scale,
-      scale.by = scale_by,
-      scale.min = scale_min,
-      scale.max = scale_max
-    ) + coord_fixed() +
-      guides(
-        x = guide_axis(angle = 90),
-        size = guide_legend(
-          title = "Percent (%)",
-          order = 2,
-          override.aes = list(
-            shape = 21,
-            colour = "black",
-            fill = NA,
-            stroke = 0.4,
-            alpha = 1
-          )
-        ),
-        color = .sn_colorbar_guide(title = "Z score", order = 1)
-      )
-  )
+  p <- suppressMessages(Seurat::DotPlot(
+    object = x,
+    assay = assay,
+    features = features,
+    col.min = col_min,
+    col.max = col_max,
+    dot.min = dot_min,
+    dot.scale = dot_scale,
+    idents = idents,
+    group.by = group_by,
+    split.by = split_by,
+    cluster.idents = cluster_idents,
+    scale = scale,
+    scale.by = scale_by,
+    scale.min = scale_min,
+    scale.max = scale_max
+  ))
+  if (!is.list(features)) {
+    p <- p + coord_fixed()
+  }
+  p <- p +
+    guides(
+      x = guide_axis(angle = 90),
+      size = guide_legend(
+        title = "Percent (%)",
+        order = 2,
+        override.aes = list(
+          shape = 21,
+          colour = "black",
+          fill = NA,
+          stroke = 0.4,
+          alpha = 1
+        )
+      ),
+      color = .sn_colorbar_guide(title = "Z score", order = 1)
+    )
   p <- suppressMessages(suppressWarnings(
     .sn_add_catplot_theme(
       p,
@@ -2530,7 +2533,9 @@ sn_plot_feature <-
       return(p)
     }
 
-    featureplot_raster <- if (isTRUE(raster) && rlang::is_installed("ggrastr")) FALSE else raster
+    # Seurat requires ggrastr for ordered rasterization. Build the ordinary
+    # vector layer first, then rasterize it below only when ggrastr is present.
+    featureplot_raster <- FALSE
     p <- withCallingHandlers(
       Seurat::FeaturePlot(
         object = object,

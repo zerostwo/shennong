@@ -197,6 +197,19 @@ test_that("Seurat plotting helpers return ggplot objects", {
     pt_size = 0.01,
     raster = TRUE
   )
+  is_installed <- rlang::is_installed
+  feature_plot_without_ggrastr <- with_mocked_bindings(
+    sn_plot_feature(
+      object,
+      features = "CD3D",
+      reduction = "umap",
+      raster = TRUE
+    ),
+    is_installed = function(pkg, ...) {
+      if (identical(pkg, "ggrastr")) FALSE else is_installed(pkg, ...)
+    },
+    .package = "rlang"
+  )
   expect_message(
     sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", raster = FALSE),
     NA
@@ -233,6 +246,8 @@ test_that("Seurat plotting helpers return ggplot objects", {
 
   expect_s3_class(feature_plot, "ggplot")
   expect_s3_class(feature_plot_small, "ggplot")
+  expect_s3_class(feature_plot_without_ggrastr, "ggplot")
+  expect_no_error(ggplot2::ggplotGrob(feature_plot_without_ggrastr))
   expect_s3_class(multi_feature_plot, "ggplot")
   expect_s3_class(heatmap_plot, "ggplot")
   expect_s3_class(average_heatmap, "ggplot")
@@ -353,6 +368,27 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
     ),
     "No stored DE result named 'missing'"
   )
+})
+
+test_that("sn_plot_dot renders grouped feature lists with free facet scales", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_dotplot_test_object()
+  marker_groups <- list(
+    T_cells = c("CD3D", "CD3E"),
+    B_cells = c("MS4A1", "CD79A")
+  )
+
+  grouped_plot <- suppressWarnings(sn_plot_dot(object, features = marker_groups))
+  grouped_grob <- suppressWarnings(ggplot2::ggplotGrob(grouped_plot))
+  flat_plot <- suppressWarnings(
+    sn_plot_dot(object, features = unlist(marker_groups, use.names = FALSE))
+  )
+
+  expect_s3_class(grouped_plot, "ggplot")
+  expect_null(grouped_plot$coordinates$ratio)
+  expect_s3_class(grouped_grob, "gtable")
+  expect_equal(flat_plot$coordinates$ratio, 1)
 })
 
 test_that("palette helpers list and resolve palettes", {
