@@ -4,15 +4,16 @@ This benchmark measures `sn_run_cluster()` runtime and peak resident memory for
 the Coralysis and Coralysis2 integration backends on downsampled or resampled
 PBMC Seurat objects.
 
-The driver creates benchmark input objects from
-`/home/sduan/projects/immune-atlas/data/processed/pbmc.qs`, relabels the
-`sample` column into a requested number of synthetic batches, and runs each
-configuration in a fresh R process under `/usr/bin/time -v`.
+The driver creates benchmark input objects from a caller-supplied Seurat object,
+relabels the `sample` column into a requested number of synthetic batches, and
+runs each configuration in a fresh R process under `/usr/bin/time -v`. Supply
+the object with `--base /path/to/pbmc.qs` or set `SHENNONG_BENCHMARK_BASE`.
 
 Example quick pilot:
 
 ```sh
 Rscript benchmarks/coralysis_capacity/run_grid.R \
+  --base /path/to/pbmc.qs \
   --cell_counts 3000,10000 \
   --batch_counts 3,10 \
   --methods coralysis,coralysis2 \
@@ -27,6 +28,7 @@ Example larger Coralysis2-only run:
 
 ```sh
 Rscript benchmarks/coralysis_capacity/run_grid.R \
+  --base /path/to/pbmc.qs \
   --cell_counts 30000,60000,120000 \
   --batch_counts 10,30 \
   --methods coralysis2 \

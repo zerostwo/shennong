@@ -2,9 +2,10 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.Renviron$
 ^\.agents
 ^\.codex
-^\.codegraph
+^\.codegraph(/.*)?$
 dev
 ^LICENSE\.md$
 ^README\.Rmd$
@@ -19,6 +20,7 @@ dev
 ^site$
 ^scripts$
 ^tests/testthat/omnipathr-log$
+^tests/testthat/Rplots\.pdf$
 ^benchmarks$
 ^\.positai$
 ^\.claude$

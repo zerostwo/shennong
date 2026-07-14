@@ -1,6 +1,29 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-13
+Last updated: 2026-07-14
+
+## 2026-07-14
+
+- CodeGraph is the first source-discovery tool for indexed R, Python, and
+  workflow code, but deletion decisions must pair graph results with exact
+  occurrence checks because dynamic dispatch and non-code documentation are not
+  fully represented in the graph.
+- Point-in-time prompts, plans, audits, and verbose validation histories belong
+  under `docs/codex/archive/`; active maintainer context is limited to the
+  indexed README, current status, decisions, roadmap, and consolidated
+  governance note.
+- Development smoke scripts must remain under `scripts/`, and all benchmark
+  assets belong under the root `benchmarks/` hierarchy. Neither belongs in the
+  installed package unless it implements a documented runtime feature.
+- Source-package validation must reject local `.codegraph` state and generated
+  plotting artifacts even if ignore rules are expected to exclude them.
+- Optional rasterization must remain optional: when `ggrastr` is unavailable,
+  plotting helpers should retain renderable vector point layers instead of
+  forwarding an ordered-raster request that Seurat cannot satisfy.
+- Shennong's data-server wrapper follows the public ShennongData 0.2 resource
+  contract. Connections, resource discovery, assay/layer selection, and
+  collection must use exported client functions rather than retired schema
+  endpoint helpers.
 
 ## 2026-07-13
 
@@ -10,6 +33,11 @@ Last updated: 2026-07-13
 - Plot regression tests must build the rendered gtable when failures can occur
   during facet panel drawing; checking only the returned `ggplot` class is not
   sufficient for coordinate/facet compatibility.
+
+## 2026-07-02
+
+- SCTransform-based `sn_run_cluster()` should honor the same `block_genes` contract as log-normalized clustering. The final SCT HVG/PCA feature set should remove internally selected genes from bundled or custom blocklists, but explicit `hvg_features` remain user intent and may re-add a blocked gene.
+- When users rely on default SCT `block_genes` but species cannot be inferred, Shennong should preserve the previous SCT behavior by skipping the default blocklist with a warning instead of failing synthetic/non-gene test objects; explicit `block_genes` still requires resolvable or supplied species.
 
 ## 2026-06-22
 

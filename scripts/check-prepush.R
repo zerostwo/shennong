@@ -76,10 +76,92 @@ run_cmd <- function(args, wd = getwd(), env = character()) {
   invisible(TRUE)
 }
 
-desc <- read.dcf("DESCRIPTION", fields = c("Package", "Version"))
+project_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+artifact_dir <- tempfile("shennong-prepush-")
+dir.create(artifact_dir, recursive = TRUE, showWarnings = FALSE)
+artifact_cleanup <- new.env(parent = emptyenv())
+artifact_cleanup$path <- artifact_dir
+reg.finalizer(
+  artifact_cleanup,
+  function(env) unlink(env$path, recursive = TRUE, force = TRUE),
+  onexit = TRUE
+)
+
+desc <- read.dcf(file.path(project_root, "DESCRIPTION"), fields = c("Package", "Version"))
 pkg_name <- desc[1, "Package"]
 pkg_version <- desc[1, "Version"]
-tarball <- file.path(getwd(), sprintf("%s_%s.tar.gz", pkg_name, pkg_version))
+tarball_name <- sprintf("%s_%s.tar.gz", pkg_name, pkg_version)
+tarball <- file.path(artifact_dir, tarball_name)
+staged_source <- file.path(artifact_dir, "source")
+
+stage_source_tree <- function(source, target) {
+  paths <- list.files(
+    source,
+    all.files = TRUE,
+    full.names = FALSE,
+    recursive = TRUE,
+    include.dirs = FALSE,
+    no.. = TRUE
+  )
+  local_state <- c(
+    "^\\.git(/|$)",
+    "^\\.codegraph(/|$)",
+    "^\\.Rproj\\.user(/|$)",
+    "^\\.agents(/|$)",
+    "^\\.codex(/|$)",
+    "^\\.Rhistory$",
+    "^\\.Renviron$",
+    "^site(/|$)",
+    "^dev(/|$)",
+    "^Shennong[.]Rcheck(/|$)",
+    "^[^/]+_[0-9][^/]*[.]tar[.]gz$",
+    "^tests/testthat/omnipathr-log(/|$)",
+    "^tests/testthat/Rplots[.]pdf$"
+  )
+  excluded <- Reduce(
+    `|`,
+    lapply(local_state, grepl, x = paths, perl = TRUE),
+    init = rep(FALSE, length(paths))
+  )
+  paths <- paths[!excluded]
+  destinations <- file.path(target, paths)
+  invisible(lapply(unique(dirname(destinations)), dir.create, recursive = TRUE, showWarnings = FALSE))
+  copied <- file.copy(
+    from = file.path(source, paths),
+    to = destinations,
+    overwrite = TRUE,
+    copy.mode = TRUE,
+    copy.date = TRUE
+  )
+  if (!all(copied)) {
+    stop(
+      "Could not stage source file(s):\n",
+      paste(paths[!copied], collapse = "\n"),
+      call. = FALSE
+    )
+  }
+  invisible(target)
+}
+
+audit_source_tarball <- function(path) {
+  members <- utils::untar(path, list = TRUE)
+  forbidden <- c(
+    "^[^/]+/\\.codegraph(/|$)",
+    "^[^/]+/tests/testthat/Rplots\\.pdf$",
+    "^[^/]+/inst/scripts/smoke_cluster_pbmc\\.R$"
+  )
+  leaked <- unique(unlist(lapply(forbidden, function(pattern) {
+    grep(pattern, members, value = TRUE, perl = TRUE)
+  })))
+  if (length(leaked) > 0L) {
+    stop(
+      "Source tarball contains local/development artifacts:\n",
+      paste(leaked, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
 
 if (!skip_document) {
   run_step("Regenerating documentation", {
@@ -110,13 +192,18 @@ if (!skip_tests) {
 
 if (!skip_build) {
   run_step("Building source tarball", {
+    if (dir.exists(staged_source)) {
+      unlink(staged_source, recursive = TRUE, force = TRUE)
+    }
     if (file.exists(tarball)) {
       unlink(tarball)
     }
-    run_cmd(c("CMD", "build", "."))
+    stage_source_tree(project_root, staged_source)
+    run_cmd(c("CMD", "build", staged_source), wd = artifact_dir)
     if (!file.exists(tarball)) {
       stop("Expected tarball was not created: ", tarball, call. = FALSE)
     }
+    audit_source_tarball(tarball)
   })
 }
 
@@ -133,7 +220,7 @@ if (!skip_check) {
       check_args <- c(check_args, "--no-tests")
     }
     check_env <- if (isTRUE(force_suggests)) character() else "_R_CHECK_FORCE_SUGGESTS_=false"
-    run_cmd(c(check_args, basename(tarball)), env = check_env)
+    run_cmd(c(check_args, basename(tarball)), wd = artifact_dir, env = check_env)
   })
 }
 

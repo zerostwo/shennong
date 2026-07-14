@@ -15,7 +15,7 @@ Files:
 Usage:
 
 ```r
-Rscript scripts/benchmarks/compare_workflow_surface.R
+Rscript benchmarks/workflow_surface/compare_workflow_surface.R
 ```
 
 Current scope:

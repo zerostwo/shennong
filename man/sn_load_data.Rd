@@ -15,7 +15,12 @@ sn_load_data(
   overwrite = FALSE,
   quiet = FALSE,
   record_id = NULL,
-  validate = FALSE
+  validate = FALSE,
+  backend = c("auto", "local", "api"),
+  server_url = getOption("ShennongData.server_url", getOption("shennong.data.server_url",
+    "http://127.0.0.1:18000")),
+  lazy = TRUE,
+  api_args = list()
 )
 }
 \arguments{
@@ -72,11 +77,33 @@ Defaults to option \code{shennong.public_data_record} or \code{"20044788"}.}
 
 \item{validate}{Logical; if \code{TRUE}, validate extracted public
 collection files against \code{manifest.tsv} MD5 checksums.}
+
+\item{backend}{Character scalar. \code{"auto"} uses the Shennong Data Server
+when the requested single dataset is present in the server catalog and
+falls back to legacy local/Zenodo loading otherwise. \code{"api"} forces
+the server-backed lazy client. \code{"local"} forces legacy loading.}
+
+\item{server_url}{Shennong Data Server URL used when \code{backend} resolves
+to \code{"api"}.}
+
+\item{lazy}{Logical. For API-backed datasets, return a lazy remote table
+without downloading data. Set to \code{FALSE} only when also passing
+materialization arguments through \code{api_args}.}
+
+\item{api_args}{Named list controlling the \pkg{ShennongData} client.
+Supported entries are \code{connection}, \code{connect_args},
+\code{version}, \code{view}, \code{validate}, \code{refresh},
+\code{assay}, \code{layer}, and \code{collect_args}. When
+\code{lazy = FALSE}, \code{collect_args} are forwarded to
+\code{ShennongData::collect()}.}
 }
 \value{
 One of:
 
 \itemize{
+\item If \code{backend = "api"}: a lazy \pkg{ShennongData} resource
+handle, or a collected result when \code{lazy = FALSE}.
+
 \item If \code{matrix_type == "filtered"} and
 \code{return_object = TRUE}:
 a Seurat object. Multiple datasets are returned as one merged Seurat
@@ -178,6 +205,9 @@ pbmc4k <- sn_load_data(
 # 6. Load a sample from the Shennong public Zenodo collection:
 data_index <- sn_list_datasets()
 sample_obj <- sn_load_data(dataset = data_index$dataset[[1]])
+
+# 7. Open a lazy Shennong Data Server resource:
+remote <- sn_load_data("toil", backend = "api")
 }
 
 }

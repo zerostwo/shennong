@@ -10,6 +10,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `sn_plot_dot()` now renders named feature lists as Seurat's free-width marker
   facets without adding an incompatible fixed coordinate ratio; ordinary
   feature vectors retain the existing fixed-coordinate layout.
+- `sn_plot_feature(raster = TRUE)` now falls back to vector point layers when
+  the optional `ggrastr` package is unavailable, instead of asking Seurat to
+  perform ordered rasterization and failing during minimal-dependency checks.
+- `sn_load_data(backend = "api")` now uses the current ShennongData 0.2
+  resource-client contract (`sn_connect()`, `sn_load_data()`, `sn_assay()`,
+  and `collect()`) rather than the retired schema endpoint interface.
+- `sn_run_cluster(normalization_method = "sctransform")` now applies
+  `block_genes` to SCTransform-selected HVGs before PCA, preventing default
+  ribosomal, mitochondrial, heat-shock, immunoglobulin, TCR, and pseudogene
+  signatures from dominating SCT-based clustering unless explicitly forced via
+  `hvg_features`.
 - `sn_run_cluster(block_genes = ...)` now resolves each entry independently, so
   bundled signature queries such as `cellCycle.G2M`, `cellCycle.G1S`, `ribo`,
   `mito`, `heatshock`, and `pseudogenes` can be mixed with custom gene symbols
@@ -80,6 +91,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_load_data()` can open lazy Shennong Data Server resources with
+  `backend = "api"`, select assay/layer views through `api_args`, and
+  materialize explicitly with `lazy = FALSE`.
 - `sn_convert_bpcells()` now converts selected Seurat assay layers to
   BPCells-backed matrix directories and rebinds those layers in the returned
   object, helping large count or normalized-expression layers stay on disk.

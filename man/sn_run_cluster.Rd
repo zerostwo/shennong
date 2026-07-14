@@ -209,7 +209,9 @@ custom gene symbols to exclude from internally selected HVGs. Signature
 queries can use leaf names such as \code{"ribo"} and
 \code{"cellCycle.G2M"} or full paths such as
 \code{"Programs/cellCycle.G1S"}; \code{"g1s"} and \code{"g2m"} are kept as
-short aliases for the cell-cycle signatures.}
+short aliases for the cell-cycle signatures. Applies to both
+log-normalization and SCTransform workflows; explicit \code{hvg_features}
+are preserved even when they overlap a blocked signature.}
 
 \item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction. Used only when

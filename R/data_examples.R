@@ -261,6 +261,25 @@ sn_list_datasets <- function(source = c("public", "examples", "all"),
 #' @param validate Logical; if \code{TRUE}, validate extracted public
 #'   collection files against \code{manifest.tsv} MD5 checksums.
 #'
+#' @param backend Character scalar. \code{"auto"} uses the Shennong Data Server
+#'   when the requested single dataset is present in the server catalog and
+#'   falls back to legacy local/Zenodo loading otherwise. \code{"api"} forces
+#'   the server-backed lazy client. \code{"local"} forces legacy loading.
+#'
+#' @param server_url Shennong Data Server URL used when \code{backend} resolves
+#'   to \code{"api"}.
+#'
+#' @param lazy Logical. For API-backed datasets, return a lazy remote table
+#'   without downloading data. Set to \code{FALSE} only when also passing
+#'   materialization arguments through \code{api_args}.
+#'
+#' @param api_args Named list controlling the \pkg{ShennongData} client.
+#'   Supported entries are \code{connection}, \code{connect_args},
+#'   \code{version}, \code{view}, \code{validate}, \code{refresh},
+#'   \code{assay}, \code{layer}, and \code{collect_args}. When
+#'   \code{lazy = FALSE}, \code{collect_args} are forwarded to
+#'   \code{ShennongData::collect()}.
+#'
 #' @details
 #' All datasets were re-aligned using Cell Ranger v9.0.1 with a custom reference
 #' based on GENCODE v48 (GRCh38.p14).
@@ -310,6 +329,9 @@ sn_list_datasets <- function(source = c("public", "examples", "all"),
 #' One of:
 #'
 #' \itemize{
+#'   \item If \code{backend = "api"}: a lazy \pkg{ShennongData} resource
+#'         handle, or a collected result when \code{lazy = FALSE}.
+#'
 #'   \item If \code{matrix_type == "filtered"} and
 #'         \code{return_object = TRUE}:
 #'         a Seurat object. Multiple datasets are returned as one merged Seurat
@@ -348,6 +370,9 @@ sn_list_datasets <- function(source = c("public", "examples", "all"),
 #' # 6. Load a sample from the Shennong public Zenodo collection:
 #' data_index <- sn_list_datasets()
 #' sample_obj <- sn_load_data(dataset = data_index$dataset[[1]])
+#'
+#' # 7. Open a lazy Shennong Data Server resource:
+#' remote <- sn_load_data("toil", backend = "api")
 #' }
 #'
 #' @references
@@ -373,11 +398,31 @@ sn_load_data <- function(dataset = "pbmc3k",
                          overwrite = FALSE,
                          quiet = FALSE,
                          record_id = NULL,
-                         validate = FALSE) {
+                         validate = FALSE,
+                         backend = c("auto", "local", "api"),
+                         server_url = getOption(
+                           "ShennongData.server_url",
+                           getOption("shennong.data.server_url", "http://127.0.0.1:18000")
+                         ),
+                         lazy = TRUE,
+                         api_args = list()) {
   catalog <- .sn_example_data_catalog()
   matrix_type <- match.arg(matrix_type)
+  backend <- match.arg(backend)
   dataset <- .sn_normalize_dataset_argument(dataset)
-  if (is.null(sample_id) && all(dataset %in% catalog$dataset)) {
+  local_example_request <- is.null(sample_id) && all(dataset %in% catalog$dataset)
+  if (.sn_should_use_data_api(dataset, sample_id, backend, server_url)) {
+    return(.sn_load_data_api(
+      dataset = dataset,
+      version = api_args$version,
+      assay = api_args$assay,
+      layer = api_args$layer %||% api_args$measure,
+      server_url = server_url,
+      lazy = lazy,
+      api_args = api_args
+    ))
+  }
+  if (local_example_request) {
     return(.sn_load_example_data(
       dataset = dataset,
       matrix_type = matrix_type,
@@ -405,6 +450,90 @@ sn_load_data <- function(dataset = "pbmc3k",
     quiet = quiet,
     record_id = record_id,
     validate = validate
+  )
+}
+
+.sn_should_use_data_api <- function(dataset, sample_id, backend, server_url) {
+  if (identical(backend, "local")) {
+    return(FALSE)
+  }
+  if (!is.null(sample_id) || length(dataset) != 1L) {
+    if (identical(backend, "api")) {
+      stop(
+        "`backend = \"api\"` supports one dataset at a time and does not use `sample_id`; ",
+        "load the dataset first and filter the lazy table instead.",
+        call. = FALSE
+      )
+    }
+    return(FALSE)
+  }
+  if (!requireNamespace("ShennongData", quietly = TRUE)) {
+    if (identical(backend, "api")) {
+      stop("Package `ShennongData` is required for `backend = \"api\"`.", call. = FALSE)
+    }
+    return(FALSE)
+  }
+  if (identical(backend, "api")) {
+    return(TRUE)
+  }
+  isTRUE(.sn_data_server_has_dataset(dataset, server_url))
+}
+
+.sn_data_server_has_dataset <- function(dataset, server_url) {
+  tryCatch({
+    connection <- ShennongData::sn_connect(
+      url = server_url,
+      set_default = FALSE
+    )
+    on.exit(ShennongData::sn_disconnect(connection), add = TRUE)
+    ShennongData::sn_load_data(
+      resource = dataset,
+      connection = connection,
+      validate = "metadata"
+    )
+    TRUE
+  }, error = function(e) {
+    FALSE
+  })
+}
+
+.sn_load_data_api <- function(dataset,
+                              version,
+                              assay,
+                              layer,
+                              server_url,
+                              lazy,
+                              api_args) {
+  connection <- api_args$connection
+  if (is.null(connection)) {
+    connect_args <- api_args$connect_args %||% list()
+    connect_args$url <- server_url
+    connect_args$set_default <- FALSE
+    connection <- do.call(ShennongData::sn_connect, connect_args)
+  }
+
+  handle <- ShennongData::sn_load_data(
+    resource = dataset,
+    version = version,
+    view = api_args$view %||% "auto",
+    connection = connection,
+    refresh = api_args$refresh %||% FALSE,
+    validate = api_args$validate %||% "metadata"
+  )
+  if (!is.null(assay) || !is.null(layer)) {
+    handle <- ShennongData::sn_assay(
+      handle,
+      assay = assay,
+      layer = layer
+    )
+  }
+  if (isTRUE(lazy)) {
+    return(handle)
+  }
+
+  do.call(
+    ShennongData::collect,
+    c(list(x = handle), api_args$collect_args %||% list())
   )
 }
 
