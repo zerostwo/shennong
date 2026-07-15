@@ -17,9 +17,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-15 10:03:30] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-15 10:03:31] Running QC metrics for human.
-#> INFO [2026-07-15 10:03:31] Seurat object initialization complete.
+#> INFO [2026-07-15 10:22:26] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 10:22:26] Running QC metrics for human.
+#> INFO [2026-07-15 10:22:27] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,

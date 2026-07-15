@@ -16,9 +16,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-15 09:56:06] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-15 09:56:06] Running QC metrics for human.
-#> INFO [2026-07-15 09:56:06] Seurat object initialization complete.
+#> INFO [2026-07-15 10:15:52] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 10:15:52] Running QC metrics for human.
+#> INFO [2026-07-15 10:15:52] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -71,16 +71,16 @@ bundle$command
 #> NULL
 bundle$files
 #> $single_cell_reference
-#> [1] "/tmp/Rtmpya9RH0/pbmc3k-cibersortx/sample_file_for_cibersort.txt"
+#> [1] "/tmp/Rtmp0LyNLQ/pbmc3k-cibersortx/sample_file_for_cibersort.txt"
 #> 
 #> $mixture
-#> [1] "/tmp/Rtmpya9RH0/pbmc3k-cibersortx/mixture_file_for_cibersort.txt"
+#> [1] "/tmp/Rtmp0LyNLQ/pbmc3k-cibersortx/mixture_file_for_cibersort.txt"
 #> 
 #> $signature_matrix
-#> [1] "/tmp/Rtmpya9RH0/pbmc3k-cibersortx/CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt"
+#> [1] "/tmp/Rtmp0LyNLQ/pbmc3k-cibersortx/CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt"
 #> 
 #> $result
-#> [1] "/tmp/Rtmpya9RH0/pbmc3k-cibersortx/CIBERSORTx_pbmc3k_demo_Results.txt"
+#> [1] "/tmp/Rtmp0LyNLQ/pbmc3k-cibersortx/CIBERSORTx_pbmc3k_demo_Results.txt"
 ```
 
 For an actual CIBERSORTx run, store credentials locally once and omit

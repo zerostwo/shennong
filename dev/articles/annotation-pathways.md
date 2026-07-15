@@ -19,9 +19,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-15 09:53:49] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-15 09:53:49] Running QC metrics for human.
-#> INFO [2026-07-15 09:53:50] Seurat object initialization complete.
+#> INFO [2026-07-15 10:13:28] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 10:13:29] Running QC metrics for human.
+#> INFO [2026-07-15 10:13:29] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -312,7 +312,7 @@ sn_review_annotation(pbmc, "pbmc_consensus")
 #> $provenance
 #> $provenance$package_versions
 #> $provenance$package_versions$Shennong
-#> [1] "0.2.0"
+#> [1] "0.2.0.9000"
 #> 
 #> $provenance$package_versions$R
 #> [1] "4.6.1"
@@ -322,7 +322,7 @@ sn_review_annotation(pbmc, "pbmc_consensus")
 #> [1] NA
 #> 
 #> $provenance$timestamp
-#> [1] "2026-07-15 09:54:58 UTC"
+#> [1] "2026-07-15 10:14:53 UTC"
 
 sn_plot_annotation_confidence(
   pbmc,
@@ -683,7 +683,7 @@ pbmc <- sn_enrich(
   store_name = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-07-15 09:55:23] Running ORA analysis for the GOBP database.
+#> INFO [2026-07-15 10:15:16] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,
