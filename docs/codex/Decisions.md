@@ -4,6 +4,11 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- The completed analysis/publication roadmap closes the `0.2.0` release line.
+  This is a pre-1.0 minor release because it adds a broad stable workflow
+  surface and includes intentional experimental API changes accumulated since
+  `0.1.4`. After tagging, `main` moves to `0.2.0.9000`; later features belong to
+  the next release instead of extending the frozen `0.2.0` changelog.
 - `README.Rmd` is the source of truth for the repository landing page, and
   `README.md` must be regenerated from it. The supported-software summary is
   organized by analysis module and names the stable Shennong entry point,

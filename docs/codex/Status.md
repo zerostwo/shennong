@@ -17,6 +17,15 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
+- The accumulated `Unreleased` roadmap, workflow, compatibility, documentation,
+  and publication-figure changes are frozen as the `0.2.0` release candidate.
+  `DESCRIPTION` and `NEWS.md` now share that version boundary; after the
+  release tag is published, `main` will advance to `0.2.0.9000` so subsequent
+  features cannot silently enter the released source. The release gate passes
+  `FAIL 0 | WARN 0 | SKIP 6 | PASS 1906`, builds
+  `Shennong_0.2.0.tar.gz`, completes structural
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` with `Status: OK`,
+  and validates the complete pkgdown reference index.
 - Full source-package checking exposed that excluding only CodeGraph contents
   could still leave an empty top-level `.codegraph` directory in the tarball.
   The root directory now has an explicit build-ignore rule, the active index
