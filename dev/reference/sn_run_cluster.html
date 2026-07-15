@@ -95,36 +95,7 @@ followed by clustering and UMAP.</p>
 <span>  cluster_group_singletons <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  leiden_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"leidenbase"</span>, <span class="st">"igraph"</span><span class="op">)</span>,</span>
 <span>  leiden_objective_function <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"modularity"</span>, <span class="st">"CPM"</span><span class="op">)</span>,</span>
-<span>  cluster_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  reuse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  rerun_from <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  auto_install <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  install_repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span>,</span>
-<span>  install_ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  hvg_group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  rare_feature_method <span class="op">=</span> <span class="st">"none"</span>,</span>
-<span>  rare_feature_group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  rare_feature_n <span class="op">=</span> <span class="fl">200</span>,</span>
-<span>  rare_feature_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  block_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"heatshock"</span>, <span class="st">"ribo"</span>, <span class="st">"mito"</span>, <span class="st">"tcr"</span>, <span class="st">"immunoglobulins"</span>, <span class="st">"pseudogenes"</span><span class="op">)</span>,</span>
-<span>  theta <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  group_by_vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  npcs <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>  dims <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
-<span>  modality <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"rna"</span>, <span class="st">"cite_seq"</span><span class="op">)</span>,</span>
-<span>  multimodal_method <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
-<span>  adt_layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
-<span>  adt_features <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  adt_npcs <span class="op">=</span> <span class="fl">30</span>,</span>
-<span>  adt_dims <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  wnn_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  umap_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  return_cluster <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -264,129 +235,70 @@ should group singletons into the nearest cluster.</p></dd>
 <code><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">Seurat::FindClusters()</a></code>.</p></dd>
 
 
-<dt id="arg-cluster-control">cluster_control<a class="anchor" aria-label="anchor" href="#arg-cluster-control"></a></dt>
-<dd><p>Optional named list of additional
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional clustering controls. Supported names include
+<code>cluster_control</code>, an optional named list of additional
 <code><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">Seurat::FindClusters()</a></code> arguments. Values here override Shennong's
-generated defaults.</p></dd>
-
-
-<dt id="arg-reuse">reuse<a class="anchor" aria-label="anchor" href="#arg-reuse"></a></dt>
-<dd><p>Logical; when <code>TRUE</code>, reuse previously recorded
+generated defaults.
+<code>reuse</code>: logical; when <code>TRUE</code>, reuse previously recorded
 <code>sn_run_cluster()</code> stages if their stored input signatures still match
 the current call. This lets resolution-only changes start at clustering,
 integration-method changes start at integration, and HVG changes start at
-feature selection instead of rerunning all earlier steps.</p></dd>
-
-
-<dt id="arg-rerun-from">rerun_from<a class="anchor" aria-label="anchor" href="#arg-rerun-from"></a></dt>
-<dd><p>Optional stage name forcing recomputation from that stage
+feature selection instead of rerunning all earlier steps.
+<code>rerun_from</code>: optional stage name forcing recomputation from that stage
 onward while still allowing earlier matching stages to be reused. Supported
 values are <code>"normalize"</code>, <code>"cell_cycle"</code>, <code>"hvg"</code>,
 <code>"pca"</code>, <code>"adt"</code>, <code>"integration"</code>, <code>"neighbors"</code>,
-<code>"clusters"</code>, and <code>"umap"</code>.</p></dd>
-
-
-<dt id="arg-auto-install">auto_install<a class="anchor" aria-label="anchor" href="#arg-auto-install"></a></dt>
-<dd><p>Logical; when <code>TRUE</code>, install missing optional
-clustering dependencies such as <span class="pkg">leidenbase</span> before the relevant stage.</p></dd>
-
-
-<dt id="arg-install-repos">install_repos<a class="anchor" aria-label="anchor" href="#arg-install-repos"></a></dt>
-<dd><p>CRAN-like repositories used when <code>auto_install</code>
-installs CRAN packages.</p></dd>
-
-
-<dt id="arg-install-ask">install_ask<a class="anchor" aria-label="anchor" href="#arg-install-ask"></a></dt>
-<dd><p>Passed to <code>BiocManager::install()</code> when
+<code>"clusters"</code>, and <code>"umap"</code>.
+<code>auto_install</code>: logical; when <code>TRUE</code>, install missing optional
+clustering dependencies such as <span class="pkg">leidenbase</span> before the relevant stage.
+<code>install_repos</code>: CRAN-like repositories used when <code>auto_install</code>
+installs CRAN packages.
+<code>install_ask</code>: passed to <code>BiocManager::install()</code> when
 <code>auto_install</code> installs Bioconductor packages through
-<code><a href="sn_install_dependencies.html">sn_install_dependencies()</a></code>.</p></dd>
-
-
-<dt id="arg-hvg-group-by">hvg_group_by<a class="anchor" aria-label="anchor" href="#arg-hvg-group-by"></a></dt>
-<dd><p>Optional metadata column used to compute highly variable
+<code><a href="sn_install_dependencies.html">sn_install_dependencies()</a></code>.
+<code>hvg_group_by</code>: optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. When <code>NULL</code> and
 <code>batch</code> is supplied, Shennong reuses <code>batch</code> by default. Use
-<code>NULL</code> with <code>batch = NULL</code> to compute HVGs on the full object.</p></dd>
-
-
-<dt id="arg-rare-feature-method">rare_feature_method<a class="anchor" aria-label="anchor" href="#arg-rare-feature-method"></a></dt>
-<dd><p>Optional rare-cell-aware feature methods appended
+<code>NULL</code> with <code>batch = NULL</code> to compute HVGs on the full object.
+<code>rare_feature_method</code>: optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
-<code>"none"</code>, <code>"gini"</code>, and <code>"local_markers"</code>.</p></dd>
-
-
-<dt id="arg-rare-feature-group-by">rare_feature_group_by<a class="anchor" aria-label="anchor" href="#arg-rare-feature-group-by"></a></dt>
-<dd><p>Optional metadata column used to define groups
+<code>"none"</code>, <code>"gini"</code>, and <code>"local_markers"</code>.
+<code>rare_feature_group_by</code>: optional metadata column used to define groups
 for <code>"local_markers"</code>. When <code>NULL</code>, Shennong builds a temporary
-coarse clustering from the base HVGs.</p></dd>
-
-
-<dt id="arg-rare-feature-n">rare_feature_n<a class="anchor" aria-label="anchor" href="#arg-rare-feature-n"></a></dt>
-<dd><p>Number of rare-aware features to add per selected
+coarse clustering from the base HVGs.
+<code>rare_feature_n</code>: number of rare-aware features to add per selected
 method. For example, <code>c("gini", "local_markers")</code> with
 <code>rare_feature_n = 50</code> can contribute up to 100 rare-aware features
-before de-duplication.</p></dd>
-
-
-<dt id="arg-rare-feature-control">rare_feature_control<a class="anchor" aria-label="anchor" href="#arg-rare-feature-control"></a></dt>
-<dd><p>Named list of advanced rare-feature thresholds.
+before de-duplication.
+<code>rare_feature_control</code>: named list of advanced rare-feature thresholds.
 Supported fields are <code>group_max_fraction</code>, <code>group_max_cells</code>,
-<code>gene_max_fraction</code>, and <code>min_cells</code>.</p></dd>
-
-
-<dt id="arg-block-genes">block_genes<a class="anchor" aria-label="anchor" href="#arg-block-genes"></a></dt>
-<dd><p>Character vector of bundled signature queries and/or
+<code>gene_max_fraction</code>, and <code>min_cells</code>.
+<code>block_genes</code>: character vector of bundled signature queries and/or
 custom gene symbols to exclude from internally selected HVGs. Signature
 queries can use leaf names such as <code>"ribo"</code> and
 <code>"cellCycle.G2M"</code> or full paths such as
 <code>"Programs/cellCycle.G1S"</code>; <code>"g1s"</code> and <code>"g2m"</code> are kept as
 short aliases for the cell-cycle signatures. Applies to both
 log-normalization and SCTransform workflows; explicit <code>hvg_features</code>
-are preserved even when they overlap a blocked signature.</p></dd>
-
-
-<dt id="arg-theta">theta<a class="anchor" aria-label="anchor" href="#arg-theta"></a></dt>
-<dd><p>The <code>theta</code> parameter for <code><a href="https://pati-ni.github.io/harmony/reference/RunHarmony.html" class="external-link">harmony::RunHarmony</a></code>, controlling batch
+are preserved even when they overlap a blocked signature.
+<code>theta</code>: the <code>theta</code> parameter for <code><a href="https://pati-ni.github.io/harmony/reference/RunHarmony.html" class="external-link">harmony::RunHarmony</a></code>, controlling batch
 diversity preservation vs. correction. Used only when
-<code>integration_method = "harmony"</code>.</p></dd>
-
-
-<dt id="arg-group-by-vars">group_by_vars<a class="anchor" aria-label="anchor" href="#arg-group-by-vars"></a></dt>
-<dd><p>Optional column name or character vector passed to
+<code>integration_method = "harmony"</code>.
+<code>group_by_vars</code>: optional column name or character vector passed to
 <code>harmony::RunHarmony(group.by.vars = ...)</code>. Defaults to <code>batch</code>
-and is used only when <code>integration_method = "harmony"</code>.</p></dd>
-
-
-<dt id="arg-npcs">npcs<a class="anchor" aria-label="anchor" href="#arg-npcs"></a></dt>
-<dd><p>Number of PCs to compute in <code>RunPCA</code>.</p></dd>
-
-
-<dt id="arg-dims">dims<a class="anchor" aria-label="anchor" href="#arg-dims"></a></dt>
-<dd><p>A numeric vector of PCs (dimensions) to use for neighbor search,
-clustering, and UMAP.</p></dd>
-
-
-<dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
-<dd><p>Optional species label. Used when block genes must be resolved
-from built-in signatures.</p></dd>
-
-
-<dt id="arg-assay">assay<a class="anchor" aria-label="anchor" href="#arg-assay"></a></dt>
-<dd><p>Assay used for clustering. Defaults to <code>"RNA"</code>.</p></dd>
-
-
-<dt id="arg-layer">layer<a class="anchor" aria-label="anchor" href="#arg-layer"></a></dt>
-<dd><p>Layer used as the input count matrix. Defaults to <code>"counts"</code>.</p></dd>
-
-
-<dt id="arg-modality">modality<a class="anchor" aria-label="anchor" href="#arg-modality"></a></dt>
-<dd><p>Workflow modality. <code>"rna"</code> runs the standard RNA-only
+and is used only when <code>integration_method = "harmony"</code>.
+<code>npcs</code>: number of PCs to compute in <code>RunPCA</code>.
+<code>dims</code>: a numeric vector of PCs (dimensions) to use for neighbor search,
+clustering, and UMAP.
+<code>species</code>: optional species label. Used when block genes must be resolved
+from built-in signatures.
+<code>assay</code>: assay used for clustering. Defaults to <code>"RNA"</code>.
+<code>layer</code>: layer used as the input count matrix. Defaults to <code>"counts"</code>.
+<code>modality</code>: workflow modality. <code>"rna"</code> runs the standard RNA-only
 workflow. <code>"cite_seq"</code> enables paired RNA+ADT workflows selected by
-<code>multimodal_method</code>.</p></dd>
-
-
-<dt id="arg-multimodal-method">multimodal_method<a class="anchor" aria-label="anchor" href="#arg-multimodal-method"></a></dt>
-<dd><p>CITE-seq backend used when
+<code>multimodal_method</code>.
+<code>multimodal_method</code>: CITE-seq backend used when
 <code>modality = "cite_seq"</code>. <code>"wnn"</code> combines RNA PCA with ADT PCA
 using Seurat's weighted nearest-neighbor workflow and clusters on
 <code>"wsnn"</code>. <code>"coralysis"</code> runs native Coralysis on the ADT assay
@@ -399,52 +311,25 @@ protein matrix when supported, computes a protein PCA reduction, and
 clusters on that reduction. When
 <code>NULL</code>, Shennong keeps the historical CITE-seq default
 <code>"wnn"</code> unless <code>integration_method</code> was explicitly set to one of
-the supported multimodal backends.</p></dd>
-
-
-<dt id="arg-adt-assay">adt_assay<a class="anchor" aria-label="anchor" href="#arg-adt-assay"></a></dt>
-<dd><p>Assay containing antibody-derived tag counts for
-<code>modality = "cite_seq"</code>.</p></dd>
-
-
-<dt id="arg-adt-layer">adt_layer<a class="anchor" aria-label="anchor" href="#arg-adt-layer"></a></dt>
-<dd><p>Layer in <code>adt_assay</code> used as ADT counts.</p></dd>
-
-
-<dt id="arg-adt-features">adt_features<a class="anchor" aria-label="anchor" href="#arg-adt-features"></a></dt>
-<dd><p>Optional ADT/protein features used by CITE-seq backends.
-Defaults to all features in <code>adt_assay</code>.</p></dd>
-
-
-<dt id="arg-adt-npcs">adt_npcs<a class="anchor" aria-label="anchor" href="#arg-adt-npcs"></a></dt>
-<dd><p>Number of ADT PCs to compute for <code>modality = "cite_seq"</code>.</p></dd>
-
-
-<dt id="arg-adt-dims">adt_dims<a class="anchor" aria-label="anchor" href="#arg-adt-dims"></a></dt>
-<dd><p>Numeric vector of ADT PCs used in weighted nearest-neighbor
-graph construction. Defaults to <code>seq_len(min(18, adt_npcs))</code>.</p></dd>
-
-
-<dt id="arg-wnn-control">wnn_control<a class="anchor" aria-label="anchor" href="#arg-wnn-control"></a></dt>
-<dd><p>Optional named list of additional
+the supported multimodal backends.
+<code>adt_assay</code>: assay containing antibody-derived tag counts for
+<code>modality = "cite_seq"</code>.
+<code>adt_layer</code>: layer in <code>adt_assay</code> used as ADT counts.
+<code>adt_features</code>: optional ADT/protein features used by CITE-seq backends.
+Defaults to all features in <code>adt_assay</code>.
+<code>adt_npcs</code>: number of ADT PCs to compute for <code>modality = "cite_seq"</code>.
+<code>adt_dims</code>: numeric vector of ADT PCs used in weighted nearest-neighbor
+graph construction. Defaults to <code>seq_len(min(18, adt_npcs))</code>.
+<code>wnn_control</code>: optional named list of additional
 <code><a href="https://satijalab.org/seurat/reference/FindMultiModalNeighbors.html" class="external-link">Seurat::FindMultiModalNeighbors()</a></code> arguments used only when
 <code>modality = "cite_seq"</code>. Values here override Shennong's generated
-defaults.</p></dd>
-
-
-<dt id="arg-umap-control">umap_control<a class="anchor" aria-label="anchor" href="#arg-umap-control"></a></dt>
-<dd><p>Optional named list of additional
+defaults.
+<code>umap_control</code>: optional named list of additional
 <code><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">Seurat::RunUMAP()</a></code> arguments. Values here override Shennong's
 generated defaults, for example <code>n.neighbors</code>, <code>min.dist</code>,
-<code>spread</code>, <code>metric</code>, <code>seed.use</code>, or <code>reduction.name</code>.</p></dd>
-
-
-<dt id="arg-return-cluster">return_cluster<a class="anchor" aria-label="anchor" href="#arg-return-cluster"></a></dt>
-<dd><p>If <code>TRUE</code>, return only the cluster_by assignments.</p></dd>
-
-
-<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Whether to print/log progress messages.</p></dd>
+<code>spread</code>, <code>metric</code>, <code>seed.use</code>, or <code>reduction.name</code>.
+<code>return_cluster</code>: if <code>TRUE</code>, return only the cluster_by assignments.
+<code>verbose</code>: whether to print/log progress messages.</p></dd>
 
 </dl></div>
     <div class="section level2">

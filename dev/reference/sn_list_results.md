@@ -50,9 +50,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   sn_list_results(obj)
 }
-#> INFO [2026-07-15 08:24:49] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-15 08:24:49] Running QC metrics for human.
-#> INFO [2026-07-15 08:24:49] Seurat object initialization complete.
+#> INFO [2026-07-15 09:02:16] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-15 09:02:16] Running QC metrics for human.
+#> INFO [2026-07-15 09:02:16] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> Warning: The following tests were not performed: 
 #> Warning: When testing Shennong versus all:
@@ -60,5 +60,5 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
 #> # A tibble: 1 × 8
 #>   collection type  name    analysis method created_at     n_rows source
 #>   <chr>      <chr> <chr>   <chr>    <chr>  <chr>           <int> <chr> 
-#> 1 de_results de    default markers  wilcox 2026-07-15 08…      0 NA    
+#> 1 de_results de    default markers  wilcox 2026-07-15 09…      0 NA    
 ```

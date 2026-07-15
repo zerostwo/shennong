@@ -114,13 +114,13 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-07-15 08:25:20] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-15 08:25:20] Running QC metrics for human.
-#> INFO [2026-07-15 08:25:21] Seurat object initialization complete.
+#> INFO [2026-07-15 09:02:47] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-15 09:02:47] Running QC metrics for human.
+#> INFO [2026-07-15 09:02:47] Seurat object initialization complete.
 #> Warning: No DE genes identified
-#> INFO [2026-07-15 08:25:22] [sn_write_presentation_summary] Starting interpretation workflow.
-#> INFO [2026-07-15 08:25:22] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).
-#> INFO [2026-07-15 08:25:22] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.1s).
-#> INFO [2026-07-15 08:25:22] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-07-15 09:02:49] [sn_write_presentation_summary] Starting interpretation workflow.
+#> INFO [2026-07-15 09:02:49] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).
+#> INFO [2026-07-15 09:02:49] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.1s).
+#> INFO [2026-07-15 09:02:49] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.1s).
 #> [1] "presentation_summary"
 ```

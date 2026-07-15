@@ -7,11 +7,10 @@ Released 2026-07-15.
 #### Fixed
 
 - [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
-  now materializes omitted multimodal defaults before dispatch and
-  supplies explicit
-  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) choices,
-  keeping the standard RNA and default CITE-seq paths stable in
-  installed-package checks.
+  now dispatches its long-standing tail controls through a compact,
+  allowlisted compatibility wrapper. Named calls, positional tail calls,
+  explicit `NULL` values, and defaults are preserved while installed
+  package checks remain stable on the R 4.6 development runner.
 - Scissor and Symphony validate required user inputs before checking
   optional backend installations, so dependency-independent contract
   errors remain testable on minimal installations.
