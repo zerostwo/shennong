@@ -37,9 +37,8 @@ Released 2026-07-15.
 - `sn_load_data(backend = "api")` now uses the current ShennongData 0.2
   resource-client contract (`sn_connect()`,
   [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md),
-  `sn_assay()`, and
-  [`collect()`](https://dplyr.tidyverse.org/reference/compute.html))
-  rather than the retired schema endpoint interface.
+  `sn_assay()`, and `collect()`) rather than the retired schema endpoint
+  interface.
 - `sn_run_cluster(normalization_method = "sctransform")` now applies
   `block_genes` to SCTransform-selected HVGs before PCA, preventing
   default ribosomal, mitochondrial, heat-shock, immunoglobulin, TCR, and
@@ -81,10 +80,8 @@ Released 2026-07-15.
   for clustering-only runs where the Coralysis reference object is not
   needed.
 - [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
-  now calls configurable Seurat steps such as
-  [`FindClusters()`](https://satijalab.org/seurat/reference/FindClusters.html)
-  and [`RunUMAP()`](https://satijalab.org/seurat/reference/RunUMAP.html)
-  through symbolic object calls rather than
+  now calls configurable Seurat steps such as `FindClusters()` and
+  `RunUMAP()` through symbolic object calls rather than
   `do.call(object = object, ...)`, preventing `object@commands` entries
   from serializing the full Seurat object into command-history call
   strings.
@@ -603,13 +600,11 @@ Released 2026-07-15.
   colour-scale message.
 
 - [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
-  now exposes additional Seurat 5.5
-  [`FeaturePlot()`](https://satijalab.org/seurat/reference/FeaturePlot.html)
-  arguments including `assay`, `dims`, `cells`, `alpha`, `stroke_size`,
-  `min_cutoff`, and `raster_dpi`. With `ggrastr` available,
-  `raster = TRUE` rasterizes a regular ggplot point layer so `pt_size`
-  behaves like `raster = FALSE`, fixing overly large rasterized feature
-  points.
+  now exposes additional Seurat 5.5 `FeaturePlot()` arguments including
+  `assay`, `dims`, `cells`, `alpha`, `stroke_size`, `min_cutoff`, and
+  `raster_dpi`. With `ggrastr` available, `raster = TRUE` rasterizes a
+  regular ggplot point layer so `pt_size` behaves like `raster = FALSE`,
+  fixing overly large rasterized feature points.
 
 - `sn_plot_feature(raster = TRUE)` now falls back to the vector point
   layer when optional package `ggrastr` is unavailable instead of
@@ -1064,8 +1059,7 @@ Released 2026-03-25.
 - Fixed
   [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
   theme handling so the optional `catplot` theme no longer tries to
-  impose an additional aspect ratio on top of
-  [`coord_fixed()`](https://ggplot2.tidyverse.org/reference/coord_fixed.html).
+  impose an additional aspect ratio on top of `coord_fixed()`.
 - Fixed Rd example line-width failures in `R CMD check` and declared the
   runtime `data.tree` dependency explicitly.
 

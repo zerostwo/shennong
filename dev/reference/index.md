@@ -241,7 +241,7 @@
 - [`sn_run_trajectory()`](https://songqi.org/shennong/dev/reference/sn_run_trajectory.md)
   : Infer trajectories and test dynamic genes
 - [`sn_run_velocity()`](https://songqi.org/shennong/dev/reference/sn_run_velocity.md)
-  : Run RNA velocity with the managed scVelo backend
+  : Run RNA velocity with managed scVelo or RegVelo backends
 - [`sn_plot_velocity()`](https://songqi.org/shennong/dev/reference/sn_plot_velocity.md)
   : Plot RNA velocity vectors
 - [`sn_run_fate()`](https://songqi.org/shennong/dev/reference/sn_run_fate.md)
@@ -524,6 +524,10 @@
   : Check if files exist
 - [`sn_get_codex_skill_path()`](https://songqi.org/shennong/dev/reference/sn_get_codex_skill_path.md)
   : Return installed Shennong Codex asset paths
+- [`sn_mcp_server_config()`](https://songqi.org/shennong/dev/reference/sn_mcp_server_config.md)
+  : Return a stdio configuration for the Shennong MCP server
+- [`sn_mcp_server()`](https://songqi.org/shennong/dev/reference/sn_mcp_server.md)
+  : Run the read-only Shennong MCP server over stdio
 - [`sn_list_dependencies()`](https://songqi.org/shennong/dev/reference/sn_list_dependencies.md)
   : List Shennong runtime and recommended R package dependencies
 - [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)

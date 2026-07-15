@@ -160,11 +160,9 @@
 </tr>
 <tr>
 <td>Marker and differential-expression analysis</td>
-<td>
-<code><a href="reference/sn_find_de.html">sn_find_de()</a></code>, <code><a href="reference/sn_find_bulk_de.html">sn_find_bulk_de()</a></code>
-</td>
-<td>Seurat tests including Wilcoxon, COSG, DESeq2, edgeR, limma/limma-voom and dream/variancePartition</td>
-<td>Native R; automatic bulk backend selection is available</td>
+<td><code><a href="reference/sn_find_de.html">sn_find_de()</a></code></td>
+<td>Single-cell Seurat tests including Wilcoxon and COSG; pseudobulk and standalone bulk DE with DESeq2, edgeR, limma/limma-voom and dream/variancePartition</td>
+<td>Native R; input type selects single-cell or bulk automatically; <code><a href="reference/sn_find_bulk_de.html">sn_find_bulk_de()</a></code> remains compatible</td>
 </tr>
 <tr>
 <td>Enrichment and regulatory activity</td>
@@ -193,7 +191,7 @@
 <td>
 <code><a href="reference/sn_run_trajectory.html">sn_run_trajectory()</a></code>, <code><a href="reference/sn_run_velocity.html">sn_run_velocity()</a></code>, <code><a href="reference/sn_run_fate.html">sn_run_fate()</a></code>
 </td>
-<td>Slingshot, Monocle 3, Palantir, tradeSeq, scVelo and CellRank</td>
+<td>Slingshot, Monocle 3, Palantir, tradeSeq, scVelo, RegVelo and CellRank</td>
 <td>Native R or managed pixi</td>
 </tr>
 <tr>
@@ -267,6 +265,20 @@
 <span><span class="fu"><a href="reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment</a></span><span class="op">(</span><span class="st">"trajectory"</span>, install_environment <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="agent-and-mcp-integration">Agent And MCP Integration<a class="anchor" aria-label="anchor" href="#agent-and-mcp-integration"></a>
+</h2>
+<p>Shennong ships installable Agent Skills plus a read-only MCP server. The MCP surface lets an agent discover registered methods, inspect exact installed R help, and retrieve workflow recipes; it does not execute arbitrary R code or modify analysis files.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install all packaged Shennong usage skills for local agents.</span></span>
+<span><span class="fu"><a href="reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">"~/.agents/skills"</span>, type <span class="op">=</span> <span class="st">"package_skills"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Use this command/argument pair in any stdio-capable MCP client.</span></span>
+<span><span class="fu"><a href="reference/sn_mcp_server_config.html">sn_mcp_server_config</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Equivalent direct server command:</span></span>
+<span><span class="co"># Rscript -e 'Shennong::sn_mcp_server()'</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="built-in-example-data">Built-In Example Data<a class="anchor" aria-label="anchor" href="#built-in-example-data"></a>
 </h2>
 <p>The package ships a small built-in PBMC example derived from the <code>pbmc1k</code> and <code>pbmc3k</code> assets:</p>
@@ -281,7 +293,7 @@
 <div class="section level2">
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span>
@@ -304,7 +316,7 @@
 <h2 id="integration-example">Integration Example<a class="anchor" aria-label="anchor" href="#integration-example"></a>
 </h2>
 <p>The same built-in PBMC example can be used for batch-aware integration:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
@@ -315,7 +327,7 @@
 <span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>You can summarize integration quality and surface rare or difficult groups directly from the integrated object:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_integrated</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
@@ -333,7 +345,7 @@
 <div class="section level2">
 <h2 id="differential-expression-and-enrichment">Differential Expression And Enrichment<a class="anchor" aria-label="anchor" href="#differential-expression-and-enrichment"></a>
 </h2>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
@@ -352,6 +364,15 @@
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  store_name <span class="op">=</span> <span class="st">"cluster_pathways"</span>,</span>
 <span>  pvalue_cutoff <span class="op">=</span> <span class="fl">0.05</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The same <code><a href="reference/sn_find_de.html">sn_find_de()</a></code> entry point accepts a feature-by-sample matrix, list, or <code>SummarizedExperiment</code> for standalone bulk analysis:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bulk_de</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
+<span>  <span class="va">counts</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="va">sample_data</span>,</span>
+<span>  design <span class="op">=</span> <span class="op">~</span> <span class="va">batch</span> <span class="op">+</span> <span class="va">condition</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"tumor"</span>, <span class="st">"normal"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"auto"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
