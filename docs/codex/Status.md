@@ -31,8 +31,16 @@ Last updated: 2026-07-15
   registry test now matches the implemented Slingshot state, and the exact
   backend fallback is muffled without hiding other enrichment warnings;
   focused regression tests pass 116 assertions without warnings.
-- Work is active on `feat/analysis-publication-roadmap` against the
-  `shennong_analysis_and_publication_figure_roadmap.md` specification.
+- The analysis/publication roadmap was completed on
+  `feat/analysis-publication-roadmap`, merged into `main` as `1f85f80`, and the
+  merged source passed `FAIL 0 | WARN 0 | SKIP 6 | PASS 1906` plus full
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` with `Status: OK`.
+  The merged topic branch was then pruned locally.
+- `README.Rmd` now exposes a module-by-module one-command software matrix and
+  regenerates `README.md`. The matrix covers 33 public workflow entry points
+  and all 63 registry methods, and explicitly distinguishes direct R,
+  Shennong-managed pixi/CLI, and external runner/result adapters from current
+  local dependency availability.
 - The final roadmap adapter pass adds the explicit multimodal entry point,
   keeps backend-specific annotation/trajectory/CellRank functions internal,
   adds direct optional Monocle 3 inference, standardizes external Palantir and

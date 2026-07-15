@@ -4,6 +4,16 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- `README.Rmd` is the source of truth for the repository landing page, and
+  `README.md` must be regenerated from it. The supported-software summary is
+  organized by analysis module and names the stable Shennong entry point,
+  backend software, and execution model rather than presenting optional
+  dependencies as if they were bundled.
+- Public documentation must distinguish method implementation from current
+  machine availability. A registry entry can be implemented through a direct
+  backend, managed pixi/CLI workflow, or explicit runner/result adapter;
+  `sn_list_methods()` and `sn_method_status()` remain authoritative for local
+  runtime and installation status.
 - Development indexes must be excluded at both the root-directory and child
   path levels because `R CMD build` can preserve an empty ignored directory.
 - Warning suppression remains message-specific. The `enrichit` qvalue fallback
