@@ -50,9 +50,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   sn_list_results(obj)
 }
-#> INFO [2026-07-15 09:02:16] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-15 09:02:16] Running QC metrics for human.
-#> INFO [2026-07-15 09:02:16] Seurat object initialization complete.
+#> INFO [2026-07-15 09:30:50] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-15 09:30:50] Running QC metrics for human.
+#> INFO [2026-07-15 09:30:50] Seurat object initialization complete.
 #> Warning: No DE genes identified
 #> Warning: The following tests were not performed: 
 #> Warning: When testing Shennong versus all:

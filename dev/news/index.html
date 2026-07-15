@@ -63,7 +63,7 @@
 <div class="section level4">
 <h4 id="fixed-0-2-0">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-2-0"></a></h4>
 <ul><li>
-<code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> now dispatches its long-standing tail controls through a compact, allowlisted compatibility wrapper. Named calls, positional tail calls, explicit <code>NULL</code> values, and defaults are preserved while installed package checks remain stable on the R 4.6 development runner.</li>
+<code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> now dispatches its long-standing tail controls through a compact, allowlisted compatibility wrapper. Named calls, positional tail calls, explicit <code>NULL</code> values, and defaults are preserved in one named argument bundle, avoiding long-formal dispatch on the R 4.6 development runner.</li>
 <li>Scissor and Symphony validate required user inputs before checking optional backend installations, so dependency-independent contract errors remain testable on minimal installations.</li>
 <li>The pkgdown deployment workflow now installs UCell before evaluating the program-scoring article, so the documented default <code>method = "ucell"</code> backend is available in clean GitHub Actions runners.</li>
 <li>The data-I/O article no longer performs unconditional Zenodo downloads during pkgdown deployment; its network-backed examples now require the explicit <code>SHENNONG_RUN_NETWORK_VIGNETTES=true</code> opt-in.</li>

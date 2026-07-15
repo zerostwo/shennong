@@ -18,9 +18,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-15 09:15:05] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-15 09:15:06] Running QC metrics for human.
-#> INFO [2026-07-15 09:15:06] Seurat object initialization complete.
+#> INFO [2026-07-15 09:43:42] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 09:43:42] Running QC metrics for human.
+#> INFO [2026-07-15 09:43:43] Seurat object initialization complete.
 counts_full <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
 demo_features <- names(sort(Matrix::rowSums(counts_full), decreasing = TRUE))[
   seq_len(min(1000, nrow(counts_full)))
@@ -57,7 +57,7 @@ pbmc_layered <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
-#> WARN [2026-07-15 09:15:08] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).
+#> WARN [2026-07-15 09:43:44] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).
 
 sn_plot_dim(
   pbmc_layered,
@@ -102,7 +102,7 @@ sn_get_de_result(
 #> [1] "0.2.0"
 #> 
 #> $created_at
-#> [1] "2026-07-15 09:15:13 UTC"
+#> [1] "2026-07-15 09:43:50 UTC"
 #> 
 #> $table
 #> # A tibble: 1,004 × 7
@@ -232,7 +232,7 @@ sn_get_de_result(
 #> [1] NA
 #> 
 #> $provenance$timestamp
-#> [1] "2026-07-15 09:15:13 UTC"
+#> [1] "2026-07-15 09:43:50 UTC"
 ```
 
 The stored metadata records the analysis context, which helps downstream
