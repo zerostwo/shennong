@@ -236,12 +236,12 @@
                                  bulk_phenotype,
                                  family,
                                  backend_control) {
-  check_installed("Scissor", reason = "to run phenotype-guided Scissor selection.")
   if (is_null(bulk_expression) || is_null(bulk_phenotype)) {
     stop("Scissor requires `bulk_expression` and `bulk_phenotype`; a cell metadata phenotype is not a substitute.", call. = FALSE)
   }
   bulk_expression <- as.matrix(bulk_expression)
   if (ncol(bulk_expression) != NROW(bulk_phenotype)) stop("`bulk_phenotype` must describe every bulk-expression column.", call. = FALSE)
+  check_installed("Scissor", reason = "to run phenotype-guided Scissor selection.")
   assay <- backend_control$assay %||% Seurat::DefaultAssay(object)
   expression <- .sn_annotation_expression(object, assay = assay, layer = backend_control$layer %||% "data")
   counts <- .sn_get_seurat_layer_data(object, assay = assay, layer = "counts")

@@ -2509,6 +2509,12 @@ sn_run_cluster <- function(object,
                            umap_control = list(),
                            return_cluster = FALSE,
                            verbose = TRUE) {
+  if (missing(modality)) {
+    modality <- "rna"
+  }
+  if (missing(multimodal_method)) {
+    multimodal_method <- NULL
+  }
   check_installed("Seurat")
   check_installed("HGNChelper")
 
@@ -2532,7 +2538,7 @@ sn_run_cluster <- function(object,
   block_genes_supplied <- !missing(block_genes)
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
-  modality <- match.arg(modality)
+  modality <- match.arg(modality, c("rna", "cite_seq"))
   multimodal_method <- if (identical(modality, "cite_seq")) {
     .sn_resolve_multimodal_method(
       multimodal_method = multimodal_method,

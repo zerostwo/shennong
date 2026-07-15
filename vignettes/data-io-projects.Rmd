@@ -12,6 +12,8 @@ vignette: >
 
 ```{r, include = FALSE}
 run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_network_vignette <- run_vignette &&
+  identical(Sys.getenv("SHENNONG_RUN_NETWORK_VIGNETTES"), "true")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -20,7 +22,7 @@ knitr::opts_chunk$set(
   message = FALSE,
   fig.width = 7,
   fig.height = 5,
-  eval = run_vignette
+  eval = run_network_vignette
 )
 ```
 
@@ -29,8 +31,9 @@ find the data, read it with one function, add explicit sample metadata, and
 write reusable artifacts without changing APIs for every file type.
 
 This article uses the package PBMC3k example throughout. To keep package checks
-and website builds fast, code chunks are shown by default and are evaluated only
-when you render with `SHENNONG_RUN_VIGNETTES=true`.
+and website builds independent of Zenodo availability, code chunks are shown by
+default and are evaluated only when you render with both
+`SHENNONG_RUN_VIGNETTES=true` and `SHENNONG_RUN_NETWORK_VIGNETTES=true`.
 
 ## Start with PBMC3k
 

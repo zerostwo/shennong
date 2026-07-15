@@ -30,6 +30,18 @@ Last updated: 2026-07-15
   but exposed a clean-runner dependency omission: UCell was not installed for
   the default program-scoring example. The website workflow now declares
   `bioc::UCell`; the corrected remote run must pass before tagging the release.
+- The corrected run passed the UCell-dependent article and then exposed an
+  unconditional Zenodo download in `data-io-projects.Rmd`; Zenodo returned HTTP
+  504. That article now requires the explicit
+  `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in so website builds are not coupled
+  to third-party availability.
+- The same clean-runner gate also exposed installed-package clustering failures
+  around omitted multimodal defaults, plus two optional-backend checks that ran
+  before dependency-independent input validation. The defaults are now
+  materialized explicitly, and Scissor/Symphony validate required inputs before
+  checking their optional packages. Focused clustering, abundance, and
+  annotation tests pass with `FAIL 0 | WARN 0 | SKIP 1 | PASS 505`; the
+  data-I/O article also renders successfully with network examples disabled.
 - Full source-package checking exposed that excluding only CodeGraph contents
   could still leave an empty top-level `.codegraph` directory in the tarball.
   The root directory now has an explicit build-ignore rule, the active index

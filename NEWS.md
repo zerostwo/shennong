@@ -9,9 +9,18 @@ Released 2026-07-15.
 
 ### Fixed
 
+- `sn_run_cluster()` now materializes omitted multimodal defaults before
+  dispatch and supplies explicit `match.arg()` choices, keeping the standard
+  RNA and default CITE-seq paths stable in installed-package checks.
+- Scissor and Symphony validate required user inputs before checking optional
+  backend installations, so dependency-independent contract errors remain
+  testable on minimal installations.
 - The pkgdown deployment workflow now installs UCell before evaluating the
   program-scoring article, so the documented default `method = "ucell"`
   backend is available in clean GitHub Actions runners.
+- The data-I/O article no longer performs unconditional Zenodo downloads during
+  pkgdown deployment; its network-backed examples now require the explicit
+  `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in.
 - `sn_plot_dot()` now renders named feature lists as Seurat's free-width marker
   facets without adding an incompatible fixed coordinate ratio; ordinary
   feature vectors retain the existing fixed-coordinate layout.

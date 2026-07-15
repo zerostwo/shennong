@@ -262,10 +262,10 @@
                                     assay = NULL,
                                     layer = "data",
                                     backend_control = list()) {
-  check_installed("symphony", reason = "to run `method = \"symphony\"` annotation.")
   if (is_null(reference) || is_null(reference_label_by)) {
     stop("`reference` and `reference_label_by` are required for Symphony annotation.", call. = FALSE)
   }
+  check_installed("symphony", reason = "to run `method = \"symphony\"` annotation.")
   query <- .sn_annotation_expression(object, assay = assay, layer = layer)
   build_control <- backend_control$build %||% list()
   if (inherits(reference, "Seurat")) {
