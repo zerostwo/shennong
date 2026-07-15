@@ -11,11 +11,11 @@ Last updated: 2026-07-15
   and explicit `NULL` values; unknown and duplicate tail controls fail
   explicitly. Installed-package tests must use expression-scoped namespace
   mocks so a test double cannot replace this public binding in later files.
-- The completed analysis/publication roadmap closes the `0.2.0` release line.
-  This is a pre-1.0 minor release because it adds a broad stable workflow
-  surface and includes intentional experimental API changes accumulated since
-  `0.1.4`. After tagging, `main` moves to `0.2.0.9000`; later features belong to
-  the next release instead of extending the frozen `0.2.0` changelog.
+- The completed analysis/publication roadmap is published as `v0.2.0`. This is
+  a pre-1.0 minor release because it adds a broad stable workflow surface and
+  includes intentional experimental API changes accumulated since `0.1.4`.
+  `main` now uses `0.2.0.9000`; later features belong to the next release
+  instead of extending the frozen `0.2.0` changelog.
 - `README.Rmd` is the source of truth for the repository landing page, and
   `README.md` must be regenerated from it. The supported-software summary is
   organized by analysis module and names the stable Shennong entry point,

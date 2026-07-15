@@ -17,15 +17,17 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
-- The accumulated `Unreleased` roadmap, workflow, compatibility, documentation,
-  and publication-figure changes are frozen as the `0.2.0` release candidate.
-  `DESCRIPTION` and `NEWS.md` now share that version boundary; after the
-  release tag is published, `main` will advance to `0.2.0.9000` so subsequent
+- The accumulated roadmap, workflow, compatibility, documentation, and
+  publication-figure changes were published as GitHub Release `v0.2.0` from
+  commit `5f75d4a`. The tag is non-draft and non-prerelease; `main` now advances
+  to `0.2.0.9000`, and `NEWS.md` has a fresh `Unreleased` boundary so subsequent
   features cannot silently enter the released source. The release gate passes
   `FAIL 0 | WARN 0 | SKIP 6 | PASS 1906`, builds
   `Shennong_0.2.0.tar.gz`, completes structural
   `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` with `Status: OK`,
-  and validates the complete pkgdown reference index.
+  and validates the complete pkgdown reference index. Remote release checks
+  pass in `R-CMD-check` run `29405957672`, coverage run `29405957618`, and
+  pkgdown deployment run `29405957610`.
 - The first remote `0.2.0` pkgdown run reached the evaluated annotation article
   but exposed a clean-runner dependency omission: UCell was not installed for
   the default program-scoring example. The website workflow now declares
