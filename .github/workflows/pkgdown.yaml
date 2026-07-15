@@ -4,7 +4,19 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '23 2 * * 1'
   workflow_dispatch:
+    inputs:
+      full:
+        description: Clean and rebuild every reference page and article
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: pkgdown-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -14,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SHENNONG_RUN_VIGNETTES: true
+      PKGDOWN_FULL: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,9 +80,13 @@ jobs:
           Rscript -e '
             sha <- substr(Sys.getenv("GITHUB_SHA"), 1, 7)
             version <- as.character(utils::packageVersion("Shennong"))
+            full <- identical(tolower(Sys.getenv("PKGDOWN_FULL")), "true")
             pkgdown::deploy_to_branch(
               new_process = FALSE,
               install = FALSE,
+              clean = full,
+              lazy = !full,
+              examples = full,
               commit_message = sprintf("Built site for Shennong@%s: %s", version, sha)
             )
           ' > pkgdown.log 2>&1

@@ -102,7 +102,9 @@ Datasets:
 - `sn_plot_annotation_confidence()` / `sn_plot_annotation_markers()` /
   `sn_plot_annotation_confusion()`: result-aware annotation diagnostics
 - `sn_run_celltypist()`: external CellTypist-based annotation
-- `sn_find_de()`: markers, contrasts, and pseudobulk DE
+- `sn_find_de()`: unified DE entry point; Seurat inputs run markers, contrasts,
+  or pseudobulk DE, while matrix/list/`SummarizedExperiment` inputs run
+  standalone bulk DE with explicit design and contrast
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
 - `sn_enrich()`: ORA or GSEA from vectors, tables, or stored DE
 - `sn_list_signatures()`: list bundled signatures
@@ -134,9 +136,10 @@ Datasets:
   `sn_plot_lineage_probability()`: embedding views backed by the stored result
 - `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
   `sn_plot_branch_comparison()`: tradeSeq trend and branch-test views
-- `sn_run_velocity()` / `sn_plot_velocity()`: managed scVelo inference from
-  spliced/unspliced layers with projected vectors, transition evidence,
-  pseudotime, and confidence
+- `sn_run_velocity()` / `sn_plot_velocity()`: managed scVelo or RegVelo
+  inference from spliced/unspliced layers with projected vectors, transition
+  evidence, pseudotime, and confidence; RegVelo additionally requires an
+  explicit regulator-target prior GRN and retains its model artifact
 - `sn_run_fate()` / `sn_plot_fate()`: CellRank GPCCA terminal states, fate
   probabilities, and optional lineage drivers from a stored velocity result
 
@@ -164,8 +167,9 @@ Datasets:
   survival workflows
 - `sn_assess_bulk_qc()`: library size, detected features, distributions, PCA,
   sample correlation, and robust outlier evidence
-- `sn_find_bulk_de()`: validated fixed/mixed design and explicit contrast with
-  automatic or direct edgeR, DESeq2, limma-voom, limma, and dream backends
+- `sn_find_bulk_de()`: compatibility entry point for the same bulk engine now
+  selected automatically by `sn_find_de()`; supports fixed/mixed designs and
+  edgeR, DESeq2, limma-voom, limma, and dream backends
 - `sn_score_bulk_pathways()`: mean, GSVA, or ssGSEA sample scores with gene-set
   coverage diagnostics
 - `sn_run_wgcna()`: weighted co-expression modules, eigengenes, soft-power
@@ -302,6 +306,10 @@ Datasets:
 - `sn_install_dependencies()`: install missing dependencies
 - `sn_initialize_project()`: initialize a governed analysis project
 - `sn_install_codex_skill()`: install shipped Codex skills
+- `sn_mcp_server_config()`: return the stdio command and arguments for the
+  bundled read-only Shennong MCP server
+- `sn_mcp_server()`: serve method discovery, installed R help, and workflow
+  guides over newline-delimited MCP JSON-RPC without arbitrary code execution
 - `sn_set_path()`: create a directory path if needed
 
 ## Selection shortcuts
@@ -310,7 +318,8 @@ Datasets:
   use `sn_initialize_seurat_object()`
 - If the task is clustering or integration:
   use `sn_run_cluster()`
-- If the task is markers or contrasts:
+- If the task is single-cell markers, single-cell contrasts, pseudobulk, or
+  standalone bulk differential expression:
   use `sn_find_de()`
 - If the task is pathways:
   use `sn_enrich()`

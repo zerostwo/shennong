@@ -8,6 +8,37 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Changes developed after `v0.2.0` are recorded in this section for the next
 release.
 
+### Added
+
+- Added RegVelo as a managed `sn_run_velocity(method = "regvelo")` backend.
+  Shennong accepts regulator-target edge tables, named target-by-regulator
+  matrices, or CSV priors; the unified velocity result retains RegVelo latent
+  time, projected vectors, transition evidence, trained-model metadata, and
+  the H5AD artifact used by CellRank.
+- Added a read-only stdio MCP server with `sn_mcp_server()` and
+  `sn_mcp_server_config()`. Agents can discover methods, inspect exact installed
+  function help, and read bundled workflow guides without arbitrary R execution
+  or file mutation. A matching `use-shennong-mcp` Agent Skill is shipped and
+  installable through `sn_install_codex_skill()`.
+
+### Changed
+
+- `sn_find_de()` is now the common differential-expression entry point. It
+  retains all Seurat marker, contrast, and pseudobulk behavior while
+  automatically dispatching matrix, list, and `SummarizedExperiment` inputs to
+  the standalone bulk engine. `sn_find_bulk_de()` remains a compatible wrapper.
+
+### Performance
+
+- Daily R package checks no longer repeat the full test suite already run by
+  coverage; release audits can opt back in through `workflow_dispatch`.
+- pkgdown push deployments preserve the previous site, rebuild only changed
+  pages, and skip example execution. A scheduled or manually requested full
+  build remains the clean release-quality gate, while
+  `scripts/build-pkgdown.R` provides the same incremental/full split locally.
+- Documentation-only changes avoid unnecessary coverage and package-check
+  runs, and superseded runs are cancelled per branch.
+
 # Version 0.2.0
 
 Released 2026-07-15.

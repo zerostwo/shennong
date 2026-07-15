@@ -75,6 +75,41 @@ test_that("velocity and fate runners receive backend context", {
   expect_equal(fate$method, "cellrank")
 })
 
+test_that("RegVelo reuses the velocity result contract", {
+  object <- make_velocity_test_object()
+  result <- sn_run_velocity(
+    object,
+    method = "regvelo",
+    backend_control = list(result = velocity_adapter_result(object)),
+    return_object = FALSE
+  )
+
+  expect_true(sn_validate_result(result, error = FALSE)$valid)
+  expect_identical(result$method, "regvelo")
+  expect_identical(result$backend, "regvelo-pixi")
+  expect_true(all(result$tables$cells$method == "regvelo"))
+  expect_true(all(c("soft_constraint", "lam", "max_epochs") %in% names(result$parameters)))
+})
+
+test_that("RegVelo prior GRNs are normalized to regulator-target edges", {
+  path <- tempfile(fileext = ".csv")
+  prior <- matrix(
+    c(0, 1.5, -0.5, 0),
+    nrow = 2,
+    dimnames = list(target = c("G1", "G2"), regulator = c("TF1", "TF2"))
+  )
+  Shennong:::.sn_write_regvelo_prior_grn(prior, path)
+  edges <- utils::read.csv(path)
+
+  expect_setequal(names(edges), c("regulator", "target", "weight"))
+  expect_equal(nrow(edges), 2L)
+  expect_setequal(edges$regulator, c("TF1", "TF2"))
+  expect_error(
+    Shennong:::.sn_write_regvelo_prior_grn(NULL, path),
+    "prior_grn"
+  )
+})
+
 test_that("velocity and fate plots render", {
   object <- make_velocity_test_object()
   velocity <- sn_run_velocity(object, backend_control = list(result = velocity_adapter_result(object)), return_object = FALSE)
@@ -94,5 +129,8 @@ test_that("velocity and fate plots render", {
 test_that("trajectory pixi environment and dynamics methods are registered", {
   expect_true("trajectory" %in% sn_list_pixi_environments())
   expect_true(sn_method_status("scvelo", "velocity")$implemented)
+  expect_true(sn_method_status("regvelo", "velocity")$implemented)
   expect_true(sn_method_status("cellrank", "fate")$implemented)
+  manifest <- readLines(sn_pixi_config_path("trajectory"), warn = FALSE)
+  expect_true(any(grepl("regvelo", manifest, fixed = TRUE)))
 })

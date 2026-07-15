@@ -4,6 +4,31 @@ Last updated: 2026-07-15
 
 ## 2026-07-15
 
+- `sn_find_de()` is the stable differential-expression entry point across
+  single-cell, pseudobulk, and standalone bulk inputs. Modality auto-detection
+  is based on the input contract, not an inferred biological claim;
+  `sn_find_bulk_de()` remains a thin compatibility wrapper so existing scripts
+  do not break.
+- RegVelo shares the managed velocity environment and the existing
+  `sn_run_velocity()` result schema with scVelo, but it requires an explicit
+  prior GRN. Shennong normalizes supported prior formats and retains
+  RegVelo-native model/latent-time evidence rather than disguising RegVelo as a
+  scVelo option with equivalent assumptions.
+- The package MCP server is a read-only discovery surface over stdio. Its tool
+  list is intentionally limited to registry inspection, method status, exact R
+  help, bundled workflow guides, and package metadata; arbitrary R execution,
+  filesystem writes, and implicit dependency installation are outside this
+  server's authority.
+- Agent integration is shipped as package assets, not repository-only prompts.
+  The dedicated MCP skill follows the same API map and workflow recipes as the
+  other installed Shennong skills so agents have one package-versioned source
+  of operational guidance.
+- Routine push validation should avoid duplicated expensive work. Coverage
+  owns the full test suite, the ordinary R CMD check job uses `--no-tests`, and
+  manual dispatch can restore the full check path. Pkgdown uses lazy,
+  example-free builds on pushes and reserves clean full builds for weekly,
+  manual, and release validation. This changes execution frequency, not the
+  release gate.
 - The public `sn_run_cluster()` entry point keeps a compact formal list and
   resolves its long-standing tail controls from `...` through a fixed allowlist
   into one named argument bundle before calling the single-argument private

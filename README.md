@@ -56,11 +56,11 @@ executed.
 | CITE-seq and multimodal integration | `sn_run_multimodal()` | Seurat WNN, totalVI, Coralysis and MMoCHi | Native R or managed pixi |
 | Reference mapping and simulation | `sn_transfer_labels()`, `sn_simulate()` | Seurat anchors, Coralysis, scANVI, scArches, scPoli and scDesign3 | Native R or managed pixi |
 | Cell-type annotation | `sn_run_annotation()` | Shennong consensus, SingleR, CellTypist, Seurat label transfer, Symphony, scmap and scANVI, with Cell Ontology mapping | Native R, CLI or managed pixi |
-| Marker and differential-expression analysis | `sn_find_de()`, `sn_find_bulk_de()` | Seurat tests including Wilcoxon, COSG, DESeq2, edgeR, limma/limma-voom and dream/variancePartition | Native R; automatic bulk backend selection is available |
+| Marker and differential-expression analysis | `sn_find_de()` | Single-cell Seurat tests including Wilcoxon and COSG; pseudobulk and standalone bulk DE with DESeq2, edgeR, limma/limma-voom and dream/variancePartition | Native R; input type selects single-cell or bulk automatically; `sn_find_bulk_de()` remains compatible |
 | Enrichment and regulatory activity | `sn_enrich()`, `sn_run_regulatory_activity()` | clusterProfiler ORA/GSEA, GO, KEGG, MSigDB/msigdbr, decoupleR, DoRothEA and PROGENy | Native R |
 | Gene-set scoring and program discovery | `sn_score_programs()`, `sn_discover_programs()` | UCell, AUCell, GSVA, ssGSEA, sparse mean scoring, multi-restart NMF, cNMF and Hotspot | Native R; cNMF/Hotspot adapters |
 | Gene-regulatory networks | `sn_run_grn()` | GENIE3, pySCENIC, R SCENIC and GRNBoost2/arboreto | Native R for GENIE3; external-result adapters for SCENIC/GRNBoost2 |
-| Trajectory and cell dynamics | `sn_run_trajectory()`, `sn_run_velocity()`, `sn_run_fate()` | Slingshot, Monocle 3, Palantir, tradeSeq, scVelo and CellRank | Native R or managed pixi |
+| Trajectory and cell dynamics | `sn_run_trajectory()`, `sn_run_velocity()`, `sn_run_fate()` | Slingshot, Monocle 3, Palantir, tradeSeq, scVelo, RegVelo and CellRank | Native R or managed pixi |
 | Differential abundance and state prioritization | `sn_test_abundance()`, `sn_prioritize_states()` | Propeller/speckle, Milo/miloR, scCODA/pertpy, sample-aware permutation, Augur-inspired prioritization, Scissor and RareQ | Native R, managed runner or adapter |
 | Cell-cell communication | `sn_run_cell_communication()` | LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus | Native R or managed pixi |
 | CNV and malignant-state analysis | `sn_run_cnv()` | infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries | Managed pixi or native R |
@@ -89,6 +89,24 @@ sn_method_status("cellrank", task = "fate")
 # Install missing R dependencies or prepare a managed Python environment
 sn_install_dependencies(scope = "recommended")
 sn_prepare_pixi_environment("trajectory", install_environment = TRUE)
+```
+
+## Agent And MCP Integration
+
+Shennong ships installable Agent Skills plus a read-only MCP server. The
+MCP surface lets an agent discover registered methods, inspect exact
+installed R help, and retrieve workflow recipes; it does not execute
+arbitrary R code or modify analysis files.
+
+``` r
+# Install all packaged Shennong usage skills for local agents.
+sn_install_codex_skill(path = "~/.agents/skills", type = "package_skills")
+
+# Use this command/argument pair in any stdio-capable MCP client.
+sn_mcp_server_config()
+
+# Equivalent direct server command:
+# Rscript -e 'Shennong::sn_mcp_server()'
 ```
 
 ## Built-In Example Data
@@ -180,6 +198,19 @@ pbmc <- sn_enrich(
   species = "human",
   store_name = "cluster_pathways",
   pvalue_cutoff = 0.05
+)
+```
+
+The same `sn_find_de()` entry point accepts a feature-by-sample matrix,
+list, or `SummarizedExperiment` for standalone bulk analysis:
+
+``` r
+bulk_de <- sn_find_de(
+  counts,
+  metadata = sample_data,
+  design = ~ batch + condition,
+  contrast = c("condition", "tumor", "normal"),
+  method = "auto"
 )
 ```
 

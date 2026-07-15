@@ -67,6 +67,44 @@ test_that("bulk DE validates design and returns standardized edgeR results", {
   )
 })
 
+test_that("sn_find_de dispatches bulk and preserves the legacy wrapper", {
+  fixture <- bulk_fixture(features = 20L, samples = 6L)
+  backend <- list(result = data.frame(
+    gene = rownames(fixture$counts),
+    logFC = seq(-1, 1, length.out = nrow(fixture$counts)),
+    PValue = seq(0.001, 0.2, length.out = nrow(fixture$counts)),
+    FDR = seq(0.01, 0.5, length.out = nrow(fixture$counts))
+  ))
+
+  unified <- sn_find_de(
+    fixture$counts,
+    metadata = fixture$metadata,
+    design = ~condition,
+    contrast = c("condition", "tumor", "normal"),
+    backend_control = backend
+  )
+  legacy <- sn_find_bulk_de(
+    fixture$counts,
+    metadata = fixture$metadata,
+    design = ~condition,
+    contrast = c("condition", "tumor", "normal"),
+    backend_control = backend
+  )
+
+  expect_true(sn_validate_result(unified)$valid)
+  expect_identical(unified$analysis_type, "bulk_de")
+  expect_identical(unified$name, "bulk_de")
+  expect_equal(unified$tables$primary, legacy$tables$primary)
+  expect_error(
+    sn_find_de(fixture$counts, metadata = fixture$metadata),
+    "contrast.*required"
+  )
+  expect_error(
+    sn_find_de(fixture$counts, modality = "single_cell"),
+    "requires a Seurat object"
+  )
+})
+
 test_that("limma supports normalized continuous bulk expression", {
   skip_if_not_installed("limma")
   fixture <- bulk_fixture()

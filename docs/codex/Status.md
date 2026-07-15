@@ -17,6 +17,32 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
+- The post-`v0.2.0` development line now unifies single-cell and standalone
+  bulk differential expression under `sn_find_de()`: Seurat objects select the
+  single-cell path, while matrices, lists, and `SummarizedExperiment` inputs
+  select bulk DE. `sn_find_bulk_de()` remains a compatibility wrapper over the
+  same internal bulk implementation.
+- RegVelo is registered and implemented as
+  `sn_run_velocity(method = "regvelo")` in the managed trajectory pixi
+  environment. The adapter accepts a named target-by-regulator matrix, an edge
+  table, or a CSV prior GRN; standardizes velocity, latent time, confidence,
+  embeddings, model artifacts, and manifest metadata into the existing
+  velocity result contract; and documents downstream CellRank use. A real pixi
+  solve succeeds with RegVelo 0.4.2, PyTorch 2.5.1 CPU, SciPy 1.15.2, and
+  scvi-tools 1.1.6.post1.
+- Shennong now ships a read-only stdio MCP server plus a validated
+  `use-shennong-mcp` Agent Skill. Agents can list methods, inspect method
+  status, read exact exported-function help, retrieve workflow guides, and
+  inspect package entry points without arbitrary R evaluation or analysis-file
+  mutation.
+- Routine CI is split from release-quality validation. Push-time pkgdown builds
+  are lazy and skip examples, while scheduled/manual full builds remain clean
+  and exhaustive. R CMD check no longer reruns tests already covered by the
+  coverage job unless a manual full-test input is selected. Path filters and
+  concurrency cancellation avoid obsolete documentation-only or superseded
+  runs. Locally, the complete pkgdown build took 147.8 seconds and the
+  immediately following incremental build took 29.4 seconds, a roughly 80%
+  reduction.
 - The accumulated roadmap, workflow, compatibility, documentation, and
   publication-figure changes were published as GitHub Release `v0.2.0` from
   commit `5f75d4a`. The tag is non-draft and non-prerelease; `main` now advances
@@ -76,7 +102,7 @@ Last updated: 2026-07-15
   The merged topic branch was then pruned locally.
 - `README.Rmd` now exposes a module-by-module one-command software matrix and
   regenerates `README.md`. The matrix covers 33 public workflow entry points
-  and all 63 registry methods, and explicitly distinguishes direct R,
+  and all 64 registry methods, and explicitly distinguishes direct R,
   Shennong-managed pixi/CLI, and external runner/result adapters from current
   local dependency availability.
 - The final roadmap adapter pass adds the explicit multimodal entry point,
@@ -165,6 +191,20 @@ Last updated: 2026-07-15
 
 ## Validation
 
+- The complete local suite passes with
+  `FAIL 0 | WARN 0 | SKIP 6 | PASS 1960` in 535.7 seconds. Skips are limited to
+  unavailable optional lisi, ROGUE, scmap, and zen4R packages. The focused MCP
+  suite passes 19 assertions, including source-tree and installed-package help
+  rendering.
+- `R CMD build .` succeeds, and the resulting source package passes
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-tests` with
+  `Status: OK`; the test phase is intentionally omitted there because the full
+  testthat suite was run separately. The complete and incremental pkgdown
+  builds both finish successfully.
+- The RegVelo Python entry point parses successfully, its registry and manifest
+  contracts pass focused tests, and the managed pixi dependency graph resolves
+  on CPU. End-to-end biological model training is not part of this local
+  validation pass.
 - Spatial workflow tests pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 46`, covering spatial autocorrelation,
   adapters, domains, metadata storage, graph/enrichment/co-occurrence evidence,

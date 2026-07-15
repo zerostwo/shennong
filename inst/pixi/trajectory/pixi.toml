@@ -7,15 +7,21 @@ platforms = ["{{ platform }}"]
 python = ">=3.10,<3.13"
 scvelo = ">=0.3.4"
 cellrank = ">=2.0.7"
+scvi-tools = ">=1.0,<1.2.1"
 scanpy = ">=1.10"
 anndata = ">=0.10"
 pandas = ">=2"
 numpy = ">=1.26"
-scipy = ">=1.11"
+scipy = ">=1.11.1,<1.16"
 scikit-learn = "*"
 python-igraph = "*"
 leidenalg = "*"
 matplotlib-base = "*"
+pip = "*"
+pytorch-cpu = ">=2.2,<2.6"
+
+[pypi-dependencies]
+regvelo = ">=0.1.0"
 
 [environments]
 default = []

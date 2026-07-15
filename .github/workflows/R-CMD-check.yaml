@@ -4,7 +4,40 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'R/**'
+      - 'data/**'
+      - 'inst/**'
+      - 'man/**'
+      - 'tests/**'
+      - 'vignettes/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.Rbuildignore'
+      - '.github/workflows/R-CMD-check.yaml'
   pull_request:
+    paths:
+      - 'R/**'
+      - 'data/**'
+      - 'inst/**'
+      - 'man/**'
+      - 'tests/**'
+      - 'vignettes/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.Rbuildignore'
+      - '.github/workflows/R-CMD-check.yaml'
+  workflow_dispatch:
+    inputs:
+      full_tests:
+        description: Run tests again inside R CMD check for a release audit
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: R-CMD-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   R-CMD-check:
@@ -48,4 +81,5 @@ jobs:
 
       - uses: r-lib/actions/check-r-package@v2
         with:
-          build_args: 'c("--no-manual")'
+          args: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_tests) && 'c("--no-manual", "--as-cran")' || 'c("--no-manual", "--as-cran", "--no-tests")' }}
+          build_args: '"--no-manual"'

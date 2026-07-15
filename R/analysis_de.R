@@ -297,10 +297,21 @@
 #'   marker and contrast analyses and to \code{"counts"} for pseudobulk
 #'   analyses.
 #' @param features Optional feature subset to test.
+#' @param modality Input modality. \code{"auto"} selects single-cell analysis
+#'   for Seurat objects and bulk analysis for matrices, lists, and
+#'   \code{SummarizedExperiment} objects.
+#' @param metadata Optional sample metadata for bulk analysis.
+#' @param design A fixed- or mixed-effects formula for bulk analysis.
+#' @param contrast Character triple giving the bulk contrast as variable,
+#'   numerator, and denominator.
+#' @param backend_control Bulk backend controls or a custom bulk
+#'   \code{runner}/precomputed \code{result}.
 #' @param method Statistical method. For \code{"markers"} and
 #'   \code{"contrast"}, this can be any Seurat \code{test.use} value or
 #'   \code{"COSGR"} for marker discovery. For \code{"pseudobulk"}, choose one
-#'   of \code{"DESeq2"}, \code{"edgeR"}, or \code{"limma"}.
+#'   of \code{"DESeq2"}, \code{"edgeR"}, or \code{"limma"}. For bulk input,
+#'   choose \code{"auto"}, \code{"edger"}, \code{"deseq2"}, \code{"limma"},
+#'   or \code{"dream"}.
 #' @param only_pos Whether to return only positive markers. Defaults to
 #'   \code{TRUE} for \code{"markers"} and \code{FALSE} otherwise.
 #' @param logfc_threshold,min_pct Standard Seurat marker filtering arguments.
@@ -316,7 +327,8 @@
 #' @param verbose Whether to emit progress information.
 #' @param ... Additional arguments passed through to the selected DE method.
 #'
-#' @return Either a DE result table or an updated \code{Seurat} object.
+#' @return For single-cell input, either a DE result table or an updated
+#'   \code{Seurat} object. For bulk input, a validated Shennong bulk-DE result.
 #'
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
@@ -361,6 +373,24 @@
 #'   )
 #'   names(obj@misc$de_results)
 #' }
+#'
+#' bulk_counts <- matrix(
+#'   stats::rpois(40 * 6, 20), nrow = 40,
+#'   dimnames = list(paste0("gene_", 1:40), paste0("sample_", 1:6))
+#' )
+#' bulk_metadata <- data.frame(
+#'   condition = factor(rep(c("control", "treated"), each = 3)),
+#'   row.names = colnames(bulk_counts)
+#' )
+#' bulk_de <- sn_find_de(
+#'   bulk_counts,
+#'   metadata = bulk_metadata,
+#'   design = ~condition,
+#'   contrast = c("condition", "treated", "control"),
+#'   backend_control = list(result = data.frame(
+#'     gene = rownames(bulk_counts), logFC = 0, PValue = 1, FDR = 1
+#'   ))
+#' )
 #' @export
 sn_find_de <- function(
   object,
@@ -384,10 +414,38 @@ sn_find_de <- function(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  modality = c("auto", "single_cell", "bulk"),
+  metadata = NULL,
+  design = ~condition,
+  contrast = NULL,
+  backend_control = list(),
   ...
 ) {
+  assay_missing <- missing(assay)
+  modality <- match.arg(modality)
+  if (identical(modality, "auto")) {
+    modality <- if (inherits(object, "Seurat")) "single_cell" else "bulk"
+  }
+
+  if (identical(modality, "bulk")) {
+    if (is_null(contrast)) {
+      stop("`contrast` is required for bulk differential expression.", call. = FALSE)
+    }
+    bulk_method <- tolower(method %||% "auto")
+    return(.sn_find_bulk_de(
+      object = object,
+      metadata = metadata,
+      design = design,
+      contrast = contrast,
+      method = bulk_method,
+      assay = if (assay_missing) NULL else assay,
+      store_name = if (identical(store_name, "default")) "bulk_de" else store_name,
+      backend_control = backend_control
+    ))
+  }
+
   if (!inherits(object, "Seurat")) {
-    stop("Input must be a Seurat object.")
+    stop("`modality = 'single_cell'` requires a Seurat object.", call. = FALSE)
   }
 
   if (is_null(analysis)) {

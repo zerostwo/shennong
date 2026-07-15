@@ -50,7 +50,72 @@
   list(features = features, cells = cells)
 }
 
+.sn_write_regvelo_prior_grn <- function(prior_grn, path) {
+  if (is_null(prior_grn)) {
+    stop(
+      "RegVelo requires `backend_control$prior_grn` as an edge table, named matrix, or CSV path.",
+      call. = FALSE
+    )
+  }
+
+  if (is.character(prior_grn) && length(prior_grn) == 1L) {
+    if (!file.exists(prior_grn)) {
+      stop("The RegVelo prior-GRN file does not exist: ", prior_grn, call. = FALSE)
+    }
+    if (!file.copy(prior_grn, path, overwrite = TRUE)) {
+      stop("Could not stage the RegVelo prior-GRN file.", call. = FALSE)
+    }
+    return(invisible(path))
+  }
+
+  if (is.matrix(prior_grn) || inherits(prior_grn, "Matrix")) {
+    if (is_null(rownames(prior_grn)) || is_null(colnames(prior_grn))) {
+      stop("A RegVelo prior-GRN matrix requires target row names and regulator column names.", call. = FALSE)
+    }
+    sparse <- .sn_as_sparse_matrix(prior_grn)
+    entries <- Matrix::summary(sparse)
+    prior_grn <- data.frame(
+      regulator = colnames(sparse)[entries$j],
+      target = rownames(sparse)[entries$i],
+      weight = entries$x,
+      stringsAsFactors = FALSE
+    )
+  } else if (is.data.frame(prior_grn)) {
+    regulator_hits <- intersect(c("regulator", "tf", "source", "from"), tolower(names(prior_grn)))
+    target_hits <- intersect(c("target", "gene", "to"), tolower(names(prior_grn)))
+    regulator_col <- if (length(regulator_hits) == 0L) NULL else regulator_hits[[1]]
+    target_col <- if (length(target_hits) == 0L) NULL else target_hits[[1]]
+    if (is_null(regulator_col) || is_null(target_col)) {
+      stop("A RegVelo prior-GRN table requires `regulator` and `target` columns.", call. = FALSE)
+    }
+    original_names <- names(prior_grn)
+    regulator_col <- original_names[match(regulator_col, tolower(original_names))]
+    target_col <- original_names[match(target_col, tolower(original_names))]
+    weight_hits <- intersect(c("weight", "score", "importance"), tolower(original_names))
+    weight_name <- if (length(weight_hits) == 0L) NULL else weight_hits[[1]]
+    weight_col <- if (is_null(weight_name)) NULL else original_names[match(weight_name, tolower(original_names))]
+    prior_grn <- data.frame(
+      regulator = as.character(prior_grn[[regulator_col]]),
+      target = as.character(prior_grn[[target_col]]),
+      weight = if (is_null(weight_col)) 1 else suppressWarnings(as.numeric(prior_grn[[weight_col]])),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    stop("Unsupported RegVelo prior-GRN input.", call. = FALSE)
+  }
+
+  keep <- nzchar(prior_grn$regulator) & nzchar(prior_grn$target) &
+    is.finite(prior_grn$weight) & prior_grn$weight != 0
+  prior_grn <- unique(prior_grn[keep, , drop = FALSE])
+  if (nrow(prior_grn) == 0L) {
+    stop("The RegVelo prior GRN contains no finite non-zero edges.", call. = FALSE)
+  }
+  utils::write.csv(prior_grn, path, row.names = FALSE)
+  invisible(path)
+}
+
 .sn_run_velocity_pixi <- function(object,
+                                  method,
                                   spliced_assay,
                                   spliced_layer,
                                   unspliced_assay,
@@ -64,14 +129,32 @@
     object, spliced_assay, spliced_layer, unspliced_assay, unspliced_layer,
     embedding, input_dir
   )
+  prior_grn_path <- NULL
+  if (identical(method, "regvelo")) {
+    prior_grn_path <- file.path(input_dir, "prior_grn.csv")
+    .sn_write_regvelo_prior_grn(backend_control$prior_grn, prior_grn_path)
+  }
   config <- list(
-    mode = "velocity", velocity_mode = backend_control$velocity_mode %||% "stochastic",
+    mode = method, velocity_mode = backend_control$velocity_mode %||% "stochastic",
     min_shared_counts = backend_control$min_shared_counts %||% 10L,
     n_top_genes = backend_control$n_top_genes %||% min(2000L, length(exported$features)),
     n_neighbors = backend_control$n_neighbors %||% min(30L, length(exported$cells) - 1L),
     n_pcs = backend_control$n_pcs %||% min(30L, ncol(embedding$matrix)),
     max_graph_edges = backend_control$max_graph_edges %||% 100000L,
     write_h5ad = backend_control$write_h5ad %||% TRUE,
+    prior_grn = prior_grn_path,
+    soft_constraint = backend_control$soft_constraint %||% TRUE,
+    lam = backend_control$lam %||% 1,
+    lam2 = backend_control$lam2 %||% 0,
+    max_epochs = backend_control$max_epochs %||% 1500L,
+    learning_rate = backend_control$learning_rate %||% 0.01,
+    train_size = backend_control$train_size %||% 0.9,
+    batch_size = backend_control$batch_size %||% NULL,
+    early_stopping = backend_control$early_stopping %||% TRUE,
+    min_max_scale = backend_control$min_max_scale %||% TRUE,
+    filter_on_r2 = backend_control$filter_on_r2 %||% TRUE,
+    posterior_samples = backend_control$posterior_samples %||% 30L,
+    save_model = backend_control$save_model %||% TRUE,
     random_seed = backend_control$seed %||% 717L
   )
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -133,17 +216,21 @@
   list(cells = base, graph = graph, artifacts = output$artifacts %||% list(), warnings = output$warnings %||% character())
 }
 
-#' Run RNA velocity with the managed scVelo backend
+#' Run RNA velocity with managed scVelo or RegVelo backends
 #'
 #' @param object A Seurat object containing spliced and unspliced layers.
-#' @param method Velocity backend; currently scVelo.
+#' @param method Velocity backend: \code{"scvelo"} or \code{"regvelo"}.
 #' @param spliced_assay,unspliced_assay Assays containing count layers.
 #' @param spliced_layer,unspliced_layer Layer names.
 #' @param reduction,dims Embedding and dimensions used for projected vectors.
 #' @param store_name Stored result name.
-#' @param backend_control scVelo/pixi controls or an explicit `runner`/`result`.
+#' @param backend_control Backend/pixi controls or an explicit `runner`/`result`.
+#'   RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
+#'   table, a target-by-regulator named matrix, or a CSV path.
 #' @param return_object Return the modified object or unified velocity result.
 #' @return A Seurat object or velocity result.
+#' @references RegVelo documentation: \url{https://regvelo.readthedocs.io/}.
+#'   Wang et al. (2026), Cell, \doi{10.1016/j.cell.2026.04.022}.
 #' @examples
 #' \dontrun{
 #' object <- sn_run_velocity(object, spliced_layer = "spliced", unspliced_layer = "unspliced")
@@ -162,7 +249,7 @@ sn_run_velocity <- function(object,
                             backend_control = list(),
                             return_object = TRUE) {
   .sn_validate_result_object(object)
-  method <- match.arg(method, "scvelo")
+  method <- match.arg(method, c("scvelo", "regvelo"))
   spliced_assay <- spliced_assay %||% SeuratObject::DefaultAssay(object)
   unspliced_assay <- unspliced_assay %||% spliced_assay
   embedding <- .sn_velocity_embedding(object, reduction, dims)
@@ -177,7 +264,7 @@ sn_run_velocity <- function(object,
     backend_control$result
   } else {
     .sn_run_velocity_pixi(
-      object, spliced_assay, spliced_layer, unspliced_assay,
+      object, method, spliced_assay, spliced_layer, unspliced_assay,
       unspliced_layer, embedding, backend_control
     )
   }
@@ -187,13 +274,23 @@ sn_run_velocity <- function(object,
   object[[paste0(store_name, "_confidence")]] <- stats::setNames(cells$confidence, cells$cell)[colnames(object)]
   result <- list(
     schema_version = "1.0", analysis_type = "velocity", name = store_name,
-    method = method, backend = "scvelo-pixi",
+    method = method, backend = paste0(method, "-pixi"),
     input = list(
       cells = nrow(cells), spliced_assay = spliced_assay, spliced_layer = spliced_layer,
       unspliced_assay = unspliced_assay, unspliced_layer = unspliced_layer,
       reduction = embedding$reduction, dimensions = embedding$dims
     ),
-    parameters = list(velocity_mode = backend_control$velocity_mode %||% "stochastic"),
+    parameters = if (identical(method, "regvelo")) {
+      list(
+        soft_constraint = backend_control$soft_constraint %||% TRUE,
+        lam = backend_control$lam %||% 1,
+        lam2 = backend_control$lam2 %||% 0,
+        max_epochs = backend_control$max_epochs %||% 1500L,
+        filter_on_r2 = backend_control$filter_on_r2 %||% TRUE
+      )
+    } else {
+      list(velocity_mode = backend_control$velocity_mode %||% "stochastic")
+    },
     tables = list(primary = cells, cells = cells, transition_edges = standardized$graph),
     embeddings = list(reduction = embedding$matrix, velocity = as.matrix(cells[, c("velocity_1", "velocity_2")])),
     graphs = list(transition_edges = standardized$graph),

@@ -51,6 +51,9 @@ This skill is the main entry point for package usage.
 - respect strict `sn_verb_noun` naming conventions
 - use the shared package API and workflow references instead of inventing
   partial wrapper logic
+- use `sn_find_de()` as the common single-cell, pseudobulk, and standalone bulk
+  DE entry point; keep `sn_find_bulk_de()` only for compatibility with older
+  scripts
 - use current public argument names only; do not pass retired compatibility
   names such as `group_col`, `sample_col`, `annotation_col`, `condition_col`,
   `cluster_col`, `label_col`, `labels_key`, `groupby`, `cnv_score_groupby`,
@@ -159,9 +162,11 @@ This skill is the main entry point for package usage.
    Set `dynamic_features` to an explicit auditable feature set for formal
    analyses, and use `test_dynamic = FALSE` only for topology review.
    Run `sn_run_velocity()` only when raw spliced and unspliced layers are
-   present. Review stored transition/confidence evidence before passing the
-   retained H5AD artifact to `sn_run_fate()` for CellRank GPCCA terminal states
-   and fate probabilities.
+   present. Select `method = "regvelo"` only with an explicit, versioned
+   regulator-target GRN in `backend_control$prior_grn`; otherwise use scVelo.
+   Review stored transition/confidence evidence before passing the retained
+   H5AD artifact to `sn_run_fate()` for CellRank GPCCA terminal states and fate
+   probabilities.
    Test cell-type abundance with `sn_test_abundance()` using `sample_by` as the
    biological replicate; use Propeller by default, permutation for transparent
    validation, and Milo for neighborhood effects. Use

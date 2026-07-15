@@ -313,6 +313,8 @@ reference:
       - sn_install_shennong
       - sn_check_file
       - sn_get_codex_skill_path
+      - sn_mcp_server_config
+      - sn_mcp_server
       - sn_list_dependencies
       - sn_install_dependencies
       - sn_check_pixi

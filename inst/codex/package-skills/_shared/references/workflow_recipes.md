@@ -112,8 +112,9 @@ user request to the right Shennong function family quickly.
 2. Run `sn_assess_bulk_qc()` first and review `tables$samples`,
    `embeddings$pca`, and `tables$correlation`; do not remove a sample solely
    because one automatic outlier flag is true.
-3. Use `sn_find_bulk_de(design = ..., contrast = c(variable, numerator,
-   denominator))`. Keep `method = "auto"` unless the statistical backend is
+3. Use `sn_find_de(design = ..., contrast = c(variable, numerator,
+   denominator))`; non-Seurat input selects bulk automatically. Keep
+   `method = "auto"` unless the statistical backend is
    prespecified: integer counts choose edgeR, continuous expression chooses
    limma, and mixed-effects designs choose dream.
 4. Use `sn_score_bulk_pathways()` for sample pathway scores and inspect
@@ -249,11 +250,14 @@ user request to the right Shennong function family quickly.
 ## Recipe: Estimate RNA velocity and fate
 
 1. Keep raw spliced and unspliced counts in explicit Seurat layers and verify
-   cell/feature overlap before calling `sn_run_velocity()`.
+   cell/feature overlap before calling `sn_run_velocity()`. Use the default
+   scVelo backend for expression-only velocity, or
+   `sn_run_velocity(method = "regvelo", backend_control = list(prior_grn = ...))`
+   when a versioned regulator-target GRN is part of the model.
 2. Review velocity confidence, projected vectors, and transition edges. A
    visually smooth arrow field is not sufficient evidence by itself.
 3. Run `sn_run_fate(velocity_name = ...)` so CellRank consumes the retained
-   scVelo H5AD transition evidence. Use the stability terminal-state rule by
+   scVelo or RegVelo H5AD transition evidence. Use the stability terminal-state rule by
    default; set `terminal_method = "top_n"` or `terminal_states` only with a
    documented biological rationale.
 4. Retrieve `velocity` and `fate` results separately with `sn_get_result()`;

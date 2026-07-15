@@ -296,6 +296,21 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
                             contrast, method = c("auto", "edger", "deseq2", "limma", "dream"),
                             assay = NULL, store_name = "bulk_de", backend_control = list()) {
+  .sn_find_bulk_de(
+    object = object,
+    metadata = metadata,
+    design = design,
+    contrast = contrast,
+    method = method,
+    assay = assay,
+    store_name = store_name,
+    backend_control = backend_control
+  )
+}
+
+.sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
+                             contrast, method = c("auto", "edger", "deseq2", "limma", "dream"),
+                             assay = NULL, store_name = "bulk_de", backend_control = list()) {
   method <- match.arg(method)
   input <- .sn_bulk_input(object, metadata, assay)
   contrast <- .sn_bulk_validate_contrast(input$metadata, contrast)

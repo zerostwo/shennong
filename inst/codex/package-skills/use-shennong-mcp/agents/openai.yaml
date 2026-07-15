@@ -1,0 +1,8 @@
+interface:
+  display_name: "Use Shennong MCP"
+  short_description: "Discover Shennong through its read-only MCP server"
+  brand_color: "#2E7D32"
+  default_prompt: "Use $use-shennong-mcp to discover the installed Shennong workflow and draft exact R code."
+
+policy:
+  allow_implicit_invocation: true

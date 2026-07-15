@@ -4,7 +4,28 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'R/**'
+      - 'data/**'
+      - 'inst/**'
+      - 'tests/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.github/workflows/test-coverage.yaml'
   pull_request:
+    paths:
+      - 'R/**'
+      - 'data/**'
+      - 'inst/**'
+      - 'tests/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.github/workflows/test-coverage.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: test-coverage-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

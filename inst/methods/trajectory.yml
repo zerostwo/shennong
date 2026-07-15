@@ -50,6 +50,16 @@
     "citation": "Bergen et al. Nature Biotechnology 2020"
   },
   {
+    "name": "regvelo", "task": "velocity", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
+    "implemented": true, "default": false,
+    "description": "Gene-regulatory-informed RNA velocity with RegVelo through sn_run_velocity(method = 'regvelo').",
+    "input_requirements": ["spliced counts", "unspliced counts", "regulator-target prior GRN", "embedding"],
+    "outputs": ["velocity vectors", "velocity graph", "RegVelo latent time", "trained model artifact"],
+    "supports": {"gene_regulatory_prior": true, "latent_time": true, "cellrank": true},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('trajectory', install_environment = TRUE)",
+    "citation": "Wang et al. Cell 2026, doi:10.1016/j.cell.2026.04.022"
+  },
+  {
     "name": "cellrank", "task": "fate", "runtime": "pixi", "package": "Shennong", "environment": "trajectory",
     "implemented": true, "default": true,
     "description": "Fate probabilities and terminal-state inference with CellRank.",

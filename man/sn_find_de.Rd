@@ -26,6 +26,11 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  modality = c("auto", "single_cell", "bulk"),
+  metadata = NULL,
+  design = ~condition,
+  contrast = NULL,
+  backend_control = list(),
   ...
 )
 }
@@ -62,7 +67,9 @@ analyses.}
 \item{method}{Statistical method. For \code{"markers"} and
 \code{"contrast"}, this can be any Seurat \code{test.use} value or
 \code{"COSGR"} for marker discovery. For \code{"pseudobulk"}, choose one
-of \code{"DESeq2"}, \code{"edgeR"}, or \code{"limma"}.}
+of \code{"DESeq2"}, \code{"edgeR"}, or \code{"limma"}. For bulk input,
+choose \code{"auto"}, \code{"edger"}, \code{"deseq2"}, \code{"limma"},
+or \code{"dream"}.}
 
 \item{only_pos}{Whether to return only positive markers. Defaults to
 \code{TRUE} for \code{"markers"} and \code{FALSE} otherwise.}
@@ -85,10 +92,25 @@ stored DE results. Otherwise return the result table.}
 
 \item{verbose}{Whether to emit progress information.}
 
+\item{modality}{Input modality. \code{"auto"} selects single-cell analysis
+for Seurat objects and bulk analysis for matrices, lists, and
+\code{SummarizedExperiment} objects.}
+
+\item{metadata}{Optional sample metadata for bulk analysis.}
+
+\item{design}{A fixed- or mixed-effects formula for bulk analysis.}
+
+\item{contrast}{Character triple giving the bulk contrast as variable,
+numerator, and denominator.}
+
+\item{backend_control}{Bulk backend controls or a custom bulk
+\code{runner}/precomputed \code{result}.}
+
 \item{...}{Additional arguments passed through to the selected DE method.}
 }
 \value{
-Either a DE result table or an updated \code{Seurat} object.
+For single-cell input, either a DE result table or an updated
+\code{Seurat} object. For bulk input, a validated Shennong bulk-DE result.
 }
 \description{
 This function provides a single entry point for:
@@ -145,4 +167,22 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(obj@misc$de_results)
 }
+
+bulk_counts <- matrix(
+  stats::rpois(40 * 6, 20), nrow = 40,
+  dimnames = list(paste0("gene_", 1:40), paste0("sample_", 1:6))
+)
+bulk_metadata <- data.frame(
+  condition = factor(rep(c("control", "treated"), each = 3)),
+  row.names = colnames(bulk_counts)
+)
+bulk_de <- sn_find_de(
+  bulk_counts,
+  metadata = bulk_metadata,
+  design = ~condition,
+  contrast = c("condition", "treated", "control"),
+  backend_control = list(result = data.frame(
+    gene = rownames(bulk_counts), logFC = 0, PValue = 1, FDR = 1
+  ))
+)
 }

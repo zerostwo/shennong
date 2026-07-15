@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_velocity_fate.R
 \name{sn_run_velocity}
 \alias{sn_run_velocity}
-\title{Run RNA velocity with the managed scVelo backend}
+\title{Run RNA velocity with managed scVelo or RegVelo backends}
 \usage{
 sn_run_velocity(
   object,
@@ -21,7 +21,7 @@ sn_run_velocity(
 \arguments{
 \item{object}{A Seurat object containing spliced and unspliced layers.}
 
-\item{method}{Velocity backend; currently scVelo.}
+\item{method}{Velocity backend: \code{"scvelo"} or \code{"regvelo"}.}
 
 \item{spliced_assay, unspliced_assay}{Assays containing count layers.}
 
@@ -31,7 +31,9 @@ sn_run_velocity(
 
 \item{store_name}{Stored result name.}
 
-\item{backend_control}{scVelo/pixi controls or an explicit \code{runner}/\code{result}.}
+\item{backend_control}{Backend/pixi controls or an explicit \code{runner}/\code{result}.
+RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
+table, a target-by-regulator named matrix, or a CSV path.}
 
 \item{return_object}{Return the modified object or unified velocity result.}
 }
@@ -39,11 +41,15 @@ sn_run_velocity(
 A Seurat object or velocity result.
 }
 \description{
-Run RNA velocity with the managed scVelo backend
+Run RNA velocity with managed scVelo or RegVelo backends
 }
 \examples{
 \dontrun{
 object <- sn_run_velocity(object, spliced_layer = "spliced", unspliced_layer = "unspliced")
 velocity <- sn_get_result(object, "velocity", "velocity")
 }
+}
+\references{
+RegVelo documentation: \url{https://regvelo.readthedocs.io/}.
+Wang et al. (2026), Cell, \doi{10.1016/j.cell.2026.04.022}.
 }
