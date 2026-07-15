@@ -1,5 +1,895 @@
 # Changelog
 
+## Version 0.2.0
+
+Released 2026-07-15.
+
+#### Fixed
+
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now materializes omitted multimodal defaults before dispatch and
+  supplies explicit
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) choices,
+  keeping the standard RNA and default CITE-seq paths stable in
+  installed-package checks.
+- Scissor and Symphony validate required user inputs before checking
+  optional backend installations, so dependency-independent contract
+  errors remain testable on minimal installations.
+- The pkgdown deployment workflow now installs UCell before evaluating
+  the program-scoring article, so the documented default
+  `method = "ucell"` backend is available in clean GitHub Actions
+  runners.
+- The data-I/O article no longer performs unconditional Zenodo downloads
+  during pkgdown deployment; its network-backed examples now require the
+  explicit `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in.
+- [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
+  now renders named feature lists as Seurat’s free-width marker facets
+  without adding an incompatible fixed coordinate ratio; ordinary
+  feature vectors retain the existing fixed-coordinate layout.
+- `sn_plot_feature(raster = TRUE)` now falls back to vector point layers
+  when the optional `ggrastr` package is unavailable, instead of asking
+  Seurat to perform ordered rasterization and failing during
+  minimal-dependency checks.
+- `sn_load_data(backend = "api")` now uses the current ShennongData 0.2
+  resource-client contract (`sn_connect()`,
+  [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md),
+  `sn_assay()`, and
+  [`collect()`](https://dplyr.tidyverse.org/reference/compute.html))
+  rather than the retired schema endpoint interface.
+- `sn_run_cluster(normalization_method = "sctransform")` now applies
+  `block_genes` to SCTransform-selected HVGs before PCA, preventing
+  default ribosomal, mitochondrial, heat-shock, immunoglobulin, TCR, and
+  pseudogene signatures from dominating SCT-based clustering unless
+  explicitly forced via `hvg_features`.
+- `sn_run_cluster(block_genes = ...)` now resolves each entry
+  independently, so bundled signature queries such as `cellCycle.G2M`,
+  `cellCycle.G1S`, `ribo`, `mito`, `heatshock`, and `pseudogenes` can be
+  mixed with custom gene symbols and are removed from the final stored
+  HVG set.
+- [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  now creates missing parent directories before dispatching both rio and
+  custom writers, so nested `.qs`, `.h5ad`, `.h5`, and BPCells outputs
+  no longer fail only because the containing directory does not exist.
+- [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  now auto-installs missing optional writer dependencies by default for
+  custom formats such as `.qs2`, `.h5ad`, `.h5`, and BPCells. `.qs`
+  output now attempts to install `qs` from the GitHub remote
+  `qsbase/qs`, while `.qs2` remains the recommended new serialization
+  format.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now uses `batch` as the only integration metadata argument; the older
+  `batch_by` alias has been removed from this entry point.
+- GitHub Actions now install `leidenbase` anywhere evaluated clustering
+  examples or tests can request `cluster_algorithm = "leiden"`.
+- `sn_run_cluster(cluster_algorithm = "leiden")` now checks for
+  `leidenbase` before calling Seurat and auto-installs it through
+  [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
+  by default. Set `auto_install = FALSE` to keep the previous fail-fast
+  behavior.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now skips redundant Seurat PCA work for integration backends that do
+  not consume a Seurat PCA reduction, including Coralysis, scVI/scANVI,
+  totalVI, MMoCHi, and CITE-seq protein-only Coralysis/MMoCHi paths.
+- Native Coralysis clustering now stores the trained
+  `SingleCellExperiment` under `object@misc$coralysis` by default, so
+  the returned object can be used directly as a label-transfer
+  reference. Set `integration_control = list(store_sce = FALSE)` only
+  for clustering-only runs where the Coralysis reference object is not
+  needed.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now calls configurable Seurat steps such as
+  [`FindClusters()`](https://satijalab.org/seurat/reference/FindClusters.html)
+  and [`RunUMAP()`](https://satijalab.org/seurat/reference/RunUMAP.html)
+  through symbolic object calls rather than
+  `do.call(object = object, ...)`, preventing `object@commands` entries
+  from serializing the full Seurat object into command-history call
+  strings.
+- Grouped HVG selection in
+  [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now skips cells with missing or empty `hvg_group_by` labels and runs
+  temporary per-group HVG calls on the selected assay only, avoiding
+  spurious ADT assay removal messages on multimodal objects.
+- SCTransform workflows in
+  [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  and
+  [`sn_normalize_data()`](https://songqi.org/shennong/dev/reference/sn_normalize_data.md)
+  now temporarily raise `future.globals.maxSize` from the detected
+  system memory and object size before calling Seurat, avoiding the
+  default 500 MiB future export limit on large objects while restoring
+  the caller’s option afterwards.
+- Package source builds now exclude local benchmark outputs and
+  OmnipathR test log directories, keeping `R CMD build` tarballs small
+  and free of generated validation artifacts.
+- Package source builds and git status now ignore local `.codegraph/`,
+  `.agents/`, and `.codex/` agent artifacts, keeping analysis state out
+  of source builds and commits.
+- Signature catalog add/update/delete helpers now edit the packaged
+  Shennong signature tree directly, so custom signature maintenance no
+  longer requires the optional upstream `SignatuR` package at runtime.
+- The `.qs` writer parent-directory regression test now mocks optional
+  writer dependency detection completely, avoiding live GitHub
+  installation attempts during local tests.
+- Local CIBERSORTx execution now uses structured
+  [`system2()`](https://rdrr.io/r/base/system2.html) calls instead of a
+  pasted shell command, and dry-run/stored command artifacts redact
+  CIBERSORTx account email and token values.
+- `scripts/check-prepush.R` now reports per-step timings, defaults local
+  checks to `_R_CHECK_FORCE_SUGGESTS_=false`, skips duplicate test
+  execution inside `R CMD check` after a successful full `test_local()`
+  pass, and adds a `--quick` edit-loop mode.
+- Stored-result writes through Shennong’s shared `object@misc` helper
+  now pass through a central collection registry and schema validator.
+  Malformed stored
+  DE/enrichment/interpretation/deconvolution/Milo/communication/regulatory/QC
+  entries now fail early with an actionable schema error, and
+  [`sn_list_results()`](https://songqi.org/shennong/dev/reference/sn_list_results.md)
+  also reports stored QC assessments.
+- Enrichment wrappers now muffle known benign `clusterProfiler`/`fgsea`
+  warnings produced by tiny deterministic examples, keeping local test
+  and package-check output warning-clean while preserving hard errors,
+  including the current `enrichit` qvalue fallback when a tiny result
+  cannot estimate q values.
+
+#### Added
+
+- Added the explicit
+  [`sn_run_multimodal()`](https://songqi.org/shennong/dev/reference/sn_run_multimodal.md)
+  CITE-seq entry point while keeping annotation, trajectory, and fate
+  backend adapters internal to their unified workflow APIs.
+- Added direct optional Monocle 3 trajectory inference plus standardized
+  Palantir runner/result and scCODA/pertpy runner/result adapters. All
+  shipped method-registry entries are now implemented, and scCODA
+  retains biological samples as the inferential unit.
+- Added a publication figure engine with generic
+  screen/column/page/slide profiles, automatic
+  size/point/raster/layout/pagination specifications, structured figure
+  QA, deterministic PDF/SVG/TIFF/PNG export, and reproducible figure
+  bundles containing source data, specs, sessions, manifests, and
+  checksums.
+- Added result-aware DE/GSEA/enrichment figures plus QC threshold,
+  doublet, ambient correction, HVG, elbow, cluster tree, resolution
+  sweep, integration, and reference-projection diagnostics. Core
+  dimensional, feature, dot, heatmap, violin, box, bar, composition,
+  Milo, and bulk plots now carry figure specifications without changing
+  their native plot classes.
+- Added a standalone bulk transcriptomics mainline for matrix/list/
+  `SummarizedExperiment` inputs: sample QC, design-aware
+  edgeR/DESeq2/limma/ dream differential expression, pathway scoring,
+  WGCNA module-trait analysis, Cox survival models, clinical
+  associations, and result-aware plots.
+- Added
+  [`sn_run_spatial()`](https://songqi.org/shennong/dev/reference/sn_run_spatial.md)
+  as a dispatcher plus explicit spatial feature, domain, neighborhood,
+  deconvolution, mapping, integration, and communication entry points.
+  Local Moran’s I and memory-bounded KNN workflows retain spatial
+  graphs, permutation evidence, co-occurrence, coordinates, and
+  diagnostics; nnSVG/BANKSY run when installed and heavyweight
+  alternatives use explicit result adapters.
+- Added spatial coordinate, feature, domain, SVG, neighborhood,
+  deconvolution, and distance-aware communication plots that preserve
+  tissue aspect ratio.
+- Added
+  [`sn_run_velocity()`](https://songqi.org/shennong/dev/reference/sn_run_velocity.md)
+  and
+  [`sn_plot_velocity()`](https://songqi.org/shennong/dev/reference/sn_plot_velocity.md)
+  with a managed scVelo pixi backend for spliced/unspliced
+  preprocessing, projected velocity vectors, velocity
+  pseudotime/confidence, transition edges, and retained H5AD evidence.
+- Added
+  [`sn_run_fate()`](https://songqi.org/shennong/dev/reference/sn_run_fate.md)
+  and
+  [`sn_plot_fate()`](https://songqi.org/shennong/dev/reference/sn_plot_fate.md)
+  with a managed CellRank GPCCA backend for terminal-state discovery,
+  fate probabilities, optional lineage drivers, metadata storage, and
+  explicit terminal-state controls.
+- Added
+  [`sn_discover_programs()`](https://songqi.org/shennong/dev/reference/sn_discover_programs.md)
+  and
+  [`sn_plot_discovered_programs()`](https://songqi.org/shennong/dev/reference/sn_plot_discovered_programs.md)
+  for multi-restart NMF with reconstruction/stability diagnostics plus
+  explicit cNMF and Hotspot result adapters. Discovered gene weights and
+  per-cell activities use the shared result contract and can be
+  stratified by metadata.
+- Added
+  [`sn_run_grn()`](https://songqi.org/shennong/dev/reference/sn_run_grn.md)
+  and
+  [`sn_plot_regulon()`](https://songqi.org/shennong/dev/reference/sn_plot_regulon.md)
+  for real GENIE3 inference and explicit pySCENIC, legacy SCENIC, and
+  GRNBoost2 adapters. Results standardize regulatory edges, regulons,
+  per-cell activity, and transparent group specificity without hiding
+  external motif databases or Python runtimes.
+- Added
+  [`sn_run_cnv()`](https://songqi.org/shennong/dev/reference/sn_run_cnv.md)
+  and
+  [`sn_plot_cnv()`](https://songqi.org/shennong/dev/reference/sn_plot_cnv.md)
+  as the unified inferCNVpy/CopyKAT workflow. Stored results now include
+  reference-calibrated malignancy scores, malignant calls, subclones,
+  sample summaries, chromosome-level CNV, optional CNV UMAP coordinates,
+  and CNV-expression associations.
+- Added
+  [`sn_metabolic_signatures()`](https://songqi.org/shennong/dev/reference/sn_metabolic_signatures.md),
+  [`sn_run_metabolism()`](https://songqi.org/shennong/dev/reference/sn_run_metabolism.md),
+  and
+  [`sn_plot_metabolism()`](https://songqi.org/shennong/dev/reference/sn_plot_metabolism.md)
+  for curated UCell/GSVA/ssGSEA/mean pathway activity, sample-level
+  differential metabolism, scMetabolism, and standardized scFEA/Compass
+  result adapters.
+- Expanded
+  [`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+  into a multi-backend communication workflow for LIANA, CellChat,
+  CellPhoneDB, NicheNet, and MultiNicheNet. All backends now map to a
+  shared ligand-receptor schema with method concordance, consensus
+  ranks, sample-level expression evidence, condition contrasts,
+  ligand-target links, retained backend artifacts, and a reserved
+  spatial distance field. Added bubble, heatmap, network, chord, river,
+  ligand-target, and differential-communication plots.
+- Added
+  [`sn_test_abundance()`](https://songqi.org/shennong/dev/reference/sn_test_abundance.md)
+  as the stable differential-abundance entry point for sample-level
+  Propeller, transparent sample-label permutation, and
+  neighborhood-level Milo. Results include standardized effects,
+  adjusted significance, completed sample proportions, sample
+  contributions, design data, backend evidence, and permutation nulls
+  where applicable.
+- Added
+  [`sn_prioritize_states()`](https://songqi.org/shennong/dev/reference/sn_prioritize_states.md)
+  for sample-aware Augur-style held-out separability, explicit
+  bulk-input Scissor selection, and RareQ topology discovery followed by
+  sample-level phenotype association. State rankings, cell scores,
+  uncertainty, null distributions, and sample contributions use the
+  shared result contract;
+  [`sn_plot_abundance()`](https://songqi.org/shennong/dev/reference/sn_plot_abundance.md)
+  and
+  [`sn_plot_state_priority()`](https://songqi.org/shennong/dev/reference/sn_plot_state_priority.md)
+  render stored results.
+- Added
+  [`sn_run_trajectory()`](https://songqi.org/shennong/dev/reference/sn_run_trajectory.md)
+  with Slingshot lineage inference and optional tradeSeq dynamic-gene,
+  branch-pattern, differential-end, convergence, and fitted-trend
+  outputs. Per-lineage pseudotime/probability, principal curves,
+  terminal states, topology, diagnostics, and provenance use the unified
+  analysis-result contract, while primary lineage/pseudotime are also
+  added to Seurat metadata.
+- Added result-aware trajectory, pseudotime, lineage-probability,
+  dynamic-heatmap, gene-trend, and branch-comparison plots through
+  [`sn_plot_trajectory()`](https://songqi.org/shennong/dev/reference/sn_plot_trajectory.md),
+  [`sn_plot_pseudotime()`](https://songqi.org/shennong/dev/reference/sn_plot_pseudotime.md),
+  [`sn_plot_lineage_probability()`](https://songqi.org/shennong/dev/reference/sn_plot_lineage_probability.md),
+  [`sn_plot_dynamic_heatmap()`](https://songqi.org/shennong/dev/reference/sn_plot_dynamic_heatmap.md),
+  [`sn_plot_gene_trend()`](https://songqi.org/shennong/dev/reference/sn_plot_gene_trend.md),
+  and
+  [`sn_plot_branch_comparison()`](https://songqi.org/shennong/dev/reference/sn_plot_branch_comparison.md).
+- Added
+  [`sn_score_programs()`](https://songqi.org/shennong/dev/reference/sn_score_programs.md)
+  with UCell (default per-cell), AUCell, GSVA, ssGSEA, and sparse-aware
+  mean-expression backends. It records signature feature coverage,
+  stores long-form scores in the unified result contract, and adds
+  cell-level scores to Seurat metadata without silently converting large
+  sparse matrices for GSVA.
+- Added
+  [`sn_test_programs()`](https://songqi.org/shennong/dev/reference/sn_test_programs.md)
+  for condition comparisons that aggregate to the sample/patient level
+  before inference when `sample_by` is supplied, plus
+  [`sn_plot_program_activity()`](https://songqi.org/shennong/dev/reference/sn_plot_program_activity.md)
+  and
+  [`sn_plot_program_heatmap()`](https://songqi.org/shennong/dev/reference/sn_plot_program_heatmap.md)
+  for stored score results.
+- Added
+  [`sn_run_annotation()`](https://songqi.org/shennong/dev/reference/sn_run_annotation.md)
+  as the stable annotation entry point with marker-only consensus plus
+  optional SingleR, CellTypist, Seurat transfer, Symphony, scmap, and
+  scANVI backends. It stores cell- and cluster-level hierarchical
+  labels, calibrated confidence/margin, runner-up labels, marker
+  support/conflicts, reference coverage, raw backend predictions,
+  diagnostics, and provenance in the unified result contract.
+- Added
+  [`sn_annotation_consensus()`](https://songqi.org/shennong/dev/reference/sn_annotation_consensus.md),
+  [`sn_annotation_confidence()`](https://songqi.org/shennong/dev/reference/sn_annotation_confidence.md),
+  [`sn_map_cell_ontology()`](https://songqi.org/shennong/dev/reference/sn_map_cell_ontology.md),
+  and
+  [`sn_review_annotation()`](https://songqi.org/shennong/dev/reference/sn_review_annotation.md)
+  for transparent evidence aggregation, a versioned bundled Cell
+  Ontology snapshot, and explicit low-confidence review without allowing
+  LLM output to overwrite computational labels.
+- Added result-aware annotation confidence, marker-evidence, and
+  confusion plots through
+  [`sn_plot_annotation_confidence()`](https://songqi.org/shennong/dev/reference/sn_plot_annotation_confidence.md),
+  [`sn_plot_annotation_markers()`](https://songqi.org/shennong/dev/reference/sn_plot_annotation_markers.md),
+  and
+  [`sn_plot_annotation_confusion()`](https://songqi.org/shennong/dev/reference/sn_plot_annotation_confusion.md).
+- Added a shipped method registry with
+  [`sn_list_methods()`](https://songqi.org/shennong/dev/reference/sn_list_methods.md)
+  and
+  [`sn_method_status()`](https://songqi.org/shennong/dev/reference/sn_method_status.md).
+  It records runtime, optional dependency, installation action,
+  input/output contract, CPU/GPU expectations, citations, and whether
+  each current or planned backend is actually implemented and available.
+- Added the versioned generic analysis-result contract and
+  [`sn_store_result()`](https://songqi.org/shennong/dev/reference/sn_store_result.md),
+  [`sn_get_result()`](https://songqi.org/shennong/dev/reference/sn_get_result.md),
+  [`sn_delete_result()`](https://songqi.org/shennong/dev/reference/sn_delete_result.md),
+  and
+  [`sn_validate_result()`](https://songqi.org/shennong/dev/reference/sn_validate_result.md).
+  Existing registered DE, enrichment, Milo, communication,
+  deconvolution, regulatory, QC, and interpretation results are upgraded
+  on write/read without breaking their specialized getters.
+- [`sn_list_results()`](https://songqi.org/shennong/dev/reference/sn_list_results.md)
+  now accepts an optional `type` filter and includes new generic result
+  types stored under `object@misc$analysis_results`.
+- [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
+  can open lazy Shennong Data Server resources with `backend = "api"`,
+  select assay/layer views through `api_args`, and materialize
+  explicitly with `lazy = FALSE`.
+- [`sn_convert_bpcells()`](https://songqi.org/shennong/dev/reference/sn_convert_bpcells.md)
+  now converts selected Seurat assay layers to BPCells-backed matrix
+  directories and rebinds those layers in the returned object, helping
+  large count or normalized-expression layers stay on disk.
+- [`sn_annotate_de_features()`](https://songqi.org/shennong/dev/reference/sn_annotate_de_features.md)
+  now flags stored marker/DE genes that encode transcription factors,
+  cell-surface or plasma-membrane proteins, cytokines, and chemokines.
+  It can annotate direct DE tables or store annotated tables back under
+  `object@misc$de_results` for retrieval with
+  [`sn_get_de_result()`](https://songqi.org/shennong/dev/reference/sn_get_de_result.md).
+- [`sn_prepare_label_transfer_reference()`](https://songqi.org/shennong/dev/reference/sn_prepare_label_transfer_reference.md)
+  now creates compact reference objects for
+  [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md).
+  For native Coralysis, it keeps only the trained Coralysis models, PCA
+  model, feature names, and selected labels while dropping reference
+  assays, reductions, and stored joint probabilities. For Seurat,
+  scANVI, and scArches workflows, it returns a slim Seurat reference
+  with selected assay layers and labels.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now accepts `umap_control`, a named list of
+  [`Seurat::RunUMAP()`](https://satijalab.org/seurat/reference/RunUMAP.html)
+  arguments such as `n.neighbors`, `min.dist`, `spread`, `metric`,
+  `seed.use`, and `reduction.name`, so users can tune embedding geometry
+  without rerunning Coralysis, neighbor graph construction, or
+  clustering.
+- `sn_run_cluster(modality = "cite_seq")` now runs Seurat CITE-seq
+  weighted nearest-neighbor clustering from paired RNA and ADT assays,
+  including ADT CLR normalization, ADT PCA, `weighted.nn` / `wsnn` graph
+  construction, clustering, and `wnn.umap` embedding.
+- `sn_run_cluster(modality = "cite_seq", multimodal_method = ...)` now
+  exposes a unified CITE-seq backend selector. In addition to Seurat
+  WNN, users can run native Coralysis on the ADT protein assay,
+  scvi-tools totalVI on paired RNA and ADT counts, or MMoCHi ADT
+  landmark registration through a managed pixi backend.
+- `sn_run_cluster(modality = "cite_seq", multimodal_method = "mmochi")`
+  now supports single-sample CITE-seq runs with `batch = NULL` by
+  passing a constant internal batch key to the MMoCHi backend instead of
+  requiring a user-supplied batch column.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now records reusable stage signatures for normalization, cell-cycle
+  scoring, HVG/rare-feature selection, PCA, integration, neighbor graph
+  construction, clustering, and UMAP. Re-running on its own output
+  reuses matching stages by default, so changing only `resolution`
+  starts at clustering, changing `integration_method` starts at
+  integration, and changing HVG controls starts at feature selection.
+  Use `reuse = FALSE` or `rerun_from = "hvg"` / `"integration"` /
+  another stage to force recompute.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now exposes key
+  [`Seurat::FindClusters()`](https://satijalab.org/seurat/reference/FindClusters.html)
+  controls, including `cluster_algorithm = "leiden"` / `"louvain"` /
+  `"slm"`, custom cluster metadata names, random seed, start/iteration
+  counts, singleton handling, and Leiden method/objective options.
+- [`sn_calculate_variance_explained()`](https://songqi.org/shennong/dev/reference/sn_calculate_variance_explained.md)
+  now ranks metadata variables such as platform, study, tissue, and
+  sample by weighted embedding variance explained, with single-variable
+  and partial multi-variable modes for batch-effect diagnostics.
+- [`sn_calculate_roe()`](https://songqi.org/shennong/dev/reference/sn_calculate_roe.md)
+  now computes observed-over-expected enrichment for categorical
+  composition tables from Seurat metadata or data frames, with long
+  table output by default and optional matrix output for heatmaps.
+- [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md)
+  now wraps reference mapping with a query-first API for pipe-friendly
+  workflows. The default Seurat anchor workflow is retained, and
+  `method = "coralysis"` now projects queries onto Coralysis-trained
+  references with native `Coralysis::ReferenceMapping()`.
+  `method = "scanvi"` and `method = "scarches"` now provide
+  semi-supervised scVI-family label transfer through the pixi-managed
+  scverse backend.
+- [`sn_upload_zenodo()`](https://songqi.org/shennong/dev/reference/sn_upload_zenodo.md)
+  now uploads reusable data files to Zenodo through `zen4R`, with a
+  simple draft-first interface and an automatically uploaded Shennong
+  manifest that records dataset version, package version, file sizes,
+  md5 checksums, and sha256 checksums for reproducible reuse.
+- [`sn_download_zenodo()`](https://songqi.org/shennong/dev/reference/sn_download_zenodo.md)
+  now downloads reusable files from public Zenodo records without
+  requiring a token, with optional token support for restricted records.
+  [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
+  now uses this download layer and accepts multiple example datasets
+  such as `dataset = c("pbmc1k", "pbmc3k")`; filtered datasets are
+  returned as one merged Seurat object and raw datasets as a named list
+  of sparse matrices.
+- [`sn_list_datasets()`](https://songqi.org/shennong/dev/reference/sn_list_datasets.md)
+  now lists sample-level datasets available through the Shennong public
+  Zenodo collection.
+  [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
+  can load those samples from the `shennong_index.json` layout in Zenodo
+  record `20044788`, downloading the study ZIP, extracting the requested
+  sample’s filtered/raw H5 or Cell Ranger metrics file, and optionally
+  validating extracted files against `manifest.tsv`.
+- [`sn_simulate()`](https://songqi.org/shennong/dev/reference/sn_simulate.md)
+  now provides a method-based simulation entry point.
+  `method = "scdesign3"` wraps `scDesign3::scdesign3()` for Seurat or
+  SingleCellExperiment inputs and can return simulated counts as a
+  Seurat object, SingleCellExperiment, sparse matrix, or raw scDesign3
+  result.
+  [`sn_simulate_scdesign3()`](https://songqi.org/shennong/dev/reference/sn_simulate_scdesign3.md)
+  remains as the backend-specific wrapper.
+- [`sn_plot_heatmap()`](https://songqi.org/shennong/dev/reference/sn_plot_heatmap.md)
+  now draws focused heatmaps for user-selected genes, with cell-level
+  and group-averaged modes, optional grouping/splitting, default
+  rasterization, hidden cell names/ticks, 8 pt group labels, Paired
+  group-bar colors, and automatic scaling of requested features when
+  needed.
+- [`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+  now wraps real cell-cell communication backends: CellChat, NicheNet
+  (`nichenetr`), and LIANA. Results can be stored and retrieved with
+  [`sn_store_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_store_cell_communication.md)
+  and
+  [`sn_get_cell_communication_result()`](https://songqi.org/shennong/dev/reference/sn_get_cell_communication_result.md).
+- [`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md)
+  now runs fast footprint-style activity inference with DoRothEA
+  regulons or PROGENy pathway models through `decoupleR::run_ulm()`.
+  Results can be stored and retrieved with
+  [`sn_store_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_store_regulatory_activity.md)
+  and
+  [`sn_get_regulatory_activity_result()`](https://songqi.org/shennong/dev/reference/sn_get_regulatory_activity_result.md).
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now accepts `integration_method` for batch workflows. In addition to
+  the historical Harmony path, users can run Coralysis multi-level
+  integration or Seurat layer integration with CCA/RPCA through the same
+  clustering entry point.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now accepts `integration_method = "scvi"` and `"scanvi"`. These
+  backends export selected count data to a pixi-managed scverse runtime
+  under `~/.shennong/pixi/`, run the Python model, import the latent
+  representation as a Seurat reduction, and then continue Shennong’s
+  neighbors/clustering/UMAP workflow. The scANVI path requires
+  `integration_control = list(label_by = ...)`. Convenience wrappers
+  [`sn_run_scvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
+  and
+  [`sn_run_scanvi()`](https://songqi.org/shennong/dev/reference/sn_run_scvi.md)
+  expose the same workflows directly.
+- New pixi helpers
+  [`sn_check_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md),
+  [`sn_install_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md),
+  [`sn_ensure_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md),
+  [`sn_pixi_paths()`](https://songqi.org/shennong/dev/reference/sn_pixi_paths.md),
+  [`sn_list_pixi_environments()`](https://songqi.org/shennong/dev/reference/sn_list_pixi_environments.md),
+  [`sn_pixi_config_path()`](https://songqi.org/shennong/dev/reference/sn_pixi_config_path.md),
+  [`sn_prepare_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md),
+  [`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md),
+  [`sn_detect_accelerator()`](https://songqi.org/shennong/dev/reference/sn_detect_accelerator.md),
+  and
+  [`sn_configure_pixi_mirror()`](https://songqi.org/shennong/dev/reference/sn_configure_pixi_mirror.md)
+  expose the Python-runtime setup used by scVI/scANVI and future Python
+  backends. Shennong now keeps pixi workspaces under
+  `~/.shennong/pixi/`, renders package-bundled configs from
+  `inst/pixi/`, can auto-install pixi when missing, selects CPU or CUDA
+  pixi environments automatically, and can write China mirror
+  configuration into the Shennong `PIXI_HOME`.
+- Bundled pixi configs and command helpers are available for concrete
+  Python method families including `scvi` (shared by scVI/scANVI),
+  `scarches` (shared by scArches/scPoli), `infercnvpy`, `cellphonedb`,
+  `cell2location`, `tangram`, `squidpy`, `spatialdata`, and `stlearn`.
+  Use environment calls such as
+  [`sn_call_cell2location()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md)
+  or analysis wrappers such as
+  [`sn_run_tangram()`](https://songqi.org/shennong/dev/reference/sn_run_scarches.md)
+  to run commands inside those managed environments.
+- `sn_run_infercnvpy(object = seurat_obj, ...)` now provides an
+  object-level infercnvpy workflow: it exports the selected Seurat
+  assay/layer with gene positions, runs infercnvpy in the managed pixi
+  environment, and imports CNV metadata and optional CNV reductions back
+  into the Seurat object.
+- Packaged Python runner scripts now live with their pixi family configs
+  under `inst/pixi/<family>/scripts/`. Object-level Seurat workflows are
+  available for scArches/scPoli, CellPhoneDB, cell2location, Tangram,
+  Squidpy, SpatialData, and stLearn through their corresponding
+  `sn_run_*()` wrappers; method-specific Python settings can be supplied
+  with `method_control`.
+- `R CMD check` namespace diagnostics are tighter: optional `qs`/`qs2`
+  serialization packages are now declared, and previous `ave`, `tail`,
+  `target`, and `mor` code-analysis notes have been resolved.
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now accepts `hvg_features`, a user-supplied feature list that is
+  validated against the object and merged with internally selected HVGs
+  and rare-aware features before scaling/PCA. This lets users force rare
+  population marker genes into the clustering feature set when global
+  HVG selection misses them.
+- [`sn_sweep_cluster_resolution()`](https://songqi.org/shennong/dev/reference/sn_sweep_cluster_resolution.md)
+  now provides a formal resolution-sweep interface for empirically
+  comparing candidate cluster counts across Seurat resolutions with
+  metrics such as silhouette width, graph connectivity, cluster purity,
+  clustering agreement, and optional ROGUE summaries.
+- [`sn_list_dependencies()`](https://songqi.org/shennong/dev/reference/sn_list_dependencies.md)
+  now reports the package’s required and recommended R package surface
+  with install status and expected source, and
+  [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
+  can install missing CRAN, Bioconductor, and GitHub dependencies in one
+  step.
+- [`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
+  now scans a root directory for 10x Genomics outputs and can return
+  `outs/` directories, filtered matrix paths, raw matrix paths, H5
+  files, or `metrics_summary.csv` paths. The default now returns `outs/`
+  paths so the result can be passed directly to
+  [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md).
+  Returned vectors are now named with inferred sample identifiers.
+- [`sn_interpret_annotation()`](https://songqi.org/shennong/dev/reference/sn_interpret_annotation.md)
+  now accepts `label_candidates` so sorted or enriched datasets can
+  constrain annotation toward expected cell-type spaces such as `ILC1` /
+  `ILC2` / `ILC3` instead of relying only on free-text background notes.
+- [`sn_interpret_annotation()`](https://songqi.org/shennong/dev/reference/sn_interpret_annotation.md)
+  now supports `annotation_mode = "agentic"` for a two-stage workflow:
+  broad lineage/state annotation followed by focused refinement on
+  ambiguous or lineage-sensitive clusters. Annotation evidence now also
+  exposes a `canonical_marker_snapshot` table so prompts can compare
+  lineage-defining markers across clusters without relying only on
+  top-ranked DE hits. The `ellmer` path now also uses native structured
+  output for the final annotation table and can run a tool-assisted
+  focused-comparison step before the refinement pass.
+- Annotation heuristics and prompt priors are now more robust for
+  ILC-rich datasets: blood ILC workflows now bias `KIT+ ILCP-like` over
+  premature mature `ILC3` calls when the type-3 program is incomplete,
+  mixed `T/NK` and `NK/ILC3` transitional states are called out more
+  explicitly, and dominant hemoglobin programs can now surface as
+  `erythroid contamination`.
+- [`sn_interpret_annotation()`](https://songqi.org/shennong/dev/reference/sn_interpret_annotation.md)
+  and
+  [`sn_prepare_annotation_evidence()`](https://songqi.org/shennong/dev/reference/sn_prepare_annotation_evidence.md)
+  now support `marker_selection = "specific"` and
+  `enrichment_selection = "specific"` so annotation evidence can prefer
+  cluster-restricted marker genes and pathway terms over generic
+  top-ranked features.
+- Annotation evidence now adds concise canonical lineage heuristic hints
+  from known marker programs so the LLM can use deterministic guardrails
+  such as `ILC2-like`, `KIT+ ILC-like`, `T-cell-like`, or `B-cell-like`
+  when those programs are clearly supported.
+- [`sn_assess_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_qc.md)
+  now summarizes overall and per-sample QC status, reports current QC
+  risk signals such as failed-QC fractions, doublet rates, and
+  decontamination zero-count rates, and can compare a filtered object
+  against a pre-filter reference to quantify low-quality-cell removal,
+  doublet removal, and clean-cell retention. Reports can be stored under
+  `object@misc$qc_assessments`.
+- [`sn_plot_composition()`](https://songqi.org/shennong/dev/reference/sn_plot_composition.md)
+  now provides a composition-focused bar plot helper for grouped
+  proportions, counts, QC pass/fail summaries, and similar categorical
+  tables.
+- [`sn_compare_composition()`](https://songqi.org/shennong/dev/reference/sn_compare_composition.md)
+  now compares sample-level composition between two groups and reports
+  mean proportions, differences, log2 fold changes, and optional
+  Wilcoxon/FDR statistics per category.
+- [`sn_run_milo()`](https://songqi.org/shennong/dev/reference/sn_run_milo.md)
+  now provides a Shennong wrapper around miloR for neighborhood-level
+  differential abundance testing between two sample groups from a Seurat
+  embedding.
+- [`sn_list_palettes()`](https://songqi.org/shennong/dev/reference/sn_list_palettes.md)
+  and
+  [`sn_get_palette()`](https://songqi.org/shennong/dev/reference/sn_get_palette.md)
+  now expose the package palette registry directly, and
+  [`sn_list_palettes()`](https://songqi.org/shennong/dev/reference/sn_list_palettes.md)
+  now includes preview-oriented display output plus the `OkabeIto`
+  palette from `ggokabeito`.
+
+#### Changed
+
+- Standardized public metadata-selector arguments on the current API
+  names and removed old compatibility aliases such as `group`,
+  `group_col`, `sample_col`, `label_col`, `labels_key`,
+  `annotation_col`, `condition_col`, `cluster_col`, `reference_key`,
+  `cell_type_key`, `cell_type_col`, `cell_state_col`, `groupby`, and
+  `cnv_score_groupby`. Backend-local config keys may still use backend
+  names when required by the external Python tools.
+
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now uses a simpler rare-feature interface. The supported automatic
+  rare feature methods are `gini` and `local_markers`; less common
+  `local_hvg` and `ciara` modes were removed from the clustering
+  wrapper. Advanced thresholds are consolidated into
+  `rare_feature_control = list(group_max_fraction = ..., group_max_cells = ..., gene_max_fraction = ..., min_cells = ...)`;
+  the old scalar threshold arguments have been removed.
+
+- [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
+  now silently replaces Seurat’s default expression color scale when a
+  Shennong palette is requested, avoiding the noisy duplicate
+  colour-scale message.
+
+- [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
+  now exposes additional Seurat 5.5
+  [`FeaturePlot()`](https://satijalab.org/seurat/reference/FeaturePlot.html)
+  arguments including `assay`, `dims`, `cells`, `alpha`, `stroke_size`,
+  `min_cutoff`, and `raster_dpi`. With `ggrastr` available,
+  `raster = TRUE` rasterizes a regular ggplot point layer so `pt_size`
+  behaves like `raster = FALSE`, fixing overly large rasterized feature
+  points.
+
+- `sn_plot_feature(raster = TRUE)` now falls back to the vector point
+  layer when optional package `ggrastr` is unavailable instead of
+  failing during Seurat’s ordered rasterization.
+
+- [`sn_plot_dim()`](https://songqi.org/shennong/dev/reference/sn_plot_dim.md)
+  now exposes `label_halo` so users can disable the white label
+  halo/background, and `label = TRUE, repel = TRUE` now keeps a
+  repel-aware label layer instead of replacing it with fixed-position
+  shadow text.
+
+- [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
+  now uses black colorbar frame/tick styling and suppresses the
+  duplicate colour-scale replacement message when applying Shennong
+  palettes.
+
+- [`sn_list_dependencies()`](https://songqi.org/shennong/dev/reference/sn_list_dependencies.md)
+  and
+  [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
+  now classify `anndataR` and `tidytemplate` as GitHub-hosted optional
+  dependencies and `Nebulosa` as a Bioconductor dependency instead of
+  routing them through CRAN. Legacy `.qs` support now remains
+  opportunistic when `qs` is already installed, while new one-step
+  dependency installation uses `qs2` and avoids attempting the archived,
+  R 4.6-incompatible `qs` package.
+
+- [`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
+  now installs required dependencies for GitHub-hosted optional packages
+  by default and stops with the package names that remain missing after
+  installer warnings, making partial installation failures easier to
+  diagnose.
+
+- Reworked the pkgdown article set around a PBMC3k tutorial path, adding
+  explicit data/project and visualization articles and rewriting
+  workflow articles to explain why each Shennong function is used before
+  showing the code. Heavy or credentialed chunks now remain opt-in
+  through `SHENNONG_RUN_VIGNETTES=true` so local website builds stay
+  fast.
+
+- `sn_run_cluster(normalization_method = "sctransform", batch = ...)`
+  now runs SCTransform followed by Harmony integration instead of
+  rejecting SCTransform-based integration workflows.
+
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now applies `rare_feature_n` per selected `rare_feature_method` before
+  de-duplicating the combined rare-aware feature set, matching the
+  documented contract. The stored `object@misc$rare_feature_selection`
+  record now keeps both the requested `rare_feature_n`, the resolved
+  `rare_feature_control`, and the realized `selected_rare_feature_n`.
+
+- [`sn_calculate_rogue()`](https://songqi.org/shennong/dev/reference/sn_calculate_rogue.md)
+  now avoids materializing the full matrix before optional subsampling,
+  skips redundant entropy work when grouped ROGUE scores are requested,
+  and returns tidy per-cluster or per-sample-per-cluster tables when
+  grouping metadata are supplied.
+
+- [`sn_list_palettes()`](https://songqi.org/shennong/dev/reference/sn_list_palettes.md)
+  now renders palette names and swatches without overlap in plot mode
+  and includes built-in viridis-family palettes in the shared palette
+  registry.
+  [`sn_plot_dim()`](https://songqi.org/shennong/dev/reference/sn_plot_dim.md),
+  [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md),
+  and the other `sn_plot_*()` wrappers now reconcile `aspect_ratio` with
+  `panel_widths` / `panel_heights` automatically instead of erroring
+  when fixed panel sizes are requested, and Seurat reduction plots now
+  apply axis hiding more reliably while `sn_plot_dim(label = TRUE)` adds
+  a white halo behind labels for better legibility.
+  [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
+  now also supports `mode = "density"` for Nebulosa-style embedding
+  density maps with a galaxy-like default theme and shared colorbar
+  collection across multi-feature plots.
+  [`sn_find_doublets()`](https://songqi.org/shennong/dev/reference/sn_find_doublets.md)
+  now records skipped cells as `unresolved` instead of `NA` in the
+  stored class column and orders doublet classes as `singlet`,
+  `doublet`, then other levels.
+
+- [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md)
+  now accepts the named character vectors returned by
+  [`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
+  and imports all detected 10x samples in one call, returning a named
+  list of Seurat objects. Annotation-aware
+  [`sn_filter_genes()`](https://songqi.org/shennong/dev/reference/sn_filter_genes.md)
+  warnings now report example unmatched feature names, and `sn_plot_*()`
+  legends use safer non-negative spacing so legend text does not overlap
+  plotted panels.
+
+- [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md)
+  now recognizes typical 10x Genomics `outs/` directories, reads the
+  filtered matrix automatically, and stores discovered source metadata
+  such as `raw_feature_bc_matrix` paths and `metrics_summary.csv`
+  contents in `Seurat::Misc(object, "input_source")`.
+  [`sn_remove_ambient_contamination()`](https://songqi.org/shennong/dev/reference/sn_remove_ambient_contamination.md)
+  now reuses that stored raw path automatically when the selected method
+  can use background droplets and the caller leaves `raw = NULL`. When
+  `sample_name = NULL` and the input path is a named 10x path, the
+  inferred sample identifier is now written into `meta.data$sample`
+  automatically.
+
+- [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
+  now reuses in-session caches for repeated MSigDB term-table loads and
+  repeated SYMBOL-to-ENTREZ conversions, which reduces repeated overhead
+  during enrichment-heavy test and analysis sessions.
+
+- [`sn_interpret_annotation()`](https://songqi.org/shennong/dev/reference/sn_interpret_annotation.md)
+  now supports cluster-level functional evidence through
+  `enrichment_name`, can incorporate cluster QC summaries into the
+  prompt, requests structured annotation JSON by default, stores the
+  parsed cluster annotation table, can map normalized cell-type labels
+  plus confidence/risk fields back onto Seurat metadata, and now
+  defaults to an `ellmer`-backed provider path rather than
+  Shennong-managed local provider config. It also now resolves `de_name`
+  automatically when omitted, preferring a stored `default` marker
+  result, then a single available DE result, and otherwise the most
+  recent marker result. Annotation prompts now include the full
+  cluster_by evidence table instead of truncating at eight rows, request
+  one record per cluster, use more conservative evidence-grounded label
+  selection, can inject candidate-label priors for sorted datasets, and
+  can attach cluster-neighborhood geometry from reductions such as UMAP.
+  Prompt assembly is now more explicitly markdown-structured, which
+  keeps the system/task/evidence sections easier to iterate on as prompt
+  templates.
+  [`sn_interpret_de()`](https://songqi.org/shennong/dev/reference/sn_interpret_de.md),
+  [`sn_interpret_enrichment()`](https://songqi.org/shennong/dev/reference/sn_interpret_enrichment.md),
+  [`sn_write_results()`](https://songqi.org/shennong/dev/reference/sn_write_results.md),
+  [`sn_write_figure_legend()`](https://songqi.org/shennong/dev/reference/sn_write_figure_legend.md),
+  and
+  [`sn_write_presentation_summary()`](https://songqi.org/shennong/dev/reference/sn_write_presentation_summary.md)
+  now share the same step-wise progress logging and elapsed-time
+  reporting surface.
+
+- LLM-provider integration is now centered on `ellmer`. The old
+  `sn_configure_llm_provider()`, `sn_list_llm_providers()`,
+  `sn_get_llm_provider()`, `sn_make_openai_provider()`, and
+  `sn_make_sub2api_provider()` compatibility shims have been removed,
+  along with the legacy `~/.shennong` provider/history workflow. The
+  supported entry point is now
+  [`sn_make_ellmer_provider()`](https://songqi.org/shennong/dev/reference/sn_make_ellmer_provider.md),
+  which can explicitly forward `reasoning_effort` to compatible GPT-5
+  chat-completions endpoints. Default environment-variable discovery is
+  now limited to `OPENAI_*`; the temporary `SUB2API_*` compatibility
+  path has been removed.
+
+- Annotation metadata write-back is now lean by default. High-level
+  interpretation writes only the core fields needed for visualization
+  and grouping (`label`, `broad_label`, `confidence`, `status`,
+  `risk_flags`) into Seurat metadata, while detailed supporting
+  markers/functions/notes stay in the stored interpretation result table
+  under `object@misc`.
+
+- [`sn_calculate_composition()`](https://songqi.org/shennong/dev/reference/sn_calculate_composition.md)
+  now supports multi-column `group_by` values, can return proportions,
+  counts, or both through `measure`, preserves factor columns from the
+  source metadata, filters returned composition categories by
+  `min_cells`, and can sort a single grouping column by a chosen
+  category level such as WT proportion.
+
+- [`sn_initialize_project()`](https://songqi.org/shennong/dev/reference/sn_initialize_project.md)
+  is now the single project bootstrap entry point. It now also writes a
+  repository `.gitignore` plus a generated project `.Rproj` file into
+  initialized analysis repositories.
+
+- The built-in `Paired` discrete palette is now overridden by Shennong
+  so its brightest yellow swatch uses `#ECD577` instead of Brewer’s
+  `#FFFF99`.
+
+- Visualization helpers now share a common discrete-palette resolver.
+  Named palettes such as `\"Paired\"` expand automatically when more
+  categories are present than the base palette length, and key plotting
+  helpers now expose `panel_widths` / `panel_heights` plus consistent
+  axis-label handling.
+
+- [`sn_plot_dim()`](https://songqi.org/shennong/dev/reference/sn_plot_dim.md)
+  and
+  [`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
+  now default to hiding coordinate axes, choose point sizes
+  automatically when `pt_size = NULL`, and keep a shared point-size
+  heuristic for small versus large datasets.
+  [`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
+  now defaults to a warmer-high / cooler-low color direction, keeps the
+  Z-score legend ahead of the percent legend, supports `Min`/`Max`
+  legend labels, uses hollow black-edged percent legend dots, accepts
+  `legend_position`, and uses thicker black colorbar ticks.
+
+- Continuous-color helpers now use the same palette registry through
+  `sn_get_palette(..., palette_type = "continuous")`, and
+  expression-oriented plotting functions now apply continuous palettes
+  through the shared internal resolver instead of separate ad hoc
+  `scale_*_distiller()` logic.
+
+- [`sn_plot_barplot()`](https://songqi.org/shennong/dev/reference/sn_plot_barplot.md)
+  now supports automatic summary bars for repeated observations,
+  optional SD/SE error bars, and optional jittered raw points, making it
+  suitable for sample-level effect summaries as well as simple identity
+  bars.
+
+- [`sn_compare_composition()`](https://songqi.org/shennong/dev/reference/sn_compare_composition.md)
+  now adds a `change` factor with levels `Increase` and `Decrease`
+  derived from the sign of `log2_fc`.
+
+- [`sn_find_doublets()`](https://songqi.org/shennong/dev/reference/sn_find_doublets.md)
+  now skips zero-count and low-feature cells before running
+  `scDblFinder()` on corrected layers, records corrected-layer results
+  with `_corrected` suffixes, and works with the zero-count flags
+  produced by ambient-RNA correction.
+
+- [`sn_filter_cells()`](https://songqi.org/shennong/dev/reference/sn_filter_cells.md)
+  now validates its `method` argument, keeps constant-value QC groups
+  when MAD collapses to zero, and checks plotting dependencies
+  explicitly before rendering diagnostics.
+  [`sn_filter_genes()`](https://songqi.org/shennong/dev/reference/sn_filter_genes.md)
+  now validates `min_cells` and keeps its threshold summary stable when
+  the requested threshold exceeds the number of cells in the object.
+
+- [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  now defaults `hvg_group_by` to the `batch` column when batch
+  integration is requested and the user does not explicitly supply a
+  separate HVG grouping variable.
+
+- [`sn_standardize_gene_symbols()`](https://songqi.org/shennong/dev/reference/sn_standardize_gene_symbols.md)
+  now also accepts character vectors of gene symbols or gene IDs and
+  returns the standardized vector directly, while preserving the
+  existing matrix and Seurat-object behavior.
+
+- `sn_run_cluster(normalization_method = "scran", batch = ...)` now runs
+  scran normalization before the selected batch-integration backend
+  instead of rejecting batch workflows.
+
+- The repository now ships `scripts/check-prepush.R` so maintainers can
+  run documentation, targeted tests, the full test suite, `R CMD build`,
+  and `R CMD check --no-manual` in one local pre-push command.
+
+- Internal DE result storage now reuses the shared misc-result helper
+  instead of maintaining a second collection-specific implementation.
+
+- [`sn_check_version()`](https://songqi.org/shennong/dev/reference/sn_check_version.md)
+  and
+  [`sn_install_shennong()`](https://songqi.org/shennong/dev/reference/sn_install_shennong.md)
+  now use the unified `source` / `ref` arguments for GitHub and local
+  source paths; the old `github_repo`, `github_ref`, and `local_path`
+  aliases have been removed.
+
+#### Fixed
+
+- Fixed
+  [`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
+  so detected samples are returned in deterministic sample-name order
+  instead of depending on platform-specific filesystem or `find`
+  traversal order.
+- Fixed
+  [`sn_standardize_gene_symbols()`](https://songqi.org/shennong/dev/reference/sn_standardize_gene_symbols.md)
+  so unresolved or ambiguous `HGNChelper` suggestions no longer
+  propagate `NA` row names or drop otherwise valid original symbols.
+  Truly missing or empty feature names are still removed before
+  duplicate symbols are aggregated.
+- Fixed IO edge cases where `sn_read(row_names = "column")` failed for
+  column names, detected 10x spatial directories were not dispatched to
+  a custom reader,
+  [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  failed for existing `SingleCellExperiment` h5ad exports, and `qs2`
+  serialization called
+  [`qs2::qs_save()`](https://rdrr.io/pkg/qs2/man/qs_save.html) with the
+  wrong argument name.
+- Fixed
+  [`sn_run_celltypist()`](https://songqi.org/shennong/dev/reference/sn_run_celltypist.md)
+  path inputs so precomputed CellTypist inputs return a prediction table
+  instead of trying to write metadata onto a character path.
+- Fixed `sn_remove_ambient_contamination(method = "soupx")` so Seurat
+  returns now add `nCount_<assay>_corrected` and
+  `nFeature_<assay>_corrected` metadata from the SoupX-corrected layer,
+  matching the decontX writeback behavior.
+- Fixed the pkgdown reference index by adding the exported
+  [`sn_sweep_cluster_resolution()`](https://songqi.org/shennong/dev/reference/sn_sweep_cluster_resolution.md)
+  topic.
+- Fixed a malformed hidden R chunk in the clustering vignette that
+  prevented pkgdown from rendering articles.
+- Fixed local and CI test helpers so Seurat fixtures used in `de_enrich`
+  and `utils` tests no longer depend on implicit species inference or
+  non-returned normalization calls.
+- Fixed pkgdown reference indexing so new helpers such as
+  [`sn_assess_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_qc.md)
+  and
+  [`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
+  are included in the generated site configuration.
+
 ## Version 0.1.2
 
 Released 2026-03-25.

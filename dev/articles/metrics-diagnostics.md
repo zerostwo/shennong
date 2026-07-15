@@ -20,9 +20,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-14 06:39:52] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:39:52] Running QC metrics for human.
-#> INFO [2026-07-14 06:39:52] Seurat object initialization complete.
+#> INFO [2026-07-15 08:37:35] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 08:37:35] Running QC metrics for human.
+#> INFO [2026-07-15 08:37:36] Seurat object initialization complete.
 pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc <- sn_run_cluster(
@@ -59,39 +59,39 @@ assessment <- sn_assess_integration(
 
 assessment$summary
 #>                          metric             category        score
-#> 1              batch_silhouette        batch_removal 0.0291342653
-#> 2              label_silhouette biology_conservation 0.2869161592
-#> 3                    batch_lisi        batch_removal 1.8891694458
-#> 4                    label_lisi biology_conservation 1.1760448109
+#> 1              batch_silhouette        batch_removal 0.0291797570
+#> 2              label_silhouette biology_conservation 0.2866008297
+#> 3                    batch_lisi        batch_removal 1.8889673188
+#> 4                    label_lisi biology_conservation 1.1758400747
 #> 5            graph_connectivity biology_conservation 1.0000000000
 #> 6                           ari biology_conservation 1.0000000000
 #> 7                           nmi biology_conservation 1.0000000000
-#> 8          isolated_label_score biology_conservation 0.7663213939
+#> 8          isolated_label_score biology_conservation 0.7662856393
 #> 9          cluster_label_purity biology_conservation 1.0000000000
-#> 10        cluster_batch_entropy        batch_removal 0.9886644476
-#> 11                    pcr_batch        batch_removal 0.0002692302
+#> 10        cluster_batch_entropy        batch_removal 0.9886574048
+#> 11                    pcr_batch        batch_removal 0.0002694834
 #> 12 well_resolved_group_fraction            structure 1.0000000000
-#> 13           batch_mixing_score            aggregate 0.7297122774
-#> 14   biology_conservation_score            aggregate 0.9128884199
+#> 13           batch_mixing_score            aggregate 0.7294300338
+#> 14   biology_conservation_score            aggregate 0.9128640383
 #> 15              structure_score            aggregate 1.0000000000
-#> 16    overall_integration_score            aggregate 0.8396179629
+#> 16    overall_integration_score            aggregate 0.8394904365
 #>    scaled_score n_cells                             source
-#> 1    0.97086573    1500          harmony + seurat_clusters
-#> 2    0.64345808    1500                            harmony
-#> 3    0.88916945    1500                            harmony
-#> 4    0.98043947    1500                            harmony
+#> 1    0.97082024    1500          harmony + seurat_clusters
+#> 2    0.64330041    1500                            harmony
+#> 3    0.88896732    1500                            harmony
+#> 4    0.98046221    1500                            harmony
 #> 5    1.00000000    1500                             RNA_nn
 #> 6    1.00000000    1500 seurat_clusters vs seurat_clusters
 #> 7    1.00000000    1500 seurat_clusters vs seurat_clusters
-#> 8    0.76632139      50                    seurat_clusters
+#> 8    0.76628564      50                    seurat_clusters
 #> 9    1.00000000    1500 seurat_clusters vs seurat_clusters
-#> 10   0.98866445    1500         seurat_clusters vs library
-#> 11   0.07014948    1500                     harmony vs pca
+#> 10   0.98865740    1500         seurat_clusters vs library
+#> 11   0.06927517    1500                     harmony vs pca
 #> 12   1.00000000    1500                    seurat_clusters
-#> 13   0.72971228    1500                          aggregate
-#> 14   0.91288842    1500                          aggregate
+#> 13   0.72943003    1500                          aggregate
+#> 14   0.91286404    1500                          aggregate
 #> 15   1.00000000    1500                          aggregate
-#> 16   0.83961796    1500         0.4 batch_by + 0.6 biology
+#> 16   0.83949044    1500         0.4 batch_by + 0.6 biology
 #>                     note
 #> 1                       
 #> 2                       
@@ -146,19 +146,19 @@ cluster_lisi <- sn_calculate_lisi(
 
 head(library_lisi)
 #>            cell_id  library
-#> 1 AAACATACAACCAC-1 1.850893
-#> 2 AAACATTGATCAGC-1 1.771864
-#> 3 AAACCGTGCTTCCG-1 1.692925
-#> 4 AAACGCACTGGTAC-1 1.597155
-#> 5 AAACGCTGACCAGT-1 1.821597
-#> 6 AAACGCTGGTTCTT-1 1.997790
+#> 1 AAACATACAACCAC-1 1.851349
+#> 2 AAACATTGATCAGC-1 1.763703
+#> 3 AAACCGTGCTTCCG-1 1.693069
+#> 4 AAACGCACTGGTAC-1 1.599863
+#> 5 AAACGCTGACCAGT-1 1.818432
+#> 6 AAACGCTGGTTCTT-1 1.998104
 head(cluster_lisi)
 #>            cell_id seurat_clusters
-#> 1 AAACCGTGCTTCCG-1        1.118627
-#> 2 AAACCGTGTATGCG-1        1.024888
-#> 3 AAACGCTGACCAGT-1        1.090233
-#> 4 AAACGCTGTAGCCA-1        2.160213
-#> 5 AAACGCTGTTTCTG-1        1.069474
+#> 1 AAACATTGAGCTAC-1        1.000000
+#> 2 AAACATTGATCAGC-1        1.041738
+#> 3 AAACGCTGACCAGT-1        1.085267
+#> 4 AAACGCTGTAGCCA-1        2.651311
+#> 5 AAACGCTGTTTCTG-1        1.115321
 #> 6 AAACTTGAAAAACG-1        1.000000
 ```
 
@@ -178,12 +178,12 @@ cluster_sil <- sn_calculate_silhouette(
 
 head(cluster_sil)
 #>            cell_id seurat_clusters silhouette_width
-#> 1 AAACCGTGCTTCCG-1               2       0.18744014
-#> 2 AAACCGTGTATGCG-1               6       0.29597372
-#> 3 AAACGCTGACCAGT-1               3       0.11130933
-#> 4 AAACGCTGTAGCCA-1               3      -0.05947341
-#> 5 AAACGCTGTTTCTG-1               5       0.22930637
-#> 6 AAACTTGAAAAACG-1               4       0.35813064
+#> 1 AAACATTGAGCTAC-1               4       0.42128412
+#> 2 AAACATTGATCAGC-1               1       0.23931000
+#> 3 AAACGCTGACCAGT-1               3       0.10464782
+#> 4 AAACGCTGTAGCCA-1               3      -0.04240411
+#> 5 AAACGCTGTTTCTG-1               5       0.22616282
+#> 6 AAACTTGAAAAACG-1               4       0.37935553
 ```
 
 Graph connectivity asks whether cells with the same label remain
@@ -201,16 +201,16 @@ connectivity <- sn_calculate_graph_connectivity(
 
 connectivity
 #>    seurat_clusters n_cells largest_component connectivity_score
-#> 1                0     255               255                  1
-#> 2                1     222               222                  1
+#> 1                0     253               253                  1
+#> 2                1     224               224                  1
 #> 3                2     237               237                  1
-#> 4                3     223               223                  1
-#> 5                4     208               208                  1
-#> 6                5     137               137                  1
-#> 7                6     130               130                  1
+#> 4                3     221               221                  1
+#> 5                4     209               209                  1
+#> 6                5     136               136                  1
+#> 7                6     131               131                  1
 #> 8                7      36                36                  1
 #> 9                8      36                36                  1
-#> 10               9      16                16                  1
+#> 10               9      17                17                  1
 ```
 
 ## Compare clusters to labels when references exist
@@ -228,14 +228,14 @@ sn_calculate_cluster_purity(
   label_by = "coarse_label"
 )
 #>    seurat_clusters n_cells dominant_label dominant_label_n
-#> 1                3     369      cluster_3              369
+#> 1                3     368      cluster_3              368
 #> 2                4     357      cluster_4              357
-#> 3                1     525      cluster_1              525
-#> 4                2     488      cluster_2              488
-#> 5                6     153      cluster_6              153
+#> 3                1     527      cluster_1              527
+#> 4                2     487      cluster_2              487
+#> 5                6     154      cluster_6              154
 #> 6                5     165      cluster_5              165
-#> 7                0     608      cluster_0              608
-#> 8                9      16      cluster_9               16
+#> 7                0     606      cluster_0              606
+#> 8                9      17      cluster_9               17
 #> 9                8      36      cluster_8               36
 #> 10               7      36      cluster_7               36
 #>    purity_score impurity_score
@@ -256,14 +256,14 @@ sn_calculate_cluster_entropy(
   label_by = "coarse_label"
 )
 #>    seurat_clusters n_cells n_labels dominant_label entropy
-#> 1                3     369        1      cluster_3       0
+#> 1                3     368        1      cluster_3       0
 #> 2                4     357        1      cluster_4       0
-#> 3                1     525        1      cluster_1       0
-#> 4                2     488        1      cluster_2       0
-#> 5                6     153        1      cluster_6       0
+#> 3                1     527        1      cluster_1       0
+#> 4                2     487        1      cluster_2       0
+#> 5                6     154        1      cluster_6       0
 #> 6                5     165        1      cluster_5       0
-#> 7                0     608        1      cluster_0       0
-#> 8                9      16        1      cluster_9       0
+#> 7                0     606        1      cluster_0       0
+#> 8                9      17        1      cluster_9       0
 #> 9                8      36        1      cluster_8       0
 #> 10               7      36        1      cluster_7       0
 #>    normalized_entropy
@@ -294,16 +294,16 @@ sn_calculate_isolated_label_score(
   max_cells = 1500
 )
 #>    coarse_label n_cells fraction_cells mean_silhouette isolated_score
-#> 1     cluster_9      16     0.01066667       0.6521673      0.8260836
-#> 2     cluster_7      36     0.02400000       0.3947029      0.6973514
-#> 3     cluster_8      36     0.02400000       0.4395215      0.7197608
-#> 4     cluster_6     130     0.08666667       0.3052815      0.6526408
-#> 5     cluster_5     137     0.09133333       0.4082164      0.7041082
-#> 6     cluster_4     208     0.13866667       0.4645281      0.7322640
-#> 7     cluster_1     222     0.14800000       0.1907304      0.5953652
-#> 8     cluster_3     223     0.14866667       0.1260716      0.5630358
-#> 9     cluster_2     237     0.15800000       0.3858285      0.6929143
-#> 10    cluster_0     255     0.17000000       0.2393942      0.6196971
+#> 1     cluster_9      17     0.01133333       0.5761626      0.7880813
+#> 2     cluster_7      36     0.02400000       0.4048276      0.7024138
+#> 3     cluster_8      36     0.02400000       0.4395448      0.7197724
+#> 4     cluster_6     131     0.08733333       0.3224888      0.6612444
+#> 5     cluster_5     136     0.09066667       0.4203340      0.7101670
+#> 6     cluster_4     209     0.13933333       0.4784576      0.7392288
+#> 7     cluster_3     221     0.14733333       0.1120699      0.5560349
+#> 8     cluster_1     224     0.14933333       0.1718597      0.5859299
+#> 9     cluster_2     237     0.15800000       0.3980331      0.6990165
+#> 10    cluster_0     253     0.16866667       0.2395322      0.6197661
 #>    isolated_label
 #> 1            TRUE
 #> 2            TRUE
@@ -340,9 +340,9 @@ pcr <- sn_calculate_pcr_batch(
 
 pcr
 #>   reduction baseline_reduction batch_column n_cells batch_variance
-#> 1   harmony                pca      library    1500   0.0002692302
+#> 1   harmony                pca      library    1500   0.0002694834
 #>   baseline_batch_variance pcr_improvement scaled_score
-#> 1            0.0002895414    2.031118e-05   0.07014948
+#> 1            0.0002895414    2.005803e-05   0.06927517
 ```
 
 When several metadata variables might drive the same residual structure,
@@ -396,38 +396,38 @@ challenging <- sn_identify_challenging_groups(
 
 challenging
 #>    seurat_clusters n_cells fraction_cells median_neighbor_purity
-#> 1                3     223     0.14866667                 1.0000
-#> 2                1     222     0.14800000                 1.0000
-#> 3                0     255     0.17000000                 1.0000
-#> 4                6     130     0.08666667                 1.0000
-#> 5                2     237     0.15800000                 1.0000
-#> 6                7      36     0.02400000                 1.0000
-#> 7                5     137     0.09133333                 1.0000
-#> 8                8      36     0.02400000                 1.0000
-#> 9                4     208     0.13866667                 1.0000
-#> 10               9      16     0.01066667                 0.9375
+#> 1                3     221     0.14733333              1.0000000
+#> 2                1     224     0.14933333              1.0000000
+#> 3                0     253     0.16866667              1.0000000
+#> 4                6     131     0.08733333              1.0000000
+#> 5                2     237     0.15800000              1.0000000
+#> 6                7      36     0.02400000              1.0000000
+#> 7                5     136     0.09066667              1.0000000
+#> 8                8      36     0.02400000              1.0000000
+#> 9                9      17     0.01133333              0.9411765
+#> 10               4     209     0.13933333              1.0000000
 #>    mean_neighbor_purity graph_connectivity mean_silhouette
-#> 1             0.9317346                  1       0.1260716
-#> 2             0.8991603                  1       0.1907304
-#> 3             0.9121629                  1       0.2393942
-#> 4             0.9604462                  1       0.3052815
-#> 5             0.9584785                  1       0.3858285
-#> 6             0.9282930                  1       0.3947029
-#> 7             0.9503810                  1       0.4082164
-#> 8             0.9331017                  1       0.4395215
-#> 9             0.9935285                  1       0.4645281
-#> 10            0.9249387                  1       0.6521673
+#> 1             0.9154503                  1       0.1120699
+#> 2             0.8730401                  1       0.1718597
+#> 3             0.8912202                  1       0.2395322
+#> 4             0.9481837                  1       0.3224888
+#> 5             0.9660129                  1       0.3980331
+#> 6             0.9466419                  1       0.4048276
+#> 7             0.9564398                  1       0.4203340
+#> 8             0.9617983                  1       0.4395448
+#> 9             0.9091375                  1       0.5761626
+#> 10            0.9938152                  1       0.4784576
 #>    separation_score challenge_score rare_group challenging_group
-#> 1         0.8543453      0.14565473      FALSE             FALSE
-#> 2         0.8651217      0.13487826      FALSE             FALSE
-#> 3         0.8732324      0.12676764      FALSE             FALSE
-#> 4         0.8842136      0.11578641      FALSE             FALSE
-#> 5         0.8976381      0.10236192      FALSE             FALSE
-#> 6         0.8991171      0.10088286       TRUE             FALSE
-#> 7         0.9013694      0.09863060      FALSE             FALSE
-#> 8         0.9065869      0.09341308       TRUE             FALSE
-#> 9         0.9107547      0.08924532      FALSE             FALSE
-#> 10        0.9211945      0.07880545       TRUE             FALSE
+#> 1         0.8520116      0.14798835      FALSE             FALSE
+#> 2         0.8619766      0.13802338      FALSE             FALSE
+#> 3         0.8732554      0.12674464      FALSE             FALSE
+#> 4         0.8870815      0.11291853      FALSE             FALSE
+#> 5         0.8996722      0.10032782      FALSE             FALSE
+#> 6         0.9008046      0.09919540       TRUE             FALSE
+#> 7         0.9033890      0.09661099      FALSE             FALSE
+#> 8         0.9065908      0.09340920       TRUE             FALSE
+#> 9         0.9097526      0.09024741       TRUE             FALSE
+#> 10        0.9130763      0.08692373      FALSE             FALSE
 ```
 
 ROGUE is an optional cluster-purity diagnostic that depends on the

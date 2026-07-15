@@ -6,8 +6,10 @@ metadata, and write reusable artifacts without changing APIs for every
 file type.
 
 This article uses the package PBMC3k example throughout. To keep package
-checks and website builds fast, code chunks are shown by default and are
-evaluated only when you render with `SHENNONG_RUN_VIGNETTES=true`.
+checks and website builds independent of Zenodo availability, code
+chunks are shown by default and are evaluated only when you render with
+both `SHENNONG_RUN_VIGNETTES=true` and
+`SHENNONG_RUN_NETWORK_VIGNETTES=true`.
 
 ## Start with PBMC3k
 
@@ -25,9 +27,6 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data(dataset = "pbmc3k")
-#> INFO [2026-07-14 06:38:27] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:38:28] Running QC metrics for human.
-#> INFO [2026-07-14 06:38:28] Seurat object initialization complete.
 
 pbmc_h5 <- sn_load_data(
   dataset = "pbmc3k",
@@ -35,19 +34,9 @@ pbmc_h5 <- sn_load_data(
 )
 
 pbmc_h5
-#> [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 
 pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-#> INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc1k.
-#> INFO [2026-07-14 06:38:39] Running QC metrics for human.
-#> INFO [2026-07-14 06:38:39] Seurat object initialization complete.
-#> INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:38:40] Running QC metrics for human.
-#> INFO [2026-07-14 06:38:40] Seurat object initialization complete.
 table(pbmc_merged$sample)
-#> 
-#> pbmc1k pbmc3k 
-#>   1215   2753
 ```
 
 [`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
@@ -63,8 +52,6 @@ public_h5 <- sn_download_zenodo(
 )
 
 public_h5
-#>                               pbmc3k_filtered_feature_bc_matrix.h5 
-#> "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"
 ```
 
 The current Shennong public reprocessed-data collection is indexed by
@@ -140,15 +127,8 @@ pbmc <- sn_initialize_seurat_object(
   study = "10x_pbmc",
   species = "human"
 )
-#> INFO [2026-07-14 06:38:41] Initializing Seurat object for project: pbmc3k_demo.
-#> INFO [2026-07-14 06:38:41] Running QC metrics for human.
-#> INFO [2026-07-14 06:38:42] Seurat object initialization complete.
 
 pbmc
-#> An object of class Seurat 
-#> 54872 features across 2753 samples within 1 assay 
-#> Active assay: RNA (54872 features, 0 variable features)
-#>  1 layer present: counts
 ```
 
 The important design choice is that provenance is not hidden in the
@@ -159,13 +139,6 @@ reuse them.
 ``` r
 
 head(pbmc[[]][, c("sample", "study", "nCount_RNA", "nFeature_RNA", "percent.mt")])
-#>                  sample    study nCount_RNA nFeature_RNA percent.mt
-#> AAACATACAACCAC-1 pbmc3k 10x_pbmc       2844         1046  2.7777778
-#> AAACATTGAGCTAC-1 pbmc3k 10x_pbmc       5717         1722  3.2534546
-#> AAACATTGATCAGC-1 pbmc3k 10x_pbmc       3766         1500  0.6903877
-#> AAACCGTGCTTCCG-1 pbmc3k 10x_pbmc       2981         1153  1.5095606
-#> AAACCGTGTATGCG-1 pbmc3k 10x_pbmc       1229          698  0.8950366
-#> AAACGCACTGGTAC-1 pbmc3k 10x_pbmc       2536         1032  1.4984227
 ```
 
 ## Discover 10x folders before reading them
@@ -218,12 +191,7 @@ metadata <- sn_read(metadata_path, row_names = "cell")
 pbmc_cached <- sn_read(object_path)
 
 dim(metadata)
-#> [1] 2753    8
 pbmc_cached
-#> An object of class Seurat 
-#> 54872 features across 2753 samples within 1 assay 
-#> Active assay: RNA (54872 features, 0 variable features)
-#>  1 layer present: counts
 ```
 
 `row_names = "cell"` is useful when a CSV carries cell IDs as a regular
@@ -268,13 +236,7 @@ zenodo_plan <- sn_upload_zenodo(
 )
 
 zenodo_plan$files[, c("file", "size", "md5")]
-#> # A tibble: 2 × 3
-#>   file                      size md5                             
-#>   <chr>                    <dbl> <chr>                           
-#> 1 pbmc3k_metadata.csv     252144 30e88b334de6ed4d04a0393921f0f216
-#> 2 pbmc3k_initialized.qs2 6229208 8f982b37f3dd01235364273240af1e2a
 zenodo_plan$manifest_path
-#> [1] "/tmp/RtmpQhdMA8/shennong_zenodo_manifest.json"
 ```
 
 In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and

@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,11 +44,21 @@
     <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -104,9 +114,9 @@ column.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:52] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:52] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:52] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:35] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:35] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:36] Seurat object initialization complete.</span></span>
 <span><span class="va">pbmc</span><span class="op">$</span><span class="va">library</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library_a"</span>, <span class="st">"library_b"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
@@ -142,39 +152,39 @@ and returns the results in predictable sections: <code>summary</code>,
 <span></span>
 <span><span class="va">assessment</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;                          metric             category        score</span></span>
-<span><span class="co">#&gt; 1              batch_silhouette        batch_removal 0.0291342653</span></span>
-<span><span class="co">#&gt; 2              label_silhouette biology_conservation 0.2869161592</span></span>
-<span><span class="co">#&gt; 3                    batch_lisi        batch_removal 1.8891694458</span></span>
-<span><span class="co">#&gt; 4                    label_lisi biology_conservation 1.1760448109</span></span>
+<span><span class="co">#&gt; 1              batch_silhouette        batch_removal 0.0291797570</span></span>
+<span><span class="co">#&gt; 2              label_silhouette biology_conservation 0.2866008297</span></span>
+<span><span class="co">#&gt; 3                    batch_lisi        batch_removal 1.8889673188</span></span>
+<span><span class="co">#&gt; 4                    label_lisi biology_conservation 1.1758400747</span></span>
 <span><span class="co">#&gt; 5            graph_connectivity biology_conservation 1.0000000000</span></span>
 <span><span class="co">#&gt; 6                           ari biology_conservation 1.0000000000</span></span>
 <span><span class="co">#&gt; 7                           nmi biology_conservation 1.0000000000</span></span>
-<span><span class="co">#&gt; 8          isolated_label_score biology_conservation 0.7663213939</span></span>
+<span><span class="co">#&gt; 8          isolated_label_score biology_conservation 0.7662856393</span></span>
 <span><span class="co">#&gt; 9          cluster_label_purity biology_conservation 1.0000000000</span></span>
-<span><span class="co">#&gt; 10        cluster_batch_entropy        batch_removal 0.9886644476</span></span>
-<span><span class="co">#&gt; 11                    pcr_batch        batch_removal 0.0002692302</span></span>
+<span><span class="co">#&gt; 10        cluster_batch_entropy        batch_removal 0.9886574048</span></span>
+<span><span class="co">#&gt; 11                    pcr_batch        batch_removal 0.0002694834</span></span>
 <span><span class="co">#&gt; 12 well_resolved_group_fraction            structure 1.0000000000</span></span>
-<span><span class="co">#&gt; 13           batch_mixing_score            aggregate 0.7297122774</span></span>
-<span><span class="co">#&gt; 14   biology_conservation_score            aggregate 0.9128884199</span></span>
+<span><span class="co">#&gt; 13           batch_mixing_score            aggregate 0.7294300338</span></span>
+<span><span class="co">#&gt; 14   biology_conservation_score            aggregate 0.9128640383</span></span>
 <span><span class="co">#&gt; 15              structure_score            aggregate 1.0000000000</span></span>
-<span><span class="co">#&gt; 16    overall_integration_score            aggregate 0.8396179629</span></span>
+<span><span class="co">#&gt; 16    overall_integration_score            aggregate 0.8394904365</span></span>
 <span><span class="co">#&gt;    scaled_score n_cells                             source</span></span>
-<span><span class="co">#&gt; 1    0.97086573    1500          harmony + seurat_clusters</span></span>
-<span><span class="co">#&gt; 2    0.64345808    1500                            harmony</span></span>
-<span><span class="co">#&gt; 3    0.88916945    1500                            harmony</span></span>
-<span><span class="co">#&gt; 4    0.98043947    1500                            harmony</span></span>
+<span><span class="co">#&gt; 1    0.97082024    1500          harmony + seurat_clusters</span></span>
+<span><span class="co">#&gt; 2    0.64330041    1500                            harmony</span></span>
+<span><span class="co">#&gt; 3    0.88896732    1500                            harmony</span></span>
+<span><span class="co">#&gt; 4    0.98046221    1500                            harmony</span></span>
 <span><span class="co">#&gt; 5    1.00000000    1500                             RNA_nn</span></span>
 <span><span class="co">#&gt; 6    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
 <span><span class="co">#&gt; 7    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
-<span><span class="co">#&gt; 8    0.76632139      50                    seurat_clusters</span></span>
+<span><span class="co">#&gt; 8    0.76628564      50                    seurat_clusters</span></span>
 <span><span class="co">#&gt; 9    1.00000000    1500 seurat_clusters vs seurat_clusters</span></span>
-<span><span class="co">#&gt; 10   0.98866445    1500         seurat_clusters vs library</span></span>
-<span><span class="co">#&gt; 11   0.07014948    1500                     harmony vs pca</span></span>
+<span><span class="co">#&gt; 10   0.98865740    1500         seurat_clusters vs library</span></span>
+<span><span class="co">#&gt; 11   0.06927517    1500                     harmony vs pca</span></span>
 <span><span class="co">#&gt; 12   1.00000000    1500                    seurat_clusters</span></span>
-<span><span class="co">#&gt; 13   0.72971228    1500                          aggregate</span></span>
-<span><span class="co">#&gt; 14   0.91288842    1500                          aggregate</span></span>
+<span><span class="co">#&gt; 13   0.72943003    1500                          aggregate</span></span>
+<span><span class="co">#&gt; 14   0.91286404    1500                          aggregate</span></span>
 <span><span class="co">#&gt; 15   1.00000000    1500                          aggregate</span></span>
-<span><span class="co">#&gt; 16   0.83961796    1500         0.4 batch_by + 0.6 biology</span></span>
+<span><span class="co">#&gt; 16   0.83949044    1500         0.4 batch_by + 0.6 biology</span></span>
 <span><span class="co">#&gt;                     note</span></span>
 <span><span class="co">#&gt; 1                       </span></span>
 <span><span class="co">#&gt; 2                       </span></span>
@@ -226,19 +236,19 @@ mixing by changing <code>label</code>.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">library_lisi</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            cell_id  library</span></span>
-<span><span class="co">#&gt; 1 AAACATACAACCAC-1 1.850893</span></span>
-<span><span class="co">#&gt; 2 AAACATTGATCAGC-1 1.771864</span></span>
-<span><span class="co">#&gt; 3 AAACCGTGCTTCCG-1 1.692925</span></span>
-<span><span class="co">#&gt; 4 AAACGCACTGGTAC-1 1.597155</span></span>
-<span><span class="co">#&gt; 5 AAACGCTGACCAGT-1 1.821597</span></span>
-<span><span class="co">#&gt; 6 AAACGCTGGTTCTT-1 1.997790</span></span>
+<span><span class="co">#&gt; 1 AAACATACAACCAC-1 1.851349</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1 1.763703</span></span>
+<span><span class="co">#&gt; 3 AAACCGTGCTTCCG-1 1.693069</span></span>
+<span><span class="co">#&gt; 4 AAACGCACTGGTAC-1 1.599863</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGACCAGT-1 1.818432</span></span>
+<span><span class="co">#&gt; 6 AAACGCTGGTTCTT-1 1.998104</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cluster_lisi</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            cell_id seurat_clusters</span></span>
-<span><span class="co">#&gt; 1 AAACCGTGCTTCCG-1        1.118627</span></span>
-<span><span class="co">#&gt; 2 AAACCGTGTATGCG-1        1.024888</span></span>
-<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1        1.090233</span></span>
-<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1        2.160213</span></span>
-<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1        1.069474</span></span>
+<span><span class="co">#&gt; 1 AAACATTGAGCTAC-1        1.000000</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1        1.041738</span></span>
+<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1        1.085267</span></span>
+<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1        2.651311</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1        1.115321</span></span>
 <span><span class="co">#&gt; 6 AAACTTGAAAAACG-1        1.000000</span></span></code></pre></div>
 <p>Silhouette asks whether a label is compact in the embedding. For
 biological labels, high silhouette can be good; for batch labels, high
@@ -254,12 +264,12 @@ silhouette often means residual batch separation.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cluster_sil</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            cell_id seurat_clusters silhouette_width</span></span>
-<span><span class="co">#&gt; 1 AAACCGTGCTTCCG-1               2       0.18744014</span></span>
-<span><span class="co">#&gt; 2 AAACCGTGTATGCG-1               6       0.29597372</span></span>
-<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1               3       0.11130933</span></span>
-<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1               3      -0.05947341</span></span>
-<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1               5       0.22930637</span></span>
-<span><span class="co">#&gt; 6 AAACTTGAAAAACG-1               4       0.35813064</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 AAACATTGAGCTAC-1               4       0.42128412</span></span>
+<span><span class="co">#&gt; 2 AAACATTGATCAGC-1               1       0.23931000</span></span>
+<span><span class="co">#&gt; 3 AAACGCTGACCAGT-1               3       0.10464782</span></span>
+<span><span class="co">#&gt; 4 AAACGCTGTAGCCA-1               3      -0.04240411</span></span>
+<span><span class="co">#&gt; 5 AAACGCTGTTTCTG-1               5       0.22616282</span></span>
+<span><span class="co">#&gt; 6 AAACTTGAAAAACG-1               4       0.37935553</span></span></code></pre></div>
 <p>Graph connectivity asks whether cells with the same label remain
 connected in the neighbor graph.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -273,16 +283,16 @@ connected in the neighbor graph.</p>
 <span></span>
 <span><span class="va">connectivity</span></span>
 <span><span class="co">#&gt;    seurat_clusters n_cells largest_component connectivity_score</span></span>
-<span><span class="co">#&gt; 1                0     255               255                  1</span></span>
-<span><span class="co">#&gt; 2                1     222               222                  1</span></span>
+<span><span class="co">#&gt; 1                0     253               253                  1</span></span>
+<span><span class="co">#&gt; 2                1     224               224                  1</span></span>
 <span><span class="co">#&gt; 3                2     237               237                  1</span></span>
-<span><span class="co">#&gt; 4                3     223               223                  1</span></span>
-<span><span class="co">#&gt; 5                4     208               208                  1</span></span>
-<span><span class="co">#&gt; 6                5     137               137                  1</span></span>
-<span><span class="co">#&gt; 7                6     130               130                  1</span></span>
+<span><span class="co">#&gt; 4                3     221               221                  1</span></span>
+<span><span class="co">#&gt; 5                4     209               209                  1</span></span>
+<span><span class="co">#&gt; 6                5     136               136                  1</span></span>
+<span><span class="co">#&gt; 7                6     131               131                  1</span></span>
 <span><span class="co">#&gt; 8                7      36                36                  1</span></span>
 <span><span class="co">#&gt; 9                8      36                36                  1</span></span>
-<span><span class="co">#&gt; 10               9      16                16                  1</span></span></code></pre></div>
+<span><span class="co">#&gt; 10               9      17                17                  1</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="compare-clusters-to-labels-when-references-exist">Compare clusters to labels when references exist<a class="anchor" aria-label="anchor" href="#compare-clusters-to-labels-when-references-exist"></a>
@@ -298,14 +308,14 @@ agreement show how the computed clusters relate to that reference.</p>
 <span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;    seurat_clusters n_cells dominant_label dominant_label_n</span></span>
-<span><span class="co">#&gt; 1                3     369      cluster_3              369</span></span>
+<span><span class="co">#&gt; 1                3     368      cluster_3              368</span></span>
 <span><span class="co">#&gt; 2                4     357      cluster_4              357</span></span>
-<span><span class="co">#&gt; 3                1     525      cluster_1              525</span></span>
-<span><span class="co">#&gt; 4                2     488      cluster_2              488</span></span>
-<span><span class="co">#&gt; 5                6     153      cluster_6              153</span></span>
+<span><span class="co">#&gt; 3                1     527      cluster_1              527</span></span>
+<span><span class="co">#&gt; 4                2     487      cluster_2              487</span></span>
+<span><span class="co">#&gt; 5                6     154      cluster_6              154</span></span>
 <span><span class="co">#&gt; 6                5     165      cluster_5              165</span></span>
-<span><span class="co">#&gt; 7                0     608      cluster_0              608</span></span>
-<span><span class="co">#&gt; 8                9      16      cluster_9               16</span></span>
+<span><span class="co">#&gt; 7                0     606      cluster_0              606</span></span>
+<span><span class="co">#&gt; 8                9      17      cluster_9               17</span></span>
 <span><span class="co">#&gt; 9                8      36      cluster_8               36</span></span>
 <span><span class="co">#&gt; 10               7      36      cluster_7               36</span></span>
 <span><span class="co">#&gt;    purity_score impurity_score</span></span>
@@ -326,14 +336,14 @@ agreement show how the computed clusters relate to that reference.</p>
 <span>  label_by <span class="op">=</span> <span class="st">"coarse_label"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;    seurat_clusters n_cells n_labels dominant_label entropy</span></span>
-<span><span class="co">#&gt; 1                3     369        1      cluster_3       0</span></span>
+<span><span class="co">#&gt; 1                3     368        1      cluster_3       0</span></span>
 <span><span class="co">#&gt; 2                4     357        1      cluster_4       0</span></span>
-<span><span class="co">#&gt; 3                1     525        1      cluster_1       0</span></span>
-<span><span class="co">#&gt; 4                2     488        1      cluster_2       0</span></span>
-<span><span class="co">#&gt; 5                6     153        1      cluster_6       0</span></span>
+<span><span class="co">#&gt; 3                1     527        1      cluster_1       0</span></span>
+<span><span class="co">#&gt; 4                2     487        1      cluster_2       0</span></span>
+<span><span class="co">#&gt; 5                6     154        1      cluster_6       0</span></span>
 <span><span class="co">#&gt; 6                5     165        1      cluster_5       0</span></span>
-<span><span class="co">#&gt; 7                0     608        1      cluster_0       0</span></span>
-<span><span class="co">#&gt; 8                9      16        1      cluster_9       0</span></span>
+<span><span class="co">#&gt; 7                0     606        1      cluster_0       0</span></span>
+<span><span class="co">#&gt; 8                9      17        1      cluster_9       0</span></span>
 <span><span class="co">#&gt; 9                8      36        1      cluster_8       0</span></span>
 <span><span class="co">#&gt; 10               7      36        1      cluster_7       0</span></span>
 <span><span class="co">#&gt;    normalized_entropy</span></span>
@@ -364,16 +374,16 @@ agreement show how the computed clusters relate to that reference.</p>
 <span>  max_cells <span class="op">=</span> <span class="fl">1500</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;    coarse_label n_cells fraction_cells mean_silhouette isolated_score</span></span>
-<span><span class="co">#&gt; 1     cluster_9      16     0.01066667       0.6521673      0.8260836</span></span>
-<span><span class="co">#&gt; 2     cluster_7      36     0.02400000       0.3947029      0.6973514</span></span>
-<span><span class="co">#&gt; 3     cluster_8      36     0.02400000       0.4395215      0.7197608</span></span>
-<span><span class="co">#&gt; 4     cluster_6     130     0.08666667       0.3052815      0.6526408</span></span>
-<span><span class="co">#&gt; 5     cluster_5     137     0.09133333       0.4082164      0.7041082</span></span>
-<span><span class="co">#&gt; 6     cluster_4     208     0.13866667       0.4645281      0.7322640</span></span>
-<span><span class="co">#&gt; 7     cluster_1     222     0.14800000       0.1907304      0.5953652</span></span>
-<span><span class="co">#&gt; 8     cluster_3     223     0.14866667       0.1260716      0.5630358</span></span>
-<span><span class="co">#&gt; 9     cluster_2     237     0.15800000       0.3858285      0.6929143</span></span>
-<span><span class="co">#&gt; 10    cluster_0     255     0.17000000       0.2393942      0.6196971</span></span>
+<span><span class="co">#&gt; 1     cluster_9      17     0.01133333       0.5761626      0.7880813</span></span>
+<span><span class="co">#&gt; 2     cluster_7      36     0.02400000       0.4048276      0.7024138</span></span>
+<span><span class="co">#&gt; 3     cluster_8      36     0.02400000       0.4395448      0.7197724</span></span>
+<span><span class="co">#&gt; 4     cluster_6     131     0.08733333       0.3224888      0.6612444</span></span>
+<span><span class="co">#&gt; 5     cluster_5     136     0.09066667       0.4203340      0.7101670</span></span>
+<span><span class="co">#&gt; 6     cluster_4     209     0.13933333       0.4784576      0.7392288</span></span>
+<span><span class="co">#&gt; 7     cluster_3     221     0.14733333       0.1120699      0.5560349</span></span>
+<span><span class="co">#&gt; 8     cluster_1     224     0.14933333       0.1718597      0.5859299</span></span>
+<span><span class="co">#&gt; 9     cluster_2     237     0.15800000       0.3980331      0.6990165</span></span>
+<span><span class="co">#&gt; 10    cluster_0     253     0.16866667       0.2395322      0.6197661</span></span>
 <span><span class="co">#&gt;    isolated_label</span></span>
 <span><span class="co">#&gt; 1            TRUE</span></span>
 <span><span class="co">#&gt; 2            TRUE</span></span>
@@ -407,9 +417,9 @@ correction against the pre-integration PCA space.</p>
 <span></span>
 <span><span class="va">pcr</span></span>
 <span><span class="co">#&gt;   reduction baseline_reduction batch_column n_cells batch_variance</span></span>
-<span><span class="co">#&gt; 1   harmony                pca      library    1500   0.0002692302</span></span>
+<span><span class="co">#&gt; 1   harmony                pca      library    1500   0.0002694834</span></span>
 <span><span class="co">#&gt;   baseline_batch_variance pcr_improvement scaled_score</span></span>
-<span><span class="co">#&gt; 1            0.0002895414    2.031118e-05   0.07014948</span></span></code></pre></div>
+<span><span class="co">#&gt; 1            0.0002895414    2.005803e-05   0.06927517</span></span></code></pre></div>
 <p>When several metadata variables might drive the same residual
 structure, rank them directly with variance-explained scoring. Use the
 single-variable mode for a quick screen, then the partial mode when the
@@ -456,38 +466,38 @@ deserve manual review. This is useful before final annotation.</p>
 <span></span>
 <span><span class="va">challenging</span></span>
 <span><span class="co">#&gt;    seurat_clusters n_cells fraction_cells median_neighbor_purity</span></span>
-<span><span class="co">#&gt; 1                3     223     0.14866667                 1.0000</span></span>
-<span><span class="co">#&gt; 2                1     222     0.14800000                 1.0000</span></span>
-<span><span class="co">#&gt; 3                0     255     0.17000000                 1.0000</span></span>
-<span><span class="co">#&gt; 4                6     130     0.08666667                 1.0000</span></span>
-<span><span class="co">#&gt; 5                2     237     0.15800000                 1.0000</span></span>
-<span><span class="co">#&gt; 6                7      36     0.02400000                 1.0000</span></span>
-<span><span class="co">#&gt; 7                5     137     0.09133333                 1.0000</span></span>
-<span><span class="co">#&gt; 8                8      36     0.02400000                 1.0000</span></span>
-<span><span class="co">#&gt; 9                4     208     0.13866667                 1.0000</span></span>
-<span><span class="co">#&gt; 10               9      16     0.01066667                 0.9375</span></span>
+<span><span class="co">#&gt; 1                3     221     0.14733333              1.0000000</span></span>
+<span><span class="co">#&gt; 2                1     224     0.14933333              1.0000000</span></span>
+<span><span class="co">#&gt; 3                0     253     0.16866667              1.0000000</span></span>
+<span><span class="co">#&gt; 4                6     131     0.08733333              1.0000000</span></span>
+<span><span class="co">#&gt; 5                2     237     0.15800000              1.0000000</span></span>
+<span><span class="co">#&gt; 6                7      36     0.02400000              1.0000000</span></span>
+<span><span class="co">#&gt; 7                5     136     0.09066667              1.0000000</span></span>
+<span><span class="co">#&gt; 8                8      36     0.02400000              1.0000000</span></span>
+<span><span class="co">#&gt; 9                9      17     0.01133333              0.9411765</span></span>
+<span><span class="co">#&gt; 10               4     209     0.13933333              1.0000000</span></span>
 <span><span class="co">#&gt;    mean_neighbor_purity graph_connectivity mean_silhouette</span></span>
-<span><span class="co">#&gt; 1             0.9317346                  1       0.1260716</span></span>
-<span><span class="co">#&gt; 2             0.8991603                  1       0.1907304</span></span>
-<span><span class="co">#&gt; 3             0.9121629                  1       0.2393942</span></span>
-<span><span class="co">#&gt; 4             0.9604462                  1       0.3052815</span></span>
-<span><span class="co">#&gt; 5             0.9584785                  1       0.3858285</span></span>
-<span><span class="co">#&gt; 6             0.9282930                  1       0.3947029</span></span>
-<span><span class="co">#&gt; 7             0.9503810                  1       0.4082164</span></span>
-<span><span class="co">#&gt; 8             0.9331017                  1       0.4395215</span></span>
-<span><span class="co">#&gt; 9             0.9935285                  1       0.4645281</span></span>
-<span><span class="co">#&gt; 10            0.9249387                  1       0.6521673</span></span>
+<span><span class="co">#&gt; 1             0.9154503                  1       0.1120699</span></span>
+<span><span class="co">#&gt; 2             0.8730401                  1       0.1718597</span></span>
+<span><span class="co">#&gt; 3             0.8912202                  1       0.2395322</span></span>
+<span><span class="co">#&gt; 4             0.9481837                  1       0.3224888</span></span>
+<span><span class="co">#&gt; 5             0.9660129                  1       0.3980331</span></span>
+<span><span class="co">#&gt; 6             0.9466419                  1       0.4048276</span></span>
+<span><span class="co">#&gt; 7             0.9564398                  1       0.4203340</span></span>
+<span><span class="co">#&gt; 8             0.9617983                  1       0.4395448</span></span>
+<span><span class="co">#&gt; 9             0.9091375                  1       0.5761626</span></span>
+<span><span class="co">#&gt; 10            0.9938152                  1       0.4784576</span></span>
 <span><span class="co">#&gt;    separation_score challenge_score rare_group challenging_group</span></span>
-<span><span class="co">#&gt; 1         0.8543453      0.14565473      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 2         0.8651217      0.13487826      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 3         0.8732324      0.12676764      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 4         0.8842136      0.11578641      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 5         0.8976381      0.10236192      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 6         0.8991171      0.10088286       TRUE             FALSE</span></span>
-<span><span class="co">#&gt; 7         0.9013694      0.09863060      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 8         0.9065869      0.09341308       TRUE             FALSE</span></span>
-<span><span class="co">#&gt; 9         0.9107547      0.08924532      FALSE             FALSE</span></span>
-<span><span class="co">#&gt; 10        0.9211945      0.07880545       TRUE             FALSE</span></span></code></pre></div>
+<span><span class="co">#&gt; 1         0.8520116      0.14798835      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 2         0.8619766      0.13802338      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 3         0.8732554      0.12674464      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 4         0.8870815      0.11291853      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 5         0.8996722      0.10032782      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 6         0.9008046      0.09919540       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 7         0.9033890      0.09661099      FALSE             FALSE</span></span>
+<span><span class="co">#&gt; 8         0.9065908      0.09340920       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 9         0.9097526      0.09024741       TRUE             FALSE</span></span>
+<span><span class="co">#&gt; 10        0.9130763      0.08692373      FALSE             FALSE</span></span></code></pre></div>
 <p>ROGUE is an optional cluster-purity diagnostic that depends on the
 upstream <code>ROGUE</code> package. Keep it as a targeted check rather
 than a mandatory build step.</p>

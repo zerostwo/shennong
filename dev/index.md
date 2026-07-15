@@ -1,10 +1,12 @@
 # Shennong
 
-`Shennong` is an experimental R package for single-cell transcriptomics
-workflows built around Seurat objects. It focuses on practical analysis
-steps that are commonly repeated across projects: preprocessing,
-clustering, batch integration, differential expression, enrichment,
-visualization, and interpretation-ready result storage.
+`Shennong` is an experimental R package for single-cell, multimodal,
+spatial, and bulk transcriptomics workflows. Seurat objects remain the
+primary single-cell contract, while standalone bulk analyses accept
+ordinary matrices and `SummarizedExperiment` objects. The package
+provides reproducible entry points for preprocessing, integration,
+annotation, differential testing, biological-state modeling, publication
+figures, and interpretation-ready result storage.
 
 ## Installation
 
@@ -27,21 +29,60 @@ deps
 sn_install_dependencies(scope = "required")
 ```
 
-## What Shennong Covers
+## One-Command Analysis Software
 
-- Seurat object initialization and QC-aware preprocessing
-- Gene and cell filtering, including bundled human/mouse GENCODE gene
-  classes
-- Doublet detection and ambient RNA correction
-- Single-dataset clustering and Harmony-based integration with
-  [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
-- Multi-metric integration assessment with
-  [`sn_assess_integration()`](https://songqi.org/shennong/dev/reference/sn_assess_integration.md)
-- Marker detection, pseudobulk differential expression, and enrichment
-  analysis
-- Bulk deconvolution workflows with BayesPrism and local CIBERSORTx
-  containers
-- Stored-result workflows for downstream interpretation and reporting
+Shennong provides stable `sn_*` entry points over R packages,
+command-line programs, and Python workflows. The table below summarizes
+the current analysis surface by data-analysis module. “Managed pixi/CLI”
+means Shennong prepares the input, runs the backend in a
+project-independent environment, and imports the result. “Adapter” means
+Shennong standardizes an existing result or a result returned by a
+user-supplied runner; the external software is not silently installed or
+executed.
+
+| Analysis module | Main Shennong entry point | Supported software and methods | Execution model |
+|----|----|----|----|
+| Data import and storage | [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md), [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md), [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md) | 10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT, rio, Zenodo and ShennongData | Native R and format adapters |
+| Preprocessing and QC | [`sn_normalize_data()`](https://songqi.org/shennong/dev/reference/sn_normalize_data.md), [`sn_find_doublets()`](https://songqi.org/shennong/dev/reference/sn_find_doublets.md), [`sn_remove_ambient_contamination()`](https://songqi.org/shennong/dev/reference/sn_remove_ambient_contamination.md) | Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper | Native R |
+| Clustering and batch integration | [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md) | Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering | Native R or managed pixi |
+| CITE-seq and multimodal integration | [`sn_run_multimodal()`](https://songqi.org/shennong/dev/reference/sn_run_multimodal.md) | Seurat WNN, totalVI, Coralysis and MMoCHi | Native R or managed pixi |
+| Reference mapping and simulation | [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md), [`sn_simulate()`](https://songqi.org/shennong/dev/reference/sn_simulate.md) | Seurat anchors, Coralysis, scANVI, scArches, scPoli and scDesign3 | Native R or managed pixi |
+| Cell-type annotation | [`sn_run_annotation()`](https://songqi.org/shennong/dev/reference/sn_run_annotation.md) | Shennong consensus, SingleR, CellTypist, Seurat label transfer, Symphony, scmap and scANVI, with Cell Ontology mapping | Native R, CLI or managed pixi |
+| Marker and differential-expression analysis | [`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md), [`sn_find_bulk_de()`](https://songqi.org/shennong/dev/reference/sn_find_bulk_de.md) | Seurat tests including Wilcoxon, COSG, DESeq2, edgeR, limma/limma-voom and dream/variancePartition | Native R; automatic bulk backend selection is available |
+| Enrichment and regulatory activity | [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md), [`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md) | clusterProfiler ORA/GSEA, GO, KEGG, MSigDB/msigdbr, decoupleR, DoRothEA and PROGENy | Native R |
+| Gene-set scoring and program discovery | [`sn_score_programs()`](https://songqi.org/shennong/dev/reference/sn_score_programs.md), [`sn_discover_programs()`](https://songqi.org/shennong/dev/reference/sn_discover_programs.md) | UCell, AUCell, GSVA, ssGSEA, sparse mean scoring, multi-restart NMF, cNMF and Hotspot | Native R; cNMF/Hotspot adapters |
+| Gene-regulatory networks | [`sn_run_grn()`](https://songqi.org/shennong/dev/reference/sn_run_grn.md) | GENIE3, pySCENIC, R SCENIC and GRNBoost2/arboreto | Native R for GENIE3; external-result adapters for SCENIC/GRNBoost2 |
+| Trajectory and cell dynamics | [`sn_run_trajectory()`](https://songqi.org/shennong/dev/reference/sn_run_trajectory.md), [`sn_run_velocity()`](https://songqi.org/shennong/dev/reference/sn_run_velocity.md), [`sn_run_fate()`](https://songqi.org/shennong/dev/reference/sn_run_fate.md) | Slingshot, Monocle 3, Palantir, tradeSeq, scVelo and CellRank | Native R or managed pixi |
+| Differential abundance and state prioritization | [`sn_test_abundance()`](https://songqi.org/shennong/dev/reference/sn_test_abundance.md), [`sn_prioritize_states()`](https://songqi.org/shennong/dev/reference/sn_prioritize_states.md) | Propeller/speckle, Milo/miloR, scCODA/pertpy, sample-aware permutation, Augur-inspired prioritization, Scissor and RareQ | Native R, managed runner or adapter |
+| Cell-cell communication | [`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md) | LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus | Native R or managed pixi |
+| CNV and malignant-state analysis | [`sn_run_cnv()`](https://songqi.org/shennong/dev/reference/sn_run_cnv.md) | infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries | Managed pixi or native R |
+| Metabolic analysis | [`sn_run_metabolism()`](https://songqi.org/shennong/dev/reference/sn_run_metabolism.md) | UCell, GSVA, ssGSEA, mean scoring, scMetabolism, scFEA and Compass | Native R; scFEA/Compass runner-result adapters |
+| Spatial transcriptomics | [`sn_run_spatial()`](https://songqi.org/shennong/dev/reference/sn_run_spatial.md) | Moran’s I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony | Native R, managed pixi or adapter |
+| Bulk transcriptomics and clinical analysis | [`sn_run_bulk()`](https://songqi.org/shennong/dev/reference/sn_run_bulk.md), [`sn_deconvolve_bulk()`](https://songqi.org/shennong/dev/reference/sn_deconvolve_bulk.md) | edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, survival/Cox, BayesPrism and CIBERSORTx | Native R or local container backend |
+| Integration diagnostics | [`sn_assess_integration()`](https://songqi.org/shennong/dev/reference/sn_assess_integration.md) | LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE | Native R |
+| Publication figures and reporting | [`sn_figure_spec()`](https://songqi.org/shennong/dev/reference/sn_figure_spec.md), [`sn_export_figure_bundle()`](https://songqi.org/shennong/dev/reference/sn_export_figure_bundle.md), [`sn_write_results()`](https://songqi.org/shennong/dev/reference/sn_write_results.md) | ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation | Native R with optional LLM provider |
+
+All methods shipped in `inst/methods/` currently have an implemented
+Shennong entry point or explicit adapter. Optional R packages,
+command-line programs, pixi environments, credentials, references, and
+model files are still required when the selected backend depends on
+them. Inspect the registry and the current machine before starting a
+workflow:
+
+``` r
+
+# Every registered backend and whether it can run in the current session
+sn_list_methods()
+sn_list_methods(task = "trajectory")
+sn_list_methods(available = TRUE)
+
+# Runtime, dependency, install action, inputs and outputs for one backend
+sn_method_status("cellrank", task = "fate")
+
+# Install missing R dependencies or prepare a managed Python environment
+sn_install_dependencies(scope = "recommended")
+sn_prepare_pixi_environment("trajectory", install_environment = TRUE)
+```
 
 ## Built-In Example Data
 

@@ -57,6 +57,8 @@ sn_call_scpoli(command, args = character(), ...)
 
 sn_call_infercnvpy(command, args = character(), ...)
 
+sn_call_trajectory(command, args = character(), ...)
+
 sn_call_cellphonedb(command, args = character(), ...)
 
 sn_call_cell2location(command, args = character(), ...)

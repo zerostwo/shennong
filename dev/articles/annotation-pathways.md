@@ -19,9 +19,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-14 06:29:34] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:29:34] Running QC metrics for human.
-#> INFO [2026-07-14 06:29:35] Seurat object initialization complete.
+#> INFO [2026-07-15 08:25:53] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 08:25:53] Running QC metrics for human.
+#> INFO [2026-07-15 08:25:54] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -159,6 +159,256 @@ sn_plot_dot(
 ```
 
 ![](annotation-pathways_files/figure-html/canonical-dotplot-1.png)
+
+## Run traceable consensus annotation
+
+[`sn_run_annotation()`](https://songqi.org/shennong/dev/reference/sn_run_annotation.md)
+is the stable annotation entry point. Its default `method = "consensus"`
+scores the bundled canonical marker database, retains the best and
+second-best candidate, calibrates a confidence margin, assigns
+hierarchical labels, and maps known labels to a versioned Cell Ontology
+snapshot. It supports both cluster- and cell-level output; without a
+reference, each cell inherits the traceable consensus of its cluster.
+
+``` r
+
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "consensus",
+  species = "human",
+  tissue = "peripheral blood",
+  ontology = TRUE,
+  store_name = "pbmc_consensus"
+)
+
+annotation_index <- sn_list_results(pbmc, type = "annotation")
+annotation_index
+#> # A tibble: 1 × 8
+#>   collection       type  name  analysis method created_at n_rows source
+#>   <chr>            <chr> <chr> <chr>    <chr>  <chr>       <int> <chr> 
+#> 1 analysis_results anno… pbmc… annotat… conse… 2026-07-1…   4037 NA
+
+annotation <- sn_get_result(
+  pbmc,
+  type = "annotation",
+  name = "pbmc_consensus"
+)
+
+head(annotation$tables$clusters)
+#> # A tibble: 6 × 16
+#>   cluster prediction          second_best_label prediction_score margin
+#>   <chr>   <chr>               <chr>                        <dbl>  <dbl>
+#> 1 0       ELP                 Early lymphoid/T…            0.711 0.0364
+#> 2 1       Myelocytes          ELP                          0.732 0.106 
+#> 3 2       Monocytes           Monocyte precurs…            0.752 0.172 
+#> 4 3       Kidney-resident ma… Naive B cells                0.726 0.0860
+#> 5 4       Tem/Trm cytotoxic … Transitional NK              0.732 0.108 
+#> 6 5       Monocytes           Myelocytes                   0.712 0.0385
+#> # ℹ 11 more variables: method_count <int>, methods <chr>,
+#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
+#> #   supporting_markers <chr>, conflicting_markers <chr>,
+#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
+head(annotation$tables$cells)
+#> # A tibble: 6 × 17
+#>   cell     cluster prediction second_best_label prediction_score margin
+#>   <chr>    <chr>   <chr>      <chr>                        <dbl>  <dbl>
+#> 1 AAACATA… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#> 2 AAACATT… 3       Kidney-re… Naive B cells                0.726 0.0860
+#> 3 AAACATT… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#> 4 AAACCGT… 2       Monocytes  Monocyte precurs…            0.752 0.172 
+#> 5 AAACCGT… 6       CD16+ NK … NK cells                     0.731 0.104 
+#> 6 AAACGCA… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#> # ℹ 11 more variables: method_count <int>, methods <chr>,
+#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
+#> #   supporting_markers <chr>, conflicting_markers <chr>,
+#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
+annotation$diagnostics
+#> $low_confidence_cells
+#> [1] 1193
+#> 
+#> $low_confidence_clusters
+#> [1] 5
+#> 
+#> $unmapped_ontology_labels
+#> [1] "ELP"                         "Myelocytes"                 
+#> [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  
+#> [5] "Pre-pro-B cells"
+```
+
+Every final label remains linked to marker support, conflicts, reference
+coverage, confidence, and provenance. LLM helpers can explain this
+evidence but cannot replace the stored computational label. Review
+uncertain assignments before using them as biological truth.
+
+``` r
+
+sn_review_annotation(pbmc, "pbmc_consensus")
+#> $cells
+#> # A tibble: 1,193 × 17
+#>    cell    cluster prediction second_best_label prediction_score margin
+#>    <chr>   <chr>   <chr>      <chr>                        <dbl>  <dbl>
+#>  1 AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#>  2 AAACAT… 3       Kidney-re… Naive B cells                0.726 0.0860
+#>  3 AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#>  4 AAACGC… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#>  5 AAACGC… 5       Monocytes  Myelocytes                   0.712 0.0385
+#>  6 AAACTT… 3       Kidney-re… Naive B cells                0.726 0.0860
+#>  7 AAAGAG… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#>  8 AAAGCC… 0       ELP        Early lymphoid/T…            0.711 0.0364
+#>  9 AAAGGC… 3       Kidney-re… Naive B cells                0.726 0.0860
+#> 10 AAAGTT… 3       Kidney-re… Naive B cells                0.726 0.0860
+#> # ℹ 1,183 more rows
+#> # ℹ 11 more variables: method_count <int>, methods <chr>,
+#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
+#> #   supporting_markers <chr>, conflicting_markers <chr>,
+#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
+#> 
+#> $clusters
+#> # A tibble: 5 × 16
+#>   cluster prediction          second_best_label prediction_score margin
+#>   <chr>   <chr>               <chr>                        <dbl>  <dbl>
+#> 1 0       ELP                 Early lymphoid/T…            0.711 0.0364
+#> 2 3       Kidney-resident ma… Naive B cells                0.726 0.0860
+#> 3 5       Monocytes           Myelocytes                   0.712 0.0385
+#> 4 7       Pre-pro-B cells     Early lymphoid/T…            0.719 0.0644
+#> 5 8       Kidney-resident ma… Monocytes                    0.706 0.0200
+#> # ℹ 11 more variables: method_count <int>, methods <chr>,
+#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
+#> #   supporting_markers <chr>, conflicting_markers <chr>,
+#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
+#> 
+#> $evidence
+#> # A tibble: 980 × 8
+#>    entity label          parent_label   score method supporting_markers
+#>    <chr>  <chr>          <chr>          <dbl> <chr>  <chr>             
+#>  1 0      Age-associate… B cells      0.00528 marke… TBX21;FCRL2;ITGAX 
+#>  2 0      Alveolar macr… Macrophages  0       marke… GPNMB;TREM2;BHLHE…
+#>  3 0      B cells        B cells      0.0190  marke… CD79A;MS4A1;CD19  
+#>  4 0      CD16- NK cells ILC          0.0662  marke… NKG7;GNLY;CD160   
+#>  5 0      CD16+ NK cells ILC          0.0731  marke… NKG7;GNLY;FCGR3A  
+#>  6 0      CD8a/a         T cells      0.0162  marke… PDCD1;ZNF683;GNG4 
+#>  7 0      CD8a/b(entry)  T cells      0.0607  marke… SATB1;TOX2;CCR9   
+#>  8 0      Classical mon… Monocytes    0.0455  marke… S100A9;CD14;S100A…
+#>  9 0      CMP            HSC/MPP      0       marke… MPO;CTSG;FLT3     
+#> 10 0      CRTAM+ gamma-… T cells      0.0216  marke… IKZF2;TRDC;ITGAD  
+#> # ℹ 970 more rows
+#> # ℹ 2 more variables: conflicting_markers <chr>,
+#> #   reference_coverage <dbl>
+#> 
+#> $diagnostics
+#> $diagnostics$low_confidence_cells
+#> [1] 1193
+#> 
+#> $diagnostics$low_confidence_clusters
+#> [1] 5
+#> 
+#> $diagnostics$unmapped_ontology_labels
+#> [1] "ELP"                         "Myelocytes"                 
+#> [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  
+#> [5] "Pre-pro-B cells"            
+#> 
+#> 
+#> $provenance
+#> $provenance$package_versions
+#> $provenance$package_versions$Shennong
+#> [1] "0.2.0"
+#> 
+#> $provenance$package_versions$R
+#> [1] "4.6.1"
+#> 
+#> 
+#> $provenance$random_seed
+#> [1] NA
+#> 
+#> $provenance$timestamp
+#> [1] "2026-07-15 08:27:05 UTC"
+
+sn_plot_annotation_confidence(
+  pbmc,
+  store_name = "pbmc_consensus",
+  level = "cluster"
+)
+```
+
+![](annotation-pathways_files/figure-html/annotation-review-plots-1.png)
+
+``` r
+
+
+sn_plot_annotation_markers(
+  pbmc,
+  store_name = "pbmc_consensus",
+  top_n = 5
+)
+```
+
+![](annotation-pathways_files/figure-html/annotation-review-plots-2.png)
+
+If trusted labels are present, a confusion heatmap makes disagreements
+visible.
+
+``` r
+
+sn_plot_annotation_confusion(
+  pbmc,
+  truth = "curated_cell_type",
+  store_name = "pbmc_consensus"
+)
+```
+
+## Choose a reference backend deliberately
+
+Use `sn_list_methods("annotation")` and
+[`sn_method_status()`](https://songqi.org/shennong/dev/reference/sn_method_status.md)
+to inspect current availability. Reference methods should not be used
+when tissue, disease, species, assay chemistry, or cell-state coverage
+is badly mismatched; a high similarity to an incomplete reference is not
+evidence that the missing cell type is absent.
+
+| Backend | Best use | Input and runtime | Stored output |
+|----|----|----|----|
+| SingleR | Default reference prediction with per-label scores | Query and annotated Seurat/SummarizedExperiment reference; CPU; optional `SingleR` | Full score evidence, pruned label, delta, coverage |
+| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and consensus evidence |
+| Seurat | Anchor transfer from a compatible Seurat reference | Query/reference assays and labels; CPU; optional `Seurat` | Transferred labels and all returned score columns |
+| Symphony | Repeated mapping to a compressed atlas | Built reference or Seurat reference; CPU; optional `symphony` | kNN confidence and mapped embedding |
+| scmap | Conservative projection to indexed expression centroids | Shared features and annotated reference; CPU; optional `scmap` | Label, similarity, and unassigned status |
+| scANVI | Semi-supervised mapping with batch structure | Raw counts, labels, batch metadata; CPU or CUDA through pixi | Labels and managed backend artifacts |
+
+Backend-specific functions stay internal rather than creating parallel
+result types. Select the backend with `sn_run_annotation(method = ...)`
+and retrieve every result with the same
+`sn_get_result(object, "annotation", name)` contract.
+
+The underlying methods should be cited in publications: SingleR (Aran et
+al., 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping
+(Hao et al., 2021), Symphony (Kang et al., 2021), scmap (Kiselev et al.,
+2018), and scANVI (Xu et al., 2021). Cell Ontology identifiers come from
+the bundled 2026-06-08 CL snapshot; verify current author and ontology
+guidelines when preparing a submission.
+
+``` r
+
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "consensus",
+  reference = reference,
+  reference_label_by = "cell_type",
+  consensus_reference_method = "singleR",
+  species = "human",
+  store_name = "pbmc_reference_consensus"
+)
+
+reference_result <- sn_get_result(
+  pbmc,
+  type = "annotation",
+  name = "pbmc_reference_consensus"
+)
+
+head(reference_result$tables$backend_predictions)
+head(reference_result$tables$backend_evidence)
+```
 
 ## Transfer labels from a reference
 
@@ -302,6 +552,119 @@ sn_delete_signature(
 )
 ```
 
+## Score programs in cells and samples
+
+[`sn_score_programs()`](https://songqi.org/shennong/dev/reference/sn_score_programs.md)
+accepts named gene-set lists, program/gene tables, named gene vectors,
+or bundled signature queries. UCell is the default for per-cell work
+because its rank-based score works directly with sparse expression and
+is less sensitive to dataset composition than a raw mean. AUCell is
+useful when area-under-recovery-curve activity is the intended
+statistic, but its ranking step is more expensive. GSVA and ssGSEA are
+intended primarily for samples or aggregated groups; supply `group_by`
+for large single-cell objects. The `mean` backend is dependency-free and
+transparent, but it is more sensitive to assay scale and signature size.
+
+``` r
+
+immune_programs <- list(
+  B_cell = c("MS4A1", "CD79A", "CD37", "CD74"),
+  T_cell = c("CD3D", "CD3E", "TRAC", "LTB"),
+  Myeloid = c("LYZ", "FCN1", "S100A8", "CTSS")
+)
+
+pbmc <- sn_score_programs(
+  pbmc,
+  signatures = immune_programs,
+  method = "ucell",
+  assay = "RNA",
+  layer = "data",
+  name = "immune_programs",
+  min_genes = 2
+)
+
+program_result <- sn_get_result(
+  pbmc,
+  type = "program_scoring",
+  name = "immune_programs"
+)
+
+program_result$tables$coverage
+#> # A tibble: 3 × 6
+#>   program n_genes n_matched coverage matched_genes        missing_genes
+#>   <chr>     <int>     <int>    <dbl> <chr>                <chr>        
+#> 1 B_cell        4         4        1 MS4A1;CD79A;CD37;CD… ""           
+#> 2 T_cell        4         4        1 CD3D;CD3E;TRAC;LTB   ""           
+#> 3 Myeloid       4         4        1 LYZ;FCN1;S100A8;CTSS ""
+head(program_result$tables$scores)
+#> # A tibble: 6 × 5
+#>   entity           program score level group_by
+#>   <chr>            <chr>   <dbl> <chr> <chr>   
+#> 1 AAACATACAACCAC-1 B_cell  0.352 cell  NA      
+#> 2 AAACATTGAGCTAC-1 B_cell  0.913 cell  NA      
+#> 3 AAACATTGATCAGC-1 B_cell  0.177 cell  NA      
+#> 4 AAACCGTGCTTCCG-1 B_cell  0.464 cell  NA      
+#> 5 AAACCGTGTATGCG-1 B_cell  0.181 cell  NA      
+#> 6 AAACGCACTGGTAC-1 B_cell  0     cell  NA
+```
+
+UCell and AUCell require their optional Bioconductor packages and run on
+CPU. GSVA/ssGSEA require `GSVA` and run on CPU; Shennong blocks per-cell
+GSVA on more than 5,000 sparse columns unless users aggregate
+explicitly. Cite UCell (Andreatta and Carmona, 2021), AUCell (Aibar et
+al., 2017), GSVA (Hänzelmann et al., 2013), or ssGSEA (Barbie et al.,
+2009) according to the selected backend.
+
+``` r
+
+sn_plot_program_activity(
+  pbmc,
+  name = "immune_programs",
+  group_by = "seurat_clusters"
+)
+```
+
+![](annotation-pathways_files/figure-html/plot-programs-1.png)
+
+``` r
+
+
+sn_plot_program_heatmap(
+  pbmc,
+  name = "immune_programs",
+  group_by = "seurat_clusters"
+)
+```
+
+![](annotation-pathways_files/figure-html/plot-programs-2.png)
+
+For comparative studies, preserve the sample or patient as the
+inferential unit.
+[`sn_test_programs()`](https://songqi.org/shennong/dev/reference/sn_test_programs.md)
+first averages cell scores within each sample/condition/stratum, then
+runs the selected test; omitting `sample_by` is explicitly marked as
+exploratory cell-level inference.
+
+``` r
+
+pbmc <- sn_test_programs(
+  pbmc,
+  score_name = "immune_programs",
+  condition_by = "condition",
+  sample_by = "patient",
+  group_by = "cell_type",
+  contrast = c("treated", "control"),
+  method = "limma",
+  store_name = "immune_program_condition"
+)
+
+sn_get_result(
+  pbmc,
+  type = "program_comparison",
+  name = "immune_program_condition"
+)$tables$primary
+```
+
 ## Run enrichment from stored marker results
 
 [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
@@ -320,7 +683,7 @@ pbmc <- sn_enrich(
   store_name = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-07-14 06:30:40] Running ORA analysis for the GOBP database.
+#> INFO [2026-07-15 08:27:31] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,

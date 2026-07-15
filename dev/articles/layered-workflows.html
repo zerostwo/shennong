@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,11 +44,21 @@
     <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -100,9 +110,9 @@ CellBender, or another preprocessing tool.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:38] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:38] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:39:39] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:20] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:20] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:37:20] Seurat object initialization complete.</span></span>
 <span><span class="va">counts_full</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
 <span><span class="va">demo_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -136,7 +146,7 @@ the object.</p>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; WARN [2026-07-14 06:39:40] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).</span></span>
+<span><span class="co">#&gt; WARN [2026-07-15 08:37:22] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
@@ -175,10 +185,10 @@ through <code>layer</code>.</p>
 <span><span class="co">#&gt; [1] "1.0.0"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $package_version</span></span>
-<span><span class="co">#&gt; [1] "0.1.4"</span></span>
+<span><span class="co">#&gt; [1] "0.2.0"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $created_at</span></span>
-<span><span class="co">#&gt; [1] "2026-07-14 06:39:45 UTC"</span></span>
+<span><span class="co">#&gt; [1] "2026-07-15 08:37:27 UTC"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $table</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 7</span></span></span>
@@ -245,7 +255,70 @@ through <code>layer</code>.</p>
 <span><span class="co">#&gt; [1] 0.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $n_genes</span></span>
-<span><span class="co">#&gt; [1] 1004</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 1004</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $analysis_type</span></span>
+<span><span class="co">#&gt; [1] "de"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $name</span></span>
+<span><span class="co">#&gt; [1] "cluster_markers"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $backend</span></span>
+<span><span class="co">#&gt; [1] "wilcox"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $input</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $parameters</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $tables</span></span>
+<span><span class="co">#&gt; $tables$primary</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 7</span></span></span>
+<span><span class="co">#&gt;       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  </span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-64</span>      5.86  0.872 0.038  3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span> 0       CST7  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span>      6.67  0.802 0.022  8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-58</span> 0       GZMA  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-60</span>      6.65  0.93  0.102  1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span> 0       NKG7  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span>      4.30  0.965 0.131  2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-54</span> 0       CCL5  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-43</span>      4.66  0.826 0.143  4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-40</span> 0       CTSW  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-36</span>      6.11  0.57  0.035  2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-33</span> 0       PRF1  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-32</span>      6.91  0.453 0.013  5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-29</span> 0       GZMK  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-31</span>      8.48  0.43  0.01   4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span> 0       FGFBP2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-30</span>      0.999 1     0.997  3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-27</span> 0       B2M   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span>      7.81  0.384 0.006  3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-25</span> 0       GZMH  </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 994 more rows</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $embeddings</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $graphs</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $models</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $diagnostics</span></span>
+<span><span class="co">#&gt; list()</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $warnings</span></span>
+<span><span class="co">#&gt; character(0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance</span></span>
+<span><span class="co">#&gt; $provenance$package_versions</span></span>
+<span><span class="co">#&gt; $provenance$package_versions$Shennong</span></span>
+<span><span class="co">#&gt; [1] "0.2.0"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$package_versions$R</span></span>
+<span><span class="co">#&gt; [1] "4.6.1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$random_seed</span></span>
+<span><span class="co">#&gt; [1] NA</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$timestamp</span></span>
+<span><span class="co">#&gt; [1] "2026-07-15 08:37:27 UTC"</span></span></code></pre></div>
 <p>The stored metadata records the analysis context, which helps
 downstream plotting and interpretation recover how the result was
 made.</p>

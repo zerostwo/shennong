@@ -1,0 +1,128 @@
+# Differential Abundance and State Priority
+
+Shennong treats biological samples—not cells—as the inferential unit for
+differential abundance. It also separates three distinct state-priority
+questions: perturbation separability, bulk-phenotype-guided cell
+selection, and rare-state discovery.
+
+## Sample-level differential abundance
+
+``` r
+
+library(Shennong)
+
+object <- sn_test_abundance(
+  object,
+  method = "propeller",
+  sample_by = "patient",
+  condition_by = "response",
+  cell_type_by = "cell_type",
+  contrast = c("responder", "nonresponder"),
+  design = c("batch", "sex"),
+  store_name = "response_abundance"
+)
+```
+
+Use the permutation backend as a transparent validation and Milo for
+neighborhood-level effects:
+
+``` r
+
+permutation <- sn_test_abundance(
+  object, method = "permutation", sample_by = "patient",
+  condition_by = "response", cell_type_by = "cell_type",
+  contrast = c("responder", "nonresponder"), permutations = 999,
+  return_object = FALSE
+)
+
+milo <- sn_test_abundance(
+  object, method = "milo", sample_by = "patient",
+  condition_by = "response", cell_type_by = "cell_type",
+  contrast = c("responder", "nonresponder"),
+  backend_control = list(milo = list(reduction = "pca")),
+  return_object = FALSE
+)
+```
+
+For Bayesian compositional inference, run scCODA or pertpy in the Python
+environment owned by the project and pass its effect table through the
+explicit adapter. The table needs a `feature` or `cell_type` column and
+an `effect` or `estimate` column; inclusion probabilities and
+credible-effect flags are retained when supplied. The adapter does not
+convert posterior inclusion probabilities into frequentist p values;
+those fields remain missing unless the backend explicitly provides them.
+
+``` r
+
+sccoda <- sn_test_abundance(
+  object, method = "sccoda", sample_by = "patient",
+  condition_by = "response", cell_type_by = "cell_type",
+  contrast = c("responder", "nonresponder"),
+  backend_control = list(result = list(table = sccoda_effects)),
+  return_object = FALSE
+)
+sccoda$tables$primary
+```
+
+Discover and retrieve the durable result:
+
+``` r
+
+sn_list_results(object, type = "differential_abundance")
+abundance <- sn_get_result(
+  object, "differential_abundance", "response_abundance"
+)
+abundance$tables$primary
+abundance$tables$sample_proportions
+abundance$tables$sample_contributions
+sn_plot_abundance(abundance)
+```
+
+## Prioritize responsive states
+
+The default method holds out biological samples when `sample_by` is
+supplied, predicts the condition independently within each state, and
+records a sample-label permutation null.
+
+``` r
+
+object <- sn_prioritize_states(
+  object,
+  method = "augur",
+  phenotype = "response",
+  sample_by = "patient",
+  state_by = "cell_type",
+  contrast = c("responder", "nonresponder"),
+  store_name = "response_priority"
+)
+
+priority <- sn_get_result(object, "state_priority", "response_priority")
+priority$tables$primary
+priority$tables$sample_contributions
+priority$tables$permutation_null
+sn_plot_state_priority(priority)
+```
+
+RareQ first discovers topology-supported rare states and then tests
+their sample-level abundance association. Scissor answers a different
+question and therefore requires a gene-by-bulk-sample expression matrix
+plus its phenotype; a cell metadata label is not accepted as a
+substitute.
+
+``` r
+
+rareq <- sn_prioritize_states(
+  object, method = "rareq", phenotype = "response",
+  sample_by = "patient", contrast = c("responder", "nonresponder"),
+  return_object = FALSE
+)
+
+scissor <- sn_prioritize_states(
+  object, method = "scissor", phenotype = "bulk_response",
+  state_by = "cell_type", sample_by = "patient",
+  bulk_expression = bulk_expression,
+  bulk_phenotype = bulk_response,
+  family = "binomial",
+  return_object = FALSE
+)
+```

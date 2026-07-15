@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,11 +46,21 @@
     <li><a class="dropdown-item" href="articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -73,7 +83,7 @@
 <!-- badges: start -->
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<p><code>Shennong</code> is an experimental R package for single-cell transcriptomics workflows built around Seurat objects. It focuses on practical analysis steps that are commonly repeated across projects: preprocessing, clustering, batch integration, differential expression, enrichment, visualization, and interpretation-ready result storage.</p>
+<p><code>Shennong</code> is an experimental R package for single-cell, multimodal, spatial, and bulk transcriptomics workflows. Seurat objects remain the primary single-cell contract, while standalone bulk analyses accept ordinary matrices and <code>SummarizedExperiment</code> objects. The package provides reproducible entry points for preprocessing, integration, annotation, differential testing, biological-state modeling, publication figures, and interpretation-ready result storage.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -89,20 +99,172 @@
 <span><span class="fu"><a href="reference/sn_install_dependencies.html">sn_install_dependencies</a></span><span class="op">(</span>scope <span class="op">=</span> <span class="st">"required"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-shennong-covers">What Shennong Covers<a class="anchor" aria-label="anchor" href="#what-shennong-covers"></a>
+<h2 id="one-command-analysis-software">One-Command Analysis Software<a class="anchor" aria-label="anchor" href="#one-command-analysis-software"></a>
 </h2>
-<ul>
-<li>Seurat object initialization and QC-aware preprocessing</li>
-<li>Gene and cell filtering, including bundled human/mouse GENCODE gene classes</li>
-<li>Doublet detection and ambient RNA correction</li>
-<li>Single-dataset clustering and Harmony-based integration with <code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code>
-</li>
-<li>Multi-metric integration assessment with <code><a href="reference/sn_assess_integration.html">sn_assess_integration()</a></code>
-</li>
-<li>Marker detection, pseudobulk differential expression, and enrichment analysis</li>
-<li>Bulk deconvolution workflows with BayesPrism and local CIBERSORTx containers</li>
-<li>Stored-result workflows for downstream interpretation and reporting</li>
-</ul>
+<p>Shennong provides stable <code>sn_*</code> entry points over R packages, command-line programs, and Python workflows. The table below summarizes the current analysis surface by data-analysis module. “Managed pixi/CLI” means Shennong prepares the input, runs the backend in a project-independent environment, and imports the result. “Adapter” means Shennong standardizes an existing result or a result returned by a user-supplied runner; the external software is not silently installed or executed.</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr>
+<th>Analysis module</th>
+<th>Main Shennong entry point</th>
+<th>Supported software and methods</th>
+<th>Execution model</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Data import and storage</td>
+<td>
+<code><a href="reference/sn_read.html">sn_read()</a></code>, <code><a href="reference/sn_write.html">sn_write()</a></code>, <code><a href="reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>
+</td>
+<td>10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT, rio, Zenodo and ShennongData</td>
+<td>Native R and format adapters</td>
+</tr>
+<tr>
+<td>Preprocessing and QC</td>
+<td>
+<code><a href="reference/sn_normalize_data.html">sn_normalize_data()</a></code>, <code><a href="reference/sn_find_doublets.html">sn_find_doublets()</a></code>, <code><a href="reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination()</a></code>
+</td>
+<td>Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper</td>
+<td>Native R</td>
+</tr>
+<tr>
+<td>Clustering and batch integration</td>
+<td><code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code></td>
+<td>Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering</td>
+<td>Native R or managed pixi</td>
+</tr>
+<tr>
+<td>CITE-seq and multimodal integration</td>
+<td><code><a href="reference/sn_run_multimodal.html">sn_run_multimodal()</a></code></td>
+<td>Seurat WNN, totalVI, Coralysis and MMoCHi</td>
+<td>Native R or managed pixi</td>
+</tr>
+<tr>
+<td>Reference mapping and simulation</td>
+<td>
+<code><a href="reference/sn_transfer_labels.html">sn_transfer_labels()</a></code>, <code><a href="reference/sn_simulate.html">sn_simulate()</a></code>
+</td>
+<td>Seurat anchors, Coralysis, scANVI, scArches, scPoli and scDesign3</td>
+<td>Native R or managed pixi</td>
+</tr>
+<tr>
+<td>Cell-type annotation</td>
+<td><code><a href="reference/sn_run_annotation.html">sn_run_annotation()</a></code></td>
+<td>Shennong consensus, SingleR, CellTypist, Seurat label transfer, Symphony, scmap and scANVI, with Cell Ontology mapping</td>
+<td>Native R, CLI or managed pixi</td>
+</tr>
+<tr>
+<td>Marker and differential-expression analysis</td>
+<td>
+<code><a href="reference/sn_find_de.html">sn_find_de()</a></code>, <code><a href="reference/sn_find_bulk_de.html">sn_find_bulk_de()</a></code>
+</td>
+<td>Seurat tests including Wilcoxon, COSG, DESeq2, edgeR, limma/limma-voom and dream/variancePartition</td>
+<td>Native R; automatic bulk backend selection is available</td>
+</tr>
+<tr>
+<td>Enrichment and regulatory activity</td>
+<td>
+<code><a href="reference/sn_enrich.html">sn_enrich()</a></code>, <code><a href="reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity()</a></code>
+</td>
+<td>clusterProfiler ORA/GSEA, GO, KEGG, MSigDB/msigdbr, decoupleR, DoRothEA and PROGENy</td>
+<td>Native R</td>
+</tr>
+<tr>
+<td>Gene-set scoring and program discovery</td>
+<td>
+<code><a href="reference/sn_score_programs.html">sn_score_programs()</a></code>, <code><a href="reference/sn_discover_programs.html">sn_discover_programs()</a></code>
+</td>
+<td>UCell, AUCell, GSVA, ssGSEA, sparse mean scoring, multi-restart NMF, cNMF and Hotspot</td>
+<td>Native R; cNMF/Hotspot adapters</td>
+</tr>
+<tr>
+<td>Gene-regulatory networks</td>
+<td><code><a href="reference/sn_run_grn.html">sn_run_grn()</a></code></td>
+<td>GENIE3, pySCENIC, R SCENIC and GRNBoost2/arboreto</td>
+<td>Native R for GENIE3; external-result adapters for SCENIC/GRNBoost2</td>
+</tr>
+<tr>
+<td>Trajectory and cell dynamics</td>
+<td>
+<code><a href="reference/sn_run_trajectory.html">sn_run_trajectory()</a></code>, <code><a href="reference/sn_run_velocity.html">sn_run_velocity()</a></code>, <code><a href="reference/sn_run_fate.html">sn_run_fate()</a></code>
+</td>
+<td>Slingshot, Monocle 3, Palantir, tradeSeq, scVelo and CellRank</td>
+<td>Native R or managed pixi</td>
+</tr>
+<tr>
+<td>Differential abundance and state prioritization</td>
+<td>
+<code><a href="reference/sn_test_abundance.html">sn_test_abundance()</a></code>, <code><a href="reference/sn_prioritize_states.html">sn_prioritize_states()</a></code>
+</td>
+<td>Propeller/speckle, Milo/miloR, scCODA/pertpy, sample-aware permutation, Augur-inspired prioritization, Scissor and RareQ</td>
+<td>Native R, managed runner or adapter</td>
+</tr>
+<tr>
+<td>Cell-cell communication</td>
+<td><code><a href="reference/sn_run_cell_communication.html">sn_run_cell_communication()</a></code></td>
+<td>LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus</td>
+<td>Native R or managed pixi</td>
+</tr>
+<tr>
+<td>CNV and malignant-state analysis</td>
+<td><code><a href="reference/sn_run_cnv.html">sn_run_cnv()</a></code></td>
+<td>infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries</td>
+<td>Managed pixi or native R</td>
+</tr>
+<tr>
+<td>Metabolic analysis</td>
+<td><code><a href="reference/sn_run_metabolism.html">sn_run_metabolism()</a></code></td>
+<td>UCell, GSVA, ssGSEA, mean scoring, scMetabolism, scFEA and Compass</td>
+<td>Native R; scFEA/Compass runner-result adapters</td>
+</tr>
+<tr>
+<td>Spatial transcriptomics</td>
+<td><code><a href="reference/sn_run_spatial.html">sn_run_spatial()</a></code></td>
+<td>Moran’s I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony</td>
+<td>Native R, managed pixi or adapter</td>
+</tr>
+<tr>
+<td>Bulk transcriptomics and clinical analysis</td>
+<td>
+<code><a href="reference/sn_run_bulk.html">sn_run_bulk()</a></code>, <code><a href="reference/sn_deconvolve_bulk.html">sn_deconvolve_bulk()</a></code>
+</td>
+<td>edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, survival/Cox, BayesPrism and CIBERSORTx</td>
+<td>Native R or local container backend</td>
+</tr>
+<tr>
+<td>Integration diagnostics</td>
+<td><code><a href="reference/sn_assess_integration.html">sn_assess_integration()</a></code></td>
+<td>LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE</td>
+<td>Native R</td>
+</tr>
+<tr>
+<td>Publication figures and reporting</td>
+<td>
+<code><a href="reference/sn_figure_spec.html">sn_figure_spec()</a></code>, <code><a href="reference/sn_export_figure_bundle.html">sn_export_figure_bundle()</a></code>, <code><a href="reference/sn_write_results.html">sn_write_results()</a></code>
+</td>
+<td>ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation</td>
+<td>Native R with optional LLM provider</td>
+</tr>
+</tbody>
+</table>
+<p>All methods shipped in <code>inst/methods/</code> currently have an implemented Shennong entry point or explicit adapter. Optional R packages, command-line programs, pixi environments, credentials, references, and model files are still required when the selected backend depends on them. Inspect the registry and the current machine before starting a workflow:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Every registered backend and whether it can run in the current session</span></span>
+<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span>task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span>available <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Runtime, dependency, install action, inputs and outputs for one backend</span></span>
+<span><span class="fu"><a href="reference/sn_method_status.html">sn_method_status</a></span><span class="op">(</span><span class="st">"cellrank"</span>, task <span class="op">=</span> <span class="st">"fate"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Install missing R dependencies or prepare a managed Python environment</span></span>
+<span><span class="fu"><a href="reference/sn_install_dependencies.html">sn_install_dependencies</a></span><span class="op">(</span>scope <span class="op">=</span> <span class="st">"recommended"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment</a></span><span class="op">(</span><span class="st">"trajectory"</span>, install_environment <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="built-in-example-data">Built-In Example Data<a class="anchor" aria-label="anchor" href="#built-in-example-data"></a>
@@ -119,7 +281,7 @@
 <div class="section level2">
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span>
@@ -142,7 +304,7 @@
 <h2 id="integration-example">Integration Example<a class="anchor" aria-label="anchor" href="#integration-example"></a>
 </h2>
 <p>The same built-in PBMC example can be used for batch-aware integration:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
@@ -153,7 +315,7 @@
 <span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>You can summarize integration quality and surface rare or difficult groups directly from the integrated object:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_integrated</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
@@ -171,7 +333,7 @@
 <div class="section level2">
 <h2 id="differential-expression-and-enrichment">Differential Expression And Enrichment<a class="anchor" aria-label="anchor" href="#differential-expression-and-enrichment"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>

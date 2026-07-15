@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,11 +25,21 @@
     <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -59,11 +69,21 @@
 <span>  <span class="va">result</span>,</span>
 <span>  store_name <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"cellchat"</span>,</span>
+<span>  backend <span class="op">=</span> <span class="va">method</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sender <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  receiver <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  artifacts <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  raw_result <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  consensus_result <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sample_evidence <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  comparison <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  concordance <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ligand_targets <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  condition_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -86,7 +106,12 @@
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>Communication backend.</p></dd>
+<dd><p>User-facing communication method label.</p></dd>
+
+
+<dt id="arg-backend">backend<a class="anchor" aria-label="anchor" href="#arg-backend"></a></dt>
+<dd><p>Canonical backend identifier. This differs from <code>method</code>
+only when preserving a legacy alias such as <code>"nichenetr"</code>.</p></dd>
 
 
 <dt id="arg-group-by">group_by<a class="anchor" aria-label="anchor" href="#arg-group-by"></a></dt>
@@ -103,6 +128,18 @@
 
 <dt id="arg-artifacts">artifacts<a class="anchor" aria-label="anchor" href="#arg-artifacts"></a></dt>
 <dd><p>Optional backend-specific artifacts.</p></dd>
+
+
+<dt id="arg-raw-result-consensus-result-sample-evidence-comparison-concordance-ligand-targets">raw_result, consensus_result, sample_evidence, comparison, concordance, ligand_targets<a class="anchor" aria-label="anchor" href="#arg-raw-result-consensus-result-sample-evidence-comparison-concordance-ligand-targets"></a></dt>
+<dd><p>Optional standardized secondary tables stored in the unified result.</p></dd>
+
+
+<dt id="arg-warnings">warnings<a class="anchor" aria-label="anchor" href="#arg-warnings"></a></dt>
+<dd><p>Character vector of backend warnings retained for audit.</p></dd>
+
+
+<dt id="arg-sample-by-condition-by">sample_by, condition_by<a class="anchor" aria-label="anchor" href="#arg-sample-by-condition-by"></a></dt>
+<dd><p>Optional sample and condition metadata columns.</p></dd>
 
 
 <dt id="arg-return-object">return_object<a class="anchor" aria-label="anchor" href="#arg-return-object"></a></dt>

@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,11 +44,21 @@
     <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -89,9 +99,10 @@ boring: find the data, read it with one function, add explicit sample
 metadata, and write reusable artifacts without changing APIs for every
 file type.</p>
 <p>This article uses the package PBMC3k example throughout. To keep
-package checks and website builds fast, code chunks are shown by default
-and are evaluated only when you render with
-<code>SHENNONG_RUN_VIGNETTES=true</code>.</p>
+package checks and website builds independent of Zenodo availability,
+code chunks are shown by default and are evaluated only when you render
+with both <code>SHENNONG_RUN_VIGNETTES=true</code> and
+<code>SHENNONG_RUN_NETWORK_VIGNETTES=true</code>.</p>
 <div class="section level2">
 <h2 id="start-with-pbmc3k">Start with PBMC3k<a class="anchor" aria-label="anchor" href="#start-with-pbmc3k"></a>
 </h2>
@@ -108,9 +119,6 @@ the <code>sample</code> metadata column.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:27] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:28] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:28] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc_h5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span></span>
 <span>  dataset <span class="op">=</span> <span class="st">"pbmc3k"</span>,</span>
@@ -118,19 +126,9 @@ the <code>sample</code> metadata column.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc_h5</span></span>
-<span><span class="co">#&gt; [1] "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"</span></span>
 <span></span>
 <span><span class="va">pbmc_merged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span>dataset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pbmc1k"</span>, <span class="st">"pbmc3k"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc1k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Seurat object initialization complete.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:39] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:40] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:40] Seurat object initialization complete.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_merged</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; pbmc1k pbmc3k </span></span>
-<span><span class="co">#&gt;   1215   2753</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_merged</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/sn_load_data.html">sn_load_data()</a></code> uses the general Zenodo downloader
 underneath. Public Zenodo records do not need a token; pass
 <code>token = ...</code> only for restricted or private records that
@@ -141,9 +139,7 @@ your account can access.</p>
 <span>  files <span class="op">=</span> <span class="st">"pbmc3k_filtered_feature_bc_matrix.h5"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">public_h5</span></span>
-<span><span class="co">#&gt;                               pbmc3k_filtered_feature_bc_matrix.h5 </span></span>
-<span><span class="co">#&gt; "/home/runner/.shennong/data/pbmc3k_filtered_feature_bc_matrix.h5"</span></span></code></pre></div>
+<span><span class="va">public_h5</span></span></code></pre></div>
 <p>The current Shennong public reprocessed-data collection is indexed by
 <code>shennong_index.json</code> on Zenodo. Use
 <code><a href="../reference/sn_list_datasets.html">sn_list_datasets()</a></code> to discover the sample-level IDs, then
@@ -210,28 +206,14 @@ make the metadata decision explicit in
 <span>  study <span class="op">=</span> <span class="st">"10x_pbmc"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:41] Initializing Seurat object for project: pbmc3k_demo.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:41] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:38:42] Seurat object initialization complete.</span></span>
 <span></span>
-<span><span class="va">pbmc</span></span>
-<span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 54872 features across 2753 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (54872 features, 0 variable features)</span></span>
-<span><span class="co">#&gt;  1 layer present: counts</span></span></code></pre></div>
+<span><span class="va">pbmc</span></span></code></pre></div>
 <p>The important design choice is that provenance is not hidden in the
 project name. <code>sample_name</code>, <code>study</code>, and
 <code>species</code> are separate inputs, so downstream composition,
 integration, and interpretation steps can reuse them.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="st">"study"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"nFeature_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                  sample    study nCount_RNA nFeature_RNA percent.mt</span></span>
-<span><span class="co">#&gt; AAACATACAACCAC-1 pbmc3k 10x_pbmc       2844         1046  2.7777778</span></span>
-<span><span class="co">#&gt; AAACATTGAGCTAC-1 pbmc3k 10x_pbmc       5717         1722  3.2534546</span></span>
-<span><span class="co">#&gt; AAACATTGATCAGC-1 pbmc3k 10x_pbmc       3766         1500  0.6903877</span></span>
-<span><span class="co">#&gt; AAACCGTGCTTCCG-1 pbmc3k 10x_pbmc       2981         1153  1.5095606</span></span>
-<span><span class="co">#&gt; AAACCGTGTATGCG-1 pbmc3k 10x_pbmc       1229          698  0.8950366</span></span>
-<span><span class="co">#&gt; AAACGCACTGGTAC-1 pbmc3k 10x_pbmc       2536         1032  1.4984227</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="st">"study"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"nFeature_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="discover-10x-folders-before-reading-them">Discover 10x folders before reading them<a class="anchor" aria-label="anchor" href="#discover-10x-folders-before-reading-them"></a>
@@ -276,12 +258,7 @@ objects; Shennong chooses the writer from the file extension.</p>
 <span><span class="va">pbmc_cached</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="va">object_path</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 2753    8</span></span>
-<span><span class="va">pbmc_cached</span></span>
-<span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 54872 features across 2753 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (54872 features, 0 variable features)</span></span>
-<span><span class="co">#&gt;  1 layer present: counts</span></span></code></pre></div>
+<span><span class="va">pbmc_cached</span></span></code></pre></div>
 <p><code>row_names = "cell"</code> is useful when a CSV carries cell IDs
 as a regular column. This avoids ad hoc
 <code>read.csv(..., row.names = ...)</code> calls that are easy to
@@ -319,13 +296,7 @@ only when the record is ready.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">zenodo_plan</span><span class="op">$</span><span class="va">files</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"file"</span>, <span class="st">"size"</span>, <span class="st">"md5"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
-<span><span class="co">#&gt;   file                      size md5                             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> pbmc3k_metadata.csv     <span style="text-decoration: underline;">252</span>144 30e88b334de6ed4d04a0393921f0f216</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> pbmc3k_initialized.qs2 6<span style="text-decoration: underline;">229</span>208 8f982b37f3dd01235364273240af1e2a</span></span>
-<span><span class="va">zenodo_plan</span><span class="op">$</span><span class="va">manifest_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpQhdMA8/shennong_zenodo_manifest.json"</span></span></code></pre></div>
+<span><span class="va">zenodo_plan</span><span class="op">$</span><span class="va">manifest_path</span></span></code></pre></div>
 <p>In a real upload, set <code>ZENODO_TOKEN</code> or
 <code>ZENODO_SANDBOX_TOKEN</code> and remove
 <code>dry_run = TRUE</code>. The uploaded

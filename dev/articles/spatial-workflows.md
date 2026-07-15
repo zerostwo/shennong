@@ -1,0 +1,81 @@
+# Spatial Feature, Domain, and Neighborhood Workflows
+
+Shennong’s spatial workflow keeps coordinates, graphs, statistics,
+backend artifacts, and plots connected through the common result
+contract. Coordinate columns may be supplied explicitly or discovered
+from common metadata names.
+
+## Spatial features
+
+``` r
+
+object <- sn_find_spatial_features(
+  object,
+  method = "morans_i",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  backend_control = list(k = 6, n_permutations = 999, seed = 717)
+)
+
+svg <- sn_get_result(object, "spatial_features", "spatial_features")
+head(svg$tables$features)
+head(svg$graphs$spatial)
+sn_plot_spatial_svg(svg)
+sn_plot_spatial_feature(object, svg$tables$features$feature[1:4])
+```
+
+Use `method = "nnsvg"` for the optional nearest-neighbor
+Gaussian-process backend. SPARK-X enters through an explicit
+runner/result adapter.
+
+## Domains and neighborhoods
+
+``` r
+
+object <- sn_find_spatial_domains(
+  object,
+  method = "banksy",
+  store_name = "banksy_domains",
+  backend_control = list(lambda = 0.8, resolution = 1, seed = 717)
+)
+sn_plot_spatial_domain(object, "banksy_domains")
+
+object <- sn_run_spatial_neighborhood(
+  object,
+  group_by = "cell_type",
+  backend_control = list(k = 6, n_permutations = 999)
+)
+neighborhood <- sn_get_result(object, "spatial_neighborhood", "spatial_neighborhood")
+sn_plot_spatial_neighborhood(neighborhood, type = "enrichment")
+sn_plot_spatial_neighborhood(neighborhood, type = "cooccurrence")
+```
+
+The local graph avoids allocating a full all-by-all distance matrix.
+Squidpy is available as the heavier backend when its graph ecosystem is
+needed.
+
+## Distance-aware communication
+
+Run
+[`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+first. Then augment that evidence with spatial distances:
+
+``` r
+
+object <- sn_run_spatial_communication(
+  object,
+  communication_name = "communication",
+  group_by = "cell_type",
+  max_distance = 200,
+  store_name = "spatial_communication"
+)
+
+spatial_communication <- sn_get_result(
+  object, "spatial_communication", "spatial_communication"
+)
+head(spatial_communication$tables$group_distances)
+sn_plot_spatial_communication(spatial_communication)
+```
+
+Distance filtering does not create ligand-receptor evidence; it only
+adds a proximity constraint to an already auditable communication
+result.

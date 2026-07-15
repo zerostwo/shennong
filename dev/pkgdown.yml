@@ -2,17 +2,27 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  abundance-priority: abundance-priority.html
+  analysis-results-and-methods: analysis-results-and-methods.html
   annotation-pathways: annotation-pathways.html
   bulk-deconvolution: bulk-deconvolution.html
+  bulk-transcriptomics: bulk-transcriptomics.html
   clustering: clustering.html
+  cnv-metabolism: cnv-metabolism.html
+  communication-consensus: communication-consensus.html
   composition-analysis: composition-analysis.html
   data-io-projects: data-io-projects.html
   interpretation-workflows: interpretation-workflows.html
   layered-workflows: layered-workflows.html
   metrics-diagnostics: metrics-diagnostics.html
   preprocessing-qc: preprocessing-qc.html
+  program-discovery-grn: program-discovery-grn.html
+  publication-figures: publication-figures.html
+  spatial-workflows: spatial-workflows.html
+  trajectory-dynamics: trajectory-dynamics.html
+  velocity-fate: velocity-fate.html
   visualization: visualization.html
-last_built: 2026-07-14T06:28Z
+last_built: 2026-07-15T08:24Z
 urls:
   reference: https://songqi.org/shennong/reference
   article: https://songqi.org/shennong/articles

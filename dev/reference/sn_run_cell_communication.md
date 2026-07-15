@@ -1,16 +1,15 @@
 # Run cell-cell communication inference
 
-`sn_run_cell_communication()` wraps established communication backends:
-CellChat for global interaction networks, NicheNet for
-sender-to-receiver ligand activity, and LIANA for consensus
-ligand-receptor scoring when the optional package is installed.
+`sn_run_cell_communication()` wraps established communication backends
+and stores a comparable ligand-receptor schema. Multiple backends can be
+run together to calculate method concordance and a consensus rank.
 
 ## Usage
 
 ``` r
 sn_run_cell_communication(
   object,
-  method = c("cellchat", "nichenetr", "liana"),
+  method = c("liana", "cellchat", "cellphonedb", "nichenet", "multinichenet"),
   group_by,
   assay = NULL,
   layer = "data",
@@ -31,6 +30,10 @@ sn_run_cell_communication(
   population_size = FALSE,
   raw_use = TRUE,
   resource = NULL,
+  sample_by = NULL,
+  consensus = TRUE,
+  contrast = NULL,
+  backend_control = list(),
   store_name = "default",
   return_object = TRUE,
   ...
@@ -45,7 +48,8 @@ sn_run_cell_communication(
 
 - method:
 
-  One of `"cellchat"`, `"nichenetr"`, or `"liana"`.
+  One or more of `"liana"`, `"cellchat"`, `"cellphonedb"`, `"nichenet"`,
+  or `"multinichenet"`. The legacy alias `"nichenetr"` is accepted.
 
 - group_by:
 
@@ -85,7 +89,7 @@ sn_run_cell_communication(
 - ligand_target_matrix, lr_network:
 
   NicheNet prior matrices/networks. These must be supplied for
-  `method = "nichenetr"`.
+  `method = "nichenet"`.
 
 - expressed_pct:
 
@@ -111,6 +115,26 @@ sn_run_cell_communication(
 - resource:
 
   Optional LIANA resource.
+
+- sample_by:
+
+  Metadata column defining biological samples. When supplied, ligand and
+  receptor expression is aggregated within each sample before condition
+  comparison.
+
+- consensus:
+
+  If `TRUE` and multiple methods are requested, use the cross-method
+  consensus ranking as the primary result table.
+
+- contrast:
+
+  Optional length-two condition contrast, with case first and reference
+  second.
+
+- backend_control:
+
+  Named list of method-specific argument lists.
 
 - store_name:
 

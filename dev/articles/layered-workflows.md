@@ -18,9 +18,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-14 06:39:38] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:39:38] Running QC metrics for human.
-#> INFO [2026-07-14 06:39:39] Seurat object initialization complete.
+#> INFO [2026-07-15 08:37:20] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 08:37:20] Running QC metrics for human.
+#> INFO [2026-07-15 08:37:20] Seurat object initialization complete.
 counts_full <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
 demo_features <- names(sort(Matrix::rowSums(counts_full), decreasing = TRUE))[
   seq_len(min(1000, nrow(counts_full)))
@@ -57,7 +57,7 @@ pbmc_layered <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
-#> WARN [2026-07-14 06:39:40] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).
+#> WARN [2026-07-15 08:37:22] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).
 
 sn_plot_dim(
   pbmc_layered,
@@ -99,10 +99,10 @@ sn_get_de_result(
 #> [1] "1.0.0"
 #> 
 #> $package_version
-#> [1] "0.1.4"
+#> [1] "0.2.0"
 #> 
 #> $created_at
-#> [1] "2026-07-14 06:39:45 UTC"
+#> [1] "2026-07-15 08:37:27 UTC"
 #> 
 #> $table
 #> # A tibble: 1,004 × 7
@@ -170,6 +170,69 @@ sn_get_de_result(
 #> 
 #> $n_genes
 #> [1] 1004
+#> 
+#> $analysis_type
+#> [1] "de"
+#> 
+#> $name
+#> [1] "cluster_markers"
+#> 
+#> $backend
+#> [1] "wilcox"
+#> 
+#> $input
+#> list()
+#> 
+#> $parameters
+#> list()
+#> 
+#> $tables
+#> $tables$primary
+#> # A tibble: 1,004 × 7
+#>       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  
+#>       <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr> 
+#>  1 3.25e-64      5.86  0.872 0.038  3.25e-61 0       CST7  
+#>  2 8.30e-61      6.67  0.802 0.022  8.30e-58 0       GZMA  
+#>  3 1.49e-60      6.65  0.93  0.102  1.49e-57 0       NKG7  
+#>  4 2.17e-57      4.30  0.965 0.131  2.17e-54 0       CCL5  
+#>  5 4.56e-43      4.66  0.826 0.143  4.56e-40 0       CTSW  
+#>  6 2.57e-36      6.11  0.57  0.035  2.57e-33 0       PRF1  
+#>  7 5.96e-32      6.91  0.453 0.013  5.96e-29 0       GZMK  
+#>  8 4.57e-31      8.48  0.43  0.01   4.57e-28 0       FGFBP2
+#>  9 3.88e-30      0.999 1     0.997  3.88e-27 0       B2M   
+#> 10 3.80e-28      7.81  0.384 0.006  3.80e-25 0       GZMH  
+#> # ℹ 994 more rows
+#> 
+#> 
+#> $embeddings
+#> list()
+#> 
+#> $graphs
+#> list()
+#> 
+#> $models
+#> list()
+#> 
+#> $diagnostics
+#> list()
+#> 
+#> $warnings
+#> character(0)
+#> 
+#> $provenance
+#> $provenance$package_versions
+#> $provenance$package_versions$Shennong
+#> [1] "0.2.0"
+#> 
+#> $provenance$package_versions$R
+#> [1] "4.6.1"
+#> 
+#> 
+#> $provenance$random_seed
+#> [1] NA
+#> 
+#> $provenance$timestamp
+#> [1] "2026-07-15 08:37:27 UTC"
 ```
 
 The stored metadata records the analysis context, which helps downstream

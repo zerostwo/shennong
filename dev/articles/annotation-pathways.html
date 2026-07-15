@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.1.4</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,11 +44,21 @@
     <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
     <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
     <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
+    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
     <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
+    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
     <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
     <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
+    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
     <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
     <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
+    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
+    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
+    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
+    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -102,9 +112,9 @@ reports.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:29:34] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:29:34] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:29:35] Seurat object initialization complete.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:25:53] Initializing Seurat object for project: pbmc3k.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:25:53] Running QC metrics for human.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:25:54] Seurat object initialization complete.</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -229,6 +239,290 @@ select top markers per cluster directly.</p>
 <p><img src="annotation-pathways_files/figure-html/canonical-dotplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
+<h2 id="run-traceable-consensus-annotation">Run traceable consensus annotation<a class="anchor" aria-label="anchor" href="#run-traceable-consensus-annotation"></a>
+</h2>
+<p><code><a href="../reference/sn_run_annotation.html">sn_run_annotation()</a></code> is the stable annotation entry
+point. Its default <code>method = "consensus"</code> scores the bundled
+canonical marker database, retains the best and second-best candidate,
+calibrates a confidence margin, assigns hierarchical labels, and maps
+known labels to a versioned Cell Ontology snapshot. It supports both
+cluster- and cell-level output; without a reference, each cell inherits
+the traceable consensus of its cluster.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_annotation.html">sn_run_annotation</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"consensus"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  tissue <span class="op">=</span> <span class="st">"peripheral blood"</span>,</span>
+<span>  ontology <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc_consensus"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">annotation_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"annotation"</span><span class="op">)</span></span>
+<span><span class="va">annotation_index</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type  name  analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> analysis_results anno… pbmc… annotat… conse… 2026-07-1…   <span style="text-decoration: underline;">4</span>037 <span style="color: #BB0000;">NA</span></span></span>
+<span></span>
+<span><span class="va">annotation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"annotation"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"pbmc_consensus"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">clusters</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 16</span></span></span>
+<span><span class="co">#&gt;   cluster prediction          second_best_label prediction_score margin</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0       ELP                 Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 1       Myelocytes          ELP                          0.732 0.106 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2       Monocytes           Monocyte precurs…            0.752 0.172 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 3       Kidney-resident ma… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 4       Tem/Trm cytotoxic … Transitional NK              0.732 0.108 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 5       Monocytes           Myelocytes                   0.712 0.038<span style="text-decoration: underline;">5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 11 more variables: method_count &lt;int&gt;, methods &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   low_confidence &lt;lgl&gt;, level_1 &lt;chr&gt;, level_2 &lt;chr&gt;, level_3 &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   supporting_markers &lt;chr&gt;, conflicting_markers &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   reference_coverage &lt;dbl&gt;, ontology_id &lt;chr&gt;, ontology_label &lt;chr&gt;</span></span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">cells</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 17</span></span></span>
+<span><span class="co">#&gt;   cell     cluster prediction second_best_label prediction_score margin</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> AAACATA… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> AAACATT… 3       Kidney-re… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> AAACATT… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> AAACCGT… 2       Monocytes  Monocyte precurs…            0.752 0.172 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> AAACCGT… 6       CD16+ NK … NK cells                     0.731 0.104 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> AAACGCA… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 11 more variables: method_count &lt;int&gt;, methods &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   low_confidence &lt;lgl&gt;, level_1 &lt;chr&gt;, level_2 &lt;chr&gt;, level_3 &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   supporting_markers &lt;chr&gt;, conflicting_markers &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   reference_coverage &lt;dbl&gt;, ontology_id &lt;chr&gt;, ontology_label &lt;chr&gt;</span></span></span>
+<span><span class="va">annotation</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="co">#&gt; $low_confidence_cells</span></span>
+<span><span class="co">#&gt; [1] 1193</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $low_confidence_clusters</span></span>
+<span><span class="co">#&gt; [1] 5</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $unmapped_ontology_labels</span></span>
+<span><span class="co">#&gt; [1] "ELP"                         "Myelocytes"                 </span></span>
+<span><span class="co">#&gt; [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  </span></span>
+<span><span class="co">#&gt; [5] "Pre-pro-B cells"</span></span></code></pre></div>
+<p>Every final label remains linked to marker support, conflicts,
+reference coverage, confidence, and provenance. LLM helpers can explain
+this evidence but cannot replace the stored computational label. Review
+uncertain assignments before using them as biological truth.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_review_annotation.html">sn_review_annotation</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pbmc_consensus"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $cells</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,193 × 17</span></span></span>
+<span><span class="co">#&gt;    cell    cluster prediction second_best_label prediction_score margin</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> AAACAT… 3       Kidney-re… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> AAACGC… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> AAACGC… 5       Monocytes  Myelocytes                   0.712 0.038<span style="text-decoration: underline;">5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> AAACTT… 3       Kidney-re… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> AAAGAG… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> AAAGCC… 0       ELP        Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> AAAGGC… 3       Kidney-re… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> AAAGTT… 3       Kidney-re… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,183 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 11 more variables: method_count &lt;int&gt;, methods &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   low_confidence &lt;lgl&gt;, level_1 &lt;chr&gt;, level_2 &lt;chr&gt;, level_3 &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   supporting_markers &lt;chr&gt;, conflicting_markers &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   reference_coverage &lt;dbl&gt;, ontology_id &lt;chr&gt;, ontology_label &lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $clusters</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 16</span></span></span>
+<span><span class="co">#&gt;   cluster prediction          second_best_label prediction_score margin</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0       ELP                 Early lymphoid/T…            0.711 0.036<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 3       Kidney-resident ma… Naive B cells                0.726 0.086<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 5       Monocytes           Myelocytes                   0.712 0.038<span style="text-decoration: underline;">5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 7       Pre-pro-B cells     Early lymphoid/T…            0.719 0.064<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 8       Kidney-resident ma… Monocytes                    0.706 0.020<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 11 more variables: method_count &lt;int&gt;, methods &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   low_confidence &lt;lgl&gt;, level_1 &lt;chr&gt;, level_2 &lt;chr&gt;, level_3 &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   supporting_markers &lt;chr&gt;, conflicting_markers &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   reference_coverage &lt;dbl&gt;, ontology_id &lt;chr&gt;, ontology_label &lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $evidence</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 980 × 8</span></span></span>
+<span><span class="co">#&gt;    entity label          parent_label   score method supporting_markers</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 0      Age-associate… B cells      0.005<span style="text-decoration: underline;">28</span> marke… TBX21;FCRL2;ITGAX </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 0      Alveolar macr… Macrophages  0       marke… GPNMB;TREM2;BHLHE…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 0      B cells        B cells      0.019<span style="text-decoration: underline;">0</span>  marke… CD79A;MS4A1;CD19  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 0      CD16- NK cells ILC          0.066<span style="text-decoration: underline;">2</span>  marke… NKG7;GNLY;CD160   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 0      CD16+ NK cells ILC          0.073<span style="text-decoration: underline;">1</span>  marke… NKG7;GNLY;FCGR3A  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 0      CD8a/a         T cells      0.016<span style="text-decoration: underline;">2</span>  marke… PDCD1;ZNF683;GNG4 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 0      CD8a/b(entry)  T cells      0.060<span style="text-decoration: underline;">7</span>  marke… SATB1;TOX2;CCR9   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 0      Classical mon… Monocytes    0.045<span style="text-decoration: underline;">5</span>  marke… S100A9;CD14;S100A…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 0      CMP            HSC/MPP      0       marke… MPO;CTSG;FLT3     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 0      CRTAM+ gamma-… T cells      0.021<span style="text-decoration: underline;">6</span>  marke… IKZF2;TRDC;ITGAD  </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 970 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: conflicting_markers &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   reference_coverage &lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $diagnostics</span></span>
+<span><span class="co">#&gt; $diagnostics$low_confidence_cells</span></span>
+<span><span class="co">#&gt; [1] 1193</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $diagnostics$low_confidence_clusters</span></span>
+<span><span class="co">#&gt; [1] 5</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $diagnostics$unmapped_ontology_labels</span></span>
+<span><span class="co">#&gt; [1] "ELP"                         "Myelocytes"                 </span></span>
+<span><span class="co">#&gt; [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  </span></span>
+<span><span class="co">#&gt; [5] "Pre-pro-B cells"            </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance</span></span>
+<span><span class="co">#&gt; $provenance$package_versions</span></span>
+<span><span class="co">#&gt; $provenance$package_versions$Shennong</span></span>
+<span><span class="co">#&gt; [1] "0.2.0"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$package_versions$R</span></span>
+<span><span class="co">#&gt; [1] "4.6.1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$random_seed</span></span>
+<span><span class="co">#&gt; [1] NA</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $provenance$timestamp</span></span>
+<span><span class="co">#&gt; [1] "2026-07-15 08:27:05 UTC"</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_annotation_confidence.html">sn_plot_annotation_confidence</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc_consensus"</span>,</span>
+<span>  level <span class="op">=</span> <span class="st">"cluster"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="annotation-pathways_files/figure-html/annotation-review-plots-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="../reference/sn_plot_annotation_markers.html">sn_plot_annotation_markers</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc_consensus"</span>,</span>
+<span>  top_n <span class="op">=</span> <span class="fl">5</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="annotation-pathways_files/figure-html/annotation-review-plots-2.png" class="r-plt" alt="" width="672"></p>
+<p>If trusted labels are present, a confusion heatmap makes
+disagreements visible.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_annotation_confusion.html">sn_plot_annotation_confusion</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  truth <span class="op">=</span> <span class="st">"curated_cell_type"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc_consensus"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="choose-a-reference-backend-deliberately">Choose a reference backend deliberately<a class="anchor" aria-label="anchor" href="#choose-a-reference-backend-deliberately"></a>
+</h2>
+<p>Use <code>sn_list_methods("annotation")</code> and
+<code><a href="../reference/sn_method_status.html">sn_method_status()</a></code> to inspect current availability.
+Reference methods should not be used when tissue, disease, species,
+assay chemistry, or cell-state coverage is badly mismatched; a high
+similarity to an incomplete reference is not evidence that the missing
+cell type is absent.</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>Backend</th>
+<th>Best use</th>
+<th>Input and runtime</th>
+<th>Stored output</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>SingleR</td>
+<td>Default reference prediction with per-label scores</td>
+<td>Query and annotated Seurat/SummarizedExperiment reference; CPU;
+optional <code>SingleR</code>
+</td>
+<td>Full score evidence, pruned label, delta, coverage</td>
+</tr>
+<tr class="even">
+<td>CellTypist</td>
+<td>External pretrained immune atlases</td>
+<td>Counts plus model; CPU CLI on <code>PATH</code>
+</td>
+<td>Original label columns and consensus evidence</td>
+</tr>
+<tr class="odd">
+<td>Seurat</td>
+<td>Anchor transfer from a compatible Seurat reference</td>
+<td>Query/reference assays and labels; CPU; optional
+<code>Seurat</code>
+</td>
+<td>Transferred labels and all returned score columns</td>
+</tr>
+<tr class="even">
+<td>Symphony</td>
+<td>Repeated mapping to a compressed atlas</td>
+<td>Built reference or Seurat reference; CPU; optional
+<code>symphony</code>
+</td>
+<td>kNN confidence and mapped embedding</td>
+</tr>
+<tr class="odd">
+<td>scmap</td>
+<td>Conservative projection to indexed expression centroids</td>
+<td>Shared features and annotated reference; CPU; optional
+<code>scmap</code>
+</td>
+<td>Label, similarity, and unassigned status</td>
+</tr>
+<tr class="even">
+<td>scANVI</td>
+<td>Semi-supervised mapping with batch structure</td>
+<td>Raw counts, labels, batch metadata; CPU or CUDA through pixi</td>
+<td>Labels and managed backend artifacts</td>
+</tr>
+</tbody>
+</table>
+<p>Backend-specific functions stay internal rather than creating
+parallel result types. Select the backend with
+<code>sn_run_annotation(method = ...)</code> and retrieve every result
+with the same <code>sn_get_result(object, "annotation", name)</code>
+contract.</p>
+<p>The underlying methods should be cited in publications: SingleR (Aran
+et al., 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping
+(Hao et al., 2021), Symphony (Kang et al., 2021), scmap (Kiselev et al.,
+2018), and scANVI (Xu et al., 2021). Cell Ontology identifiers come from
+the bundled 2026-06-08 CL snapshot; verify current author and ontology
+guidelines when preparing a submission.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_annotation.html">sn_run_annotation</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"consensus"</span>,</span>
+<span>  reference <span class="op">=</span> <span class="va">reference</span>,</span>
+<span>  reference_label_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  consensus_reference_method <span class="op">=</span> <span class="st">"singleR"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"pbmc_reference_consensus"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">reference_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"annotation"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"pbmc_reference_consensus"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">reference_result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">backend_predictions</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">reference_result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">backend_evidence</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="transfer-labels-from-a-reference">Transfer labels from a reference<a class="anchor" aria-label="anchor" href="#transfer-labels-from-a-reference"></a>
 </h2>
 <p>Marker tables are useful when you want to name clusters manually.
@@ -238,7 +532,7 @@ writes the projected label plus a confidence score back to the query
 metadata. The wrapper keeps the source label and transfer settings in
 <code>query@misc$label_transfer</code>, so the annotation is not just a
 loose metadata column.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
 <span><span class="va">query</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
 <span></span>
@@ -262,7 +556,7 @@ default, Shennong keeps the native Coralysis-trained
 SingleCellExperiment and PCA model under
 <code>reference@misc$coralysis</code>, so the returned object can be
 used directly as a label-transfer reference.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  <span class="va">reference</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"sample_id"</span>,</span>
@@ -285,7 +579,7 @@ instead of saving the full analysis object. Coralysis references keep
 the trained models, PCA model, feature names, and selected labels while
 dropping the large reference assay matrices and joint-probability
 tables.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">coral_reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prepare_label_transfer_reference.html">sn_prepare_label_transfer_reference</a></span><span class="op">(</span></span>
 <span>  <span class="va">reference</span>,</span>
 <span>  label_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
@@ -308,7 +602,7 @@ tables.</p>
 </h2>
 <p>Shennong ships a signature catalog so blocking genes, marker sets,
 and report features do not need to be redefined in every analysis.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">signature_index</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_signatures.html">sn_list_signatures</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">signature_index</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
@@ -331,7 +625,7 @@ and report features do not need to be redefined in every analysis.</p>
 <p>Custom signatures can be added, renamed, and deleted through the same
 API. Use a project-specific catalog path when you do not want to modify
 the package-level catalog.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">catalog_path</span> <span class="op">&lt;-</span> <span class="st">"config/signatures/pbmc_signatures.csv"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_add_signature.html">sn_add_signature</a></span><span class="op">(</span></span>
@@ -356,13 +650,111 @@ the package-level catalog.</p>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="score-programs-in-cells-and-samples">Score programs in cells and samples<a class="anchor" aria-label="anchor" href="#score-programs-in-cells-and-samples"></a>
+</h2>
+<p><code><a href="../reference/sn_score_programs.html">sn_score_programs()</a></code> accepts named gene-set lists,
+program/gene tables, named gene vectors, or bundled signature queries.
+UCell is the default for per-cell work because its rank-based score
+works directly with sparse expression and is less sensitive to dataset
+composition than a raw mean. AUCell is useful when
+area-under-recovery-curve activity is the intended statistic, but its
+ranking step is more expensive. GSVA and ssGSEA are intended primarily
+for samples or aggregated groups; supply <code>group_by</code> for large
+single-cell objects. The <code>mean</code> backend is dependency-free
+and transparent, but it is more sensitive to assay scale and signature
+size.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">immune_programs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  B_cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"CD37"</span>, <span class="st">"CD74"</span><span class="op">)</span>,</span>
+<span>  T_cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span>, <span class="st">"LTB"</span><span class="op">)</span>,</span>
+<span>  Myeloid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"LYZ"</span>, <span class="st">"FCN1"</span>, <span class="st">"S100A8"</span>, <span class="st">"CTSS"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_score_programs.html">sn_score_programs</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  signatures <span class="op">=</span> <span class="va">immune_programs</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"ucell"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"immune_programs"</span>,</span>
+<span>  min_genes <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">program_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"program_scoring"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"immune_programs"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">program_result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">coverage</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
+<span><span class="co">#&gt;   program n_genes n_matched coverage matched_genes        missing_genes</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> B_cell        4         4        1 MS4A1;CD79A;CD37;CD… <span style="color: #949494;">""</span>           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> T_cell        4         4        1 CD3D;CD3E;TRAC;LTB   <span style="color: #949494;">""</span>           </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Myeloid       4         4        1 LYZ;FCN1;S100A8;CTSS <span style="color: #949494;">""</span></span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">program_result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">scores</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;   entity           program score level group_by</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> AAACATACAACCAC-1 B_cell  0.352 cell  <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> AAACATTGAGCTAC-1 B_cell  0.913 cell  <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> AAACATTGATCAGC-1 B_cell  0.177 cell  <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> AAACCGTGCTTCCG-1 B_cell  0.464 cell  <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> AAACCGTGTATGCG-1 B_cell  0.181 cell  <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> AAACGCACTGGTAC-1 B_cell  0     cell  <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<p>UCell and AUCell require their optional Bioconductor packages and run
+on CPU. GSVA/ssGSEA require <code>GSVA</code> and run on CPU; Shennong
+blocks per-cell GSVA on more than 5,000 sparse columns unless users
+aggregate explicitly. Cite UCell (Andreatta and Carmona, 2021), AUCell
+(Aibar et al., 2017), GSVA (Hänzelmann et al., 2013), or ssGSEA (Barbie
+et al., 2009) according to the selected backend.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_program_activity.html">sn_plot_program_activity</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"immune_programs"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="annotation-pathways_files/figure-html/plot-programs-1.png" class="r-plt" alt="" width="672"></p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="../reference/sn_plot_program_heatmap.html">sn_plot_program_heatmap</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"immune_programs"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="annotation-pathways_files/figure-html/plot-programs-2.png" class="r-plt" alt="" width="672"></p>
+<p>For comparative studies, preserve the sample or patient as the
+inferential unit. <code><a href="../reference/sn_test_programs.html">sn_test_programs()</a></code> first averages cell
+scores within each sample/condition/stratum, then runs the selected
+test; omitting <code>sample_by</code> is explicitly marked as
+exploratory cell-level inference.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_programs.html">sn_test_programs</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  score_name <span class="op">=</span> <span class="st">"immune_programs"</span>,</span>
+<span>  condition_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"treated"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"limma"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"immune_program_condition"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"program_comparison"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"immune_program_condition"</span></span>
+<span><span class="op">)</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="run-enrichment-from-stored-marker-results">Run enrichment from stored marker results<a class="anchor" aria-label="anchor" href="#run-enrichment-from-stored-marker-results"></a>
 </h2>
 <p><code><a href="../reference/sn_enrich.html">sn_enrich()</a></code> can accept a gene vector, a ranked vector, a
 data frame, or a Seurat object with stored DE results. For cluster
 markers, the Seurat-object path is the most reproducible because the
 enrichment knows which DE result it came from.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
@@ -371,7 +763,7 @@ enrichment knows which DE result it came from.</p>
 <span>  store_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-14 06:30:40] Running ORA analysis for the GOBP database.</span></span>
+<span><span class="co">#&gt; INFO [2026-07-15 08:27:31] Running ORA analysis for the GOBP database.</span></span>
 <span></span>
 <span><span class="va">pathways</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_enrichment_result.html">sn_get_enrichment_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
@@ -393,7 +785,7 @@ enrichment knows which DE result it came from.</p>
 <p>If you already have an enrichment table from another tool, store it
 with <code><a href="../reference/sn_store_enrichment.html">sn_store_enrichment()</a></code> so the interpretation layer can
 find it.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">external_terms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  cluster <span class="op">=</span> <span class="st">"0"</span>,</span>
 <span>  ID <span class="op">=</span> <span class="st">"GO:0006955"</span>,</span>
@@ -423,7 +815,7 @@ pattern used by DE and enrichment. Use CellChat for a global interaction
 network, NicheNet when the question is sender-to-receiver ligand
 activity, or LIANA when the optional LIANA package is available and
 consensus scoring is preferred.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"cellchat"</span>,</span>
@@ -442,7 +834,7 @@ consensus scoring is preferred.</p>
 Shennong requires those priors explicitly so the output remains
 traceable to the real NicheNet model rather than an inferred placeholder
 network.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"nichenetr"</span>,</span>
@@ -458,7 +850,7 @@ network.</p>
 <code><a href="../reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity()</a></code> uses fast footprint methods
 through <code>decoupleR</code>. DoRothEA reports TF activity; PROGENy
 reports pathway activity.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"dorothea"</span>,</span>
@@ -482,7 +874,7 @@ reports pathway activity.</p>
 explicit. When the input is a Seurat object, predictions are written
 back to metadata. When the input is a file path, Shennong returns the
 prediction table because there is no object to update.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"Immune_All_Low.pkl"</span>,</span>
@@ -492,7 +884,7 @@ prediction table because there is no object to update.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"Immune_All_Low"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prediction_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="st">"pbmc3k_counts.csv"</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"Immune_All_Low.pkl"</span>,</span>

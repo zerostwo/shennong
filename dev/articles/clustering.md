@@ -21,9 +21,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-14 06:32:42] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-14 06:32:42] Running QC metrics for human.
-#> INFO [2026-07-14 06:32:42] Seurat object initialization complete.
+#> INFO [2026-07-15 08:29:39] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-15 08:29:39] Running QC metrics for human.
+#> INFO [2026-07-15 08:29:40] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -197,6 +197,10 @@ ADT PCA, then uses Seurat weighted nearest neighbors to cluster on the
 `wsnn` graph and create a `wnn.umap` embedding. The template below
 assumes `pbmc_cite` is a prepared Seurat object containing both assays,
 so it is not executed during site builds.
+`sn_run_multimodal(object, method = "wnn")` is an equivalent explicit
+entry point and accepts the remaining
+[`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+arguments through `...`.
 
 ``` r
 
