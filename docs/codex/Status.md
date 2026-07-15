@@ -29,19 +29,24 @@ Last updated: 2026-07-15
 - The first remote `0.2.0` pkgdown run reached the evaluated annotation article
   but exposed a clean-runner dependency omission: UCell was not installed for
   the default program-scoring example. The website workflow now declares
-  `bioc::UCell`; the corrected remote run must pass before tagging the release.
+  `bioc::UCell`, and the corrected clean-runner pkgdown build and deployment
+  passes in GitHub Actions run `29400422339`.
 - The corrected run passed the UCell-dependent article and then exposed an
   unconditional Zenodo download in `data-io-projects.Rmd`; Zenodo returned HTTP
   504. That article now requires the explicit
   `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in so website builds are not coupled
   to third-party availability.
-- The same clean-runner gate also exposed installed-package clustering failures
-  around omitted multimodal defaults, plus two optional-backend checks that ran
-  before dependency-independent input validation. The defaults are now
-  materialized explicitly, and Scissor/Symphony validate required inputs before
-  checking their optional packages. Focused clustering, abundance, and
-  annotation tests pass with `FAIL 0 | WARN 0 | SKIP 1 | PASS 505`; the
-  data-I/O article also renders successfully with network examples disabled.
+- The same clean-runner gate also exposed an R 4.6 development-runner failure
+  while matching the 47-formal `sn_run_cluster()` entry point, plus two
+  optional-backend checks that ran before dependency-independent input
+  validation. Clustering now uses a compact public compatibility wrapper and a
+  private full implementation; its allowlisted tail resolver preserves named
+  and positional calls, defaults, and explicit `NULL` values. Scissor/Symphony
+  validate required inputs before checking their optional packages. The full
+  clustering module passes `FAIL 0 | WARN 0 | SKIP 0 | PASS 441`; the combined
+  clustering, abundance, and annotation regression previously passed
+  `FAIL 0 | WARN 0 | SKIP 1 | PASS 505`, and the data-I/O article renders with
+  network examples disabled.
 - Full source-package checking exposed that excluding only CodeGraph contents
   could still leave an empty top-level `.codegraph` directory in the tarball.
   The root directory now has an explicit build-ignore rule, the active index

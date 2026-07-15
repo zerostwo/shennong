@@ -436,6 +436,34 @@ test_that("sn_run_cluster treats batch as the primary integration argument", {
   expect_false("batch_by" %in% names(formals(sn_run_cluster)))
 })
 
+test_that("sn_run_cluster resolves compact tail arguments compatibly", {
+  expect_identical(length(formals(sn_run_cluster)), 18L)
+  expect_identical(tail(names(formals(sn_run_cluster)), 1L), "...")
+
+  resolved <- .sn_resolve_cluster_tail_args(list(
+    block_genes = NULL,
+    modality = "cite_seq"
+  ))
+  expect_null(resolved$values$block_genes)
+  expect_identical(resolved$values$modality, "cite_seq")
+  expect_setequal(resolved$supplied, c("block_genes", "modality"))
+
+  positional <- .sn_resolve_cluster_tail_args(list(list(algorithm = 4), FALSE))
+  expect_identical(positional$values$cluster_control, list(algorithm = 4))
+  expect_false(positional$values$reuse)
+
+  expect_error(
+    .sn_resolve_cluster_tail_args(list(unknown_control = TRUE)),
+    "Unused clustering argument"
+  )
+  expect_error(
+    .sn_resolve_cluster_tail_args(
+      structure(list(1:2, 2:3), names = c("dims", "dims"))
+    ),
+    "supplied more than once"
+  )
+})
+
 test_that("sn_run_cluster can return cluster assignments directly and supports scran batch workflows", {
   skip_if_not_installed("Seurat")
 

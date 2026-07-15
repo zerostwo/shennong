@@ -2252,6 +2252,80 @@ sn_detect_rare_cells <- function(object,
   list(features = present, missing = missing)
 }
 
+.sn_cluster_tail_defaults <- function() {
+  list(
+    cluster_control = list(),
+    reuse = TRUE,
+    rerun_from = NULL,
+    auto_install = TRUE,
+    install_repos = getOption("repos"),
+    install_ask = FALSE,
+    hvg_group_by = NULL,
+    rare_feature_method = "none",
+    rare_feature_group_by = NULL,
+    rare_feature_n = 200,
+    rare_feature_control = list(),
+    block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
+    theta = 2,
+    group_by_vars = NULL,
+    npcs = 50,
+    dims = NULL,
+    species = NULL,
+    assay = "RNA",
+    layer = "counts",
+    modality = c("rna", "cite_seq"),
+    multimodal_method = NULL,
+    adt_assay = "ADT",
+    adt_layer = "counts",
+    adt_features = NULL,
+    adt_npcs = 30,
+    adt_dims = NULL,
+    wnn_control = list(),
+    umap_control = list(),
+    return_cluster = FALSE,
+    verbose = TRUE
+  )
+}
+
+.sn_resolve_cluster_tail_args <- function(dots) {
+  defaults <- .sn_cluster_tail_defaults()
+  if (length(dots) == 0L) {
+    return(list(values = defaults, supplied = character()))
+  }
+
+  dot_names <- names(dots)
+  if (is.null(dot_names)) {
+    dot_names <- rep("", length(dots))
+  }
+  named <- nzchar(dot_names)
+  unknown <- setdiff(unique(dot_names[named]), names(defaults))
+  if (length(unknown) > 0L) {
+    stop("Unused clustering argument(s): ", paste(unknown, collapse = ", "), ".", call. = FALSE)
+  }
+  duplicated_names <- unique(dot_names[named][duplicated(dot_names[named])])
+  if (length(duplicated_names) > 0L) {
+    stop("Clustering argument(s) supplied more than once: ", paste(duplicated_names, collapse = ", "), ".", call. = FALSE)
+  }
+
+  unnamed <- which(!named)
+  available <- setdiff(names(defaults), dot_names[named])
+  if (length(unnamed) > length(available)) {
+    stop("Too many positional clustering arguments were supplied after `leiden_objective_function`.", call. = FALSE)
+  }
+  if (length(unnamed) > 0L) {
+    dot_names[unnamed] <- utils::head(available, length(unnamed))
+  }
+  if (anyDuplicated(dot_names)) {
+    duplicated_names <- unique(dot_names[duplicated(dot_names)])
+    stop("Clustering argument(s) supplied more than once: ", paste(duplicated_names, collapse = ", "), ".", call. = FALSE)
+  }
+
+  for (index in seq_along(dots)) {
+    defaults[dot_names[[index]]] <- list(dots[[index]])
+  }
+  list(values = defaults, supplied = dot_names)
+}
+
 #' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
@@ -2344,44 +2418,45 @@ sn_detect_rare_cells <- function(object,
 #'   \code{Seurat::FindClusters()} when \code{cluster_algorithm = "leiden"}.
 #' @param leiden_objective_function Leiden objective function passed to
 #'   \code{Seurat::FindClusters()}.
-#' @param cluster_control Optional named list of additional
+#' @param ... Additional clustering controls. Supported names include
+#'   \code{cluster_control}, an optional named list of additional
 #'   \code{Seurat::FindClusters()} arguments. Values here override Shennong's
 #'   generated defaults.
-#' @param reuse Logical; when \code{TRUE}, reuse previously recorded
+#'   \code{reuse}: logical; when \code{TRUE}, reuse previously recorded
 #'   \code{sn_run_cluster()} stages if their stored input signatures still match
 #'   the current call. This lets resolution-only changes start at clustering,
 #'   integration-method changes start at integration, and HVG changes start at
 #'   feature selection instead of rerunning all earlier steps.
-#' @param rerun_from Optional stage name forcing recomputation from that stage
+#'   \code{rerun_from}: optional stage name forcing recomputation from that stage
 #'   onward while still allowing earlier matching stages to be reused. Supported
 #'   values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
 #'   \code{"pca"}, \code{"adt"}, \code{"integration"}, \code{"neighbors"},
 #'   \code{"clusters"}, and \code{"umap"}.
-#' @param auto_install Logical; when \code{TRUE}, install missing optional
+#'   \code{auto_install}: logical; when \code{TRUE}, install missing optional
 #'   clustering dependencies such as \pkg{leidenbase} before the relevant stage.
-#' @param install_repos CRAN-like repositories used when \code{auto_install}
+#'   \code{install_repos}: CRAN-like repositories used when \code{auto_install}
 #'   installs CRAN packages.
-#' @param install_ask Passed to \code{BiocManager::install()} when
+#'   \code{install_ask}: passed to \code{BiocManager::install()} when
 #'   \code{auto_install} installs Bioconductor packages through
 #'   \code{sn_install_dependencies()}.
-#' @param hvg_group_by Optional metadata column used to compute highly variable
+#'   \code{hvg_group_by}: optional metadata column used to compute highly variable
 #'   genes within groups before merging and ranking them. When \code{NULL} and
 #'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
 #'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
-#' @param rare_feature_method Optional rare-cell-aware feature methods appended
+#'   \code{rare_feature_method}: optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
 #'   \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
-#' @param rare_feature_group_by Optional metadata column used to define groups
+#'   \code{rare_feature_group_by}: optional metadata column used to define groups
 #'   for \code{"local_markers"}. When \code{NULL}, Shennong builds a temporary
 #'   coarse clustering from the base HVGs.
-#' @param rare_feature_n Number of rare-aware features to add per selected
+#'   \code{rare_feature_n}: number of rare-aware features to add per selected
 #'   method. For example, \code{c("gini", "local_markers")} with
 #'   \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
 #'   before de-duplication.
-#' @param rare_feature_control Named list of advanced rare-feature thresholds.
+#'   \code{rare_feature_control}: named list of advanced rare-feature thresholds.
 #'   Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 #'   \code{gene_max_fraction}, and \code{min_cells}.
-#' @param block_genes Character vector of bundled signature queries and/or
+#'   \code{block_genes}: character vector of bundled signature queries and/or
 #'   custom gene symbols to exclude from internally selected HVGs. Signature
 #'   queries can use leaf names such as \code{"ribo"} and
 #'   \code{"cellCycle.G2M"} or full paths such as
@@ -2389,23 +2464,23 @@ sn_detect_rare_cells <- function(object,
 #'   short aliases for the cell-cycle signatures. Applies to both
 #'   log-normalization and SCTransform workflows; explicit \code{hvg_features}
 #'   are preserved even when they overlap a blocked signature.
-#' @param theta The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
+#'   \code{theta}: the \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction. Used only when
 #'   \code{integration_method = "harmony"}.
-#' @param group_by_vars Optional column name or character vector passed to
+#'   \code{group_by_vars}: optional column name or character vector passed to
 #'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
 #'   and is used only when \code{integration_method = "harmony"}.
-#' @param npcs Number of PCs to compute in \code{RunPCA}.
-#' @param dims A numeric vector of PCs (dimensions) to use for neighbor search,
+#'   \code{npcs}: number of PCs to compute in \code{RunPCA}.
+#'   \code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
 #'   clustering, and UMAP.
-#' @param species Optional species label. Used when block genes must be resolved
+#'   \code{species}: optional species label. Used when block genes must be resolved
 #'   from built-in signatures.
-#' @param assay Assay used for clustering. Defaults to \code{"RNA"}.
-#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
-#' @param modality Workflow modality. \code{"rna"} runs the standard RNA-only
+#'   \code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
+#'   \code{layer}: layer used as the input count matrix. Defaults to \code{"counts"}.
+#'   \code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 #'   workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
 #'   \code{multimodal_method}.
-#' @param multimodal_method CITE-seq backend used when
+#'   \code{multimodal_method}: CITE-seq backend used when
 #'   \code{modality = "cite_seq"}. \code{"wnn"} combines RNA PCA with ADT PCA
 #'   using Seurat's weighted nearest-neighbor workflow and clusters on
 #'   \code{"wsnn"}. \code{"coralysis"} runs native Coralysis on the ADT assay
@@ -2419,24 +2494,24 @@ sn_detect_rare_cells <- function(object,
 #'   \code{NULL}, Shennong keeps the historical CITE-seq default
 #'   \code{"wnn"} unless \code{integration_method} was explicitly set to one of
 #'   the supported multimodal backends.
-#' @param adt_assay Assay containing antibody-derived tag counts for
+#'   \code{adt_assay}: assay containing antibody-derived tag counts for
 #'   \code{modality = "cite_seq"}.
-#' @param adt_layer Layer in \code{adt_assay} used as ADT counts.
-#' @param adt_features Optional ADT/protein features used by CITE-seq backends.
+#'   \code{adt_layer}: layer in \code{adt_assay} used as ADT counts.
+#'   \code{adt_features}: optional ADT/protein features used by CITE-seq backends.
 #'   Defaults to all features in \code{adt_assay}.
-#' @param adt_npcs Number of ADT PCs to compute for \code{modality = "cite_seq"}.
-#' @param adt_dims Numeric vector of ADT PCs used in weighted nearest-neighbor
+#'   \code{adt_npcs}: number of ADT PCs to compute for \code{modality = "cite_seq"}.
+#'   \code{adt_dims}: numeric vector of ADT PCs used in weighted nearest-neighbor
 #'   graph construction. Defaults to \code{seq_len(min(18, adt_npcs))}.
-#' @param wnn_control Optional named list of additional
+#'   \code{wnn_control}: optional named list of additional
 #'   \code{Seurat::FindMultiModalNeighbors()} arguments used only when
 #'   \code{modality = "cite_seq"}. Values here override Shennong's generated
 #'   defaults.
-#' @param umap_control Optional named list of additional
+#'   \code{umap_control}: optional named list of additional
 #'   \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 #'   generated defaults, for example \code{n.neighbors}, \code{min.dist},
 #'   \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
-#' @param return_cluster If \code{TRUE}, return only the cluster_by assignments.
-#' @param verbose Whether to print/log progress messages.
+#'   \code{return_cluster}: if \code{TRUE}, return only the cluster_by assignments.
+#'   \code{verbose}: whether to print/log progress messages.
 #'
 #' @return A \code{Seurat} object with clustering results and embeddings, or a
 #'   cluster_by vector if \code{return_cluster = TRUE}.
@@ -2463,6 +2538,59 @@ sn_detect_rare_cells <- function(object,
 #' }
 #' @export
 sn_run_cluster <- function(object,
+                           batch = NULL,
+                           normalization_method = c("seurat", "scran", "sctransform"),
+                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
+                           integration_control = list(),
+                           nfeatures = 3000,
+                           hvg_features = NULL,
+                           vars_to_regress = NULL,
+                           resolution = 0.8,
+                           cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden"),
+                           cluster_name = NULL,
+                           cluster_n_start = 10,
+                           cluster_n_iter = 10,
+                           cluster_random_seed = 717,
+                           cluster_group_singletons = TRUE,
+                           leiden_method = c("leidenbase", "igraph"),
+                           leiden_objective_function = c("modularity", "CPM"),
+                           ...) {
+  integration_method_supplied <- !missing(integration_method)
+  tail <- .sn_resolve_cluster_tail_args(list(...))
+  block_genes_supplied <- "block_genes" %in% tail$supplied
+
+  do.call(
+    .sn_run_cluster_impl,
+    c(
+      list(
+        object = object,
+        batch = batch,
+        normalization_method = normalization_method,
+        integration_method = integration_method,
+        integration_control = integration_control,
+        nfeatures = nfeatures,
+        hvg_features = hvg_features,
+        vars_to_regress = vars_to_regress,
+        resolution = resolution,
+        cluster_algorithm = cluster_algorithm,
+        cluster_name = cluster_name,
+        cluster_n_start = cluster_n_start,
+        cluster_n_iter = cluster_n_iter,
+        cluster_random_seed = cluster_random_seed,
+        cluster_group_singletons = cluster_group_singletons,
+        leiden_method = leiden_method,
+        leiden_objective_function = leiden_objective_function
+      ),
+      tail$values,
+      list(
+        .integration_method_supplied = integration_method_supplied,
+        .block_genes_supplied = block_genes_supplied
+      )
+    )
+  )
+}
+
+.sn_run_cluster_impl <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
                            integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
@@ -2508,13 +2636,9 @@ sn_run_cluster <- function(object,
                            wnn_control = list(),
                            umap_control = list(),
                            return_cluster = FALSE,
-                           verbose = TRUE) {
-  if (missing(modality)) {
-    modality <- "rna"
-  }
-  if (missing(multimodal_method)) {
-    multimodal_method <- NULL
-  }
+                           verbose = TRUE,
+                           .integration_method_supplied = FALSE,
+                           .block_genes_supplied = FALSE) {
   check_installed("Seurat")
   check_installed("HGNChelper")
 
@@ -2534,8 +2658,8 @@ sn_run_cluster <- function(object,
     stop("`batch` must be a single metadata column name or `NULL`.", call. = FALSE)
   }
 
-  integration_method_supplied <- !missing(integration_method)
-  block_genes_supplied <- !missing(block_genes)
+  integration_method_supplied <- isTRUE(.integration_method_supplied)
+  block_genes_supplied <- isTRUE(.block_genes_supplied)
   normalization_method <- match.arg(normalization_method)
   integration_method <- match.arg(integration_method)
   modality <- match.arg(modality, c("rna", "cite_seq"))

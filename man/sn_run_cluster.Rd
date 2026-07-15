@@ -23,36 +23,7 @@ sn_run_cluster(
   cluster_group_singletons = TRUE,
   leiden_method = c("leidenbase", "igraph"),
   leiden_objective_function = c("modularity", "CPM"),
-  cluster_control = list(),
-  reuse = TRUE,
-  rerun_from = NULL,
-  auto_install = TRUE,
-  install_repos = getOption("repos"),
-  install_ask = FALSE,
-  hvg_group_by = NULL,
-  rare_feature_method = "none",
-  rare_feature_group_by = NULL,
-  rare_feature_n = 200,
-  rare_feature_control = list(),
-  block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
-  theta = 2,
-  group_by_vars = NULL,
-  npcs = 50,
-  dims = NULL,
-  species = NULL,
-  assay = "RNA",
-  layer = "counts",
-  modality = c("rna", "cite_seq"),
-  multimodal_method = NULL,
-  adt_assay = "ADT",
-  adt_layer = "counts",
-  adt_features = NULL,
-  adt_npcs = 30,
-  adt_dims = NULL,
-  wnn_control = list(),
-  umap_control = list(),
-  return_cluster = FALSE,
-  verbose = TRUE
+  ...
 )
 }
 \arguments{
@@ -156,88 +127,69 @@ should group singletons into the nearest cluster.}
 \item{leiden_objective_function}{Leiden objective function passed to
 \code{Seurat::FindClusters()}.}
 
-\item{cluster_control}{Optional named list of additional
+\item{...}{Additional clustering controls. Supported names include
+\code{cluster_control}, an optional named list of additional
 \code{Seurat::FindClusters()} arguments. Values here override Shennong's
-generated defaults.}
-
-\item{reuse}{Logical; when \code{TRUE}, reuse previously recorded
+generated defaults.
+\code{reuse}: logical; when \code{TRUE}, reuse previously recorded
 \code{sn_run_cluster()} stages if their stored input signatures still match
 the current call. This lets resolution-only changes start at clustering,
 integration-method changes start at integration, and HVG changes start at
-feature selection instead of rerunning all earlier steps.}
-
-\item{rerun_from}{Optional stage name forcing recomputation from that stage
+feature selection instead of rerunning all earlier steps.
+\code{rerun_from}: optional stage name forcing recomputation from that stage
 onward while still allowing earlier matching stages to be reused. Supported
 values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
 \code{"pca"}, \code{"adt"}, \code{"integration"}, \code{"neighbors"},
-\code{"clusters"}, and \code{"umap"}.}
-
-\item{auto_install}{Logical; when \code{TRUE}, install missing optional
-clustering dependencies such as \pkg{leidenbase} before the relevant stage.}
-
-\item{install_repos}{CRAN-like repositories used when \code{auto_install}
-installs CRAN packages.}
-
-\item{install_ask}{Passed to \code{BiocManager::install()} when
+\code{"clusters"}, and \code{"umap"}.
+\code{auto_install}: logical; when \code{TRUE}, install missing optional
+clustering dependencies such as \pkg{leidenbase} before the relevant stage.
+\code{install_repos}: CRAN-like repositories used when \code{auto_install}
+installs CRAN packages.
+\code{install_ask}: passed to \code{BiocManager::install()} when
 \code{auto_install} installs Bioconductor packages through
-\code{sn_install_dependencies()}.}
-
-\item{hvg_group_by}{Optional metadata column used to compute highly variable
+\code{sn_install_dependencies()}.
+\code{hvg_group_by}: optional metadata column used to compute highly variable
 genes within groups before merging and ranking them. When \code{NULL} and
 \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
-\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.}
-
-\item{rare_feature_method}{Optional rare-cell-aware feature methods appended
+\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
+\code{rare_feature_method}: optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
-\code{"none"}, \code{"gini"}, and \code{"local_markers"}.}
-
-\item{rare_feature_group_by}{Optional metadata column used to define groups
+\code{"none"}, \code{"gini"}, and \code{"local_markers"}.
+\code{rare_feature_group_by}: optional metadata column used to define groups
 for \code{"local_markers"}. When \code{NULL}, Shennong builds a temporary
-coarse clustering from the base HVGs.}
-
-\item{rare_feature_n}{Number of rare-aware features to add per selected
+coarse clustering from the base HVGs.
+\code{rare_feature_n}: number of rare-aware features to add per selected
 method. For example, \code{c("gini", "local_markers")} with
 \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
-before de-duplication.}
-
-\item{rare_feature_control}{Named list of advanced rare-feature thresholds.
+before de-duplication.
+\code{rare_feature_control}: named list of advanced rare-feature thresholds.
 Supported fields are \code{group_max_fraction}, \code{group_max_cells},
-\code{gene_max_fraction}, and \code{min_cells}.}
-
-\item{block_genes}{Character vector of bundled signature queries and/or
+\code{gene_max_fraction}, and \code{min_cells}.
+\code{block_genes}: character vector of bundled signature queries and/or
 custom gene symbols to exclude from internally selected HVGs. Signature
 queries can use leaf names such as \code{"ribo"} and
 \code{"cellCycle.G2M"} or full paths such as
 \code{"Programs/cellCycle.G1S"}; \code{"g1s"} and \code{"g2m"} are kept as
 short aliases for the cell-cycle signatures. Applies to both
 log-normalization and SCTransform workflows; explicit \code{hvg_features}
-are preserved even when they overlap a blocked signature.}
-
-\item{theta}{The \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
+are preserved even when they overlap a blocked signature.
+\code{theta}: the \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction. Used only when
-\code{integration_method = "harmony"}.}
-
-\item{group_by_vars}{Optional column name or character vector passed to
+\code{integration_method = "harmony"}.
+\code{group_by_vars}: optional column name or character vector passed to
 \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
-and is used only when \code{integration_method = "harmony"}.}
-
-\item{npcs}{Number of PCs to compute in \code{RunPCA}.}
-
-\item{dims}{A numeric vector of PCs (dimensions) to use for neighbor search,
-clustering, and UMAP.}
-
-\item{species}{Optional species label. Used when block genes must be resolved
-from built-in signatures.}
-
-\item{assay}{Assay used for clustering. Defaults to \code{"RNA"}.}
-
-\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
-
-\item{modality}{Workflow modality. \code{"rna"} runs the standard RNA-only
+and is used only when \code{integration_method = "harmony"}.
+\code{npcs}: number of PCs to compute in \code{RunPCA}.
+\code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
+clustering, and UMAP.
+\code{species}: optional species label. Used when block genes must be resolved
+from built-in signatures.
+\code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
+\code{layer}: layer used as the input count matrix. Defaults to \code{"counts"}.
+\code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
-\code{multimodal_method}.}
-
-\item{multimodal_method}{CITE-seq backend used when
+\code{multimodal_method}.
+\code{multimodal_method}: CITE-seq backend used when
 \code{modality = "cite_seq"}. \code{"wnn"} combines RNA PCA with ADT PCA
 using Seurat's weighted nearest-neighbor workflow and clusters on
 \code{"wsnn"}. \code{"coralysis"} runs native Coralysis on the ADT assay
@@ -250,34 +202,25 @@ protein matrix when supported, computes a protein PCA reduction, and
 clusters on that reduction. When
 \code{NULL}, Shennong keeps the historical CITE-seq default
 \code{"wnn"} unless \code{integration_method} was explicitly set to one of
-the supported multimodal backends.}
-
-\item{adt_assay}{Assay containing antibody-derived tag counts for
-\code{modality = "cite_seq"}.}
-
-\item{adt_layer}{Layer in \code{adt_assay} used as ADT counts.}
-
-\item{adt_features}{Optional ADT/protein features used by CITE-seq backends.
-Defaults to all features in \code{adt_assay}.}
-
-\item{adt_npcs}{Number of ADT PCs to compute for \code{modality = "cite_seq"}.}
-
-\item{adt_dims}{Numeric vector of ADT PCs used in weighted nearest-neighbor
-graph construction. Defaults to \code{seq_len(min(18, adt_npcs))}.}
-
-\item{wnn_control}{Optional named list of additional
+the supported multimodal backends.
+\code{adt_assay}: assay containing antibody-derived tag counts for
+\code{modality = "cite_seq"}.
+\code{adt_layer}: layer in \code{adt_assay} used as ADT counts.
+\code{adt_features}: optional ADT/protein features used by CITE-seq backends.
+Defaults to all features in \code{adt_assay}.
+\code{adt_npcs}: number of ADT PCs to compute for \code{modality = "cite_seq"}.
+\code{adt_dims}: numeric vector of ADT PCs used in weighted nearest-neighbor
+graph construction. Defaults to \code{seq_len(min(18, adt_npcs))}.
+\code{wnn_control}: optional named list of additional
 \code{Seurat::FindMultiModalNeighbors()} arguments used only when
 \code{modality = "cite_seq"}. Values here override Shennong's generated
-defaults.}
-
-\item{umap_control}{Optional named list of additional
+defaults.
+\code{umap_control}: optional named list of additional
 \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 generated defaults, for example \code{n.neighbors}, \code{min.dist},
-\code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.}
-
-\item{return_cluster}{If \code{TRUE}, return only the cluster_by assignments.}
-
-\item{verbose}{Whether to print/log progress messages.}
+\code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
+\code{return_cluster}: if \code{TRUE}, return only the cluster_by assignments.
+\code{verbose}: whether to print/log progress messages.}
 }
 \value{
 A \code{Seurat} object with clustering results and embeddings, or a
