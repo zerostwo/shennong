@@ -26,6 +26,10 @@ Last updated: 2026-07-15
   `Shennong_0.2.0.tar.gz`, completes structural
   `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` with `Status: OK`,
   and validates the complete pkgdown reference index.
+- The first remote `0.2.0` pkgdown run reached the evaluated annotation article
+  but exposed a clean-runner dependency omission: UCell was not installed for
+  the default program-scoring example. The website workflow now declares
+  `bioc::UCell`; the corrected remote run must pass before tagging the release.
 - Full source-package checking exposed that excluding only CodeGraph contents
   could still leave an empty top-level `.codegraph` directory in the tarball.
   The root directory now has an explicit build-ignore rule, the active index

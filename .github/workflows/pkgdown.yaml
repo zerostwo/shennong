@@ -45,6 +45,7 @@ jobs:
             github::immunogenomics/harmony@harmony2
             any::clusterProfiler
             bioc::org.Hs.eg.db
+            bioc::UCell
             any::HGNChelper
             github::catplot/catplot
             github::immunogenomics/lisi

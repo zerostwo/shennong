@@ -9,6 +9,9 @@ Released 2026-07-15.
 
 ### Fixed
 
+- The pkgdown deployment workflow now installs UCell before evaluating the
+  program-scoring article, so the documented default `method = "ucell"`
+  backend is available in clean GitHub Actions runners.
 - `sn_plot_dot()` now renders named feature lists as Seurat's free-width marker
   facets without adding an incompatible fixed coordinate ratio; ordinary
   feature vectors retain the existing fixed-coordinate layout.
