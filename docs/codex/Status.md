@@ -37,13 +37,14 @@ Last updated: 2026-07-15
   `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in so website builds are not coupled
   to third-party availability.
 - The same clean-runner gate also exposed an R 4.6 development-runner failure
-  while matching the 47-formal `sn_run_cluster()` entry point, plus two
+  while matching the 47-formal `sn_run_cluster()` dispatcher, plus two
   optional-backend checks that ran before dependency-independent input
   validation. Clustering now uses a compact public compatibility wrapper and a
-  private full implementation; its allowlisted tail resolver preserves named
-  and positional calls, defaults, and explicit `NULL` values. Scissor/Symphony
+  single-argument private implementation; its allowlisted tail resolver
+  preserves named and positional calls, defaults, and explicit `NULL` values
+  without any internal long-formal matching. Scissor/Symphony
   validate required inputs before checking their optional packages. The full
-  clustering module passes `FAIL 0 | WARN 0 | SKIP 0 | PASS 441`; the combined
+  clustering module passes `FAIL 0 | WARN 0 | SKIP 0 | PASS 442`; the combined
   clustering, abundance, and annotation regression previously passed
   `FAIL 0 | WARN 0 | SKIP 1 | PASS 505`, and the data-I/O article renders with
   network examples disabled.

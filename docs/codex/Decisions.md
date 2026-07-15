@@ -6,10 +6,11 @@ Last updated: 2026-07-15
 
 - The public `sn_run_cluster()` entry point keeps a compact formal list and
   resolves its long-standing tail controls from `...` through a fixed allowlist
-  before calling the private full implementation. This preserves named calls,
-  positional tail calls, defaults, and explicit `NULL` values while avoiding
-  the R 4.6 development runner's installed-package failure on the original
-  47-formal entry point; unknown and duplicate tail controls fail explicitly.
+  into one named argument bundle before calling the single-argument private
+  implementation. This preserves named calls, positional tail calls, defaults,
+  and explicit `NULL` values while avoiding the R 4.6 development runner's
+  installed-package failure on the original 47-formal dispatcher; unknown and
+  duplicate tail controls fail explicitly.
 - The completed analysis/publication roadmap closes the `0.2.0` release line.
   This is a pre-1.0 minor release because it adds a broad stable workflow
   surface and includes intentional experimental API changes accumulated since

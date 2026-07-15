@@ -439,6 +439,7 @@ test_that("sn_run_cluster treats batch as the primary integration argument", {
 test_that("sn_run_cluster resolves compact tail arguments compatibly", {
   expect_identical(length(formals(sn_run_cluster)), 18L)
   expect_identical(tail(names(formals(sn_run_cluster)), 1L), "...")
+  expect_identical(names(formals(.sn_run_cluster_impl)), "args")
 
   resolved <- .sn_resolve_cluster_tail_args(list(
     block_genes = NULL,

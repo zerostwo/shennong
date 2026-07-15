@@ -2559,86 +2559,87 @@ sn_run_cluster <- function(object,
   tail <- .sn_resolve_cluster_tail_args(list(...))
   block_genes_supplied <- "block_genes" %in% tail$supplied
 
-  do.call(
-    .sn_run_cluster_impl,
-    c(
-      list(
-        object = object,
-        batch = batch,
-        normalization_method = normalization_method,
-        integration_method = integration_method,
-        integration_control = integration_control,
-        nfeatures = nfeatures,
-        hvg_features = hvg_features,
-        vars_to_regress = vars_to_regress,
-        resolution = resolution,
-        cluster_algorithm = cluster_algorithm,
-        cluster_name = cluster_name,
-        cluster_n_start = cluster_n_start,
-        cluster_n_iter = cluster_n_iter,
-        cluster_random_seed = cluster_random_seed,
-        cluster_group_singletons = cluster_group_singletons,
-        leiden_method = leiden_method,
-        leiden_objective_function = leiden_objective_function
-      ),
-      tail$values,
-      list(
-        .integration_method_supplied = integration_method_supplied,
-        .block_genes_supplied = block_genes_supplied
-      )
+  cluster_args <- c(
+    list(
+      object = object,
+      batch = batch,
+      normalization_method = normalization_method,
+      integration_method = integration_method,
+      integration_control = integration_control,
+      nfeatures = nfeatures,
+      hvg_features = hvg_features,
+      vars_to_regress = vars_to_regress,
+      resolution = resolution,
+      cluster_algorithm = cluster_algorithm,
+      cluster_name = cluster_name,
+      cluster_n_start = cluster_n_start,
+      cluster_n_iter = cluster_n_iter,
+      cluster_random_seed = cluster_random_seed,
+      cluster_group_singletons = cluster_group_singletons,
+      leiden_method = leiden_method,
+      leiden_objective_function = leiden_objective_function
+    ),
+    tail$values,
+    list(
+      .integration_method_supplied = integration_method_supplied,
+      .block_genes_supplied = block_genes_supplied
     )
   )
+
+  .sn_run_cluster_impl(cluster_args)
 }
 
-.sn_run_cluster_impl <- function(object,
-                           batch = NULL,
-                           normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
-                           integration_control = list(),
-                           nfeatures = 3000,
-                           hvg_features = NULL,
-                           vars_to_regress = NULL,
-                           resolution = 0.8,
-                           cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden"),
-                           cluster_name = NULL,
-                           cluster_n_start = 10,
-                           cluster_n_iter = 10,
-                           cluster_random_seed = 717,
-                           cluster_group_singletons = TRUE,
-                           leiden_method = c("leidenbase", "igraph"),
-                           leiden_objective_function = c("modularity", "CPM"),
-                           cluster_control = list(),
-                           reuse = TRUE,
-                           rerun_from = NULL,
-                           auto_install = TRUE,
-                           install_repos = getOption("repos"),
-                           install_ask = FALSE,
-                           hvg_group_by = NULL,
-                           rare_feature_method = "none",
-                           rare_feature_group_by = NULL,
-                           rare_feature_n = 200,
-                           rare_feature_control = list(),
-                           block_genes = c("heatshock", "ribo", "mito", "tcr", "immunoglobulins", "pseudogenes"),
-                           theta = 2,
-                           group_by_vars = NULL,
-                           npcs = 50,
-                           dims = NULL,
-                           species = NULL,
-                           assay = "RNA",
-                           layer = "counts",
-                           modality = c("rna", "cite_seq"),
-                           multimodal_method = NULL,
-                           adt_assay = "ADT",
-                           adt_layer = "counts",
-                           adt_features = NULL,
-                           adt_npcs = 30,
-                           adt_dims = NULL,
-                           wnn_control = list(),
-                           umap_control = list(),
-                           return_cluster = FALSE,
-                           verbose = TRUE,
-                           .integration_method_supplied = FALSE,
-                           .block_genes_supplied = FALSE) {
+.sn_run_cluster_impl <- function(args) {
+  object <- args$object
+  batch <- args$batch
+  normalization_method <- args$normalization_method
+  integration_method <- args$integration_method
+  integration_control <- args$integration_control
+  nfeatures <- args$nfeatures
+  hvg_features <- args$hvg_features
+  vars_to_regress <- args$vars_to_regress
+  resolution <- args$resolution
+  cluster_algorithm <- args$cluster_algorithm
+  cluster_name <- args$cluster_name
+  cluster_n_start <- args$cluster_n_start
+  cluster_n_iter <- args$cluster_n_iter
+  cluster_random_seed <- args$cluster_random_seed
+  cluster_group_singletons <- args$cluster_group_singletons
+  leiden_method <- args$leiden_method
+  leiden_objective_function <- args$leiden_objective_function
+  cluster_control <- args$cluster_control
+  reuse <- args$reuse
+  rerun_from <- args$rerun_from
+  auto_install <- args$auto_install
+  install_repos <- args$install_repos
+  install_ask <- args$install_ask
+  hvg_group_by <- args$hvg_group_by
+  rare_feature_method <- args$rare_feature_method
+  rare_feature_group_by <- args$rare_feature_group_by
+  rare_feature_n <- args$rare_feature_n
+  rare_feature_control <- args$rare_feature_control
+  block_genes <- args$block_genes
+  theta <- args$theta
+  group_by_vars <- args$group_by_vars
+  npcs <- args$npcs
+  dims <- args$dims
+  species <- args$species
+  assay <- args$assay
+  layer <- args$layer
+  modality <- args$modality
+  multimodal_method <- args$multimodal_method
+  adt_assay <- args$adt_assay
+  adt_layer <- args$adt_layer
+  adt_features <- args$adt_features
+  adt_npcs <- args$adt_npcs
+  adt_dims <- args$adt_dims
+  wnn_control <- args$wnn_control
+  umap_control <- args$umap_control
+  return_cluster <- args$return_cluster
+  verbose <- args$verbose
+  .integration_method_supplied <- args$.integration_method_supplied
+  .block_genes_supplied <- args$.block_genes_supplied
+
   check_installed("Seurat")
   check_installed("HGNChelper")
 
@@ -2660,8 +2661,14 @@ sn_run_cluster <- function(object,
 
   integration_method_supplied <- isTRUE(.integration_method_supplied)
   block_genes_supplied <- isTRUE(.block_genes_supplied)
-  normalization_method <- match.arg(normalization_method)
-  integration_method <- match.arg(integration_method)
+  normalization_method <- match.arg(
+    normalization_method,
+    c("seurat", "scran", "sctransform")
+  )
+  integration_method <- match.arg(
+    integration_method,
+    c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi")
+  )
   modality <- match.arg(modality, c("rna", "cite_seq"))
   multimodal_method <- if (identical(modality, "cite_seq")) {
     .sn_resolve_multimodal_method(
@@ -2676,8 +2683,11 @@ sn_run_cluster <- function(object,
     NULL
   }
   cluster_algorithm_value <- .sn_resolve_find_clusters_algorithm(cluster_algorithm)
-  leiden_method <- match.arg(leiden_method)
-  leiden_objective_function <- match.arg(leiden_objective_function)
+  leiden_method <- match.arg(leiden_method, c("leidenbase", "igraph"))
+  leiden_objective_function <- match.arg(
+    leiden_objective_function,
+    c("modularity", "CPM")
+  )
   rerun_from <- .sn_resolve_cluster_rerun_from(rerun_from)
   if (!is.list(integration_control)) {
     stop("`integration_control` must be a named list.", call. = FALSE)
