@@ -8,9 +8,9 @@ Last updated: 2026-07-15
   resolves its long-standing tail controls from `...` through a fixed allowlist
   into one named argument bundle before calling the single-argument private
   implementation. This preserves named calls, positional tail calls, defaults,
-  and explicit `NULL` values while avoiding the R 4.6 development runner's
-  installed-package failure on the original 47-formal dispatcher; unknown and
-  duplicate tail controls fail explicitly.
+  and explicit `NULL` values; unknown and duplicate tail controls fail
+  explicitly. Installed-package tests must use expression-scoped namespace
+  mocks so a test double cannot replace this public binding in later files.
 - The completed analysis/publication roadmap closes the `0.2.0` release line.
   This is a pre-1.0 minor release because it adds a broad stable workflow
   surface and includes intentional experimental API changes accumulated since

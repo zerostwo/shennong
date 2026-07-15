@@ -164,7 +164,14 @@ test_that("roadmap keeps backend adapters internal and multimodal public", {
   expect_true(is.function(sn_run_multimodal))
   expect_error(sn_run_multimodal(make_roadmap_adapter_object(), method = "invalid"), "arg")
 
-  local_mocked_bindings(
+  cluster_formals <- formals(sn_run_cluster)
+  delegated <- testthat::with_mocked_bindings(
+    sn_run_multimodal(
+      object = "query",
+      modality = "cite_seq",
+      method = "totalvi",
+      batch = "sample"
+    ),
     sn_run_cluster = function(object, modality, multimodal_method, ...) {
       list(
         object = object,
@@ -172,15 +179,9 @@ test_that("roadmap keeps backend adapters internal and multimodal public", {
         multimodal_method = multimodal_method,
         controls = list(...)
       )
-    },
-    .env = asNamespace("Shennong")
+    }
   )
-  delegated <- sn_run_multimodal(
-    object = "query",
-    modality = "cite_seq",
-    method = "totalvi",
-    batch = "sample"
-  )
+  expect_identical(formals(sn_run_cluster), cluster_formals)
   expect_identical(delegated$object, "query")
   expect_identical(delegated$modality, "cite_seq")
   expect_identical(delegated$multimodal_method, "totalvi")

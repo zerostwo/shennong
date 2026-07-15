@@ -37,12 +37,17 @@ Last updated: 2026-07-15
   `SHENNONG_RUN_NETWORK_VIGNETTES=true` opt-in so website builds are not coupled
   to third-party availability.
 - The same clean-runner gate also exposed an R 4.6 development-runner failure
-  while matching the 47-formal `sn_run_cluster()` dispatcher, plus two
+  where the multimodal roadmap test's four-formal `sn_run_cluster()` namespace
+  mock leaked into the later clustering test file, plus two
   optional-backend checks that ran before dependency-independent input
-  validation. Clustering now uses a compact public compatibility wrapper and a
-  single-argument private implementation; its allowlisted tail resolver
+  validation. The roadmap mock is now expression-scoped so the real export is
+  restored immediately; its focused suite passes 35 assertions and a post-test
+  check confirms all 18 public wrapper formals remain intact. Clustering also
+  uses a compact public compatibility
+  wrapper and a single-argument private implementation; its allowlisted tail
+  resolver
   preserves named and positional calls, defaults, and explicit `NULL` values
-  without any internal long-formal matching. Scissor/Symphony
+  with explicit validation. Scissor/Symphony
   validate required inputs before checking their optional packages. The full
   clustering module passes `FAIL 0 | WARN 0 | SKIP 0 | PASS 442`; the combined
   clustering, abundance, and annotation regression previously passed
