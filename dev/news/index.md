@@ -6,6 +6,10 @@ Released 2026-07-15.
 
 #### Fixed
 
+- The multimodal roadmap test now scopes its
+  [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+  mock to one expression, preventing the four-formal test double from
+  leaking into later installed-package clustering tests.
 - [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
   now dispatches its long-standing tail controls through a compact,
   allowlisted compatibility wrapper. Named calls, positional tail calls,
