@@ -1,10 +1,10 @@
 # RNA Velocity and Fate Mapping
 
-Shennong runs scVelo and CellRank in a managed, isolated CPU pixi
-environment. The two stages remain separate stored analyses: velocity
-estimates a directed transition process from spliced/unspliced counts,
-while fate mapping analyzes that transition process with CellRank’s
-GPCCA estimator.
+Shennong runs scVelo, RegVelo, and CellRank in a managed, isolated CPU
+pixi environment. The two stages remain separate stored analyses:
+velocity estimates a directed transition process from spliced/unspliced
+counts, while fate mapping analyzes that transition process with
+CellRank’s GPCCA estimator.
 
 ## Prepare the backend
 
@@ -49,7 +49,51 @@ remain visible in interpretation. The H5AD artifact recorded in
 `models$artifacts` contains the transition evidence consumed by
 CellRank.
 
+## Add a regulatory prior with RegVelo
+
+RegVelo uses the same spliced/unspliced and embedding inputs, plus an
+explicit gene-regulatory prior. Supply either a regulator-target edge
+table, a named target-by-regulator matrix, or a CSV path. Shennong
+retains the trained model, H5AD, prior-edge count, velocity vectors,
+transition graph, and RegVelo latent time under the standard velocity
+result contract.
+
+``` r
+
+prior_grn <- data.frame(
+  regulator = c("SOX10", "SOX10", "TFAP2A"),
+  target = c("ERBB3", "PLP1", "SOX10"),
+  weight = c(1, 0.8, 1)
+)
+
+object <- sn_run_velocity(
+  object,
+  method = "regvelo",
+  spliced_layer = "spliced",
+  unspliced_layer = "unspliced",
+  reduction = "umap",
+  store_name = "regvelo",
+  backend_control = list(
+    prior_grn = prior_grn,
+    max_epochs = 1500,
+    early_stopping = TRUE,
+    seed = 717
+  )
+)
+
+regvelo <- sn_get_result(object, "velocity", "regvelo")
+regvelo$tables$cells
+regvelo$models$artifacts
+```
+
+The prior GRN is a modeling assumption and must be versioned with the
+analysis. Do not interpret a smooth vector field as independent
+validation of that prior.
+
 ## Estimate terminal states and fate
+
+CellRank can consume the retained H5AD produced by either scVelo or
+RegVelo.
 
 ``` r
 

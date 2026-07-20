@@ -142,7 +142,7 @@ result.</p>
 chooses limma; a mixed-effects formula selects dream. Explicit DESeq2,
 edgeR, limma, and dream choices remain available.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">de</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_bulk_de.html">sn_find_bulk_de</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">de</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  <span class="va">counts</span>,</span>
 <span>  metadata <span class="op">=</span> <span class="va">sample_data</span>,</span>
 <span>  design <span class="op">=</span> <span class="op">~</span> <span class="va">batch</span> <span class="op">+</span> <span class="va">condition</span>,</span>
@@ -154,6 +154,12 @@ edgeR, limma, and dream choices remain available.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">de</span><span class="op">$</span><span class="va">tables</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">de</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">differential_expression</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_bulk_de.html">sn_plot_bulk_de</a></span><span class="op">(</span><span class="va">de</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> detects Seurat input as single-cell and
+matrix/list/ <code>SummarizedExperiment</code> input as bulk. Set
+<code>modality = "single_cell"</code> or <code>modality = "bulk"</code>
+only when dispatch must be explicit. The older
+<code><a href="../reference/sn_find_bulk_de.html">sn_find_bulk_de()</a></code> entry point remains a compatibility
+wrapper around the same bulk implementation.</p>
 </div>
 <div class="section level2">
 <h2 id="pathways-networks-and-clinical-models">Pathways, networks, and clinical models<a class="anchor" aria-label="anchor" href="#pathways-networks-and-clinical-models"></a>

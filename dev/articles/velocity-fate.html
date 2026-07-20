@@ -90,11 +90,11 @@
 
     
     
-<p>Shennong runs scVelo and CellRank in a managed, isolated CPU pixi
-environment. The two stages remain separate stored analyses: velocity
-estimates a directed transition process from spliced/unspliced counts,
-while fate mapping analyzes that transition process with CellRank’s
-GPCCA estimator.</p>
+<p>Shennong runs scVelo, RegVelo, and CellRank in a managed, isolated
+CPU pixi environment. The two stages remain separate stored analyses:
+velocity estimates a directed transition process from spliced/unspliced
+counts, while fate mapping analyzes that transition process with
+CellRank’s GPCCA estimator.</p>
 <div class="section level2">
 <h2 id="prepare-the-backend">Prepare the backend<a class="anchor" aria-label="anchor" href="#prepare-the-backend"></a>
 </h2>
@@ -136,9 +136,49 @@ remain visible in interpretation. The H5AD artifact recorded in
 by CellRank.</p>
 </div>
 <div class="section level2">
+<h2 id="add-a-regulatory-prior-with-regvelo">Add a regulatory prior with RegVelo<a class="anchor" aria-label="anchor" href="#add-a-regulatory-prior-with-regvelo"></a>
+</h2>
+<p>RegVelo uses the same spliced/unspliced and embedding inputs, plus an
+explicit gene-regulatory prior. Supply either a regulator-target edge
+table, a named target-by-regulator matrix, or a CSV path. Shennong
+retains the trained model, H5AD, prior-edge count, velocity vectors,
+transition graph, and RegVelo latent time under the standard velocity
+result contract.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prior_grn</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  regulator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SOX10"</span>, <span class="st">"SOX10"</span>, <span class="st">"TFAP2A"</span><span class="op">)</span>,</span>
+<span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ERBB3"</span>, <span class="st">"PLP1"</span>, <span class="st">"SOX10"</span><span class="op">)</span>,</span>
+<span>  weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.8</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_velocity.html">sn_run_velocity</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"regvelo"</span>,</span>
+<span>  spliced_layer <span class="op">=</span> <span class="st">"spliced"</span>,</span>
+<span>  unspliced_layer <span class="op">=</span> <span class="st">"unspliced"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
+<span>  store_name <span class="op">=</span> <span class="st">"regvelo"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    prior_grn <span class="op">=</span> <span class="va">prior_grn</span>,</span>
+<span>    max_epochs <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>    early_stopping <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">regvelo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"velocity"</span>, <span class="st">"regvelo"</span><span class="op">)</span></span>
+<span><span class="va">regvelo</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">cells</span></span>
+<span><span class="va">regvelo</span><span class="op">$</span><span class="va">models</span><span class="op">$</span><span class="va">artifacts</span></span></code></pre></div>
+<p>The prior GRN is a modeling assumption and must be versioned with the
+analysis. Do not interpret a smooth vector field as independent
+validation of that prior.</p>
+</div>
+<div class="section level2">
 <h2 id="estimate-terminal-states-and-fate">Estimate terminal states and fate<a class="anchor" aria-label="anchor" href="#estimate-terminal-states-and-fate"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>CellRank can consume the retained H5AD produced by either scVelo or
+RegVelo.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_fate.html">sn_run_fate</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
 <span>  velocity_name <span class="op">=</span> <span class="st">"velocity"</span>,</span>

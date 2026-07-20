@@ -17,4 +17,13 @@ read-only MCP server.
 
 ``` r
 sn_mcp_server_config()
+#> $command
+#> [1] "/opt/R/4.6.1/lib/R/bin/Rscript"
+#> 
+#> $args
+#> [1] "-e"                        "Shennong::sn_mcp_server()"
+#> 
+#> $transport
+#> [1] "stdio"
+#> 
 ```

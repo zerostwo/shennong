@@ -41,27 +41,27 @@ sn_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
 #> [1] "scvi"
 #> 
 #> $runtime_dir
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8"
 #> 
 #> $pixi_root
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/pixi"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/pixi"
 #> 
 #> $pixi_home
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/pixi/home"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/pixi/home"
 #> 
 #> $project_dir
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/pixi/scvi"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/pixi/scvi"
 #> 
 #> $source_config_path
 #> [1] "/home/runner/work/_temp/Library/Shennong/pixi/scvi/pixi.toml"
 #> 
 #> $manifest_path
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/pixi/scvi/pixi.toml"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/pixi/scvi/pixi.toml"
 #> 
 #> $workspace_env_dir
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/pixi/scvi/.pixi/envs"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/pixi/scvi/.pixi/envs"
 #> 
 #> $runs_dir
-#> [1] "/tmp/Rtmpwqgfeh/shennong-home-1bbf11b67c70/runs"
+#> [1] "/tmp/RtmpUtYuZs/shennong-home-1c618fb64e8/runs"
 #> 
 ```

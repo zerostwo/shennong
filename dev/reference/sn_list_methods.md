@@ -42,7 +42,7 @@ sn_list_methods("trajectory")
 #> #   input_requirements <list>, outputs <list>, supports <list>,
 #> #   citation <chr>, registry_file <chr>
 sn_list_methods(available = TRUE)
-#> # A tibble: 63 × 17
+#> # A tibble: 64 × 17
 #>    task       name  description runtime package environment implemented
 #>    <chr>      <chr> <chr>       <chr>   <chr>   <chr>       <lgl>      
 #>  1 annotation cons… Consensus … r       Shenno… NA          TRUE       
@@ -55,7 +55,7 @@ sn_list_methods(available = TRUE)
 #>  8 bulk_de    auto  Design-awa… r       Shenno… NA          TRUE       
 #>  9 bulk_de    dese… Negative-b… r       DESeq2  NA          TRUE       
 #> 10 bulk_de    dream Linear mix… r       varian… NA          TRUE       
-#> # ℹ 53 more rows
+#> # ℹ 54 more rows
 #> # ℹ 10 more variables: default <lgl>, available <lgl>,
 #> #   availability_reason <chr>, cpu_gpu <chr>, install_action <chr>,
 #> #   input_requirements <list>, outputs <list>, supports <list>,

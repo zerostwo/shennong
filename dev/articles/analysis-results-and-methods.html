@@ -273,6 +273,33 @@ names and explicit provenance make stored results discoverable by
 scripts, reports, and future agent integrations without allowing an LLM
 to overwrite computational output.</p>
 </div>
+<div class="section level2">
+<h2 id="give-agents-a-read-only-discovery-surface">Give agents a read-only discovery surface<a class="anchor" aria-label="anchor" href="#give-agents-a-read-only-discovery-surface"></a>
+</h2>
+<p>Install the packaged Shennong Agent Skills and register the bundled
+stdio MCP server with an MCP-capable client:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"~/.agents/skills"</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"package_skills"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_mcp_server_config.html">sn_mcp_server_config</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $command</span></span>
+<span><span class="co">#&gt; [1] "/opt/R/4.6.1/lib/R/bin/Rscript"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $args</span></span>
+<span><span class="co">#&gt; [1] "-e"                        "Shennong::sn_mcp_server()"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $transport</span></span>
+<span><span class="co">#&gt; [1] "stdio"</span></span></code></pre></div>
+<p>The MCP server exposes <code>list_methods</code>,
+<code>method_status</code>, <code>function_help</code>,
+<code>workflow_guide</code>, and <code>package_info</code>. These tools
+only read installed package metadata and documentation. Analysis
+execution remains explicit R code, and the server offers no
+arbitrary-code or file-mutation tool.</p>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

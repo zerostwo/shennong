@@ -98,6 +98,11 @@ pseudobulk contrasts aggregated by sample.
 <span>  store_name <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  modality <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"single_cell"</span>, <span class="st">"bulk"</span><span class="op">)</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  design <span class="op">=</span> <span class="op">~</span><span class="va">condition</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -159,7 +164,9 @@ analyses.</p></dd>
 <dd><p>Statistical method. For <code>"markers"</code> and
 <code>"contrast"</code>, this can be any Seurat <code>test.use</code> value or
 <code>"COSGR"</code> for marker discovery. For <code>"pseudobulk"</code>, choose one
-of <code>"DESeq2"</code>, <code>"edgeR"</code>, or <code>"limma"</code>.</p></dd>
+of <code>"DESeq2"</code>, <code>"edgeR"</code>, or <code>"limma"</code>. For bulk input,
+choose <code>"auto"</code>, <code>"edger"</code>, <code>"deseq2"</code>, <code>"limma"</code>,
+or <code>"dream"</code>.</p></dd>
 
 
 <dt id="arg-only-pos">only_pos<a class="anchor" aria-label="anchor" href="#arg-only-pos"></a></dt>
@@ -199,13 +206,38 @@ stored DE results. Otherwise return the result table.</p></dd>
 <dd><p>Whether to emit progress information.</p></dd>
 
 
+<dt id="arg-modality">modality<a class="anchor" aria-label="anchor" href="#arg-modality"></a></dt>
+<dd><p>Input modality. <code>"auto"</code> selects single-cell analysis
+for Seurat objects and bulk analysis for matrices, lists, and
+<code>SummarizedExperiment</code> objects.</p></dd>
+
+
+<dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
+<dd><p>Optional sample metadata for bulk analysis.</p></dd>
+
+
+<dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
+<dd><p>A fixed- or mixed-effects formula for bulk analysis.</p></dd>
+
+
+<dt id="arg-contrast">contrast<a class="anchor" aria-label="anchor" href="#arg-contrast"></a></dt>
+<dd><p>Character triple giving the bulk contrast as variable,
+numerator, and denominator.</p></dd>
+
+
+<dt id="arg-backend-control">backend_control<a class="anchor" aria-label="anchor" href="#arg-backend-control"></a></dt>
+<dd><p>Bulk backend controls or a custom bulk
+<code>runner</code>/precomputed <code>result</code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed through to the selected DE method.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Either a DE result table or an updated <code>Seurat</code> object.</p>
+    <p>For single-cell input, either a DE result table or an updated
+<code>Seurat</code> object. For bulk input, a validated Shennong bulk-DE result.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -257,9 +289,9 @@ downstream helpers such as <code><a href="sn_plot_dot.html">sn_plot_dot()</a></c
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">de_results</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-15 10:12:14] Initializing Seurat object for project: Shennong.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-15 10:12:14] Running QC metrics for human.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-15 10:12:14] Seurat object initialization complete.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-20 05:53:31] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-20 05:53:31] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-07-20 05:53:31] Seurat object initialization complete.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> (default method for FindMarkers) please install the presto package</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> --------------------------------------------</span>
@@ -270,6 +302,24 @@ downstream helpers such as <code><a href="sn_plot_dot.html">sn_plot_dot()</a></c
 <span class="r-msg co"><span class="r-pr">#&gt;</span> efficient implementation (no further action necessary).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> This message will be shown once per session</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "celltype_markers"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">bulk_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">40</span> <span class="op">*</span> <span class="fl">6</span>, <span class="fl">20</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">40</span>,</span></span>
+<span class="r-in"><span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"gene_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">40</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">bulk_metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">bulk_de</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">bulk_counts</span>,</span></span>
+<span class="r-in"><span>  metadata <span class="op">=</span> <span class="va">bulk_metadata</span>,</span></span>
+<span class="r-in"><span>  design <span class="op">=</span> <span class="op">~</span><span class="va">condition</span>,</span></span>
+<span class="r-in"><span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"control"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>result <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    gene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span>, logFC <span class="op">=</span> <span class="fl">0</span>, PValue <span class="op">=</span> <span class="fl">1</span>, FDR <span class="op">=</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

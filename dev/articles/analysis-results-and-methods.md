@@ -187,3 +187,31 @@ Prefer these APIs over direct `object@misc` access. Stable names and
 explicit provenance make stored results discoverable by scripts,
 reports, and future agent integrations without allowing an LLM to
 overwrite computational output.
+
+## Give agents a read-only discovery surface
+
+Install the packaged Shennong Agent Skills and register the bundled
+stdio MCP server with an MCP-capable client:
+
+``` r
+
+sn_install_codex_skill(
+  path = "~/.agents/skills",
+  type = "package_skills"
+)
+
+sn_mcp_server_config()
+#> $command
+#> [1] "/opt/R/4.6.1/lib/R/bin/Rscript"
+#> 
+#> $args
+#> [1] "-e"                        "Shennong::sn_mcp_server()"
+#> 
+#> $transport
+#> [1] "stdio"
+```
+
+The MCP server exposes `list_methods`, `method_status`, `function_help`,
+`workflow_guide`, and `package_info`. These tools only read installed
+package metadata and documentation. Analysis execution remains explicit
+R code, and the server offers no arbitrary-code or file-mutation tool.

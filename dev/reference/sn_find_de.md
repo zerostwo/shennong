@@ -33,6 +33,11 @@ sn_find_de(
   store_name = "default",
   return_object = TRUE,
   verbose = TRUE,
+  modality = c("auto", "single_cell", "bulk"),
+  metadata = NULL,
+  design = ~condition,
+  contrast = NULL,
+  backend_control = list(),
   ...
 )
 ```
@@ -90,7 +95,9 @@ sn_find_de(
 
   Statistical method. For `"markers"` and `"contrast"`, this can be any
   Seurat `test.use` value or `"COSGR"` for marker discovery. For
-  `"pseudobulk"`, choose one of `"DESeq2"`, `"edgeR"`, or `"limma"`.
+  `"pseudobulk"`, choose one of `"DESeq2"`, `"edgeR"`, or `"limma"`. For
+  bulk input, choose `"auto"`, `"edger"`, `"deseq2"`, `"limma"`, or
+  `"dream"`.
 
 - only_pos:
 
@@ -127,13 +134,37 @@ sn_find_de(
 
   Whether to emit progress information.
 
+- modality:
+
+  Input modality. `"auto"` selects single-cell analysis for Seurat
+  objects and bulk analysis for matrices, lists, and
+  `SummarizedExperiment` objects.
+
+- metadata:
+
+  Optional sample metadata for bulk analysis.
+
+- design:
+
+  A fixed- or mixed-effects formula for bulk analysis.
+
+- contrast:
+
+  Character triple giving the bulk contrast as variable, numerator, and
+  denominator.
+
+- backend_control:
+
+  Bulk backend controls or a custom bulk `runner`/precomputed `result`.
+
 - ...:
 
   Additional arguments passed through to the selected DE method.
 
 ## Value
 
-Either a DE result table or an updated `Seurat` object.
+For single-cell input, either a DE result table or an updated `Seurat`
+object. For bulk input, a validated Shennong bulk-DE result.
 
 ## Details
 
@@ -187,9 +218,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(obj@misc$de_results)
 }
-#> INFO [2026-07-15 10:12:14] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-15 10:12:14] Running QC metrics for human.
-#> INFO [2026-07-15 10:12:14] Seurat object initialization complete.
+#> INFO [2026-07-20 05:53:31] Initializing Seurat object for project: Shennong.
+#> INFO [2026-07-20 05:53:31] Running QC metrics for human.
+#> INFO [2026-07-20 05:53:31] Seurat object initialization complete.
 #> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
 #> (default method for FindMarkers) please install the presto package
 #> --------------------------------------------
@@ -200,4 +231,22 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
 #> efficient implementation (no further action necessary).
 #> This message will be shown once per session
 #> [1] "celltype_markers"
+
+bulk_counts <- matrix(
+  stats::rpois(40 * 6, 20), nrow = 40,
+  dimnames = list(paste0("gene_", 1:40), paste0("sample_", 1:6))
+)
+bulk_metadata <- data.frame(
+  condition = factor(rep(c("control", "treated"), each = 3)),
+  row.names = colnames(bulk_counts)
+)
+bulk_de <- sn_find_de(
+  bulk_counts,
+  metadata = bulk_metadata,
+  design = ~condition,
+  contrast = c("condition", "treated", "control"),
+  backend_control = list(result = data.frame(
+    gene = rownames(bulk_counts), logFC = 0, PValue = 1, FDR = 1
+  ))
+)
 ```

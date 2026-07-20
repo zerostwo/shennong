@@ -59,7 +59,7 @@ Explicit DESeq2, edgeR, limma, and dream choices remain available.
 
 ``` r
 
-de <- sn_find_bulk_de(
+de <- sn_find_de(
   counts,
   metadata = sample_data,
   design = ~ batch + condition,
@@ -72,6 +72,14 @@ names(de$tables)
 head(de$tables$differential_expression)
 sn_plot_bulk_de(de)
 ```
+
+[`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md)
+detects Seurat input as single-cell and matrix/list/
+`SummarizedExperiment` input as bulk. Set `modality = "single_cell"` or
+`modality = "bulk"` only when dispatch must be explicit. The older
+[`sn_find_bulk_de()`](https://songqi.org/shennong/dev/reference/sn_find_bulk_de.md)
+entry point remains a compatibility wrapper around the same bulk
+implementation.
 
 ## Pathways, networks, and clinical models
 

@@ -19,9 +19,9 @@ library(Seurat)
 library(dplyr)
 
 pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-15 10:13:28] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-15 10:13:29] Running QC metrics for human.
-#> INFO [2026-07-15 10:13:29] Seurat object initialization complete.
+#> INFO [2026-07-20 05:54:55] Initializing Seurat object for project: pbmc3k.
+#> INFO [2026-07-20 05:54:55] Running QC metrics for human.
+#> INFO [2026-07-20 05:54:56] Seurat object initialization complete.
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -93,8 +93,8 @@ sn_list_results(pbmc)
 #> # A tibble: 2 × 8
 #>   collection type  name        analysis method created_at n_rows source
 #>   <chr>      <chr> <chr>       <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 de_results de    cluster_ma… markers  wilcox 2026-07-1…   4670 NA    
-#> 2 de_results de    cluster_ma… markers  wilcox 2026-07-1…   4670 NA
+#> 1 de_results de    cluster_ma… markers  wilcox 2026-07-2…   4670 NA    
+#> 2 de_results de    cluster_ma… markers  wilcox 2026-07-2…   4670 NA
 
 sn_get_de_result(
   pbmc,
@@ -187,7 +187,7 @@ annotation_index
 #> # A tibble: 1 × 8
 #>   collection       type  name  analysis method created_at n_rows source
 #>   <chr>            <chr> <chr> <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 analysis_results anno… pbmc… annotat… conse… 2026-07-1…   4037 NA
+#> 1 analysis_results anno… pbmc… annotat… conse… 2026-07-2…   4037 NA
 
 annotation <- sn_get_result(
   pbmc,
@@ -322,7 +322,7 @@ sn_review_annotation(pbmc, "pbmc_consensus")
 #> [1] NA
 #> 
 #> $provenance$timestamp
-#> [1] "2026-07-15 10:14:53 UTC"
+#> [1] "2026-07-20 05:55:55 UTC"
 
 sn_plot_annotation_confidence(
   pbmc,
@@ -683,7 +683,7 @@ pbmc <- sn_enrich(
   store_name = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-07-15 10:15:16] Running ORA analysis for the GOBP database.
+#> INFO [2026-07-20 05:56:23] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,

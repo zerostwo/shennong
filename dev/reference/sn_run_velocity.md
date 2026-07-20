@@ -1,6 +1,6 @@
-# Run RNA velocity with the managed scVelo backend
+# Run RNA velocity with managed scVelo or RegVelo backends
 
-Run RNA velocity with the managed scVelo backend
+Run RNA velocity with managed scVelo or RegVelo backends
 
 ## Usage
 
@@ -28,7 +28,7 @@ sn_run_velocity(
 
 - method:
 
-  Velocity backend; currently scVelo.
+  Velocity backend: `"scvelo"` or `"regvelo"`.
 
 - spliced_assay, unspliced_assay:
 
@@ -48,7 +48,9 @@ sn_run_velocity(
 
 - backend_control:
 
-  scVelo/pixi controls or an explicit `runner`/`result`.
+  Backend/pixi controls or an explicit `runner`/`result`. RegVelo
+  requires `prior_grn`, supplied as a regulator-target edge table, a
+  target-by-regulator named matrix, or a CSV path.
 
 - return_object:
 
@@ -57,6 +59,13 @@ sn_run_velocity(
 ## Value
 
 A Seurat object or velocity result.
+
+## References
+
+RegVelo documentation: <https://regvelo.readthedocs.io/>. Wang et al.
+(2026), Cell,
+[doi:10.1016/j.cell.2026.04.022](https://doi.org/10.1016/j.cell.2026.04.022)
+.
 
 ## Examples
 
