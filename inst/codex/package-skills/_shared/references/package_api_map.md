@@ -10,23 +10,45 @@ Core object rule:
 - Prefer Shennong APIs over raw Seurat calls when the package already exposes
   the needed behavior.
 - Prefer stored-result workflows over ad hoc `object@misc` access.
+- Canonical analytical results use `schema_version = "1.0.0"` and place the
+  principal data frame in `tables$primary`; named tables are synchronized
+  semantic aliases.
+
+## Result Contract
+
+- `sn_validate_result()`: validate the common envelope and type-specific
+  primary-table columns; compatible legacy schema spellings remain readable
+- `sn_audit_results()`: report canonical, legacy, invalid, registered artifact,
+  and unregistered top-level `object@misc` entries without mutating the Seurat
+  object
+- `sn_upgrade_results()`: migrate compatible analytical results in place while
+  preserving their established `object@misc` collections and leaving runtime
+  artifacts and unregistered payloads untouched
+- `sn_store_result()` / `sn_get_result()` / `sn_list_results()` /
+  `sn_delete_result()`: generic lifecycle APIs for versioned analytical results
+- `sn_build_result_bundle()`: build the credential-free
+  `shennong.dev/analysis-result-bundle/v1` JSON handoff from one validated
+  canonical result, immutable input identifier/revision/SHA-256 references,
+  execution provenance, and candidate output-artifact records
+- `sn_validate_result_bundle()` / `sn_export_result_bundle()`: validate the
+  handoff contract and atomically write JSON with a returned SHA-256 digest;
+  these APIs do not call services, authorize access, upload bytes, or promote
+  artifacts
 
 ## Data and Import
 
-- `sn_list_datasets()`: list sample-level datasets available through the current Shennong public Zenodo collection, plus bundled examples with `source = "all"`
-- `sn_load_data()`: load packaged or remote example datasets; vectorized bundled datasets such as `c("pbmc1k", "pbmc3k")` return a merged Seurat object for filtered matrices or a named list for raw matrices. Public Shennong collection samples can be loaded by sample ID from `sn_list_datasets()` or by `study_id` plus `sample_id`; the study ZIP is cached and only the requested filtered/raw H5 or metrics file is extracted. Use `backend = "api"` for a lazy ShennongData 0.2 resource handle, with assay/layer selection in `api_args`; set `lazy = FALSE` only for explicit collection.
-- `sn_download_zenodo()`: download reusable files from public Zenodo records without a token, or from restricted/private records when a token is supplied
+- Dataset discovery, download, caching, and publication are provided by the
+  separate `ShennongData` package. Shennong accepts the resulting materialized
+  matrices, paths, and Seurat objects and does not re-export data-distribution
+  wrappers.
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
 - `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
 - `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
 - registered `rio` handlers: `.import.rio_10x()`, `.import.rio_10x_spatial()`, `.import.rio_starsolo()`, `.import.rio_gmt()`, `.import.rio_h5()`, `.import.rio_h5ad()`, `.import.rio_qs()`, `.import.rio_qs2()`, `.import.rio_bpcells()`, `.export.rio_h5()`, `.export.rio_h5ad()`, `.export.rio_qs()`, `.export.rio_qs2()`, and `.export.rio_bpcells()` are the package-level import/export hooks used by `sn_read()` and `sn_write()`
 - `sn_convert_bpcells()`: write selected Seurat assay layers to BPCells matrix directories and rebind those layers in the returned object
-- `sn_upload_zenodo()`: upload reusable data files to Zenodo through `zen4R`, with a Shennong checksum/version manifest for later reuse
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
 
-Datasets:
-- `pbmc_small`
-- `pbmc_small_raw`
+Runtime reference datasets:
 - `marker_genes`
 - `hom_genes`
 - `shennong_gene_annotations`
@@ -70,6 +92,24 @@ Datasets:
 - Use the `sn_call_*()` helpers for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
 - `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
 - `sn_configure_pixi_mirror()`: write Shennong-level pixi mirror configuration for default, China, TUNA, USTC, or BFSU sources.
+
+## Optional R Acceleration
+
+- `sn_check_autozyme()`: side-effect-free compatibility report for the pinned
+  AutoZyme revision and selected upstream patches
+- `sn_enable_autozyme()`: explicitly activate only patches that satisfy the
+  strict version/equivalence policy; conservative defaults are CellChat and
+  NicheNet
+- `sn_disable_autozyme()`: deactivate only selected Shennong-supported patches
+- `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
+  restore the caller's prior patch state on exit
+- Shennong never activates AutoZyme on package load, installs it during an
+  analysis, creates its Python environment, or changes thread counts. Version
+  drift is blocked by default, and approximate patches require a second
+  explicit opt-in. Active patches are retained in result provenance. The
+  CellChat and NicheNet defaults map to current Shennong communication calls;
+  other manifest entries provide audited compatibility metadata for advanced
+  process-level AutoZyme use and do not imply a direct Shennong workflow call.
 
 ## Diagnostics and Benchmarking
 
@@ -174,11 +214,16 @@ Datasets:
   coverage diagnostics
 - `sn_run_wgcna()`: weighted co-expression modules, eigengenes, soft-power
   evidence, and sample trait associations
-- `sn_run_survival()` / `sn_run_clinical_association()`: sample-level Cox and
+- `sn_run_survival()`: sample-level adjusted Cox models plus deterministic
+  Kaplan-Meier grouping, log-rank tests, risk/cumulative-hazard evidence,
+  proportional-hazards diagnostics, and concordance/performance tables;
+  per-feature failures remain explicit rows
+- `sn_run_clinical_association()`: sample-level numeric or categorical
   phenotype models using expression features or metadata scores
 - `sn_plot_bulk_qc()` / `sn_plot_bulk_pca()` /
   `sn_plot_sample_correlation()` / `sn_plot_bulk_de()` / `sn_plot_wgcna()` /
-  `sn_plot_survival()`: result-aware bulk figures
+  `sn_plot_survival()`: result-aware bulk figures, including forest,
+  Kaplan-Meier, risk-table, proportional-hazards, and cumulative-hazard views
 
 ## Publication Figures
 
@@ -212,6 +257,11 @@ Datasets:
 - `sn_prioritize_states()`: sample-held-out perturbation separability, explicit
   bulk-input Scissor, or RareQ discovery plus sample-level association
 - `sn_plot_state_priority()`: ranked state-priority view
+- `sn_run_scissor()`: direct phenotype-guided Scissor entry point with strict
+  named bulk-sample alignment, all-cell coefficients, state/sample summaries,
+  correlation evidence, model metadata, and opt-in bootstrap reliability
+- `sn_plot_scissor()`: state, cell, sample, correlation, or reliability views
+  from a direct `scissor` result or the compatible state-priority result
 
 ## CNV, Malignancy, and Metabolism
 

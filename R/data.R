@@ -82,32 +82,3 @@
 #' @source Built from local GENCODE sources via
 #'   \code{data-raw/build_shennong_gene_annotations.R}.
 "shennong_gene_annotations"
-
-#' Small Built-In PBMC Seurat Object
-#'
-#' A compact Seurat object sampled from the package PBMC example assets. The
-#' object combines cells from \code{pbmc1k} and \code{pbmc3k} and includes
-#' sample-level metadata, so examples can demonstrate both single-sample and
-#' multi-sample workflows without a network download.
-#'
-#' @format A \code{Seurat} object with filtered counts and metadata columns
-#'   including \code{sample}, \code{source_dataset}, and
-#'   \code{source_barcode}.
-#'
-#' @source Derived during development from the Zenodo-backed \code{pbmc1k} and
-#'   \code{pbmc3k} example datasets via
-#'   \code{data-raw/build_shennong_example_data.R}.
-"pbmc_small"
-
-#' Small Built-In PBMC Raw Counts Matrix
-#'
-#' A compact raw count matrix matched to \code{pbmc_small}. It includes the
-#' sampled filtered barcodes plus additional raw-only droplets for ambient-RNA
-#' and preprocessing examples.
-#'
-#' @format A sparse gene-by-barcode matrix with raw barcodes.
-#'
-#' @source Derived during development from the Zenodo-backed \code{pbmc1k} and
-#'   \code{pbmc3k} example datasets via
-#'   \code{data-raw/build_shennong_example_data.R}.
-"pbmc_small_raw"

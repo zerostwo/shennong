@@ -80,7 +80,11 @@
   assay <- assay %||% SeuratObject::DefaultAssay(object)
   mat <- .sn_expression_matrix(object = object, assay = assay, layer = layer)
   meta <- object[[]][colnames(mat), , drop = FALSE]
-  meta$shennong_group <- as.character(meta[[group_by]])
+  group_values <- as.character(meta[[group_by]])
+  group_map <- .sn_multinichenet_label_map(
+    group_values[!is.na(group_values) & nzchar(group_values)]
+  )
+  meta$shennong_group <- unname(group_map$encoded[group_values])
   if (!"samples" %in% names(meta)) meta$samples <- "sample1"
   keep <- !is.na(meta$shennong_group) & nzchar(meta$shennong_group)
   mat <- mat[, keep, drop = FALSE]
@@ -124,6 +128,11 @@
   )
 
   table <- tibble::as_tibble(CellChat::subsetCommunication(cellchat))
+  for (column in intersect(c("source", "target"), names(table))) {
+    encoded <- as.character(table[[column]])
+    decoded <- unname(group_map$decoded[encoded])
+    table[[column]] <- ifelse(is.na(decoded), encoded, decoded)
+  }
   list(
     table = table,
     backend_result = cellchat,
@@ -674,7 +683,7 @@ sn_store_cell_communication <- function(object,
     0L
   }
   stored_result <- list(
-    schema_version = "1.0",
+    schema_version = "1.0.0",
     analysis_type = "cell_communication",
     name = store_name,
     backend = backend,

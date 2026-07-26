@@ -64,24 +64,27 @@ reference:
       - sn_store_result
       - sn_get_result
       - sn_list_results
+      - sn_audit_results
+      - sn_upgrade_results
       - sn_delete_result
       - sn_validate_result
+      - sn_build_result_bundle
+      - sn_validate_result_bundle
+      - sn_export_result_bundle
+      - sn_check_autozyme
+      - sn_enable_autozyme
+      - sn_disable_autozyme
+      - sn_with_autozyme
   - title: Data and Import
     contents:
       - marker_genes
       - hom_genes
-      - pbmc_small
-      - pbmc_small_raw
       - shennong_gene_annotations
       - shennong_signature_catalog
-      - sn_list_datasets
-      - sn_load_data
-      - sn_download_zenodo
       - sn_list_10x_paths
       - sn_read
       - sn_write
       - sn_convert_bpcells
-      - sn_upload_zenodo
       - sn_add_data_from_anndata
   - title: Preprocessing and QC
     contents:
@@ -210,6 +213,8 @@ reference:
       - sn_plot_abundance
       - sn_prioritize_states
       - sn_plot_state_priority
+      - sn_run_scissor
+      - sn_plot_scissor
       - sn_calculate_composition
       - sn_calculate_roe
       - sn_compare_composition

@@ -496,7 +496,7 @@ sn_run_trajectory <- function(object,
   object[[paste0(store_name, "_pseudotime")]] <- cells$primary_pseudotime
   object[[paste0(store_name, "_lineage")]] <- cells$primary_lineage
   result <- list(
-    schema_version = "1.0",
+    schema_version = "1.0.0",
     analysis_type = "trajectory",
     name = store_name,
     method = method,
@@ -519,6 +519,7 @@ sn_run_trajectory <- function(object,
       trend_points = as.integer(trend_points)
     ),
     tables = list(
+      primary = cells,
       cells = cells,
       terminal_states = terminals,
       curves = curve_table,

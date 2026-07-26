@@ -1,0 +1,196 @@
+schema_version: "1.0.0"
+default_root: "data-local/pkgdown-real"
+root_environment_variable: "SHENNONG_REAL_DATA_DIR"
+rules:
+  tracked_data: false
+  download_inside_vignettes: false
+  deterministic_subsetting: true
+  default_seed: 717
+  require_sha256: true
+  require_runtime_manifest: true
+  notes:
+    - "Raw and derived data stay under data-local/pkgdown-real, which is excluded by both Git and R package builds."
+    - "Only acquisition code, source metadata, citations, and coverage declarations are tracked."
+    - "GEO data without an explicit redistribution license are retained locally and are never copied into the package or pkgdown site."
+
+bundles:
+  kotliarov_pbmc:
+    title: "Kotliarov PBMC CITE-seq response cohort"
+    category: "single_cell_cite_seq"
+    output:
+      - "single-cell/kotliarov_pbmc.qs2"
+    sources:
+      - provider: "Bioconductor scRNAseq"
+        accession: "scRNAseq/kotliarov-pbmc"
+        retrieval: "Retrieve RNA and ADT separately with scRNAseq::KotliarovPBMCData(mode = 'rna', ...) and mode = 'adt', then intersect and exactly align cell barcodes before constructing the local multimodal object."
+        landing_page: "https://bioconductor.org/packages/release/data/experiment/html/scRNAseq.html"
+        documentation: "https://bioconductor.org/packages/release/data/experiment/manuals/scRNAseq/man/scRNAseq.pdf"
+        license: "CC0"
+        redistribution: "Allowed by the scRNAseq data-package license; this project nevertheless keeps the prepared object local."
+        citation: "Kotliarov Y et al. Broad immune activation underlies shared set point signatures for vaccine responsiveness in healthy individuals and disease activity in patients with lupus. Nature Medicine. 2020;26:618-629."
+    biological_design:
+      species: "Homo sapiens"
+      samples: 20
+      batches: 2
+      response: "Five high and five low responders in each batch"
+      modalities:
+        - "RNA UMI counts"
+        - "ADT counts"
+    subset:
+      target_cells: 2000
+      strategy: "Deterministically retain up to 100 eligible cells per biological sample; prefer author-demultiplexed singlets when an unambiguous singlet field is available."
+      features: "Keep every RNA feature and every ADT feature after cell subsetting so QC and multimodal workflows remain valid."
+      preserve_metadata:
+        - "sample"
+        - "adjmfc.time"
+        - "batch"
+        - "tenx_lane"
+        - "author QC and demultiplexing fields"
+    intended_coverage:
+      - "preprocessing and QC"
+      - "RNA and CITE-seq clustering/integration"
+      - "annotation, DE, enrichment, programs, GRN"
+      - "integration metrics"
+      - "composition, differential abundance, state priority"
+      - "communication and regulatory activity"
+      - "general single-cell visualization"
+
+  melanoma_bridge:
+    title: "Melanoma single-cell to bulk-clinical bridge"
+    category: "cancer_single_cell_bulk"
+    output:
+      - "cancer/melanoma_gse72056.qs2"
+      - "bulk/tcga_skcm.qs2"
+    sources:
+      - provider: "NCBI Gene Expression Omnibus"
+        accession: "GSE72056"
+        retrieval: "GSE72056_melanoma_single_cell_revised_v2.txt.gz"
+        download_url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE72nnn/GSE72056/suppl/GSE72056_melanoma_single_cell_revised_v2.txt.gz"
+        landing_page: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE72056"
+        license: "No explicit redistribution license stated on the GEO accession page"
+        redistribution: "Local analysis only; do not commit or publish the expression matrix. Cite the study and accession."
+        citation: "Tirosh I et al. Dissecting the multicellular ecosystem of metastatic melanoma by single-cell RNA-seq. Science. 2016;352:189-196. PMID: 27124452."
+      - provider: "Bioconductor curatedTCGAData / NCI Genomic Data Commons"
+        accession: "TCGA-SKCM"
+        retrieval: "curatedTCGAData::curatedTCGAData('SKCM', assays = c('RNASeq2Gene', 'RNASeq2GeneNorm'), version = '2.1.1', dry.run = FALSE); align assays and patient metadata through the MultiAssayExperiment sampleMap."
+        data_version: "2.1.1"
+        package_landing_page: "https://bioconductor.org/packages/curatedTCGAData"
+        landing_page: "https://portal.gdc.cancer.gov/projects/TCGA-SKCM"
+        access_policy: "https://gdc.cancer.gov/access-data/data-access-processes-and-tools"
+        analysis_policy: "https://gdc.cancer.gov/analyze-data/data-analysis-policies"
+        license: "GDC open-access data policy"
+        redistribution: "No authentication is required for the selected high-level data. Do not attempt participant re-identification; retain data locally and provide TCGA/GDC attribution."
+        citation: "The Cancer Genome Atlas Network. Genomic Classification of Cutaneous Melanoma. Cell. 2015;161:1681-1696."
+    biological_design:
+      species: "Homo sapiens"
+      single_cell_samples: 19
+      single_cell_cells: 4645
+      bulk_groups:
+        - "Primary Tumor"
+        - "Metastatic"
+      endpoints:
+        - "overall survival time"
+        - "overall survival event"
+      single_cell_annotations:
+        - "tumor"
+        - "inferred-CNV malignancy class"
+        - "non-malignant T, B, macrophage, endothelial, CAF, and NK classes"
+    subset:
+      target_single_cells: 1500
+      target_single_cell_features: 6000
+      target_bulk_samples: 180
+      target_bulk_features: 3000
+      strategy: "Apply the deterministic disease-matched single-cell and bulk strategies below with seed 717."
+      single_cell_strategy: "Stratify by tumor and author-provided malignant/non-malignant cell class, then keep high-variance genes after metadata rows are removed. The values remain author-provided normalized expression and are stored in the data layer, never relabeled as raw counts."
+      bulk_strategy: "Use the curatedTCGAData MultiAssayExperiment sampleMap to pair RNASeq2Gene RSEM TPM and RNASeq2GeneNorm upper-quartile log2-normalized RSEM TPM samples with 12-character patient IDs. Select patients with finite overall-survival follow-up, balance All_Primaries and All_Metastases up to 90 per group, require every retained gene to be finite in both assays across all selected patients, preserve both continuous expression assays without relabeling either as raw counts, and choose variable genes shared with the melanoma single-cell object where possible. Use Kotliarov biological-sample pseudobulk for count-based bulk DE examples."
+      preserve_metadata:
+        - "TCGA case and sample barcodes"
+        - "sample type"
+        - "vital status"
+        - "days to death or last follow-up"
+        - "age, sex, and stage when available"
+    intended_coverage:
+      - "bulk QC, DE, pathways, WGCNA, survival, and clinical association"
+      - "Scissor using a true bulk phenotype"
+      - "bulk deconvolution with a disease-matched single-cell reference"
+      - "reference-aware CNV inference and malignancy plots"
+      - "metabolism and cancer-state analyses"
+
+  hermann_spermatogenesis:
+    title: "Hermann mouse spermatogenesis spliced/unspliced atlas"
+    category: "trajectory_velocity"
+    output:
+      - "trajectory/hermann_spermatogenesis.qs2"
+    sources:
+      - provider: "Bioconductor scRNAseq"
+        accession: "scRNAseq/hermann-spermatogenesis"
+        retrieval: "scRNAseq::HermannSpermatogenesisData(strip = TRUE, location = TRUE, legacy = FALSE)"
+        landing_page: "https://bioconductor.org/packages/release/data/experiment/html/scRNAseq.html"
+        documentation: "https://bioconductor.org/packages/release/data/experiment/manuals/scRNAseq/man/scRNAseq.pdf"
+        license: "CC0"
+        redistribution: "Allowed by the scRNAseq data-package license; this project nevertheless keeps the prepared object local."
+        citation: "Hermann BP et al. The Mammalian Spermatogenesis Single-Cell Transcriptome, from Spermatogonial Stem Cells to Spermatids. Cell Reports. 2018;25:1650-1667.e8."
+    biological_design:
+      species: "Mus musculus"
+      modalities:
+        - "spliced counts"
+        - "unspliced counts"
+      trajectory: "Author-provided germ-cell stages spanning spermatogonial stem cells to spermatids"
+    subset:
+      target_cells: 1000
+      target_features: 2000
+      strategy: "Deterministically sample across every author-provided cell type, then retain genes with the largest variance in total spliced plus unspliced abundance."
+      preserve_metadata:
+        - "author cell type"
+        - "sample fields when available"
+      preserve_layers:
+        - "counts"
+        - "spliced"
+        - "unspliced"
+    intended_coverage:
+      - "Slingshot, Monocle 3, Palantir, and tradeSeq"
+      - "scVelo and RegVelo"
+      - "CellRank fate probabilities"
+      - "trajectory, pseudotime, dynamic-gene, velocity, and fate plots"
+
+  visium_lymph_node:
+    title: "Two-platform 10x Visium human lymph-node sections"
+    category: "spatial_transcriptomics"
+    output:
+      - "spatial/visium_lymph_node.qs2"
+    sources:
+      - provider: "10x Genomics"
+        accession: "V1_Human_Lymph_Node"
+        retrieval: "Space Ranger 1.1.0 filtered feature-barcode matrix and spatial output"
+        landing_page: "https://www.10xgenomics.com/datasets/human-lymph-node-1-standard-1-1-0"
+        matrix_url: "https://cf.10xgenomics.com/samples/spatial-exp/1.1.0/V1_Human_Lymph_Node/V1_Human_Lymph_Node_filtered_feature_bc_matrix.h5"
+        spatial_url: "https://cf.10xgenomics.com/samples/spatial-exp/1.1.0/V1_Human_Lymph_Node/V1_Human_Lymph_Node_spatial.tar.gz"
+        license: "CC BY 4.0"
+        redistribution: "Attribution is required; the prepared object and images remain local."
+        citation: "10x Genomics. Human Lymph Node, Visium Spatial Gene Expression, Space Ranger 1.1.0. Published 2020-06-23."
+      - provider: "10x Genomics"
+        accession: "Visium_V2_Human_Lymph_Node"
+        retrieval: "Space Ranger 3.1.3 filtered feature-barcode matrix and spatial output"
+        landing_page: "https://www.10xgenomics.com/datasets/visium-v2-human-lymph-node"
+        matrix_url: "https://cf.10xgenomics.com/samples/spatial-exp/3.1.3/Visium_V2_Human_Lymph_Node/Visium_V2_Human_Lymph_Node_filtered_feature_bc_matrix.h5"
+        spatial_url: "https://cf.10xgenomics.com/samples/spatial-exp/3.1.3/Visium_V2_Human_Lymph_Node/Visium_V2_Human_Lymph_Node_spatial.tar.gz"
+        license: "CC BY 4.0"
+        redistribution: "Attribution is required; the prepared object and images remain local."
+        citation: "10x Genomics. Visium CytAssist Spatial Gene Expression Library, Human Lymph Node (FFPE), Space Ranger 3.1.3. Published 2025-05-22."
+    biological_design:
+      species: "Homo sapiens"
+      sections: 2
+      platforms:
+        - "fresh-frozen whole-transcriptome Visium"
+        - "FFPE Visium CytAssist"
+    subset:
+      target_spots_per_section: 400
+      strategy: "Retain a contiguous set of tissue spots nearest the spatial median of each section, preserving the real coordinate lattice and low-resolution histology image."
+      features: "Keep sparse counts for all measured features after spot subsetting; select features only inside individual analyses."
+    intended_coverage:
+      - "spatially variable features"
+      - "spatial domains and neighborhood enrichment"
+      - "two-section spatial integration"
+      - "cell2location and Tangram with the Kotliarov PBMC reference"
+      - "distance-aware communication"
+      - "all spatial plots"

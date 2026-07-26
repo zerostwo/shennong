@@ -30,6 +30,8 @@ interpretation layer.
 ## Rules
 
 - use stored results rather than recomputing upstream analyses unnecessarily
+- audit unfamiliar or older objects with `sn_audit_results()` before treating
+  arbitrary `object@misc` payloads as analytical evidence
 - separate evidence from inference
 - keep interpretation provider-agnostic at the package boundary
 - use current public argument names such as `cluster_by`, not retired aliases
@@ -46,16 +48,20 @@ interpretation layer.
 
 ## Procedure
 
-1. Discover stored assets with `sn_list_results()`.
-2. Retrieve them with the corresponding `sn_get_*_result()` helper.
-3. Build prompt bundles with `sn_build_prompt()` when a prompt artifact is
+1. Audit unfamiliar objects with `sn_audit_results()` and review any `legacy`
+   or `invalid` entries before interpretation.
+2. Discover stored assets with `sn_list_results()`.
+3. Retrieve table-focused views with the corresponding `sn_get_*_result()`
+   helper, or use `sn_get_result()` when models, diagnostics, warnings, or
+   provenance are needed.
+4. Build prompt bundles with `sn_build_prompt()` when a prompt artifact is
    enough, or run the interpretation layer with `sn_interpret_annotation()`,
    `sn_interpret_de()`, `sn_interpret_enrichment()`, `sn_write_results()`,
    `sn_write_figure_legend()`, or `sn_write_presentation_summary()`.
-4. Use `sn_prepare_annotation_evidence()`, `sn_prepare_de_evidence()`,
+5. Use `sn_prepare_annotation_evidence()`, `sn_prepare_de_evidence()`,
    `sn_prepare_enrichment_evidence()`, or `sn_prepare_results_evidence()` to
    keep evidence assembly explicit.
-5. Use `sn_make_ellmer_provider()` and `sn_test_llm_provider()` when a live
+6. Use `sn_make_ellmer_provider()` and `sn_test_llm_provider()` when a live
    provider call is actually needed, then `sn_run_llm()` for direct message
    execution through the resolved provider.
 
@@ -67,6 +73,9 @@ interpretation layer.
 
 ## Examples
 
+- `sn_audit_results(object)`
+- `sn_list_results(object)`
+- `sn_get_result(object, "scissor", "bulk_response")`
 - `sn_prepare_annotation_evidence()`
 - `sn_prepare_results_evidence()`
 - `sn_build_prompt()`

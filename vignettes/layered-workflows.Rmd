@@ -11,7 +11,18 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
+celltypist_model <- Sys.getenv("SHENNONG_CELLTYPIST_MODEL")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -29,33 +40,48 @@ Seurat v5 objects can store multiple assay layers. Shennong exposes `assay` and
 raw counts, decontaminated counts, or other matrix layers without rewriting the
 analysis.
 
-This article uses PBMC3k and creates a demonstration layer by copying counts.
-In real work, that layer might come from decontX, SoupX, CellBender, or another
-preprocessing tool.
+This article uses real RNA and ADT count layers from the public Kotliarov PBMC
+CITE-seq fixture. It does not copy counts into a pretend corrected layer. A
+deterministic, sample-stratified subset keeps the layer examples fast while
+preserving cells from all 20 biological samples.
 
-## Create a demonstration layer
+## Inspect and subset real assay layers
 
 ```{r setup-layer}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
+pbmc <- qs2::qs_read(real_data_file)
 counts_full <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
 demo_features <- names(sort(Matrix::rowSums(counts_full), decreasing = TRUE))[
   seq_len(min(1000, nrow(counts_full)))
 ]
-demo_cells <- colnames(pbmc)[seq_len(min(400, ncol(pbmc)))]
-pbmc <- subset(pbmc, features = demo_features, cells = demo_cells)
+demo_cells <- unlist(lapply(
+  split(colnames(pbmc), as.character(pbmc$real_sample)),
+  utils::head,
+  n = 20
+), use.names = FALSE)
+pbmc <- subset(pbmc, cells = demo_cells)
+pbmc[["RNA"]] <- subset(
+  pbmc[["RNA"]],
+  features = demo_features,
+  cells = demo_cells
+)
 
-counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
-SeuratObject::LayerData(pbmc, assay = "RNA", layer = "decontaminated_counts") <- counts
-
-SeuratObject::Layers(pbmc[["RNA"]])
+data.frame(
+  assay = c("RNA", "ADT"),
+  layers = c(
+    paste(SeuratObject::Layers(pbmc[["RNA"]]), collapse = ", "),
+    paste(SeuratObject::Layers(pbmc[["ADT"]]), collapse = ", ")
+  ),
+  features = c(nrow(pbmc[["RNA"]]), nrow(pbmc[["ADT"]])),
+  cells = ncol(pbmc)
+)
 ```
 
-The object still has its original counts. The new layer is simply another input
-matrix that layer-aware Shennong functions can target.
+The object retains measured RNA and ADT counts. Normalized `data` layers are
+created only by the workflows that require them.
 
 ## Cluster from a selected layer
 
@@ -67,7 +93,7 @@ pbmc_layered <- sn_run_cluster(
   object = pbmc,
   normalization_method = "seurat",
   assay = "RNA",
-  layer = "decontaminated_counts",
+  layer = "counts",
   nfeatures = 500,
   dims = 1:10,
   resolution = 0.6,
@@ -80,7 +106,7 @@ sn_plot_dim(
   reduction = "umap",
   group_by = "seurat_clusters",
   label = TRUE,
-  title = "PBMC3k clustered from decontaminated_counts"
+  title = "Real PBMC cells clustered from the RNA counts layer"
 )
 ```
 
@@ -117,29 +143,48 @@ plotting and interpretation recover how the result was made.
 Layer selection appears in functions where using the wrong matrix would change
 the answer.
 
-```{r layer-aware-functions, eval = FALSE}
-pbmc_layered <- sn_filter_genes(
+```{r filter-selected-layer, eval = run_vignette}
+pbmc_layered_filtered <- sn_filter_genes(
   pbmc_layered,
   min_cells = 5,
   assay = "RNA",
-  layer = "decontaminated_counts",
-  species = "human"
+  layer = "counts",
+  species = "human",
+  plot = FALSE
 )
 
-pbmc_layered <- sn_run_celltypist(
+data.frame(
+  features_before = nrow(pbmc_layered),
+  features_after = nrow(pbmc_layered_filtered)
+)
+```
+
+CellTypist and ROGUE are optional backends. They run only in the `all` profile
+when the executable/model or R dependency is already available.
+
+```{r layer-celltypist, eval = run_extended && nzchar(celltypist_model) && file.exists(celltypist_model) && nzchar(Sys.which("celltypist"))}
+pbmc_celltypist <- sn_run_celltypist(
   x = pbmc_layered,
   assay = "RNA",
-  layer = "decontaminated_counts",
+  layer = "counts",
+  model = celltypist_model,
   over_clustering = "seurat_clusters",
   quiet = TRUE
 )
 
+grep("celltypist", colnames(pbmc_celltypist[[]]), value = TRUE, ignore.case = TRUE)
+```
+
+```{r layer-rogue, eval = run_extended && requireNamespace("ROGUE", quietly = TRUE)}
 rogue_tbl <- sn_calculate_rogue(
   pbmc_layered,
   cluster_by = "seurat_clusters",
+  sample_by = "real_sample",
   assay = "RNA",
-  layer = "decontaminated_counts"
+  layer = "counts"
 )
+
+rogue_tbl
 ```
 
 ## Simulate from the current object
@@ -151,20 +196,36 @@ converts the selected Seurat layer to a SingleCellExperiment, calls scDesign3,
 and returns a simulated Seurat object by default. It does not merge original
 and simulated cells unless `combine_original = TRUE`.
 
-```{r scdesign3-layer, eval = run_vignette && requireNamespace("scDesign3", quietly = TRUE)}
+This optional simulation backend runs only in the `all` profile when
+`scDesign3` is installed.
+
+```{r scdesign3-layer, eval = run_extended && requireNamespace("scDesign3", quietly = TRUE)}
 sim_pbmc <- sn_simulate(
   object = pbmc_layered,
   method = "scdesign3",
   celltype = "seurat_clusters",
   ncell = 100,
   assay = "RNA",
-  layer = "decontaminated_counts",
+  layer = "counts",
   n_cores = 1,
   return = "seurat"
 )
 
 sim_pbmc
 sim_pbmc@misc$scdesign3
+
+sim_counts <- sn_simulate_scdesign3(
+  object = pbmc_layered,
+  celltype = "seurat_clusters",
+  ncell = 50,
+  assay = "RNA",
+  layer = "counts",
+  n_cores = 1,
+  return = "counts"
+)
+
+dim(sim_counts)
+summary(Matrix::colSums(sim_counts))
 ```
 
 ## Cache layer-aware artifacts
@@ -173,10 +234,10 @@ Layer-aware results are still regular Seurat objects and tables, so the same IO
 helpers from the first article apply.
 
 ```{r cache-layered}
-outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-layered"))
+outdir <- sn_set_path(file.path(tempdir(), "shennong-kotliarov-layered"))
 
-object_path <- file.path(outdir, "pbmc3k_layered.qs2")
-markers_path <- file.path(outdir, "pbmc3k_layered_markers.csv")
+object_path <- file.path(outdir, "kotliarov_layered.qs2")
+markers_path <- file.path(outdir, "kotliarov_layered_markers.csv")
 
 sn_write(pbmc_layered, object_path)
 sn_write(

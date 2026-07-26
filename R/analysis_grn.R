@@ -208,7 +208,7 @@ sn_run_grn <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0", analysis_type = "grn", name = name,
+    schema_version = "1.0.0", analysis_type = "grn", name = name,
     method = method, backend = method,
     input = list(
       assay = expression$assay %||% assay %||% SeuratObject::DefaultAssay(object),

@@ -59,3 +59,26 @@
 - Current high-risk zones are data import/export, heavyweight optional-package integrations, and any schema stored under `object@misc`.
 - Current modernization order is: inventory API, stabilize tests, normalize metadata and namespace handling, reorganize source files without changing behavior, then tighten internals and documentation.
 - Repository-internal developer memory stays in `docs/codex/` and `AGENTS.md`. Installed-package user assets belong under `inst/codex/project-template/` and `inst/codex/package-skills/`.
+
+## Ecosystem Coordination
+
+- Use `docs/codex/Ecosystem.md` as the starting point for work that crosses
+  Shennong and any of the four sibling repositories.
+- This repository is the coordination center, not a monorepo. The sibling
+  roots are `/home/duansq/dev/packages/shennong-data`,
+  `/home/duansq/dev/services/shennong.one/shennong-os`,
+  `/home/duansq/dev/services/shennong.one/shennong-runtime`, and
+  `/home/duansq/dev/services/shennong.one/shennong-db`.
+- `/home/duansq/dev/services/shennong.one` is an aggregate architecture
+  directory, not a Git repository. Inspect and close each repository
+  independently.
+- Before cross-repository edits, record each repository's branch, HEAD,
+  upstream divergence, dirty files, and published/deployed version. Preserve
+  unrelated work in every tree.
+- A cross-repository behavior change requires a versioned producer/consumer
+  contract, focused tests in each affected repository, and a real integration
+  fixture. Update `docs/codex/Ecosystem.md` when interface or modality status
+  changes.
+- Distinguish source, committed, published, deployed, and end-to-end status.
+  Do not infer platform modality support from a file format, registry entry,
+  discoverable MCP method, or package-only analysis.

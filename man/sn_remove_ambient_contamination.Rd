@@ -63,16 +63,8 @@ raw matrix metadata is reused automatically if \code{raw = NULL}.
 }
 \examples{
 \dontrun{
-data("pbmc_small", package = "Shennong")
-data("pbmc_small_raw", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
-
-corrected <- sn_remove_ambient_contamination(
-  x = SeuratObject::LayerData(pbmc, layer = "counts"),
-  raw = pbmc_small_raw,
-  method = "soupx",
-  return_object = FALSE
-)
 }
 
 }

@@ -368,7 +368,7 @@ sn_test_abundance <- function(object,
   }
 
   result <- list(
-    schema_version = "1.0",
+    schema_version = "1.0.0",
     analysis_type = "differential_abundance",
     name = store_name,
     method = method,

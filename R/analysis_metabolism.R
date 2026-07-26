@@ -261,7 +261,7 @@ sn_run_metabolism <- function(object,
     character()
   }
   result <- list(
-    schema_version = "1.0", analysis_type = "metabolism", name = store_name,
+    schema_version = "1.0.0", analysis_type = "metabolism", name = store_name,
     method = method, backend = backend,
     input = list(
       assay = expression_info$assay, layer = expression_info$layer,

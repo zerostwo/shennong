@@ -64,7 +64,7 @@ test_that("spatial neighborhoods preserve enrichment and co-occurrence", {
 
 make_communication_test_result <- function() {
   list(
-    schema_version = "1.0", analysis_type = "communication", name = "communication",
+    schema_version = "1.0.0", analysis_type = "cell_communication", name = "communication",
     method = "synthetic", backend = "synthetic", input = list(), parameters = list(),
     tables = list(primary = tibble::tibble(
       source = c("left", "left", "right"), target = c("left", "right", "right"),
@@ -86,6 +86,24 @@ test_that("spatial communication adds distance evidence and filters", {
     max_distance = min(unfiltered$tables$primary$spatial_distance), return_object = FALSE
   )
   expect_lte(nrow(filtered$tables$primary), nrow(unfiltered$tables$primary))
+})
+
+test_that("spatial communication reuses stored cell-communication results", {
+  object <- make_spatial_test_object()
+  object <- sn_store_result(
+    object,
+    type = "cell_communication",
+    name = "communication",
+    result = make_communication_test_result()
+  )
+  result <- sn_run_spatial_communication(
+    object,
+    communication_name = "communication",
+    group_by = "region",
+    return_object = FALSE
+  )
+  expect_equal(nrow(result$tables$all_interactions), 3L)
+  expect_equal(result$models$source_result$name, "communication")
 })
 
 test_that("spatial integration and dispatcher standardize adapter embeddings", {

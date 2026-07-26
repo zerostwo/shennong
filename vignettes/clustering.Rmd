@@ -1,17 +1,27 @@
 ---
-title: "Clustering and integration with PBMC3k"
+title: "Clustering and integration with real PBMC CITE-seq data"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Clustering and integration with PBMC3k}
+  %\VignetteIndexEntry{Clustering and integration with real PBMC CITE-seq data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -28,8 +38,10 @@ Seurat teaches users a sequence of steps: normalize, find variable genes, run
 PCA, build neighbors, cluster, and embed. Shennong keeps that logic, but exposes
 it through one workflow function so the choices are visible in one call.
 
-This article uses PBMC3k. For speed, the website shows code without running the
-analysis unless `SHENNONG_RUN_VIGNETTES=true`.
+This article uses the public Kotliarov PBMC CITE-seq cohort: 2,000 real cells
+from 20 biological samples, two acquisition batches, and aligned RNA and ADT
+assays. A real-data pkgdown build executes the core chunks. Ordinary package
+checks safely leave them unevaluated when the local fixture is absent.
 
 ## One function for the standard clustering path
 
@@ -37,12 +49,18 @@ The minimal clustering call is intentionally short. The arguments that usually
 matter for a report are visible: normalization method, number of features, PC
 range, resolution, clustering algorithm, and species.
 
-```{r cluster-pbmc3k}
+```{r cluster-kotliarov-pbmc}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
+pixi_environment_ready <- function(environment) {
+  if (!nzchar(Sys.which("pixi"))) return(FALSE)
+  paths <- sn_pixi_paths(environment)
+  file.exists(paths$manifest_path) && dir.exists(paths$workspace_env_dir)
+}
+
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -56,7 +74,20 @@ pbmc <- sn_run_cluster(
   verbose = FALSE
 )
 
-pbmc
+data.frame(
+  cells = ncol(pbmc),
+  clusters = length(unique(pbmc$seurat_clusters)),
+  biological_samples = length(unique(pbmc$real_sample)),
+  batches = length(unique(pbmc$real_batch))
+)
+```
+
+Variable-feature and PCA diagnostics are produced from the same real RNA
+matrix used for clustering.
+
+```{r hvg-and-elbow-diagnostics, eval = run_vignette}
+sn_plot_hvg(pbmc, assay = "RNA", label_n = 10)
+sn_plot_elbow(pbmc, reduction = "pca", ndims = 20)
 ```
 
 When the input already contains `sn_run_cluster()` stage metadata, the function
@@ -70,7 +101,7 @@ UMAP geometry can be tuned independently from clustering with `umap_control`.
 This is useful when clusters are biologically separate but overlap visually in
 the two-dimensional embedding.
 
-```{r tune-umap, eval = FALSE}
+```{r tune-umap, eval = run_vignette}
 pbmc_umap <- sn_run_cluster(
   pbmc,
   umap_control = list(
@@ -80,6 +111,14 @@ pbmc_umap <- sn_run_cluster(
     reduction.name = "umap_tuned"
   ),
   rerun_from = "umap"
+)
+
+sn_plot_dim(
+  pbmc_umap,
+  reduction = "umap_tuned",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  title = "UMAP retuned on real PBMC cells"
 )
 ```
 
@@ -92,7 +131,7 @@ sn_plot_dim(
   reduction = "umap",
   group_by = "seurat_clusters",
   label = TRUE,
-  title = "PBMC3k clusters"
+  title = "Kotliarov PBMC clusters"
 )
 ```
 
@@ -116,6 +155,12 @@ pbmc_blocked <- sn_run_cluster(
   block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo", "MYC"),
   verbose = FALSE
 )
+
+data.frame(
+  selected_hvgs = length(pbmc_blocked@misc$hvg_selection$selected_features),
+  blocked_hvgs = length(pbmc_blocked@misc$hvg_selection$blocked_features)
+)
+head(pbmc_blocked@misc$hvg_selection$blocked_features)
 ```
 
 Use this when a technical or lineage-specific gene family is overwhelming the
@@ -140,6 +185,9 @@ pbmc_rare <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
+
+head(pbmc_rare@misc$hvg_selection$selected_features)
+table(pbmc_rare$seurat_clusters)
 ```
 
 The key idea is simple: keep the global HVGs, then add a small number of genes
@@ -188,15 +236,15 @@ For CITE-seq objects with paired RNA and ADT assays, set
 `modality = "cite_seq"`. The default `multimodal_method = "wnn"` runs the
 standard RNA PCA path, normalizes the ADT assay with CLR, computes ADT PCA, then
 uses Seurat weighted nearest neighbors to cluster on the `wsnn` graph and create
-a `wnn.umap` embedding. The template below assumes `pbmc_cite` is a prepared
-Seurat object containing both assays, so it is not executed during site builds.
-`sn_run_multimodal(object, method = "wnn")` is an equivalent explicit entry
+a `wnn.umap` embedding. Here both modalities come from the same real cells.
+`sn_run_multimodal(object, method = "wnn")` is the explicit multimodal entry
 point and accepts the remaining `sn_run_cluster()` arguments through `...`.
 
-```{r cite-seq-wnn, eval = FALSE}
-pbmc_cite <- sn_run_cluster(
+```{r cite-seq-wnn, eval = run_vignette}
+pbmc_cite <- qs2::qs_read(real_data_file)
+pbmc_cite <- sn_run_multimodal(
   object = pbmc_cite,
-  modality = "cite_seq",
+  method = "wnn",
   assay = "RNA",
   adt_assay = "ADT",
   normalization_method = "seurat",
@@ -208,6 +256,7 @@ pbmc_cite <- sn_run_cluster(
   verbose = FALSE
 )
 
+table(pbmc_cite$seurat_clusters, pbmc_cite$real_batch)
 sn_plot_dim(pbmc_cite, reduction = "wnn.umap", group_by = "seurat_clusters")
 ```
 
@@ -224,12 +273,18 @@ reduction, and clusters from that reduction. The full MMoCHi hierarchy
 classifier remains an advanced Python workflow because it requires an explicit
 user-defined hierarchy.
 
-```{r cite-seq-totalvi, eval = FALSE}
+These external or optional backends are evaluated only by the `all` real-data
+profile and only when their runtime dependency is already available. The
+article never installs a Python environment or changes GPU settings while it is
+being built.
+
+```{r cite-seq-totalvi, eval = run_extended && pixi_environment_ready("scvi")}
+pbmc_totalvi <- qs2::qs_read(real_data_file)
 pbmc_totalvi <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_totalvi,
   modality = "cite_seq",
   multimodal_method = "totalvi",
-  batch = "library",
+  batch = "real_batch",
   assay = "RNA",
   adt_assay = "ADT",
   normalization_method = "seurat",
@@ -239,36 +294,42 @@ pbmc_totalvi <- sn_run_cluster(
   verbose = FALSE
 )
 
+table(pbmc_totalvi$seurat_clusters, pbmc_totalvi$real_batch)
 sn_plot_dim(pbmc_totalvi, reduction = "umap", group_by = "seurat_clusters")
 ```
 
-```{r cite-seq-coralysis-protein, eval = FALSE}
+```{r cite-seq-coralysis-protein, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
+pbmc_adt_coral <- qs2::qs_read(real_data_file)
 pbmc_adt_coral <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_adt_coral,
   modality = "cite_seq",
   multimodal_method = "coralysis",
-  batch = "library",
+  batch = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
   verbose = FALSE
 )
+
+table(pbmc_adt_coral$seurat_clusters, pbmc_adt_coral$real_batch)
 ```
 
-```{r cite-seq-mmochi-protein, eval = FALSE}
+```{r cite-seq-mmochi-protein, eval = run_extended && pixi_environment_ready("mmochi")}
+pbmc_adt_mmochi <- qs2::qs_read(real_data_file)
 pbmc_adt_mmochi <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_adt_mmochi,
   modality = "cite_seq",
   multimodal_method = "mmochi",
-  batch = NULL,
+  batch = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
   integration_control = list(
     protein_layer = "data",
-    marker_bandwidths = list(CD3 = 0.25),
     store_corrected_layer = TRUE
   ),
   verbose = FALSE
 )
+
+table(pbmc_adt_mmochi$seurat_clusters, pbmc_adt_mmochi$real_batch)
 ```
 
 ## Choose resolution empirically
@@ -289,26 +350,40 @@ sweep <- sn_sweep_cluster_resolution(
 
 sweep$summary
 sweep$recommended_resolution
+sn_plot_resolution_sweep(sweep)
+
+resolution_cols <- c("res_0_2", "res_0_6", "res_1_0")
+pbmc_tree <- pbmc
+for (index in seq_along(resolution_cols)) {
+  pbmc_tree <- sn_run_cluster(
+    pbmc_tree,
+    resolution = c(0.2, 0.6, 1.0)[[index]],
+    cluster_name = resolution_cols[[index]],
+    reuse = TRUE,
+    verbose = FALSE
+  )
+}
+
+sn_plot_cluster_tree(pbmc_tree, resolution_cols = resolution_cols)
 ```
 
 The recommendation is not a replacement for biology; it is a compact way to
 find resolutions that are numerically stable before looking at marker genes.
 
-## Integration is the same API with a batch column
+## Integration is the same API with a real batch column
 
-PBMC3k is one dataset, so the example below creates a teaching-only pseudo
-batch column. In a real experiment, `batch` would be a donor, library, chemistry,
-or dataset column.
+`real_batch` records the two acquisition batches in the source cohort. It is a
+technical label, whereas `real_sample` remains the biological replicate for
+sample-level inference.
 
-```{r harmony-integration, eval = FALSE}
-pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
+```{r harmony-integration, eval = run_vignette && requireNamespace("harmony", quietly = TRUE)}
 
 pbmc_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch = "real_batch",
   integration_method = "harmony",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 2000,
   dims = 1:20,
   resolution = 0.6,
@@ -319,8 +394,8 @@ pbmc_integrated <- sn_run_cluster(
 sn_plot_dim(
   object = pbmc_integrated,
   reduction = "umap",
-  group_by = "library",
-  title = "Pseudo-batch mixing"
+  group_by = "real_batch",
+  title = "Mixing of the two real acquisition batches"
 )
 ```
 
@@ -329,12 +404,14 @@ integration use the same entry point; adding `batch` turns on integration, and
 `integration_method` names the backend. Harmony is the default because it is
 fast and broadly useful.
 
-The same integration switch can be used with SCTransform normalization:
+The same integration switch can be used with SCTransform normalization. This
+heavier optional backend runs in the `all` profile when both Harmony and
+`glmGamPoi` are installed:
 
-```{r sctransform-integration, eval = FALSE}
+```{r sctransform-integration, eval = run_extended && requireNamespace("harmony", quietly = TRUE) && requireNamespace("glmGamPoi", quietly = TRUE)}
 pbmc_sct_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch = "real_batch",
   integration_method = "harmony",
   normalization_method = "sctransform",
   hvg_features = c("IL7R", "CCR7", "NKG7"),
@@ -342,6 +419,8 @@ pbmc_sct_integrated <- sn_run_cluster(
   resolution = 0.6,
   verbose = FALSE
 )
+
+table(pbmc_sct_integrated$seurat_clusters, pbmc_sct_integrated$real_batch)
 ```
 
 For imbalanced datasets where a rare or unevenly distributed state may be
@@ -353,13 +432,13 @@ Coralysis SingleCellExperiment is stored by default under
 Coralysis label-transfer reference. Set
 `integration_control = list(store_sce = FALSE)` only for clustering-only runs.
 
-```{r coralysis-integration, eval = FALSE}
+```{r coralysis-integration, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
 pbmc_coral <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 2000,
   dims = 1:20,
   resolution = 0.6,
@@ -373,15 +452,17 @@ pbmc_coral <- sn_run_cluster(
   ),
   verbose = FALSE
 )
+
+table(pbmc_coral$seurat_clusters, pbmc_coral$real_batch)
 ```
 
 Seurat layer integration methods are also available when users want to compare
 against familiar anchor-based workflows:
 
-```{r seurat-layer-integration, eval = FALSE}
+```{r seurat-layer-integration, eval = run_vignette}
 pbmc_cca <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch = "real_batch",
   integration_method = "seurat_cca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -391,12 +472,27 @@ pbmc_cca <- sn_run_cluster(
 
 pbmc_rpca <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch = "real_batch",
   integration_method = "seurat_rpca",
   normalization_method = "seurat",
   nfeatures = 2000,
   dims = 1:20,
   verbose = FALSE
+)
+
+data.frame(
+  method = c("seurat_cca", "seurat_rpca"),
+  clusters = c(
+    length(unique(pbmc_cca$seurat_clusters)),
+    length(unique(pbmc_rpca$seurat_clusters))
+  )
+)
+
+sn_plot_dim(
+  pbmc_rpca,
+  reduction = "umap",
+  group_by = "real_batch",
+  title = "RPCA integration across real acquisition batches"
 )
 ```
 
@@ -426,57 +522,20 @@ scPoli uses the `scarches` environment. Spatial tools are represented by
 specific environment names such as `cell2location`, `tangram`, `squidpy`,
 `spatialdata`, and `stlearn`.
 
-For method wrappers that define an object-level contract, use the `object =`
-form. Runner scripts are stored with each pixi family under
-`inst/pixi/<family>/scripts/`. For example, inferCNVpy can be run directly on a
-Seurat object and will import cell-level CNV metadata and CNV reductions back
-into that object:
+Cancer CNV and spatial Python wrappers require disease-matched references or
+spatial coordinates, so they are intentionally exercised in the corresponding
+real melanoma and Visium articles rather than against this PBMC object.
 
-```{r infercnvpy-object, eval = FALSE}
-tumor <- sn_run_infercnvpy(
-  object = tumor,
-  assay = "RNA",
-  layer = "data",
-  species = "human",
-  reference_by = "cell_type",
-  reference_cat = c("T cell", "Myeloid", "Endothelial")
-)
-```
-
-Other Python tools follow the same Seurat-first pattern. Tools that need
-additional biological inputs make those inputs explicit:
-
-```{r python-object-tools, eval = FALSE}
-object <- sn_run_cellphonedb(object, group_by = "cell_type")
-
-spatial <- sn_run_tangram(
-  object = spatial,
-  reference_object = sc_reference,
-  cell_type_by = "cell_type",
-  spatial_cols = c("x", "y")
-)
-
-spatial <- sn_run_cell2location(
-  object = spatial,
-  reference_signatures = signature_matrix,
-  spatial_cols = c("x", "y"),
-  method_control = list(max_epochs = 30000)
-)
-
-spatial <- sn_run_squidpy(object = spatial, spatial_cols = c("x", "y"))
-```
-
-```{r scvi-integration, eval = FALSE}
+```{r scvi-integration, eval = run_extended && pixi_environment_ready("scvi")}
 sn_list_pixi_environments()
 sn_pixi_paths("scvi")
-sn_ensure_pixi()
 
-pbmc_scvi <- sn_run_cluster(
-  object = pbmc,
-  batch = "library",
-  integration_method = "scvi",
+pbmc_scvi <- qs2::qs_read(real_data_file)
+pbmc_scvi <- sn_run_scvi(
+  object = pbmc_scvi,
+  batch = "real_batch",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 3000,
   dims = 1:30,
   integration_control = list(
@@ -488,20 +547,62 @@ pbmc_scvi <- sn_run_cluster(
   verbose = FALSE
 )
 
-pbmc_scanvi <- sn_run_cluster(
-  object = pbmc,
-  batch = "library",
-  integration_method = "scanvi",
+table(pbmc_scvi$seurat_clusters, pbmc_scvi$real_batch)
+sn_plot_dim(pbmc_scvi, reduction = "umap", group_by = "real_batch")
+
+scanvi_input <- pbmc
+held_out_samples <- utils::tail(sort(unique(as.character(pbmc$real_sample))), 5)
+scanvi_input$scanvi_label <- as.character(scanvi_input$seurat_clusters)
+scanvi_input$scanvi_label[scanvi_input$real_sample %in% held_out_samples] <- "Unknown"
+
+pbmc_scanvi <- sn_run_scanvi(
+  object = scanvi_input,
+  batch = "real_batch",
   normalization_method = "seurat",
-  hvg_group_by = "library",
   nfeatures = 3000,
   dims = 1:30,
   integration_control = list(
-    label_by = "reference_label",
+    label_by = "scanvi_label",
     unlabeled_category = "Unknown",
+    accelerator = "auto",
+    mirror = "auto",
     n_latent = 30,
     max_epochs = 100
   ),
   verbose = FALSE
+)
+
+table(pbmc_scanvi$scanvi_prediction, pbmc_scanvi$real_response)
+```
+
+The scArches and scPoli object wrappers use the same real batch column and the
+RNA clusters computed above as analytical labels. They are not run unless the
+shared scArches pixi environment has already been materialized.
+
+```{r scarches-and-scpoli, eval = run_extended && pixi_environment_ready("scarches")}
+pbmc_scarches <- sn_run_scarches(
+  object = pbmc,
+  assay = "RNA",
+  layer = "counts",
+  batch_by = "real_batch",
+  label_by = "seurat_clusters",
+  method_control = list(max_epochs = 100)
+)
+
+pbmc_scpoli <- sn_run_scpoli(
+  object = pbmc,
+  assay = "RNA",
+  layer = "counts",
+  batch_by = "real_batch",
+  label_by = "seurat_clusters",
+  method_control = list(max_epochs = 100)
+)
+
+data.frame(
+  method = c("scarches", "scpoli"),
+  reductions = c(
+    paste(names(pbmc_scarches@reductions), collapse = ", "),
+    paste(names(pbmc_scpoli@reductions), collapse = ", ")
+  )
 )
 ```

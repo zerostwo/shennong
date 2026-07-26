@@ -221,7 +221,7 @@ sn_discover_programs <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0", analysis_type = "program_discovery", name = name,
+    schema_version = "1.0.0", analysis_type = "program_discovery", name = name,
     method = method, backend = method,
     input = list(
       assay = output$expression$assay %||% assay %||% SeuratObject::DefaultAssay(object),

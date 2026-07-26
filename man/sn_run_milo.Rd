@@ -95,8 +95,10 @@ DA table, design data, and milo object.}
 }
 \value{
 By default, a data frame of neighborhood-level DA statistics. When
-\code{return_intermediate = TRUE}, a list with \code{table},
-\code{design_df}, and \code{milo} is returned.
+\code{store_name} is supplied, return the unified stored-result list, or
+the updated Seurat object when \code{return_object = TRUE}. When
+\code{return_intermediate = TRUE}, return a list with \code{table},
+\code{design_df}, and \code{milo}.
 }
 \description{
 This wrapper runs the standard miloR neighborhood differential abundance

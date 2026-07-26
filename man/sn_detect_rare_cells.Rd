@@ -100,8 +100,8 @@ Detect rare cells with native or optional rare-cell backends
 }
 \examples{
 \dontrun{
-data("pbmc_small", package = "Shennong")
-rare_tbl <- sn_detect_rare_cells(pbmc_small, method = "gini")
+pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+rare_tbl <- sn_detect_rare_cells(pbmc, method = "gini")
 head(rare_tbl)
 }
 

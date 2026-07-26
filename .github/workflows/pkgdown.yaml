@@ -19,13 +19,12 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
     env:
-      SHENNONG_RUN_VIGNETTES: true
       PKGDOWN_FULL: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full) }}
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +52,6 @@ jobs:
             any::leidenbase
             any::qs2
             any::rio
-            any::zen4R
             github::carmonalab/SignatuR
             github::immunogenomics/harmony@harmony2
             any::clusterProfiler
@@ -64,37 +62,15 @@ jobs:
             github::immunogenomics/lisi
           needs: website
 
-      - name: Configure git identity
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        shell: bash
-
       - name: Install package
         run: R CMD INSTALL .
         shell: bash
 
-      - name: Build and deploy site
+      - name: Build site without deployment
         run: |
-          set +e
-          Rscript -e '
-            sha <- substr(Sys.getenv("GITHUB_SHA"), 1, 7)
-            version <- as.character(utils::packageVersion("Shennong"))
-            full <- identical(tolower(Sys.getenv("PKGDOWN_FULL")), "true")
-            pkgdown::deploy_to_branch(
-              new_process = FALSE,
-              install = FALSE,
-              clean = full,
-              lazy = !full,
-              examples = full,
-              commit_message = sprintf("Built site for Shennong@%s: %s", version, sha)
-            )
-          ' > pkgdown.log 2>&1
-          status=$?
-          cat pkgdown.log
-          if [ "$status" -ne 0 ]; then
-            tail_msg=$(tail -n 80 pkgdown.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
-            echo "::error title=pkgdown deploy failed::$tail_msg"
-            exit "$status"
+          if [ "${PKGDOWN_FULL}" = "true" ]; then
+            Rscript scripts/build-pkgdown.R --full
+          else
+            Rscript scripts/build-pkgdown.R
           fi
         shell: bash

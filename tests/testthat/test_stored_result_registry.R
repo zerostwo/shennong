@@ -17,7 +17,7 @@ test_that("stored result registry describes listable and direct misc collections
   expect_s3_class(registry, "data.frame")
   expect_true(all(c(
     "collection", "type", "schema_version", "required_fields",
-    "listable", "table_required", "reader", "writer"
+    "contract_scope", "listable", "table_required", "reader", "writer"
   ) %in% colnames(registry)))
   expect_true(any(registry$collection == "de_results" & registry$listable))
   expect_true(any(registry$collection == "enrichment_results" & registry$listable))
@@ -25,6 +25,8 @@ test_that("stored result registry describes listable and direct misc collections
   expect_true(any(registry$collection == "deconvolution_results" & registry$listable))
   expect_true(any(registry$collection == "sn_run_cluster" & !registry$listable))
   expect_true(any(registry$collection == "bpcells_layers" & !registry$listable))
+  expect_true(any(registry$collection == "label_transfer" & registry$contract_scope == "artifact"))
+  expect_true(any(registry$collection == "scdesign3" & registry$contract_scope == "artifact"))
   expect_equal(anyDuplicated(registry$collection), 0L)
 })
 

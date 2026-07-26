@@ -11,9 +11,14 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
-run_network_vignette <- run_vignette &&
-  identical(Sys.getenv("SHENNONG_RUN_NETWORK_VIGNETTES"), "true")
+real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
+pbmc_fixture <- if (nzchar(real_data_root)) {
+  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
+} else {
+  ""
+}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
+  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -22,106 +27,64 @@ knitr::opts_chunk$set(
   message = FALSE,
   fig.width = 7,
   fig.height = 5,
-  eval = run_network_vignette
+  eval = run_vignette
 )
 ```
 
-Shennong is meant to make the first step of a single-cell project boring:
-find the data, read it with one function, add explicit sample metadata, and
-write reusable artifacts without changing APIs for every file type.
+Shennong begins after data distribution: it reads materialized files, adds
+explicit sample metadata, and writes reusable analysis artifacts without
+changing APIs for every file type. Dataset discovery, download, caching, and
+publication are handled by the separate `ShennongData` package.
 
-This article uses the package PBMC3k example throughout. To keep package checks
-and website builds independent of Zenodo availability, code chunks are shown by
-default and are evaluated only when you render with both
-`SHENNONG_RUN_VIGNETTES=true` and `SHENNONG_RUN_NETWORK_VIGNETTES=true`.
+This article uses a small, provenance-tracked public PBMC subset materialized
+under `SHENNONG_REAL_DATA_DIR`. The data are used locally for validation and
+pkgdown output but are intentionally not stored in the Shennong repository.
 
-## Start with PBMC3k
+## Start with materialized public data
 
-The package loader returns a Seurat object by default. If you need the original
-10x H5 path instead, set `return_object = FALSE`; this is useful when you want
-to show exactly what was read from disk. You can also request several example
-datasets at once; filtered matrices are initialized separately and returned as
-one merged Seurat object with the source dataset stored in the `sample`
-metadata column.
+The local fixture is a Seurat object prepared from public data. Its acquisition
+manifest and checksums live alongside the ignored local data cache, while the
+analysis code remains reviewable here.
 
 ```{r load-pbmc3k}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data(dataset = "pbmc3k")
+pbmc <- qs2::qs_read(file.path(
+  real_data_root,
+  "single-cell", "kotliarov_pbmc.qs2"
+))
 
-pbmc_h5 <- sn_load_data(
-  dataset = "pbmc3k",
-  return_object = FALSE
-)
-
-pbmc_h5
-
-pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-table(pbmc_merged$sample)
+pbmc
+table(pbmc$real_sample)
 ```
 
-`sn_load_data()` uses the general Zenodo downloader underneath. Public Zenodo
-records do not need a token; pass `token = ...` only for restricted or private
-records that your account can access.
+## Use ShennongData for discovery and materialization
 
-```{r zenodo-download}
-public_h5 <- sn_download_zenodo(
-  record_id = "14884845",
-  files = "pbmc3k_filtered_feature_bc_matrix.h5"
-)
-
-public_h5
-```
-
-The current Shennong public reprocessed-data collection is indexed by
-`shennong_index.json` on Zenodo. Use `sn_list_datasets()` to discover the
-sample-level IDs, then pass one of those IDs to `sn_load_data()`. The study ZIP
-is cached locally, and only the requested sample file is extracted.
-
-```{r public-collection, eval=FALSE}
-datasets <- sn_list_datasets()
-head(datasets[, c("dataset", "study_id", "organism", "technology")])
-
-sample_obj <- sn_load_data(dataset = datasets$dataset[[1]])
-sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
-sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
-```
-
-## Use the Shennong Data Server lazily
-
-For resources exposed by a Shennong Data Server, `backend = "api"` returns a
-metadata-first `ShennongData` handle without downloading the full matrix. The
-wrapper creates a non-default connection for `server_url`, then uses the
-resource, assay, and layer contracts from ShennongData 0.2.
+Shennong does not wrap or re-export the data client. Use qualified
+`ShennongData::` calls so the ownership boundary is explicit, inspect the lazy
+query, and materialize only the assay/layer required by an analysis.
 
 ```{r data-server, eval=FALSE}
-remote <- sn_load_data(
-  dataset = "toil",
-  backend = "api",
-  server_url = "https://data.example.org",
-  api_args = list(
-    assay = "rna",
-    layer = "expression"
-  )
+connection <- ShennongData::sn_connect(
+  url = "https://data.example.org",
+  set_default = FALSE
 )
 
-materialized <- sn_load_data(
-  dataset = "toil",
-  backend = "api",
-  server_url = "https://data.example.org",
-  lazy = FALSE,
-  api_args = list(
-    assay = "rna",
-    layer = "expression",
-    collect_args = list(allow_large = TRUE)
-  )
+remote <- ShennongData::sn_load_data(
+  resource = "toil",
+  connection = connection
 )
+
+rna <- ShennongData::sn_assay(remote, assay = "rna", layer = "expression")
+ShennongData::sn_show_query(rna)
+materialized <- ShennongData::collect(rna, allow_large = TRUE)
 ```
 
-Keep `backend = "auto"` when local/Zenodo fallback is desired. Use
-`backend = "local"` when a workflow must never contact the data server.
+Pass `materialized` to `sn_initialize_seurat_object()` or another Shennong
+analysis entry point. Data publication and cache policy remain in
+`ShennongData`, not the analysis package.
 
 ## Read once, then initialize with metadata
 
@@ -131,13 +94,13 @@ you can read counts directly and then make the metadata decision explicit in
 `sn_initialize_seurat_object()`.
 
 ```{r read-and-initialize}
-counts <- sn_read(pbmc_h5)
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+metadata <- pbmc[[]]
 
 pbmc <- sn_initialize_seurat_object(
   x = counts,
-  project = "pbmc3k_demo",
-  sample_name = "pbmc3k",
-  study = "10x_pbmc",
+  metadata = metadata,
+  project = "kotliarov_pbmc",
   species = "human"
 )
 
@@ -145,11 +108,11 @@ pbmc
 ```
 
 The important design choice is that provenance is not hidden in the project
-name. `sample_name`, `study`, and `species` are separate inputs, so downstream
-composition, integration, and interpretation steps can reuse them.
+name. The materialized metadata retain the real sample and batch fields, while
+species is an explicit initialization input.
 
 ```{r inspect-metadata}
-head(pbmc[[]][, c("sample", "study", "nCount_RNA", "nFeature_RNA", "percent.mt")])
+head(pbmc[[]][, c("real_sample", "real_batch", "nCount_RNA", "nFeature_RNA", "percent.mt")])
 ```
 
 ## Discover 10x folders before reading them
@@ -181,10 +144,10 @@ works for tables and serialized R objects; Shennong chooses the writer from the
 file extension.
 
 ```{r write-read}
-outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-io"))
+outdir <- sn_set_path(file.path(tempdir(), "shennong-kotliarov-io"))
 
-metadata_path <- file.path(outdir, "pbmc3k_metadata.csv")
-object_path <- file.path(outdir, "pbmc3k_initialized.qs2")
+metadata_path <- file.path(outdir, "kotliarov_metadata.csv")
+object_path <- file.path(outdir, "kotliarov_initialized.qs2")
 
 metadata_export <- cbind(cell = rownames(pbmc[[]]), pbmc[[]])
 sn_write(metadata_export, metadata_path, row.names = FALSE)
@@ -218,31 +181,13 @@ pbmc <- sn_convert_bpcells(
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
 ```
 
-## Prepare a reusable Zenodo upload
+## Publish reusable data outside the analysis package
 
-When an intermediate object or reference dataset should be reused by another
-project, upload the exact files and a versioned manifest to Zenodo with
-`sn_upload_zenodo()`. The default is draft-first: inspect the Zenodo draft, then
-rerun with `publish = TRUE` only when the record is ready.
-
-```{r zenodo-dry-run}
-zenodo_plan <- sn_upload_zenodo(
-  files = c(metadata_path, object_path),
-  title = "PBMC3k initialized Shennong example",
-  creators = "Duan, Songqi",
-  version = "2026.05.04",
-  sandbox = TRUE,
-  dry_run = TRUE
-)
-
-zenodo_plan$files[, c("file", "size", "md5")]
-zenodo_plan$manifest_path
-```
-
-In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and remove
-`dry_run = TRUE`. The uploaded `shennong_zenodo_manifest.json` records the
-dataset version, Shennong version, file sizes, and checksums so future analyses
-can verify they are reusing the same data release.
+When an intermediate object or reference dataset should be shared, hand the
+exact files and their checksums to the `ShennongData` publication workflow.
+Shennong intentionally stops at producing validated analysis artifacts; it no
+longer owns repository discovery, download, caching, credentials, or remote
+publication state.
 
 ## Add metadata exported from AnnData
 

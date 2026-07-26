@@ -96,9 +96,9 @@ an exact fallback.
 }
 \examples{
 \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 pbmc <- sn_run_cluster(
-  pbmc_small,
+  pbmc,
   batch = "sample",
   species = "human",
   verbose = FALSE

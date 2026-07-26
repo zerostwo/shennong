@@ -64,6 +64,7 @@ test_that("Slingshot trajectory stores complete per-cell and graph contracts", {
   expect_equal(result$method, "slingshot")
   expect_gte(result$diagnostics$n_lineages, 2L)
   expect_equal(nrow(result$tables$cells), ncol(object))
+  expect_identical(result$tables$primary, result$tables$cells)
   expect_true(all(c("primary_lineage", "primary_pseudotime") %in% names(result$tables$cells)))
   expect_true(any(grepl("^weight_", names(result$tables$cells))))
   expect_equal(nrow(result$tables$terminal_states), result$diagnostics$n_lineages)

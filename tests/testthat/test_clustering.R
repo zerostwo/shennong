@@ -2027,6 +2027,7 @@ test_that("sn_transfer_labels adds compact Seurat label-transfer metadata", {
     row.names = colnames(query),
     check.names = FALSE
   )
+  transfer_args <- new.env(parent = emptyenv())
 
   mapped <- testthat::with_mocked_bindings(
     sn_transfer_labels(
@@ -2042,6 +2043,7 @@ test_that("sn_transfer_labels adds compact Seurat label-transfer metadata", {
       list(anchor_count = 5)
     },
     .sn_transfer_data_backend = function(...) {
+      transfer_args$value <- list(...)
       predictions
     }
   )
@@ -2055,6 +2057,11 @@ test_that("sn_transfer_labels adds compact Seurat label-transfer metadata", {
   ) %in% colnames(mapped[[]])))
   expect_equal(unname(mapped$pbmc_ref_label), predictions$predicted.id)
   expect_equal(mapped@misc$label_transfer$pbmc_ref$label_col, "cell_type")
+  canonical <- sn_get_result(mapped, "annotation", "pbmc_ref")
+  expect_equal(canonical$tables$primary$cell, colnames(mapped))
+  expect_equal(canonical$tables$primary$prediction, predictions$predicted.id)
+  expect_equal(canonical$tables$primary$prediction_score, predictions$prediction.score.max)
+  expect_false(any(c("reference", "query", "query.assay") %in% names(transfer_args$value)))
 })
 
 test_that("sn_transfer_labels supports Coralysis reference mapping", {

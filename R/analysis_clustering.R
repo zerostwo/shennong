@@ -1858,8 +1858,8 @@ sn_run_scanvi <- function(object,
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
-#' rare_tbl <- sn_detect_rare_cells(pbmc_small, method = "gini")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#' rare_tbl <- sn_detect_rare_cells(pbmc, method = "gini")
 #' head(rare_tbl)
 #' }
 #'
@@ -3856,6 +3856,13 @@ sn_run_cluster <- function(object,
     output_h5ad = combined@misc$integration$output_h5ad %||% NULL,
     transfer_control = transfer_control
   )
+  object <- .sn_store_label_transfer_result(
+    object = object,
+    prediction_prefix = prediction_prefix,
+    method = method_name,
+    label_by = label_by,
+    prediction_columns = colnames(metadata)
+  )
 
   if (isTRUE(return_anchors)) {
     return(list(query = object, combined = combined, prediction_col = prediction_col))
@@ -3872,6 +3879,60 @@ sn_run_cluster <- function(object,
   x <- gsub("^_+|_+$", "", x)
   x[!nzchar(x)] <- "value"
   x
+}
+
+.sn_store_label_transfer_result <- function(object,
+                                            prediction_prefix,
+                                            method,
+                                            label_by,
+                                            prediction_columns) {
+  metadata <- object[[]]
+  prediction_columns <- intersect(as.character(prediction_columns), colnames(metadata))
+  label_column <- paste0(prediction_prefix, "_label")
+  if (!label_column %in% prediction_columns) {
+    stop(
+      "Label-transfer output is missing expected metadata column `",
+      label_column, "`.",
+      call. = FALSE
+    )
+  }
+  primary <- tibble::tibble(
+    cell = rownames(metadata),
+    prediction = as.character(metadata[[label_column]])
+  )
+  score_column <- paste0(prediction_prefix, "_score")
+  if (score_column %in% prediction_columns) {
+    primary$prediction_score <- as.numeric(metadata[[score_column]])
+  }
+  extra_columns <- setdiff(prediction_columns, c(label_column, score_column))
+  for (column in extra_columns) {
+    primary[[column]] <- metadata[[column]]
+  }
+  result <- .sn_new_analysis_result(
+    analysis_type = "annotation",
+    name = prediction_prefix,
+    method = method,
+    backend = switch(
+      method,
+      seurat = "Seurat::TransferData",
+      coralysis = "Coralysis::ReferenceMapping",
+      scanvi = "scvi-tools scANVI",
+      scarches = "scvi-tools scArches",
+      method
+    ),
+    input = list(cells = nrow(primary), label_by = label_by),
+    parameters = list(
+      prediction_prefix = prediction_prefix,
+      prediction_columns = prediction_columns
+    ),
+    tables = list(primary = primary),
+    diagnostics = list(
+      labeled_cells = sum(!is.na(primary$prediction) & nzchar(primary$prediction)),
+      missing_predictions = sum(is.na(primary$prediction) | !nzchar(primary$prediction)),
+      label_levels = sort(unique(stats::na.omit(primary$prediction)))
+    )
+  )
+  sn_store_result(object, "annotation", prediction_prefix, result)
 }
 
 .sn_get_seurat_logcounts_sce <- function(object,
@@ -4271,6 +4332,13 @@ sn_prepare_label_transfer_reference <- function(object,
     prediction_columns = colnames(metadata),
     transfer_control = transfer_control
   )
+  object <- .sn_store_label_transfer_result(
+    object = object,
+    prediction_prefix = prediction_prefix,
+    method = "coralysis",
+    label_by = label_col,
+    prediction_columns = colnames(metadata)
+  )
 
   if (isTRUE(return_anchors)) {
     return(list(query = object, mapping = mapped))
@@ -4282,7 +4350,8 @@ sn_prepare_label_transfer_reference <- function(object,
 #'
 #' \code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
 #' keeps the common path compact: transfer one metadata label, add the predicted
-#' label_by and confidence score back to the query, and store a small provenance
+#' label and confidence score back to the query, store cell-level predictions
+#' as a canonical \code{annotation} result, and retain a compact compatibility
 #' record in \code{query@misc$label_transfer}. The default \code{method =
 #' "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
 #' \code{TransferData()} workflow. \code{method = "coralysis"} projects the
@@ -4451,9 +4520,6 @@ sn_transfer_labels <- function(object = NULL,
   predictions <- .sn_transfer_data_backend(
     anchorset = anchors,
     refdata = ref_labels,
-    reference = reference,
-    query = object,
-    query.assay = query_assay,
     weight.reduction = reduction,
     dims = dims,
     k.weight = k_weight,
@@ -4490,6 +4556,13 @@ sn_transfer_labels <- function(object = NULL,
     reduction = reduction,
     dims = dims,
     features = features,
+    prediction_columns = colnames(metadata)
+  )
+  object <- .sn_store_label_transfer_result(
+    object = object,
+    prediction_prefix = prediction_prefix,
+    method = "seurat",
+    label_by = label_by,
     prediction_columns = colnames(metadata)
   )
 
@@ -4819,7 +4892,7 @@ sn_simulate_scdesign3 <- function(object,
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 #' pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl")
 #' head(colnames(pbmc[[]]))

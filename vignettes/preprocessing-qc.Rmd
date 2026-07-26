@@ -1,17 +1,27 @@
 ---
-title: "Preprocessing and QC with PBMC3k"
+title: "Preprocessing and QC with real PBMC CITE-seq data"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Preprocessing and QC with PBMC3k}
+  %\VignetteIndexEntry{Preprocessing and QC with real PBMC CITE-seq data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -32,38 +42,57 @@ Preprocessing should answer four questions before clustering:
 4. What QC evidence can be stored and revisited later?
 
 Shennong keeps those decisions explicit while keeping the code short. The
-examples use PBMC3k and are evaluated only when
+examples use 2,000 real cells sampled deterministically across 20 biological
+samples from the public Kotliarov PBMC CITE-seq cohort. The RNA and ADT assays
+remain aligned. Ordinary package checks do not evaluate the article when the
+local fixture is unavailable; a real-data pkgdown build sets
 `SHENNONG_RUN_VIGNETTES=true`.
 
-## Load PBMC3k and inspect species-aware QC fields
+## Load the local PBMC fixture and inspect species-aware QC fields
 
-`sn_load_data("pbmc3k")` downloads or reuses the cached 10x H5 file, reads it,
-and initializes a Seurat object with human QC metrics.
+Data discovery and materialization are handled by `ShennongData`. This article
+reads the already materialized, provenance-tracked local fixture; Shennong then
+owns the analysis steps.
 
-```{r load-pbmc3k}
+```{r load-kotliarov-pbmc}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-pbmc$sample <- "pbmc3k"
+pbmc <- qs2::qs_read(real_data_file)
 
 sn_get_species(pbmc)
 
-head(pbmc[[]][, c("sample", "nCount_RNA", "nFeature_RNA", "percent.mt")])
+head(pbmc[[]][, c(
+  "real_sample", "real_response", "real_batch",
+  "nCount_RNA", "nFeature_RNA", "pctMT", "nCount_ADT"
+)])
+
+data.frame(
+  assay = names(pbmc@assays),
+  features = vapply(pbmc@assays, nrow, numeric(1)),
+  cells = vapply(pbmc@assays, ncol, numeric(1))
+)
 ```
 
-If you start from a raw matrix instead, the equivalent explicit form is:
+The initialization API can be exercised on the real RNA UMI matrix without
+introducing another example dataset:
 
-```{r initialize-from-counts, eval = FALSE}
-counts <- sn_read("pbmc3k_filtered_feature_bc_matrix.h5")
+```{r initialize-from-counts, eval = run_vignette}
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
 
-pbmc <- sn_initialize_seurat_object(
+pbmc_from_counts <- sn_initialize_seurat_object(
   x = counts,
-  project = "pbmc3k_demo",
-  sample_name = "pbmc3k",
-  study = "10x_pbmc",
+  project = "kotliarov_pbmc",
+  sample_name = "kotliarov_subset",
+  study = "Kotliarov_2020",
   species = "human"
+)
+
+data.frame(
+  cells = ncol(pbmc_from_counts),
+  features = nrow(pbmc_from_counts),
+  assay = SeuratObject::DefaultAssay(pbmc_from_counts)
 )
 ```
 
@@ -73,12 +102,20 @@ analysis. If `HGNChelper` cannot provide an unambiguous replacement for an
 otherwise valid symbol, Shennong preserves the original symbol instead of
 returning an `NA` feature name.
 
-```{r standardize-symbols, eval = FALSE}
-pbmc <- sn_standardize_gene_symbols(
+```{r standardize-symbols, eval = run_vignette}
+symbols_before <- rownames(pbmc)
+pbmc_standardized <- sn_standardize_gene_symbols(
   pbmc,
   species = "human",
   is_gene_id = FALSE
 )
+
+data.frame(
+  feature_set = c("input", "standardized"),
+  features = c(length(symbols_before), nrow(pbmc_standardized)),
+  duplicated_symbols_resolved = c(NA_integer_, length(symbols_before) - nrow(pbmc_standardized))
+)
+head(rownames(pbmc_standardized))
 ```
 
 ## Filter cells with inspectable QC flags
@@ -91,15 +128,26 @@ acceptable.
 ```{r flag-cells}
 pbmc_flagged <- sn_filter_cells(
   x = pbmc,
-  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  group_by = "real_sample",
   method = "mad",
   n = c(5, 5, 3),
   plot = FALSE,
   filter = FALSE
 )
 
-qc_flag_cols <- grep("^qc_", colnames(pbmc_flagged[[]]), value = TRUE)
-head(pbmc_flagged[[]][, qc_flag_cols, drop = FALSE])
+qc_flag_cols <- grep("_qc$", colnames(pbmc_flagged[[]]), value = TRUE)
+qc_flag_summary <- do.call(rbind, lapply(qc_flag_cols, function(column) {
+  data.frame(metric = column, status = names(table(pbmc_flagged[[column]][, 1])),
+             cells = as.integer(table(pbmc_flagged[[column]][, 1])))
+}))
+qc_flag_summary
+
+sn_plot_qc_thresholds(
+  pbmc_flagged,
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  sample_by = "real_batch"
+)
 ```
 
 Once the flags look sensible, apply the same rule:
@@ -107,7 +155,8 @@ Once the flags look sensible, apply the same rule:
 ```{r filter-cells}
 pbmc_cells <- sn_filter_cells(
   x = pbmc,
-  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  group_by = "real_sample",
   method = "mad",
   n = c(5, 5, 3),
   plot = FALSE,
@@ -154,29 +203,76 @@ pbmc_norm <- sn_score_cell_cycle(pbmc_norm, species = "human")
 table(pbmc_norm$Phase)
 ```
 
+The fixture was deterministically prepared from author-demultiplexed singlets.
+The following core plot uses that real HTO classification directly; it verifies
+the input selection rule rather than pretending that `sn_find_doublets()` was
+run. A lightweight embedding is computed only to display those source calls.
+
+```{r plot-author-doublet-calls, eval = run_vignette}
+pbmc_qc_embedding <- sn_run_cluster(
+  pbmc_norm,
+  normalization_method = "seurat",
+  nfeatures = 1000,
+  dims = 1:15,
+  resolution = 0.6,
+  cluster_algorithm = "louvain",
+  species = "human",
+  verbose = FALSE
+)
+
+table(pbmc_qc_embedding$hto_classification_global)
+sn_plot_doublets(
+  pbmc_qc_embedding,
+  class_col = "hto_classification_global",
+  reduction = "umap"
+)
+```
+
 ## Optional doublet and ambient-RNA correction
 
 Doublet detection and ambient correction depend on optional backends. Shennong
-keeps them as explicit steps rather than hiding them in clustering.
+keeps them as explicit steps rather than hiding them in clustering. These
+steps run only when their R backend is installed. The doublet re-estimation is
+reserved for the `all` profile because the fixture already contains the
+authors' singlet calls; the core profile runs DecontX and its before/after plot
+when `celda` is available.
 
-```{r doublets, eval = FALSE}
+```{r doublets, eval = run_extended && requireNamespace("scDblFinder", quietly = TRUE)}
 pbmc_doublets <- sn_find_doublets(pbmc_norm)
 table(pbmc_doublets$doublet_class)
+
+pbmc_doublets <- sn_run_cluster(
+  pbmc_doublets,
+  normalization_method = "seurat",
+  nfeatures = 1000,
+  dims = 1:15,
+  resolution = 0.6,
+  cluster_algorithm = "louvain",
+  species = "human",
+  verbose = FALSE
+)
+sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
-For ambient RNA, PBMC3k raw counts can be loaded from the same example registry.
-The corrected matrix is written to a new layer by default, so the original
-counts remain inspectable.
+For ambient RNA, materialize a matching raw-count resource with
+`ShennongData` when the selected backend requires it. The decontX path below
+uses the filtered object directly and writes corrected counts to a new layer,
+so the original counts remain inspectable.
 
-```{r ambient, eval = FALSE}
-pbmc_raw <- sn_load_data("pbmc3k", matrix_type = "raw")
-
+```{r ambient, eval = run_vignette && requireNamespace("celda", quietly = TRUE)}
 pbmc_decont <- sn_remove_ambient_contamination(
   x = pbmc_norm,
-  raw = pbmc_raw,
   method = "decontx",
   layer = "decontaminated_counts",
   verbose = FALSE
+)
+
+SeuratObject::Layers(pbmc_decont[["RNA"]])
+sn_plot_ambient_correction(
+  pbmc_decont,
+  assay = "RNA",
+  layer_before = "counts",
+  layer_after = "decontaminated_counts"
 )
 ```
 
@@ -190,17 +286,20 @@ the QC decision without rerunning preprocessing.
 qc_report <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_by = "sample",
+  sample_by = "real_sample",
   verbose = FALSE
 )
 
 qc_report$overall
+head(qc_report$by_sample)
+
+sn_plot_qc(qc_report, metric = "retention_fraction")
 
 pbmc_norm <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_by = "sample",
-  store_name = "pbmc3k_preprocessing",
+  sample_by = "real_sample",
+  store_name = "kotliarov_preprocessing",
   return_object = TRUE,
   verbose = FALSE
 )

@@ -157,7 +157,7 @@ sn_find_spatial_features <- function(object,
   table <- if (identical(method, "morans_i") && all(c("feature", "score") %in% names(output$table))) tibble::as_tibble(output$table) else .sn_standardize_spatial_features(output, method)
   graph <- tibble::as_tibble(output$graph %||% tibble::tibble())
   result <- list(
-    schema_version = "1.0", analysis_type = "spatial_features", name = store_name,
+    schema_version = "1.0.0", analysis_type = "spatial_features", name = store_name,
     method = method, backend = method,
     input = list(assay = expression$assay, layer = expression$layer, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(k = backend_control$k %||% 6L, n_permutations = backend_control$n_permutations %||% 99L),
@@ -247,7 +247,7 @@ sn_find_spatial_domains <- function(object,
   values <- stats::setNames(domains$domain, domains$cell)
   object[[store_name]] <- values[colnames(object)]
   result <- list(
-    schema_version = "1.0", analysis_type = "spatial_domains", name = store_name,
+    schema_version = "1.0.0", analysis_type = "spatial_domains", name = store_name,
     method = method, backend = method,
     input = list(assay = assay %||% SeuratObject::DefaultAssay(object), layer = layer, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(lambda = backend_control$lambda %||% NULL, resolution = backend_control$resolution %||% NULL),
@@ -345,7 +345,7 @@ sn_run_spatial_neighborhood <- function(object,
   cooccurrence <- tibble::as_tibble(output$cooccurrence %||% tibble::tibble())
   if (!all(c("source", "target", "distance") %in% names(graph))) stop("Spatial graph requires source, target, and distance columns.", call. = FALSE)
   result <- list(
-    schema_version = "1.0", analysis_type = "spatial_neighborhood", name = store_name,
+    schema_version = "1.0.0", analysis_type = "spatial_neighborhood", name = store_name,
     method = method, backend = method,
     input = list(group_by = group_by, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(k = backend_control$k %||% 6L, n_permutations = backend_control$n_permutations %||% 99L),
@@ -397,7 +397,7 @@ sn_run_spatial_communication <- function(object,
                                          return_object = TRUE) {
   .sn_validate_result_object(object)
   if (missing(group_by) || !group_by %in% colnames(object[[]])) stop("`group_by` must name object metadata.", call. = FALSE)
-  communication <- communication %||% sn_get_result(object, "communication", communication_name)
+  communication <- communication %||% sn_get_result(object, "cell_communication", communication_name)
   sn_validate_result(communication)
   interactions <- tibble::as_tibble(communication$tables$primary)
   if (!all(c("source", "target") %in% names(interactions))) stop("Communication result requires source and target columns.", call. = FALSE)
@@ -408,7 +408,7 @@ sn_run_spatial_communication <- function(object,
   spatial$within_distance <- if (is_null(max_distance)) is.finite(spatial$spatial_distance) else is.finite(spatial$spatial_distance) & spatial$spatial_distance <= max_distance
   filtered <- spatial[spatial$within_distance, , drop = FALSE]
   result <- list(
-    schema_version = "1.0", analysis_type = "spatial_communication", name = store_name,
+    schema_version = "1.0.0", analysis_type = "spatial_communication", name = store_name,
     method = paste0(communication$method, "+distance"), backend = communication$backend,
     input = list(communication_name = communication$name, group_by = group_by, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(max_distance = max_distance),
@@ -461,7 +461,7 @@ sn_integrate_spatial <- function(object,
   storage.mode(matrix) <- "numeric"
   rownames(matrix) <- embedding$cell
   result <- list(
-    schema_version = "1.0", analysis_type = "spatial_integration", name = store_name,
+    schema_version = "1.0.0", analysis_type = "spatial_integration", name = store_name,
     method = method, backend = method,
     input = list(coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(), tables = list(primary = embedding, coordinates = coordinates$table),

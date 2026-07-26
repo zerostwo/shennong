@@ -10,6 +10,45 @@ release.
 
 ### Added
 
+- Added `sn_build_result_bundle()`, `sn_validate_result_bundle()`, and
+  `sn_export_result_bundle()` as the package-owned,
+  `shennong.dev/analysis-result-bundle/v1` JSON handoff boundary. Bundles carry
+  one validated canonical result, immutable input
+  identifier/revision/SHA-256 references, package and execution provenance,
+  and candidate artifact roles/digests without service calls or credentials.
+- Added `sn_audit_results()` and `sn_upgrade_results()` to inspect and migrate
+  stored analytical results to the canonical `1.0.0` result contract. The
+  audit distinguishes valid, safely upgradeable legacy, invalid, and
+  intentionally out-of-contract runtime artifacts, and reports unknown
+  top-level `object@misc` payloads as `unregistered`, without mutating objects.
+- Added the direct `sn_run_scissor()` workflow and `sn_plot_scissor()` views for
+  bulk-phenotype-guided cell selection. Unified results retain all-cell
+  coefficients, state and sample summaries, model/correlation evidence, and
+  optional bootstrap reliability output while the existing
+  `sn_prioritize_states(method = "scissor")` entry point remains compatible.
+- Expanded `sn_run_survival()` into a complete per-feature survival workflow
+  with adjusted Cox models, Kaplan-Meier curves, log-rank tests, risk tables,
+  cumulative hazards, model-performance statistics, proportional-hazards
+  tests, and scaled Schoenfeld residuals. `sn_plot_survival()` now renders
+  forest, Kaplan-Meier, risk-table, cumulative-hazard, scaled-residual, and
+  proportional-hazards-test views.
+- Added explicit, scoped AutoZyme acceleration support through
+  `sn_check_autozyme()`, `sn_enable_autozyme()`, `sn_disable_autozyme()`, and
+  `sn_with_autozyme()`. Compatibility is checked against a pinned AutoZyme
+  revision and exact upstream versions; approximate patches require a second
+  opt-in, and active acceleration is recorded in result provenance.
+- Added a local-only real-public-data harness under `scripts/real-data/`. Its
+  four logical bundles cover Kotliarov PBMC CITE-seq, a GSE72056/TCGA-SKCM
+  single-cell-to-bulk melanoma bridge, Hermann spermatogenesis spliced and
+  unspliced counts, and two 10x Visium lymph-node sections. Source metadata,
+  deterministic preparation, validation, and function-to-article coverage are
+  tracked; raw and prepared data remain ignored and are never packaged.
+- Added runtime article coverage and AutoZyme benchmark runners. Runtime
+  coverage records which declared analysis and visualization functions were
+  actually observed while real-data articles rendered, keeps optional extended
+  backends explicit, and rejects network access. The benchmark compares
+  baseline and scoped accelerated CellChat/WGCNA execution and checks output
+  equivalence plus patch restoration.
 - Added RegVelo as a managed `sn_run_velocity(method = "regvelo")` backend.
   Shennong accepts regulator-target edge tables, named target-by-regulator
   matrices, or CSV priors; the unified velocity result retains RegVelo latent
@@ -23,12 +62,96 @@ release.
 
 ### Changed
 
+- `sn_list_methods(available = TRUE/FALSE)` now filters against the caller's
+  requested value instead of resolving the argument through dplyr's data mask.
+- Named Scissor Cox phenotypes explicitly preserve bulk-sample identifiers
+  after alignment; the regression contract now verifies both reordered values
+  and retained names.
+- Analytical results now use `schema_version = "1.0.0"` and a canonical
+  data-frame `tables$primary` across registered and generic result stores.
+  Existing table aliases and specialized getters remain available as
+  compatibility views, while non-analytical caches and backend manifests remain
+  explicitly classified as artifacts.
+- Reference label transfer now stores cell-level predictions as a canonical
+  `annotation` result while retaining the existing compact
+  `object@misc$label_transfer` manifest as a registered compatibility artifact.
+- `scripts/build-pkgdown.R --real` now validates the complete local public-data
+  matrix before evaluating article chunks with real tables and plots. It never
+  downloads data; `--data-root` selects an existing local matrix, `--extended`
+  opts into available external backends, and `--full --real` is the clean
+  real-output release gate.
 - `sn_find_de()` is now the common differential-expression entry point. It
   retains all Seurat marker, contrast, and pseudobulk behavior while
   automatically dispatching matrix, list, and `SummarizedExperiment` inputs to
   the standalone bulk engine. `sn_find_bulk_de()` remains a compatible wrapper.
 
+### Removed
+
+- Removed Shennong's data-distribution layer: `sn_load_data()`,
+  `sn_list_datasets()`, `sn_download_zenodo()`, and `sn_upload_zenodo()` are no
+  longer exported, and the bundled `pbmc_small` / `pbmc_small_raw` analysis
+  datasets are no longer shipped. Dataset discovery, download, caching, and
+  publication now belong to `ShennongData`; Shennong consumes materialized
+  matrices, paths, and Seurat objects. The runtime reference assets used for
+  annotation, species mapping, gene filtering, and signatures remain bundled.
+
+### Fixed
+
+- Managed scVelo preprocessing now explicitly normalizes fractional splicing
+  estimates and log1p-transforms the expression matrix before Seurat-flavor
+  HVG selection. The choices are retained in velocity parameters and backend
+  manifests, and CellRank computes its eigendecomposition before automatic
+  macrostate selection when no state count is supplied.
+- `sn_annotate_de_features()` now synchronizes the legacy `table` alias with
+  `tables$primary`, preventing retrieval of stale differential-expression
+  evidence after feature annotation.
+- Result migration now rejects unsupported or future schema versions without
+  rewriting them, uses exact field lookup so misspelled aliases cannot pass
+  validation, and materializes the registered QC compatibility views when a
+  canonical generic result is stored.
+- `sn_run_scissor()` now uses the requested assay layer consistently for
+  variable-feature selection, PCA, graph construction, and the Scissor backend;
+  requesting an unavailable layer fails explicitly instead of silently falling
+  back to counts.
+- Stored spatial communication now retrieves the registered
+  `cell_communication` result type instead of looking under an unreachable
+  `communication` type.
+- CellChat execution now encodes backend-unsafe group names such as the numeric
+  label `"0"` and decodes sender/receiver labels in returned tables, preserving
+  the user's original biological labels.
+- Seurat label transfer now requests the table-returning `TransferData()` form.
+  This avoids Seurat 5 returning a query object that was then incorrectly
+  coerced to a data frame.
+- `sn_plot_feature(assay = ...)` now uses the requested assay when calculating
+  shared feature limits, so ADT and other non-default-assay features render
+  without changing `DefaultAssay()`.
+- Result-aware plotting uses exact nested-field lookup, preventing similarly
+  named fields such as `tables_backup` from being partially matched as the
+  canonical `tables$primary` result.
+- Enrichment plotting now accepts the native S4 `enrichResult`, `gseaResult`,
+  and `compareClusterResult` objects returned by clusterProfiler/DOSE, so
+  standalone real-data enrichment results can be plotted without manual
+  coercion.
+- The BayesPrism adapter now restores the R session temporary directory if a
+  backend removes it, preventing successful deconvolution from breaking later
+  knitr graphics and file output in the same session.
+- Cross-method communication concordance now counts finite rank pairs before
+  computing Spearman correlation, and LIANA/NATMI `prod_weight` and
+  `edge_specificity` output is recognized as quantitative evidence.
+  LIANA/CellChat consensus therefore uses both backend rankings when available
+  and retains an explicit `NA` diagnostic when overlap is not rankable instead
+  of failing after both backends complete successfully.
+
 ### Performance
+
+- On the current maintainer host, the reproducible real-data benchmark recorded
+  CellChat at 1.264s baseline versus 0.126s accelerated (10.0317x), with
+  identical 16-interaction output, and WGCNA at 7.781s versus 0.073s
+  (106.5890x), with identical modules, maximum eigengene difference `1.71e-07`,
+  and maximum trait-correlation difference `8.92e-08` (tolerance `1e-05`).
+  These are measured host-specific results, not package-level performance
+  guarantees; the ignored JSON artifact retains the exact inputs, timings,
+  versions, source revision, and equivalence checks.
 
 - Daily R package checks no longer repeat the full test suite already run by
   coverage; release audits can opt back in through `workflow_dispatch`.

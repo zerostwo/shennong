@@ -1,21 +1,39 @@
 .sn_misc_result_registry <- function() {
-  tibble::tibble(
-    collection = c(
-      "de_results",
-      "cell_communication_results",
-      "deconvolution_results",
-      "milo_results",
-      "qc_assessments",
-      "regulatory_activity_results",
-      "enrichment_results",
-      "interpretation_results",
-      "sn_run_cluster",
-      "integration",
-      "mmochi",
-      "bpcells_layers",
-      "infercnvpy",
-      "input_source"
-    ),
+  analysis_collections <- c(
+    "de_results",
+    "cell_communication_results",
+    "deconvolution_results",
+    "milo_results",
+    "qc_assessments",
+    "regulatory_activity_results",
+    "enrichment_results",
+    "interpretation_results"
+  )
+  artifact_collections <- c(
+    "sn_run_cluster",
+    "integration",
+    "mmochi",
+    "bpcells_layers",
+    "infercnvpy",
+    "input_source",
+    "qc",
+    "hvg_selection",
+    "rare_feature_selection",
+    "label_transfer",
+    "label_transfer_reference",
+    "scdesign3",
+    "coralysis",
+    "scarches",
+    "scpoli",
+    "cellphonedb",
+    "cell2location",
+    "tangram",
+    "squidpy",
+    "spatialdata",
+    "stlearn"
+  )
+  analysis_registry <- tibble::tibble(
+    collection = analysis_collections,
     type = c(
       "de",
       "cell_communication",
@@ -24,15 +42,9 @@
       "qc_assessment",
       "regulatory_activity",
       "enrichment",
-      "interpretation",
-      "clustering_stage_cache",
-      "integration_artifact",
-      "mmochi_artifact",
-      "bpcells_artifact",
-      "infercnvpy_artifact",
-      "input_source"
+      "interpretation"
     ),
-    schema_version = c(rep("1.0.0", 8), rep(NA_character_, 6)),
+    schema_version = rep("1.0.0", length(analysis_collections)),
     required_fields = I(c(
       list(c("schema_version", "package_version", "created_at", "table", "analysis")),
       list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
@@ -41,16 +53,11 @@
       list(c("schema_version", "package_version", "created_at", "overall", "by_sample")),
       list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
       list(c("schema_version", "package_version", "created_at", "table", "analysis", "database")),
-      list(c("schema_version", "package_version", "created_at", "task", "evidence", "prompt", "response")),
-      list(character()),
-      list(character()),
-      list(character()),
-      list(character()),
-      list(character()),
-      list(character())
+      list(c("schema_version", "package_version", "created_at", "task", "evidence", "prompt", "response"))
     )),
-    listable = c(rep(TRUE, 8), rep(FALSE, 6)),
-    table_required = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, rep(FALSE, 6)),
+    contract_scope = rep("analysis_result", length(analysis_collections)),
+    listable = rep(TRUE, length(analysis_collections)),
+    table_required = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE),
     reader = c(
       "sn_get_de_result",
       "sn_get_cell_communication_result",
@@ -59,21 +66,35 @@
       NA_character_,
       "sn_get_regulatory_activity_result",
       "sn_get_enrichment_result",
-      "sn_get_interpretation_result",
-      rep(NA_character_, 6)
+      "sn_get_interpretation_result"
     ),
     writer = c(
-      "sn_find_de/sn_store_de_result",
+      "sn_find_de",
       "sn_store_cell_communication",
       "sn_store_deconvolution",
       "sn_store_milo",
       "sn_assess_qc",
       "sn_store_regulatory_activity",
       "sn_store_enrichment",
-      "sn_interpret_*",
-      rep(NA_character_, 6)
+      "sn_interpret_*"
     )
   )
+  artifact_registry <- tibble::tibble(
+    collection = artifact_collections,
+    type = paste0(artifact_collections, "_artifact"),
+    schema_version = rep(NA_character_, length(artifact_collections)),
+    required_fields = I(rep(list(character()), length(artifact_collections))),
+    contract_scope = rep("artifact", length(artifact_collections)),
+    listable = rep(FALSE, length(artifact_collections)),
+    table_required = rep(FALSE, length(artifact_collections)),
+    reader = rep(NA_character_, length(artifact_collections)),
+    writer = rep(NA_character_, length(artifact_collections))
+  )
+  artifact_registry$type[artifact_registry$collection == "sn_run_cluster"] <-
+    "clustering_stage_cache"
+  artifact_registry$type[artifact_registry$collection == "input_source"] <-
+    "input_source"
+  dplyr::bind_rows(analysis_registry, artifact_registry)
 }
 
 .sn_misc_registry_entry <- function(collection) {
@@ -104,7 +125,7 @@
     }
   }
 
-  if (isTRUE(entry$table_required[[1]]) && !is.data.frame(result$table)) {
+  if (isTRUE(entry$table_required[[1]]) && !is.data.frame(result[["table"]])) {
     stop(
       "Stored result '", store_name, "' in collection '", collection,
       "' does not match schema; `table` must be a data frame or tibble.",
@@ -112,7 +133,10 @@
     )
   }
 
-  if ("schema_version" %in% required_fields && (!is.character(result$schema_version) || length(result$schema_version) != 1L || !nzchar(result$schema_version))) {
+  schema_version <- result[["schema_version"]]
+  if ("schema_version" %in% required_fields &&
+      (!is.character(schema_version) || length(schema_version) != 1L ||
+       is.na(schema_version) || !nzchar(schema_version))) {
     stop(
       "Stored result '", store_name, "' in collection '", collection,
       "' does not match schema; `schema_version` must be a non-empty character scalar.",
@@ -123,17 +147,77 @@
   invisible(TRUE)
 }
 
-.sn_store_misc_result <- function(object, collection, store_name, result) {
-  .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
+.sn_prepare_misc_result <- function(collection, store_name, result) {
   entry <- .sn_misc_registry_entry(collection)
-  if (!is_null(entry) && isTRUE(entry$listable[[1]])) {
-    result <- .sn_upgrade_analysis_result(
-      result,
-      analysis_type = entry$type[[1]],
-      name = store_name
-    )
-    sn_validate_result(result)
+  if (is_null(entry)) {
+    stop("Unknown Shennong misc collection: ", collection, call. = FALSE)
   }
+  if (!isTRUE(entry$listable[[1]])) {
+    .sn_validate_misc_result(collection, store_name, result)
+    return(result)
+  }
+
+  # Registered legacy collections keep their established compatibility fields,
+  # but the canonical payload always lives under tables$primary. When both are
+  # present, the legacy field is authoritative for legacy writers.
+  legacy_table <- result[["table"]]
+  if (is.data.frame(legacy_table)) {
+    result[["tables"]] <- result[["tables"]] %||% list()
+    result[["tables"]][["primary"]] <- legacy_table
+  }
+  legacy_by_sample <- result[["by_sample"]]
+  if (identical(collection, "qc_assessments") && is.data.frame(legacy_by_sample)) {
+    result[["tables"]] <- result[["tables"]] %||% list()
+    result[["tables"]][["primary"]] <- legacy_by_sample
+    result[["tables"]][["by_sample"]] <- legacy_by_sample
+  }
+  result <- .sn_upgrade_analysis_result(
+    result,
+    analysis_type = entry$type[[1]],
+    name = store_name
+  )
+  result[["package_version"]] <- result[["package_version"]] %||%
+    result[["provenance"]][["package_versions"]][["Shennong"]] %||% NA_character_
+  result[["created_at"]] <- result[["created_at"]] %||%
+    result[["provenance"]][["timestamp"]]
+  result[["analysis"]] <- result[["analysis"]] %||% result[["analysis_type"]]
+  required <- entry$required_fields[[1]]
+  if ("table" %in% required) {
+    result[["table"]] <- result[["tables"]][["primary"]]
+  }
+  if ("method" %in% required) {
+    result[["method"]] <- result[["method"]] %||% "unknown"
+  }
+  if ("database" %in% required) {
+    result[["database"]] <- result[["database"]] %||%
+      result[["parameters"]][["database"]] %||% "unknown"
+  }
+  if (identical(collection, "qc_assessments")) {
+    result[["by_sample"]] <- result[["tables"]][["by_sample"]] %||%
+      result[["tables"]][["primary"]]
+    result[["overall"]] <- result[["overall"]] %||%
+      result[["tables"]][["overall"]]
+  }
+  .sn_validate_misc_result(collection, store_name, result)
+  sn_validate_result(result)
+  result
+}
+
+.sn_store_misc_result <- function(object, collection, store_name, result) {
+  # New writes must satisfy the registered physical-storage contract before
+  # normalization. Read-time migration may infer compatible legacy envelope
+  # fields, but a malformed payload claiming to be a current writer output
+  # should not be silently accepted.
+  .sn_validate_misc_result(
+    collection = collection,
+    store_name = store_name,
+    result = result
+  )
+  result <- .sn_prepare_misc_result(
+    collection = collection,
+    store_name = store_name,
+    result = result
+  )
   misc_data <- methods::slot(object, "misc")
   misc_data[[collection]] <- misc_data[[collection]] %||% list()
   misc_data[[collection]][[store_name]] <- result
@@ -148,17 +232,11 @@
     stop(glue("No stored result named '{store_name}' was found in `object@misc${collection}`."))
   }
   result <- collection_data[[store_name]]
-  .sn_validate_misc_result(collection = collection, store_name = store_name, result = result)
-  entry <- .sn_misc_registry_entry(collection)
-  if (!is_null(entry) && isTRUE(entry$listable[[1]])) {
-    result <- .sn_upgrade_analysis_result(
-      result,
-      analysis_type = entry$type[[1]],
-      name = store_name
-    )
-    sn_validate_result(result)
-  }
-  result
+  .sn_prepare_misc_result(
+    collection = collection,
+    store_name = store_name,
+    result = result
+  )
 }
 
 .sn_resolve_misc_result_name <- function(object,
@@ -216,14 +294,18 @@
 }
 
 .sn_result_n_rows <- function(result) {
-  if (is.data.frame(result$table)) {
-    return(nrow(result$table))
+  tables <- result[["tables"]] %||% list()
+  if (is.data.frame(tables[["primary"]])) {
+    return(nrow(tables[["primary"]]))
   }
-  if (is.data.frame(result$by_sample)) {
-    return(nrow(result$by_sample))
+  if (is.data.frame(result[["table"]])) {
+    return(nrow(result[["table"]]))
   }
-  if (is.data.frame(result$overall)) {
-    return(nrow(result$overall))
+  if (is.data.frame(result[["by_sample"]])) {
+    return(nrow(result[["by_sample"]]))
+  }
+  if (is.data.frame(result[["overall"]])) {
+    return(nrow(result[["overall"]]))
   }
   0L
 }
@@ -2635,7 +2717,11 @@ sn_store_enrichment <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_enrichment"))
   }
 
-  stored_result
+  .sn_get_misc_result(
+    object = object,
+    collection = "enrichment_results",
+    store_name = store_name
+  )
 }
 
 #' Prepare cluster-annotation evidence from a Seurat object

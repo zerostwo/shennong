@@ -1,6 +1,6 @@
 ---
 name: use-shennong-single-cell-workflows
-description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, CNV, metabolism, regulatory, simulation, visualization, IO, runtime, or reporting workflows built around Seurat objects.
+description: Use when working with current Shennong single-cell, CITE-seq, spatial, deconvolution, communication, state-priority, Scissor, CNV, metabolism, regulatory, simulation, visualization, IO, runtime, acceleration, or reporting workflows built around Seurat objects.
 ---
 
 # use-shennong-single-cell-workflows
@@ -28,26 +28,18 @@ This skill is the main entry point for package usage.
 
 - a Shennong-driven workflow step
 - reusable Seurat outputs or stored results
-- a Zenodo upload plan or record when the user asks to release reusable data
+- an explicit data provenance record for every materialized input
 
 ## Rules
 
 - prefer Shennong exported APIs when they already expose the needed capability
 - keep the main object as a Seurat object unless another return type is required
-- use `sn_upload_zenodo()` for reusable data releases instead of hand-written
-  `zen4R` upload code; keep `publish = FALSE` until the user explicitly wants
-  to publish the Zenodo draft
-- use `sn_download_zenodo()` for reusable data downloads from public Zenodo
-  records; do not require a token unless the record is restricted/private
-- use `sn_list_datasets()` before loading the Shennong public Zenodo
-  collection, then call `sn_load_data(dataset = <sample_id>)` or
-  `sn_load_data(dataset = <study_id>, sample_id = <sample_id>)`
-- use vectorized `sn_load_data(dataset = c(...))` when several Shennong
-  example datasets should be loaded together; filtered inputs return a merged
-  Seurat object and raw inputs return a named list
-- use `sn_load_data(dataset = ..., backend = "api")` for lazy Shennong Data
-  Server resources; select assay/layer views through `api_args`, and set
-  `lazy = FALSE` only when the user explicitly wants materialization
+- dataset discovery, download, caching, and publication belong to the
+  `ShennongData` package; call its APIs with an explicit `ShennongData::`
+  namespace, then pass the materialized matrix, path, or Seurat object to
+  Shennong
+- do not recreate the removed Shennong `sn_load_data()`, `sn_list_datasets()`,
+  `sn_download_zenodo()`, or `sn_upload_zenodo()` compatibility layer
 - respect strict `sn_verb_noun` naming conventions
 - use the shared package API and workflow references instead of inventing
   partial wrapper logic
@@ -67,6 +59,9 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
+- keep AutoZyme acceleration explicit: inspect `sn_check_autozyme()` first and
+  prefer `sn_with_autozyme()` with strict defaults; never install AutoZyme,
+  prepare its Python environment, or change thread counts inside an analysis
 - if work is happening inside an initialized project, also respect the project
   `AGENTS.md`, `memory/`, and `docs/standards/`
 
@@ -169,9 +164,13 @@ This skill is the main entry point for package usage.
    probabilities.
    Test cell-type abundance with `sn_test_abundance()` using `sample_by` as the
    biological replicate; use Propeller by default, permutation for transparent
-   validation, and Milo for neighborhood effects. Use
-   `sn_prioritize_states()` for perturbation separability, RareQ topology, or
-   Scissor only when matched bulk expression and phenotype are supplied.
+   validation, and Milo for neighborhood effects. Use `sn_prioritize_states()`
+   for perturbation separability or RareQ topology. Use `sn_run_scissor()` only
+   when a named gene-by-bulk-sample expression matrix and aligned bulk
+   phenotype are supplied; retrieve it with
+   `sn_get_result(object, "scissor", store_name)` and review all-cell, state,
+   sample, correlation, model, and optional reliability tables before calling
+   `sn_plot_scissor()`.
    Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
    or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
    same input should be tested against multiple databases in one call.
@@ -215,7 +214,11 @@ This skill is the main entry point for package usage.
 13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks.
-14. When the correct entry point is unclear, read
+14. When a user explicitly requests R acceleration, run
+   `sn_check_autozyme()` first. Keep strict version/SHA and upstream-version
+   gating enabled, use the CellChat/NicheNet defaults only when eligible, and
+   prefer `sn_with_autozyme({...})` so prior patch state is restored.
+15. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 
@@ -249,7 +252,9 @@ This skill is the main entry point for package usage.
 - `sn_calculate_composition()`
 - `sn_calculate_roe()`
 - `sn_run_milo()`
+- `sn_run_scissor()` / `sn_plot_scissor()`
 - `sn_run_cell_communication(method = "cellchat")`
+- `sn_check_autozyme()` / `sn_with_autozyme({...})`
 - `sn_run_regulatory_activity(method = "dorothea")`
 - `sn_store_cell_communication()` / `sn_get_cell_communication_result()`
 - `sn_store_regulatory_activity()` / `sn_get_regulatory_activity_result()`

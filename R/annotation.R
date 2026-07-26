@@ -648,7 +648,7 @@ sn_run_annotation <- function(object,
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
 
   result <- list(
-    schema_version = "1.0",
+    schema_version = "1.0.0",
     analysis_type = "annotation",
     name = store_name,
     method = method,
@@ -674,6 +674,7 @@ sn_run_annotation <- function(object,
       consensus_reference_method = if (method == "consensus" && !is_null(reference)) backend_method else NULL
     ),
     tables = list(
+      primary = tibble::as_tibble(cell_predictions),
       cells = tibble::as_tibble(cell_predictions),
       clusters = tibble::as_tibble(cluster_predictions),
       evidence = tibble::as_tibble(cluster_evidence),

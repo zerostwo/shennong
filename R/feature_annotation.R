@@ -330,7 +330,8 @@ sn_annotate_de_features <- function(x,
     store_name <- store_name %||% paste0(de_name, "_feature_classes")
     updated <- stored
     updated$table <- annotated
-    updated$schema_version <- "1.1.0"
+    updated$tables$primary <- annotated
+    updated$schema_version <- .sn_analysis_result_schema_version()
     updated$feature_annotation <- list(
       source_de_name = de_name,
       species = species,

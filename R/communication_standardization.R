@@ -47,7 +47,8 @@
   q_value <- suppressWarnings(as.numeric(.sn_communication_values(table, c("q_value", "p_val_adj", "FDR", "adjusted_p_value"))))
   score_column <- .sn_communication_column(table, c(
     "score", "prob", "magnitude", "lr_means", "mean", "pearson", "aupr_corrected",
-    "scaled_weight", "weight", "interaction_score", "prioritization_score"
+    "prod_weight", "edge_specificity", "scaled_weight", "weight",
+    "interaction_score", "prioritization_score"
   ))
   rank_column <- .sn_communication_column(table, c("aggregate_rank", "magnitude_rank", "rank"))
   score <- if (!is_null(score_column)) {
@@ -171,13 +172,19 @@
   pairs <- utils::combn(methods, 2, simplify = FALSE)
   dplyr::bind_rows(lapply(pairs, function(pair) {
     shared <- intersect(names(ranks[[pair[[1]]]]), names(ranks[[pair[[2]]]]))
+    rank_1 <- ranks[[pair[[1]]]][shared]
+    rank_2 <- ranks[[pair[[2]]]][shared]
+    complete <- is.finite(rank_1) & is.finite(rank_2)
     tibble::tibble(
       method_1 = pair[[1]],
       method_2 = pair[[2]],
       shared_edges = length(shared),
-      rank_correlation = if (length(shared) < 3L) NA_real_ else stats::cor(
-        ranks[[pair[[1]]]][shared], ranks[[pair[[2]]]][shared], method = "spearman", use = "complete.obs"
-      )
+      complete_edges = sum(complete),
+      rank_correlation = if (sum(complete) < 3L) {
+        NA_real_
+      } else {
+        stats::cor(rank_1[complete], rank_2[complete], method = "spearman")
+      }
     )
   }))
 }

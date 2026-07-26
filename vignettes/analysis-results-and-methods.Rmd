@@ -11,11 +11,21 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
+real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
+pbmc_fixture <- if (nzchar(real_data_root)) {
+  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
+} else {
+  ""
+}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
+  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
-  message = FALSE
+  message = FALSE,
+  eval = run_vignette
 )
 ```
 
@@ -41,40 +51,28 @@ entry. Use `available` to determine whether its optional R package, executable,
 or pixi runtime is present in the current environment. Installation is always
 explicit; discovery never installs software.
 
-## The common result shape
+## The common result shape on real data
 
-New workflows store results with one versioned contract. Tables, embeddings,
-graphs, models, diagnostics, warnings, parameters, input summaries, and
-provenance have stable locations.
+New workflows store results with one versioned contract. This example runs QC
+assessment on the public Kotliarov PBMC CITE-seq cohort, stores the result on
+the Seurat object, and then validates the actual stored envelope. Tables,
+embeddings, graphs, models, diagnostics, warnings, parameters, input summaries,
+and provenance have stable locations.
 
 ```{r result-contract}
-result <- list(
-  schema_version = "1.0",
-  analysis_type = "trajectory",
-  name = "cd8_slingshot",
-  method = "slingshot",
-  backend = "slingshot",
-  input = list(reduction = "pca", cells = 4L, features = 2L),
-  parameters = list(start = "naive"),
-  tables = list(
-    primary = data.frame(
-      cell = paste0("cell", 1:4),
-      pseudotime = c(0, 0.3, 0.7, 1)
-    )
-  ),
-  embeddings = list(),
-  graphs = list(),
-  models = list(),
-  diagnostics = list(converged = TRUE),
-  warnings = character(),
-  provenance = list(
-    package_versions = list(Shennong = as.character(packageVersion("Shennong"))),
-    random_seed = 1L,
-    timestamp = "2026-07-15 UTC"
-  )
+object <- qs2::qs_read(pbmc_fixture)
+object <- sn_assess_qc(
+  object,
+  sample_by = "real_sample",
+  store_name = "kotliarov_qc",
+  return_object = TRUE,
+  verbose = FALSE
 )
 
+result <- sn_get_result(object, "qc_assessment", "kotliarov_qc")
 sn_validate_result(result, error = FALSE)
+result$tables$primary |> head()
+result$overall
 ```
 
 ## Store, discover, and retrieve from Seurat
@@ -83,43 +81,160 @@ The generic functions support new result types while existing helpers such as
 `sn_get_de_result()` remain available. Registered legacy result writers are
 upgraded to the same contract on write and read.
 
-```{r stored-results, eval = FALSE}
+```{r stored-results}
 object <- sn_store_result(
   object,
-  type = "trajectory",
-  name = "cd8_slingshot",
+  type = "qc_assessment",
+  name = "qc_copy",
   result = result
 )
 
 sn_list_results(object)
-sn_list_results(object, type = "trajectory")
+sn_list_results(object, type = "qc_assessment")
 
-trajectory <- sn_get_result(
+qc_copy <- sn_get_result(
   object,
-  type = "trajectory",
-  name = "cd8_slingshot"
+  type = "qc_assessment",
+  name = "qc_copy"
 )
 
-trajectory$tables$primary
-trajectory$provenance
+qc_copy$tables$primary |> head()
+qc_copy$provenance
 
 object <- sn_delete_result(
   object,
-  type = "trajectory",
-  name = "cd8_slingshot"
+  type = "qc_assessment",
+  name = "qc_copy"
 )
+
+sn_list_results(object)
 ```
 
 Prefer these APIs over direct `object@misc` access. Stable names and explicit
 provenance make stored results discoverable by scripts, reports, and future
 agent integrations without allowing an LLM to overwrite computational output.
 
+## Export a service-neutral Result Bundle
+
+`sn_build_result_bundle()` turns one retrieved canonical result into the
+package-owned JSON handoff contract
+`shennong.dev/analysis-result-bundle/v1`. The bundle may reference immutable
+inputs and candidate output artifacts, but it never connects to ShennongDB,
+calls an orchestrator, or carries credentials. An authorized external service
+must independently verify the referenced digests before promoting output
+bytes.
+
+```{r result-bundle}
+# Discover and retrieve the exact stored result first.
+sn_list_results(object, type = "qc_assessment")
+qc_result <- sn_get_result(
+  object,
+  type = "qc_assessment",
+  name = "kotliarov_qc"
+)
+
+bundle <- sn_build_result_bundle(
+  qc_result,
+  inputs = list(list(
+    role = "expression",
+    resource_id = "kotliarov-pbmc",
+    revision = "replace-with-immutable-revision",
+    digest = list(
+      algorithm = "sha256",
+      value = paste(rep("0", 64L), collapse = "")
+    )
+  )),
+  execution = list(runtime = "interactive-r")
+)
+
+sn_validate_result_bundle(bundle, error = FALSE)
+bundle_path <- tempfile(fileext = ".json")
+handoff <- sn_export_result_bundle(bundle, bundle_path)
+handoff[c("size_bytes", "digest")]
+unlink(bundle_path)
+```
+
+Replace the placeholder revision and digest with the exact values supplied by
+the data owner. Artifact paths, when present, must be bundle-relative. The
+export return value includes the JSON file's SHA-256 digest for the next
+trusted boundary to verify.
+
+## Audit and upgrade existing objects
+
+`sn_audit_results()` checks every registered result collection, the generic
+result store, and every other populated top-level `object@misc` entry without
+changing the object. Canonical results report `valid`, older compatible
+envelopes report `legacy`, runtime/cache payloads report `artifact`, and
+unknown payloads report `unregistered` rather than being silently omitted or
+misclassified as analysis results.
+Every analytical result uses `schema_version = "1.0.0"` and a canonical
+`tables$primary`; specialized table names remain synchronized aliases.
+
+```{r audit-results}
+audit <- sn_audit_results(object)
+audit[, c(
+  "type", "name", "contract_scope", "status", "schema_version",
+  "primary_rows", "errors"
+)]
+
+# Upgrade only compatible analytical results. Artifacts and unregistered
+# payloads are left untouched.
+object <- sn_upgrade_results(object)
+stopifnot(all(
+  sn_audit_results(object, include_artifacts = FALSE)$status == "valid"
+))
+
+sn_audit_results(object, include_artifacts = FALSE)
+```
+
+Table-returning helpers such as `sn_get_de_result()` remain compatibility
+views over the same canonical primary table. Use `sn_get_result()` when the
+full envelope, diagnostics, or provenance is required.
+
+## Opt in to validated AutoZyme acceleration
+
+Shennong never patches another package during loading. AutoZyme acceleration
+is an explicit, optional session-level choice, and strict mode requires both
+the pinned AutoZyme revision and an exactly validated upstream-package version.
+The conservative defaults cover the CellChat and NicheNet calls already used
+by `sn_run_cell_communication()`. The compatibility table can also report
+non-default AutoZyme patches, including packages that Shennong does not call
+directly. Those rows document guarded process-level AutoZyme capability; they
+are not additional Shennong workflow integrations.
+
+```{r autozyme-check}
+sn_check_autozyme()
+```
+
+```{r autozyme-enable, eval = FALSE}
+# Activate only after the compatibility table reports eligible = TRUE.
+sn_enable_autozyme()
+
+communication <- sn_run_cell_communication(
+  object,
+  method = c("cellchat", "nichenet")
+)
+
+sn_disable_autozyme()
+
+# Or restore the prior patch state automatically, even after an error.
+communication <- sn_with_autozyme({
+  sn_run_cell_communication(object, method = "cellchat")
+})
+```
+
+Version-drift and approximate patches are blocked by default. Relaxing
+`strict` or setting `allow_approximate = TRUE` is an explicit reproducibility
+decision and should be recorded with the analysis. Shennong does not install
+AutoZyme, create a Python environment, or change thread counts during an
+analysis call. Active patch details are added to result provenance.
+
 ## Give agents a read-only discovery surface
 
 Install the packaged Shennong Agent Skills and register the bundled stdio MCP
 server with an MCP-capable client:
 
-```{r mcp}
+```{r mcp, eval=FALSE}
 sn_install_codex_skill(
   path = "~/.agents/skills",
   type = "package_skills"

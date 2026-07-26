@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-07-15
+Last updated: 2026-07-26
 
 ## Current structure
 
@@ -17,6 +17,126 @@ Last updated: 2026-07-15
 
 ## Latest cleanup
 
+The newest entries appear first. Older entries remain as point-in-time evidence;
+historical validation counts and removed APIs do not describe the current
+release gate.
+
+- Shennong now owns the local candidate-result handoff boundary
+  `shennong.dev/analysis-result-bundle/v1`. `sn_build_result_bundle()` carries
+  one validated canonical analysis result, immutable input
+  identifier/revision/SHA-256 references, package/execution provenance, and candidate artifact
+  roles/digests; `sn_export_result_bundle()` writes credential-free JSON and
+  returns its SHA-256 digest. This does not imply OS authorization, byte
+  upload, DB promotion, or an end-to-end ecosystem loop.
+- `sn_list_methods(available = TRUE/FALSE)` now uses the caller value outside
+  dplyr's data mask. Named Cox phenotypes in Scissor continue to retain their
+  aligned sample identifiers, and the regression test now treats those names
+  as part of the public alignment evidence rather than ignoring them.
+- The five-repository ecosystem audit is recorded in
+  `docs/codex/Ecosystem.md`. The architecture has appropriate ownership
+  boundaries but does not yet have an end-to-end governed data and result loop.
+  Current package-level strengths are scRNA-seq, prepared CITE-seq, bulk RNA,
+  and prepared coordinate-bearing spatial transcriptomics; none currently has
+  deployed DB -> OS -> ShennongData materialization -> Runtime/Shennong ->
+  immutable DB result evidence, and scATAC-seq has no analytical or platform
+  contract. ShennongData artifact origin handling, sparse zero semantics, the
+  incomplete OS gateway/token contract, DB revision binding, binary Runtime
+  staging, result promotion, and environment locks are the highest-priority
+  cross-repository gaps.
+- The final 2026-07-26 full local package suite on the pre-existing dirty
+  development tree completed with `PASS 2576`, `SKIP 4`, `WARN 0`, and
+  `FAIL 0` in 542.9 seconds. The skips are explicit optional/local-fixture
+  boundaries: `lisi`, `ROGUE`, `scmap`, and the unavailable local public-data
+  figure fixture. The previously failing Scissor expectation now preserves
+  and asserts the aligned sample identifiers, and the three Result Bundle
+  exports are accounted for by the runtime-coverage governance test.
+- The final clean staged source build and tarball audit exclude `.codegraph`
+  and other repository-only state. The staged source package passed
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual`, including its
+  complete packaged test suite, with `Status: OK` in 597.5 seconds. The
+  check-safe AutoZyme metadata test now reads the installed package
+  DESCRIPTION, and the corrected result-audit Rd markup passes `checkRd`.
+  A subsequent `scripts/build-pkgdown.R --full` rebuilt the complete installed
+  site, including the Result Bundle reference and discovery/retrieval example,
+  in 266.8 seconds.
+- Data distribution has moved out of Shennong. The package no longer exports
+  `sn_load_data()`, `sn_list_datasets()`, `sn_download_zenodo()`, or
+  `sn_upload_zenodo()`, and no longer ships the `pbmc_small` analysis fixtures.
+  Real public-data fixtures for local validation and pkgdown rendering live
+  under the ignored `SHENNONG_REAL_DATA_DIR` boundary. The four small runtime
+  reference assets required by annotation, species mapping, gene filtering,
+  and signature lookup remain package data. The current source, namespace, and
+  data tree reflect that ownership change; the final full-suite,
+  source-package, `R CMD check`, and clean non-real-data site verdicts are
+  recorded above. A full real-data site rebuild remains a separate local-data
+  gate.
+- The local real-public-data matrix is prepared as four logical bundles and five
+  checksummed artifacts: Kotliarov PBMC CITE-seq (RNA/ADT, 2,000 cells, 20
+  samples); GSE72056 melanoma (6,000 features, 1,500 cells, 19 tumors) paired
+  with TCGA-SKCM (3,000 finite features, 155 patients, 75 overall-survival
+  events); Hermann spermatogenesis (2,000 features, 1,000 cells, spliced and
+  unspliced layers); and fresh-frozen plus FFPE/CytAssist Visium lymph node (400
+  real spots per section). The current validator accepts all five artifacts.
+  Acquisition code, source/license metadata, deterministic subset rules, and
+  coverage declarations are tracked; raw and derived data are not.
+- `scripts/build-pkgdown.R --real` validates the complete local matrix before
+  evaluating articles with real tables and figures, without downloading data.
+  Article-level smoke rendering has already produced local real-output HTML and
+  plot assets. `--full --real` remains the clean integrated site gate, and
+  `--extended` is reserved for installed optional backends.
+- The runtime-coverage runner traces declared analysis and visualization
+  functions while their mapped articles render, blocks network calls, and
+  writes ignored CSV/JSON evidence. The currently saved report is an
+  intermediate diagnostic snapshot, not a release verdict: it exposed article
+  failures and unobserved core rows that are being resolved before the final
+  clean run. No final runtime-coverage count is recorded here until that rerun
+  completes.
+- Analytical result boundaries are now audited and normalized on schema
+  `1.0.0`. New `sn_audit_results()` and `sn_upgrade_results()` APIs report and
+  migrate canonical, legacy, and invalid analysis results; registered runtime
+  payloads report as `artifact`, while every other populated top-level
+  `object@misc` entry reports as `unregistered` and is never rewritten.
+  Annotation (including label transfer), program scoring, trajectory,
+  registered legacy collections, and standalone bulk workflows expose a
+  canonical `tables$primary`. The durable coverage and exception inventory is
+  recorded in `docs/codex/ResultContractAudit.md`.
+  Unsupported or future schemas are never rewritten, critical contract fields
+  use exact lookup, and canonical generic QC writes materialize their registered
+  compatibility views before storage validation. Provenance types are checked
+  before a result can be reported as valid or unified.
+- Scissor now has a direct cell-first `sn_run_scissor()` entry point plus state,
+  cell, sample, correlation, and reliability plots. It validates exact bulk
+  sample alignment, retains all cell coefficients and model evidence, records
+  the bulk sample as the inferential unit, and shares its backend implementation
+  with the compatible `sn_prioritize_states(method = "scissor")` path. A missed
+  upstream alpha-search cutoff is now retained as an explicit exploratory
+  warning and diagnostic rather than silently accepted. The requested assay
+  layer is now used consistently through preprocessing and backend execution;
+  unavailable layers fail explicitly rather than falling back to counts.
+- Bulk survival now retains adjusted Cox estimates, model failures, model
+  performance, Kaplan-Meier and cumulative-hazard curves, group assignments,
+  log-rank tests, risk tables, proportional-hazards tests, and scaled
+  Schoenfeld-residual evidence. All six survival plot views build from retained
+  tables without refitting models.
+- Optional AutoZyme support is pinned to revision
+  `718541d9489596c7c1d75f52e9b3a8b2a429d1f9` and is explicit, scoped, and
+  transactional. Strict mode requires both that exact AutoZyme source and an
+  exact validated upstream version; approximate patches require separate
+  consent, and active patches are captured in analysis-result provenance. On
+  the current maintainer host, the real-data benchmark recorded CellChat at
+  1.264s versus 0.126s (10.0317x), with identical interaction output, and WGCNA
+  at 7.781s versus 0.073s (106.5890x), with identical modules and eigengene
+  difference `1.71e-07` plus trait-correlation difference `8.92e-08` within the
+  declared `1e-05` tolerance. Patches were inactive after each scoped run;
+  these timings are machine-specific measurements rather than general
+  guarantees.
+- Real execution exposed and fixed four cross-version/data-contract defects:
+  CellChat now safely encodes numeric group labels and decodes its output;
+  Seurat 5 label transfer requests the table-returning `TransferData()` form;
+  `sn_plot_feature(assay = "ADT")` uses the selected assay for shared limits;
+  and result-aware plots use exact lookup so backup fields cannot partially
+  match `tables$primary`. Focused regressions cover each boundary; the final
+  integrated package and site gates remain pending as described above.
 - The post-`v0.2.0` development line now unifies single-cell and standalone
   bulk differential expression under `sn_find_de()`: Seurat objects select the
   single-cell path, while matrices, lists, and `SummarizedExperiment` inputs

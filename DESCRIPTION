@@ -19,6 +19,7 @@ Imports:
     cluster,
     cli,
     curl,
+    digest,
     dplyr,
     ggplot2,
     glue,
@@ -39,6 +40,7 @@ Suggests:
     apeglm,
     aplot,
     AUCell,
+    autozyme,
     BayesPrism,
     Banksy,
     BiocManager,
@@ -107,7 +109,6 @@ Suggests:
     Seurat,
     SeuratObject,
     shadowtext,
-    ShennongData,
     SignatuR,
     SingleR,
     SingleCellExperiment,
@@ -125,9 +126,9 @@ Suggests:
     variancePartition,
     WGCNA,
     survival,
-    withr,
-    zen4R
+    withr
 Remotes:
+    github::ElliotXie/autozyme/autozyme_r@718541d9489596c7c1d75f52e9b3a8b2a429d1f9,
     github::cole-trapnell-lab/monocle3,
     github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,
@@ -137,7 +138,6 @@ Remotes:
     github::bnprks/BPCells/r,
     github::carmonalab/SignatuR,
     github::catplot/catplot,
-    github::zerostwo/shennong-data,
     github::jinworks/CellChat,
     github::immunogenomics/harmony@harmony2,
     github::immunogenomics/lisi,

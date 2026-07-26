@@ -11,7 +11,17 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -29,22 +39,25 @@ common Seurat and ggplot2 patterns used in single-cell reports: automatic point
 sizing, stable palettes, compact panel sizing, rasterized scatter plots for
 large objects, and direct support for stored Shennong results.
 
-This article uses PBMC3k as the running example. The chunks are displayed by
-default and are evaluated only with `SHENNONG_RUN_VIGNETTES=true`.
+This article uses the public Kotliarov PBMC CITE-seq subset as the running
+example. Its RNA and ADT values, 20 biological samples, response groups, and
+acquisition batches are all retained from the source study. The chunks execute
+in real-data builds and remain safe during ordinary package checks when the
+local fixture is unavailable.
 
 ## Prepare one clustered object
 
 The plot wrappers expect the same Seurat object produced by the analysis
-workflow. For a fast demonstration, this example clusters PBMC3k with fewer PCs
+workflow. For a fast demonstration, this example clusters the real PBMC subset with fewer PCs
 and variable features than a full analysis.
 
-```{r setup-pbmc3k}
+```{r setup-kotliarov-pbmc}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 library(ggplot2)
 
-pbmc <- sn_load_data("pbmc3k")
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -56,6 +69,8 @@ pbmc <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
+
+table(pbmc$seurat_clusters, pbmc$real_response)
 ```
 
 ## Dimensional maps: labels, palettes, and rasterization
@@ -72,7 +87,7 @@ sn_plot_dim(
   label = TRUE,
   label_halo = FALSE,
   palette = "Paired",
-  title = "PBMC3k clusters"
+  title = "Kotliarov PBMC clusters"
 )
 ```
 
@@ -114,7 +129,7 @@ sn_plot_feature(
 Density mode is useful when expression is sparse and you want to emphasize
 where a marker-defined state sits in the embedding.
 
-```{r plot-feature-density, eval = FALSE}
+```{r plot-feature-density, eval = run_vignette && requireNamespace("Nebulosa", quietly = TRUE)}
 sn_plot_feature(
   object = pbmc,
   features = "IL7R",
@@ -122,6 +137,34 @@ sn_plot_feature(
   mode = "density",
   density_style = "galaxy",
   title = "IL7R density"
+)
+```
+
+The matched ADT assay can be shown on the WNN embedding after the real protein
+counts have been CLR-normalized by the multimodal workflow.
+
+```{r plot-adt-features, eval = run_vignette}
+pbmc_cite <- sn_run_multimodal(
+  object = qs2::qs_read(real_data_file),
+  method = "wnn",
+  assay = "RNA",
+  adt_assay = "ADT",
+  nfeatures = 1500,
+  dims = 1:15,
+  adt_dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+sn_plot_feature(
+  object = pbmc_cite,
+  features = c("CD3-PROT", "CD19-PROT", "CD14-PROT"),
+  assay = "ADT",
+  layer = "data",
+  reduction = "wnn.umap",
+  palette = "YlOrRd",
+  title = "Measured ADT proteins"
 )
 ```
 
@@ -161,12 +204,12 @@ sn_plot_heatmap(
 Use `split_by` when the same marker panel should be inspected separately across
 samples, conditions, or batches.
 
-```{r plot-heatmap-split, eval = FALSE}
+```{r plot-heatmap-split, eval = run_vignette}
 sn_plot_heatmap(
   object = pbmc,
   features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
   group_by = "seurat_clusters",
-  split_by = "sample"
+  split_by = "real_response"
 )
 ```
 
@@ -176,27 +219,26 @@ Shennong wraps common summary plots so a report can move from cell-level maps to
 sample-level summaries without switching visual grammar.
 
 ```{r plot-violin-box}
-pbmc$sample <- rep(paste0("donor", 1:6), length.out = ncol(pbmc))
-pbmc$condition <- ifelse(pbmc$sample %in% paste0("donor", 1:3), "control", "stim")
-
 sn_plot_violin(
   object = pbmc,
-  features = c("nFeature_RNA", "percent.mt"),
-  group_by = "condition",
+  features = c("nFeature_RNA", "pctMT"),
+  group_by = "real_response",
   palette = "Set2"
 )
 
 qc_summary <- pbmc[[]] |>
-  dplyr::group_by(sample, condition) |>
+  dplyr::group_by(real_sample, real_response) |>
   dplyr::summarise(
     median_features = median(nFeature_RNA),
-    median_mito = median(percent.mt),
+    median_mito = median(pctMT),
     .groups = "drop"
   )
 
+head(qc_summary)
+
 sn_plot_boxplot(
   qc_summary,
-  x = condition,
+  x = real_response,
   y = median_features,
   y_label = "Median detected genes",
   panel_widths = 80,
@@ -257,7 +299,7 @@ it. Keeping those steps separate makes the denominator and grouping explicit.
 ```{r plot-composition}
 composition <- sn_calculate_composition(
   x = pbmc,
-  group_by = "sample",
+  group_by = "real_sample",
   variable = "seurat_clusters",
   measure = "both",
   min_cells = 10
@@ -265,7 +307,7 @@ composition <- sn_calculate_composition(
 
 sn_plot_composition(
   composition,
-  x = sample,
+  x = real_sample,
   fill = seurat_clusters,
   y = proportion,
   position = "stack",
@@ -280,13 +322,22 @@ resolve colors through Shennong. If `catplot` is installed, its compact theme is
 a good final layer for manuscript-style figures.
 
 ```{r custom-ggplot}
-condition_cols <- sn_get_palette("Set2", n = 2, palette_type = "discrete")
-names(condition_cols) <- c("control", "stim")
+response_levels <- sort(unique(qc_summary$real_response))
+response_cols <- sn_get_palette(
+  "Set2",
+  n = length(response_levels),
+  palette_type = "discrete"
+)
+names(response_cols) <- response_levels
 
-p <- ggplot(qc_summary, aes(x = condition, y = median_mito, fill = condition)) +
-  geom_col(width = 0.7) +
-  scale_fill_manual(values = condition_cols) +
-  labs(x = NULL, y = "Median mitochondrial percent")
+p <- ggplot(
+  qc_summary,
+  aes(x = real_response, y = median_mito, colour = real_response)
+) +
+  geom_boxplot(outlier.shape = NA, colour = "grey35") +
+  geom_jitter(width = 0.08, height = 0, size = 2) +
+  scale_colour_manual(values = response_cols) +
+  labs(x = NULL, y = "Per-sample median mitochondrial percent", colour = NULL)
 
 if (requireNamespace("catplot", quietly = TRUE)) {
   p <- p + catplot::theme_cat(panel_widths = 80, panel_heights = 70)

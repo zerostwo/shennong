@@ -1,8 +1,10 @@
 library(Seurat)
 
-data("pbmc_small", package = "Shennong")
-
-pbmc <- pbmc_small
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+))
 
 pbmc <- subset(
   pbmc,

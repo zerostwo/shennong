@@ -32,6 +32,7 @@ test_that("mean scoring is sparse-aware, stored, and added to metadata", {
   expect_true(all(c("programs_program_a", "programs_program_b") %in% colnames(object[[]])))
   result <- sn_get_result(object, "program_scoring", "programs")
   expect_equal(result$method, "mean")
+  expect_identical(result$tables$primary, result$tables$scores)
   expect_equal(nrow(result$tables$scores), 2 * ncol(object))
   expect_equal(unique(result$tables$scores$level), "cell")
   expect_equal(result$tables$coverage$n_matched, c(3L, 3L))

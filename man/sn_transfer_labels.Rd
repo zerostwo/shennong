@@ -102,7 +102,8 @@ A Seurat query object with transferred labels, or a list when
 \description{
 \code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
 keeps the common path compact: transfer one metadata label, add the predicted
-label_by and confidence score back to the query, and store a small provenance
+label and confidence score back to the query, store cell-level predictions
+as a canonical \code{annotation} result, and retain a compact compatibility
 record in \code{query@misc$label_transfer}. The default \code{method =
 "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
 \code{TransferData()} workflow. \code{method = "coralysis"} projects the

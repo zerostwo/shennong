@@ -254,6 +254,9 @@ test_that("sn_annotate_de_features stores annotated DE results on Seurat objects
   stored <- sn_get_de_result(object, de_name = "celltype_markers_feature_classes")
   expect_true("is_surface_membrane" %in% colnames(stored))
   expect_true(any(stored$is_surface_membrane, na.rm = TRUE))
+  stored_result <- sn_get_result(object, "de", "celltype_markers_feature_classes")
+  expect_identical(stored_result$table, stored_result$tables$primary)
+  expect_true("is_surface_membrane" %in% colnames(stored_result$tables$primary))
   expect_equal(
     object@misc$de_results$celltype_markers_feature_classes$feature_annotation$source_de_name,
     "celltype_markers"

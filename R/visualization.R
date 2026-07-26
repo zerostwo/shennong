@@ -135,15 +135,19 @@
 
 .sn_feature_limits <- function(object,
                                features,
+                               assay = NULL,
                                layer = "data",
                                max_cutoff = NA,
                                cells = NULL) {
-  data <- SeuratObject::FetchData(
+  data <- .sn_fetch_feature_matrix(
     object = object,
-    vars = features,
-    cells = cells,
+    features = features,
+    assay = assay,
     layer = layer
   )
+  if (!is.null(cells)) {
+    data <- data[cells, , drop = FALSE]
+  }
 
   values <- unlist(data[features], use.names = FALSE)
   if (length(values) == 0L) {
@@ -1411,7 +1415,7 @@ sn_plot_milo <- function(x,
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 #' sn_plot_dim(
 #'   object = pbmc,
@@ -2631,6 +2635,7 @@ sn_plot_feature <-
     feature_limits <- .sn_feature_limits(
       object = object,
       features = feature_titles,
+      assay = assay,
       layer = layer,
       max_cutoff = max_cutoff,
       cells = cells

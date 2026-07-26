@@ -137,6 +137,8 @@
   config <- list(
     mode = method, velocity_mode = backend_control$velocity_mode %||% "stochastic",
     min_shared_counts = backend_control$min_shared_counts %||% 10L,
+    enforce_normalization = backend_control$enforce_normalization %||% TRUE,
+    log1p_transform = backend_control$log1p_transform %||% TRUE,
     n_top_genes = backend_control$n_top_genes %||% min(2000L, length(exported$features)),
     n_neighbors = backend_control$n_neighbors %||% min(30L, length(exported$cells) - 1L),
     n_pcs = backend_control$n_pcs %||% min(30L, ncol(embedding$matrix)),
@@ -226,7 +228,11 @@
 #' @param store_name Stored result name.
 #' @param backend_control Backend/pixi controls or an explicit `runner`/`result`.
 #'   RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
-#'   table, a target-by-regulator named matrix, or a CSV path.
+#'   table, a target-by-regulator named matrix, or a CSV path. Shared scVelo
+#'   preprocessing defaults to \code{enforce_normalization = TRUE} so
+#'   non-integer source splicing estimates are normalized before HVG selection;
+#'   \code{log1p_transform = TRUE} prepares the expression matrix for Scanpy's
+#'   Seurat-flavor HVG calculation.
 #' @param return_object Return the modified object or unified velocity result.
 #' @return A Seurat object or velocity result.
 #' @references RegVelo documentation: \url{https://regvelo.readthedocs.io/}.
@@ -273,7 +279,7 @@ sn_run_velocity <- function(object,
   object[[paste0(store_name, "_pseudotime")]] <- stats::setNames(cells$pseudotime, cells$cell)[colnames(object)]
   object[[paste0(store_name, "_confidence")]] <- stats::setNames(cells$confidence, cells$cell)[colnames(object)]
   result <- list(
-    schema_version = "1.0", analysis_type = "velocity", name = store_name,
+    schema_version = "1.0.0", analysis_type = "velocity", name = store_name,
     method = method, backend = paste0(method, "-pixi"),
     input = list(
       cells = nrow(cells), spliced_assay = spliced_assay, spliced_layer = spliced_layer,
@@ -286,10 +292,16 @@ sn_run_velocity <- function(object,
         lam = backend_control$lam %||% 1,
         lam2 = backend_control$lam2 %||% 0,
         max_epochs = backend_control$max_epochs %||% 1500L,
-        filter_on_r2 = backend_control$filter_on_r2 %||% TRUE
+        filter_on_r2 = backend_control$filter_on_r2 %||% TRUE,
+        enforce_normalization = backend_control$enforce_normalization %||% TRUE,
+        log1p_transform = backend_control$log1p_transform %||% TRUE
       )
     } else {
-      list(velocity_mode = backend_control$velocity_mode %||% "stochastic")
+      list(
+        velocity_mode = backend_control$velocity_mode %||% "stochastic",
+        enforce_normalization = backend_control$enforce_normalization %||% TRUE,
+        log1p_transform = backend_control$log1p_transform %||% TRUE
+      )
     },
     tables = list(primary = cells, cells = cells, transition_edges = standardized$graph),
     embeddings = list(reduction = embedding$matrix, velocity = as.matrix(cells[, c("velocity_1", "velocity_2")])),
@@ -414,7 +426,7 @@ sn_run_fate <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0", analysis_type = "fate", name = store_name,
+    schema_version = "1.0.0", analysis_type = "fate", name = store_name,
     method = method, backend = "cellrank-pixi",
     input = list(cells = length(unique(probabilities$cell)), velocity_name = velocity_name, reduction = embedding$reduction, dimensions = embedding$dims),
     parameters = list(

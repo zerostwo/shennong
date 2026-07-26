@@ -170,7 +170,7 @@ sn_list_methods <- function(task = NULL, available = NULL) {
     if (!is.logical(available) || length(available) != 1L || is.na(available)) {
       stop("`available` must be NULL, TRUE, or FALSE.", call. = FALSE)
     }
-    table <- dplyr::filter(table, .data$available == available)
+    table <- dplyr::filter(table, .data$available == .env$available)
   }
   dplyr::arrange(table, .data$task, dplyr::desc(.data$default), .data$name)
 }

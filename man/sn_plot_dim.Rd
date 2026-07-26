@@ -125,7 +125,7 @@ This function creates a dimensionality reduction plot for categorical data using
 }
 \examples{
 \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 sn_plot_dim(
   object = pbmc,

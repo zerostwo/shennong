@@ -46,9 +46,9 @@ clean cells, and whether ambient-RNA correction introduced problematic
 zero-count cells.
 }
 \examples{
-if (requireNamespace("Seurat", quietly = TRUE)) {
-  data("pbmc_small", package = "Shennong")
-  qc_report <- sn_assess_qc(pbmc_small, verbose = FALSE)
+\dontrun{
+  pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+  qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
   qc_report$overall
 }
 

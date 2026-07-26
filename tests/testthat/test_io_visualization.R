@@ -188,8 +188,27 @@ test_that("Seurat plotting helpers return ggplot objects", {
   object <- suppressWarnings(
     Seurat::RunUMAP(object, dims = 1:5, n.neighbors = 5, verbose = FALSE)
   )
+  adt_counts <- Matrix::Matrix(
+    matrix(seq_len(20), nrow = 2, dimnames = list(c("ADT-CD3", "ADT-CD19"), colnames(object))),
+    sparse = TRUE
+  )
+  object[["ADT"]] <- SeuratObject::CreateAssayObject(counts = adt_counts)
+  object <- Seurat::NormalizeData(
+    object,
+    assay = "ADT",
+    normalization.method = "CLR",
+    margin = 2,
+    verbose = FALSE
+  )
 
   feature_plot <- sn_plot_feature(object, features = "CD3D", reduction = "umap", palette = "YlOrRd", direction = -1)
+  adt_feature_plot <- sn_plot_feature(
+    object,
+    features = "ADT-CD3",
+    assay = "ADT",
+    reduction = "umap",
+    raster = FALSE
+  )
   feature_plot_small <- sn_plot_feature(
     object,
     features = "CD3D",
@@ -245,6 +264,8 @@ test_that("Seurat plotting helpers return ggplot objects", {
   feature_color_scale <- Filter(function(scale) "colour" %in% scale$aesthetics, feature_plot$scales$scales)[[1]]
 
   expect_s3_class(feature_plot, "ggplot")
+  expect_s3_class(adt_feature_plot, "ggplot")
+  expect_no_error(ggplot2::ggplotGrob(adt_feature_plot))
   expect_s3_class(feature_plot_small, "ggplot")
   expect_s3_class(feature_plot_without_ggrastr, "ggplot")
   expect_no_error(ggplot2::ggplotGrob(feature_plot_without_ggrastr))

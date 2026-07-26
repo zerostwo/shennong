@@ -1,7 +1,17 @@
 .sn_result_plot_table <- function(result) {
   if (is.data.frame(result)) return(tibble::as_tibble(result))
-  if (!is.list(result)) stop("`result` must be a data frame or result list.", call. = FALSE)
-  table <- result$tables$primary %||% result$table %||% result$overall
+  if (inherits(result, c("enrichResult", "gseaResult", "compareClusterResult"))) {
+    return(tibble::as_tibble(as.data.frame(result)))
+  }
+  if (!is.list(result)) {
+    stop(
+      "`result` must be a data frame, a Shennong result list, or a clusterProfiler enrichment result.",
+      call. = FALSE
+    )
+  }
+  table <- result[["tables"]][["primary"]] %||%
+    result[["table"]] %||%
+    result[["overall"]]
   if (!is.data.frame(table)) stop("The result does not contain a primary table.", call. = FALSE)
   tibble::as_tibble(table)
 }

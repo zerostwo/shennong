@@ -3,6 +3,53 @@
 This reference gives compact task-oriented recipes so an agent can move from a
 user request to the right Shennong function family quickly.
 
+## Recipe: Audit or migrate stored results
+
+1. Run `sn_audit_results(object)` before reading arbitrary `object@misc`
+   entries. Canonical analytical results report `valid`; compatible older
+   envelopes report `legacy`; malformed analytical results report `invalid`;
+   registered runtime/cache payloads report `artifact`; and unknown top-level
+   `object@misc` payloads report `unregistered` for manual classification.
+2. Require `schema_version = "1.0.0"` and `tables$primary` for new analytical
+   results. Named tables such as `tables$cells`, `tables$scores`, or
+   `tables$survival` are synchronized semantic aliases.
+3. Review errors before calling `object <- sn_upgrade_results(object)`.
+   Upgrading leaves registered artifacts and unregistered payloads untouched
+   and records the source schema version in provenance.
+4. Use table-focused getters for compatibility views and `sn_get_result()`
+   when diagnostics, models, warnings, or provenance are needed.
+
+## Recipe: Export a Result Bundle candidate
+
+1. Discover the stored name with `sn_list_results()` and retrieve the exact
+   canonical envelope with `sn_get_result()`.
+2. Validate with `sn_validate_result()` before constructing a bundle.
+3. Call `sn_build_result_bundle()` with immutable resource/artifact
+   identifiers, revisions, and SHA-256 digests. Add execution identifiers and candidate output artifact
+   roles/digests, but never add credentials.
+4. Run `sn_validate_result_bundle()` and then
+   `sn_export_result_bundle()`. Record the returned JSON SHA-256 digest.
+5. Treat the file as a candidate handoff only. Shennong does not authorize,
+   upload, or promote artifacts; the trusted external receiver must verify
+   digests and complete those actions.
+
+## Recipe: Opt in to AutoZyme acceleration
+
+1. Run `sn_check_autozyme()` first. Do not activate a patch unless
+   `eligible = TRUE` for the pinned AutoZyme build and current upstream package.
+2. Use `sn_enable_autozyme()` for an explicitly managed session or wrap one
+   call in `sn_with_autozyme({...})` so only newly activated patches are
+   restored on exit. The safe defaults target CellChat and NicheNet paths used
+   by `sn_run_cell_communication()`.
+   Other reported patches are compatibility metadata for explicit advanced
+   AutoZyme use, not evidence that Shennong directly calls every package.
+3. Keep `strict = TRUE`. Treat `strict = FALSE` or
+   `allow_approximate = TRUE` as an explicit reproducibility decision, not a
+   generic speed switch.
+4. Do not install AutoZyme, prepare Python, or change process-wide thread
+   counts inside an analytical workflow. Confirm active-patch details in the
+   returned result provenance.
+
 ## Recipe: Start from raw counts or 10x outputs
 
 1. Discover 10x inputs with `sn_list_10x_paths()` when needed.
@@ -13,18 +60,15 @@ user request to the right Shennong function family quickly.
 4. Infer or verify species with `sn_get_species()`.
 5. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
-## Recipe: Open a Shennong Data Server resource
+## Recipe: Materialize data with ShennongData
 
-1. Use `sn_load_data(dataset = ..., backend = "api")` for a lazy
-   ShennongData 0.2 resource handle.
-2. Select an assay or layer with
-   `api_args = list(assay = ..., layer = ...)` when the default resource view
-   is not sufficient.
-3. Keep `lazy = TRUE` for query planning. Set `lazy = FALSE` and supply
-   `api_args = list(collect_args = list(...))` only when materialization is
-   explicitly required.
-4. Use `backend = "auto"` for server-first discovery with local/Zenodo
-   fallback, or `backend = "local"` to prohibit server access.
+1. Use `ShennongData::sn_connect()` and
+   `ShennongData::sn_load_data(resource = ...)` to open a lazy resource.
+2. Select an assay or layer with `ShennongData::sn_assay()`.
+3. Inspect the query and provenance before calling
+   `ShennongData::collect()` when materialization is required.
+4. Pass the resulting matrix, path, or Seurat object to Shennong. Do not
+   recreate the removed Shennong data-distribution wrappers.
 
 ## Recipe: Normalize and cluster a single dataset
 
@@ -120,10 +164,16 @@ user request to the right Shennong function family quickly.
 4. Use `sn_score_bulk_pathways()` for sample pathway scores and inspect
    `tables$coverage`. Use `sn_run_wgcna()` for modules/eigengenes and
    sample-level trait associations.
-5. Use `sn_run_survival()` for adjusted Cox models and
-   `sn_run_clinical_association()` for numeric or categorical phenotype tests.
-   Retrieve evidence from each returned result's named `tables` rather than
-   recomputing statistics inside plotting code.
+5. Use `sn_run_survival()` for adjusted Cox models, Kaplan-Meier/log-rank
+   evidence, proportional-hazards checks, concordance, and risk/cumulative
+   hazard tables. Define `group_method` and cutpoints before inspecting the
+   outcome; use `sn_run_clinical_association()` for other numeric or
+   categorical phenotype tests. Retrieve evidence from each returned result's
+   named `tables` rather than recomputing statistics inside plotting code.
+6. Use `sn_plot_survival()` with the forest, Kaplan-Meier, risk-table,
+   proportional-hazards, and cumulative-hazard views. A failed feature remains
+   in the association table with `status = "error"`; do not silently discard
+   it from the analytical report.
 
 ## Recipe: Export a publication figure
 
@@ -276,9 +326,20 @@ user request to the right Shennong function family quickly.
    adjusted significance in the stored result before plotting.
 4. Use `sn_prioritize_states(method = "augur")` for state-wise condition
    separability, with `sample_by` so entire samples are held out.
-5. Use RareQ when topology-supported rare states are the target. Use Scissor
-   only with explicit gene-by-bulk-sample expression and corresponding bulk
-   phenotype; cell metadata is not a valid replacement.
+5. Use RareQ when topology-supported rare states are the target.
+6. Use `sn_run_scissor()` when a named gene-by-bulk-sample expression matrix
+   and its aligned bulk phenotype are available; cell metadata is not a valid
+   phenotype replacement. Retrieve the stored result with
+   `sn_get_result(object, "scissor", store_name)` and inspect `tables$cells`,
+   `tables$states`, `tables$samples`, `tables$correlations`, and `tables$model`
+   before plotting with `sn_plot_scissor()`.
+7. Keep the full sample-cell correlation matrix and bootstrap reliability
+   opt-in through `backend_control`; they can materially increase memory or
+   runtime. Treat `cutoff` as an alpha-search stopping rule, not a guaranteed
+   selected-cell ceiling; review `tables$model$selection_cutoff_satisfied` and
+   treat a missed cutoff as exploratory. Use the older
+   `sn_prioritize_states(method = "scissor")` only when compatibility with an
+   existing state-priority workflow is required.
 
 ## Recipe: Run a spatial analysis
 
@@ -300,17 +361,9 @@ user request to the right Shennong function family quickly.
    `sn_get_milo_result()`, `sn_get_deconvolution_result()`,
    `sn_get_cell_communication_result()`,
    `sn_get_regulatory_activity_result()`, or `sn_get_interpretation_result()`.
-3. Use `sn_download_zenodo(record_id = ..., files = ...)` when a reusable
-   public Zenodo record should be pulled into a local cache. Public records do
-   not need a token; pass `token = ...` only for restricted/private files.
-4. Use `sn_list_datasets()` to inspect the current Shennong public collection,
-   then `sn_load_data(dataset = <sample_id>)` or
-   `sn_load_data(dataset = <study_id>, sample_id = <sample_id>)` to cache the
-   study ZIP and extract one sample's filtered/raw H5 or metrics file.
-5. Use `sn_upload_zenodo(files = ..., title = ..., version = ...)` when a
-   reusable object, marker table, reference, or manifest should be released for
-   cross-project reuse with stable checksums and Zenodo version metadata.
-6. Avoid direct `object@misc` access in user-facing workflows.
+3. Use qualified `ShennongData::` APIs for external dataset discovery,
+   download, caching, and publication.
+4. Avoid direct `object@misc` access in user-facing workflows.
 
 ## Recipe: LLM-backed interpretation
 

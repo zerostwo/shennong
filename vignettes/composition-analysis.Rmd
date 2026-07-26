@@ -11,7 +11,17 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -28,7 +38,10 @@ Composition analysis should not treat every cell as an independent biological
 replicate. Shennong separates cell-level counting from sample-level comparison:
 first compute proportions, then compare replicate samples.
 
-This article uses PBMC3k with teaching-only pseudo samples and conditions.
+This article uses the public Kotliarov PBMC CITE-seq subset. The 20
+`real_sample` values are biological replicates, and each sample has one
+source-study `real_response` value. Cell counts are never treated as replicate
+counts for the response comparison.
 
 ## Prepare cluster labels and sample metadata
 
@@ -37,7 +50,7 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -48,15 +61,15 @@ pbmc <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
+sample_design <- pbmc[[]] |>
+  dplyr::distinct(real_sample, real_response) |>
+  dplyr::arrange(real_sample)
 
-pbmc$sample <- rep(paste0("donor", 1:6), length.out = ncol(pbmc))
-pbmc$condition <- ifelse(pbmc$sample %in% paste0("donor", 1:3), "control", "stim")
-pbmc$cluster_label <- paste0("cluster_", pbmc$seurat_clusters)
+sample_design
 ```
 
-The pseudo labels are only for demonstration. In a real analysis, `sample`
-should be a biological replicate and `condition` should come from experimental
-metadata.
+The design table above is the source-study metadata used below. Its one-row-per-
+sample structure makes the inferential unit explicit.
 
 ## Count cells before comparing groups
 
@@ -66,8 +79,8 @@ category counts, and percentages.
 ```{r calculate-composition}
 composition <- sn_calculate_composition(
   x = pbmc,
-  group_by = "sample",
-  variable = "cluster_label",
+  group_by = "real_sample",
+  variable = "seurat_clusters",
   min_cells = 10,
   measure = "both"
 )
@@ -84,8 +97,8 @@ are enriched or depleted relative to the full contingency table.
 ```{r calculate-roe}
 roe <- sn_calculate_roe(
   x = pbmc,
-  group_by = "condition",
-  variable = "cluster_label"
+  group_by = "real_response",
+  variable = "seurat_clusters"
 )
 
 head(roe)
@@ -94,8 +107,8 @@ head(roe)
 ```{r calculate-roe-matrix}
 roe_matrix <- sn_calculate_roe(
   x = pbmc,
-  group_by = "condition",
-  variable = "cluster_label",
+  group_by = "real_response",
+  variable = "seurat_clusters",
   return_matrix = TRUE
 )
 
@@ -105,12 +118,12 @@ roe_matrix[, seq_len(min(4, ncol(roe_matrix))), drop = FALSE]
 ```{r plot-composition}
 sn_plot_composition(
   composition,
-  x = sample,
-  fill = cluster_label,
+  x = real_sample,
+  fill = seurat_clusters,
   y = proportion,
   position = "stack",
   palette = "Paired",
-  title = "PBMC3k cluster composition by pseudo donor"
+  title = "PBMC cluster composition by real biological sample"
 )
 ```
 
@@ -122,10 +135,10 @@ sample-level proportions between conditions. That avoids pseudo-replication.
 ```{r compare-composition}
 comparison <- sn_compare_composition(
   x = pbmc,
-  sample_by = "sample",
-  group_by = "condition",
-  variable = "cluster_label",
-  contrast = c("stim", "control"),
+  sample_by = "real_sample",
+  group_by = "real_response",
+  variable = "seurat_clusters",
+  contrast = c("d0 high", "d0 low"),
   min_cells = 20,
   test = "wilcox"
 )
@@ -139,14 +152,14 @@ figure-ready view.
 ```{r plot-comparison}
 sn_plot_barplot(
   comparison,
-  x = cluster_label,
+  x = seurat_clusters,
   y = log2_fc,
   fill = change,
   stat = "identity",
   palette = "Set2",
   angle_x = 45,
   y_label = "log2 fold-change",
-  title = "Composition shift: stim vs control"
+  title = "Composition shift: high vs low responders"
 )
 ```
 
@@ -157,19 +170,19 @@ summarize to the replicate level first, then plot.
 
 ```{r continuous-summaries}
 sample_qc <- pbmc[[]] |>
-  dplyr::group_by(sample, condition) |>
+  dplyr::group_by(real_sample, real_response) |>
   dplyr::summarise(
     median_features = median(nFeature_RNA),
-    median_mito = median(percent.mt),
+    median_mito = median(pctMT),
     .groups = "drop"
   )
 
 sn_plot_boxplot(
   sample_qc,
-  x = condition,
+  x = real_response,
   y = median_features,
   y_label = "Median detected genes",
-  title = "QC summary by pseudo condition"
+  title = "Per-sample QC summary by response group"
 )
 ```
 
@@ -177,56 +190,51 @@ sn_plot_boxplot(
 
 Global proportions can miss local shifts inside an embedding. `sn_run_milo()`
 wraps the miloR neighborhood workflow for sample-level differential abundance.
+Because miloR is optional, these chunks run only in the `all` profile when the
+backend is installed.
 
-```{r run-milo, eval = FALSE}
+```{r run-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
 milo_tbl <- sn_run_milo(
   x = pbmc,
-  sample_by = "sample",
-  group_by = "condition",
-  contrast = c("stim", "control"),
+  sample_by = "real_sample",
+  group_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
   reduction = "pca",
   dims = 1:15,
-  annotation_by = "cluster_label",
+  annotation_by = "seurat_clusters",
   max_cells = 1500,
-  store_name = "condition_da",
   return_object = FALSE
 )
 
 head(milo_tbl)
 ```
 
-If a milo result was generated elsewhere, store and retrieve it with the same
+The real neighborhood result can be stored and retrieved with the same
 object-level convention used for DE and enrichment.
 
-```{r store-milo}
-mock_milo <- data.frame(
-  logFC = c(1.1, -0.7, 0.2),
-  SpatialFDR = c(0.03, 0.08, 0.4),
-  cluster_label = c("cluster_0", "cluster_1", "cluster_2")
-)
-
+```{r store-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
 pbmc <- sn_store_milo(
   object = pbmc,
-  result = mock_milo,
-  store_name = "condition_da",
-  sample_by = "sample",
-  group_by = "condition",
-  comparison = "stim_vs_control",
+  result = milo_tbl,
+  store_name = "response_da",
+  sample_by = "real_sample",
+  group_by = "real_response",
+  comparison = "d0_high_vs_d0_low",
   reduction = "pca",
-  annotation_by = "cluster_label",
+  annotation_by = "seurat_clusters",
   return_object = TRUE
 )
 
-sn_get_milo_result(pbmc, milo_name = "condition_da")
+head(sn_get_milo_result(pbmc, milo_name = "response_da"))
 ```
 
 `sn_plot_milo()` then displays the stored neighborhood-level table.
 
-```{r plot-milo}
+```{r plot-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
 sn_plot_milo(
   pbmc,
-  milo_name = "condition_da",
-  annotation_by = "cluster_label",
+  milo_name = "response_da",
+  annotation_by = "seurat_clusters",
   title = "Neighborhood differential abundance"
 )
 ```

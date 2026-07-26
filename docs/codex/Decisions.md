@@ -1,9 +1,122 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-15
+Last updated: 2026-07-26
+
+## 2026-07-26
+
+- `/home/duansq/dev/packages/shennong` is the maintainer coordination center
+  for the five-repository ecosystem, but the repositories remain independently
+  versioned and released. Cross-repository status and contracts are recorded in
+  `docs/codex/Ecosystem.md`; aggregate Git operations from the non-repository
+  `shennong.one` parent are not permitted.
+- OS remains the user/project authorization and orchestration gateway.
+  ShennongData and user-facing MCP clients must not receive a headless
+  ShennongDB admin key, and Runtime workloads must not receive general DB
+  credentials. Data movement will use OS-brokered, project/job/digest-bound
+  grants for immutable artifacts.
+- Runtime success is not analytical completion. A plan step may be completed
+  only after its expected artifact bytes are verified, promoted into immutable
+  ShennongDB Artifacts, linked to exact inputs and execution provenance, and
+  accepted by the declared scientific/result validator.
+- Ecosystem compatibility requires a versioned data bundle, analysis request,
+  result bundle, and deployment compatibility lock. The lock binds all five
+  commits, package and image digests, API/result schemas, Skill digests,
+  environment locks, and actual backend availability.
+- Modality claims are end-to-end claims. Package-level algorithms, generic file
+  registration, method-registry entries, and successful arbitrary script
+  execution are useful evidence but do not by themselves establish bulk,
+  scRNA-seq, spatial, CITE-seq, or scATAC-seq platform compatibility.
+- Shennong owns the service-neutral candidate result boundary identified by
+  `shennong.dev/analysis-result-bundle/v1`. It contains the validated
+  `analysis_result` envelope, immutable input
+  identifier/revision/SHA-256 references, package and execution provenance, and candidate output artifact
+  roles/digests. It contains no credentials and performs no DB, OS, Runtime,
+  upload, authorization, or promotion calls; those remain external trust
+  boundaries.
+- Scissor's named phenotype alignment preserves sample identifiers after
+  reordering. Downstream extraction retaining those names is contract evidence,
+  not an implementation artifact to strip.
 
 ## 2026-07-15
 
+- Dataset discovery, download, caching, and publication are owned by
+  `ShennongData`, not by the analysis package. Shennong therefore removes
+  `sn_load_data()`, `sn_list_datasets()`, `sn_download_zenodo()`, and
+  `sn_upload_zenodo()` instead of retaining forwarding aliases; callers pass a
+  materialized matrix, path, or Seurat object into the analysis API. Local real
+  datasets used for validation and pkgdown are rooted at
+  `SHENNONG_REAL_DATA_DIR` and excluded from source control. This supersedes the
+  earlier in-package loader and Zenodo-distribution decisions retained below as
+  historical context.
+- Analysis fixtures and runtime reference knowledge have different ownership.
+  `pbmc_small` and `pbmc_small_raw` move out with data distribution, while
+  `marker_genes`, `hom_genes`, `shennong_gene_annotations`, and
+  `shennong_signature_catalog` remain bundled because core annotation,
+  species, filtering, and signature workflows directly depend on them.
+- Real-data validation uses a small modality matrix rather than one synthetic
+  object per function: Kotliarov covers PBMC/CITE-seq workflows; matched
+  GSE72056 and TCGA-SKCM cover cancer single-cell, bulk, Scissor, survival, and
+  deconvolution; Hermann covers trajectory and RNA velocity; two Visium
+  lymph-node sections cover spatial integration. Only source declarations,
+  deterministic preparation code, checksums, and coverage intent are tracked.
+  Raw downloads, derived objects, rendered articles, benchmark results, and
+  runtime-coverage reports stay below the ignored local data root.
+- Real pkgdown builds are offline consumers of an already prepared data matrix.
+  `scripts/build-pkgdown.R --real` must validate all bundles before rendering;
+  it must never fetch data. The core profile is the routine real-output surface,
+  while `--extended` is an explicit request to exercise installed optional
+  backends. A function listed in a vignette is not considered runtime-covered
+  until the tracing runner observes it during successful article evaluation.
+  Core omissions fail the coverage gate; unavailable extended rows remain
+  explicit `not_run` evidence rather than being simulated.
+- The canonical analytical result schema is `1.0.0`, with one data-frame
+  `tables$primary` plus stable named evidence tables, diagnostics, warnings, and
+  provenance. Existing registered `object@misc` locations and table aliases are
+  compatibility boundaries, not parallel stores. Runtime caches, large backend
+  artifacts, and input manifests remain visible to audits but are not
+  misrepresented as tabular analytical results. Every populated top-level
+  `object@misc` entry outside those registered boundaries remains visible as
+  `unregistered`; Shennong does not assume ownership or migrate it.
+- Label-transfer predictions are analytical cell-level evidence and therefore
+  use the canonical `annotation` result contract. The historical compact
+  `object@misc$label_transfer` record remains a registered compatibility
+  artifact rather than becoming a second analytical source of truth.
+- Result migration is additive and explicit. Reads may normalize compatible
+  legacy payloads, while `sn_audit_results()` provides a non-mutating inventory
+  and `sn_upgrade_results()` performs an in-place upgrade that records the
+  source schema spelling. Unsupported semantic versions and unsynchronized
+  legacy/canonical tables fail validation.
+- Result consumers use exact `[[...]]` lookup at contract boundaries. R's
+  partial `$` matching is not acceptable for schema-bearing fields because a
+  similarly named field such as `tables_backup` can otherwise masquerade as
+  `tables`.
+- Direct Scissor analysis is cell-first because Scissor selects phenotype-linked
+  cells from bulk-to-cell correlations; state and single-cell sample summaries
+  are descriptive aggregations, while the bulk sample remains the inferential
+  unit. The state-priority wrapper remains for compatibility and shares the same
+  backend rather than maintaining a second implementation. Scissor's `cutoff`
+  is an alpha-search stopping condition, not a guaranteed selected-cell ceiling;
+  a miss remains visible and the cell set is labeled exploratory.
+- Survival analysis keeps samples as the inferential unit and stores enough
+  evidence to audit model validity rather than only returning hazard ratios.
+  Per-feature Cox failures remain explicit rows; grouping cutpoints use only
+  endpoint-complete finite observations; proportional-hazards tests and scaled
+  Schoenfeld residuals are retained for diagnosis and plotting.
+- AutoZyme acceleration is an explicit process-scoped optimization, not an
+  implicit workflow default. Shennong pins the reviewed AutoZyme source, gates
+  strict activation on exact upstream versions, requires a second opt-in for
+  approximate patches, restores prior activation state transactionally, and
+  never installs dependencies, prepares Python, or changes thread counts as a
+  side effect.
+- Backend-safe label encoding is an adapter concern. CellChat receives encoded
+  factor labels when user labels are numeric or otherwise unsafe, and Shennong
+  decodes source and target columns before returning evidence. Label transfer
+  similarly requests Seurat's table-returning `TransferData()` contract rather
+  than passing a query object and accepting the Seurat 5 object-returning form.
+- Explicit assay selection must remain end to end. Plot-level value extraction,
+  shared limits, and rendering all use the requested assay, so visualizing ADT
+  or another non-default assay never depends on temporarily changing
+  `DefaultAssay()`.
 - `sn_find_de()` is the stable differential-expression entry point across
   single-cell, pseudobulk, and standalone bulk inputs. Modality auto-detection
   is based on the input contract, not an inferred biological claim;
@@ -747,7 +860,7 @@ Last updated: 2026-07-15
 - `sn_plot_barplot()` should cover the common statistical bar-chart use case directly instead of forcing users to drop down to raw `ggplot2` for every sample-level summary. Automatic replicate summarization plus optional error bars and raw-point overlays are now part of that helper's intended scope.
 - Observed-over-expected enrichment belongs beside composition summaries rather than as a plotting-only helper. `sn_calculate_roe()` uses the same `group_by` / `variable` contract as `sn_calculate_composition()`, fills absent combinations with zero observed counts, and returns a long audit table by default with matrix output only as an opt-in convenience.
 - Batch-effect diagnostics need a variable-ranking API, not only one-batch-at-a-time PCR scoring. `sn_calculate_variance_explained()` therefore reports weighted embedding variance explained for multiple metadata variables and keeps partial multi-variable scoring explicit because nested variables such as study and platform can be confounded.
-- The pkgdown GitHub Actions workflow should install the optional packages that are actually exercised by evaluated articles. The data IO article runs real `sn_write()` / `sn_read()` examples and the Zenodo dry-run path, so `qs2`, `rio`, and `zen4R` are part of the website dependency set even though they remain runtime-optional for the package. Article examples should prefer `qs2` over archived `qs` when either format is acceptable.
+- The pkgdown GitHub Actions workflow should install the optional packages that are actually exercised by evaluated articles. The data IO article runs real `sn_write()` / `sn_read()` examples, so `qs2` and `rio` remain website dependencies. The former Zenodo dry-run path and `zen4R` dependency are removed with the data-distribution layer.
 - MMoCHi should enter `sn_run_cluster()` as a CITE-seq protein backend, not as
   a generic RNA batch-integration method. Its user-independent piece is ADT
   landmark registration, so Shennong exposes `multimodal_method = "mmochi"` for

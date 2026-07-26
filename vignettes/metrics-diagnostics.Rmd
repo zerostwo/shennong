@@ -11,7 +11,17 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -32,7 +42,10 @@ separate three questions:
 - Which clusters or groups are difficult enough to inspect manually?
 
 Shennong exposes both one-line aggregate diagnostics and individual metrics.
-This article uses PBMC3k and a teaching-only pseudo-batch column.
+This article uses the public Kotliarov PBMC CITE-seq subset. `real_batch` is a
+source acquisition label, `real_sample` identifies the 20 biological samples,
+and RNA-versus-WNN clusters provide a real cross-modality comparison without
+inventing reference labels.
 
 ## Prepare a diagnostic object
 
@@ -41,19 +54,43 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
   normalization_method = "seurat",
-  hvg_group_by = "library",
   nfeatures = 1500,
   dims = 1:15,
   resolution = 0.6,
   species = "human",
   verbose = FALSE
+)
+
+pbmc$rna_clusters <- as.character(pbmc$seurat_clusters)
+
+pbmc_wnn <- sn_run_multimodal(
+  object = qs2::qs_read(real_data_file),
+  method = "wnn",
+  assay = "RNA",
+  adt_assay = "ADT",
+  nfeatures = 1500,
+  dims = 1:15,
+  adt_dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+pbmc$wnn_clusters <- as.character(pbmc_wnn$seurat_clusters)[
+  match(colnames(pbmc), colnames(pbmc_wnn))
+]
+
+table(pbmc$rna_clusters, pbmc$wnn_clusters)
+
+sn_plot_dim(
+  pbmc,
+  reduction = "umap",
+  group_by = "real_batch",
+  title = "Real acquisition batches before integration"
 )
 ```
 
@@ -61,22 +98,29 @@ pbmc <- sn_run_cluster(
 
 `sn_assess_integration()` runs a compact panel of metrics and returns the
 results in predictable sections: `summary`, `per_cell`, `per_group`, and
-`parameters`.
+`parameters`. Here the dependency-free panel evaluates the unintegrated PCA
+space; the same call can be pointed at an integrated reduction later.
 
 ```{r aggregate-assessment}
 assessment <- sn_assess_integration(
   x = pbmc,
-  batch = "library",
-  label_by = "seurat_clusters",
-  cluster_by = "seurat_clusters",
-  reduction = "harmony",
-  baseline_reduction = "pca",
+  batch_by = "real_batch",
+  label_by = "wnn_clusters",
+  cluster_by = "rna_clusters",
+  reduction = "pca",
+  baseline_reduction = NULL,
   dims = 1:15,
-  max_cells = 1500
+  max_cells = 1500,
+  metrics = c(
+    "batch_silhouette", "label_silhouette", "graph_connectivity",
+    "clustering_agreement", "isolated_label_score", "cluster_purity",
+    "cluster_entropy", "pcr_batch", "challenging_groups"
+  )
 )
 
 assessment$summary
 names(assessment$per_group)
+sn_plot_integration(assessment)
 ```
 
 Use the wrapper for routine reporting, then call individual metrics when one
@@ -85,27 +129,27 @@ part of the assessment needs more detail.
 ## Inspect mixing and separation directly
 
 LISI asks how diverse each cell's local neighborhood is with respect to a
-label. Here the same function can measure library mixing or cluster mixing by
-changing `label`.
+label. The upstream `lisi` package is optional, so this real-data chunk runs
+only in the `all` profile when that package is installed.
 
-```{r lisi}
-library_lisi <- sn_calculate_lisi(
+```{r lisi, eval = run_extended && requireNamespace("lisi", quietly = TRUE)}
+batch_lisi <- sn_calculate_lisi(
   pbmc,
-  reduction = "harmony",
-  label_by = "library",
+  reduction = "pca",
+  label_by = "real_batch",
   dims = 1:15,
   max_cells = 1500
 )
 
 cluster_lisi <- sn_calculate_lisi(
   pbmc,
-  reduction = "harmony",
-  label_by = "seurat_clusters",
+  reduction = "pca",
+  label_by = "wnn_clusters",
   dims = 1:15,
   max_cells = 1500
 )
 
-head(library_lisi)
+head(batch_lisi)
 head(cluster_lisi)
 ```
 
@@ -116,8 +160,8 @@ means residual batch separation.
 ```{r silhouette}
 cluster_sil <- sn_calculate_silhouette(
   pbmc,
-  label_by = "seurat_clusters",
-  reduction = "harmony",
+  label_by = "rna_clusters",
+  reduction = "pca",
   dims = 1:15,
   max_cells = 1500
 )
@@ -131,8 +175,8 @@ the neighbor graph.
 ```{r graph-connectivity}
 connectivity <- sn_calculate_graph_connectivity(
   pbmc,
-  label_by = "seurat_clusters",
-  reduction = "harmony",
+  label_by = "rna_clusters",
+  reduction = "pca",
   dims = 1:15,
   max_cells = 1500
 )
@@ -142,42 +186,42 @@ connectivity
 
 ## Compare clusters to labels when references exist
 
-When you have a trusted label column, purity, entropy, and clustering agreement
-show how the computed clusters relate to that reference.
+Purity, entropy, and clustering agreement can also compare independently
+computed clusterings. Here RNA-only clusters are compared with WNN clusters
+learned from the aligned RNA and ADT assays; neither is mislabeled as ground
+truth.
 
 ```{r supervised-metrics}
-pbmc$coarse_label <- paste0("cluster_", pbmc$seurat_clusters)
-
 sn_calculate_cluster_purity(
   pbmc,
-  cluster_by = "seurat_clusters",
-  label_by = "coarse_label"
+  cluster_by = "rna_clusters",
+  label_by = "wnn_clusters"
 )
 
 sn_calculate_cluster_entropy(
   pbmc,
-  cluster_by = "seurat_clusters",
-  label_by = "coarse_label"
+  cluster_by = "rna_clusters",
+  label_by = "wnn_clusters"
 )
 
 sn_calculate_clustering_agreement(
   pbmc,
-  cluster_by = "seurat_clusters",
-  label_by = "coarse_label"
+  cluster_by = "rna_clusters",
+  label_by = "wnn_clusters"
 )
 
 sn_calculate_isolated_label_score(
   pbmc,
-  label_by = "coarse_label",
-  reduction = "harmony",
+  label_by = "wnn_clusters",
+  reduction = "pca",
   dims = 1:15,
   max_cells = 1500
 )
 ```
 
-The artificial label above is deliberately simple. In a real workflow, replace
-it with cell-type annotations, reference-mapping labels, or curated manual
-labels.
+When a curated reference label becomes available, repeat the same calls with
+that label and report its provenance. The cross-modality comparison above is a
+stability diagnostic, not an accuracy claim.
 
 ## Quantify residual batch signal
 
@@ -188,9 +232,9 @@ pre-integration PCA space.
 ```{r pcr-batch}
 pcr <- sn_calculate_pcr_batch(
   pbmc,
-  batch = "library",
-  reduction = "harmony",
-  baseline_reduction = "pca",
+  batch_by = "real_batch",
+  reduction = "pca",
+  baseline_reduction = NULL,
   dims = 1:15,
   max_cells = 1500
 )
@@ -203,13 +247,9 @@ them directly with variance-explained scoring. Use the single-variable mode for
 a quick screen, then the partial mode when the design is not fully confounded.
 
 ```{r variance-explained}
-pbmc$study <- paste0("study_", pbmc$library)
-pbmc$tissue <- "blood"
-pbmc$sample <- rep(paste0("donor_", seq_len(4)), length.out = ncol(pbmc))
-
 variance_drivers <- sn_calculate_variance_explained(
   pbmc,
-  variables = c("library", "study", "tissue", "sample"),
+  variables = c("real_batch", "real_response", "real_sample"),
   reduction = "pca",
   dims = 1:15,
   max_cells = 1500
@@ -227,8 +267,8 @@ before final annotation.
 ```{r challenging-groups}
 challenging <- sn_identify_challenging_groups(
   pbmc,
-  group_by = "seurat_clusters",
-  reduction = "harmony",
+  group_by = "rna_clusters",
+  reduction = "pca",
   dims = 1:15,
   max_cells = 1500
 )
@@ -239,11 +279,11 @@ challenging
 ROGUE is an optional cluster-purity diagnostic that depends on the upstream
 `ROGUE` package. Keep it as a targeted check rather than a mandatory build step.
 
-```{r rogue, eval = FALSE}
+```{r rogue, eval = run_extended && requireNamespace("ROGUE", quietly = TRUE)}
 rogue_tbl <- sn_calculate_rogue(
   pbmc,
-  cluster_by = "seurat_clusters",
-  sample_by = "library",
+  cluster_by = "rna_clusters",
+  sample_by = "real_sample",
   max_cells = 1500
 )
 

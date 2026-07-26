@@ -33,7 +33,11 @@ sn_run_velocity(
 
 \item{backend_control}{Backend/pixi controls or an explicit \code{runner}/\code{result}.
 RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
-table, a target-by-regulator named matrix, or a CSV path.}
+table, a target-by-regulator named matrix, or a CSV path. Shared scVelo
+preprocessing defaults to \code{enforce_normalization = TRUE} so
+non-integer source splicing estimates are normalized before HVG selection;
+\code{log1p_transform = TRUE} prepares the expression matrix for Scanpy's
+Seurat-flavor HVG calculation.}
 
 \item{return_object}{Return the modified object or unified velocity result.}
 }

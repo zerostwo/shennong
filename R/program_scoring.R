@@ -225,7 +225,7 @@ sn_score_programs <- function(object,
   }
 
   result <- list(
-    schema_version = "1.0",
+    schema_version = "1.0.0",
     analysis_type = "program_scoring",
     name = name,
     method = method,
@@ -239,7 +239,7 @@ sn_score_programs <- function(object,
       species = species
     ),
     parameters = list(min_genes = min_genes, level = level),
-    tables = list(scores = score_table, coverage = matched$coverage),
+    tables = list(primary = score_table, scores = score_table, coverage = matched$coverage),
     embeddings = list(),
     graphs = list(),
     models = list(),
@@ -365,7 +365,7 @@ sn_test_programs <- function(object,
   tests$adjusted_p_value <- stats::p.adjust(tests$p_value, method = "BH")
   store_name <- store_name %||% paste0(score_name, "_", condition_by)
   result <- list(
-    schema_version = "1.0", analysis_type = "program_comparison", name = store_name,
+    schema_version = "1.0.0", analysis_type = "program_comparison", name = store_name,
     method = method, backend = method,
     input = list(score_name = score_name, condition_by = condition_by, sample_by = sample_by, group_by = group_by),
     parameters = list(contrast = contrast),

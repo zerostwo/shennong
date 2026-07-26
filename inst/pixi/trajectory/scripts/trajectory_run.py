@@ -62,10 +62,15 @@ def _prepare_velocity_data(input_dir: Path, config: dict):
     import scvelo as scv
 
     adata = _read_velocity_input(input_dir)
+    enforce_normalization = bool(config.get("enforce_normalization", True))
     scv.pp.filter_and_normalize(
         adata,
         min_shared_counts=int(config.get("min_shared_counts", 10)),
+        enforce=enforce_normalization,
     )
+    log1p_transform = bool(config.get("log1p_transform", True))
+    if log1p_transform:
+        sc.pp.log1p(adata)
     n_top_genes = int(config.get("n_top_genes", min(2000, adata.n_vars)))
     if n_top_genes < adata.n_vars:
         sc.pp.highly_variable_genes(adata, n_top_genes=n_top_genes, subset=True, flavor="seurat")
@@ -109,9 +114,18 @@ def _write_velocity_outputs(
     manifest = {
         "mode": "velocity",
         "method": method,
+        "velocity_mode": config.get("velocity_mode", "stochastic"),
         "n_cells": int(adata.n_obs),
         "n_features": int(adata.n_vars),
         "output_h5ad": str(output_h5ad),
+        "preprocessing": {
+            "min_shared_counts": int(config.get("min_shared_counts", 10)),
+            "enforce_normalization": bool(config.get("enforce_normalization", True)),
+            "log1p_transform": bool(config.get("log1p_transform", True)),
+            "n_top_genes": int(config.get("n_top_genes", min(2000, adata.n_vars))),
+            "n_neighbors": int(config.get("n_neighbors", min(30, adata.n_obs - 1))),
+            "n_pcs": int(config.get("n_pcs", 30)),
+        },
         "versions": _versions(),
     }
     manifest.update(extra_manifest or {})
@@ -253,6 +267,8 @@ def run_fate(output_dir: Path, config: dict) -> None:
     compute_args = {}
     if config.get("n_states") is not None:
         compute_args["n_states"] = int(config["n_states"])
+    else:
+        estimator.compute_eigendecomposition()
     estimator.compute_macrostates(**compute_args)
     if config.get("terminal_states"):
         estimator.set_terminal_states(config["terminal_states"])

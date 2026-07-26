@@ -170,7 +170,11 @@ sn_store_regulatory_activity <- function(object,
   if (isTRUE(return_object)) {
     return(.sn_log_seurat_command(object = object, name = "sn_store_regulatory_activity"))
   }
-  stored_result
+  .sn_get_misc_result(
+    object = object,
+    collection = "regulatory_activity_results",
+    store_name = store_name
+  )
 }
 
 #' Retrieve stored regulatory activity results

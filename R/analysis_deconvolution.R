@@ -341,6 +341,23 @@ sn_set_cibersortx_credentials <- function(email, token) {
   tibble::as_tibble(table)
 }
 
+.sn_restore_directory <- function(path) {
+  if (!dir.exists(path)) {
+    created <- dir.create(path, recursive = TRUE, showWarnings = FALSE)
+    if (!isTRUE(created) && !dir.exists(path)) {
+      stop("Could not restore the directory removed by an external backend: ", path, call. = FALSE)
+    }
+  }
+  invisible(path)
+}
+
+.sn_with_preserved_directory <- function(path, code) {
+  on.exit(.sn_restore_directory(path), add = TRUE)
+  value <- force(code)
+  .sn_restore_directory(path)
+  value
+}
+
 .sn_run_bayesprism <- function(reference_cells_by_gene,
                                cell_type_labels,
                                cell_state_labels,
@@ -364,12 +381,16 @@ sn_set_cibersortx_credentials <- function(email, token) {
     key = key,
     mixture = bulk_samples_by_gene
   )
-  bp_fit <- BayesPrism::run.prism(
-    prism = prism,
-    n.cores = n_cores,
-    update.gibbs = update_gibbs,
-    gibbs.control = gibbs_control,
-    opt.control = opt_control
+  session_tempdir <- tempdir(check = TRUE)
+  bp_fit <- .sn_with_preserved_directory(
+    session_tempdir,
+    BayesPrism::run.prism(
+      prism = prism,
+      n.cores = n_cores,
+      update.gibbs = update_gibbs,
+      gibbs.control = gibbs_control,
+      opt.control = opt_control
+    )
   )
 
   which_theta <- if (isTRUE(update_gibbs)) "final" else "first"
@@ -740,7 +761,11 @@ sn_store_deconvolution <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_deconvolution"))
   }
 
-  stored_result
+  .sn_get_misc_result(
+    object = object,
+    collection = "deconvolution_results",
+    store_name = store_name
+  )
 }
 
 #' Retrieve a stored deconvolution result from a Seurat object

@@ -11,7 +11,14 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
+pbmc_fixture <- if (nzchar(real_data_root)) {
+  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
+} else {
+  ""
+}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
+  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -29,8 +36,10 @@ does not replace markers, enrichment, QC, or clustering; it packages those
 results into structured evidence, then builds prompts or calls a provider only
 when the user asks.
 
-This article uses PBMC3k markers as the evidence source. Provider calls are
-shown but not executed by default.
+This article uses a deterministic subset of the public Kotliarov PBMC CITE-seq
+cohort as the evidence source. The local fixture retains real donor, batch,
+response, RNA, and ADT information. Provider calls remain opt-in because they
+require credentials and create external state.
 
 ## Create analysis evidence first
 
@@ -39,7 +48,16 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
+pbmc <- qs2::qs_read(pbmc_fixture)
+
+tibble::tibble(
+  source = "Kotliarov PBMC CITE-seq",
+  cells = ncol(pbmc),
+  genes = nrow(pbmc),
+  samples = dplyr::n_distinct(pbmc$real_sample),
+  batches = dplyr::n_distinct(pbmc$real_batch),
+  assays = paste(SeuratObject::Assays(pbmc), collapse = ", ")
+)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -133,7 +151,7 @@ annotation_prompt <- sn_build_prompt(
   task = "annotation",
   audience = "scientist",
   language = "en",
-  background = "PBMC3k single-cell RNA-seq clustered with Shennong.",
+  background = "Kotliarov PBMC CITE-seq response cohort clustered with Shennong.",
   output_format = "llm",
   include_json_schema = TRUE
 )
@@ -151,7 +169,7 @@ annotation_prompt <- sn_interpret_annotation(
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   output_format = "llm",
-  background = "Annotate PBMC3k clusters conservatively."
+  background = "Annotate Kotliarov PBMC clusters conservatively."
 )
 
 annotation_prompt$task
@@ -189,7 +207,7 @@ de_prompt <- sn_interpret_de(
   de_name = "cluster_markers",
   n_genes = 10,
   return_prompt = TRUE,
-  background = "Summarize PBMC3k cluster marker programs."
+  background = "Summarize Kotliarov PBMC cluster marker programs."
 )
 
 de_prompt$task
@@ -217,7 +235,7 @@ results_prompt <- sn_write_results(
   cluster_de_name = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
-  background = "Write a concise Results paragraph for PBMC3k clustering."
+  background = "Write a concise Results paragraph for Kotliarov PBMC clustering."
 )
 
 legend_prompt <- sn_write_figure_legend(
@@ -233,7 +251,7 @@ summary_prompt <- sn_write_presentation_summary(
   cluster_de_name = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
-  background = "Prepare a short collaborator-facing PBMC3k summary."
+  background = "Prepare a short collaborator-facing Kotliarov PBMC summary."
 )
 
 c(results_prompt$task, legend_prompt$task, summary_prompt$task)

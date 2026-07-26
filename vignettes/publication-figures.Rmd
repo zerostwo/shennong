@@ -8,8 +8,24 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
-library(Shennong)
+real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
+pbmc_fixture <- if (nzchar(real_data_root)) {
+  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
+} else {
+  ""
+}
+run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
+  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  eval = run_vignette
+)
 ```
 
 Shennong figures remain native `ggplot`, patchwork, or ComplexHeatmap objects.
@@ -24,25 +40,38 @@ not claim to replace current journal artwork instructions; verify those before
 submission.
 
 ```{r profiles}
+library(Shennong)
+library(Seurat)
+
 sn_list_figure_profiles()
 
-large_spec <- sn_figure_spec(
-  plot_type = "embedding",
-  data_summary = list(
-    n_points = 5000000,
-    n_groups = 18,
-    n_panels = 1,
-    max_label_chars = 16
-  ),
-  profile = "single_column"
+pbmc <- qs2::qs_read(pbmc_fixture)
+pbmc <- sn_run_cluster(
+  pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
 )
-large_spec$recommended
+
+plot <- sn_plot_dim(
+  pbmc,
+  reduction = "umap",
+  group_by = "real_response",
+  split_by = "real_batch",
+  title = "Kotliarov PBMC response groups"
+)
+
+sn_recommend_figure_size(plot, profile = "double_column")
+plot
 ```
 
-The five-million-point example calculates metadata only; it does not allocate
-or render five million rows. Point size follows a clamped power rule, and
-high-density layers are recommended for rasterization while text and geometry
-remain vector in PDF/SVG output.
+The example above is rendered from 2,000 real CITE-seq cells and retains the
+study's responder and acquisition-batch labels. Point size follows a clamped
+power rule, and high-density layers are recommended for rasterization while
+text and geometry remain vector in PDF/SVG output.
 
 ## Inspect and apply a specification
 
@@ -50,15 +79,10 @@ Core Shennong plots attach `shennong_figure_spec` automatically. Any native
 plot can also be profiled after construction.
 
 ```{r apply}
-plot <- ggplot2::ggplot(
-  mtcars,
-  ggplot2::aes(wt, mpg, color = factor(cyl))
-) +
-  ggplot2::geom_point()
-
-plot <- sn_apply_figure_profile(plot, "single_column")
+plot <- sn_apply_figure_profile(plot, "double_column")
 sn_figure_spec(plot)$recommended
 sn_validate_figure(plot)
+plot
 ```
 
 Validation reports calculated dimensions, text and raster settings, small
@@ -71,21 +95,32 @@ still required.
 `sn_save_figure()` supports PDF, SVG, TIFF, and PNG without depending on the
 current RStudio graphics device. Explicit dimensions override automatic values.
 
-```{r save, eval=FALSE}
-sn_save_figure(
+```{r save}
+figure_dir <- file.path(tempdir(), "shennong-real-figures")
+dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+
+png_path <- sn_save_figure(
   plot,
-  "figures/Figure_1A.pdf",
-  profile = "single_column"
+  file.path(figure_dir, "kotliarov_response.png"),
+  profile = "double_column"
 )
+
+pdf_path <- sn_export_figure(
+  plot,
+  file.path(figure_dir, "kotliarov_response.pdf"),
+  profile = "double_column"
+)
+
+file.info(c(png_path, pdf_path))[, c("size", "mtime")]
 ```
 
 For a reproducible handoff, export the rendering, source table, calculated
 specification, session information, checksums, and validation result together.
 
-```{r bundle, eval=FALSE}
+```{r bundle}
 manifest <- sn_export_figure_bundle(
   plot,
-  path = "figures/Figure_1A",
+  path = file.path(figure_dir, "kotliarov_response_bundle"),
   formats = c("pdf", "png"),
   include_data = TRUE,
   include_spec = TRUE,
@@ -93,6 +128,7 @@ manifest <- sn_export_figure_bundle(
   profile = "single_column"
 )
 manifest$files
+manifest$validation$status
 ```
 
 Result-aware `sn_plot_de()`, `sn_plot_enrichment()`, and `sn_plot_gsea()` attach

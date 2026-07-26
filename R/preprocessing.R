@@ -784,16 +784,16 @@ sn_standardize_gene_symbols <- function(
 #' annotation subset.
 #'
 #' @examples
-#' if (requireNamespace("Seurat", quietly = TRUE)) {
-#'   data("pbmc_small", package = "Shennong")
+#' \dontrun{
+#'   pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #'   pbmc_filtered <- sn_filter_genes(
-#'     pbmc_small,
+#'     pbmc,
 #'     min_cells = 5,
 #'     plot = FALSE,
 #'     filter = TRUE
 #'   )
 #'   pbmc_coding <- sn_filter_genes(
-#'     pbmc_small,
+#'     pbmc,
 #'     min_cells = 1,
 #'     plot = FALSE,
 #'     filter = TRUE,
@@ -1676,16 +1676,8 @@ sn_find_doublets <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
-#' data("pbmc_small_raw", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
-#'
-#' corrected <- sn_remove_ambient_contamination(
-#'   x = SeuratObject::LayerData(pbmc, layer = "counts"),
-#'   raw = pbmc_small_raw,
-#'   method = "soupx",
-#'   return_object = FALSE
-#' )
 #' }
 #'
 #' @export

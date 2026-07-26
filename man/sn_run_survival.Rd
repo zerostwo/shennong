@@ -12,7 +12,13 @@ sn_run_survival(
   covariates = NULL,
   metadata = NULL,
   assay = NULL,
-  store_name = "bulk_survival"
+  store_name = "bulk_survival",
+  group_method = c("median", "quantile", "fixed", "none"),
+  group_quantile = 0.5,
+  group_cutpoint = NULL,
+  group_labels = c("Low", "High"),
+  ties = c("efron", "breslow", "exact"),
+  risk_times = NULL
 )
 }
 \arguments{
@@ -29,6 +35,19 @@ sn_run_survival(
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
 \item{store_name}{Result name.}
+
+\item{group_method}{Feature grouping used for Kaplan-Meier analysis.}
+
+\item{group_quantile}{Quantile used when \code{group_method = "quantile"}.}
+
+\item{group_cutpoint}{Fixed scalar or feature-named cutpoints.}
+
+\item{group_labels}{Labels ordered as lower/equal and higher than the cutpoint.}
+
+\item{ties}{Cox partial-likelihood tie method.}
+
+\item{risk_times}{Optional non-negative times shown in the risk table. The
+default uses at most eight deterministic pretty breaks per feature.}
 }
 \value{
 A validated survival result with one adjusted Cox model per feature.

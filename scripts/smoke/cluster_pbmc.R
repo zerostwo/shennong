@@ -5,13 +5,14 @@ suppressPackageStartupMessages({
   stopifnot(requireNamespace("clusterProfiler", quietly = TRUE))
   stopifnot(requireNamespace("org.Hs.eg.db", quietly = TRUE))
   stopifnot(requireNamespace("lisi", quietly = TRUE))
+  stopifnot(requireNamespace("qs2", quietly = TRUE))
 })
 
 devtools::load_all(".", quiet = TRUE)
 
-prepare_sample <- function(dataset) {
-  object <- sn_load_data(dataset = dataset)
-  object$sample <- dataset
+prepare_sample <- function(object, sample_id) {
+  object <- subset(object, cells = colnames(object)[as.character(object$real_sample) == sample_id])
+  object$sample <- as.character(object$real_sample)
   object$study <- "pbmc_demo"
   object <- suppressWarnings(
     sn_filter_cells(
@@ -66,19 +67,29 @@ find_enrichment_result <- function(markers) {
   stop("No non-empty enrichment result was produced for the PBMC marker sets.")
 }
 
-pbmc1k <- prepare_sample("pbmc1k")
-pbmc3k <- prepare_sample("pbmc3k")
-pbmc1k_clustered <- run_single_cluster(pbmc1k)
+fixture_path <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+stopifnot(file.exists(fixture_path))
+fixture <- qs2::qs_read(fixture_path)
+stopifnot(inherits(fixture, "Seurat"), "real_sample" %in% colnames(fixture[[]]))
+sample_ids <- unique(as.character(fixture$real_sample))
+stopifnot(length(sample_ids) >= 2L)
 
-stopifnot("seurat_clusters" %in% colnames(pbmc1k_clustered[[]]))
-stopifnot("umap" %in% names(pbmc1k_clustered@reductions))
+sample_a <- prepare_sample(fixture, sample_ids[[1]])
+sample_b <- prepare_sample(fixture, sample_ids[[2]])
+sample_a_clustered <- run_single_cluster(sample_a)
+
+stopifnot("seurat_clusters" %in% colnames(sample_a_clustered[[]]))
+stopifnot("umap" %in% names(sample_a_clustered@reductions))
 
 merged <- merge(
-  x = pbmc1k,
-  y = pbmc3k,
-  add.cell.ids = c("pbmc1k", "pbmc3k")
+  x = sample_a,
+  y = sample_b,
+  add.cell.ids = c("sample_a", "sample_b")
 )
-merged$sample <- ifelse(grepl("^pbmc1k_", colnames(merged)), "pbmc1k", "pbmc3k")
 merged$study <- "pbmc_demo"
 
 integrated <- suppressWarnings(

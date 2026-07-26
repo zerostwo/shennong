@@ -24,9 +24,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -98,9 +98,9 @@ sn_calculate_lisi <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -179,9 +179,9 @@ sn_calculate_silhouette <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -272,9 +272,9 @@ sn_calculate_graph_connectivity <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -681,9 +681,9 @@ sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = N
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -925,9 +925,9 @@ sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL) 
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -1114,9 +1114,9 @@ sn_identify_challenging_groups <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
 #' pbmc <- sn_run_cluster(
-#'   pbmc_small,
+#'   pbmc,
 #'   batch = "sample",
 #'   species = "human",
 #'   verbose = FALSE
@@ -1588,8 +1588,8 @@ sn_assess_integration <- function(
 #'
 #' @examples
 #' \dontrun{
-#' data("pbmc_small", package = "Shennong")
-#' pbmc <- sn_run_cluster(pbmc_small, normalization_method = "seurat", verbose = FALSE)
+#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 #' rogue_tbl <- sn_calculate_rogue(pbmc, cluster_by = "seurat_clusters")
 #' head(rogue_tbl)
 #' }
@@ -2621,8 +2621,10 @@ sn_compare_composition <- function(x,
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
 #' @return By default, a data frame of neighborhood-level DA statistics. When
-#'   \code{return_intermediate = TRUE}, a list with \code{table},
-#'   \code{design_df}, and \code{milo} is returned.
+#'   \code{store_name} is supplied, return the unified stored-result list, or
+#'   the updated Seurat object when \code{return_object = TRUE}. When
+#'   \code{return_intermediate = TRUE}, return a list with \code{table},
+#'   \code{design_df}, and \code{milo}.
 #'
 #' @examples
 #' \dontrun{
@@ -2887,7 +2889,11 @@ sn_store_milo <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_milo"))
   }
 
-  stored_result
+  .sn_get_misc_result(
+    object = object,
+    collection = "milo_results",
+    store_name = store_name
+  )
 }
 
 #' Retrieve a stored miloR result from a Seurat object
@@ -3194,9 +3200,9 @@ sn_get_milo_result <- function(object,
 #'   updated Seurat object with the stored assessment.
 #'
 #' @examples
-#' if (requireNamespace("Seurat", quietly = TRUE)) {
-#'   data("pbmc_small", package = "Shennong")
-#'   qc_report <- sn_assess_qc(pbmc_small, verbose = FALSE)
+#' \dontrun{
+#'   pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#'   qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
 #'   qc_report$overall
 #' }
 #'
@@ -3275,7 +3281,11 @@ sn_assess_qc <- function(object,
     return(object)
   }
 
-  report
+  .sn_prepare_misc_result(
+    collection = "qc_assessments",
+    store_name = store_name,
+    result = report
+  )
 }
 
 .sn_extract_metric_metadata <- function(x) {

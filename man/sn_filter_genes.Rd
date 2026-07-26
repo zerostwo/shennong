@@ -62,16 +62,16 @@ function also matches the feature set against the bundled
 annotation subset.
 }
 \examples{
-if (requireNamespace("Seurat", quietly = TRUE)) {
-  data("pbmc_small", package = "Shennong")
+\dontrun{
+  pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
   pbmc_filtered <- sn_filter_genes(
-    pbmc_small,
+    pbmc,
     min_cells = 5,
     plot = FALSE,
     filter = TRUE
   )
   pbmc_coding <- sn_filter_genes(
-    pbmc_small,
+    pbmc,
     min_cells = 1,
     plot = FALSE,
     filter = TRUE,

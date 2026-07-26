@@ -38,6 +38,8 @@ test_that("scVelo adapter stores projected vectors and diagnostics", {
   expect_equal(nrow(result$tables$cells), ncol(object))
   expect_equal(nrow(result$tables$transition_edges), ncol(object) - 1L)
   expect_equal(result$diagnostics$finite_vectors, ncol(object))
+  expect_true(result$parameters$enforce_normalization)
+  expect_true(result$parameters$log1p_transform)
   expect_true(all(c("velocity_pseudotime", "velocity_confidence") %in% colnames(updated[[]])))
 })
 
@@ -88,7 +90,21 @@ test_that("RegVelo reuses the velocity result contract", {
   expect_identical(result$method, "regvelo")
   expect_identical(result$backend, "regvelo-pixi")
   expect_true(all(result$tables$cells$method == "regvelo"))
-  expect_true(all(c("soft_constraint", "lam", "max_epochs") %in% names(result$parameters)))
+  expect_true(all(c("soft_constraint", "lam", "max_epochs", "enforce_normalization", "log1p_transform") %in% names(result$parameters)))
+})
+
+test_that("managed velocity preprocessing enforces and records normalization", {
+  script <- paste(
+    readLines(Shennong:::.sn_trajectory_pixi_script(), warn = FALSE),
+    collapse = "\n"
+  )
+
+  expect_match(script, 'config.get("enforce_normalization", True)', fixed = TRUE)
+  expect_match(script, "enforce=enforce_normalization", fixed = TRUE)
+  expect_match(script, "sc.pp.log1p(adata)", fixed = TRUE)
+  expect_match(script, '"velocity_mode": config.get', fixed = TRUE)
+  expect_match(script, '"preprocessing": {', fixed = TRUE)
+  expect_match(script, "estimator.compute_eigendecomposition()", fixed = TRUE)
 })
 
 test_that("RegVelo prior GRNs are normalized to regulator-target edges", {

@@ -11,7 +11,18 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+real_data_file <- file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+)
+real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
+run_requested <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true")
+run_vignette <- run_requested &&
+  requireNamespace("qs2", quietly = TRUE) &&
+  file.exists(real_data_file)
+run_extended <- run_vignette && identical(real_profile, "all")
+celltypist_model <- Sys.getenv("SHENNONG_CELLTYPIST_MODEL")
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -33,14 +44,19 @@ After clustering, users usually ask three linked questions:
 Shennong stores DE and enrichment results on the Seurat object so the same
 tables can feed dot plots, interpretation prompts, and later reports.
 
-## Cluster PBMC3k and find markers
+All core results below are computed from the public Kotliarov PBMC CITE-seq
+fixture. Its 20 `real_sample` values are the biological replicates,
+`real_response` is constant within each sample, and RNA and ADT measurements
+remain aligned. No donor, condition, or cell-label column is fabricated.
+
+## Cluster the real PBMC cells and find markers
 
 ```{r setup-markers}
 library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -63,6 +79,8 @@ pbmc <- sn_find_de(
   return_object = TRUE,
   verbose = FALSE
 )
+
+table(pbmc$seurat_clusters, pbmc$real_response)
 ```
 
 The result is stored under `object@misc$de_results`. Retrieve it by name instead
@@ -125,7 +143,7 @@ sn_plot_dot(
   n = 4,
   group_by = "seurat_clusters",
   palette = "RdBu",
-  title = "Top PBMC3k markers"
+  title = "Top markers in the real PBMC subset"
 )
 ```
 
@@ -174,6 +192,24 @@ annotation <- sn_get_result(
 head(annotation$tables$clusters)
 head(annotation$tables$cells)
 annotation$diagnostics
+
+confidence_from_evidence <- sn_annotation_confidence(
+  annotation$tables$evidence
+)
+consensus_from_evidence <- sn_annotation_consensus(
+  annotation$tables$evidence,
+  ontology = TRUE
+)
+
+head(confidence_from_evidence)
+head(consensus_from_evidence)
+
+sn_plot_reference_projection(
+  pbmc,
+  store_name = "pbmc_consensus",
+  reduction = "umap",
+  color_by = "prediction"
+)
 ```
 
 Every final label remains linked to marker support, conflicts, reference
@@ -197,13 +233,21 @@ sn_plot_annotation_markers(
 )
 ```
 
-If trusted labels are present, a confusion heatmap makes disagreements visible.
+If trusted cell-level labels are present, a confusion heatmap makes
+disagreements visible. This fixture has no author-curated cell-type truth
+column, so the real-data example below compares consensus labels with labels
+mapped independently from a disjoint reference subset. That plot measures
+reference-mapping consistency; it is not an accuracy estimate or biological
+ground truth.
 
-```{r annotation-confusion, eval = FALSE}
-sn_plot_annotation_confusion(
-  pbmc,
-  truth = "curated_cell_type",
-  store_name = "pbmc_consensus"
+Ontology mapping can also be inspected directly. The `all` profile reports the
+versioned mappings for the real consensus labels without changing the stored
+annotation.
+
+```{r map-cell-ontology, eval = run_extended}
+sn_map_cell_ontology(
+  unique(annotation$tables$clusters$prediction),
+  strict = FALSE
 )
 ```
 
@@ -236,22 +280,31 @@ The underlying methods should be cited in publications: SingleR (Aran et al.,
 CL snapshot; verify current author and ontology guidelines when preparing a
 submission.
 
-```{r singleR-annotation, eval = FALSE}
-pbmc <- sn_run_annotation(
-  pbmc,
+The optional reference examples split the 20 real biological samples into
+non-overlapping reference and query sets. They run only in the `all` profile
+when the requested backend is installed.
+
+```{r singleR-annotation, eval = run_extended && requireNamespace("SingleR", quietly = TRUE)}
+reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
+reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
+reference <- subset(pbmc, cells = reference_cells)
+query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
+
+query_singleR <- sn_run_annotation(
+  query,
   group_by = "seurat_clusters",
   method = "consensus",
   reference = reference,
-  reference_label_by = "cell_type",
+  reference_label_by = "pbmc_consensus_label",
   consensus_reference_method = "singleR",
   species = "human",
-  store_name = "pbmc_reference_consensus"
+  store_name = "kotliarov_reference_consensus"
 )
 
 reference_result <- sn_get_result(
-  pbmc,
+  query_singleR,
   type = "annotation",
-  name = "pbmc_reference_consensus"
+  name = "kotliarov_reference_consensus"
 )
 
 head(reference_result$tables$backend_predictions)
@@ -265,25 +318,54 @@ trusted reference already exists, `sn_transfer_labels()` follows Seurat's
 anchor workflow and writes the projected label plus a confidence score back to
 the query metadata. The wrapper keeps the source label and transfer settings in
 `query@misc$label_transfer`, so the annotation is not just a loose metadata
-column.
+column. The example below uses the consensus labels computed above as the
+reference annotation and keeps the reference/query biological samples
+disjoint. These are computational labels, not author-provided truth.
 
-```{r label-transfer, eval = FALSE}
-reference <- pbmc
-query <- pbmc
-
-reference$cell_type <- reference$seurat_clusters
+```{r label-transfer, eval = run_vignette}
+reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
+reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
+reference <- subset(pbmc, cells = reference_cells)
+query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
 
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "cell_type",
-  prediction_prefix = "pbmc_reference",
+  label_by = "pbmc_consensus_label",
+  prediction_prefix = "kotliarov_reference",
   dims = 1:15,
   verbose = FALSE
 )
 
-table(query$pbmc_reference_label)
-head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
+table(query$kotliarov_reference_label, query$real_response)
+head(query[[]][, c(
+  "real_sample", "real_response",
+  "kotliarov_reference_label", "kotliarov_reference_score"
+)])
+```
+
+The mapped query labels carry label-transfer provenance in
+`query@misc$label_transfer`. To compare them with the stored consensus result,
+place only those mapped query labels back into a cell-aligned metadata vector;
+reference cells remain missing and are excluded from the contingency table.
+
+```{r annotation-reference-consistency}
+reference_mapped_labels <- stats::setNames(
+  rep(NA_character_, ncol(pbmc)),
+  colnames(pbmc)
+)
+reference_mapped_labels[colnames(query)] <- as.character(
+  query$kotliarov_reference_label
+)
+pbmc$kotliarov_reference_label <- unname(
+  reference_mapped_labels[colnames(pbmc)]
+)
+
+sn_plot_annotation_confusion(
+  pbmc,
+  truth = "kotliarov_reference_label",
+  store_name = "pbmc_consensus"
+)
 ```
 
 The same query-first interface can use Coralysis reference mapping when the
@@ -292,10 +374,10 @@ By default, Shennong keeps the native Coralysis-trained SingleCellExperiment
 and PCA model under `reference@misc$coralysis`, so the returned object can be
 used directly as a label-transfer reference.
 
-```{r coralysis-label-transfer, eval = FALSE}
+```{r coralysis-label-transfer, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
 reference <- sn_run_cluster(
   reference,
-  batch = "sample_id",
+  batch = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
   verbose = FALSE
@@ -304,12 +386,14 @@ reference <- sn_run_cluster(
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "cell_type",
+  label_by = "pbmc_consensus_label",
   method = "coralysis",
   prediction_prefix = "coral_reference",
   transfer_control = list(k.nn = 10),
   verbose = FALSE
 )
+
+table(query$coral_reference_label, query$real_response)
 ```
 
 For durable handoffs, prepare a compact transfer-ready reference instead of
@@ -317,22 +401,33 @@ saving the full analysis object. Coralysis references keep the trained models,
 PCA model, feature names, and selected labels while dropping the large
 reference assay matrices and joint-probability tables.
 
-```{r compact-label-transfer-reference, eval = FALSE}
-coral_reference <- sn_prepare_label_transfer_reference(
+The core profile also builds a compact Seurat reference in a temporary path,
+then maps the same disjoint query samples back to it. No local fixture or
+reference object is written into the repository.
+
+```{r compact-label-transfer-reference, eval = run_vignette}
+compact_path <- tempfile(fileext = ".qs2")
+compact_reference <- sn_prepare_label_transfer_reference(
   reference,
-  label_by = "cell_type",
-  method = "coralysis",
-  path = "data/processed/pbmc_coralysis_reference.qs2",
+  label_by = "pbmc_consensus_label",
+  method = "seurat",
+  path = compact_path,
   overwrite = TRUE
 )
 
-query <- sn_transfer_labels(
+compact_query <- sn_transfer_labels(
   object = query,
-  reference = coral_reference,
-  label_by = "cell_type",
-  method = "coralysis",
-  prediction_prefix = "coral_reference",
+  reference = compact_reference,
+  label_by = "pbmc_consensus_label",
+  prediction_prefix = "compact_reference",
+  dims = 1:15,
   verbose = FALSE
+)
+
+data.frame(
+  reference_cells = ncol(compact_reference),
+  query_cells = ncol(compact_query),
+  labels_transferred = sum(!is.na(compact_query$compact_reference_label))
 )
 ```
 
@@ -353,14 +448,18 @@ immune_signatures <- sn_get_signatures(
 head(immune_signatures)
 ```
 
-Custom signatures can be added, renamed, and deleted through the same API. Use
-a project-specific catalog path when you do not want to modify the package-level
-catalog.
+Custom signatures can be added, renamed, and deleted through the same API. The
+example copies the shipped catalog to a temporary `.rda`, exercises the full
+lifecycle with real PBMC genes, and leaves the package catalog unchanged.
 
-```{r custom-signature, eval = FALSE}
-catalog_path <- "config/signatures/pbmc_signatures.csv"
+```{r custom-signature, eval = run_vignette}
+catalog_path <- tempfile(fileext = ".rda")
+file.copy(
+  system.file("data", "shennong_signature_catalog.rda", package = "Shennong"),
+  catalog_path
+)
 
-sn_add_signature(
+added_catalog <- sn_add_signature(
   species = "human",
   path = "custom/t_cell_activation",
   genes = c("IL7R", "CCR7", "LTB"),
@@ -368,18 +467,24 @@ sn_add_signature(
   source = "project"
 )
 
-sn_update_signature(
+updated_catalog <- sn_update_signature(
   species = "human",
   path = "custom/t_cell_activation",
-  rename_to = "custom/naive_t_cell",
+  rename_to = "naive_t_cell",
   catalog_path = catalog_path
 )
 
-sn_delete_signature(
+deleted_catalog <- sn_delete_signature(
   species = "human",
   path = "custom/naive_t_cell",
   catalog_path = catalog_path
 )
+
+data.frame(
+  operation = c("add", "update", "delete"),
+  catalog = c(added_catalog, updated_catalog, deleted_catalog)
+)
+file.info(catalog_path)[, c("size", "mtime")]
 ```
 
 ## Score programs in cells and samples
@@ -446,22 +551,22 @@ unit. `sn_test_programs()` first averages cell scores within each
 sample/condition/stratum, then runs the selected test; omitting `sample_by` is
 explicitly marked as exploratory cell-level inference.
 
-```{r test-programs, eval = FALSE}
+```{r test-programs, eval = run_vignette}
 pbmc <- sn_test_programs(
   pbmc,
   score_name = "immune_programs",
-  condition_by = "condition",
-  sample_by = "patient",
-  group_by = "cell_type",
-  contrast = c("treated", "control"),
-  method = "limma",
-  store_name = "immune_program_condition"
+  condition_by = "real_response",
+  sample_by = "real_sample",
+  group_by = "seurat_clusters",
+  contrast = c("d0 high", "d0 low"),
+  method = "wilcox",
+  store_name = "immune_program_response"
 )
 
 sn_get_result(
   pbmc,
   type = "program_comparison",
-  name = "immune_program_condition"
+  name = "immune_program_response"
 )$tables$primary
 ```
 
@@ -491,28 +596,26 @@ pathways <- sn_get_enrichment_result(
 head(pathways)
 ```
 
-If you already have an enrichment table from another tool, store it with
-`sn_store_enrichment()` so the interpretation layer can find it.
+If you already have a real enrichment table from another stage or tool, store
+it with `sn_store_enrichment()` so the interpretation layer can find it. Here
+the retrieved Kotliarov GO table is re-registered under a review-specific name;
+no placeholder term or p-value is introduced.
 
-```{r store-external-enrichment, eval = FALSE}
-external_terms <- data.frame(
-  cluster = "0",
-  ID = "GO:0006955",
-  Description = "immune response",
-  p.adjust = 0.001,
-  geneID = "IL7R/CCR7/LTB"
-)
+```{r store-external-enrichment, eval = run_vignette}
+review_terms <- pathways
 
 pbmc <- sn_store_enrichment(
   object = pbmc,
-  result = external_terms,
-  store_name = "external_gobp",
+  result = review_terms,
+  store_name = "reviewed_cluster_gobp",
   analysis = "ora",
   database = "GOBP",
   species = "human",
   source_de_name = "cluster_markers",
   return_object = TRUE
 )
+
+head(sn_get_enrichment_result(pbmc, "reviewed_cluster_gobp"))
 ```
 
 ## Cell communication and regulatory activity
@@ -524,11 +627,19 @@ network, NicheNet when the question is sender-to-receiver ligand activity, or
 LIANA when the optional LIANA package is available and consensus scoring is
 preferred.
 
-```{r cellchat-communication, eval = FALSE}
+Communication and regulatory backends are part of the `all` profile. They run
+only when their upstream R package and, for NicheNet, versioned prior matrices
+are already available. Sample-aware comparisons use `real_sample` as the
+inferential unit and `real_response` as its sample-level phenotype.
+
+```{r cellchat-communication, eval = run_extended && requireNamespace("CellChat", quietly = TRUE)}
 pbmc <- sn_run_cell_communication(
   object = pbmc,
   method = "cellchat",
   group_by = "seurat_clusters",
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
   species = "human",
   store_name = "cluster_cellchat"
 )
@@ -539,31 +650,47 @@ cellchat_tbl <- sn_get_cell_communication_result(
 )
 
 head(cellchat_tbl)
+sn_plot_communication(pbmc, name = "cluster_cellchat", type = "bubble", n = 25)
 ```
 
 NicheNet needs its ligand-target matrix and ligand-receptor network. Shennong
 requires those priors explicitly so the output remains traceable to the real
-NicheNet model rather than an inferred placeholder network.
+NicheNet model rather than an inferred placeholder network. Set
+`SHENNONG_NICHENET_LIGAND_TARGET` and `SHENNONG_NICHENET_LR_NETWORK` to
+versioned local RDS files to enable this extended chunk.
 
-```{r nichenet-communication, eval = FALSE}
+```{r nichenet-communication, eval = run_extended && requireNamespace("nichenetr", quietly = TRUE) && file.exists(Sys.getenv("SHENNONG_NICHENET_LIGAND_TARGET")) && file.exists(Sys.getenv("SHENNONG_NICHENET_LR_NETWORK"))}
+ligand_target_matrix <- readRDS(Sys.getenv("SHENNONG_NICHENET_LIGAND_TARGET"))
+lr_network <- readRDS(Sys.getenv("SHENNONG_NICHENET_LR_NETWORK"))
+cluster_levels <- names(sort(table(pbmc$seurat_clusters), decreasing = TRUE))
+receiver_markers <- marker_tbl$gene[
+  as.character(marker_tbl$cluster) == cluster_levels[[3]]
+]
+
 pbmc <- sn_run_cell_communication(
   object = pbmc,
-  method = "nichenetr",
+  method = "nichenet",
   group_by = "seurat_clusters",
-  sender = c("0", "1"),
-  receiver = "2",
-  geneset = c("IL7R", "CCR7", "LTB"),
+  sender = cluster_levels[1:2],
+  receiver = cluster_levels[[3]],
+  geneset = receiver_markers,
+  background_genes = rownames(pbmc),
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
   ligand_target_matrix = ligand_target_matrix,
   lr_network = lr_network,
   store_name = "sender_receiver_nichenet"
 )
+
+head(sn_get_cell_communication_result(pbmc, "sender_receiver_nichenet"))
 ```
 
 For transcription-factor and pathway activity, `sn_run_regulatory_activity()`
 uses fast footprint methods through `decoupleR`. DoRothEA reports TF activity;
 PROGENy reports pathway activity.
 
-```{r regulatory-activity, eval = FALSE}
+```{r regulatory-activity, eval = run_extended && requireNamespace("decoupleR", quietly = TRUE) && requireNamespace("dorothea", quietly = TRUE)}
 pbmc <- sn_run_regulatory_activity(
   object = pbmc,
   method = "dorothea",
@@ -588,27 +715,20 @@ the input is a Seurat object, predictions are written back to metadata. When the
 input is a file path, Shennong returns the prediction table because there is no
 object to update.
 
-```{r celltypist-seurat, eval = FALSE}
+The CellTypist chunk additionally requires a local model path in
+`SHENNONG_CELLTYPIST_MODEL` and an existing `celltypist` executable. The
+article never downloads a model during pkgdown rendering.
+
+```{r celltypist-seurat, eval = run_extended && nzchar(celltypist_model) && file.exists(celltypist_model) && nzchar(Sys.which("celltypist"))}
 pbmc <- sn_run_celltypist(
   x = pbmc,
-  model = "Immune_All_Low.pkl",
+  model = celltypist_model,
   over_clustering = "seurat_clusters",
   majority_voting = TRUE,
   quiet = TRUE
 )
 
-grep("Immune_All_Low", colnames(pbmc[[]]), value = TRUE)
-```
-
-```{r celltypist-path, eval = FALSE}
-prediction_tbl <- sn_run_celltypist(
-  x = "pbmc3k_counts.csv",
-  model = "Immune_All_Low.pkl",
-  over_clustering = "obs_cluster",
-  quiet = TRUE
-)
-
-head(prediction_tbl)
+grep("celltypist", colnames(pbmc[[]]), value = TRUE, ignore.case = TRUE)
 ```
 
 The intended pattern is evidence first, label second: markers and pathways are

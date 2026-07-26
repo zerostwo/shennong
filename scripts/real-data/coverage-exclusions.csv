@@ -1,0 +1,91 @@
+function,category,reason
+sn_add_data_from_anndata,io_project,Data import adapter rather than an analysis workflow
+sn_add_signature,signature_management,Signature catalog mutation rather than analysis execution
+sn_audit_results,result_management,Stored-result governance rather than biological analysis
+sn_build_result_bundle,result_management,Credential-free result handoff construction rather than biological analysis
+sn_build_prompt,interpretation_reporting,Interpretation prompt construction rather than analysis execution
+sn_call_cell2location,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_cellphonedb,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_infercnvpy,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_mmochi,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_pixi_environment,backend_adapter,Generic runtime invocation rather than a biological analysis contract
+sn_call_scanvi,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_scarches,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_scpoli,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_scvi,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_spatialdata,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_squidpy,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_stlearn,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_tangram,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_call_trajectory,backend_adapter,Low-level backend call covered through the corresponding sn_run entry point
+sn_check_autozyme,acceleration_control,Acceleration capability inspection rather than analysis execution
+sn_check_file,io_project,File validation utility rather than analysis execution
+sn_check_pixi,runtime_admin,Runtime capability inspection rather than analysis execution
+sn_check_version,runtime_admin,Package version utility rather than analysis execution
+sn_configure_pixi_mirror,runtime_admin,Runtime configuration rather than analysis execution
+sn_convert_bpcells,io_project,Storage conversion rather than analysis execution
+sn_delete_result,result_management,Stored-result mutation rather than biological analysis
+sn_delete_signature,signature_management,Signature catalog mutation rather than analysis execution
+sn_detect_accelerator,runtime_admin,Hardware capability inspection rather than analysis execution
+sn_disable_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_enable_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_ensure_pixi,runtime_admin,Runtime installation management rather than analysis execution
+sn_export_result_bundle,result_management,Local result handoff export rather than biological analysis
+sn_get_cell_communication_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_codex_skill_path,runtime_admin,Installed asset discovery rather than analysis execution
+sn_get_de_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_deconvolution_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_enrichment_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_interpretation_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_milo_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_palette,io_project,Palette lookup rather than analysis execution
+sn_get_regulatory_activity_result,result_management,Compatibility result retrieval rather than analysis execution
+sn_get_result,result_management,Generic result retrieval rather than analysis execution
+sn_get_signatures,signature_management,Signature catalog lookup rather than analysis execution
+sn_initialize_project,io_project,Project scaffolding rather than analysis execution
+sn_install_codex_skill,runtime_admin,Installed asset management rather than analysis execution
+sn_install_dependencies,runtime_admin,Dependency installation rather than analysis execution
+sn_install_pixi,runtime_admin,Runtime installation rather than analysis execution
+sn_install_shennong,runtime_admin,Package installation rather than analysis execution
+sn_interpret_annotation,interpretation_reporting,Narrative interpretation rather than quantitative analysis
+sn_interpret_de,interpretation_reporting,Narrative interpretation rather than quantitative analysis
+sn_interpret_enrichment,interpretation_reporting,Narrative interpretation rather than quantitative analysis
+sn_list_10x_paths,io_project,Input discovery rather than analysis execution
+sn_list_dependencies,runtime_admin,Dependency inventory rather than analysis execution
+sn_list_figure_profiles,io_project,Figure configuration lookup rather than visualization execution
+sn_list_methods,runtime_admin,Method registry inspection rather than analysis execution
+sn_list_palettes,io_project,Palette inventory rather than visualization execution
+sn_list_pixi_environments,runtime_admin,Runtime inventory rather than analysis execution
+sn_list_results,result_management,Stored-result inventory rather than biological analysis
+sn_list_signatures,signature_management,Signature catalog inventory rather than analysis execution
+sn_make_ellmer_provider,interpretation_reporting,Provider construction rather than quantitative analysis
+sn_mcp_server,runtime_admin,Agent server lifecycle rather than analysis execution
+sn_mcp_server_config,runtime_admin,Agent server configuration rather than analysis execution
+sn_method_status,runtime_admin,Method capability inspection rather than analysis execution
+sn_pixi_config_path,runtime_admin,Runtime path lookup rather than analysis execution
+sn_pixi_paths,runtime_admin,Runtime path lookup rather than analysis execution
+sn_prepare_annotation_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
+sn_prepare_de_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
+sn_prepare_enrichment_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
+sn_prepare_pixi_environment,runtime_admin,Runtime preparation rather than analysis execution
+sn_prepare_results_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
+sn_read,io_project,Data input rather than analysis execution
+sn_run_llm,interpretation_reporting,Language-model invocation rather than quantitative analysis
+sn_set_cibersortx_credentials,runtime_admin,Credential configuration rather than analysis execution
+sn_set_path,io_project,Filesystem setup rather than analysis execution
+sn_store_cell_communication,result_management,Compatibility result storage rather than analysis execution
+sn_store_deconvolution,result_management,Compatibility result storage rather than analysis execution
+sn_store_enrichment,result_management,Compatibility result storage rather than analysis execution
+sn_store_milo,result_management,Compatibility result storage rather than analysis execution
+sn_store_regulatory_activity,result_management,Compatibility result storage rather than analysis execution
+sn_store_result,result_management,Generic result storage rather than biological analysis
+sn_test_llm_provider,interpretation_reporting,Provider connectivity test rather than quantitative analysis
+sn_update_signature,signature_management,Signature catalog mutation rather than analysis execution
+sn_upgrade_results,result_management,Stored-result governance rather than biological analysis
+sn_validate_result,result_management,Stored-result governance rather than biological analysis
+sn_validate_result_bundle,result_management,Result handoff governance rather than biological analysis
+sn_with_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_write,io_project,Data output rather than analysis execution
+sn_write_figure_legend,interpretation_reporting,Narrative reporting rather than visualization execution
+sn_write_presentation_summary,interpretation_reporting,Narrative reporting rather than quantitative analysis
+sn_write_results,interpretation_reporting,Result export and reporting rather than analysis execution

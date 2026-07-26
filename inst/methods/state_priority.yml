@@ -12,10 +12,10 @@
   {
     "name": "scissor", "task": "state_priority", "runtime": "r", "package": "Scissor",
     "implemented": true, "default": false,
-    "description": "Bulk-phenotype-guided selection of positively and negatively associated cells.",
-    "input_requirements": ["single-cell expression", "bulk expression", "bulk phenotype"],
-    "outputs": ["cell coefficients", "selected cells", "state ranking"],
-    "supports": {"binomial": true, "gaussian": true, "cox": true},
+    "description": "Bulk-phenotype-guided cell selection with strict sample alignment and unified cell, state, sample, correlation, model, and optional reliability outputs.",
+    "input_requirements": ["single-cell expression", "state labels", "bulk expression with gene and sample names", "aligned bulk phenotype", "optional sample labels"],
+    "outputs": ["all-cell coefficients", "selected cells", "state ranking", "sample contributions", "cell correlation summaries", "model summary", "optional reliability", "optional long correlation matrix"],
+    "supports": {"binomial": true, "gaussian": true, "cox": true, "strict_named_sample_alignment": true, "positional_phenotype_compatibility": true, "bootstrap_reliability": true},
     "cpu_gpu": "CPU", "install": "remotes::install_github('sunduanchen/Scissor')",
     "citation": "Sun et al. Nature Biotechnology 2022"
   },

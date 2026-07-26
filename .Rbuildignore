@@ -6,7 +6,7 @@
 ^\.agents
 ^\.codex
 ^\.codegraph$
-^\.codegraph(/.*)?$
+^\.codegraph/
 dev
 ^LICENSE\.md$
 ^README\.Rmd$
@@ -25,5 +25,6 @@ dev
 ^vignettes/omnipathr-log$
 ^tests/testthat/Rplots\.pdf$
 ^benchmarks$
+^data-local$
 ^\.positai$
 ^\.claude$

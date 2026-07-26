@@ -79,6 +79,7 @@ test_that("marker-only consensus produces traceable cluster and cell annotations
 
   result <- sn_get_result(object, "annotation", "immune")
   expect_true(sn_validate_result(result, error = FALSE)$valid)
+  expect_identical(result$tables$primary, result$tables$cells)
   expect_equal(nrow(result$tables$cells), ncol(object))
   expect_equal(nrow(result$tables$clusters), 2L)
   expect_true(all(c("supporting_markers", "conflicting_markers", "ontology_id") %in% colnames(result$tables$clusters)))

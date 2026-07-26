@@ -106,6 +106,28 @@ test_that("DE and enrichment plots consume standardized evidence", {
   expect_true(all(vapply(plots, function(x) !is.null(attr(x, "shennong_figure_spec")), logical(1))))
 })
 
+test_that("enrichment plots accept clusterProfiler S4 results", {
+  skip_if_not_installed("DOSE")
+  loadNamespace("DOSE")
+  table <- data.frame(
+    ID = c("P1", "P2"), Description = c("Pathway 1", "Pathway 2"),
+    setSize = c(2L, 2L), enrichmentScore = c(0.5, -0.4), NES = c(1.4, -1.2),
+    pvalue = c(0.01, 0.02), p.adjust = c(0.02, 0.03), qvalue = c(0.02, 0.03),
+    rank = c(2L, 3L), leading_edge = c("tags=50%", "tags=50%"),
+    core_enrichment = c("G1/G2", "G3/G4")
+  )
+  result <- methods::new(
+    "gseaResult", result = table, organism = "human", setType = "H",
+    geneSets = list(), geneList = c(G1 = 2, G2 = 1, G3 = -1, G4 = -2),
+    keytype = "UNKNOWN", permScores = matrix(numeric(), 0, 0), params = list(),
+    gene2Symbol = character(), readable = FALSE, termsim = matrix(numeric(), 0, 0),
+    method = "fgsea", dr = list()
+  )
+
+  expect_s3_class(sn_plot_enrichment(result), "ggplot")
+  expect_s3_class(sn_plot_gsea(result), "ggplot")
+})
+
 test_that("core diagnostic plot helpers expose figure specs", {
   qc <- list(by_sample = data.frame(sample = c("S1", "S2"), qc_score = c(.8, .6), n_cells = c(100, 80), retention_fraction = c(.9, .7)))
   metadata <- data.frame(nFeature_RNA = 1:20, nCount_RNA = 21:40, percent.mt = seq(1, 5, length.out = 20), sample = rep(c("S1", "S2"), 10), row.names = paste0("C", 1:20))
@@ -126,9 +148,16 @@ test_that("core diagnostic plot helpers expose figure specs", {
   expect_true(all(vapply(plots, function(x) !is.null(sn_figure_spec(x)), logical(1))))
 })
 
-test_that("Seurat diagnostic plots and reference projection run on bundled data", {
+test_that("Seurat diagnostic plots and reference projection run on local public data", {
   skip_if_not_installed("Seurat")
-  object <- pbmc_small
+  skip_if_not_installed("qs2")
+  data_path <- file.path(
+    Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+    "single-cell",
+    "kotliarov_pbmc.qs2"
+  )
+  skip_if_not(file.exists(data_path), "Local public-data fixture is unavailable")
+  object <- qs2::qs_read(data_path)
   object$doublet_class <- rep(c("singlet", "doublet"), length.out = ncol(object))
   object <- suppressWarnings(Seurat::NormalizeData(object, verbose = FALSE))
   object <- suppressWarnings(Seurat::FindVariableFeatures(object, nfeatures = 20, verbose = FALSE))
@@ -139,7 +168,7 @@ test_that("Seurat diagnostic plots and reference projection run on bundled data"
   elbow <- sn_plot_elbow(object, reduction = "pca", ndims = 5)
   cells <- data.frame(cell = colnames(object), prediction = rep(c("T", "B"), length.out = ncol(object)), prediction_score = seq(.5, .9, length.out = ncol(object)))
   result <- list(
-    schema_version = "1.0", analysis_type = "annotation", name = "annotation", method = "test", backend = "test",
+    schema_version = "1.0.0", analysis_type = "annotation", name = "annotation", method = "test", backend = "test",
     input = list(), parameters = list(), tables = list(primary = cells, cells = cells), embeddings = list(), graphs = list(), models = list(),
     diagnostics = list(), warnings = character(), provenance = Shennong:::.sn_analysis_provenance()
   )
@@ -158,4 +187,14 @@ test_that("migrated core plots carry automatic figure specs", {
     sn_plot_composition(data.frame(sample = rep(c("S1", "S2"), each = 2), cell_type = rep(c("T", "B"), 2), proportion = c(60, 40, 30, 70)), x = sample, fill = cell_type)
   )
   expect_true(all(vapply(plots, function(x) inherits(attr(x, "shennong_figure_spec"), "sn_figure_spec"), logical(1))))
+})
+test_that("result plots never partially match backup table fields", {
+  result <- list(
+    tables_backup = list(primary = data.frame(value = 1)),
+    table = data.frame(value = 2)
+  )
+
+  table <- Shennong:::.sn_result_plot_table(result)
+
+  expect_identical(table$value, 2)
 })

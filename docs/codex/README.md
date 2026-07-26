@@ -11,6 +11,37 @@ Shennong users under `inst/codex/`.
 - `Roadmap.md`: remaining structural work, ordered by risk.
 - `Governance.md`: boundaries between package maintenance, initialized-project
   governance, and package-usage skills.
+- `ResultContractAudit.md`: current analytical-result coverage, corrected
+  inconsistencies, and intentional runtime-artifact exclusions.
+- `Ecosystem.md`: current five-repository development state, interface ledger,
+  modality compatibility matrix, shared-contract targets, and cross-repository
+  release gates.
+
+## Real public-data validation
+
+The tracked validation surface lives under `scripts/real-data/`:
+
+- `sources.yml` records provenance, licenses, deterministic subset rules, and
+  the four logical data bundles.
+- `prepare-real-data.R` materializes those bundles below the local data root.
+- `validate-real-data.R` verifies manifests, checksums, biological dimensions,
+  finite matrices, coverage declarations, and source-control boundaries.
+- `coverage.csv` maps analysis and visualization functions to a bundle, core or
+  extended execution level, backend, and pkgdown article.
+- `coverage-exclusions.csv` accounts for every remaining public `sn_*` export
+  as IO, runtime, result governance, interpretation, signature management,
+  acceleration control, or a low-level backend adapter. Validation fails when
+  any new export is neither runtime-covered nor explicitly classified.
+- `run-runtime-coverage.R` evaluates mapped articles with tracing and writes a
+  local CSV/JSON audit without allowing downloads.
+- `benchmark-autozyme.R` measures baseline versus scoped AutoZyme execution and
+  verifies numerical equivalence and patch restoration.
+
+The default root is `data-local/pkgdown-real`, overridable with
+`SHENNONG_REAL_DATA_DIR`. Everything below that root is ignored by Git and
+excluded from package builds; it is validation evidence, never package data.
+Use `Rscript scripts/build-pkgdown.R --full --real` for the clean real-output
+pkgdown gate after the matrix has been prepared and validated.
 
 ## Historical snapshots
 

@@ -19,4 +19,5 @@ vignettes/omnipathr-log/
 *.Rcheck/
 benchmarks/coralysis_capacity/results*/inputs/
 benchmarks/coralysis_capacity/results*/runs/
+data-local/
 .positai

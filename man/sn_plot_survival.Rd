@@ -4,15 +4,26 @@
 \alias{sn_plot_survival}
 \title{Plot bulk survival associations}
 \usage{
-sn_plot_survival(x, adjusted_p_value = NULL)
+sn_plot_survival(
+  x,
+  adjusted_p_value = NULL,
+  view = c("forest", "km", "risk_table", "ph", "ph_test", "cumulative_hazard"),
+  feature = NULL
+)
 }
 \arguments{
 \item{x}{A bulk-survival result.}
 
 \item{adjusted_p_value}{Optional adjusted p-value cutoff.}
+
+\item{view}{Survival view: hazard-ratio forest, Kaplan-Meier curve, risk
+table, scaled Schoenfeld residual diagnostics, proportional-hazards test
+p-values, or cumulative hazard.}
+
+\item{feature}{Optional feature subset for the selected view.}
 }
 \value{
-A hazard-ratio forest plot.
+A survival \code{ggplot} object.
 }
 \description{
 Plot bulk survival associations

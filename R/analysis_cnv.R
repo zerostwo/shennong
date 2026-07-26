@@ -393,7 +393,7 @@ sn_run_cnv <- function(object,
   embeddings <- list()
   if (!is_null(backend$embedding)) embeddings$cnv_umap <- backend$embedding
   result <- list(
-    schema_version = "1.0", analysis_type = "cnv", name = store_name,
+    schema_version = "1.0.0", analysis_type = "cnv", name = store_name,
     method = method, backend = method,
     input = list(
       assay = resolved_assay, layer = association_layer,

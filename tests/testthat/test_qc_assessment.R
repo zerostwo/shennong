@@ -38,6 +38,8 @@ test_that("sn_assess_qc summarizes current QC status by sample", {
   ) %in% colnames(report$by_sample)))
   expect_true(is.character(report$messages))
   expect_equal(report$sample_col, "sample")
+  expect_true(sn_validate_result(report, error = FALSE)$valid)
+  expect_identical(report$tables$primary, report$by_sample)
 })
 
 test_that("sn_assess_qc compares filtered objects to a reference and stores reports", {

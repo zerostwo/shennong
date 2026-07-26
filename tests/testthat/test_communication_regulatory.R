@@ -61,6 +61,16 @@ make_multinichenet_object <- function() {
   )
 }
 
+test_that("backend label maps make zero-valued groups safe and reversible", {
+  map <- Shennong:::.sn_multinichenet_label_map(c("0", "1", "T cell", "0"))
+
+  expect_false(any(unname(map$encoded) == "0"))
+  expect_identical(
+    unname(map$decoded[unname(map$encoded[c("0", "1", "T cell")])]),
+    c("0", "1", "T cell")
+  )
+})
+
 test_that("cell communication results can be stored and retrieved", {
   skip_if_not_installed("Seurat")
   object <- make_communication_object()
@@ -154,15 +164,44 @@ test_that("communication backends standardize to one comparable schema", {
     sender = "Sender", receiver = "Receiver", ligand = "LIG1",
     receptor = "REC1", prioritization_score = 0.7, group = "Stim"
   ), method = "multinichenet")
+  natmi <- Shennong:::.sn_standardize_communication(tibble::tibble(
+    source = c("Sender", "Sender"), target = c("Receiver", "Receiver"),
+    ligand_complex = c("LIG1", "LIG2"), receptor_complex = c("REC1", "REC2"),
+    prod_weight = c(0.42, 0.21), edge_specificity = c(0.8, 0.9)
+  ), method = "liana")
   combined <- dplyr::bind_rows(liana, cellchat, multinichenet)
   consensus <- Shennong:::.sn_communication_consensus(combined)
   concordance <- Shennong:::.sn_communication_concordance(combined)
 
+  expect_equal(natmi$score, c(0.42, 0.21))
+  expect_equal(natmi$rank, c(1, 2))
   expect_true(all(c("source", "target", "ligand", "receptor", "score", "p_value", "q_value", "rank", "method", "condition", "sample", "pathway", "target_genes", "evidence_source", "spatial_distance") %in% names(combined)))
   expect_equal(consensus$n_methods, 3L)
   expect_equal(consensus$evidence_source, "cellchat;liana;multinichenet")
   expect_equal(nrow(concordance), 3L)
   expect_true(all(concordance$shared_edges == 1L))
+  expect_true(all(concordance$complete_edges == 1L))
+})
+
+test_that("communication concordance tolerates shared edges with missing ranks", {
+  edges <- tibble::tibble(
+    source = "Sender", target = "Receiver",
+    ligand = paste0("L", 1:3), receptor = paste0("R", 1:3)
+  )
+  table <- dplyr::bind_rows(
+    dplyr::mutate(edges, method = "liana", rank = c(1, 2, 3)),
+    dplyr::mutate(edges, method = "cellchat", rank = c(NA_real_, 2, Inf))
+  )
+
+  concordance <- Shennong:::.sn_communication_concordance(table)
+  expect_equal(concordance$shared_edges, 3L)
+  expect_equal(concordance$complete_edges, 1L)
+  expect_true(is.na(concordance$rank_correlation))
+
+  table$rank[table$method == "cellchat"] <- c(3, 2, 1)
+  complete <- Shennong:::.sn_communication_concordance(table)
+  expect_equal(complete$complete_edges, 3L)
+  expect_equal(complete$rank_correlation, -1)
 })
 
 test_that("public communication runner builds a real cross-method consensus", {
