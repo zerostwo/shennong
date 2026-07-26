@@ -59,6 +59,7 @@ Suggests:
     DESeq2,
     decoupleR,
     dorothea,
+    DOSE,
     edgeR,
     ellmer,
     GapClust,

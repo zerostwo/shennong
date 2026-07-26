@@ -21,6 +21,14 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- R-CMD-check run `30214842915` exposed one real package-metadata warning:
+  `tests/testthat/test-figure-engine.R` conditionally loads `DOSE`, but the
+  package had not declared it in `Suggests`. `DESCRIPTION` now declares the
+  optional dependency; no hard installation dependency was introduced. The
+  focused figure-engine suite passed 35 tests with one local-fixture skip, and
+  the rebuilt source package passed 2,168 tests with 14 source-package skips,
+  no warning, and no failure. Its sole local check NOTE is the live CodeGraph
+  socket, which is absent from a clean GitHub checkout.
 - The five-repository implementation milestone now has explicit source,
   commit, publication, image, deployment, and end-to-end states in
   `docs/codex/Ecosystem.md` and the machine-readable compatibility lock

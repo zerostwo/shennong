@@ -2,6 +2,13 @@
 
 Last updated: 2026-07-27
 
+## 2026-07-27
+
+- Optional packages named by tests through `library()`, `require()`, or
+  `loadNamespace()` must be declared in `Suggests`, even when the call is
+  guarded by `skip_if_not_installed()`. `R CMD check` performs a static
+  dependency audit before it decides whether the optional test can run.
+
 ## 2026-07-26
 
 - Result Bundle v1 separates producer claims from platform authority. A package

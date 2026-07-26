@@ -97,6 +97,9 @@ release.
 
 ### Fixed
 
+- Declared `DOSE` in `Suggests` because the figure-engine tests conditionally
+  load its S4 classes. This keeps the backend optional while satisfying
+  `R CMD check`'s static test-dependency audit.
 - Managed scVelo preprocessing now explicitly normalizes fractional splicing
   estimates and log1p-transforms the expression matrix before Seurat-flavor
   HVG selection. The choices are retained in velocity parameters and backend
