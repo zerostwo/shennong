@@ -21,6 +21,13 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- GitHub pkgdown run `30208397482` restored an exact dependency cache containing
+  `stringfish` 0.19.0, then upgraded `RcppParallel` to 6.0.0. The cached
+  `stringfish.so` still referenced the legacy TBB ABI and failed while pkgdown
+  read `README.md`; this was a native dependency-cache defect, not a Shennong
+  source failure. The pkgdown workflow now starts cache epoch 2, load-tests
+  `stringfish` after dependency resolution, and rebuilds it from source only
+  when the active `RcppParallel`/TBB ABI rejects the cached binary.
 - Shennong now owns the local candidate-result handoff boundary
   `shennong.dev/analysis-result-bundle/v1`. `sn_build_result_bundle()` carries
   one validated canonical analysis result, immutable input

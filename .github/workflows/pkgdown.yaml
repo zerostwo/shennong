@@ -39,6 +39,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          # v2 drops the cache created before RcppParallel 6 changed the TBB ABI.
+          cache-version: '2'
           dependencies: '"hard"'
           # Keep optional packages here when executable articles require them.
           extra-packages: |
@@ -61,6 +63,36 @@ jobs:
             github::catplot/catplot
             github::immunogenomics/lisi
           needs: website
+
+      - name: Validate cached native dependencies
+        run: |
+          Rscript - <<'RSCRIPT'
+          stringfish_ok <- tryCatch(
+            {
+              loadNamespace("stringfish")
+              TRUE
+            },
+            error = function(error) {
+              message("Cached stringfish failed to load: ", conditionMessage(error))
+              FALSE
+            }
+          )
+
+          if (!stringfish_ok) {
+            message(
+              "Rebuilding stringfish from source against the active ",
+              "RcppParallel/TBB."
+            )
+            install.packages(
+              "stringfish",
+              repos = getOption("repos"),
+              type = "source",
+              dependencies = FALSE
+            )
+            loadNamespace("stringfish")
+          }
+          RSCRIPT
+        shell: bash
 
       - name: Install package
         run: R CMD INSTALL .

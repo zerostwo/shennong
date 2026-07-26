@@ -4,6 +4,12 @@ Last updated: 2026-07-26
 
 ## 2026-07-26
 
+- Compiled R packages restored from CI caches must be load-tested after
+  dependency resolution when a `LinkingTo` provider can change its native ABI.
+  Pkgdown therefore uses cache epoch 2 and conditionally rebuilds `stringfish`
+  from source when it cannot load against the active `RcppParallel`/TBB. The
+  workflow neither pins an obsolete `RcppParallel` nor disables dependency
+  caching for every run.
 - `/home/duansq/dev/packages/shennong` is the maintainer coordination center
   for the five-repository ecosystem, but the repositories remain independently
   versioned and released. Cross-repository status and contracts are recorded in
