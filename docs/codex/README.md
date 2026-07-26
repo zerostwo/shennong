@@ -16,6 +16,11 @@ Shennong users under `inst/codex/`.
 - `Ecosystem.md`: current five-repository development state, interface ledger,
   modality compatibility matrix, shared-contract targets, and cross-repository
   release gates.
+- `ecosystem-lock.json`: machine-readable compatibility lock for the five
+  implementation revisions, package/source and image digests, shared contract
+  schemas, CI evidence, and deployed status. All implementation/image fields
+  are populated for the current milestone; `deployed` remains false until live
+  revision checks pass.
 
 ## Real public-data validation
 

@@ -1,9 +1,36 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 ## 2026-07-26
 
+- Result Bundle v1 separates producer claims from platform authority. A package
+  can name immutable inputs, candidate output paths/digests, package versions,
+  and an optional Runtime Job claim; it cannot authoritatively assert the OS
+  Run, Project, Plan, actor, Runtime-assigned Artifact UUIDs, or compatibility
+  lock. During promotion, OS derives those fields from its Job record and the
+  Runtime manifest. Optional producer claims fail closed when they disagree,
+  but fields the producer cannot know are not hidden v1 requirements.
+- The supported headless R path is ShennongData -> Shennong OS -> ShennongDB.
+  Personal access tokens and the canonical Project UUID terminate at OS; DB
+  admin credentials never enter the R client. Projectless access is limited to
+  public catalog discovery, while inspect, query, resolve, download, and
+  governed Artifact operations require project scope.
+- Governed Artifact promotion is complete only after OS has re-read the exact
+  Runtime bytes, verified size and SHA-256, uploaded them through DB, re-read
+  the exact Resource binding/Entity/Activity records, and recorded stable
+  platform-derived lineage. Caller provenance is retained only as explicitly
+  unverified claims and cannot inherit an `integrity_status = "verified"`
+  label.
+- Runtime compatibility admission binds Result Bundle schema v1, the canonical
+  runtime-toolchain manifest digest, and exact Shennong/ShennongData versions
+  and commits. Explicit mismatches fail before execution; a missing lock
+  remains visible as legacy `unbound` rather than being silently treated as
+  verified.
+- DB Artifact content responses carry the canonical `X-Content-Sha256`.
+  Internal OS reads explicitly request a non-redirected stream so S3 presigning
+  cannot break promotion or leak the admin header across origins; user-facing
+  clients still never follow a credentialed cross-origin redirect.
 - Compiled R packages restored from CI caches must be load-tested after
   dependency resolution when a `LinkingTo` provider can change its native ABI.
   Pkgdown therefore uses cache epoch 2 and conditionally rebuilds `stringfish`

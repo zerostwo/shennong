@@ -1,0 +1,178 @@
+{
+  "schema": "shennong.dev/ecosystem-lock/v1",
+  "generated_at": "2026-07-27",
+  "status": "candidate",
+  "deployed": false,
+  "contracts": {
+    "data_bundle": "shennong.dev/data-bundle/v1",
+    "analysis_result_bundle": "shennong.dev/analysis-result-bundle/v1",
+    "runtime_r_toolchain": "shennong.dev/runtime-r-toolchain/v1",
+    "analysis_result": "1.0.0"
+  },
+  "authority": {
+    "user_data_gateway": "shennong-os",
+    "headless_user_authentication": "personal_access_token",
+    "project_required_for": [
+      "inspect",
+      "query",
+      "resolve",
+      "download"
+    ],
+    "projectless_access": "public_discovery_only",
+    "platform_execution_authority": "shennong-os",
+    "immutable_artifact_authority": "shennong-db",
+    "runtime_has_general_db_credentials": false
+  },
+  "repositories": {
+    "shennong": {
+      "path": "/home/duansq/dev/packages/shennong",
+      "version": "0.2.0.9000",
+      "implementation_revision": "1a9a4bd2c3260d6584c010e884a375b660605223",
+      "runtime_pinned_revision": "c1d958db3319f635ff5d6f9ad484a208774a4a39",
+      "runtime_source_archive_sha256": "016b1a589d33e46016ad0a8fe4216e03e0860a96f32924af5043d9003cb14377",
+      "branch": "main",
+      "pushed": true,
+      "released_package": null,
+      "deployed": false,
+      "ci": {
+        "pkgdown": {
+          "run_id": 30209172802,
+          "status": "success"
+        },
+        "r_cmd_check": {
+          "run_id": 30208397436,
+          "status": "external_dependency_failure",
+          "note": "Bioconductor 3.23 metadata was unavailable during the unstated-dependency scan after build, examples, and vignettes passed"
+        }
+      }
+    },
+    "shennong_data": {
+      "path": "/home/duansq/dev/packages/shennong-data",
+      "version": "0.2.0.9000",
+      "implementation_revision": "17f0f0e87dd8ad2a3751dd11c58c8aa43823aa69",
+      "runtime_source_archive_sha256": "97044cbd1dbb5835a712b9594a7cadc5a552c1a784f91a4a2a4d18f5c410350d",
+      "branch": "main",
+      "pushed": true,
+      "released_package": null,
+      "deployed": false,
+      "ci": {
+        "r_cmd_check": {
+          "run_id": 30210855773,
+          "status": "success"
+        },
+        "coverage": {
+          "run_id": 30210855775,
+          "status": "success"
+        },
+        "pkgdown": {
+          "run_id": 30210855771,
+          "status": "success"
+        }
+      }
+    },
+    "shennong_os": {
+      "path": "/home/duansq/dev/services/shennong.one/shennong-os",
+      "version": "1.0.0",
+      "base_revision": "bed5187025d4fa3f342a0ac518a96f10454a0c8b",
+      "implementation_revision": "e3f421bcba70e85a82596634178f24f3270df621",
+      "branch": "main",
+      "pushed": true,
+      "image": {
+        "repository": "zerostwo/shennong-os",
+        "index_digest": "sha256:718b5be9e42c4dda71c57dec78c2fdcf0533a6a40eb94edd5cee498f191c9615",
+        "amd64_manifest_digest": "sha256:00ccb208854cde6c4bfb0f4597644ba39a020d3debcc1ebd60ae3f3564f27136",
+        "revision_label": "e3f421bcba70e85a82596634178f24f3270df621"
+      },
+      "ci": {
+        "test": {
+          "run_id": 30214570590,
+          "status": "success"
+        },
+        "docker_publish": {
+          "run_id": 30214570549,
+          "status": "success"
+        }
+      },
+      "deployed": false
+    },
+    "shennong_runtime": {
+      "path": "/home/duansq/dev/services/shennong.one/shennong-runtime",
+      "version": "1.0.0",
+      "implementation_revision": "1649f1da43b25d79e8d820bd1ef093cf49a77114",
+      "branch": "main",
+      "pushed": true,
+      "toolchain_sha256": "ea92fd5c3c8cf2b4da5b5e409cde94179f6c358e0e97eac178be151fe5eda6bf",
+      "image": {
+        "repository": "zerostwo/shennong-runtime",
+        "index_digest": "sha256:6506ce58451b15cd100ac23e14524f75aae2b4c120bc7852a4e6bd8ee1e0226b",
+        "amd64_manifest_digest": "sha256:647756eef172b4aa440fe72d56397e75e7ce13afa8070007aedf67b2d382bb07",
+        "revision_label": "1649f1da43b25d79e8d820bd1ef093cf49a77114"
+      },
+      "ci": {
+        "test": {
+          "run_id": 30211448950,
+          "status": "success"
+        },
+        "docker_publish": {
+          "run_id": 30211448939,
+          "status": "success"
+        }
+      },
+      "deployed": false
+    },
+    "shennong_db": {
+      "path": "/home/duansq/dev/services/shennong.one/shennong-db",
+      "version": "1.0.0",
+      "base_revision": "dd2327a215a2cad37322689b4d1af8f88a788804",
+      "implementation_revision": "24445c3b08bb708bcdc2d1cf2eccba1735815633",
+      "branch": "main",
+      "pushed": true,
+      "image": {
+        "repository": "zerostwo/shennong-db",
+        "index_digest": "sha256:0c4220718d9fe5684dcba963c1b9abad9d753b4a4b86177067b5e5fef6b4e5f3",
+        "amd64_manifest_digest": "sha256:6748f0e8fb62a0c9c0436296fd15bfaf7b9fec9f519529a81e1d61e1a39ef434",
+        "revision_label": "24445c3b08bb708bcdc2d1cf2eccba1735815633"
+      },
+      "ci": {
+        "test": {
+          "run_id": 30212925592,
+          "status": "success"
+        },
+        "docker_publish": {
+          "run_id": 30212925566,
+          "status": "success"
+        }
+      },
+      "deployed": false
+    }
+  },
+  "project_resource_discovery": {
+    "current_model": "bounded_snapshot",
+    "stable_cursor_pagination": false,
+    "next_step": "Add stable cursor pagination with snapshot identity and bounded resumable traversal"
+  },
+  "modality_evidence": {
+    "bulk_rna": {
+      "status": "partial",
+      "all_five_repositories_end_to_end": false
+    },
+    "scrna_seq": {
+      "status": "most_ready_partial",
+      "db_pbmc3k_fixture": true,
+      "all_five_repositories_end_to_end": false
+    },
+    "single_cell_spatial": {
+      "status": "prepared_object_partial",
+      "all_five_repositories_end_to_end": false
+    },
+    "cite_seq": {
+      "status": "prepared_object_and_contract_only",
+      "all_five_repositories_end_to_end": false
+    },
+    "scatac_seq": {
+      "status": "descriptor_and_transport_contract_only",
+      "analysis_supported": false,
+      "all_five_repositories_end_to_end": false
+    }
+  }
+}

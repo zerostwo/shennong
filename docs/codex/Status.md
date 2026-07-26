@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 ## Current structure
 
@@ -21,6 +21,32 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- The five-repository implementation milestone now has explicit source,
+  commit, publication, image, deployment, and end-to-end states in
+  `docs/codex/Ecosystem.md` and the machine-readable compatibility lock
+  `docs/codex/ecosystem-lock.json`. The loop is governed by
+  `shennong.dev/data-bundle/v1`,
+  `shennong.dev/analysis-result-bundle/v1`, and
+  `shennong.dev/runtime-r-toolchain/v1`, with OS PAT/project authority and DB
+  exact/digest readback. All five implementation revisions are pushed, the
+  three service images are published and inspected, and no service is recorded
+  as deployed.
+- Shennong and ShennongData package gates pass. OS revision
+  `e3f421bcba70e85a82596634178f24f3270df621`, Runtime revision
+  `1649f1da43b25d79e8d820bd1ef093cf49a77114`, and DB revision
+  `24445c3b08bb708bcdc2d1cf2eccba1735815633` have green remote CI and Docker
+  publication. Together they implement PAT/RBAC, exact toolchain admission,
+  staged immutable input, Result Bundle validation, authoritative platform
+  provenance, exact upload/readback, SHA-256, service-only no-redirect reads,
+  and zero-byte Artifact support. Immutable OCI digests and run IDs are
+  recorded in the ecosystem lock.
+- The modality verdict remains conservative. scRNA-seq is the closest because
+  Shennong has mature analysis and DB has a real PBMC3K headless fixture, but
+  it has not crossed all five repositories. Bulk support means bulk RNA only;
+  spatial and CITE-seq mean prepared-object/contract support; scATAC-seq has
+  descriptor/transport contracts but no production analysis or five-service
+  evidence. Project resource discovery is a bounded snapshot; stable cursor
+  pagination is a follow-up.
 - GitHub pkgdown run `30208397482` restored an exact dependency cache containing
   `stringfish` 0.19.0, then upgraded `RcppParallel` to 6.0.0. The cached
   `stringfish.so` still referenced the legacy TBB ABI and failed while pkgdown
@@ -39,17 +65,9 @@ release gate.
   dplyr's data mask. Named Cox phenotypes in Scissor continue to retain their
   aligned sample identifiers, and the regression test now treats those names
   as part of the public alignment evidence rather than ignoring them.
-- The five-repository ecosystem audit is recorded in
-  `docs/codex/Ecosystem.md`. The architecture has appropriate ownership
-  boundaries but does not yet have an end-to-end governed data and result loop.
-  Current package-level strengths are scRNA-seq, prepared CITE-seq, bulk RNA,
-  and prepared coordinate-bearing spatial transcriptomics; none currently has
-  deployed DB -> OS -> ShennongData materialization -> Runtime/Shennong ->
-  immutable DB result evidence, and scATAC-seq has no analytical or platform
-  contract. ShennongData artifact origin handling, sparse zero semantics, the
-  incomplete OS gateway/token contract, DB revision binding, binary Runtime
-  staging, result promotion, and environment locks are the highest-priority
-  cross-repository gaps.
+- The original five-repository audit remains embedded as historical evidence
+  in `docs/codex/Ecosystem.md`. Its pre-implementation gap table is explicitly
+  marked historical; the current interface ledger above it is authoritative.
 - The final 2026-07-26 full local package suite on the pre-existing dirty
   development tree completed with `PASS 2576`, `SKIP 4`, `WARN 0`, and
   `FAIL 0` in 542.9 seconds. The skips are explicit optional/local-fixture

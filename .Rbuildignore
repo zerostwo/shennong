@@ -11,6 +11,7 @@ dev
 ^LICENSE\.md$
 ^README\.Rmd$
 ^README\.html$
+^shennong_analysis_and_publication_figure_roadmap\.md$
 ^AGENTS\.md$
 ^CONTRIBUTING\.md$
 ^\.github$
