@@ -27,7 +27,7 @@
     "shennong": {
       "path": "/home/duansq/dev/packages/shennong",
       "version": "0.2.0.9000",
-      "implementation_revision": "1a9a4bd2c3260d6584c010e884a375b660605223",
+      "implementation_revision": "e58f7fbfea1ea02cebc07efddcabb66d6e8bb48a",
       "runtime_pinned_revision": "c1d958db3319f635ff5d6f9ad484a208774a4a39",
       "runtime_source_archive_sha256": "016b1a589d33e46016ad0a8fe4216e03e0860a96f32924af5043d9003cb14377",
       "branch": "main",
@@ -36,13 +36,16 @@
       "deployed": false,
       "ci": {
         "pkgdown": {
-          "run_id": 30209172802,
+          "run_id": 30215609067,
           "status": "success"
         },
         "r_cmd_check": {
-          "run_id": 30208397436,
-          "status": "external_dependency_failure",
-          "note": "Bioconductor 3.23 metadata was unavailable during the unstated-dependency scan after build, examples, and vignettes passed"
+          "run_id": 30215609091,
+          "status": "success"
+        },
+        "coverage": {
+          "run_id": 30215609075,
+          "status": "success"
         }
       }
     },

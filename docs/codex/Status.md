@@ -28,7 +28,10 @@ release gate.
   focused figure-engine suite passed 35 tests with one local-fixture skip, and
   the rebuilt source package passed 2,168 tests with 14 source-package skips,
   no warning, and no failure. Its sole local check NOTE is the live CodeGraph
-  socket, which is absent from a clean GitHub checkout.
+  socket, which is absent from a clean GitHub checkout. Follow-up
+  R-CMD-check `30215609091`, test-coverage `30215609075`, and pkgdown
+  `30215609067` all passed for revision
+  `e58f7fbfea1ea02cebc07efddcabb66d6e8bb48a`.
 - The five-repository implementation milestone now has explicit source,
   commit, publication, image, deployment, and end-to-end states in
   `docs/codex/Ecosystem.md` and the machine-readable compatibility lock
