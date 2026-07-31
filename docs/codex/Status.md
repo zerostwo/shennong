@@ -21,6 +21,15 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- `sn_set_layer_backend()` now provides a bidirectional Seurat layer-storage
+  boundary: selected layers can be staged and rebound to external BPCells
+  directories or materialized directly as `dgCMatrix` without a dense
+  intermediate. Multi-layer round-trip, preflight, source-retention, automatic
+  `uint32_t`, and unsafe-conversion behavior are covered by focused tests. The
+  standard pre-push path passed 2,613 tests with four optional/local-fixture
+  skips, built the source tarball, completed structural `R CMD check` with
+  status OK, and validated the pkgdown reference index; the incremental
+  pkgdown site rebuild also completed successfully.
 - Issue #7 tracks BPCells compatibility for Seurat initialization and
   sample-aware doublet detection. The implementation preserves BPCells
   `IterableMatrix` counts in `sn_initialize_seurat_object()`, converts BPCells
@@ -33,6 +42,13 @@ release gate.
   `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` completed with no
   error or warning and only the existing `.codegraph` hidden-directory NOTE.
   The pkgdown site rebuilt successfully under `site/dev`.
+- The next ecosystem milestone is captured in
+  `docs/codex/NextEcosystemMilestone.md`: revalidate the five locked revisions,
+  deploy DB/Runtime/OS by immutable digest, prove PAT/Project and Artifact
+  security boundaries, then run a real PBMC3K path through all five
+  repositories with scientific assertions and exact lineage readback. This
+  planning update does not claim that a deployment or end-to-end run has
+  occurred.
 - R-CMD-check run `30214842915` exposed one real package-metadata warning:
   `tests/testthat/test-figure-engine.R` conditionally loads `DOSE`, but the
   package had not declared it in `Suggests`. `DESCRIPTION` now declares the

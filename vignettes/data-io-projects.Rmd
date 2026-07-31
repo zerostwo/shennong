@@ -166,13 +166,14 @@ pbmc_cached
 column. This avoids ad hoc `read.csv(..., row.names = ...)` calls that are easy
 to forget in later scripts.
 
-For large Seurat objects, keep bulky assay layers on disk with BPCells before
-serializing the Seurat object. The returned object keeps the same Seurat layer
-interface, but the selected matrices live in BPCells directories.
+For large Seurat objects, switch bulky assay layers to the BPCells backend
+before serializing the Seurat object. The returned object keeps the same Seurat
+assay/layer interface, but the selected matrices live in BPCells directories.
 
 ```{r bpcells-backed-layers, eval = FALSE}
-pbmc <- sn_convert_bpcells(
+pbmc <- sn_set_layer_backend(
   pbmc,
+  backend = "bpcells",
   directory = file.path(outdir, "pbmc3k_bpcells"),
   layers = c("counts", "data"),
   overwrite = TRUE
@@ -180,6 +181,22 @@ pbmc <- sn_convert_bpcells(
 
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
 ```
+
+When an operation explicitly requires an in-memory sparse matrix, switch only
+the required layer back. This materializes the complete selected layer as a
+`dgCMatrix`; it does not delete the external BPCells matrix directory.
+
+```{r materialize-bpcells-layer, eval = FALSE}
+pbmc <- sn_set_layer_backend(
+  pbmc,
+  backend = "memory",
+  assays = "RNA",
+  layers = "decontaminated_counts"
+)
+```
+
+`sn_convert_bpcells()` remains a compatibility wrapper for
+`sn_set_layer_backend(backend = "bpcells")`.
 
 `sn_initialize_seurat_object()` also accepts a BPCells `IterableMatrix`
 directly and preserves that on-disk backend instead of converting the complete

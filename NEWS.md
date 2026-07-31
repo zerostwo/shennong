@@ -10,6 +10,12 @@ release.
 
 ### Added
 
+- Added `sn_set_layer_backend()` as the bidirectional Seurat layer-storage
+  interface. Selected layers can be written and rebound to BPCells or safely
+  materialized as in-memory `dgCMatrix` objects without changing assay/layer
+  names. Count-like integer layers use BPCells `uint32_t` storage automatically,
+  while `sn_convert_bpcells()` remains available as a compatible one-way
+  wrapper.
 - Added `sn_build_result_bundle()`, `sn_validate_result_bundle()`, and
   `sn_export_result_bundle()` as the package-owned,
   `shennong.dev/analysis-result-bundle/v1` JSON handoff boundary. Bundles carry

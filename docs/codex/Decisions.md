@@ -4,6 +4,15 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Seurat assay/layer names describe analytical semantics, while BPCells and
+  `dgCMatrix` describe storage backends. `sn_set_layer_backend()` is therefore
+  the bidirectional public boundary; it changes storage without renaming
+  layers. Materialization never deletes external BPCells directories, and the
+  older `sn_convert_bpcells()` entry point remains a compatibility wrapper.
+- Automatic BPCells integer compression is limited to count-like layers whose
+  in-memory values can be proven safe for `uint32_t`. Explicit unsafe
+  `uint32_t` conversion fails instead of truncating fractional or invalid
+  values.
 - BPCells-backed inputs remain lazy in `sn_initialize_seurat_object()`.
   Operations that intrinsically require an in-memory sparse matrix must use a
   direct sparse coercion rather than `as.matrix()`.
@@ -13,6 +22,14 @@ Last updated: 2026-08-01
   memory-minimizing default; higher concurrency intentionally trades memory
   for throughput. Ungrouped BPCells input fails before materialization instead
   of silently loading the full dataset.
+
+## 2026-07-28
+
+- The next ecosystem gate is immutable-digest deployment plus one real PBMC3K
+  five-repository fixture. Stable pagination and additional modality fixtures
+  remain follow-up work; green source CI or published images cannot advance
+  `deployed` or scRNA end-to-end status without live revision, security,
+  scientific, promotion, lineage, and readback evidence.
 
 ## 2026-07-27
 

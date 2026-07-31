@@ -10,14 +10,16 @@ sn_convert_bpcells(
   assays = NULL,
   layers = "counts",
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  matrix_type = c("auto", "uint32_t", "double", "float")
 )
 }
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{directory}{Output directory that will contain one BPCells matrix
-directory per selected assay/layer.}
+\item{directory}{Output directory containing one BPCells matrix directory
+per selected assay/layer. Required for \code{backend = "bpcells"} and
+ignored for \code{backend = "memory"}.}
 
 \item{assays}{Assays to convert. Defaults to all assays.}
 
@@ -25,32 +27,24 @@ directory per selected assay/layer.}
 \code{"counts"}. Use \code{NULL} to convert all layers in each selected
 assay.}
 
-\item{overwrite}{Logical; overwrite existing BPCells matrix directories.}
+\item{overwrite}{Logical; replace existing BPCells matrix directories.}
 
 \item{verbose}{Whether to print progress messages.}
+
+\item{matrix_type}{BPCells storage type. \code{"auto"} stores compatible
+count-like layers as \code{"uint32_t"} and otherwise preserves their
+numeric representation. Explicit alternatives are \code{"uint32_t"},
+\code{"double"}, and \code{"float"}. Used only for
+\code{backend = "bpcells"}.}
 }
 \value{
 A Seurat object with selected layers backed by BPCells matrices.
 }
 \description{
-\code{sn_convert_bpcells()} writes selected Seurat assay layers to BPCells
-matrix directories and rebinds those layers in the returned Seurat object.
-This keeps large count or normalized-expression layers on disk while
-preserving the usual Seurat object interface.
+\code{sn_convert_bpcells()} is the compatibility wrapper for
+\code{sn_set_layer_backend(backend = "bpcells")}. New code can use
+\code{sn_set_layer_backend()} when layers need to move in either direction.
 }
-\details{
-BPCells stores matrix directories outside the serialized Seurat object. If
-the object is moved to another machine, move the BPCells directory alongside
-it and rebind the layers with \code{BPCells::open_matrix_dir()} when needed.
-}
-\examples{
-\dontrun{
-pbmc <- sn_convert_bpcells(
-  pbmc,
-  directory = "data/processed/pbmc_bpcells",
-  layers = c("counts", "data"),
-  overwrite = TRUE
-)
-sn_write(pbmc, "data/processed/pbmc_bpcells_bound.qs2")
-}
+\seealso{
+\code{\link[=sn_set_layer_backend]{sn_set_layer_backend()}}
 }

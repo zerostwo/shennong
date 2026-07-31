@@ -81,6 +81,9 @@ This skill is the main entry point for package usage.
    `sn_initialize_seurat_object()`. When finding doublets on a BPCells-backed
    object, require a donor/capture `group_by` column and default to
    `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
+   Use `sn_set_layer_backend()` when selected Seurat layers must move between
+   BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
+   by an in-memory-only operation.
 2. Run clustering or batch integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
    forced into the backend feature set, use
@@ -269,5 +272,6 @@ This skill is the main entry point for package usage.
 - `sn_store_deconvolution()` / `sn_get_deconvolution_result()`
 - `sn_check_pixi()` / `sn_call_scvi()`
 - `sn_read()` / `sn_write()`
+- `sn_set_layer_backend()` / `sn_convert_bpcells()`
 - `sn_list_signatures(species = "human")`
 - `sn_get_signatures(species = "human", category = "Compartments/Mito")`

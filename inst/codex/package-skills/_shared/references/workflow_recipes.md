@@ -65,6 +65,23 @@ user request to the right Shennong function family quickly.
 5. Infer or verify species with `sn_get_species()`.
 6. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
+## Recipe: Switch Seurat layer storage backends
+
+1. Use `sn_set_layer_backend(object, backend = "bpcells", directory = ...)`
+   to write selected assay layers to external BPCells matrix directories and
+   rebind them without changing layer names. Keep those directories alongside
+   any serialized Seurat object.
+2. Select only the required assays/layers. With `matrix_type = "auto"`,
+   compatible integer count-like layers use `uint32_t`; normalized layers keep
+   their numeric representation.
+3. Use `sn_set_layer_backend(object, backend = "memory", layers = ...)` only
+   when a downstream operation requires a complete in-memory `dgCMatrix`.
+   This can consume substantial memory and does not delete the BPCells source
+   directories.
+4. Treat `sn_convert_bpcells()` as the compatible one-way wrapper for existing
+   workflows; prefer `sn_set_layer_backend()` when storage may switch in both
+   directions.
+
 ## Recipe: Materialize data with ShennongData
 
 1. Use `ShennongData::sn_connect()` and

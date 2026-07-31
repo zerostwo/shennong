@@ -544,64 +544,29 @@ sn_write <- function(x,
   invisible(path)
 }
 
-#' Convert Seurat assay layers to BPCells-backed matrices
-#'
-#' \code{sn_convert_bpcells()} writes selected Seurat assay layers to BPCells
-#' matrix directories and rebinds those layers in the returned Seurat object.
-#' This keeps large count or normalized-expression layers on disk while
-#' preserving the usual Seurat object interface.
-#'
-#' BPCells stores matrix directories outside the serialized Seurat object. If
-#' the object is moved to another machine, move the BPCells directory alongside
-#' it and rebind the layers with \code{BPCells::open_matrix_dir()} when needed.
-#'
-#' @param object A Seurat object.
-#' @param directory Output directory that will contain one BPCells matrix
-#'   directory per selected assay/layer.
-#' @param assays Assays to convert. Defaults to all assays.
-#' @param layers Layers to convert within each assay. Defaults to
-#'   \code{"counts"}. Use \code{NULL} to convert all layers in each selected
-#'   assay.
-#' @param overwrite Logical; overwrite existing BPCells matrix directories.
-#' @param verbose Whether to print progress messages.
-#'
-#' @return A Seurat object with selected layers backed by BPCells matrices.
-#'
-#' @examples
-#' \dontrun{
-#' pbmc <- sn_convert_bpcells(
-#'   pbmc,
-#'   directory = "data/processed/pbmc_bpcells",
-#'   layers = c("counts", "data"),
-#'   overwrite = TRUE
-#' )
-#' sn_write(pbmc, "data/processed/pbmc_bpcells_bound.qs2")
-#' }
-#' @export
-sn_convert_bpcells <- function(object,
-                               directory,
-                               assays = NULL,
-                               layers = "counts",
-                               overwrite = FALSE,
-                               verbose = TRUE) {
-  check_installed(pkg = c("SeuratObject", "BPCells"), reason = "to convert Seurat layers to BPCells.")
-
+.sn_layer_backend_specs <- function(object, assays = NULL, layers = "counts") {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.", call. = FALSE)
   }
-  if (!is.character(directory) || length(directory) != 1L || !nzchar(directory)) {
-    stop("`directory` must be a non-empty output directory.", call. = FALSE)
-  }
 
   assays <- assays %||% names(object@assays)
+  if (!is.character(assays) || length(assays) == 0L || anyNA(assays) || any(!nzchar(assays))) {
+    stop("`assays` must contain one or more assay names, or be `NULL`.", call. = FALSE)
+  }
+  assays <- unique(assays)
   missing_assays <- setdiff(assays, names(object@assays))
   if (length(missing_assays) > 0L) {
     stop("Assay(s) not found: ", paste(missing_assays, collapse = ", "), call. = FALSE)
   }
+  if (!is_null(layers) &&
+      (!is.character(layers) || length(layers) == 0L || anyNA(layers) || any(!nzchar(layers)))) {
+    stop("`layers` must contain one or more layer names, or be `NULL`.", call. = FALSE)
+  }
+  if (!is_null(layers)) {
+    layers <- unique(layers)
+  }
 
-  dir.create(directory, recursive = TRUE, showWarnings = FALSE)
-  converted <- list()
-
+  specs <- list()
   for (assay in assays) {
     available_layers <- SeuratObject::Layers(object = object[[assay]])
     selected_layers <- layers %||% available_layers
@@ -613,30 +578,353 @@ sn_convert_bpcells <- function(object,
         call. = FALSE
       )
     }
-
     for (layer in selected_layers) {
-      layer_dir <- file.path(
-        directory,
-        .sn_metadata_suffix(assay),
-        .sn_metadata_suffix(layer)
+      specs[[length(specs) + 1L]] <- list(
+        assay = assay,
+        layer = layer,
+        key = paste(assay, layer, sep = "/")
       )
-      if (dir.exists(layer_dir) && !isTRUE(overwrite)) {
-        stop("BPCells layer directory already exists: ", layer_dir, call. = FALSE)
-      }
-      dir.create(dirname(layer_dir), recursive = TRUE, showWarnings = FALSE)
-      if (verbose) {
-        .sn_log_info("Writing assay '{assay}' layer '{layer}' to BPCells: {layer_dir}.")
-      }
-      mat <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)
-      BPCells::write_matrix_dir(mat = mat, dir = layer_dir, overwrite = overwrite)
-      SeuratObject::LayerData(object = object, assay = assay, layer = layer) <-
-        BPCells::open_matrix_dir(dir = layer_dir)
-      converted[[paste(assay, layer, sep = "/")]] <- normalizePath(layer_dir, mustWork = FALSE)
     }
   }
 
-  object@misc$bpcells_layers <- c(object@misc$bpcells_layers %||% list(), converted)
+  specs
+}
+
+.sn_uint32_compatible_matrix <- function(x) {
+  if (.sn_is_iterable_matrix(x)) {
+    type <- tryCatch(BPCells::matrix_type(x), error = function(...) NULL)
+    return(identical(type, "uint32_t"))
+  }
+
+  values <- if (inherits(x, "sparseMatrix")) {
+    if ("x" %in% methods::slotNames(x)) {
+      methods::slot(x, "x")
+    } else {
+      rep.int(1, length(methods::slot(x, "i")))
+    }
+  } else {
+    as.vector(x)
+  }
+  if (length(values) == 0L) {
+    return(TRUE)
+  }
+
+  all(
+    is.finite(values) &
+      values >= 0 &
+      values <= 4294967295 &
+      values == floor(values)
+  )
+}
+
+.sn_prepare_bpcells_layer <- function(x, layer, matrix_type = "auto") {
+  if (identical(matrix_type, "auto")) {
+    if (!grepl("count", layer, ignore.case = TRUE) || !.sn_uint32_compatible_matrix(x)) {
+      return(x)
+    }
+    matrix_type <- "uint32_t"
+  }
+
+  if (identical(matrix_type, "uint32_t") && !.sn_uint32_compatible_matrix(x)) {
+    stop(
+      "Layer '", layer, "' cannot be safely stored as `uint32_t`; ",
+      "values must be finite, non-negative integers no greater than 4294967295.",
+      call. = FALSE
+    )
+  }
+
+  current_type <- if (.sn_is_iterable_matrix(x)) {
+    tryCatch(BPCells::matrix_type(x), error = function(...) NULL)
+  } else {
+    NULL
+  }
+  if (identical(current_type, matrix_type)) {
+    return(x)
+  }
+
+  BPCells::convert_matrix_type(matrix = x, type = matrix_type)
+}
+
+.sn_restore_bpcells_targets <- function(targets, backups, committed) {
+  for (i in rev(seq_along(targets))) {
+    if (isTRUE(committed[[i]]) && dir.exists(targets[[i]])) {
+      unlink(targets[[i]], recursive = TRUE, force = TRUE)
+    }
+    backup <- backups[[i]]
+    if (!is.na(backup) && dir.exists(backup) && !dir.exists(targets[[i]])) {
+      file.rename(backup, targets[[i]])
+    }
+  }
+  invisible(NULL)
+}
+
+.sn_set_layers_bpcells <- function(object,
+                                   specs,
+                                   directory,
+                                   matrix_type = "auto",
+                                   overwrite = FALSE,
+                                   verbose = TRUE) {
+  targets <- vapply(specs, function(spec) {
+    file.path(
+      directory,
+      .sn_metadata_suffix(spec$assay),
+      .sn_metadata_suffix(spec$layer)
+    )
+  }, character(1))
+  if (anyDuplicated(targets)) {
+    stop("Selected assay/layer names resolve to duplicate BPCells directories.", call. = FALSE)
+  }
+  existing <- targets[dir.exists(targets)]
+  if (length(existing) > 0L && !isTRUE(overwrite)) {
+    stop(
+      "BPCells layer directory already exists: ",
+      paste(existing, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  staged <- rep(NA_character_, length(targets))
+  backups <- rep(NA_character_, length(targets))
+  committed <- rep(FALSE, length(targets))
+  on.exit({
+    for (path in staged[!is.na(staged)]) {
+      if (dir.exists(path)) unlink(path, recursive = TRUE, force = TRUE)
+    }
+  }, add = TRUE)
+
+  for (i in seq_along(specs)) {
+    spec <- specs[[i]]
+    target <- targets[[i]]
+    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+    staged[[i]] <- tempfile(
+      pattern = paste0(".", basename(target), "-staged-"),
+      tmpdir = dirname(target)
+    )
+    if (verbose) {
+      .sn_log_info(
+        "Staging assay '{spec$assay}' layer '{spec$layer}' for BPCells: {target}."
+      )
+    }
+    mat <- SeuratObject::LayerData(
+      object = object,
+      assay = spec$assay,
+      layer = spec$layer
+    )
+    mat <- .sn_prepare_bpcells_layer(
+      x = mat,
+      layer = spec$layer,
+      matrix_type = matrix_type
+    )
+    BPCells::write_matrix_dir(mat = mat, dir = staged[[i]])
+  }
+
+  tryCatch(
+    {
+      for (i in seq_along(targets)) {
+        target <- targets[[i]]
+        if (dir.exists(target)) {
+          backups[[i]] <- tempfile(
+            pattern = paste0(".", basename(target), "-backup-"),
+            tmpdir = dirname(target)
+          )
+          if (!file.rename(target, backups[[i]])) {
+            stop("Could not move the existing BPCells directory aside: ", target, call. = FALSE)
+          }
+        }
+        if (!file.rename(staged[[i]], target)) {
+          if (!is.na(backups[[i]]) && dir.exists(backups[[i]])) {
+            file.rename(backups[[i]], target)
+          }
+          stop("Could not install the staged BPCells directory: ", target, call. = FALSE)
+        }
+        committed[[i]] <- TRUE
+      }
+
+      opened <- lapply(targets, BPCells::open_matrix_dir)
+      for (i in seq_along(specs)) {
+        spec <- specs[[i]]
+        SeuratObject::LayerData(
+          object = object,
+          assay = spec$assay,
+          layer = spec$layer
+        ) <- opened[[i]]
+      }
+    },
+    error = function(error) {
+      .sn_restore_bpcells_targets(
+        targets = targets,
+        backups = backups,
+        committed = committed
+      )
+      stop(conditionMessage(error), call. = FALSE)
+    }
+  )
+
+  for (backup in backups[!is.na(backups)]) {
+    if (dir.exists(backup)) unlink(backup, recursive = TRUE, force = TRUE)
+  }
+  converted <- stats::setNames(
+    as.list(normalizePath(targets, mustWork = TRUE)),
+    vapply(specs, `[[`, character(1), "key")
+  )
+  bindings <- object@misc$bpcells_layers %||% list()
+  bindings[names(converted)] <- converted
+  object@misc$bpcells_layers <- bindings
   object
+}
+
+#' Set the storage backend for Seurat assay layers
+#'
+#' \code{sn_set_layer_backend()} switches selected Seurat assay layers between
+#' on-disk BPCells matrices and in-memory sparse matrices without changing the
+#' assay or layer names. Use \code{backend = "bpcells"} to write and rebind
+#' layers, or \code{backend = "memory"} to materialize them as
+#' \code{dgCMatrix} objects.
+#'
+#' BPCells matrix directories remain external to a serialized Seurat object.
+#' Keep them alongside the object when moving an analysis. Materializing a
+#' layer with \code{backend = "memory"} does not delete its BPCells directory.
+#'
+#' @param object A Seurat object.
+#' @param backend Target storage backend: \code{"bpcells"} or
+#'   \code{"memory"}.
+#' @param directory Output directory containing one BPCells matrix directory
+#'   per selected assay/layer. Required for \code{backend = "bpcells"} and
+#'   ignored for \code{backend = "memory"}.
+#' @param assays Assays to convert. Defaults to all assays.
+#' @param layers Layers to convert within each assay. Defaults to
+#'   \code{"counts"}. Use \code{NULL} to convert all layers in each selected
+#'   assay.
+#' @param matrix_type BPCells storage type. \code{"auto"} stores compatible
+#'   count-like layers as \code{"uint32_t"} and otherwise preserves their
+#'   numeric representation. Explicit alternatives are \code{"uint32_t"},
+#'   \code{"double"}, and \code{"float"}. Used only for
+#'   \code{backend = "bpcells"}.
+#' @param overwrite Logical; replace existing BPCells matrix directories.
+#' @param verbose Whether to print progress messages.
+#'
+#' @return A Seurat object with the selected layers rebound to the requested
+#'   storage backend.
+#'
+#' @examples
+#' \dontrun{
+#' pbmc <- sn_set_layer_backend(
+#'   pbmc,
+#'   backend = "bpcells",
+#'   directory = "data/processed/pbmc_bpcells",
+#'   layers = c("counts", "data")
+#' )
+#' pbmc <- sn_set_layer_backend(
+#'   pbmc,
+#'   backend = "memory",
+#'   layers = "counts"
+#' )
+#' }
+#' @export
+sn_set_layer_backend <- function(object,
+                                 backend = c("bpcells", "memory"),
+                                 directory = NULL,
+                                 assays = NULL,
+                                 layers = "counts",
+                                 matrix_type = c("auto", "uint32_t", "double", "float"),
+                                 overwrite = FALSE,
+                                 verbose = TRUE) {
+  check_installed(pkg = "SeuratObject", reason = "to set Seurat layer storage backends.")
+  backend <- match.arg(backend)
+  matrix_type <- match.arg(matrix_type)
+  specs <- .sn_layer_backend_specs(
+    object = object,
+    assays = assays,
+    layers = layers
+  )
+
+  if (identical(backend, "bpcells")) {
+    check_installed(pkg = "BPCells", reason = "to store Seurat layers with BPCells.")
+    if (!is.character(directory) || length(directory) != 1L || is.na(directory) || !nzchar(directory)) {
+      stop("`directory` must be a non-empty output directory for the BPCells backend.", call. = FALSE)
+    }
+    object <- .sn_set_layers_bpcells(
+      object = object,
+      specs = specs,
+      directory = directory,
+      matrix_type = matrix_type,
+      overwrite = overwrite,
+      verbose = verbose
+    )
+  } else {
+    has_bpcells <- vapply(specs, function(spec) {
+      .sn_is_iterable_matrix(SeuratObject::LayerData(
+        object = object,
+        assay = spec$assay,
+        layer = spec$layer
+      ))
+    }, logical(1))
+    if (any(has_bpcells)) {
+      check_installed(pkg = "BPCells", reason = "to materialize BPCells-backed Seurat layers.")
+    }
+
+    for (spec in specs) {
+      if (verbose) {
+        .sn_log_info(
+          "Materializing assay '{spec$assay}' layer '{spec$layer}' as `dgCMatrix`."
+        )
+      }
+      mat <- SeuratObject::LayerData(
+        object = object,
+        assay = spec$assay,
+        layer = spec$layer
+      )
+      mat <- .sn_as_sparse_matrix(mat)
+      if (!inherits(mat, "dgCMatrix")) {
+        mat <- methods::as(mat, "dgCMatrix")
+      }
+      SeuratObject::LayerData(
+        object = object,
+        assay = spec$assay,
+        layer = spec$layer
+      ) <- mat
+    }
+
+    keys <- vapply(specs, `[[`, character(1), "key")
+    bindings <- object@misc$bpcells_layers %||% list()
+    bindings[keys] <- NULL
+    object@misc$bpcells_layers <- bindings
+  }
+
+  .sn_log_seurat_command(
+    object = object,
+    assay = specs[[1]]$assay,
+    name = "sn_set_layer_backend"
+  )
+}
+
+#' Convert Seurat assay layers to BPCells-backed matrices
+#'
+#' \code{sn_convert_bpcells()} is the compatibility wrapper for
+#' \code{sn_set_layer_backend(backend = "bpcells")}. New code can use
+#' \code{sn_set_layer_backend()} when layers need to move in either direction.
+#'
+#' @inheritParams sn_set_layer_backend
+#' @return A Seurat object with selected layers backed by BPCells matrices.
+#' @seealso [sn_set_layer_backend()]
+#' @export
+sn_convert_bpcells <- function(object,
+                               directory,
+                               assays = NULL,
+                               layers = "counts",
+                               overwrite = FALSE,
+                               verbose = TRUE,
+                               matrix_type = c("auto", "uint32_t", "double", "float")) {
+  sn_set_layer_backend(
+    object = object,
+    backend = "bpcells",
+    directory = directory,
+    assays = assays,
+    layers = layers,
+    matrix_type = match.arg(matrix_type),
+    overwrite = overwrite,
+    verbose = verbose
+  )
 }
 
 .sn_ensure_sn_write_base_dependencies <- function(auto_install = TRUE,

@@ -45,7 +45,8 @@ Core object rule:
 - `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
 - `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
 - registered `rio` handlers: `.import.rio_10x()`, `.import.rio_10x_spatial()`, `.import.rio_starsolo()`, `.import.rio_gmt()`, `.import.rio_h5()`, `.import.rio_h5ad()`, `.import.rio_qs()`, `.import.rio_qs2()`, `.import.rio_bpcells()`, `.export.rio_h5()`, `.export.rio_h5ad()`, `.export.rio_qs()`, `.export.rio_qs2()`, and `.export.rio_bpcells()` are the package-level import/export hooks used by `sn_read()` and `sn_write()`
-- `sn_convert_bpcells()`: write selected Seurat assay layers to BPCells matrix directories and rebind those layers in the returned object
+- `sn_set_layer_backend()`: switch selected Seurat layers bidirectionally between on-disk BPCells matrices and in-memory `dgCMatrix` storage without renaming the layers
+- `sn_convert_bpcells()`: compatibility wrapper for `sn_set_layer_backend(backend = "bpcells")`
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
 
 Runtime reference datasets:

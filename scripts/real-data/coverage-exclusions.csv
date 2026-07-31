@@ -72,6 +72,7 @@ sn_prepare_results_evidence,interpretation_reporting,Evidence packaging rather t
 sn_read,io_project,Data input rather than analysis execution
 sn_run_llm,interpretation_reporting,Language-model invocation rather than quantitative analysis
 sn_set_cibersortx_credentials,runtime_admin,Credential configuration rather than analysis execution
+sn_set_layer_backend,io_project,Layer storage conversion rather than analysis execution
 sn_set_path,io_project,Filesystem setup rather than analysis execution
 sn_store_cell_communication,result_management,Compatibility result storage rather than analysis execution
 sn_store_deconvolution,result_management,Compatibility result storage rather than analysis execution

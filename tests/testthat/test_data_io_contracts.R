@@ -481,6 +481,149 @@ test_that("sn_convert_bpcells rebinds selected Seurat layers", {
     names(converted@misc$bpcells_layers),
     "RNA/counts"
   )
+
+  reconverted <- sn_convert_bpcells(
+    converted,
+    bpcells_dir,
+    NULL,
+    "counts",
+    TRUE,
+    FALSE
+  )
+  expect_equal(names(reconverted@misc$bpcells_layers), "RNA/counts")
+})
+
+test_that("sn_set_layer_backend round-trips multiple Seurat layers", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("BPCells")
+
+  counts <- methods::as(
+    Matrix::Matrix(matrix(c(1L, 0L, 2L, 3L), nrow = 2), sparse = TRUE),
+    "dgCMatrix"
+  )
+  rownames(counts) <- c("Gene1", "Gene2")
+  colnames(counts) <- c("Cell1", "Cell2")
+  normalized <- methods::as(log1p(counts), "dgCMatrix")
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "layer-backend")
+  SeuratObject::LayerData(object, assay = "RNA", layer = "data") <- normalized
+  bpcells_dir <- tempfile("seurat-layer-backend-")
+  on.exit(unlink(bpcells_dir, recursive = TRUE), add = TRUE)
+
+  on_disk <- sn_set_layer_backend(
+    object,
+    backend = "bpcells",
+    directory = bpcells_dir,
+    assays = "RNA",
+    layers = c("counts", "data"),
+    verbose = FALSE
+  )
+
+  expect_true(all(vapply(c("counts", "data"), function(layer) {
+    Shennong:::.sn_is_iterable_matrix(
+      SeuratObject::LayerData(on_disk, assay = "RNA", layer = layer)
+    )
+  }, logical(1))))
+  expect_identical(
+    BPCells::matrix_type(SeuratObject::LayerData(on_disk, assay = "RNA", layer = "counts")),
+    "uint32_t"
+  )
+  expect_identical(
+    BPCells::matrix_type(SeuratObject::LayerData(on_disk, assay = "RNA", layer = "data")),
+    "double"
+  )
+  expect_setequal(
+    names(on_disk@misc$bpcells_layers),
+    c("RNA/counts", "RNA/data")
+  )
+
+  in_memory <- sn_set_layer_backend(
+    on_disk,
+    backend = "memory",
+    assays = "RNA",
+    layers = c("counts", "data"),
+    verbose = FALSE
+  )
+
+  expect_s4_class(
+    SeuratObject::LayerData(in_memory, assay = "RNA", layer = "counts"),
+    "dgCMatrix"
+  )
+  expect_s4_class(
+    SeuratObject::LayerData(in_memory, assay = "RNA", layer = "data"),
+    "dgCMatrix"
+  )
+  expect_equal(
+    SeuratObject::LayerData(in_memory, assay = "RNA", layer = "counts"),
+    counts
+  )
+  expect_equal(
+    SeuratObject::LayerData(in_memory, assay = "RNA", layer = "data"),
+    normalized
+  )
+  expect_length(in_memory@misc$bpcells_layers, 0L)
+  expect_true(dir.exists(file.path(bpcells_dir, "RNA", "counts")))
+  expect_true(dir.exists(file.path(bpcells_dir, "RNA", "data")))
+})
+
+test_that("sn_set_layer_backend validates all BPCells targets before writing", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("BPCells")
+
+  counts <- methods::as(
+    Matrix::Matrix(matrix(c(1L, 0L, 2L, 3L), nrow = 2), sparse = TRUE),
+    "dgCMatrix"
+  )
+  rownames(counts) <- c("Gene1", "Gene2")
+  colnames(counts) <- c("Cell1", "Cell2")
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "layer-preflight")
+  SeuratObject::LayerData(object, assay = "RNA", layer = "data") <- log1p(counts)
+  bpcells_dir <- tempfile("seurat-layer-preflight-")
+  counts_dir <- file.path(bpcells_dir, "RNA", "counts")
+  dir.create(counts_dir, recursive = TRUE)
+  on.exit(unlink(bpcells_dir, recursive = TRUE), add = TRUE)
+
+  expect_error(
+    sn_set_layer_backend(
+      object,
+      backend = "bpcells",
+      directory = bpcells_dir,
+      assays = "RNA",
+      layers = c("counts", "data"),
+      verbose = FALSE
+    ),
+    "already exists"
+  )
+  expect_false(dir.exists(file.path(bpcells_dir, "RNA", "data")))
+})
+
+test_that("sn_set_layer_backend rejects unsafe uint32 conversion", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("BPCells")
+
+  counts <- methods::as(
+    Matrix::Matrix(matrix(c(1L, 0L, 2L, 3L), nrow = 2), sparse = TRUE),
+    "dgCMatrix"
+  )
+  rownames(counts) <- c("Gene1", "Gene2")
+  colnames(counts) <- c("Cell1", "Cell2")
+  object <- SeuratObject::CreateSeuratObject(counts = counts, project = "layer-type")
+  SeuratObject::LayerData(object, assay = "RNA", layer = "data") <- log1p(counts)
+  bpcells_dir <- tempfile("seurat-layer-type-")
+  on.exit(unlink(bpcells_dir, recursive = TRUE), add = TRUE)
+
+  expect_error(
+    sn_set_layer_backend(
+      object,
+      backend = "bpcells",
+      directory = bpcells_dir,
+      assays = "RNA",
+      layers = "data",
+      matrix_type = "uint32_t",
+      verbose = FALSE
+    ),
+    "cannot be safely stored"
+  )
+  expect_false(dir.exists(file.path(bpcells_dir, "RNA", "data")))
 })
 
 test_that("io helpers cover custom source passthrough and non-csv AnnData imports", {

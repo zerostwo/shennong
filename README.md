@@ -53,7 +53,7 @@ installed or executed.
 
 | Analysis module | Main Shennong entry point | Supported software and methods | Execution model |
 |---|---|---|---|
-| Data import and storage | `sn_read()`, `sn_write()`, `sn_initialize_seurat_object()` | 10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT and rio | Native R and format adapters |
+| Data import and storage | `sn_read()`, `sn_write()`, `sn_initialize_seurat_object()`, `sn_set_layer_backend()` | 10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT and rio | Native R and format adapters |
 | Preprocessing and QC | `sn_normalize_data()`, `sn_find_doublets()`, `sn_remove_ambient_contamination()` | Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper | Native R |
 | Clustering and batch integration | `sn_run_cluster()` | Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering | Native R or managed pixi |
 | CITE-seq and multimodal integration | `sn_run_multimodal()` | Seurat WNN, totalVI, Coralysis and MMoCHi | Native R or managed pixi |
