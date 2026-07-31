@@ -254,6 +254,23 @@ pbmc_doublets <- sn_run_cluster(
 sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
+For a BPCells-backed object, provide a donor or capture column through
+`group_by`. `scDblFinder` requires an in-memory sparse matrix internally, so
+Shennong materializes one sample at a time rather than the full on-disk matrix.
+Keep `ncores = 1` for the lowest peak memory; increasing it processes sample
+chunks concurrently and can hold that many sample matrices in memory.
+
+```{r bpcells-doublets, eval = FALSE}
+pbmc_doublets <- sn_find_doublets(
+  pbmc_bpcells,
+  group_by = "sample",
+  min_features = 200,
+  ncores = 1
+)
+
+table(pbmc_doublets$sample, pbmc_doublets$scDblFinder.class)
+```
+
 For ambient RNA, materialize a matching raw-count resource with
 `ShennongData` when the selected backend requires it. The decontX path below
 uses the filtered object directly and writes corrected counts to a new layer,

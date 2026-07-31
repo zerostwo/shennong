@@ -62,6 +62,13 @@ release.
 
 ### Changed
 
+- `sn_initialize_seurat_object()` now accepts all BPCells `IterableMatrix`
+  subclasses and preserves their on-disk counts backend. `sn_find_doublets()`
+  now handles BPCells-backed Seurat layers by materializing grouped samples
+  independently; `ncores = 1` bounds count-matrix materialization to one sample
+  at a time, while ungrouped BPCells input fails early with memory-safe
+  guidance. BPCells-to-`dgCMatrix` conversion no longer passes through a dense
+  matrix.
 - `sn_list_methods(available = TRUE/FALSE)` now filters against the caller's
   requested value instead of resolving the argument through dplyr's data mask.
 - Named Scissor Cox phenotypes explicitly preserve bulk-sample identifiers

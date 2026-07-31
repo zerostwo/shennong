@@ -24,7 +24,10 @@ sn_find_doublets(
 
 \item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.}
 
-\item{ncores}{Number of cores to use (for parallel processing).}
+\item{ncores}{Number of sample groups to process concurrently. For a BPCells
+backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
+time and gives the lowest peak memory use. Higher values can hold up to
+\code{ncores} sample matrices in memory concurrently.}
 
 \item{assay}{Assay used for doublet detection. Defaults to \code{"RNA"}.}
 
@@ -41,7 +44,9 @@ The input Seurat object with two new columns in \code{meta.data}:
 \code{scDblFinder.score_corrected} for non-default corrected layers. Cells
 whose selected layer sums to zero or whose detected-feature count is below
 \code{min_features} are skipped and retain \code{NA} in the corresponding
-output columns.
+output columns. Because \code{scDblFinder()} requires an in-memory sparse
+matrix, BPCells-backed inputs must supply \code{group_by}; Shennong then
+materializes each sample independently instead of the complete matrix.
 }
 \description{
 This function identifies potential doublets in a Seurat object by converting

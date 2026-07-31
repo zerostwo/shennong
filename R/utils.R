@@ -299,9 +299,8 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   }
 
   if (.sn_is_iterable_matrix(x)) {
-    .sn_log_info("Materializing a BPCells-backed matrix in memory for this operation.")
-    materialized <- suppressWarnings(as.matrix(x))
-    return(methods::as(Matrix::Matrix(materialized, sparse = TRUE), "dgCMatrix"))
+    .sn_log_info("Materializing a BPCells-backed matrix as an in-memory sparse matrix for this operation.")
+    return(methods::as(x, "dgCMatrix"))
   }
 
   if (inherits(x, "matrix")) {

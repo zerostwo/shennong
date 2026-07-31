@@ -77,6 +77,10 @@ This skill is the main entry point for package usage.
    `sn_filter_cells()` and `sn_filter_genes()`.
    `sn_filter_genes()` can combine `min_cells` with bundled GENCODE-based
    `gene_class` or exact `gene_type` filtering for human and mouse workflows.
+   Preserve BPCells `IterableMatrix` counts by passing them directly to
+   `sn_initialize_seurat_object()`. When finding doublets on a BPCells-backed
+   object, require a donor/capture `group_by` column and default to
+   `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
 2. Run clustering or batch integration with `sn_run_cluster()`. Use
    `hvg_features = c(...)` when the user has known marker genes that should be
    forced into the backend feature set, use

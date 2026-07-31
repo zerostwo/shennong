@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-07-27
+Last updated: 2026-08-01
 
 ## Current structure
 
@@ -21,6 +21,18 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- Issue #7 tracks BPCells compatibility for Seurat initialization and
+  sample-aware doublet detection. The implementation preserves BPCells
+  `IterableMatrix` counts in `sn_initialize_seurat_object()`, converts BPCells
+  chunks directly to `dgCMatrix` without a dense intermediate, and runs
+  `scDblFinder()` on independently materialized `group_by` samples. A real
+  BPCells/scDblFinder smoke test resolved 240/240 cells across two samples
+  while leaving the returned counts layer as `RenameDims`. Focused tests passed
+  467 assertions; the full suite passed 2,597 assertions with four expected
+  optional-dependency/local-fixture skips; the source package built; and
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` completed with no
+  error or warning and only the existing `.codegraph` hidden-directory NOTE.
+  The pkgdown site rebuilt successfully under `site/dev`.
 - R-CMD-check run `30214842915` exposed one real package-metadata warning:
   `tests/testthat/test-figure-engine.R` conditionally loads `DOSE`, but the
   package had not declared it in `Suggests`. `DESCRIPTION` now declares the

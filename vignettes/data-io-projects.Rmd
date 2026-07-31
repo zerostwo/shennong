@@ -181,6 +181,20 @@ pbmc <- sn_convert_bpcells(
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
 ```
 
+`sn_initialize_seurat_object()` also accepts a BPCells `IterableMatrix`
+directly and preserves that on-disk backend instead of converting the complete
+matrix to an in-memory sparse matrix.
+
+```{r initialize-from-bpcells, eval = FALSE}
+counts <- BPCells::open_matrix_dir("data/processed/pbmc_counts.bpcells")
+pbmc <- sn_initialize_seurat_object(
+  x = counts,
+  metadata = cell_metadata,
+  project = "PBMC"
+)
+inherits(SeuratObject::LayerData(pbmc, layer = "counts"), "IterableMatrix")
+```
+
 ## Publish reusable data outside the analysis package
 
 When an intermediate object or reference dataset should be shared, hand the

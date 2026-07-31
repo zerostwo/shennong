@@ -1,6 +1,18 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-07-27
+Last updated: 2026-08-01
+
+## 2026-08-01
+
+- BPCells-backed inputs remain lazy in `sn_initialize_seurat_object()`.
+  Operations that intrinsically require an in-memory sparse matrix must use a
+  direct sparse coercion rather than `as.matrix()`.
+- `scDblFinder` currently requires `CsparseMatrix` counts. For BPCells-backed
+  objects, `sn_find_doublets()` therefore requires an explicit donor/capture
+  `group_by` and materializes each group independently. `ncores = 1` is the
+  memory-minimizing default; higher concurrency intentionally trades memory
+  for throughput. Ungrouped BPCells input fails before materialization instead
+  of silently loading the full dataset.
 
 ## 2026-07-27
 

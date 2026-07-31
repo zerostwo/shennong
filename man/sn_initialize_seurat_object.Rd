@@ -21,8 +21,10 @@ sn_initialize_seurat_object(
 )
 }
 \arguments{
-\item{x}{A matrix, data.frame, sparse matrix, path to counts data, or a
-character vector of multiple 10x paths.}
+\item{x}{A matrix, data.frame, sparse matrix, BPCells
+\code{IterableMatrix}, path to counts data, or a character vector of
+multiple 10x paths. BPCells inputs remain on disk in the returned Seurat
+object's counts layer.}
 
 \item{metadata}{Optional metadata (data.frame or similar) to add to the Seurat object.}
 

@@ -57,8 +57,13 @@ user request to the right Shennong function family quickly.
 3. When `sn_list_10x_paths()` returns multiple named paths, pass the whole
    vector to `sn_initialize_seurat_object(x = tenx_paths)` to import all
    samples at once as a named list of Seurat objects.
-4. Infer or verify species with `sn_get_species()`.
-5. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
+4. A BPCells `IterableMatrix` can be passed directly as `x`; the initialized
+   Seurat counts layer remains on disk. For doublet detection on that object,
+   call `sn_find_doublets(group_by = "sample", ncores = 1)` so only one sample
+   count matrix is materialized at a time. Increase `ncores` only when memory
+   can hold the corresponding number of sample chunks.
+5. Infer or verify species with `sn_get_species()`.
+6. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
 ## Recipe: Materialize data with ShennongData
 

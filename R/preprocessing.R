@@ -191,8 +191,10 @@ sn_score_cell_cycle <- function(object, species = NULL) {
 #' output of [sn_list_10x_paths()], the function returns a named list of Seurat
 #' objects and imports each path in one call.
 #'
-#' @param x A matrix, data.frame, sparse matrix, path to counts data, or a
-#'   character vector of multiple 10x paths.
+#' @param x A matrix, data.frame, sparse matrix, BPCells
+#'   \code{IterableMatrix}, path to counts data, or a character vector of
+#'   multiple 10x paths. BPCells inputs remain on disk in the returned Seurat
+#'   object's counts layer.
 #' @param metadata Optional metadata (data.frame or similar) to add to the Seurat object.
 #' @param names_field Passed to \code{SeuratObject::CreateSeuratObject}, indicating how to parse cell names.
 #' @param names_delim Passed to \code{SeuratObject::CreateSeuratObject}, indicating the delimiter for cell names.
@@ -288,7 +290,7 @@ sn_initialize_seurat_object <- function(
 
   source_info <- NULL
   inherited_sample_name <- NULL
-  if (inherits(x, what = c("Matrix", "matrix", "data.frame", "MatrixDir"))) {
+  if (inherits(x, what = c("Matrix", "matrix", "data.frame")) || .sn_is_iterable_matrix(x)) {
     counts <- x
   } else {
     if (is.character(x) && length(x) == 1L) {
@@ -306,7 +308,9 @@ sn_initialize_seurat_object <- function(
     sample_name <- inherited_sample_name %||% source_info$sample_name %||% NULL
   }
 
-  counts <- .sn_as_sparse_matrix(counts)
+  if (!.sn_is_iterable_matrix(counts)) {
+    counts <- .sn_as_sparse_matrix(counts)
+  }
 
   # -- Create Seurat Object
   seurat_obj <- SeuratObject::CreateSeuratObject(
@@ -1104,6 +1108,100 @@ sn_filter_cells <- function(
   scDblFinder::scDblFinder(sce = sce, ...)
 }
 
+.sn_run_grouped_bpcells_scDblFinder <- function(
+  sce,
+  clusters = NULL,
+  samples,
+  dbr_sd = NULL,
+  ncores = 1L
+) {
+  samples <- as.character(samples)
+  if (length(samples) != ncol(sce) || anyNA(samples) || any(!nzchar(samples))) {
+    stop(
+      "The grouping column must contain one non-missing sample label per analyzed cell.",
+      call. = FALSE
+    )
+  }
+
+  sample_indices <- split(seq_len(ncol(sce)), samples, drop = TRUE)
+  workers <- min(as.integer(ncores), length(sample_indices))
+
+  run_sample <- function(sample_name) {
+    indices <- sample_indices[[sample_name]]
+    sample_sce <- sce[, indices, drop = FALSE]
+    sample_counts <- .sn_as_sparse_matrix(
+      SummarizedExperiment::assay(sample_sce, "counts")
+    )
+    SummarizedExperiment::assay(sample_sce, "counts") <- sample_counts
+
+    sample_clusters <- clusters
+    if (!is_null(sample_clusters) && length(sample_clusters) > 1L) {
+      sample_clusters <- sample_clusters[indices]
+    }
+
+    scores <- tryCatch(
+      .sn_run_scDblFinder(
+        sce = sample_sce,
+        clusters = sample_clusters,
+        dbr.sd = dbr_sd,
+        returnType = "scores",
+        BPPARAM = BiocParallel::SerialParam()
+      ),
+      error = function(error) {
+        stop(
+          "Doublet detection failed while processing sample '", sample_name,
+          "':\n", conditionMessage(error),
+          call. = FALSE
+        )
+      }
+    )
+    scores <- as.data.frame(scores)
+    if (!all(c("score", "class") %in% colnames(scores))) {
+      stop(
+        "scDblFinder did not return the expected `score` and `class` columns ",
+        "for sample '", sample_name, "'.",
+        call. = FALSE
+      )
+    }
+
+    cell_names <- rownames(scores)
+    if (is_null(cell_names) || any(!nzchar(cell_names))) {
+      stop(
+        "scDblFinder did not preserve cell names for sample '", sample_name, "'.",
+        call. = FALSE
+      )
+    }
+
+    data.frame(
+      cell = cell_names,
+      scDblFinder.score = as.numeric(scores$score),
+      scDblFinder.class = as.character(scores$class),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  sample_names <- names(sample_indices)
+  results <- if (workers == 1L) {
+    lapply(sample_names, run_sample)
+  } else {
+    BiocParallel::bplapply(
+      sample_names,
+      run_sample,
+      BPPARAM = BiocParallel::MulticoreParam(workers)
+    )
+  }
+  results <- do.call(rbind, results)
+  rownames(results) <- NULL
+
+  result_index <- match(colnames(sce), results$cell)
+  if (anyNA(result_index)) {
+    stop("scDblFinder results could not be aligned to every analyzed cell.", call. = FALSE)
+  }
+  sce$scDblFinder.score <- results$scDblFinder.score[result_index]
+  sce$scDblFinder.class <- results$scDblFinder.class[result_index]
+  sce
+}
+
 #' Find doublets using scDblFinder
 #'
 #' This function identifies potential doublets in a Seurat object by converting
@@ -1113,7 +1211,10 @@ sn_filter_cells <- function(
 #' @param clusters Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.
 #' @param group_by An optional metadata column used as the donor or sample grouping.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
-#' @param ncores Number of cores to use (for parallel processing).
+#' @param ncores Number of sample groups to process concurrently. For a BPCells
+#'   backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
+#'   time and gives the lowest peak memory use. Higher values can hold up to
+#'   \code{ncores} sample matrices in memory concurrently.
 #' @param assay Assay used for doublet detection. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
 #' @param min_features Minimum number of detected features required for a cell
@@ -1126,7 +1227,9 @@ sn_filter_cells <- function(
 #'   \code{scDblFinder.score_corrected} for non-default corrected layers. Cells
 #'   whose selected layer sums to zero or whose detected-feature count is below
 #'   \code{min_features} are skipped and retain \code{NA} in the corresponding
-#'   output columns.
+#'   output columns. Because \code{scDblFinder()} requires an in-memory sparse
+#'   matrix, BPCells-backed inputs must supply \code{group_by}; Shennong then
+#'   materializes each sample independently instead of the complete matrix.
 #' @examples
 #' \dontrun{
 #' seurat_obj <- sn_find_doublets(
@@ -1151,8 +1254,32 @@ sn_find_doublets <- function(
   check_installed("scDblFinder", reason = "to run doublet detection.")
   check_installed("SingleCellExperiment")
   stopifnot(is.numeric(min_features), length(min_features) == 1, min_features >= 0)
+  if (!is.numeric(ncores) || length(ncores) != 1L || is.na(ncores) || ncores < 1 || ncores %% 1 != 0) {
+    stop("`ncores` must be one positive integer.", call. = FALSE)
+  }
+  ncores <- as.integer(ncores)
+
+  if (!is_null(group_by)) {
+    if (!is.character(group_by) || length(group_by) != 1L || !nzchar(group_by)) {
+      stop("`group_by` must be one non-empty metadata column name.", call. = FALSE)
+    }
+    if (!group_by %in% colnames(object[[]])) {
+      stop(glue("Grouping column '{group_by}' was not found in object metadata."))
+    }
+  }
 
   counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  bpcells_backed <- .sn_is_iterable_matrix(counts)
+  if (bpcells_backed && is_null(group_by)) {
+    stop(
+      paste(
+        "BPCells-backed doublet detection requires `group_by` so counts can be",
+        "materialized one sample at a time. Supply a donor/sample metadata column;",
+        "use `ncores = 1` for the lowest peak memory use."
+      ),
+      call. = FALSE
+    )
+  }
   metadata <- object[[]]
   layer_sums <- Matrix::colSums(counts)
   feature_counts <- Matrix::colSums(counts > 0)
@@ -1199,11 +1326,19 @@ sn_find_doublets <- function(
     clusters <- clusters[match(keep_cells, colnames(object))]
   }
 
-  if (!is_null(group_by) && !group_by %in% colnames(object[[]])) {
-    stop(glue("Grouping column '{group_by}' was not found in object metadata."))
-  }
-
-  if (is_null(group_by)) {
+  if (bpcells_backed) {
+    .sn_log_info(
+      "Running BPCells-backed `scDblFinder()` in {length(unique(metadata[[group_by]]))} ",
+      "sample chunk(s), with up to {ncores} concurrent chunk(s)."
+    )
+    sce <- .sn_run_grouped_bpcells_scDblFinder(
+      sce = sce,
+      clusters = clusters,
+      samples = metadata[[group_by]],
+      dbr_sd = dbr_sd,
+      ncores = ncores
+    )
+  } else if (is_null(group_by)) {
     .sn_log_info("Running `scDblFinder()` without donor grouping.")
     sce <- .sn_run_scDblFinder(
       sce = sce,
