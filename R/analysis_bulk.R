@@ -410,6 +410,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
   variable <- apply(expression, 1L, stats::var)
   expression <- expression[is.finite(variable) & variable > 0, , drop = FALSE]
   dat_expr <- t(expression)
+  .sn_with_default_autozyme({
   quality <- WGCNA::goodSamplesGenes(dat_expr, verbose = 0)
   dat_expr <- dat_expr[quality$goodSamples, quality$goodGenes, drop = FALSE]
   selected_power <- power
@@ -460,6 +461,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
     models = list(fit = output$model %||% NULL),
     diagnostics = list(modules = length(setdiff(unique(colors), "grey")), excluded_samples = sum(!quality$goodSamples), excluded_genes = sum(!quality$goodGenes))
   )
+  }, patches = "wgcna")
 }
 
 .sn_bulk_feature_data <- function(input, features) {

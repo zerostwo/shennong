@@ -217,7 +217,7 @@ test_that("sn_read validates paths and delegates custom readers for inferred for
     .import.rio_10x_spatial = function(file, ...) {
       list(kind = "spatial", path = file)
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   imported <- sn_read(tenx_dir)

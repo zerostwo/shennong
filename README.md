@@ -1,10 +1,8 @@
----
-output: github_document
----
 
 # Shennong
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/zerostwo/shennong/branch/main/graph/badge.svg)](https://app.codecov.io/gh/zerostwo/shennong?branch=main)
 [![lifecycle](https://img.shields.io/badge/lifecycle-Experimental-important.svg)](https://lifecycle.r-lib.org/articles/stages.html)
@@ -12,29 +10,27 @@ output: github_document
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-
-
-`Shennong` is an experimental R package for single-cell, multimodal, spatial,
-and bulk transcriptomics workflows. Seurat objects remain the primary
-single-cell contract, while standalone bulk analyses accept ordinary matrices
-and `SummarizedExperiment` objects. The package provides reproducible entry
-points for preprocessing, integration, annotation, differential testing,
-biological-state modeling, publication figures, and interpretation-ready result
-storage.
+`Shennong` is an experimental R package for single-cell, multimodal,
+spatial, and bulk transcriptomics workflows. Seurat objects remain the
+primary single-cell contract, while standalone bulk analyses accept
+ordinary matrices and `SummarizedExperiment` objects. The package
+provides reproducible entry points for preprocessing, integration,
+annotation, differential testing, biological-state modeling, publication
+figures, and interpretation-ready result storage.
 
 ## Installation
 
 Install the current development version from GitHub:
 
-```r
+``` r
 install.packages("remotes")
 remotes::install_github("zerostwo/shennong")
 ```
 
-List Shennong's required and recommended R packages, then install the missing
-ones in one step:
+List Shennong’s required and recommended R packages, then install the
+missing ones in one step:
 
-```r
+``` r
 deps <- sn_list_dependencies()
 deps
 
@@ -43,16 +39,17 @@ sn_install_dependencies(scope = "required")
 
 ## One-Command Analysis Software
 
-Shennong provides stable `sn_*` entry points over R packages, command-line
-programs, and Python workflows. The table below summarizes the current analysis
-surface by data-analysis module. "Managed pixi/CLI" means Shennong prepares the
-input, runs the backend in a project-independent environment, and imports the
-result. "Adapter" means Shennong standardizes an existing result or a result
-returned by a user-supplied runner; the external software is not silently
-installed or executed.
+Shennong provides stable `sn_*` entry points over R packages,
+command-line programs, and Python workflows. The table below summarizes
+the current analysis surface by data-analysis module. “Managed pixi/CLI”
+means Shennong prepares the input, runs the backend in a
+project-independent environment, and imports the result. “Adapter” means
+Shennong standardizes an existing result or a result returned by a
+user-supplied runner; the external software is not silently installed or
+executed.
 
 | Analysis module | Main Shennong entry point | Supported software and methods | Execution model |
-|---|---|---|---|
+|----|----|----|----|
 | Data import and storage | `sn_read()`, `sn_write()`, `sn_initialize_seurat_object()`, `sn_set_layer_backend()` | 10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT and rio | Native R and format adapters |
 | Preprocessing and QC | `sn_normalize_data()`, `sn_find_doublets()`, `sn_remove_ambient_contamination()` | Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper | Native R |
 | Clustering and batch integration | `sn_run_cluster()` | Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering | Native R or managed pixi |
@@ -68,20 +65,21 @@ installed or executed.
 | Cell-cell communication | `sn_run_cell_communication()` | LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus | Native R or managed pixi |
 | CNV and malignant-state analysis | `sn_run_cnv()` | infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries | Managed pixi or native R |
 | Metabolic analysis | `sn_run_metabolism()` | UCell, GSVA, ssGSEA, mean scoring, scMetabolism, scFEA and Compass | Native R; scFEA/Compass runner-result adapters |
-| Spatial transcriptomics | `sn_run_spatial()` | Moran's I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony | Native R, managed pixi or adapter |
+| Spatial transcriptomics | `sn_run_spatial()` | Moran’s I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony | Native R, managed pixi or adapter |
 | Bulk transcriptomics and clinical analysis | `sn_run_bulk()`, `sn_run_survival()`, `sn_deconvolve_bulk()` | edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, adjusted Cox, Kaplan-Meier/log-rank, proportional-hazards diagnostics, BayesPrism and CIBERSORTx | Native R or local container backend |
 | Integration diagnostics | `sn_assess_integration()` | LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE | Native R |
 | Result validation and migration | `sn_validate_result()`, `sn_audit_results()`, `sn_upgrade_results()` | Versioned `1.0.0` analytical-result envelope, canonical primary tables, legacy migration and registered artifact audit | Native R; audit is read-only and migration is explicit |
-| Optional R acceleration | `sn_check_autozyme()`, `sn_with_autozyme()` | Pinned AutoZyme 0.3.1 revision; conservative CellChat and NicheNet defaults plus explicitly selected audited patches | Explicit opt-in; strict build and upstream-version gates; no automatic install, Python setup or thread changes |
+| Optional R acceleration | `sn_check_autozyme()`, `sn_with_autozyme()` | Pinned AutoZyme 0.3.1 revision; scoped lazy defaults for CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq and WGCNA | Strict build and upstream-version gates; call state is restored; BPCells-backed Seurat layers bypass the Seurat fast patch |
 | Publication figures and reporting | `sn_figure_spec()`, `sn_export_figure_bundle()`, `sn_write_results()` | ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation | Native R with optional LLM provider |
 
-All methods shipped in `inst/methods/` currently have an implemented Shennong
-entry point or explicit adapter. Optional R packages, command-line programs,
-pixi environments, credentials, references, and model files are still required
-when the selected backend depends on them. Inspect the registry and the current
-machine before starting a workflow:
+All methods shipped in `inst/methods/` currently have an implemented
+Shennong entry point or explicit adapter. Optional R packages,
+command-line programs, pixi environments, credentials, references, and
+model files are still required when the selected backend depends on
+them. Inspect the registry and the current machine before starting a
+workflow:
 
-```r
+``` r
 # Every registered backend and whether it can run in the current session
 sn_list_methods()
 sn_list_methods(task = "trajectory")
@@ -95,43 +93,75 @@ sn_install_dependencies(scope = "recommended")
 sn_prepare_pixi_environment("trajectory", install_environment = TRUE)
 ```
 
-Analytical outputs use `schema_version = "1.0.0"`, with their principal data
-frame in `tables$primary`. Audit older objects before reusing stored evidence:
+Analytical outputs use `schema_version = "1.0.0"`, with their principal
+data frame in `tables$primary`. Audit older objects before reusing
+stored evidence:
 
-```r
+``` r
 audit <- sn_audit_results(object)
 object <- sn_upgrade_results(object) # only after reviewing legacy/invalid rows
 sn_list_results(object)
 ```
 
-AutoZyme is optional and never activated during package loading. Strict mode
-requires the pinned AutoZyme version/SHA and an exactly validated upstream
-package version. Check eligibility first and prefer a temporary scope:
+AutoZyme is optional and never activated during package loading. When an
+integrated workflow first needs one of the lazy defaults—CellChat,
+NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq, or WGCNA—Shennong
+checks that relevant patch. A patch is activated only when AutoZyme is
+installed at the pinned version/SHA, its upstream package is installed,
+and the upstream version exactly matches a validated version. Eligible
+patches are enabled only for that compatible Shennong workflow call;
+success and error paths both restore the pre-call patch state. Missing
+packages and version drift are skipped safely, and approximate patches
+are never activated automatically. The caller’s `future.globals.maxSize`
+option is also restored after AutoZyme is loaded.
 
-```r
-sn_check_autozyme()
+``` r
+default_patches <- c(
+  "cellchat", "nichenetr", "clusterprofiler", "fgsea",
+  "seurat", "tradeseq", "wgcna"
+)
+sn_check_autozyme(default_patches)
 
-communication <- sn_with_autozyme({
-  sn_run_cell_communication(object, method = "cellchat")
-})
+communication <- sn_run_cell_communication(
+  object,
+  method = "cellchat",
+  group_by = "cell_type"
+)
+
+# Session-wide opt-out for automatic workflow scopes.
+options(shennong.autozyme = FALSE)
+# Environment alternatives: AUTOZYME_DISABLED=true or AUTOZYME_DISABLE=true.
 ```
 
-The default CellChat and NicheNet patches correspond to current Shennong
-communication paths. Other manifest entries expose audited AutoZyme
-compatibility metadata for explicit advanced use; they do not imply that
-Shennong currently calls every patched package. Shennong does not install
-AutoZyme, create its Python environment, or change thread counts for these
-calls. Approximate patches require the additional explicit
-`allow_approximate = TRUE` decision.
+The option and environment variables prevent automatic scopes but do not
+deactivate a patch that the user activated manually. Explicit
+`sn_enable_autozyme()` and `sn_with_autozyme()` calls are intentional
+overrides and therefore ignore those opt-outs. One memory-safety
+exception is deliberate: when the relevant Seurat layers are
+BPCells-backed, Shennong bypasses the Seurat fast patch because the
+pinned implementation coerces non-`dgCMatrix` input to an in-memory
+`dgCMatrix`. If that patch was already active, it is suspended for the
+BPCells-backed workflow call and restored afterward. NicheNetR automatic
+use is likewise limited to `single = TRUE` with a dense numeric
+ligand-target matrix, matching its validated fast path. Enabling an
+approximate patch manually with `allow_approximate = TRUE` remains an
+explicit reproducibility decision; other non-default manifest patches
+also remain explicit. Shennong does not install AutoZyme, its upstream
+packages, or a Python environment. The BPCells rule is a guard for
+Shennong’s Seurat fast-patch calls, not a claim that every downstream
+backend is BPCells-native. CellChat, tradeSeq, and other backend
+contracts may still require a controlled sparse materialization or a
+sample/cluster-level aggregation; size that conversion explicitly for
+the available RAM.
 
 ## Agent And MCP Integration
 
-Shennong ships installable Agent Skills plus a read-only MCP server. The MCP
-surface lets an agent discover registered methods, inspect exact installed R
-help, and retrieve workflow recipes; it does not execute arbitrary R code or
-modify analysis files.
+Shennong ships installable Agent Skills plus a read-only MCP server. The
+MCP surface lets an agent discover registered methods, inspect exact
+installed R help, and retrieve workflow recipes; it does not execute
+arbitrary R code or modify analysis files.
 
-```r
+``` r
 # Install all packaged Shennong usage skills for local agents.
 sn_install_codex_skill(path = "~/.agents/skills", type = "package_skills")
 
@@ -145,15 +175,16 @@ sn_mcp_server_config()
 ## Analysis Data
 
 Dataset discovery, download, caching, and publication are owned by the
-`ShennongData` package. Shennong accepts materialized matrices, file paths, and
-Seurat objects; it no longer bundles analysis datasets or exports a data
-distribution API. The executable website uses small, provenance-tracked public
-data subsets materialized under the local `SHENNONG_REAL_DATA_DIR` cache. Those
-data files are intentionally excluded from this repository.
+`ShennongData` package. Shennong accepts materialized matrices, file
+paths, and Seurat objects; it no longer bundles analysis datasets or
+exports a data distribution API. The executable website uses small,
+provenance-tracked public data subsets materialized under the local
+`SHENNONG_REAL_DATA_DIR` cache. Those data files are intentionally
+excluded from this repository.
 
 ## Quick Start
 
-```r
+``` r
 library(Shennong)
 
 pbmc <- qs2::qs_read(file.path(
@@ -181,7 +212,7 @@ sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
 
 The same public PBMC fixture can be used for batch-aware integration:
 
-```r
+``` r
 pbmc_integrated <- sn_run_cluster(
   pbmc,
   batch = "real_batch",
@@ -193,10 +224,10 @@ sn_plot_dim(pbmc_integrated, group_by = "real_batch")
 sn_plot_dim(pbmc_integrated, group_by = "seurat_clusters", label = TRUE)
 ```
 
-You can summarize integration quality and surface rare or difficult groups
-directly from the integrated object:
+You can summarize integration quality and surface rare or difficult
+groups directly from the integrated object:
 
-```r
+``` r
 metrics <- sn_assess_integration(
   pbmc_integrated,
   batch_by = "real_batch",
@@ -214,7 +245,7 @@ metrics$per_group$challenging_groups
 
 ## Differential Expression And Enrichment
 
-```r
+``` r
 pbmc <- sn_find_de(
   pbmc,
   analysis = "markers",
@@ -236,10 +267,10 @@ pbmc <- sn_enrich(
 )
 ```
 
-The same `sn_find_de()` entry point accepts a feature-by-sample matrix, list,
-or `SummarizedExperiment` for standalone bulk analysis:
+The same `sn_find_de()` entry point accepts a feature-by-sample matrix,
+list, or `SummarizedExperiment` for standalone bulk analysis:
 
-```r
+``` r
 bulk_de <- sn_find_de(
   counts,
   metadata = sample_data,
@@ -251,8 +282,8 @@ bulk_de <- sn_find_de(
 
 ## Documentation
 
-Longer workflow articles are available in the package site and vignettes,
-including:
+Longer workflow articles are available in the package site and
+vignettes, including:
 
 - clustering and integration
 - layer-aware preprocessing
@@ -260,5 +291,6 @@ including:
 
 ## Status
 
-`Shennong` is still experimental. The package currently prioritizes a clean and
-consistent workflow surface over backward compatibility across early versions.
+`Shennong` is still experimental. The package currently prioritizes a
+clean and consistent workflow surface over backward compatibility across
+early versions.

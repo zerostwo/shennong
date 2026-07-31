@@ -419,7 +419,11 @@ sn_normalize_data <- function(
       assay = assay,
       layer = layer
     )
-    object <- Seurat::NormalizeData(object = prepared$object, ...)
+    object <- .sn_with_default_seurat_autozyme(
+      Seurat::NormalizeData(object = prepared$object, ...),
+      object = prepared$object,
+      assay = assay
+    )
     object <- .sn_restore_seurat_analysis_input(object = object, context = prepared$context)
     return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_normalize_data"))
   }
@@ -476,15 +480,19 @@ sn_normalize_data <- function(
   sct_args <- list(...)
   sct_args$verbose <- sct_args$verbose %||% TRUE
   sct_args$seed.use <- sct_args$seed.use %||% 717
-  object <- .sn_with_auto_future_globals(
-    .sn_call_with_symbolic_object(
-      fun_call = quote(Seurat::SCTransform),
+  object <- .sn_with_default_seurat_autozyme(
+    .sn_with_auto_future_globals(
+      .sn_call_with_symbolic_object(
+        fun_call = quote(Seurat::SCTransform),
+        object = prepared$object,
+        args = sct_args
+      ),
       object = prepared$object,
-      args = sct_args
+      context = "SCTransform",
+      verbose = isTRUE(sct_args$verbose)
     ),
     object = prepared$object,
-    context = "SCTransform",
-    verbose = isTRUE(sct_args$verbose)
+    assay = assay
   )
 
   if (isTRUE(prepared$context$needs_temp_counts)) {

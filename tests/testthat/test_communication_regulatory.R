@@ -103,9 +103,39 @@ test_that("cell communication results can be stored and retrieved", {
   expect_true("cell_communication_results" %in% names(object@misc))
 })
 
+test_that("direct communication storage does not claim ambient acceleration", {
+  skip_if_not_installed("Seurat")
+  object <- make_communication_object()
+  table <- tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "LIG1",
+    receptor = "REC1", score = 0.9
+  )
+  testthat::local_mocked_bindings(
+    .sn_autozyme_provenance = function() list(active_patches = "cellchat"),
+    .package = "Shennong"
+  )
+
+  direct <- sn_store_cell_communication(
+    object, table, method = "cellchat", return_object = FALSE
+  )
+  expect_null(direct$provenance$acceleration)
+
+  scoped <- Shennong:::.sn_with_autozyme_provenance_context(
+    sn_store_cell_communication(
+      object, table, method = "cellchat", return_object = FALSE
+    ),
+    patches = "cellchat"
+  )
+  expect_identical(
+    scoped$provenance$acceleration$active_patches,
+    "cellchat"
+  )
+})
+
 test_that("NicheNet backend runs with supplied priors", {
   skip_if_not_installed("Seurat")
   skip_if_not(suppressWarnings(requireNamespace("nichenetr", quietly = TRUE)), "nichenetr is not installed")
+  withr::local_options(list(shennong.autozyme = FALSE))
   object <- make_communication_object()
   ligand_target_matrix <- matrix(
     c(
@@ -149,6 +179,245 @@ test_that("NicheNet backend runs with supplied priors", {
   expect_s3_class(sn_plot_communication(stored, type = "river"), "ggplot")
   expect_s3_class(sn_plot_ligand_target(stored), "ggplot")
   expect_s3_class(sn_plot_communication_comparison(stored), "ggplot")
+})
+
+test_that("communication backends enable only call-safe default AutoZyme patches", {
+  skip_if_not_installed("Seurat")
+  withr::local_options(list(shennong.autozyme = TRUE))
+  withr::local_envvar(c(
+    AUTOZYME_DISABLED = NA,
+    AUTOZYME_DISABLE = NA
+  ))
+  object <- make_communication_object()
+  state <- new.env(parent = emptyenv())
+  state$active <- character()
+  state$enable_requests <- character()
+  state$disabled_scopes <- 0L
+  state$calls <- list()
+  backend_result <- list(
+    table = tibble::tibble(
+      source = "Sender", target = "Receiver",
+      ligand = "LIG1", receptor = "REC1", score = 1
+    ),
+    artifacts = list()
+  )
+
+  testthat::local_mocked_bindings(
+    .sn_with_default_autozyme = function(expr, patches) {
+      Shennong:::.sn_with_autozyme_provenance_context({
+        state$enable_requests <- c(state$enable_requests, patches)
+        before <- state$active
+        if (Shennong:::.sn_autozyme_default_enabled()) {
+          state$active <- union(state$active, patches)
+        }
+        on.exit(state$active <- before, add = TRUE)
+        force(expr)
+      }, patches = patches)
+    },
+    .sn_autozyme_active_patches = function() state$active,
+    .sn_autozyme_provenance = function() {
+      if (length(state$active) == 0L) return(list())
+      list(active_patches = state$active)
+    },
+    .sn_with_autozyme_disabled = function(expr) {
+      before <- state$active
+      state$disabled_scopes <- state$disabled_scopes + 1L
+      state$active <- character()
+      on.exit(state$active <- before, add = TRUE)
+      force(expr)
+    },
+    .sn_run_cellchat = function(...) {
+      state$calls[[length(state$calls) + 1L]] <- list(
+        method = "cellchat",
+        active = state$active,
+        args = list(...)
+      )
+      backend_result
+    },
+    .sn_run_nichenetr = function(...) {
+      state$calls[[length(state$calls) + 1L]] <- list(
+        method = "nichenetr",
+        active = state$active,
+        args = list(...)
+      )
+      backend_result
+    },
+    .package = "Shennong"
+  )
+
+  cellchat_stored <- sn_run_cell_communication(
+    object,
+    method = "cellchat",
+    group_by = "cell_type",
+    return_object = FALSE
+  )
+  expect_identical(state$enable_requests, "cellchat")
+  expect_true("cellchat" %in% state$calls[[1L]]$active)
+  expect_true("cellchat" %in%
+    cellchat_stored$provenance$acceleration$active_patches)
+  expect_length(state$active, 0L)
+
+  dense_prior <- matrix(
+    1,
+    nrow = 1,
+    dimnames = list("TG1", "LIG1")
+  )
+  nichenet_stored <- sn_run_cell_communication(
+    object,
+    method = "nichenetr",
+    group_by = "cell_type",
+    sender = "Sender",
+    receiver = "Receiver",
+    ligand_target_matrix = dense_prior,
+    return_object = FALSE
+  )
+  expect_identical(state$enable_requests, c("cellchat", "nichenetr"))
+  expect_true("nichenetr" %in% state$calls[[2L]]$active)
+  expect_true("nichenetr" %in%
+    nichenet_stored$provenance$acceleration$active_patches)
+  expect_length(state$active, 0L)
+
+  state$active <- character()
+  state$enable_requests <- character()
+  disabled_stored <- withr::with_options(
+    list(shennong.autozyme = FALSE),
+    sn_run_cell_communication(
+      object,
+      method = "nichenetr",
+      group_by = "cell_type",
+      sender = "Sender",
+      receiver = "Receiver",
+      ligand_target_matrix = dense_prior,
+      return_object = FALSE
+    )
+  )
+  expect_identical(state$enable_requests, "nichenetr")
+  expect_false("nichenetr" %in% state$calls[[3L]]$active)
+  expect_length(disabled_stored$provenance$acceleration, 0L)
+  expect_length(state$active, 0L)
+})
+
+test_that("NicheNet AutoZyme safety uses effective backend arguments", {
+  skip_if_not_installed("Seurat")
+  object <- make_communication_object()
+  state <- new.env(parent = emptyenv())
+  state$active <- c("cellchat", "nichenetr")
+  state$disabled <- FALSE
+  state$enable_requests <- character()
+  state$disabled_scopes <- 0L
+  state$calls <- list()
+  backend_result <- list(
+    table = tibble::tibble(
+      source = "Sender", target = "Receiver",
+      ligand = "LIG1", receptor = "REC1", score = 1
+    ),
+    artifacts = list()
+  )
+  dense_prior <- matrix(
+    1,
+    nrow = 1,
+    dimnames = list("TG1", "LIG1")
+  )
+  sparse_prior <- Matrix::Matrix(dense_prior, sparse = TRUE)
+
+  testthat::local_mocked_bindings(
+    .sn_with_default_autozyme = function(expr, patches) {
+      Shennong:::.sn_with_autozyme_provenance_context({
+        state$enable_requests <- c(state$enable_requests, patches)
+        before <- state$active
+        state$active <- union(state$active, patches)
+        on.exit(state$active <- before, add = TRUE)
+        force(expr)
+      }, patches = patches)
+    },
+    .sn_autozyme_active_patches = function() state$active,
+    .sn_with_autozyme_disabled = function(expr) {
+      before <- state$disabled
+      state$disabled_scopes <- state$disabled_scopes + 1L
+      state$disabled <- TRUE
+      on.exit(state$disabled <- before, add = TRUE)
+      force(expr)
+    },
+    .sn_run_nichenetr = function(...) {
+      state$calls[[length(state$calls) + 1L]] <- list(
+        active = state$active,
+        disabled = state$disabled,
+        args = list(...)
+      )
+      backend_result
+    },
+    .package = "Shennong"
+  )
+
+  unsafe <- sn_run_cell_communication(
+    object,
+    method = "nichenetr",
+    group_by = "cell_type",
+    sender = "Sender",
+    receiver = "Receiver",
+    ligand_target_matrix = dense_prior,
+    backend_control = list(
+      nichenet = list(ligand_target_matrix = sparse_prior)
+    ),
+    return_object = FALSE
+  )
+  expect_length(state$enable_requests, 0L)
+  expect_identical(state$disabled_scopes, 1L)
+  expect_identical(state$calls[[1L]]$active, c("cellchat", "nichenetr"))
+  expect_true(state$calls[[1L]]$disabled)
+  expect_s4_class(state$calls[[1L]]$args$ligand_target_matrix, "Matrix")
+  expect_identical(state$active, c("cellchat", "nichenetr"))
+  expect_null(unsafe$provenance$acceleration)
+
+  state$active <- character()
+  state$enable_requests <- character()
+  state$disabled_scopes <- 0L
+  sn_run_cell_communication(
+    object,
+    method = "nichenetr",
+    group_by = "cell_type",
+    sender = "Sender",
+    receiver = "Receiver",
+    ligand_target_matrix = sparse_prior,
+    backend_control = list(
+      nichenet = list(ligand_target_matrix = dense_prior)
+    ),
+    return_object = FALSE
+  )
+  expect_identical(state$enable_requests, "nichenetr")
+  expect_identical(state$disabled_scopes, 0L)
+  expect_true(is.matrix(state$calls[[2L]]$args$ligand_target_matrix))
+  expect_true("nichenetr" %in% state$calls[[2L]]$active)
+
+  for (controls in list(
+    list(single = FALSE),
+    list(zyme = FALSE),
+    list(zyme = NULL),
+    list(zyme = 0),
+    list(zyme = NA)
+  )) {
+    state$active <- c("cellchat", "nichenetr")
+    state$enable_requests <- character()
+    before_disabled <- state$disabled_scopes
+    call_args <- list(
+      object = object,
+      method = "nichenetr",
+      group_by = "cell_type",
+      sender = "Sender",
+      receiver = "Receiver",
+      ligand_target_matrix = dense_prior,
+      return_object = FALSE
+    )
+    call_args[names(controls)] <- controls
+    do.call(sn_run_cell_communication, call_args)
+    current <- state$calls[[length(state$calls)]]
+    expect_length(state$enable_requests, 0L)
+    expect_identical(state$disabled_scopes, before_disabled + 1L)
+    expect_identical(current$active, c("cellchat", "nichenetr"))
+    expect_true(current$disabled)
+    expect_false("zyme" %in% names(current$args))
+    expect_identical(state$active, c("cellchat", "nichenetr"))
+  }
 })
 
 test_that("communication backends standardize to one comparable schema", {
@@ -207,6 +476,7 @@ test_that("communication concordance tolerates shared edges with missing ranks",
 test_that("public communication runner builds a real cross-method consensus", {
   skip_if_not_installed("liana")
   skip_if_not_installed("CellChat")
+  withr::local_options(list(shennong.autozyme = FALSE))
   object <- make_communication_object()
   stored <- sn_run_cell_communication(
     object = object,

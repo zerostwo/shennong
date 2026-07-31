@@ -98,19 +98,30 @@ Runtime reference datasets:
 
 - `sn_check_autozyme()`: side-effect-free compatibility report for the pinned
   AutoZyme revision and selected upstream patches
-- `sn_enable_autozyme()`: explicitly activate only patches that satisfy the
-  strict version/equivalence policy; conservative defaults are CellChat and
-  NicheNet
+- `sn_enable_autozyme()`: manually activate only patches that satisfy the
+  strict version/equivalence policy
 - `sn_disable_autozyme()`: deactivate only selected Shennong-supported patches
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
-- Shennong never activates AutoZyme on package load, installs it during an
-  analysis, creates its Python environment, or changes thread counts. Version
-  drift is blocked by default, and approximate patches require a second
-  explicit opt-in. Active patches are retained in result provenance. The
-  CellChat and NicheNet defaults map to current Shennong communication calls;
-  other manifest entries provide audited compatibility metadata for advanced
-  process-level AutoZyme use and do not imply a direct Shennong workflow call.
+- Shennong never activates AutoZyme on package load. The lazy automatic set is
+  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq, and WGCNA.
+  AutoZyme and each upstream package must be installed at the pinned/exactly
+  validated versions. Eligible patches are active only inside the compatible
+  Shennong workflow call, with the pre-call state restored after success or
+  error; missing or drifted dependencies and all approximate patches are
+  skipped.
+- `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
+  `AUTOZYME_DISABLE=true` prevent automatic scopes but do not turn off a
+  manually active patch. Explicit `sn_enable_autozyme()` and
+  `sn_with_autozyme()` calls ignore these automatic opt-outs. BPCells-backed
+  Seurat layers are the safety exception: they bypass the Seurat fast patch to
+  avoid coercion to an in-memory `dgCMatrix`, and a manually active Seurat patch
+  is suspended for that call and then restored. Active scope details are
+  retained in result provenance. Shennong does not install AutoZyme, upstream
+  packages, or a Python environment. Automatic loading also restores the
+  caller's `future.globals.maxSize` option before analysis. This Seurat guard is
+  not whole-package BPCells compatibility: CellChat, tradeSeq, and other backend
+  contracts may still require deliberate sparse materialization or aggregation.
 
 ## Diagnostics and Benchmarking
 

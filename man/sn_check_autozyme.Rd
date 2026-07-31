@@ -5,14 +5,14 @@
 \title{Check optional AutoZyme acceleration compatibility}
 \usage{
 sn_check_autozyme(
-  patches = c("cellchat", "nichenetr"),
+  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat", "tradeseq",
+    "wgcna"),
   strict = TRUE,
   allow_approximate = FALSE
 )
 }
 \arguments{
-\item{patches}{Character vector of AutoZyme patch names. The conservative
-defaults cover Shennong's CellChat and NicheNet communication paths.}
+\item{patches}{Character vector of AutoZyme patch names to inspect or manage.}
 
 \item{strict}{If \code{TRUE}, require the installed upstream package version to
 exactly match a version validated by the pinned AutoZyme revision.}
@@ -25,9 +25,23 @@ A data frame with installation, version, activation, and eligibility
 information for each requested patch.
 }
 \description{
-Reports whether selected AutoZyme patches can be enabled without changing
-Shennong's default execution. This check is side-effect free: it does not
+Reports whether selected AutoZyme patches can be enabled. This check is
+side-effect free: it does not
 install packages, activate patches, prepare Python, or change thread counts.
+}
+\details{
+Shennong lazily activates compatible, non-approximate patches for the scope
+of an integrated workflow call. Automatic activation covers CellChat,
+clusterProfiler, fgsea, NicheNet, Seurat, tradeSeq, and WGCNA. It requires
+the pinned AutoZyme build and an exactly validated upstream version. Set
+\code{options(shennong.autozyme = FALSE)}
+or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
+\code{AUTOZYME_DISABLE=true} is also accepted) to prevent automatic activation.
+Newly activated patches are restored even when the workflow errors. These
+controls do not disable patches that are already active and do not affect
+explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or \code{\link[=sn_with_autozyme]{sn_with_autozyme()}}. Seurat
+acceleration is bypassed for BPCells-backed objects so an on-disk layer is
+never coerced to an in-memory sparse matrix by the accelerated path.
 }
 \examples{
 sn_check_autozyme()

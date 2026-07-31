@@ -82,7 +82,9 @@ suppressPackageStartupMessages({
   library(CellChat)
 })
 
+previous_options <- options(shennong.autozyme = FALSE)
 on.exit({
+  options(previous_options)
   try(sn_disable_autozyme(c("cellchat", "wgcna")), silent = TRUE)
 }, add = TRUE)
 
@@ -93,6 +95,8 @@ on.exit({
 }
 
 .cellchat_run <- function(object, database, accelerated) {
+  previous_run_options <- options(shennong.autozyme = accelerated)
+  on.exit(options(previous_run_options), add = TRUE)
   if (accelerated) {
     sn_enable_autozyme("cellchat")
   } else {
@@ -161,6 +165,8 @@ if (!cellchat_keys_equal || !is.finite(cellchat_max_diff) || cellchat_max_diff >
 }
 
 .wgcna_run <- function(expression, metadata, accelerated) {
+  previous_run_options <- options(shennong.autozyme = accelerated)
+  on.exit(options(previous_run_options), add = TRUE)
   if (accelerated) {
     sn_enable_autozyme("wgcna")
   } else {

@@ -106,4 +106,7 @@ A Seurat object or stored-result list.
 \code{sn_run_cell_communication()} wraps established communication
 backends and stores a comparable ligand-receptor schema. Multiple backends
 can be run together to calculate method concordance and a consensus rank.
+Eligible CellChat and call-safe NicheNet AutoZyme patches are activated
+automatically within the workflow and restored afterward. Set
+\code{options(shennong.autozyme = FALSE)} to disable automatic acceleration.
 }

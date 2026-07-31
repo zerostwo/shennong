@@ -1773,7 +1773,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
       captured <<- c(captured, list(split_by))
       list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   sn_run_cluster(
@@ -1790,14 +1790,6 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
   expect_equal(captured[[1]], "sample")
 
   captured <- list()
-  local_mocked_bindings(
-    .sn_select_variable_features = function(object, nfeatures, split_by = NULL, assay = NULL, layer = NULL, verbose = TRUE) {
-      captured <<- c(captured, list(split_by))
-      list(object = object, features = rownames(object)[seq_len(min(nfeatures, nrow(object)))])
-    },
-    .env = asNamespace("Shennong")
-  )
-
   sn_run_cluster(
     object = merged,
     batch = "sample",
@@ -2746,7 +2738,7 @@ test_that("sn_find_doublets skips zero-count cells in corrected layers", {
       SummarizedExperiment::colData(sce) <- colData
       sce
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   updated <- sn_find_doublets(
@@ -2792,7 +2784,7 @@ test_that("sn_find_doublets skips low-feature cells before running scDblFinder",
       SummarizedExperiment::colData(sce) <- colData
       sce
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   updated <- sn_find_doublets(

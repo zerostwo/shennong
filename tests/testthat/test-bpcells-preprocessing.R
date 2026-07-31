@@ -90,7 +90,7 @@ test_that("sn_find_doublets materializes BPCells counts one sample at a time", {
         row.names = colnames(sce)
       )
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   updated <- sn_find_doublets(

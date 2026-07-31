@@ -3,10 +3,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Unreleased
+# Version 0.3.0
 
-Changes developed after `v0.2.0` are recorded in this section for the next
-release.
+Released 2026-08-01.
 
 ### Added
 
@@ -38,11 +37,17 @@ release.
   tests, and scaled Schoenfeld residuals. `sn_plot_survival()` now renders
   forest, Kaplan-Meier, risk-table, cumulative-hazard, scaled-residual, and
   proportional-hazards-test views.
-- Added explicit, scoped AutoZyme acceleration support through
+- Added guarded AutoZyme acceleration support through
   `sn_check_autozyme()`, `sn_enable_autozyme()`, `sn_disable_autozyme()`, and
-  `sn_with_autozyme()`. Compatibility is checked against a pinned AutoZyme
-  revision and exact upstream versions; approximate patches require a second
-  opt-in, and active acceleration is recorded in result provenance.
+  `sn_with_autozyme()`. The strict automatic set now covers CellChat, NicheNetR,
+  clusterProfiler, fgsea, Seurat, tradeSeq, and WGCNA. Shennong checks these
+  patches lazily only when a compatible workflow needs them, then restores the
+  pre-call patch state after success or error. Automatic activation requires the
+  pinned AutoZyme build, an installed upstream package, and an exactly validated
+  upstream version; missing or drifted dependencies are skipped safely and
+  approximate patches are never automatic. Result-producing scopes record the
+  patches that were active for the compatible call in provenance before the
+  automatic scope is restored.
 - Added a local-only real-public-data harness under `scripts/real-data/`. Its
   four logical bundles cover Kotliarov PBMC CITE-seq, a GSE72056/TCGA-SKCM
   single-cell-to-bulk melanoma bridge, Hermann spermatogenesis spliced and
@@ -68,6 +73,21 @@ release.
 
 ### Changed
 
+- AutoZyme automatic activation is now lazy and scoped to compatible Shennong
+  workflow calls rather than package loading or persistent process mutation. Set
+  `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or
+  `AUTOZYME_DISABLE=true` to prevent automatic scopes. These opt-outs do not
+  deactivate manually active patches and do not affect explicit
+  `sn_enable_autozyme()` or `sn_with_autozyme()` calls. BPCells-backed Seurat
+  layers never enter the Seurat fast patch because that path can materialize an
+  on-disk matrix as `dgCMatrix`; an already active Seurat patch is suspended for
+  the BPCells-backed call and restored afterward. Eligible NicheNetR use remains
+  limited to its validated call-safe dense-prior path; analytical errors are
+  never retried as unaccelerated work. Automatic scopes also restore the
+  caller's `future.globals.maxSize` option after AutoZyme is loaded. This Seurat
+  guard does not make every Shennong backend BPCells-native: backends such as
+  CellChat and tradeSeq may still require a controlled sparse materialization or
+  an aggregated input that fits memory.
 - `sn_initialize_seurat_object()` now accepts all BPCells `IterableMatrix`
   subclasses and preserves their on-disk counts backend. `sn_find_doublets()`
   now handles BPCells-backed Seurat layers by materializing grouped samples

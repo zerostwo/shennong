@@ -76,14 +76,18 @@ mock_autozyme_bindings <- function(state,
   )
 }
 
-test_that("AutoZyme APIs use conservative defaults and validate inputs", {
+test_that("AutoZyme APIs expose automatic defaults and validate inputs", {
   expect_identical(
     eval(formals(Shennong:::sn_check_autozyme)$patches),
-    c("cellchat", "nichenetr")
+    Shennong:::.sn_autozyme_default_patches
   )
   expect_identical(
     eval(formals(Shennong:::sn_enable_autozyme)$patches),
     c("cellchat", "nichenetr")
+  )
+  expect_identical(
+    eval(formals(Shennong:::sn_disable_autozyme)$patches),
+    Shennong:::.sn_autozyme_default_patches
   )
   expect_true(all(vapply(
     c(
@@ -119,7 +123,7 @@ test_that("AutoZyme absence is reported without installation or evaluation", {
   )
 
   status <- Shennong:::sn_check_autozyme()
-  expect_identical(status$patch, c("cellchat", "nichenetr"))
+  expect_identical(status$patch, Shennong:::.sn_autozyme_default_patches)
   expect_true(all(!status$autozyme_installed))
   expect_true(all(!status$eligible))
   expect_true(all(status$reason == "autozyme is not installed"))
@@ -207,16 +211,403 @@ test_that("approximate patches require a second explicit opt-in", {
   expect_true(provenance$patches$slingshot$approximate)
 })
 
-test_that("WGCNA remains opt-in and reports numeric-tolerance equivalence", {
+test_that("automatic patch set covers every integrated non-approximate backend", {
+  expect_identical(
+    Shennong:::.sn_autozyme_default_patches,
+    c(
+      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
+      "tradeseq", "wgcna"
+    )
+  )
+
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
 
   status <- Shennong:::sn_check_autozyme("wgcna")
 
   expect_true(status$eligible)
-  expect_false(status$default)
+  expect_true(status$default)
   expect_false(status$approximate)
   expect_identical(status$equivalence, "numeric_tolerance_scoped")
+})
+
+test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware", {
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+
+  result <- Shennong:::.sn_with_default_autozyme(
+    Shennong:::.sn_new_analysis_result(
+      analysis_type = "test_result",
+      name = "default_acceleration",
+      method = "test",
+      tables = list(primary = tibble::tibble(value = 1))
+    ),
+    patches = c("cellchat", "wgcna")
+  )
+  expect_identical(state$activated, c("cellchat", "wgcna"))
+  expect_identical(state$deactivated, c("wgcna", "cellchat"))
+  expect_identical(state$status[["cellchat"]], "inactive")
+  expect_identical(state$status[["wgcna"]], "inactive")
+  expect_identical(
+    result$provenance$acceleration$active_patches,
+    c("cellchat", "wgcna")
+  )
+})
+
+test_that("automatic AutoZyme activation honors session opt-outs", {
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+  withr::local_options(list(shennong.autozyme = FALSE))
+
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(41L, "cellchat"),
+    41L
+  )
+  expect_length(state$activated, 0L)
+
+  withr::local_options(list(shennong.autozyme = TRUE))
+  withr::local_envvar(c(AUTOZYME_DISABLED = "true"))
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(42L, "cellchat"),
+    42L
+  )
+  expect_length(state$activated, 0L)
+
+  withr::local_envvar(c(AUTOZYME_DISABLED = NA, AUTOZYME_DISABLE = "yes"))
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(43L, "cellchat"),
+    43L
+  )
+  expect_length(state$activated, 0L)
+
+  # The automatic opt-out does not change explicit helper behavior.
+  withr::local_options(list(shennong.autozyme = FALSE))
+  withr::local_envvar(c(AUTOZYME_DISABLED = NA, AUTOZYME_DISABLE = NA))
+  Shennong:::sn_enable_autozyme("cellchat")
+  expect_identical(state$status[["cellchat"]], "active")
+})
+
+test_that("automatic activation restores AutoZyme's future option side effect", {
+  state <- make_autozyme_mock_state()
+  original_call <- state$call
+  state$call <- function(fun, ...) {
+    if (identical(fun, "list_patches")) {
+      options(future.globals.maxSize = 16 * 1024^3)
+    }
+    original_call(fun, ...)
+  }
+  mock_autozyme_bindings(state)
+  withr::local_options(list(future.globals.maxSize = 123))
+
+  value <- Shennong:::.sn_with_default_autozyme(
+    {
+      expect_identical(getOption("future.globals.maxSize"), 123)
+      options(future.globals.maxSize = 456)
+      42L
+    },
+    patches = "cellchat"
+  )
+  expect_identical(value, 42L)
+  expect_identical(getOption("future.globals.maxSize"), 456)
+
+  previous <- options()
+  previous_present <- "future.globals.maxSize" %in% names(previous)
+  previous_value <- previous[["future.globals.maxSize"]]
+  on.exit({
+    value <- if (previous_present) previous_value else NULL
+    options(future.globals.maxSize = value)
+  }, add = TRUE)
+  options(future.globals.maxSize = NULL)
+  state <- make_autozyme_mock_state()
+  original_call <- state$call
+  state$call <- function(fun, ...) {
+    if (identical(fun, "list_patches")) {
+      options(future.globals.maxSize = 16 * 1024^3)
+    }
+    original_call(fun, ...)
+  }
+  mock_autozyme_bindings(state)
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(
+      {
+        expect_null(getOption("future.globals.maxSize"))
+        43L
+      },
+      patches = "cellchat"
+    ),
+    43L
+  )
+  expect_null(getOption("future.globals.maxSize"))
+})
+
+test_that("automatic activation safely falls back after a complete rollback", {
+  state <- make_autozyme_mock_state(fail_patch = "nichenetr")
+  original_call <- state$call
+  state$call <- function(fun, ...) {
+    if (identical(fun, "list_patches")) {
+      options(future.globals.maxSize = 16 * 1024^3)
+    }
+    original_call(fun, ...)
+  }
+  mock_autozyme_bindings(state)
+  withr::local_options(list(future.globals.maxSize = 123))
+  executions <- 0L
+
+  expect_warning(
+    value <- Shennong:::.sn_with_default_autozyme(
+      {
+        expect_identical(getOption("future.globals.maxSize"), 123)
+        executions <- executions + 1L
+        42L
+      },
+      patches = c("cellchat", "nichenetr")
+    ),
+    "continuing without it"
+  )
+  expect_identical(value, 42L)
+  expect_identical(executions, 1L)
+  expect_identical(state$status[["cellchat"]], "inactive")
+  expect_identical(state$status[["nichenetr"]], "inactive")
+  expect_identical(state$deactivated, "cellchat")
+  expect_identical(getOption("future.globals.maxSize"), 123)
+})
+
+test_that("automatic activation stops when rollback leaves residual state", {
+  state <- make_autozyme_mock_state(
+    fail_patch = "nichenetr",
+    fail_deactivate_patch = "cellchat"
+  )
+  mock_autozyme_bindings(state)
+  executions <- 0L
+
+  expect_error(
+    Shennong:::.sn_with_default_autozyme(
+      {
+        executions <- executions + 1L
+        42L
+      },
+      patches = c("cellchat", "nichenetr")
+    ),
+    "could not be safely restored.*residual active patch.*cellchat"
+  )
+  expect_identical(executions, 0L)
+  expect_identical(state$status[["cellchat"]], "active")
+  expect_identical(state$status[["nichenetr"]], "inactive")
+})
+
+test_that("automatic scope restores state after analytical and cleanup failures", {
+  state <- make_autozyme_mock_state(active = "cellchat")
+  mock_autozyme_bindings(state)
+
+  expect_error(
+    Shennong:::.sn_with_default_autozyme(
+      stop("analysis failure"),
+      patches = c("cellchat", "nichenetr")
+    ),
+    "analysis failure"
+  )
+  expect_identical(state$status[["cellchat"]], "active")
+  expect_identical(state$status[["nichenetr"]], "inactive")
+  expect_identical(state$deactivated, "nichenetr")
+
+  state <- make_autozyme_mock_state(fail_deactivate_patch = "cellchat")
+  mock_autozyme_bindings(state)
+  executions <- 0L
+  expect_error(
+    Shennong:::.sn_with_default_autozyme(
+      {
+        executions <- executions + 1L
+        42L
+      },
+      patches = "cellchat"
+    ),
+    "scope could not restore.*residual active patch.*cellchat"
+  )
+  expect_identical(executions, 1L)
+  expect_identical(state$status[["cellchat"]], "active")
+})
+
+test_that("automatic scope restores state after a non-local return", {
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+
+  runner <- function() {
+    Shennong:::.sn_with_default_autozyme(
+      return(42L),
+      patches = "cellchat"
+    )
+    0L
+  }
+
+  expect_identical(runner(), 42L)
+  expect_identical(state$status[["cellchat"]], "inactive")
+  expect_identical(state$deactivated, "cellchat")
+})
+
+test_that("automatic provenance includes only patches relevant to the workflow", {
+  state <- make_autozyme_mock_state(active = c("cellchat", "nichenetr"))
+  mock_autozyme_bindings(state)
+
+  result <- Shennong:::.sn_with_default_autozyme(
+    Shennong:::.sn_new_analysis_result(
+      analysis_type = "test_result",
+      name = "filtered_acceleration",
+      method = "test",
+      tables = list(primary = tibble::tibble(value = 1))
+    ),
+    patches = "cellchat"
+  )
+  expect_identical(
+    result$provenance$acceleration$active_patches,
+    "cellchat"
+  )
+
+  excluded <- Shennong:::.sn_with_default_autozyme(
+    Shennong:::.sn_new_analysis_result(
+      analysis_type = "test_result",
+      name = "excluded_acceleration",
+      method = "test",
+      tables = list(primary = tibble::tibble(value = 1))
+    ),
+    patches = character(0)
+  )
+  expect_null(excluded$provenance$acceleration)
+})
+
+test_that("workflow provenance retains used patches after scoped rollback", {
+  state <- make_autozyme_mock_state(active = "slingshot")
+  mock_autozyme_bindings(state)
+
+  result <- Shennong:::.sn_with_autozyme_provenance_context(
+    {
+      expect_identical(
+        Shennong:::.sn_with_default_autozyme(42L, patches = "tradeseq"),
+        42L
+      )
+      Shennong:::.sn_new_analysis_result(
+        analysis_type = "test_result",
+        name = "trajectory_acceleration",
+        method = "test",
+        tables = list(primary = tibble::tibble(value = 1))
+      )
+    },
+    patches = c("slingshot", "tradeseq")
+  )
+
+  expect_identical(state$status[["slingshot"]], "active")
+  expect_identical(state$status[["tradeseq"]], "inactive")
+  expect_identical(
+    result$provenance$acceleration$active_patches,
+    c("slingshot", "tradeseq")
+  )
+})
+
+test_that("automatic AutoZyme silently skips missing and version-drifted patches", {
+  testthat::local_mocked_bindings(
+    .sn_autozyme_is_installed = function(package = "autozyme") FALSE,
+    .package = "Shennong"
+  )
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(41L, "cellchat"),
+    41L
+  )
+
+  state <- make_autozyme_mock_state(versions = c(CellChat = "2.2.0"))
+  mock_autozyme_bindings(state)
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(42L, "cellchat"),
+    42L
+  )
+  expect_length(state$activated, 0L)
+})
+
+test_that("unsafe backend calls can temporarily suspend active patches", {
+  suspended <- FALSE
+  testthat::local_mocked_bindings(
+    .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
+    .sn_autozyme_namespace_loaded = function() TRUE,
+    .sn_autozyme_with_disabled = function() {
+      function(expr) {
+        suspended <<- TRUE
+        force(expr)
+      }
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(Shennong:::.sn_with_autozyme_disabled(42L), 42L)
+  expect_true(suspended)
+
+  expect_error(
+    Shennong:::.sn_with_autozyme_disabled(stop("analysis failure")),
+    "analysis failure"
+  )
+})
+
+test_that("Seurat automatic acceleration bypasses BPCells-backed objects", {
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+  suspended <- FALSE
+  fake_object <- structure(list(), class = "Seurat")
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) TRUE,
+    .sn_with_autozyme_disabled = function(expr) {
+      suspended <<- TRUE
+      force(expr)
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(
+    Shennong:::.sn_with_default_seurat_autozyme(42L, fake_object),
+    42L
+  )
+  expect_true(suspended)
+  expect_length(state$activated, 0L)
+
+  suspended <- FALSE
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) FALSE,
+    .package = "Shennong"
+  )
+  expect_identical(
+    Shennong:::.sn_with_default_seurat_autozyme(43L, fake_object),
+    43L
+  )
+  expect_false(suspended)
+  expect_identical(state$activated, "seurat")
+  expect_identical(state$deactivated, "seurat")
+  expect_identical(state$status[["seurat"]], "inactive")
+})
+
+test_that("BPCells suppression prevents ambient Seurat provenance claims", {
+  state <- make_autozyme_mock_state(active = "seurat")
+  mock_autozyme_bindings(state)
+  fake_object <- structure(list(), class = "Seurat")
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) TRUE,
+    .sn_with_autozyme_disabled = function(expr) force(expr),
+    .package = "Shennong"
+  )
+
+  result <- Shennong:::.sn_with_autozyme_provenance_context(
+    {
+      expect_identical(
+        Shennong:::.sn_with_default_seurat_autozyme(42L, fake_object),
+        42L
+      )
+      Shennong:::.sn_new_analysis_result(
+        analysis_type = "test_result",
+        name = "bpcells_without_seurat_acceleration",
+        method = "test",
+        tables = list(primary = tibble::tibble(value = 1))
+      )
+    },
+    patches = "seurat"
+  )
+
+  expect_identical(state$status[["seurat"]], "active")
+  expect_null(result$provenance$acceleration)
 })
 
 test_that("temporary activation restores only patches owned by its scope", {

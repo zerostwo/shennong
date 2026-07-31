@@ -69,6 +69,43 @@ test_that("sn_find_de stores marker results on the Seurat object", {
   expect_true("package_version" %in% names(object@misc$de_results$celltype_markers))
 })
 
+test_that("sn_find_de preserves scoped Seurat acceleration provenance", {
+  skip_if_not_installed("Seurat")
+  object <- make_de_test_object()
+  testthat::local_mocked_bindings(
+    .sn_run_seurat_de = function(...) {
+      Shennong:::.sn_record_autozyme_usage("seurat")
+      data.frame(avg_log2FC = 1, p_val_adj = 0.01, row.names = "GENE1")
+    },
+    .sn_autozyme_provenance = function() {
+      context <- getOption("shennong.autozyme.provenance_context")
+      active <- if (is.environment(context)) context$used_patches else character()
+      if (length(active) == 0L) list() else list(active_patches = active)
+    },
+    .package = "Shennong"
+  )
+
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    store_name = "accelerated_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+  stored <- sn_get_de_result(
+    object,
+    de_name = "accelerated_markers",
+    with_metadata = TRUE
+  )
+
+  expect_identical(
+    stored$provenance$acceleration$active_patches,
+    "seurat"
+  )
+})
+
 test_that("sn_plot_dot can use stored top markers", {
   skip_if_not_installed("Seurat")
 

@@ -179,13 +179,17 @@
     }
     receiver_object <- subset(object, cells = receiver_cells)
     Seurat::Idents(receiver_object) <- receiver_object[[condition_col, drop = TRUE]]
-    de <- Seurat::FindMarkers(
-      receiver_object,
-      ident.1 = condition_oi,
-      ident.2 = condition_reference,
-      assay = assay,
-      slot = layer,
-      ...
+    de <- .sn_with_default_seurat_autozyme(
+      Seurat::FindMarkers(
+        receiver_object,
+        ident.1 = condition_oi,
+        ident.2 = condition_reference,
+        assay = assay,
+        slot = layer,
+        ...
+      ),
+      object = receiver_object,
+      assay = assay
     )
     de$gene <- rownames(de)
     p_col <- intersect(c("p_val_adj", "p_val"), colnames(de))[[1]] %||% NULL
@@ -403,6 +407,18 @@
   )
 }
 
+.sn_nichenetr_autozyme_safe <- function(args) {
+  single <- if ("single" %in% names(args)) args[["single"]] else TRUE
+  zyme_enabled <- if ("zyme" %in% names(args)) {
+    isTRUE(args[["zyme"]])
+  } else {
+    TRUE
+  }
+  isTRUE(single) && zyme_enabled &&
+    is.matrix(args[["ligand_target_matrix"]]) &&
+    is.numeric(args[["ligand_target_matrix"]])
+}
+
 .sn_run_communication_backend <- function(object,
                                           method,
                                           group_by,
@@ -435,14 +451,27 @@
       species = species, cellchat_db = cellchat_db, min_cells = min_cells,
       population_size = population_size, raw_use = raw_use
     ), controls, keep.null = TRUE)),
-    nichenet = do.call(.sn_run_nichenetr, utils::modifyList(list(
-      object = object, group_by = group_by, assay = assay, layer = layer,
-      sender = sender, receiver = receiver, geneset = geneset,
-      background_genes = background_genes, condition_col = condition_by,
-      condition_oi = condition_oi, condition_reference = condition_reference,
-      ligand_target_matrix = ligand_target_matrix, lr_network = lr_network,
-      expressed_pct = expressed_pct, top_n = top_n
-    ), controls, keep.null = TRUE)),
+    nichenet = {
+      args <- utils::modifyList(list(
+        object = object, group_by = group_by, assay = assay, layer = layer,
+        sender = sender, receiver = receiver, geneset = geneset,
+        background_genes = background_genes, condition_col = condition_by,
+        condition_oi = condition_oi, condition_reference = condition_reference,
+        ligand_target_matrix = ligand_target_matrix, lr_network = lr_network,
+        expressed_pct = expressed_pct, top_n = top_n
+      ), controls, keep.null = TRUE)
+      autozyme_safe <- .sn_nichenetr_autozyme_safe(args)
+
+      if (autozyme_safe) {
+        do.call(.sn_run_nichenetr, args)
+      } else if ("nichenetr" %in% .sn_autozyme_active_patches()) {
+        args[["zyme"]] <- NULL
+        .sn_with_autozyme_disabled(do.call(.sn_run_nichenetr, args))
+      } else {
+        args[["zyme"]] <- NULL
+        do.call(.sn_run_nichenetr, args)
+      }
+    },
     liana = do.call(.sn_run_liana, utils::modifyList(list(
       object = object, group_by = group_by, assay = assay, layer = layer,
       resource = resource
@@ -476,6 +505,9 @@
 #' \code{sn_run_cell_communication()} wraps established communication
 #' backends and stores a comparable ligand-receptor schema. Multiple backends
 #' can be run together to calculate method concordance and a consensus rank.
+#' Eligible CellChat and call-safe NicheNet AutoZyme patches are activated
+#' automatically within the workflow and restored afterward. Set
+#' `options(shennong.autozyme = FALSE)` to disable automatic acceleration.
 #'
 #' @param object A Seurat object.
 #' @param method One or more of \code{"liana"}, \code{"cellchat"},
@@ -565,67 +597,86 @@ sn_run_cell_communication <- function(object,
   if (length(method) > 1L && length(dots) > 0L) {
     stop("For multiple communication methods, place method-specific arguments under `backend_control`.", call. = FALSE)
   }
-  results <- lapply(method, function(current) {
-    controls <- backend_control[[current]] %||% if (length(method) == 1L) dots else list()
-    .sn_run_communication_backend(
-      object, current, group_by, assay, layer, species, sender, receiver,
-      geneset, background_genes, condition_by, condition_oi,
-      condition_reference, sample_by, contrast, ligand_target_matrix, lr_network, expressed_pct,
-      top_n, cellchat_db, min_cells, population_size, raw_use, resource,
-      controls
+  autozyme_patches <- if ("cellchat" %in% method) "cellchat" else character()
+  if ("nichenet" %in% method) {
+    nichenet_controls <- backend_control[["nichenet"]] %||%
+      if (length(method) == 1L) dots else list()
+    nichenet_args <- utils::modifyList(
+      list(ligand_target_matrix = ligand_target_matrix),
+      nichenet_controls,
+      keep.null = TRUE
     )
-  })
-  names(results) <- method
-  standardized <- dplyr::bind_rows(lapply(method, function(current) {
-    .sn_standardize_communication(
-      results[[current]]$table,
-      method = current,
-      sender = paste(sender %||% NA_character_, collapse = ","),
-      receiver = paste(receiver %||% NA_character_, collapse = ",")
-    )
-  }))
-  consensus_table <- .sn_communication_consensus(standardized)
-  primary <- if (isTRUE(consensus) && length(method) > 1L) consensus_table else standardized
-  concordance <- .sn_communication_concordance(standardized)
-  assay_resolved <- assay %||% Seurat::DefaultAssay(object)
-  sample_evidence <- .sn_communication_sample_evidence(
-    object, primary, group_by, sample_by, condition_by, assay_resolved, layer
-  )
-  comparison_contrast <- contrast %||% if (!is_null(condition_oi) && !is_null(condition_reference)) c(condition_oi, condition_reference) else NULL
-  comparison <- .sn_compare_communication_samples(sample_evidence, contrast = comparison_contrast)
-  ligand_targets <- dplyr::bind_rows(lapply(results, function(result) result$ligand_targets %||% tibble::tibble()))
-  backend_warnings <- unique(unlist(lapply(results, function(result) result$warnings %||% character()), use.names = FALSE))
-  artifacts <- lapply(results, `[[`, "artifacts")
-  stored_method <- if (length(method) > 1L && isTRUE(consensus)) {
-    "consensus"
-  } else if (length(requested_method) == 1L && identical(requested_method, "nichenetr")) {
-    "nichenetr"
-  } else {
-    paste(method, collapse = "+")
+    if (.sn_nichenetr_autozyme_safe(nichenet_args)) {
+      autozyme_patches <- c(autozyme_patches, "nichenetr")
+    }
   }
-  stored <- sn_store_cell_communication(
-    object = object,
-    result = primary,
-    store_name = store_name,
-    method = stored_method,
-    backend = paste(method, collapse = "+"),
-    group_by = group_by,
-    sender = sender,
-    receiver = receiver,
-    species = species,
-    artifacts = artifacts,
-    raw_result = standardized,
-    consensus_result = consensus_table,
-    sample_evidence = sample_evidence,
-    comparison = comparison,
-    concordance = concordance,
-    ligand_targets = ligand_targets,
-    warnings = backend_warnings,
-    sample_by = sample_by,
-    condition_by = condition_by,
-    return_object = return_object
+
+  .sn_with_default_autozyme(
+    {
+      results <- lapply(method, function(current) {
+        controls <- backend_control[[current]] %||% if (length(method) == 1L) dots else list()
+        .sn_run_communication_backend(
+          object, current, group_by, assay, layer, species, sender, receiver,
+          geneset, background_genes, condition_by, condition_oi,
+          condition_reference, sample_by, contrast, ligand_target_matrix, lr_network, expressed_pct,
+          top_n, cellchat_db, min_cells, population_size, raw_use, resource,
+          controls
+        )
+      })
+      names(results) <- method
+      standardized <- dplyr::bind_rows(lapply(method, function(current) {
+        .sn_standardize_communication(
+          results[[current]]$table,
+          method = current,
+          sender = paste(sender %||% NA_character_, collapse = ","),
+          receiver = paste(receiver %||% NA_character_, collapse = ",")
+        )
+      }))
+      consensus_table <- .sn_communication_consensus(standardized)
+      primary <- if (isTRUE(consensus) && length(method) > 1L) consensus_table else standardized
+      concordance <- .sn_communication_concordance(standardized)
+      assay_resolved <- assay %||% Seurat::DefaultAssay(object)
+      sample_evidence <- .sn_communication_sample_evidence(
+        object, primary, group_by, sample_by, condition_by, assay_resolved, layer
+      )
+      comparison_contrast <- contrast %||% if (!is_null(condition_oi) && !is_null(condition_reference)) c(condition_oi, condition_reference) else NULL
+      comparison <- .sn_compare_communication_samples(sample_evidence, contrast = comparison_contrast)
+      ligand_targets <- dplyr::bind_rows(lapply(results, function(result) result$ligand_targets %||% tibble::tibble()))
+      backend_warnings <- unique(unlist(lapply(results, function(result) result$warnings %||% character()), use.names = FALSE))
+      artifacts <- lapply(results, `[[`, "artifacts")
+      stored_method <- if (length(method) > 1L && isTRUE(consensus)) {
+        "consensus"
+      } else if (length(requested_method) == 1L && identical(requested_method, "nichenetr")) {
+        "nichenetr"
+      } else {
+        paste(method, collapse = "+")
+      }
+      stored <- sn_store_cell_communication(
+        object = object,
+        result = primary,
+        store_name = store_name,
+        method = stored_method,
+        backend = paste(method, collapse = "+"),
+        group_by = group_by,
+        sender = sender,
+        receiver = receiver,
+        species = species,
+        artifacts = artifacts,
+        raw_result = standardized,
+        consensus_result = consensus_table,
+        sample_evidence = sample_evidence,
+        comparison = comparison,
+        concordance = concordance,
+        ligand_targets = ligand_targets,
+        warnings = backend_warnings,
+        sample_by = sample_by,
+        condition_by = condition_by,
+        return_object = return_object
+      )
+      stored
+    },
+    patches = autozyme_patches
   )
-  stored
 }
 
 #' Store a cell-cell communication result on a Seurat object
@@ -710,7 +761,7 @@ sn_store_cell_communication <- function(object,
       samples = sample_count
     ),
     warnings = as.character(warnings),
-    provenance = .sn_analysis_provenance(),
+    provenance = .sn_contextual_analysis_provenance(),
     analysis = "cell_communication",
     method = method,
     group_by = group_by,

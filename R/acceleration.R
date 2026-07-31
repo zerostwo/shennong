@@ -2,7 +2,15 @@
 
 .sn_autozyme_expected_version <- "0.3.1"
 .sn_autozyme_expected_sha <- "718541d9489596c7c1d75f52e9b3a8b2a429d1f9"
-.sn_autozyme_default_patches <- c("cellchat", "nichenetr")
+.sn_autozyme_default_patches <- c(
+  "cellchat",
+  "clusterprofiler",
+  "fgsea",
+  "nichenetr",
+  "seurat",
+  "tradeseq",
+  "wgcna"
+)
 
 # This manifest is intentionally conservative. Versions are the exact upstream
 # versions against which the pinned AutoZyme revision declares its patches.
@@ -152,9 +160,13 @@
   do.call(base::getExportedValue("autozyme", fun), list(...))
 }
 
+.sn_autozyme_namespace_loaded <- function() {
+  base::isNamespaceLoaded("autozyme")
+}
+
 .sn_autozyme_status_vector <- function() {
   if (!.sn_autozyme_is_installed("autozyme") ||
-      !base::isNamespaceLoaded("autozyme")) {
+      !.sn_autozyme_namespace_loaded()) {
     return(character(0))
   }
 
@@ -170,14 +182,438 @@
   names(status)[!is.na(status) & status == "active"]
 }
 
+.sn_autozyme_effective_active_patches <- function() {
+  active <- .sn_autozyme_active_patches()
+  if (length(active) == 0L || !.sn_autozyme_namespace_loaded()) {
+    return(active)
+  }
+  disabled <- isTRUE(tryCatch(
+    .sn_autozyme_call("is_disabled"),
+    error = function(error) FALSE
+  ))
+  if (disabled) character(0) else active
+}
+
+.sn_autozyme_default_enabled <- function() {
+  if (!isTRUE(getOption("shennong.autozyme", TRUE))) {
+    return(FALSE)
+  }
+
+  disabled <- Sys.getenv(
+    c("AUTOZYME_DISABLED", "AUTOZYME_DISABLE"),
+    unset = ""
+  )
+  truthy <- tolower(trimws(disabled)) %in% c("1", "true", "t", "yes", "y", "on")
+  !any(truthy)
+}
+
+.sn_capture_autozyme_future_option <- function() {
+  current <- options()
+  name <- "future.globals.maxSize"
+  list(
+    present = name %in% names(current),
+    value = current[[name]]
+  )
+}
+
+.sn_restore_autozyme_future_option <- function(snapshot) {
+  value <- if (isTRUE(snapshot$present)) snapshot$value else NULL
+  options(stats::setNames(list(value), "future.globals.maxSize"))
+  invisible(NULL)
+}
+
+.sn_autozyme_rollback_details <- function(rollback) {
+  details <- character()
+  if (length(rollback$deactivation_errors) > 0L) {
+    details <- c(
+      details,
+      paste0(
+        "deactivation error(s): ",
+        paste(rollback$deactivation_errors, collapse = "; ")
+      )
+    )
+  }
+  if (!is_null(rollback$verification_error)) {
+    details <- c(
+      details,
+      paste0(
+        "post-rollback state could not be verified: ",
+        rollback$verification_error
+      )
+    )
+  }
+  if (length(rollback$residual_active) > 0L) {
+    details <- c(
+      details,
+      paste0(
+        "residual active patch(es): ",
+        paste(rollback$residual_active, collapse = ", ")
+      )
+    )
+  }
+  details
+}
+
+.sn_with_autozyme_provenance_context <- function(expr, patches) {
+  option_name <- "shennong.autozyme.provenance_context"
+  current_options <- options()
+  previous_present <- option_name %in% names(current_options)
+  previous <- current_options[[option_name]]
+  owns_context <- !is.environment(previous)
+  context <- if (owns_context) new.env(parent = emptyenv()) else previous
+  if (is_null(context$patches)) {
+    context$patches <- character()
+  }
+  if (is_null(context$used_patches)) {
+    context$used_patches <- character()
+  }
+  if (is_null(context$suppressed_patches)) {
+    context$suppressed_patches <- character()
+  }
+  context$patches <- union(context$patches, patches)
+
+  if (owns_context) {
+    options(stats::setNames(list(context), option_name))
+    on.exit({
+      value <- if (previous_present) previous else NULL
+      options(stats::setNames(list(value), option_name))
+    }, add = TRUE)
+  }
+
+  force(expr)
+}
+
+.sn_record_autozyme_usage <- function(patches) {
+  context <- getOption("shennong.autozyme.provenance_context")
+  if (is.environment(context)) {
+    context$used_patches <- union(
+      context$used_patches %||% character(),
+      intersect(as.character(patches), context$patches %||% character())
+    )
+  }
+  invisible(NULL)
+}
+
+.sn_record_autozyme_suppression <- function(patches) {
+  context <- getOption("shennong.autozyme.provenance_context")
+  if (is.environment(context)) {
+    context$suppressed_patches <- union(
+      context$suppressed_patches %||% character(),
+      intersect(as.character(patches), context$patches %||% character())
+    )
+  }
+  invisible(NULL)
+}
+
+.sn_with_default_autozyme <- function(expr, patches) {
+  patches <- unique(tolower(trimws(as.character(patches))))
+  patches <- intersect(patches, .sn_autozyme_default_patches)
+  .sn_with_autozyme_provenance_context(
+    .sn_with_default_autozyme_impl(expr, patches = patches),
+    patches = patches
+  )
+}
+
+.sn_with_default_autozyme_impl <- function(expr, patches) {
+  patches <- unique(tolower(trimws(as.character(patches))))
+  patches <- intersect(patches, .sn_autozyme_default_patches)
+  if (length(patches) == 0L) {
+    return(force(expr))
+  }
+  if (!.sn_autozyme_default_enabled() ||
+      !.sn_autozyme_is_installed("autozyme")) {
+    .sn_record_autozyme_usage(intersect(
+      patches,
+      tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
+    ))
+    return(force(expr))
+  }
+
+  check_error <- NULL
+  checks <- tryCatch(
+    sn_check_autozyme(
+      patches = patches,
+      strict = TRUE,
+      allow_approximate = FALSE
+    ),
+    error = function(error) {
+      check_error <<- error
+      NULL
+    }
+  )
+  if (!is_null(check_error)) {
+    warning(
+      sprintf(
+        "Could not check automatic AutoZyme acceleration; continuing without it: %s",
+        conditionMessage(check_error)
+      ),
+      call. = FALSE
+    )
+    return(force(expr))
+  }
+
+  eligible <- checks$patch[checks$eligible & !checks$active]
+  if (length(eligible) == 0L) {
+    .sn_record_autozyme_usage(intersect(
+      patches,
+      tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
+    ))
+    return(force(expr))
+  }
+
+  before_error <- NULL
+  before <- tryCatch(
+    .sn_autozyme_active_patches(),
+    error = function(error) {
+      before_error <<- error
+      character(0)
+    }
+  )
+  if (!is_null(before_error)) {
+    warning(
+      sprintf(
+        "Could not inspect AutoZyme state; continuing without automatic acceleration: %s",
+        conditionMessage(before_error)
+      ),
+      call. = FALSE
+    )
+    .sn_record_autozyme_usage(intersect(
+      patches,
+      tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
+    ))
+    return(force(expr))
+  }
+
+  future_option <- .sn_capture_autozyme_future_option()
+  future_option_pending <- TRUE
+  on.exit({
+    if (isTRUE(future_option_pending)) {
+      .sn_restore_autozyme_future_option(future_option)
+      future_option_pending <- FALSE
+    }
+  }, add = TRUE)
+
+  activation_error <- NULL
+  tryCatch(
+    suppressPackageStartupMessages(
+      suppressMessages(
+        sn_enable_autozyme(
+          patches = eligible,
+          strict = TRUE,
+          allow_approximate = FALSE
+        )
+      )
+    ),
+    error = function(error) {
+      activation_error <<- error
+      NULL
+    }
+  )
+  .sn_restore_autozyme_future_option(future_option)
+  future_option_pending <- FALSE
+  if (!is_null(activation_error)) {
+    after_error <- NULL
+    after <- tryCatch(
+      .sn_autozyme_active_patches(),
+      error = function(error) {
+        after_error <<- error
+        character(0)
+      }
+    )
+    residual <- if (is_null(after_error)) {
+      setdiff(intersect(eligible, after), before)
+    } else {
+      character(0)
+    }
+    if (!is_null(after_error) || length(residual) > 0L) {
+      details <- if (!is_null(after_error)) {
+        sprintf("state verification failed: %s", conditionMessage(after_error))
+      } else {
+        sprintf("residual active patch(es): %s", paste(residual, collapse = ", "))
+      }
+      stop(
+        sprintf(
+          paste0(
+            "Automatic AutoZyme activation failed and its state could not be ",
+            "safely restored (%s): %s"
+          ),
+          details,
+          conditionMessage(activation_error)
+        ),
+        call. = FALSE
+      )
+    }
+    warning(
+      sprintf(
+        "Automatic AutoZyme activation failed; continuing without it: %s",
+        conditionMessage(activation_error)
+      ),
+      call. = FALSE
+    )
+    .sn_record_autozyme_usage(intersect(
+      patches,
+      tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
+    ))
+    return(force(expr))
+  }
+
+  newly_activated <- setdiff(eligible, before)
+  .sn_record_autozyme_usage(intersect(
+    patches,
+    .sn_autozyme_effective_active_patches()
+  ))
+  cleanup_pending <- length(newly_activated) > 0L
+  on.exit({
+    if (isTRUE(cleanup_pending)) {
+      cleanup_pending <- FALSE
+      emergency_rollback <- .sn_autozyme_rollback(newly_activated)
+      if (!isTRUE(emergency_rollback$complete)) {
+        stop(
+          paste0(
+            "Automatic AutoZyme scope exited before normal cleanup and could ",
+            "not restore its prior state: ",
+            paste(.sn_autozyme_rollback_details(emergency_rollback), collapse = "; "),
+            "."
+          ),
+          call. = FALSE
+        )
+      } else if (length(emergency_rollback$deactivation_errors) > 0L) {
+        warning(
+          paste0(
+            "Automatic AutoZyme scope restored state with diagnostics: ",
+            paste(emergency_rollback$deactivation_errors, collapse = "; "),
+            "."
+          ),
+          call. = FALSE
+        )
+      }
+    }
+  }, add = TRUE)
+  value <- NULL
+  analysis_error <- NULL
+  tryCatch(
+    value <- force(expr),
+    error = function(error) {
+      analysis_error <<- error
+      NULL
+    }
+  )
+
+  rollback <- .sn_autozyme_rollback(newly_activated)
+  cleanup_pending <- FALSE
+  rollback_details <- .sn_autozyme_rollback_details(rollback)
+  if (!isTRUE(rollback$complete)) {
+    message <- paste0(
+      "Automatic AutoZyme scope could not restore its prior state: ",
+      paste(rollback_details, collapse = "; "),
+      "."
+    )
+    if (!is_null(analysis_error)) {
+      message <- paste0(
+        message,
+        " The analytical call also failed: ",
+        conditionMessage(analysis_error),
+        "."
+      )
+    }
+    stop(message, call. = FALSE)
+  }
+  if (length(rollback$deactivation_errors) > 0L) {
+    warning(
+      paste0(
+        "Automatic AutoZyme state was restored with diagnostics: ",
+        paste(rollback$deactivation_errors, collapse = "; "),
+        "."
+      ),
+      call. = FALSE
+    )
+  }
+  if (!is_null(analysis_error)) {
+    stop(analysis_error)
+  }
+
+  value
+}
+
+.sn_autozyme_with_disabled <- function() {
+  base::getExportedValue("autozyme", "with_disabled")
+}
+
+.sn_with_autozyme_disabled <- function(expr) {
+  if (!.sn_autozyme_is_installed("autozyme") ||
+      !.sn_autozyme_namespace_loaded()) {
+    return(force(expr))
+  }
+
+  with_disabled <- tryCatch(
+    .sn_autozyme_with_disabled(),
+    error = function(error) {
+      stop(
+        paste0(
+          "AutoZyme is loaded, but its patches could not be suspended safely ",
+          "for this call: ", conditionMessage(error)
+        ),
+        call. = FALSE
+      )
+    }
+  )
+
+  with_disabled(expr)
+}
+
+.sn_seurat_uses_bpcells <- function(object, assay = NULL) {
+  if (!inherits(object, "Seurat")) {
+    return(TRUE)
+  }
+
+  assays <- assay %||% names(object@assays)
+  if (!is.character(assays) || length(assays) == 0L || anyNA(assays) ||
+      any(!assays %in% names(object@assays))) {
+    return(TRUE)
+  }
+
+  for (current_assay in unique(assays)) {
+    layers <- tryCatch(
+      SeuratObject::Layers(object[[current_assay]]),
+      error = function(error) NULL
+    )
+    if (is_null(layers)) {
+      return(TRUE)
+    }
+    for (layer in layers) {
+      matrix <- tryCatch(
+        SeuratObject::LayerData(
+          object = object,
+          assay = current_assay,
+          layer = layer
+        ),
+        error = function(error) NULL
+      )
+      if (is_null(matrix) || .sn_is_iterable_matrix(matrix)) {
+        return(TRUE)
+      }
+    }
+  }
+
+  FALSE
+}
+
+.sn_with_default_seurat_autozyme <- function(expr, object, assay = NULL) {
+  if (.sn_seurat_uses_bpcells(object = object, assay = assay)) {
+    .sn_record_autozyme_suppression("seurat")
+    return(.sn_with_autozyme_disabled(expr))
+  }
+
+  .sn_with_default_autozyme(expr, patches = "seurat")
+}
+
 #' Check optional AutoZyme acceleration compatibility
 #'
-#' Reports whether selected AutoZyme patches can be enabled without changing
-#' Shennong's default execution. This check is side-effect free: it does not
+#' Reports whether selected AutoZyme patches can be enabled. This check is
+#' side-effect free: it does not
 #' install packages, activate patches, prepare Python, or change thread counts.
 #'
-#' @param patches Character vector of AutoZyme patch names. The conservative
-#'   defaults cover Shennong's CellChat and NicheNet communication paths.
+#' @param patches Character vector of AutoZyme patch names to inspect or manage.
 #' @param strict If `TRUE`, require the installed upstream package version to
 #'   exactly match a version validated by the pinned AutoZyme revision.
 #' @param allow_approximate If `TRUE`, permit patches whose documented fast
@@ -185,12 +621,29 @@
 #'
 #' @return A data frame with installation, version, activation, and eligibility
 #'   information for each requested patch.
+#'
+#' @details
+#' Shennong lazily activates compatible, non-approximate patches for the scope
+#' of an integrated workflow call. Automatic activation covers CellChat,
+#' clusterProfiler, fgsea, NicheNet, Seurat, tradeSeq, and WGCNA. It requires
+#' the pinned AutoZyme build and an exactly validated upstream version. Set
+#' `options(shennong.autozyme = FALSE)`
+#' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
+#' `AUTOZYME_DISABLE=true` is also accepted) to prevent automatic activation.
+#' Newly activated patches are restored even when the workflow errors. These
+#' controls do not disable patches that are already active and do not affect
+#' explicit calls to [sn_enable_autozyme()] or [sn_with_autozyme()]. Seurat
+#' acceleration is bypassed for BPCells-backed objects so an on-disk layer is
+#' never coerced to an in-memory sparse matrix by the accelerated path.
 #' @export
 #'
 #' @examples
 #' sn_check_autozyme()
 sn_check_autozyme <- function(
-    patches = c("cellchat", "nichenetr"),
+    patches = c(
+      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
+      "tradeseq", "wgcna"
+    ),
     strict = TRUE,
     allow_approximate = FALSE) {
   patches <- .sn_validate_autozyme_patches(patches)
@@ -354,9 +807,9 @@ sn_check_autozyme <- function(
 
 #' Enable optional AutoZyme patches
 #'
-#' Activation is explicit and transactional. All selected patches are checked
-#' before activation; if activation fails, only patches newly enabled by this
-#' call are rolled back. Existing user-activated patches are left untouched.
+#' Manual activation is transactional. All selected patches are checked before
+#' activation; if activation fails, only patches newly enabled by this call are
+#' rolled back. Existing user-activated patches are left untouched.
 #'
 #' @inheritParams sn_check_autozyme
 #'
@@ -511,7 +964,10 @@ sn_enable_autozyme <- function(
 #' \dontrun{
 #' sn_disable_autozyme()
 #' }
-sn_disable_autozyme <- function(patches = c("cellchat", "nichenetr")) {
+sn_disable_autozyme <- function(patches = c(
+    "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
+    "tradeseq", "wgcna"
+  )) {
   patches <- .sn_validate_autozyme_patches(patches)
   if (!.sn_autozyme_is_installed("autozyme")) {
     return(invisible(FALSE))
@@ -540,7 +996,11 @@ sn_disable_autozyme <- function(patches = c("cellchat", "nichenetr")) {
 #' @examples
 #' \dontrun{
 #' result <- sn_with_autozyme({
-#'   sn_run_cell_communication(object, method = "cellchat")
+#'   sn_run_cell_communication(
+#'     object,
+#'     method = "cellchat",
+#'     group_by = "cell_type"
+#'   )
 #' })
 #' }
 sn_with_autozyme <- function(
@@ -579,6 +1039,26 @@ sn_with_autozyme <- function(
   description <- .sn_autozyme_description()
   installed <- .sn_autozyme_is_installed("autozyme")
   active <- if (installed) .sn_autozyme_active_patches() else character(0)
+  disabled <- installed && .sn_autozyme_namespace_loaded() && isTRUE(tryCatch(
+    .sn_autozyme_call("is_disabled"),
+    error = function(error) FALSE
+  ))
+  if (disabled) {
+    active <- character(0)
+  }
+  context <- getOption("shennong.autozyme.provenance_context")
+  if (is.environment(context)) {
+    relevant <- context$patches %||% character()
+    used <- intersect(context$used_patches %||% character(), relevant)
+    suppressed <- intersect(
+      context$suppressed_patches %||% character(),
+      relevant
+    )
+    active <- union(
+      setdiff(intersect(active, relevant), suppressed),
+      used
+    )
+  }
   if (!installed || length(active) == 0L) {
     return(list())
   }

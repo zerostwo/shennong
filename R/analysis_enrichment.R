@@ -450,6 +450,15 @@ sn_enrich <- function(
   run_one <- function(current_database) {
     current_cfg <- msigdb_cfgs[[current_database]]
     .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
+    with_enrichment_autozyme <- function(expr) {
+      .sn_with_default_autozyme(
+        expr,
+        patches = c(
+          "clusterprofiler",
+          if (identical(analysis, "gsea")) "fgsea" else character(0)
+        )
+      )
+    }
 
     if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
       ont <- switch(EXPR = current_database,
@@ -461,36 +470,42 @@ sn_enrich <- function(
 
       if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::gseGO(
-            geneList = gene_list,
-            ont = ont,
-            OrgDb = org_db,
-            keyType = "SYMBOL",
-            pvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::gseGO(
+              geneList = gene_list,
+              ont = ont,
+              OrgDb = org_db,
+              keyType = "SYMBOL",
+              pvalueCutoff = 1
+            )
           )
         )
       } else if (is_null(mapping)) {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::enrichGO(
-            gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
-            ont = ont,
-            OrgDb = org_db,
-            keyType = "SYMBOL",
-            pvalueCutoff = 1,
-            qvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::enrichGO(
+              gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
+              ont = ont,
+              OrgDb = org_db,
+              keyType = "SYMBOL",
+              pvalueCutoff = 1,
+              qvalueCutoff = 1
+            )
           )
         )
       } else {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::compareCluster(
-            geneClusters = gene_clusters,
-            fun = "enrichGO",
-            ont = ont,
-            data = input,
-            OrgDb = org_db,
-            keyType = "SYMBOL",
-            pvalueCutoff = 1,
-            qvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::compareCluster(
+              geneClusters = gene_clusters,
+              fun = "enrichGO",
+              ont = ont,
+              data = input,
+              OrgDb = org_db,
+              keyType = "SYMBOL",
+              pvalueCutoff = 1,
+              qvalueCutoff = 1
+            )
           )
         )
       }
@@ -508,10 +523,12 @@ sn_enrich <- function(
         names(kegg_gene_list) <- gid$ENTREZID
         kegg_gene_list <- sort(kegg_gene_list, decreasing = TRUE)
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::gseKEGG(
-            geneList = kegg_gene_list,
-            organism = organism,
-            pvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::gseKEGG(
+              geneList = kegg_gene_list,
+              organism = organism,
+              pvalueCutoff = 1
+            )
           )
         )
       } else if (is_null(mapping)) {
@@ -520,11 +537,13 @@ sn_enrich <- function(
           org_db = org_db
         )
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::enrichKEGG(
-            gene = gid$ENTREZID,
-            organism = organism,
-            pvalueCutoff = 1,
-            qvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::enrichKEGG(
+              gene = gid$ENTREZID,
+              organism = organism,
+              pvalueCutoff = 1,
+              qvalueCutoff = 1
+            )
           )
         )
       } else {
@@ -542,13 +561,15 @@ sn_enrich <- function(
           dplyr::rename(!!mapping$gene_col := dplyr::all_of("ENTREZID"))
 
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::compareCluster(
-            geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
-            data = kegg_input,
-            fun = "enrichKEGG",
-            pvalueCutoff = 1,
-            qvalueCutoff = 1,
-            organism = organism
+          with_enrichment_autozyme(
+            clusterProfiler::compareCluster(
+              geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
+              data = kegg_input,
+              fun = "enrichKEGG",
+              pvalueCutoff = 1,
+              qvalueCutoff = 1,
+              organism = organism
+            )
           )
         )
       }
@@ -575,33 +596,39 @@ sn_enrich <- function(
 
       if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::GSEA(
-            geneList = gene_list,
-            TERM2GENE = term2gene,
-            TERM2NAME = term2name,
-            pvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::GSEA(
+              geneList = gene_list,
+              TERM2GENE = term2gene,
+              TERM2NAME = term2name,
+              pvalueCutoff = 1
+            )
           )
         )
       } else if (is_null(mapping)) {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::enricher(
-            gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
-            TERM2GENE = term2gene,
-            TERM2NAME = term2name,
-            pvalueCutoff = 1,
-            qvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::enricher(
+              gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
+              TERM2GENE = term2gene,
+              TERM2NAME = term2name,
+              pvalueCutoff = 1,
+              qvalueCutoff = 1
+            )
           )
         )
       } else {
         result <- .sn_enrich_muffle_empty_warning(
-          clusterProfiler::compareCluster(
-            geneClusters = gene_clusters,
-            data = input,
-            fun = clusterProfiler::enricher,
-            TERM2GENE = term2gene,
-            TERM2NAME = term2name,
-            pvalueCutoff = 1,
-            qvalueCutoff = 1
+          with_enrichment_autozyme(
+            clusterProfiler::compareCluster(
+              geneClusters = gene_clusters,
+              data = input,
+              fun = clusterProfiler::enricher,
+              TERM2GENE = term2gene,
+              TERM2NAME = term2name,
+              pvalueCutoff = 1,
+              qvalueCutoff = 1
+            )
           )
         )
       }
@@ -612,6 +639,7 @@ sn_enrich <- function(
     stop(glue("Unsupported database '{current_database}'."), call. = FALSE)
   }
 
+  .sn_with_default_autozyme({
   results <- stats::setNames(lapply(databases, run_one), databases)
 
   if (!is_null(outdir)) {
@@ -655,4 +683,8 @@ sn_enrich <- function(
   }
 
   results
+  }, patches = c(
+    "clusterprofiler",
+    if (identical(analysis, "gsea")) "fgsea" else character(0)
+  ))
 }

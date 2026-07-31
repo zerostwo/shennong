@@ -59,9 +59,11 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
-- keep AutoZyme acceleration explicit: inspect `sn_check_autozyme()` first and
-  prefer `sn_with_autozyme()` with strict defaults; never install AutoZyme,
-  prepare its Python environment, or change thread counts inside an analysis
+- expect eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq,
+  and WGCNA AutoZyme patches to activate lazily only inside compatible workflow
+  calls and restore the prior state afterward; never apply the Seurat fast patch
+  to BPCells-backed layers because it can materialize them as `dgCMatrix`, and
+  do not infer that CellChat, tradeSeq, or every other backend is BPCells-native
 - if work is happening inside an initialized project, also respect the project
   `AGENTS.md`, `memory/`, and `docs/standards/`
 
@@ -221,10 +223,17 @@ This skill is the main entry point for package usage.
 13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks.
-14. When a user explicitly requests R acceleration, run
-   `sn_check_autozyme()` first. Keep strict version/SHA and upstream-version
-   gating enabled, use the CellChat/NicheNet defaults only when eligible, and
-   prefer `sn_with_autozyme({...})` so prior patch state is restored.
+14. For R acceleration, inspect all strict lazy defaults with
+   `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
+   "seurat", "tradeseq", "wgcna"))`. Eligible patches are scoped to the
+   compatible workflow call and the prior state must be restored after success
+   or error. Missing or version-drifted dependencies and approximate patches
+   are never activated automatically. Option/environment opt-outs block the
+   automatic scope without deactivating manually active patches; explicit
+   helpers ignore them. For BPCells-backed Seurat layers, bypass the Seurat fast
+   patch and temporarily suspend a manually active copy for the call. This does
+   not make every backend BPCells-native; size any required sparse
+   materialization or aggregation explicitly.
 15. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.

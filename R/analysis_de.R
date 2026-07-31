@@ -96,37 +96,45 @@
 
   if (analysis == "markers") {
     only_pos <- only_pos %||% TRUE
-    result <- Seurat::FindAllMarkers(
+    result <- .sn_with_default_seurat_autozyme(
+      Seurat::FindAllMarkers(
+        object = object,
+        assay = assay,
+        slot = target_layer,
+        features = features,
+        group.by = group_by,
+        test.use = method,
+        only.pos = only_pos,
+        min.pct = min_pct,
+        logfc.threshold = logfc_threshold,
+        verbose = verbose,
+        ...
+      ),
       object = object,
+      assay = assay
+    )
+    return(result)
+  }
+
+  only_pos <- only_pos %||% FALSE
+  .sn_with_default_seurat_autozyme(
+    Seurat::FindMarkers(
+      object = object,
+      ident.1 = ident_1,
+      ident.2 = ident_2,
+      group.by = group_by,
       assay = assay,
       slot = target_layer,
       features = features,
-      group.by = group_by,
       test.use = method,
       only.pos = only_pos,
       min.pct = min_pct,
       logfc.threshold = logfc_threshold,
       verbose = verbose,
       ...
-    )
-    return(result)
-  }
-
-  only_pos <- only_pos %||% FALSE
-  Seurat::FindMarkers(
+    ),
     object = object,
-    ident.1 = ident_1,
-    ident.2 = ident_2,
-    group.by = group_by,
-    assay = assay,
-    slot = target_layer,
-    features = features,
-    test.use = method,
-    only.pos = only_pos,
-    min.pct = min_pct,
-    logfc.threshold = logfc_threshold,
-    verbose = verbose,
-    ...
+    assay = assay
   )
 }
 
@@ -469,6 +477,14 @@ sn_find_de <- function(
     stop(glue("Column '{subset_by}' was not found in metadata."))
   }
 
+  de_autozyme_patches <- if (
+    analysis %in% c("markers", "contrast") && !identical(method, "COSGR")
+  ) {
+    "seurat"
+  } else {
+    character(0)
+  }
+  .sn_with_autozyme_provenance_context({
   result <- NULL
 
   if (analysis == "pseudobulk") {
@@ -604,7 +620,8 @@ sn_find_de <- function(
     de_logfc = de_logfc,
     min_pct = min_pct,
     logfc_threshold = logfc_threshold,
-    n_genes = nrow(result)
+    n_genes = nrow(result),
+    provenance = .sn_contextual_analysis_provenance()
   )
 
   object <- .sn_store_misc_result(
@@ -615,8 +632,9 @@ sn_find_de <- function(
   )
 
   if (return_object) {
-    return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_find_de"))
+    .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_de")
+  } else {
+    stored_result$table
   }
-
-  stored_result$table
+  }, patches = de_autozyme_patches)
 }

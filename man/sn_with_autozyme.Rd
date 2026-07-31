@@ -14,8 +14,7 @@ sn_with_autozyme(
 \arguments{
 \item{expr}{Code to evaluate after activation.}
 
-\item{patches}{Character vector of AutoZyme patch names. The conservative
-defaults cover Shennong's CellChat and NicheNet communication paths.}
+\item{patches}{Character vector of AutoZyme patch names to inspect or manage.}
 
 \item{strict}{If \code{TRUE}, require the installed upstream package version to
 exactly match a version validated by the pinned AutoZyme revision.}
@@ -33,7 +32,11 @@ when \code{expr} raises an error. Patches that were already active remain active
 \examples{
 \dontrun{
 result <- sn_with_autozyme({
-  sn_run_cell_communication(object, method = "cellchat")
+  sn_run_cell_communication(
+    object,
+    method = "cellchat",
+    group_by = "cell_type"
+  )
 })
 }
 }

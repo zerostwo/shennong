@@ -72,6 +72,17 @@
   existing
 }
 
+.sn_contextual_analysis_provenance <- function(result = NULL,
+                                               random_seed = NULL) {
+  .sn_analysis_provenance(
+    result = result,
+    random_seed = random_seed,
+    capture_acceleration = is.environment(
+      getOption("shennong.autozyme.provenance_context")
+    )
+  )
+}
+
 .sn_result_tables <- function(result) {
   tables <- result[["tables"]] %||% list()
   legacy_table <- result[["table"]]

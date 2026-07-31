@@ -76,7 +76,7 @@ test_that("sn_install_shennong uses conservative defaults for GitHub installs", 
     .sn_get_cran_version = function(...) NULL,
     .sn_get_github_version = function(...) package_version("1.0.0"),
     check_installed = function(...) invisible(TRUE),
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   captured <- NULL
@@ -85,7 +85,7 @@ test_that("sn_install_shennong uses conservative defaults for GitHub installs", 
       captured <<- c(list(repo = repo, ref = ref), args)
       invisible(TRUE)
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_invisible(
@@ -103,7 +103,7 @@ test_that("sn_install_shennong respects explicit GitHub install overrides", {
     .sn_get_cran_version = function(...) NULL,
     .sn_get_github_version = function(...) package_version("1.0.0"),
     check_installed = function(...) invisible(TRUE),
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   captured <- NULL
@@ -112,7 +112,7 @@ test_that("sn_install_shennong respects explicit GitHub install overrides", {
       captured <<- c(list(repo = repo, ref = ref), args)
       invisible(TRUE)
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_invisible(
@@ -134,7 +134,7 @@ test_that("sn_install_shennong respects explicit GitHub install overrides", {
 test_that("sn_install_shennong supports local installs", {
   local_mocked_bindings(
     check_installed = function(...) invisible(TRUE),
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   captured <- NULL
@@ -143,7 +143,7 @@ test_that("sn_install_shennong supports local installs", {
       captured <<- list(path = path, args = args)
       invisible(TRUE)
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_invisible(
@@ -244,7 +244,7 @@ test_that("sn_install_dependencies dispatches installs by declared source", {
       invisible(remotes)
     },
     .sn_find_missing_packages = function(packages) character(0),
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_invisible(
@@ -281,7 +281,7 @@ test_that("sn_install_dependencies errors when installer leaves packages missing
       invisible(remotes)
     },
     .sn_find_missing_packages = function(packages) "cli",
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_error(
@@ -304,7 +304,7 @@ test_that("sn_install_dependencies validates requested package names", {
         stringsAsFactors = FALSE
       )
     },
-    .env = asNamespace("Shennong")
+    .package = "Shennong"
   )
 
   expect_error(

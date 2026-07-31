@@ -33,22 +33,33 @@ user request to the right Shennong function family quickly.
    upload, or promote artifacts; the trusted external receiver must verify
    digests and complete those actions.
 
-## Recipe: Opt in to AutoZyme acceleration
+## Recipe: Use AutoZyme acceleration
 
-1. Run `sn_check_autozyme()` first. Do not activate a patch unless
-   `eligible = TRUE` for the pinned AutoZyme build and current upstream package.
-2. Use `sn_enable_autozyme()` for an explicitly managed session or wrap one
-   call in `sn_with_autozyme({...})` so only newly activated patches are
-   restored on exit. The safe defaults target CellChat and NicheNet paths used
-   by `sn_run_cell_communication()`.
-   Other reported patches are compatibility metadata for explicit advanced
-   AutoZyme use, not evidence that Shennong directly calls every package.
-3. Keep `strict = TRUE`. Treat `strict = FALSE` or
+1. The lazy automatic set is CellChat, NicheNetR, clusterProfiler, fgsea,
+   Seurat, tradeSeq, and WGCNA. Inspect the full set with
+   `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
+   "seurat", "tradeseq", "wgcna"))` to report the pinned build, installed
+   upstream dependencies, exact version matches, and active state.
+2. Eligible defaults are active only inside the compatible Shennong workflow
+   call. Verify that success and error both restore the pre-call patch state.
+3. Missing packages and version drift are skipped safely. Approximate patches
+   are never automatic. Keep `strict = TRUE`; treat `strict = FALSE` or
    `allow_approximate = TRUE` as an explicit reproducibility decision, not a
    generic speed switch.
-4. Do not install AutoZyme, prepare Python, or change process-wide thread
-   counts inside an analytical workflow. Confirm active-patch details in the
-   returned result provenance.
+4. Set `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or
+   `AUTOZYME_DISABLE=true` to block automatic scopes. These settings do not
+   deactivate a manually active patch, and explicit `sn_enable_autozyme()` and
+   `sn_with_autozyme({...})` calls ignore them.
+5. BPCells-backed Seurat layers must bypass the Seurat fast patch because the
+   pinned fast path coerces non-`dgCMatrix` input into memory. Temporarily
+   suspend a manually active Seurat patch for that call and restore it after.
+   Do not infer whole-package BPCells compatibility from this guard: CellChat,
+   tradeSeq, and other backends may still require controlled sparse
+   materialization or an aggregated input sized to available RAM.
+6. Automatic NicheNetR use requires `single = TRUE` and a dense numeric
+   ligand-target matrix. Confirm active-patch details in result provenance.
+7. Confirm that the caller's `future.globals.maxSize` option is unchanged after
+   the workflow; Shennong restores AutoZyme's load-time mutation before analysis.
 
 ## Recipe: Start from raw counts or 10x outputs
 

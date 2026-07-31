@@ -735,10 +735,14 @@
     )
     variable_features <- rownames(selected_expression)[feature_order]
     SeuratObject::VariableFeatures(working) <- variable_features
-    working <- Seurat::ScaleData(
-      working,
-      features = variable_features,
-      verbose = FALSE
+    working <- .sn_with_default_seurat_autozyme(
+      Seurat::ScaleData(
+        working,
+        features = variable_features,
+        verbose = FALSE
+      ),
+      object = working,
+      assay = "RNA"
     )
     npcs <- min(
       backend_control$npcs %||% 20L,
@@ -746,13 +750,21 @@
       ncol(working) - 1L
     )
     if (npcs < 2L) stop("Scissor requires at least two usable PCA dimensions.", call. = FALSE)
-    working <- suppressWarnings(Seurat::RunPCA(
+    working <- .sn_with_default_seurat_autozyme(
+      suppressWarnings(Seurat::RunPCA(
+        working,
+        features = variable_features,
+        npcs = npcs,
+        verbose = FALSE
+      )),
+      object = working,
+      assay = "RNA"
+    )
+    working <- Seurat::FindNeighbors(
       working,
-      features = variable_features,
-      npcs = npcs,
+      dims = seq_len(min(10L, npcs)),
       verbose = FALSE
-    ))
-    working <- Seurat::FindNeighbors(working, dims = seq_len(min(10L, npcs)), verbose = FALSE)
+    )
     runner <- backend_control$runner %||% Scissor::Scissor
     fit <- withCallingHandlers(
       runner(

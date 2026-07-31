@@ -2703,7 +2703,8 @@ sn_store_enrichment <- function(object,
     species = species,
     source_de_name = source_de_name,
     gene_col = gene_col,
-    score_col = score_col
+    score_col = score_col,
+    provenance = .sn_contextual_analysis_provenance()
   )
 
   object <- .sn_store_misc_result(

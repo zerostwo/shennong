@@ -191,43 +191,63 @@ Table-returning helpers such as `sn_get_de_result()` remain compatibility
 views over the same canonical primary table. Use `sn_get_result()` when the
 full envelope, diagnostics, or provenance is required.
 
-## Opt in to validated AutoZyme acceleration
+## Use validated AutoZyme acceleration
 
-Shennong never patches another package during loading. AutoZyme acceleration
-is an explicit, optional session-level choice, and strict mode requires both
-the pinned AutoZyme revision and an exactly validated upstream-package version.
-The conservative defaults cover the CellChat and NicheNet calls already used
-by `sn_run_cell_communication()`. The compatibility table can also report
-non-default AutoZyme patches, including packages that Shennong does not call
-directly. Those rows document guarded process-level AutoZyme capability; they
-are not additional Shennong workflow integrations.
+Shennong never patches another package during loading. When an integrated
+workflow first needs one of the lazy defaults—CellChat, NicheNetR,
+clusterProfiler, fgsea, Seurat, tradeSeq, or WGCNA—it checks that relevant patch.
+Each patch requires the pinned AutoZyme build plus an installed, exactly
+validated upstream-package version. Eligible patches are activated only inside
+the compatible Shennong workflow call, and the pre-call state is restored after
+success or error. Missing or drifted dependencies are skipped safely.
+Approximate patches are never part of the automatic set. AutoZyme's load-time
+change to `future.globals.maxSize` is restored before the analytical expression
+runs.
 
 ```{r autozyme-check}
-sn_check_autozyme()
+autozyme_defaults <- c(
+  "cellchat", "nichenetr", "clusterprofiler", "fgsea",
+  "seurat", "tradeseq", "wgcna"
+)
+sn_check_autozyme(autozyme_defaults)
 ```
 
-```{r autozyme-enable, eval = FALSE}
-# Activate only after the compatibility table reports eligible = TRUE.
-sn_enable_autozyme()
-
+```{r autozyme-default, eval = FALSE}
 communication <- sn_run_cell_communication(
   object,
-  method = c("cellchat", "nichenet")
+  method = "cellchat",
+  group_by = "cell_type"
 )
 
-sn_disable_autozyme()
+# Prevent automatic workflow scopes in this R session.
+options(shennong.autozyme = FALSE)
 
-# Or restore the prior patch state automatically, even after an error.
+# Explicit helpers intentionally ignore the automatic opt-out.
 communication <- sn_with_autozyme({
-  sn_run_cell_communication(object, method = "cellchat")
-})
+  sn_run_cell_communication(
+    object,
+    method = "cellchat",
+    group_by = "cell_type"
+  )
+}, patches = "cellchat")
 ```
 
-Version-drift and approximate patches are blocked by default. Relaxing
-`strict` or setting `allow_approximate = TRUE` is an explicit reproducibility
-decision and should be recorded with the analysis. Shennong does not install
-AutoZyme, create a Python environment, or change thread counts during an
-analysis call. Active patch details are added to result provenance.
+`options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
+`AUTOZYME_DISABLE=true` block automatic scopes; none deactivates a patch that
+the user activated manually, and explicit helpers ignore these controls. For
+memory safety, BPCells-backed Seurat layers bypass the Seurat fast patch because
+the pinned implementation would coerce them to an in-memory `dgCMatrix`. An
+already active Seurat patch is suspended only for that BPCells-backed call and
+restored afterward. NicheNetR automatic use remains limited to `single = TRUE`
+and a dense numeric ligand-target matrix. Relaxing `strict` or setting
+`allow_approximate = TRUE` remains an explicit manual reproducibility decision.
+Shennong does not install AutoZyme, upstream packages, or a Python environment.
+Result-producing scopes add the patches active for the compatible call to
+provenance before restoring the automatic scope. The BPCells bypass applies to
+Seurat patch calls;
+it does not make every downstream backend BPCells-native. CellChat and tradeSeq,
+for example, may still need a controlled sparse materialization or an aggregated
+input that fits memory.
 
 ## Give agents a read-only discovery surface
 

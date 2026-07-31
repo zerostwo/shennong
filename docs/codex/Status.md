@@ -21,6 +21,27 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- Eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq, and
+  WGCNA patches now activate lazily only inside compatible Shennong workflow
+  calls, with the pre-call state restored after success or error. The automatic
+  path requires the pinned AutoZyme build and installed, exactly validated
+  upstream versions; absent or drifted dependencies and approximate patches are
+  skipped safely. Option/environment opt-outs block automatic scopes without
+  deactivating manually active patches, and explicit helpers ignore them.
+  BPCells-backed Seurat layers bypass the Seurat fast patch to avoid
+  `dgCMatrix` materialization; a manually active Seurat patch is suspended for
+  that call and then restored. AutoZyme's `future.globals.maxSize` load-time
+  mutation is restored before analysis. Result-producing scopes retain patches
+  active for compatible calls in provenance. CellChat, tradeSeq, and other
+  backend contracts remain separate BPCells-compatibility boundaries and may
+  require controlled materialization or aggregation. The final local suite
+  passed 2,847 assertions with four optional/local-fixture skips; the source
+  package built as `Shennong_0.3.0.tar.gz`; packaged tests passed 2,439
+  assertions with 14 repository-only/optional skips; and `R CMD check`
+  completed without errors or warnings. Its sole NOTE is caused by the live
+  CodeGraph daemon socket during local source staging; `.codegraph` is already
+  excluded and a clean checkout has no socket. The complete pkgdown site also
+  rebuilt successfully under `site/dev`.
 - `sn_set_layer_backend()` now provides a bidirectional Seurat layer-storage
   boundary: selected layers can be staged and rebound to external BPCells
   directories or materialized directly as `dgCMatrix` without a dense
@@ -42,13 +63,6 @@ release gate.
   `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual` completed with no
   error or warning and only the existing `.codegraph` hidden-directory NOTE.
   The pkgdown site rebuilt successfully under `site/dev`.
-- The next ecosystem milestone is captured in
-  `docs/codex/NextEcosystemMilestone.md`: revalidate the five locked revisions,
-  deploy DB/Runtime/OS by immutable digest, prove PAT/Project and Artifact
-  security boundaries, then run a real PBMC3K path through all five
-  repositories with scientific assertions and exact lineage readback. This
-  planning update does not claim that a deployment or end-to-end run has
-  occurred.
 - R-CMD-check run `30214842915` exposed one real package-metadata warning:
   `tests/testthat/test-figure-engine.R` conditionally loads `DOSE`, but the
   package had not declared it in `Suggests`. `DESCRIPTION` now declares the

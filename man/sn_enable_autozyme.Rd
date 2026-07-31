@@ -11,8 +11,7 @@ sn_enable_autozyme(
 )
 }
 \arguments{
-\item{patches}{Character vector of AutoZyme patch names. The conservative
-defaults cover Shennong's CellChat and NicheNet communication paths.}
+\item{patches}{Character vector of AutoZyme patch names to inspect or manage.}
 
 \item{strict}{If \code{TRUE}, require the installed upstream package version to
 exactly match a version validated by the pinned AutoZyme revision.}
@@ -25,9 +24,9 @@ Invisibly, the post-activation compatibility data frame returned by
 \code{\link[=sn_check_autozyme]{sn_check_autozyme()}}.
 }
 \description{
-Activation is explicit and transactional. All selected patches are checked
-before activation; if activation fails, only patches newly enabled by this
-call are rolled back. Existing user-activated patches are left untouched.
+Manual activation is transactional. All selected patches are checked before
+activation; if activation fails, only patches newly enabled by this call are
+rolled back. Existing user-activated patches are left untouched.
 }
 \examples{
 \dontrun{

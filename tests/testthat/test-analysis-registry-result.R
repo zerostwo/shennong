@@ -267,6 +267,35 @@ test_that("legacy storage helpers return the unified envelope additively", {
   }, logical(1))))
 })
 
+test_that("enrichment storage attributes acceleration only inside a workflow scope", {
+  object <- make_analysis_result_test_object()
+  testthat::local_mocked_bindings(
+    .sn_autozyme_provenance = function() list(active_patches = "fgsea"),
+    .package = "Shennong"
+  )
+
+  direct <- sn_store_enrichment(
+    object,
+    tibble::tibble(feature = "gene1", score = 1),
+    return_object = FALSE
+  )
+  expect_null(direct$provenance$acceleration)
+
+  stored <- Shennong:::.sn_with_autozyme_provenance_context(
+    sn_store_enrichment(
+      object,
+      tibble::tibble(feature = "gene1", score = 1),
+      return_object = FALSE
+    ),
+    patches = "fgsea"
+  )
+
+  expect_identical(
+    stored$provenance$acceleration$active_patches,
+    "fgsea"
+  )
+})
+
 test_that("future schemas and partial field names are never treated as legacy", {
   object <- make_analysis_result_test_object()
   future <- list(

@@ -74,6 +74,48 @@ test_that("Slingshot trajectory stores complete per-cell and graph contracts", {
   expect_true(sn_validate_result(result, error = FALSE)$valid)
 })
 
+test_that("trajectory result provenance includes the scoped Slingshot patch", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  testthat::local_mocked_bindings(
+    .sn_trajectory_slingshot = function(embedding, clusters, ...) {
+      cells <- rownames(embedding)
+      pseudotime <- matrix(
+        seq(0, 1, length.out = length(cells)),
+        ncol = 1L,
+        dimnames = list(cells, "Lineage1")
+      )
+      list(
+        pseudotime = pseudotime,
+        weights = matrix(1, nrow = length(cells), ncol = 1L,
+                         dimnames = dimnames(pseudotime)),
+        lineages = list(Lineage1 = unique(as.character(clusters))),
+        curves = tibble::tibble(),
+        backend = "slingshot"
+      )
+    },
+    .sn_autozyme_provenance = function() {
+      context <- getOption("shennong.autozyme.provenance_context")
+      active <- if (is.environment(context)) context$patches else character()
+      if (length(active) == 0L) list() else list(active_patches = active)
+    },
+    .package = "Shennong"
+  )
+
+  result <- sn_run_trajectory(
+    object,
+    reduction = "pca",
+    cluster_by = "seurat_clusters",
+    method = "slingshot",
+    test_dynamic = FALSE,
+    return_object = FALSE
+  )
+
+  expect_identical(
+    result$provenance$acceleration$active_patches,
+    "slingshot"
+  )
+})
+
 test_that("trajectory endpoints and expected lineage paths are validated", {
   skip_if_not_installed("slingshot")
   object <- make_trajectory_test_object()

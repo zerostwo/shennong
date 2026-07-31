@@ -4,6 +4,16 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Automatic AutoZyme acceleration is a lazy workflow boundary, not a
+  package-load side effect. The exact non-approximate Shennong integration set
+  is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, tradeSeq, and WGCNA;
+  each patch requires the pinned AutoZyme build and exact validated upstream
+  version, and is restored to its pre-call state after success or error.
+  Missing or drifted dependencies skip acceleration instead of changing
+  analytical behavior. BPCells-backed Seurat calls suspend the Seurat patch
+  because its validated fast path can materialize the full counts matrix.
+  Result provenance is attributed only inside the workflow scope where a
+  compatible patch was active.
 - Seurat assay/layer names describe analytical semantics, while BPCells and
   `dgCMatrix` describe storage backends. `sn_set_layer_backend()` is therefore
   the bidirectional public boundary; it changes storage without renaming
@@ -22,14 +32,6 @@ Last updated: 2026-08-01
   memory-minimizing default; higher concurrency intentionally trades memory
   for throughput. Ungrouped BPCells input fails before materialization instead
   of silently loading the full dataset.
-
-## 2026-07-28
-
-- The next ecosystem gate is immutable-digest deployment plus one real PBMC3K
-  five-repository fixture. Stable pagination and additional modality fixtures
-  remain follow-up work; green source CI or published images cannot advance
-  `deployed` or scRNA end-to-end status without live revision, security,
-  scientific, promotion, lineage, and readback evidence.
 
 ## 2026-07-27
 
@@ -171,12 +173,21 @@ Last updated: 2026-08-01
   Per-feature Cox failures remain explicit rows; grouping cutpoints use only
   endpoint-complete finite observations; proportional-hazards tests and scaled
   Schoenfeld residuals are retained for diagnosis and plotting.
-- AutoZyme acceleration is an explicit process-scoped optimization, not an
-  implicit workflow default. Shennong pins the reviewed AutoZyme source, gates
-  strict activation on exact upstream versions, requires a second opt-in for
-  approximate patches, restores prior activation state transactionally, and
-  never installs dependencies, prepares Python, or changes thread counts as a
-  side effect.
+- AutoZyme acceleration is a lazy workflow-call scope, not a package-load hook
+  or persistent process mutation. The automatic set is CellChat, NicheNetR,
+  clusterProfiler, fgsea, Seurat, tradeSeq, and WGCNA. Shennong requires the
+  pinned AutoZyme source plus an installed, exactly validated upstream version;
+  it skips absent or drifted dependencies safely, never activates approximate
+  patches automatically, and restores the pre-call state after success or
+  error. `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED`, and
+  `AUTOZYME_DISABLE` block automatic scopes without deactivating manually active
+  patches; explicit helpers intentionally ignore those opt-outs. BPCells-backed
+  Seurat layers are excluded from the Seurat fast patch because its non-sparse
+  coercion can materialize the on-disk matrix. A manually active Seurat patch is
+  therefore suspended only for that call and restored afterward. Automatic
+  loading also restores `future.globals.maxSize` before analysis. This is a
+  Seurat-call safety boundary, not a declaration that CellChat, tradeSeq, or all
+  other Shennong backends are BPCells-native.
 - Backend-safe label encoding is an adapter concern. CellChat receives encoded
   factor labels when user labels are numeric or otherwise unsafe, and Shennong
   decodes source and target columns before returning evidence. Label transfer
