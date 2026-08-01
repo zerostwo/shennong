@@ -21,6 +21,12 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- CellChat and call-safe NicheNetR communication workflows now pass
+  `strict = FALSE` to their scoped AutoZyme manager. Their runtime/backend
+  guards and upstream fallback remain unchanged, while installed version labels
+  no longer block patch activation. The scDblFinder refresh branch is merged
+  into `main` with its five-target sparse/IRLBA patch and updated
+  source fingerprint; the already-merged Seurat branch has no remaining delta.
 - clusterProfiler 4.20 and fgsea 1.38 now activate independently inside
   `sn_enrich()`: the Shennong-bundled clusterProfiler patch reports one active
   `get_GO_data()` target and the official fgsea patch reports three active
@@ -31,8 +37,9 @@ release gate.
   calls fell from about 15 seconds on the first call to about 1 second. ORA
   remains dominated by the upstream enrichit statistical core, so this is a
   measured local improvement rather than a universal speed claim. The source
-  tarball built successfully; its isolated `R CMD check` tests passed 2,619
-  assertions with 15 Seurat 5.5.1 SCTransform validation warnings and 14
+  tarball built successfully; the pre-merge isolated `R CMD check` passed
+  2,619 assertions, and the post-merge check passed 2,629 assertions, with 15
+  Seurat 5.5.1 SCTransform validation warnings and 14
   optional/repository-only skips. Check completed with zero errors/warnings and
   one known local `.codegraph` NOTE. The complete pkgdown site rebuilt in
   206.4 seconds.

@@ -103,6 +103,10 @@ Released 2026-08-01.
   bundles a clusterProfiler 4.20/enrichit-compatible exact cache for repeated
   `get_GO_data()` requests, while ranked GSEA calls use AutoZyme's three-target
   fgsea patch with relaxed version-label gating.
+- CellChat and call-safe NicheNetR communication workflows now request relaxed
+  AutoZyme version gating. Their runtime input guards and upstream fallbacks
+  remain active, but installed package version labels no longer prevent the
+  compatible patch from starting.
 - Successful automatic AutoZyme scopes now emit an INFO log naming the patches
   enabled for the current workflow call. The message is printed only after
   activation and state verification; it does not claim that every guarded
@@ -119,6 +123,9 @@ Released 2026-08-01.
   inputs with 1--33,000 cells and positive finite library sizes, and restores
   the pre-call AutoZyme state. Non-default, BPCells-grouped, oversized, drifted,
   or otherwise unsupported calls continue through captured upstream code.
+  The vendored patch now uses a non-materialized sparse transpose operator for
+  exact generic IRLBA PCA and sparse-only artificial-doublet Poisson resampling;
+  expanded inputs above 50,000 columns retain the upstream PCA path.
 - `sn_remove_ambient_contamination(method = "soupx")` now lazily activates the
   exact-scoped AutoZyme `soupx` patch for `SoupX::adjustCounts()`. The patch and
   its native C++ kernels are now bundled by Shennong and registered through

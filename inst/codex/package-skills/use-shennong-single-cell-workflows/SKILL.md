@@ -61,7 +61,9 @@ This skill is the main entry point for package usage.
   Seurat object
 - expect eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq,
   and WGCNA AutoZyme patches to activate lazily only inside compatible workflow
-  calls and restore the prior state afterward; clusterProfiler and fgsea use
+  calls and restore the prior state afterward; CellChat and call-safe NicheNetR
+  communication scopes allow upstream version-label drift behind runtime guards;
+  clusterProfiler and fgsea use
   independent scopes so either can remain accelerated if the other is
   unavailable; never apply the Seurat fast patch
   to BPCells-backed layers because it can materialize them as `dgCMatrix`, and

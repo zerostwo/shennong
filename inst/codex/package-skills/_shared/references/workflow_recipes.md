@@ -48,8 +48,8 @@ user request to the right Shennong function family quickly.
    internal fast path accepted the input. Verify that success and error both
    restore the pre-call patch state.
 3. Missing packages and approximate patches are skipped safely. Automatic
-   Seurat and enrichment workflow scopes deliberately allow version-label
-   drift. clusterProfiler and fgsea are activated independently; the bundled
+   Seurat, CellChat, NicheNetR, and enrichment workflow scopes deliberately
+   allow version-label drift. clusterProfiler and fgsea are activated independently; the bundled
    clusterProfiler 4.20 patch caches exact GSON annotation objects, while the
    statistical core remains upstream. Seurat relies on runtime structure
    guards and captured-upstream fallback; scDblFinder relies

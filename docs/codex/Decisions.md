@@ -23,6 +23,11 @@ Last updated: 2026-08-01
   captured-upstream fallback. BPCells suppression remains mandatory. The
   scDblFinder patch uses exact target function fingerprints instead of a version
   equality check, so changed internals fail closed.
+- CellChat and call-safe NicheNetR communication scopes also use relaxed
+  upstream-version gating for the current compatibility window. Their dense/
+  backend-specific input guards and captured-upstream fallbacks remain in force;
+  strict version reports remain available through `sn_check_autozyme()` and
+  explicit management calls.
 - Performance evidence must report regressions as well as wins. AutoZyme
   comparisons therefore run baseline and accelerated conditions in fresh
   workers, require exact output fingerprints and rollback, summarize medians

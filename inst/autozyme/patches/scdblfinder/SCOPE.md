@@ -16,24 +16,24 @@ from upstream commit `2d0e5e4760e3d6d7525ec9a215fbeaab51915e36`.
   exact `dgCMatrix` `counts` assay with finite, NA-free stored values and
   positive library sizes. All other public parameters must remain at their
   upstream defaults.
-- **Fast path:** Four coordinated namespace targets are active only inside the
-  supported public call: eager sparse normalization rewrapped as a delayed
-  matrix before unchanged PCA when expanded inputs stay within the package
-  RSS-safe boundary, exact full-row feature-selection subset bypass, incremental
-  KNN ratio-prefix writes, and skipping sparse NA replacement after proving the
-  stored sparse values contain no NA. The package release keeps upstream's
-  public-driver `gc()` behavior.
-- **Normalization boundary:** The eager normalization path is used only when
-  expanded real+artificial columns are at most 35,000 and size factors are
-  positive and finite. Expanded inputs above 35,000 retain upstream
-  normalization/PCA behavior for RSS neutrality and carry no normalization
-  speed claim.
-- **Compatibility guard:** Both the body and formal-list SHA-256 hashes of all
-  four targets must match the pinned source, independent of the package version
-  label. The public-driver feature-selection call-site transform must match
-  exactly once. Any implementation mismatch fails closed.
-- **Fallback:** Direct calls to `.defaultProcessing`, `.evaluateKNN`, or
-  `cxds2`; dense/delayed/unsupported sparse inputs; NA values; non-positive
+- **Fast path:** Five coordinated namespace targets are active only inside the
+  supported public call: eager sparse normalization followed by the same
+  generic IRLBA algorithm through a non-materialized transpose operator,
+  sparse-only Poisson resampling for artificial doublets, exact full-row
+  feature-selection subset bypass, incremental KNN ratio-prefix writes, and
+  skipping sparse NA replacement after proving the stored sparse values contain
+  no NA. The package release keeps upstream's public-driver `gc()` behavior.
+- **Normalization boundary:** The direct sparse PCA path is used only when
+  expanded real+artificial columns are at most 50,000 and size factors are
+  positive and finite. Expanded inputs above 50,000 retain upstream
+  normalization/PCA behavior for exactness and carry no PCA speed claim.
+- **Compatibility guard:** The body and formal-list SHA-256 hashes of all five
+  targets must match the pinned source; the package version label is not used as
+  a compatibility proxy. The public-driver feature-selection call-site
+  transform must match exactly once. Any mismatch fails closed.
+- **Fallback:** Direct calls to `.defaultProcessing`, `.evaluateKNN`,
+  `createDoublets`, or `cxds2`; dense/delayed/unsupported sparse inputs; NA
+  values; non-positive
   library sizes or size factors; non-default public arguments; unsupported
   thread backends/counts; inputs above 33,000 cells; targeted source drift;
   `lgCMatrix` and every other sparse representation; `autozyme::with_disabled()`;
@@ -41,7 +41,8 @@ from upstream commit `2d0e5e4760e3d6d7525ec9a215fbeaab51915e36`.
   Error-triggered retries restore `.Random.seed` before calling upstream.
   Unsupported paths receive no speed claim.
 
-Large-tier RSS must be neutral or improved before publishing a speed claim. The
-Campbell large tier and the Mair RNA-only 29,033-cell tier exceed the 35,000
-expanded-column eager-normalization boundary and are retained as exact
-safety/memory evidence rather than headline normalization speed results.
+The Campbell large tier supplies exact speed evidence, but its packaged
+single-replicate peak RSS was 6.8% above the cached baseline, so it does not
+support a large-tier memory-saving claim. The Mair RNA-only 29,033-cell tier
+exceeds the 50,000 expanded-column boundary and is retained as exact
+safety/memory evidence rather than a direct-PCA speed result.

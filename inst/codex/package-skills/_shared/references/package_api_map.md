@@ -119,8 +119,10 @@ Runtime reference datasets:
   SeuratObject merge/JoinLayers, and SoupX patches plus SoupX native kernels;
   official AutoZyme only
   supplies the registration and scoped activation engine for this backend.
-  AutoZyme and each upstream package must be installed at the pinned/exactly
-  validated versions. Eligible patches are active only inside the compatible
+  AutoZyme and each upstream package must be installed. Seurat, CellChat, and
+  call-safe NicheNetR workflow scopes currently tolerate upstream version-label
+  drift behind runtime/input guards; other strict checks remain available via
+  `sn_check_autozyme()`. Eligible patches are active only inside the compatible
   Shennong workflow call, with the pre-call state restored after success or
   error. Successful automatic scopes emit an INFO log naming the enabled
   patches; this confirms activation, while guarded fast paths can still fall

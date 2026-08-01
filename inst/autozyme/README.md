@@ -5,13 +5,13 @@ Shennong vendors exact-scoped `scdblfinder`, `seurat_merge`,
 them even when the official AutoZyme package does not ship these patches.
 
 - Upstream project: <https://github.com/ElliotXie/autozyme>
-- Upstream source revisions: scDblFinder task best
-  `34b1fc7a9132b6e646512688018d4be353bba6a5`; Seurat merge
+- Upstream source revisions: scDblFinder task candidate `c7a87c8` and
+  Autozyme package commits `ab5a470`, `97747ea`; Seurat merge
   `eeba1054ef0aa9def7010dbac6a1a559e6306039`; Seurat JoinLayers `55da460`;
   SoupX `9952189`
-- Vendored files: installed `patches/scdblfinder/patch.R` and
-  its validated scope and finalized benchmark summary under
-  `patches/scdblfinder/`; `patches/soupx/patch.R`, plus SoupX's validated scope in
+- Vendored files: installed `patches/scdblfinder/patch.R`, its validated scope
+  and finalized benchmark summary under `patches/scdblfinder/`;
+  `patches/soupx/patch.R`, plus SoupX's validated scope in
   `patches/soupx/SCOPE.md`, the successful equivalence-passing benchmark
   summary in `patches/soupx/speedups_finalized.tsv`; and the corresponding
   source, scope, manifest, changelog, and benchmark evidence under

@@ -70,7 +70,7 @@
   scdblfinder = list(
     upstream = "scDblFinder", versions = "1.27.6",
     equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "50f128d3e3f40ea3a25cdebef2b5c522a3cb6db1edf3c7c2d26646bdc9431423"
+    source_sha256 = "e0f74282b9e12eb2d61dd6e202b29df74e81640379b3e2ede2326d72fd1e44ee"
   ),
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),
@@ -789,9 +789,9 @@
 #' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, and WGCNA. It
 #' normally requires the pinned AutoZyme build, or an exact patch fingerprint
 #' recorded by Shennong, and an exactly validated upstream version. Automatic
-#' Seurat scopes relax the version-label check and retain runtime structure
-#' guards; the scDblFinder patch instead requires exact target-function
-#' fingerprints. Shennong bundles the
+#' Seurat, CellChat, and NicheNetR workflow scopes relax the version-label check
+#' and retain runtime/input safety guards; the scDblFinder patch instead
+#' requires exact target-function fingerprints. Shennong bundles the
 #' scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
 #' SoupX's compiled kernels), validates
 #' each bundled fingerprint, and registers them through AutoZyme when the

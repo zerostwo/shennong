@@ -675,7 +675,8 @@ sn_run_cell_communication <- function(object,
       )
       stored
     },
-    patches = autozyme_patches
+    patches = autozyme_patches,
+    strict = FALSE
   )
 }
 

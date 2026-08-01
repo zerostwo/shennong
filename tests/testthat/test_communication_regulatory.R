@@ -203,7 +203,8 @@ test_that("communication backends enable only call-safe default AutoZyme patches
   )
 
   testthat::local_mocked_bindings(
-    .sn_with_default_autozyme = function(expr, patches) {
+    .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
+      expect_false(strict)
       Shennong:::.sn_with_autozyme_provenance_context({
         state$enable_requests <- c(state$enable_requests, patches)
         before <- state$active
@@ -321,7 +322,8 @@ test_that("NicheNet AutoZyme safety uses effective backend arguments", {
   sparse_prior <- Matrix::Matrix(dense_prior, sparse = TRUE)
 
   testthat::local_mocked_bindings(
-    .sn_with_default_autozyme = function(expr, patches) {
+    .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
+      expect_false(strict)
       Shennong:::.sn_with_autozyme_provenance_context({
         state$enable_requests <- c(state$enable_requests, patches)
         before <- state$active
