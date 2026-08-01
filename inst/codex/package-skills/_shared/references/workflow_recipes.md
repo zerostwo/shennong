@@ -36,9 +36,9 @@ user request to the right Shennong function family quickly.
 ## Recipe: Use AutoZyme acceleration
 
 1. The lazy automatic set is CellChat, NicheNetR, clusterProfiler, fgsea,
-   Seurat, SoupX, tradeSeq, and WGCNA. Inspect the full set with
+   scDblFinder, Seurat, SoupX, tradeSeq, and WGCNA. Inspect the full set with
    `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "seurat", "soupx", "tradeseq", "wgcna"))` to report the pinned build, installed
+   "scdblfinder", "seurat", "soupx", "tradeseq", "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.
 2. Eligible defaults are active only inside the compatible Shennong workflow
    call. Verify that success and error both restore the pre-call patch state.
@@ -65,6 +65,11 @@ user request to the right Shennong function family quickly.
    so official AutoZyme does not need to contain `soupx`; AutoZyme still manages
    temporary activation and rollback. Shennong then performs SoupX's original
    stochastic integer rounding. Check the seed when reproducibility matters.
+9. `sn_find_doublets()` scopes Shennong's bundled `scdblfinder` patch only for
+   the validated scDblFinder 1.27.6 default call on exact `dgCMatrix` inputs of
+   at most 33,000 cells. Grouped/BPCells calls and non-default arguments remain
+   upstream paths. Treat the installed scope and finalized benchmark table as
+   the boundary for speed and memory claims.
 
 ## Recipe: Start from raw counts or 10x outputs
 

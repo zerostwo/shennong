@@ -254,11 +254,21 @@ pbmc_doublets <- sn_run_cluster(
 sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
+For scDblFinder 1.27.6, the ungrouped default call above can use Shennong's
+bundled exact AutoZyme `scdblfinder` patch. The patch is admitted only for an
+in-memory `dgCMatrix` with 1--33,000 cells, default analytical parameters,
+positive finite library sizes, and the exact validated upstream function
+fingerprints. It is activated only for the call and then restored; unsupported
+inputs, parameters, package versions, or source drift use upstream scDblFinder.
+Set `options(shennong.autozyme = FALSE)` to disable automatic acceleration.
+
 For a BPCells-backed object, provide a donor or capture column through
 `group_by`. `scDblFinder` requires an in-memory sparse matrix internally, so
 Shennong materializes one sample at a time rather than the full on-disk matrix.
 Keep `ncores = 1` for the lowest peak memory; increasing it processes sample
 chunks concurrently and can hold that many sample matrices in memory.
+These grouped calls intentionally retain upstream scDblFinder because they are
+outside the patch's validated default-call contract.
 
 ```{r bpcells-doublets, eval = FALSE}
 pbmc_doublets <- sn_find_doublets(

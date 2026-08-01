@@ -83,6 +83,9 @@ This skill is the main entry point for package usage.
    `sn_initialize_seurat_object()`. When finding doublets on a BPCells-backed
    object, require a donor/capture `group_by` column and default to
    `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
+   For in-memory `dgCMatrix` input, the exact scDblFinder 1.27.6 default call
+   can use Shennong's bundled, 33,000-cell-capped AutoZyme patch; grouped and
+   non-default calls remain on the upstream path.
    Use `sn_set_layer_backend()` when selected Seurat layers must move between
    BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
    by an in-memory-only operation.
@@ -225,7 +228,7 @@ This skill is the main entry point for package usage.
    maintenance tasks.
 14. For R acceleration, inspect all strict lazy defaults with
    `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "seurat", "tradeseq", "wgcna"))`. Eligible patches are scoped to the
+   "scdblfinder", "seurat", "soupx", "tradeseq", "wgcna"))`. Eligible patches are scoped to the
    compatible workflow call and the prior state must be restored after success
    or error. Missing or version-drifted dependencies and approximate patches
    are never activated automatically. Option/environment opt-outs block the

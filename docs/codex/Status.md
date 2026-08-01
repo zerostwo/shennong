@@ -21,6 +21,17 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- The validated scDblFinder 1.27.6 patch is now bundled under
+  `inst/autozyme/patches/scdblfinder/` and integrated into
+  `sn_find_doublets()`. Shennong verifies the installed source SHA-256, scopes
+  activation around compatible default `dgCMatrix` calls up to 33,000 cells,
+  and restores the prior AutoZyme state. Focused acceleration tests passed 166
+  assertions. A clean temporary installation verified the installed patch
+  fingerprint, real registration of all four namespace targets, activation and
+  rollback, and a 3,005-cell real SCE workflow run in 25.073 seconds with the
+  patch inactive afterward. The rebuilt source package passed `R CMD check`
+  with 2,570 assertions, 14 optional/repository-only skips, no error, warning,
+  or NOTE; pkgdown also rebuilt successfully.
 - Eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX,
   tradeSeq, and WGCNA patches now activate lazily only inside compatible
   Shennong workflow calls, with the pre-call state restored after success or

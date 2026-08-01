@@ -65,7 +65,11 @@ Runtime reference datasets:
 - `sn_filter_genes()`: gene filtering
 - `sn_filter_cells()`: cell-level QC filtering
 - `sn_assess_qc()`: summarize QC outcomes and before/after status
-- `sn_find_doublets()`: doublet detection via `scDblFinder`; BPCells-backed objects require `group_by` and are materialized per sample, with `ncores = 1` providing the lowest peak memory
+- `sn_find_doublets()`: doublet detection via `scDblFinder`; the exact
+  scDblFinder 1.27.6 default `dgCMatrix` call can use Shennong's bundled,
+  33,000-cell-capped AutoZyme patch, while BPCells-backed objects require
+  `group_by` and are materialized per sample, with `ncores = 1` providing the
+  lowest peak memory
 - `sn_remove_ambient_contamination()`: ambient RNA correction; the SoupX method
   registers Shennong's bundled exact AutoZyme `soupx` patch, scopes it around
   `adjustCounts()`, and preserves SoupX's stochastic integer output contract
@@ -106,9 +110,9 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX, tradeSeq, and
+  CellChat, NicheNetR, clusterProfiler, fgsea, scDblFinder, Seurat, SoupX, tradeSeq, and
   WGCNA.
-  Shennong bundles the SoupX patch and native kernels; official AutoZyme only
+  Shennong bundles the scDblFinder and SoupX patches and SoupX native kernels; official AutoZyme only
   supplies the registration and scoped activation engine for this backend.
   AutoZyme and each upstream package must be installed at the pinned/exactly
   validated versions. Eligible patches are active only inside the compatible
