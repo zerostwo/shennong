@@ -200,7 +200,11 @@ tradeSeq, or WGCNA—it checks that relevant patch.
 Each patch requires the pinned AutoZyme build plus an installed, exactly
 validated upstream-package version. Eligible patches are activated only inside
 the compatible Shennong workflow call, and the pre-call state is restored after
-success or error. Missing or drifted dependencies are skipped safely.
+success or error. After activation succeeds, Shennong emits an INFO log such as
+`[AutoZyme] Acceleration enabled for this call (patches: cellchat).` This confirms
+that the named patch is enabled for the scope; a guarded internal fast path can
+still fall back to upstream code when the current input is unsupported. Missing
+or drifted dependencies are skipped safely.
 Approximate patches are never part of the automatic set. AutoZyme's load-time
 change to `future.globals.maxSize` is restored before the analytical expression
 runs.

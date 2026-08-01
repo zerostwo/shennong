@@ -36,7 +36,7 @@ clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
 \code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, and WGCNA. It
 requires the pinned AutoZyme build, or an exact patch fingerprint recorded
 by Shennong, and an exactly validated upstream version. Shennong bundles the
-the scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
+scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
 SoupX's compiled kernels), validates
 each bundled fingerprint, and registers them through AutoZyme when the
 official package does not provide \code{scdblfinder}, \code{seurat_joinlayers},
@@ -46,9 +46,13 @@ Set
 \code{options(shennong.autozyme = FALSE)}
 or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
 \code{AUTOZYME_DISABLE=true} is also accepted) to prevent automatic activation.
-Newly activated patches are restored even when the workflow errors. These
+Newly activated patches are restored even when the workflow errors.
+Automatic workflow scopes log the patch names after activation succeeds and
+before the analytical expression starts. This confirms that the patches are
+enabled for the call; individual AutoZyme fast paths may still fall back to
+upstream code when an input is outside their validated scope. These
 controls do not disable patches that are already active and do not affect
-explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or \code{\link[=sn_with_autozyme]{sn_with_autozyme()}}. Seurat
+explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or \code{\link[=sn_with_autozyme]{sn_with_autozyme()}}.
 The older broad Seurat acceleration is bypassed for BPCells-backed objects
 so an on-disk layer is never coerced to an in-memory sparse matrix. The
 narrow \code{seurat_joinlayers} patch remains eligible because its validated

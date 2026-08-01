@@ -34,6 +34,12 @@ release gate.
   2,999 assertions with four optional/local-fixture skips, the complete pkgdown
   site rendered the new article, and the source tarball plus structural
   `R CMD check` completed with `Status: OK`.
+- Automatic AutoZyme scopes now emit an INFO log after successful activation,
+  naming the patches enabled for that workflow call while preserving the
+  distinction between patch activation and an internal guarded fast-path hit.
+  The focused acceleration tests passed 193 assertions, the workflow-hook tests
+  passed 111 assertions, and the full local suite passed 2,980 assertions with
+  four optional/local-fixture skips. The pkgdown site rebuilt successfully.
 - The exact-scoped AutoZyme `seurat_merge` and `seurat_joinlayers` sources are
   now bundled under `inst/autozyme/patches/` with their scope, manifest,
   changelog, and benchmark evidence. Shennong admits only the exact SHA-256

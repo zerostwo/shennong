@@ -10,6 +10,10 @@ Last updated: 2026-08-01
   across alternating-order repetitions, and distinguish operation elapsed time
   from complete-worker peak RSS. A patch may be presented as a speed win
   without being presented as a universal memory win.
+- Successful lazy AutoZyme activation is user-visible through one INFO log per
+  automatic scope, emitted after state verification and before analysis. The
+  log reports enabled patch names rather than claiming fast-path execution,
+  because individual guarded patches may still fall back for unsupported input.
 - Shennong temporarily vendors AutoZyme's finalized `seurat_merge` and
   `seurat_joinlayers` patches because the pinned official AutoZyme revision
   does not yet register them. The integration retains the one-method target

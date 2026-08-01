@@ -118,8 +118,10 @@ Runtime reference datasets:
   AutoZyme and each upstream package must be installed at the pinned/exactly
   validated versions. Eligible patches are active only inside the compatible
   Shennong workflow call, with the pre-call state restored after success or
-  error; missing or drifted dependencies and all approximate patches are
-  skipped.
+  error. Successful automatic scopes emit an INFO log naming the enabled
+  patches; this confirms activation, while guarded fast paths can still fall
+  back for unsupported inputs. Missing or drifted dependencies and all
+  approximate patches are skipped.
 - `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
   `AUTOZYME_DISABLE=true` prevent automatic scopes but do not turn off a
   manually active patch. Explicit `sn_enable_autozyme()` and

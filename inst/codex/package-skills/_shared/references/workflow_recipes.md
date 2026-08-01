@@ -43,7 +43,10 @@ user request to the right Shennong function family quickly.
    "tradeseq", "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.
 2. Eligible defaults are active only inside the compatible Shennong workflow
-   call. Verify that success and error both restore the pre-call patch state.
+   call. A successful automatic scope emits an INFO log naming the enabled
+   patches; treat this as activation evidence, not proof that every guarded
+   internal fast path accepted the input. Verify that success and error both
+   restore the pre-call patch state.
 3. Missing packages and version drift are skipped safely. Approximate patches
    are never automatic. Keep `strict = TRUE`; treat `strict = FALSE` or
    `allow_approximate = TRUE` as an explicit reproducibility decision, not a

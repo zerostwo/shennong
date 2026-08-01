@@ -583,10 +583,17 @@
   }
 
   newly_activated <- setdiff(eligible, before)
-  .sn_record_autozyme_usage(intersect(
+  active_for_call <- intersect(
     patches,
     .sn_autozyme_effective_active_patches()
-  ))
+  )
+  .sn_record_autozyme_usage(active_for_call)
+  if (length(active_for_call) > 0L) {
+    .sn_log_info(sprintf(
+      "[AutoZyme] Acceleration enabled for this call (patches: %s).",
+      paste(active_for_call, collapse = ", ")
+    ))
+  }
   cleanup_pending <- length(newly_activated) > 0L
   on.exit({
     if (isTRUE(cleanup_pending)) {
@@ -767,7 +774,7 @@
 #' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, and WGCNA. It
 #' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
 #' by Shennong, and an exactly validated upstream version. Shennong bundles the
-#' the scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
+#' scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
 #' SoupX's compiled kernels), validates
 #' each bundled fingerprint, and registers them through AutoZyme when the
 #' official package does not provide `scdblfinder`, `seurat_joinlayers`,
@@ -777,9 +784,13 @@
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
 #' `AUTOZYME_DISABLE=true` is also accepted) to prevent automatic activation.
-#' Newly activated patches are restored even when the workflow errors. These
+#' Newly activated patches are restored even when the workflow errors.
+#' Automatic workflow scopes log the patch names after activation succeeds and
+#' before the analytical expression starts. This confirms that the patches are
+#' enabled for the call; individual AutoZyme fast paths may still fall back to
+#' upstream code when an input is outside their validated scope. These
 #' controls do not disable patches that are already active and do not affect
-#' explicit calls to [sn_enable_autozyme()] or [sn_with_autozyme()]. Seurat
+#' explicit calls to [sn_enable_autozyme()] or [sn_with_autozyme()].
 #' The older broad Seurat acceleration is bypassed for BPCells-backed objects
 #' so an on-disk layer is never coerced to an in-memory sparse matrix. The
 #' narrow `seurat_joinlayers` patch remains eligible because its validated

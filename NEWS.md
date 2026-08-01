@@ -79,6 +79,10 @@ Released 2026-08-01.
 
 ### Changed
 
+- Successful automatic AutoZyme scopes now emit an INFO log naming the patches
+  enabled for the current workflow call. The message is printed only after
+  activation and state verification; it does not claim that every guarded
+  internal fast path will accept the current input.
 - Shennong now vendors the exact-scoped AutoZyme `seurat_merge` and
   `seurat_joinlayers` patches before their official AutoZyme release. They
   replace only `SeuratObject::merge.Assay5` and

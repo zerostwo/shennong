@@ -244,6 +244,14 @@ test_that("automatic patch set covers every integrated non-approximate backend",
 test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware", {
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
+  logs <- character()
+  testthat::local_mocked_bindings(
+    .sn_log_info = function(..., .envir = parent.frame()) {
+      logs <<- c(logs, as.character(glue::glue(..., .envir = .envir, .sep = "")))
+      invisible(NULL)
+    },
+    .package = "Shennong"
+  )
 
   result <- Shennong:::.sn_with_default_autozyme(
     Shennong:::.sn_new_analysis_result(
@@ -258,6 +266,10 @@ test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware
   expect_identical(state$deactivated, c("wgcna", "cellchat"))
   expect_identical(state$status[["cellchat"]], "inactive")
   expect_identical(state$status[["wgcna"]], "inactive")
+  expect_identical(
+    logs,
+    "[AutoZyme] Acceleration enabled for this call (patches: cellchat, wgcna)."
+  )
   expect_identical(
     result$provenance$acceleration$active_patches,
     c("cellchat", "wgcna")
@@ -690,6 +702,14 @@ test_that("workflow provenance retains used patches after scoped rollback", {
 })
 
 test_that("automatic AutoZyme silently skips missing and version-drifted patches", {
+  logs <- character()
+  testthat::local_mocked_bindings(
+    .sn_log_info = function(...) {
+      logs <<- c(logs, "unexpected")
+      invisible(NULL)
+    },
+    .package = "Shennong"
+  )
   testthat::local_mocked_bindings(
     .sn_autozyme_is_installed = function(package = "autozyme") FALSE,
     .package = "Shennong"
@@ -706,6 +726,7 @@ test_that("automatic AutoZyme silently skips missing and version-drifted patches
     42L
   )
   expect_length(state$activated, 0L)
+  expect_length(logs, 0L)
 })
 
 test_that("unsafe backend calls can temporarily suspend active patches", {
