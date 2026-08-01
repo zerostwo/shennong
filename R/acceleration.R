@@ -73,7 +73,7 @@
   soupx = list(
     upstream = "SoupX", versions = "1.6.2",
     equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "c60022c668f86dc08e903194bababb738cd0b46789c488ce07f0159703d17954"
+    source_sha256 = "0d96bedecf9473641eedb3589a0db9340ab5ac70dd7617d7caa668055b0e07d4"
   ),
   tradeseq = list(
     upstream = "tradeSeq", versions = "1.22.0",
