@@ -1113,7 +1113,27 @@ sn_filter_cells <- function(
 }
 
 .sn_run_scDblFinder <- function(sce, ...) {
-  scDblFinder::scDblFinder(sce = sce, ...)
+  dots <- list(...)
+  default_null_arguments <- c("clusters", "dbr.sd")
+  supported_default_call <- length(dots) == 0L ||
+    all(names(dots) %in% default_null_arguments) &&
+      all(vapply(dots, is_null, logical(1)))
+
+  if (supported_default_call) {
+    return(.sn_with_default_autozyme(
+      scDblFinder::scDblFinder(
+        sce = sce,
+        verbose = FALSE,
+        BPPARAM = BiocParallel::SerialParam(progressbar = FALSE)
+      ),
+      patches = "scdblfinder"
+    ))
+  }
+
+  .sn_with_default_autozyme(
+    scDblFinder::scDblFinder(sce = sce, ...),
+    patches = "scdblfinder"
+  )
 }
 
 .sn_run_grouped_bpcells_scDblFinder <- function(
@@ -1214,6 +1234,10 @@ sn_filter_cells <- function(
 #'
 #' This function identifies potential doublets in a Seurat object by converting
 #' it to a SingleCellExperiment and using the \code{scDblFinder} package.
+#' For the validated scDblFinder 1.27.6 default workflow on an in-memory
+#' \code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
+#' scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
+#' the captured upstream implementation.
 #'
 #' @param object A \code{Seurat} object.
 #' @param clusters Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.

@@ -224,8 +224,8 @@ test_that("automatic patch set covers every integrated non-approximate backend",
   expect_identical(
     Shennong:::.sn_autozyme_default_patches,
     c(
-      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-      "soupx", "tradeseq", "wgcna"
+      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
+      "seurat", "soupx", "tradeseq", "wgcna"
     )
   )
 
@@ -283,6 +283,26 @@ test_that("SoupX is an exact default patch with scoped activation", {
   expect_identical(state$status[["soupx"]], "inactive")
 })
 
+test_that("scDblFinder is an exact default patch with scoped activation", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$scdblfinder
+  expect_identical(spec$upstream, "scDblFinder")
+  expect_identical(spec$versions, "1.27.6")
+  expect_identical(spec$equivalence, "exact_scoped")
+  expect_false(spec$approximate)
+
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+
+  active_inside <- Shennong:::.sn_with_default_autozyme(
+    state$status[["scdblfinder"]],
+    patches = "scdblfinder"
+  )
+  expect_identical(active_inside, "active")
+  expect_identical(state$activated, "scdblfinder")
+  expect_identical(state$deactivated, "scdblfinder")
+  expect_identical(state$status[["scdblfinder"]], "inactive")
+})
+
 test_that("Shennong bundles the trusted SoupX patch independently", {
   spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
   testthat::local_mocked_bindings(
@@ -300,6 +320,65 @@ test_that("Shennong bundles the trusted SoupX patch independently", {
   expect_true(status$vendored_source_match)
   expect_true(status$source_match)
   expect_identical(status$provider, "shennong")
+})
+
+test_that("Shennong bundles the trusted scDblFinder patch independently", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$scdblfinder
+  testthat::local_mocked_bindings(
+    .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
+    .sn_autozyme_call = function(fun, ...) {
+      if (identical(fun, "list_patches")) return(character())
+      stop("Unexpected mocked AutoZyme call: ", fun)
+    },
+    .package = "Shennong"
+  )
+
+  status <- Shennong:::.sn_autozyme_patch_source_status("scdblfinder", spec)
+  expect_false(status$registered)
+  expect_true(status$bundled_by_shennong)
+  expect_true(status$vendored_source_match)
+  expect_true(status$source_match)
+  # Prefer AutoZyme when this development library already contains the same
+  # finalized source; otherwise the trusted Shennong copy is the provider.
+  expect_true(status$provider %in% c("autozyme", "shennong"))
+})
+
+test_that("scDblFinder workflow scopes the patch only around its call", {
+  skip_if_not_installed("scDblFinder")
+  skip_if_not_installed("BiocParallel")
+  captured <- new.env(parent = emptyenv())
+  marker <- structure(list(value = 1L), class = "scdblfinder-test-marker")
+
+  testthat::local_mocked_bindings(
+    .sn_with_default_autozyme = function(expr, patches) {
+      captured$patch <- patches
+      force(expr)
+    },
+    .package = "Shennong"
+  )
+  testthat::local_mocked_bindings(
+    scDblFinder = function(sce, ...) {
+      captured$sce <- sce
+      captured$args <- list(...)
+      sce
+    },
+    .package = "scDblFinder"
+  )
+
+  actual <- Shennong:::.sn_run_scDblFinder(
+    marker,
+    clusters = NULL,
+    dbr.sd = NULL
+  )
+  expect_identical(actual, marker)
+  expect_identical(captured$patch, "scdblfinder")
+  expect_false(captured$args$verbose)
+  expect_s4_class(captured$args$BPPARAM, "SerialParam")
+  expect_identical(BiocParallel::bpnworkers(captured$args$BPPARAM), 1L)
+
+  Shennong:::.sn_run_scDblFinder(marker, clusters = "cluster-a")
+  expect_identical(captured$args$clusters, "cluster-a")
+  expect_false("verbose" %in% names(captured$args))
 })
 
 test_that("vendored AutoZyme patches are validated again before sourcing", {

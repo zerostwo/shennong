@@ -5,8 +5,8 @@
 \title{Disable optional AutoZyme patches}
 \usage{
 sn_disable_autozyme(
-  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat", "soupx",
-    "tradeseq", "wgcna")
+  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
+    "seurat", "soupx", "tradeseq", "wgcna")
 )
 }
 \arguments{

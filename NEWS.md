@@ -73,6 +73,12 @@ Released 2026-08-01.
 
 ### Changed
 
+- `sn_find_doublets()` now lazily scopes Shennong's bundled exact AutoZyme
+  `scdblfinder` patch around the validated scDblFinder 1.27.6 default call.
+  The fast path is release/body/formals guarded, limited to exact `dgCMatrix`
+  inputs with 1--33,000 cells and positive finite library sizes, and restores
+  the pre-call AutoZyme state. Non-default, BPCells-grouped, oversized, drifted,
+  or otherwise unsupported calls continue through captured upstream code.
 - `sn_remove_ambient_contamination(method = "soupx")` now lazily activates the
   exact-scoped AutoZyme `soupx` patch for `SoupX::adjustCounts()`. The patch and
   its native C++ kernels are now bundled by Shennong and registered through

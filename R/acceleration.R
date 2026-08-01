@@ -7,6 +7,7 @@
   "clusterprofiler",
   "fgsea",
   "nichenetr",
+  "scdblfinder",
   "seurat",
   "soupx",
   "tradeseq",
@@ -61,6 +62,11 @@
   scriabin = list(
     upstream = "scriabin", versions = "0.0.0.9000",
     equivalence = "exact_scoped", approximate = FALSE
+  ),
+  scdblfinder = list(
+    upstream = "scDblFinder", versions = "1.27.6",
+    equivalence = "exact_scoped", approximate = FALSE,
+    source_sha256 = "cb49cc1a47a0c29897a4513a701059fd29c8794668964e42c6db760f22f0cbae"
   ),
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),
@@ -732,13 +738,15 @@
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
 #' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
+#' clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SoupX, tradeSeq, and
+#' WGCNA. It
 #' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
 #' by Shennong, and an exactly validated upstream version. Shennong bundles the
-#' SoupX patch and its compiled kernels, validates the bundled fingerprint, and
-#' registers it through AutoZyme when the official package does not provide
-#' `soupx`. The returned `patch_provider` and `bundled_by_shennong` columns make
-#' this source explicit. Set
+#' the scDblFinder and SoupX patches (plus SoupX's compiled kernels), validates
+#' each bundled fingerprint, and registers them through AutoZyme when the
+#' official package does not provide `scdblfinder` or `soupx`. The returned
+#' `patch_provider` and `bundled_by_shennong` columns make this source explicit.
+#' Set
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
 #' `AUTOZYME_DISABLE=true` is also accepted) to prevent automatic activation.
@@ -753,8 +761,8 @@
 #' sn_check_autozyme()
 sn_check_autozyme <- function(
     patches = c(
-      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-      "soupx", "tradeseq", "wgcna"
+      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
+      "seurat", "soupx", "tradeseq", "wgcna"
     ),
     strict = TRUE,
     allow_approximate = FALSE) {
@@ -1097,8 +1105,8 @@ sn_enable_autozyme <- function(
 #' sn_disable_autozyme()
 #' }
 sn_disable_autozyme <- function(patches = c(
-    "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-    "soupx", "tradeseq", "wgcna"
+    "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
+    "seurat", "soupx", "tradeseq", "wgcna"
   )) {
   patches <- .sn_validate_autozyme_patches(patches)
   if (!.sn_autozyme_is_installed("autozyme")) {

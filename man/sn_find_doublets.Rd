@@ -51,6 +51,10 @@ materializes each sample independently instead of the complete matrix.
 \description{
 This function identifies potential doublets in a Seurat object by converting
 it to a SingleCellExperiment and using the \code{scDblFinder} package.
+For the validated scDblFinder 1.27.6 default workflow on an in-memory
+\code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
+scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
+the captured upstream implementation.
 }
 \examples{
 \dontrun{

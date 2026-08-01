@@ -4,6 +4,13 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Shennong vendors the exact-scoped scDblFinder patch until the official
+  AutoZyme package ships the same finalized source. Automatic use is limited
+  to scDblFinder 1.27.6 default public calls on exact `dgCMatrix` inputs with
+  1--33,000 cells and positive finite library sizes. The four-target source and
+  formal hashes, runtime fallback, RNG restoration, and 35,000 expanded-column
+  eager-normalization boundary remain unchanged from AutoZyme verification.
+  Grouped/BPCells and non-default calls remain upstream behavior.
 - Automatic AutoZyme acceleration is a lazy workflow boundary, not a
   package-load side effect. The exact non-approximate Shennong integration set
   is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, SoupX, tradeSeq, and
