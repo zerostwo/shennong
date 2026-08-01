@@ -4,6 +4,15 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Shennong temporarily vendors AutoZyme's finalized `seurat_merge` and
+  `seurat_joinlayers` patches because the pinned official AutoZyme revision
+  does not yet register them. The integration retains the one-method target
+  boundary, exact source fingerprints, captured-upstream fallback, and scoped
+  activation/rollback. The broad legacy `seurat` patch remains disabled on
+  BPCells-backed calls, while the narrow JoinLayers path may use its separately
+  validated public BPCells fast route. Shennong additionally admits released
+  SeuratObject 5.4.0 after local exact-parity tests, alongside AutoZyme's
+  original 5.4.0.9001 development target.
 - Shennong vendors the exact-scoped scDblFinder patch until the official
   AutoZyme package ships the same finalized source. Automatic use is limited
   to scDblFinder 1.27.6 default public calls on exact `dgCMatrix` inputs with

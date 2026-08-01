@@ -6,7 +6,7 @@
 \usage{
 sn_check_autozyme(
   patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-    "seurat", "soupx", "tradeseq", "wgcna"),
+    "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna"),
   strict = TRUE,
   allow_approximate = FALSE
 )
@@ -32,13 +32,15 @@ install packages, activate patches, prepare Python, or change thread counts.
 \details{
 Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
-clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SoupX, tradeSeq, and
-WGCNA. It
+clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
+\code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, and WGCNA. It
 requires the pinned AutoZyme build, or an exact patch fingerprint recorded
 by Shennong, and an exactly validated upstream version. Shennong bundles the
-the scDblFinder and SoupX patches (plus SoupX's compiled kernels), validates
+the scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
+SoupX's compiled kernels), validates
 each bundled fingerprint, and registers them through AutoZyme when the
-official package does not provide \code{scdblfinder} or \code{soupx}. The returned
+official package does not provide \code{scdblfinder}, \code{seurat_joinlayers},
+\code{seurat_merge}, or \code{soupx}. The returned
 \code{patch_provider} and \code{bundled_by_shennong} columns make this source explicit.
 Set
 \code{options(shennong.autozyme = FALSE)}
@@ -47,8 +49,10 @@ or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
 Newly activated patches are restored even when the workflow errors. These
 controls do not disable patches that are already active and do not affect
 explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or \code{\link[=sn_with_autozyme]{sn_with_autozyme()}}. Seurat
-acceleration is bypassed for BPCells-backed objects so an on-disk layer is
-never coerced to an in-memory sparse matrix by the accelerated path.
+The older broad Seurat acceleration is bypassed for BPCells-backed objects
+so an on-disk layer is never coerced to an in-memory sparse matrix. The
+narrow \code{seurat_joinlayers} patch remains eligible because its validated
+fast path supports public BPCells \code{IterableMatrix} layers.
 }
 \examples{
 sn_check_autozyme()

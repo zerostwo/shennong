@@ -73,6 +73,12 @@ Released 2026-08-01.
 
 ### Changed
 
+- Shennong now vendors the exact-scoped AutoZyme `seurat_merge` and
+  `seurat_joinlayers` patches before their official AutoZyme release. They
+  replace only `SeuratObject::merge.Assay5` and
+  `SeuratObject::JoinLayers.Assay5`, verify bundled source fingerprints before
+  registration, preserve captured-upstream fallback, and can be enabled with
+  `sn_enable_autozyme(c("seurat_merge", "seurat_joinlayers"))`.
 - `sn_find_doublets()` now lazily scopes Shennong's bundled exact AutoZyme
   `scdblfinder` patch around the validated scDblFinder 1.27.6 default call.
   The fast path is release/body/formals guarded, limited to exact `dgCMatrix`

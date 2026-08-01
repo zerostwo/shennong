@@ -6,7 +6,7 @@
 \usage{
 sn_disable_autozyme(
   patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-    "seurat", "soupx", "tradeseq", "wgcna")
+    "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna")
 )
 }
 \arguments{

@@ -21,6 +21,20 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- The exact-scoped AutoZyme `seurat_merge` and `seurat_joinlayers` sources are
+  now bundled under `inst/autozyme/patches/` with their scope, manifest,
+  changelog, and benchmark evidence. Shennong admits only the exact SHA-256
+  fingerprints and SeuratObject 5.4.0/5.4.0.9001, registers only
+  `merge.Assay5` and `JoinLayers.Assay5`, and leaves broader Seurat/v3/SCT
+  dispatch upstream. The method contracts passed 33 merge assertions, 18
+  JoinLayers assertions, and six combined-chain assertions; the full local
+  suite passed 2,978 assertions with four unrelated optional/local-fixture
+  skips. A clean source build/install proved Shennong-owned registration and
+  rollback against an AutoZyme registry without either entry, and a BPCells
+  JoinLayers call matched upstream exactly. Structural `R CMD check` completed
+  without errors (its two warnings are the expected missing `inst/doc` outputs
+  from a deliberate `--no-build-vignettes` tarball), and the complete pkgdown
+  site rebuilt successfully.
 - The validated scDblFinder 1.27.6 patch is now bundled under
   `inst/autozyme/patches/scdblfinder/` and integrated into
   `sn_find_doublets()`. Shennong verifies the installed source SHA-256, scopes
@@ -29,9 +43,7 @@ release gate.
   assertions. A clean temporary installation verified the installed patch
   fingerprint, real registration of all four namespace targets, activation and
   rollback, and a 3,005-cell real SCE workflow run in 25.073 seconds with the
-  patch inactive afterward. The rebuilt source package passed `R CMD check`
-  with 2,570 assertions, 14 optional/repository-only skips, no error, warning,
-  or NOTE; pkgdown also rebuilt successfully.
+  patch inactive afterward.
 - Eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX,
   tradeSeq, and WGCNA patches now activate lazily only inside compatible
   Shennong workflow calls, with the pre-call state restored after success or

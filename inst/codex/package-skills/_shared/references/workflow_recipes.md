@@ -36,9 +36,11 @@ user request to the right Shennong function family quickly.
 ## Recipe: Use AutoZyme acceleration
 
 1. The lazy automatic set is CellChat, NicheNetR, clusterProfiler, fgsea,
-   scDblFinder, Seurat, SoupX, tradeSeq, and WGCNA. Inspect the full set with
+   scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq, and
+   WGCNA. Inspect the full set with
    `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "scdblfinder", "seurat", "soupx", "tradeseq", "wgcna"))` to report the pinned build, installed
+   "scdblfinder", "seurat", "seurat_merge", "seurat_joinlayers", "soupx",
+   "tradeseq", "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.
 2. Eligible defaults are active only inside the compatible Shennong workflow
    call. Verify that success and error both restore the pre-call patch state.
@@ -50,9 +52,10 @@ user request to the right Shennong function family quickly.
    `AUTOZYME_DISABLE=true` to block automatic scopes. These settings do not
    deactivate a manually active patch, and explicit `sn_enable_autozyme()` and
    `sn_with_autozyme({...})` calls ignore them.
-5. BPCells-backed Seurat layers must bypass the Seurat fast patch because the
-   pinned fast path coerces non-`dgCMatrix` input into memory. Temporarily
-   suspend a manually active Seurat patch for that call and restore it after.
+5. BPCells-backed Seurat layers bypass the older broad Seurat patch because it
+   can coerce non-`dgCMatrix` input into memory. The narrow
+   `seurat_joinlayers` patch remains eligible for its validated public BPCells
+   counts path; unsupported call shapes retain captured upstream behavior.
    Do not infer whole-package BPCells compatibility from this guard: CellChat,
    tradeSeq, and other backends may still require controlled sparse
    materialization or an aggregated input sized to available RAM.
@@ -70,6 +73,11 @@ user request to the right Shennong function family quickly.
    at most 33,000 cells. Grouped/BPCells calls and non-default arguments remain
    upstream paths. Treat the installed scope and finalized benchmark table as
    the boundary for speed and memory claims.
+10. For direct Seurat calls, explicitly activate
+    `c("seurat_merge", "seurat_joinlayers")`, run `merge()` and an explicit
+    `JoinLayers(..., layers = "counts", new = "counts")`, then disable them.
+    Shennong fingerprints and registers these bundled one-method patches even
+    when official AutoZyme does not yet contain them.
 
 ## Recipe: Start from raw counts or 10x outputs
 

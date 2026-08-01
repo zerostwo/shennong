@@ -225,7 +225,8 @@ test_that("automatic patch set covers every integrated non-approximate backend",
     Shennong:::.sn_autozyme_default_patches,
     c(
       "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-      "seurat", "soupx", "tradeseq", "wgcna"
+      "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq",
+      "wgcna"
     )
   )
 
@@ -303,6 +304,29 @@ test_that("scDblFinder is an exact default patch with scoped activation", {
   expect_identical(state$status[["scdblfinder"]], "inactive")
 })
 
+test_that("SeuratObject merge and JoinLayers are exact vendored defaults", {
+  expected <- list(
+    seurat_joinlayers = list(
+      hash = "b2379438658f8c39f8073b214ba446b72c3d8d2a059921d163eaa9abf9c761dc",
+      target = "JoinLayers.Assay5"
+    ),
+    seurat_merge = list(
+      hash = "cbb4af06fa7ad8994af70627b7420154137c7d743bae0e06ce7c942fcae7f78d",
+      target = "merge.Assay5"
+    )
+  )
+
+  for (patch in names(expected)) {
+    spec <- Shennong:::.sn_autozyme_patch_manifest[[patch]]
+    expect_identical(spec$upstream, "SeuratObject")
+    expect_identical(spec$versions, c("5.4.0", "5.4.0.9001"))
+    expect_identical(spec$equivalence, "exact_scoped")
+    expect_false(spec$approximate)
+    expect_identical(spec$source_sha256, expected[[patch]]$hash)
+    expect_true(patch %in% Shennong:::.sn_autozyme_default_patches)
+  }
+})
+
 test_that("Shennong bundles the trusted SoupX patch independently", {
   spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
   testthat::local_mocked_bindings(
@@ -341,6 +365,27 @@ test_that("Shennong bundles the trusted scDblFinder patch independently", {
   # Prefer AutoZyme when this development library already contains the same
   # finalized source; otherwise the trusted Shennong copy is the provider.
   expect_true(status$provider %in% c("autozyme", "shennong"))
+})
+
+test_that("Shennong bundles both trusted SeuratObject patches independently", {
+  for (patch in c("seurat_joinlayers", "seurat_merge")) {
+    spec <- Shennong:::.sn_autozyme_patch_manifest[[patch]]
+    testthat::local_mocked_bindings(
+      .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
+      .sn_autozyme_call = function(fun, ...) {
+        if (identical(fun, "list_patches")) return(character())
+        stop("Unexpected mocked AutoZyme call: ", fun)
+      },
+      .package = "Shennong"
+    )
+
+    status <- Shennong:::.sn_autozyme_patch_source_status(patch, spec)
+    expect_false(status$registered)
+    expect_true(status$bundled_by_shennong)
+    expect_true(status$vendored_source_match)
+    expect_true(status$source_match)
+    expect_identical(status$provider, "shennong")
+  }
 })
 
 test_that("scDblFinder workflow scopes the patch only around its call", {
@@ -686,13 +731,14 @@ test_that("unsafe backend calls can temporarily suspend active patches", {
   )
 })
 
-test_that("Seurat automatic acceleration bypasses BPCells-backed objects", {
+test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
   suspended <- FALSE
   fake_object <- structure(list(), class = "Seurat")
   testthat::local_mocked_bindings(
     .sn_seurat_uses_bpcells = function(object, assay = NULL) TRUE,
+    .sn_autozyme_effective_active_patches = function() character(),
     .sn_with_autozyme_disabled = function(expr) {
       suspended <<- TRUE
       force(expr)
@@ -704,8 +750,9 @@ test_that("Seurat automatic acceleration bypasses BPCells-backed objects", {
     Shennong:::.sn_with_default_seurat_autozyme(42L, fake_object),
     42L
   )
-  expect_true(suspended)
-  expect_length(state$activated, 0L)
+  expect_false(suspended)
+  expect_identical(state$activated, c("seurat_joinlayers", "seurat_merge"))
+  expect_identical(state$deactivated, c("seurat_merge", "seurat_joinlayers"))
 
   suspended <- FALSE
   testthat::local_mocked_bindings(
@@ -717,9 +764,35 @@ test_that("Seurat automatic acceleration bypasses BPCells-backed objects", {
     43L
   )
   expect_false(suspended)
-  expect_identical(state$activated, "seurat")
-  expect_identical(state$deactivated, "seurat")
+  expect_identical(
+    tail(state$activated, 3L),
+    c("seurat", "seurat_joinlayers", "seurat_merge")
+  )
+  expect_identical(
+    tail(state$deactivated, 3L),
+    c("seurat_merge", "seurat_joinlayers", "seurat")
+  )
   expect_identical(state$status[["seurat"]], "inactive")
+})
+
+test_that("an active broad Seurat patch still suspends BPCells calls", {
+  fake_object <- structure(list(), class = "Seurat")
+  suspended <- FALSE
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) TRUE,
+    .sn_autozyme_effective_active_patches = function() "seurat",
+    .sn_with_autozyme_disabled = function(expr) {
+      suspended <<- TRUE
+      force(expr)
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(
+    Shennong:::.sn_with_default_seurat_autozyme(44L, fake_object),
+    44L
+  )
+  expect_true(suspended)
 })
 
 test_that("BPCells suppression prevents ambient Seurat provenance claims", {
