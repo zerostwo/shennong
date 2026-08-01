@@ -78,6 +78,11 @@ user request to the right Shennong function family quickly.
     `JoinLayers(..., layers = "counts", new = "counts")`, then disable them.
     Shennong fingerprints and registers these bundled one-method patches even
     when official AutoZyme does not yet contain them.
+11. Consult the installed `autozyme-benchmarks` article and
+    `inst/benchmarks/single-cell-autozyme-benchmark.json` before making
+    performance claims. The formal real-data snapshot reports operation time
+    and whole-worker peak RSS separately and intentionally retains the observed
+    `merge()` peak-memory regression.
 
 ## Recipe: Start from raw counts or 10x outputs
 

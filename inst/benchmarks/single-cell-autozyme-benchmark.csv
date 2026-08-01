@@ -1,0 +1,4 @@
+"operation","patch","cells","features","repetitions","baseline_seconds","accelerated_seconds","speedup","baseline_peak_rss_mb","accelerated_peak_rss_mb","peak_rss_reduction_percent","output_identical","patch_inactive_after"
+"merge","seurat_merge",2000,32738,3,1.38,0.448,3.08035714285714,1336.0234375,1445.44921875,-8.19040880411202,TRUE,TRUE
+"joinlayers","seurat_joinlayers",2000,32738,3,2.451,0.464,5.2823275862069,1607.265625,1285.82421875,19.9992708890293,TRUE,TRUE
+"scdblfinder","scdblfinder",2000,32738,3,31.732,14.059,2.25705953481755,1397.62890625,1284.015625,8.12900196482324,TRUE,TRUE

@@ -4,6 +4,12 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Performance evidence must report regressions as well as wins. AutoZyme
+  comparisons therefore run baseline and accelerated conditions in fresh
+  workers, require exact output fingerprints and rollback, summarize medians
+  across alternating-order repetitions, and distinguish operation elapsed time
+  from complete-worker peak RSS. A patch may be presented as a speed win
+  without being presented as a universal memory win.
 - Shennong temporarily vendors AutoZyme's finalized `seurat_merge` and
   `seurat_joinlayers` patches because the pinned official AutoZyme revision
   does not yet register them. The integration retains the one-method target

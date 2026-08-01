@@ -21,6 +21,19 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- The SoupX, scDblFinder, and Seurat merge/JoinLayers accelerator branches are
+  integrated into `main`. A reproducible formal
+  benchmark uses the validated 2,000-cell, 32,738-feature Kotliarov PBMC
+  CITE-seq fixture, three fresh workers per condition, alternating order,
+  operation elapsed time, and whole-worker peak RSS. Median speedups were
+  3.08x for `merge()`, 5.28x for `JoinLayers()`, and 2.26x for
+  `sn_find_doublets()`, with exact canonical outputs and inactive patches after
+  all 18 runs. Peak RSS changed by +8.2%, -20.0%, and -8.1%, respectively;
+  the merge memory regression is retained in the shipped JSON/CSV evidence and
+  pkgdown article rather than generalized away. The merged full suite passed
+  2,999 assertions with four optional/local-fixture skips, the complete pkgdown
+  site rendered the new article, and the source tarball plus structural
+  `R CMD check` completed with `Status: OK`.
 - The exact-scoped AutoZyme `seurat_merge` and `seurat_joinlayers` sources are
   now bundled under `inst/autozyme/patches/` with their scope, manifest,
   changelog, and benchmark evidence. Shennong admits only the exact SHA-256

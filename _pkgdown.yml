@@ -49,6 +49,7 @@ articles:
       - layered-workflows
       - interpretation-workflows
       - analysis-results-and-methods
+      - autozyme-benchmarks
       - trajectory-dynamics
       - velocity-fate
       - abundance-priority

@@ -1,0 +1,210 @@
+---
+title: "Validated AutoZyme Benchmarks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Validated AutoZyme Benchmarks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 4.8
+)
+benchmark_path <- system.file(
+  "benchmarks",
+  "single-cell-autozyme-benchmark.json",
+  package = "Shennong"
+)
+if (!nzchar(benchmark_path)) {
+  benchmark_path <- file.path(
+    "inst", "benchmarks", "single-cell-autozyme-benchmark.json"
+  )
+}
+benchmark <- jsonlite::read_json(benchmark_path, simplifyVector = TRUE)
+results <- as.data.frame(benchmark$summary, stringsAsFactors = FALSE)
+operation_labels <- c(
+  merge = "Seurat merge",
+  joinlayers = "JoinLayers",
+  scdblfinder = "scDblFinder"
+)
+results$workflow <- unname(operation_labels[results$operation])
+merge_result <- results[results$operation == "merge", , drop = FALSE]
+join_result <- results[results$operation == "joinlayers", , drop = FALSE]
+doublet_result <- results[results$operation == "scdblfinder", , drop = FALSE]
+merge_speedup <- sprintf("%.2fx", merge_result$speedup)
+merge_rss_increase <- sprintf(
+  "%.1f%%", -merge_result$peak_rss_reduction_percent
+)
+join_speedup <- sprintf("%.2fx", join_result$speedup)
+join_rss_reduction <- sprintf(
+  "%.1f%%", join_result$peak_rss_reduction_percent
+)
+doublet_speedup <- sprintf("%.2fx", doublet_result$speedup)
+doublet_rss_reduction <- sprintf(
+  "%.1f%%", doublet_result$peak_rss_reduction_percent
+)
+```
+
+## What was measured
+
+This is a reproducible benchmark of Shennong's vendored exact-scoped
+`seurat_merge`, `seurat_joinlayers`, and `scdblfinder` patches. It uses the
+validated 2,000-cell Kotliarov PBMC CITE-seq subset distributed by Bioconductor
+`scRNAseq`. The local fixture retains all 32,738 RNA features and 20 biological
+samples. Its SHA-256 is recorded in the report; the data itself remains under
+the ignored local real-data root and is not copied into the package.
+
+Each baseline and accelerated condition ran three times in a fresh R process.
+The order alternated between baseline-first and accelerated-first. The table
+uses median operation time and median whole-worker peak resident memory. The
+memory number therefore includes loading Shennong, reading the fixture, and
+preparing identical inputs; it is a conservative end-to-end process measure,
+not an allocation profile of one function body.
+
+```{r benchmark-table}
+display <- data.frame(
+  Workflow = results$workflow,
+  `Baseline (s)` = round(results$baseline_seconds, 3),
+  `Accelerated (s)` = round(results$accelerated_seconds, 3),
+  Speedup = sprintf("%.2fx", results$speedup),
+  `Baseline peak RSS (MB)` = round(results$baseline_peak_rss_mb, 1),
+  `Accelerated peak RSS (MB)` = round(results$accelerated_peak_rss_mb, 1),
+  `Peak RSS change` = sprintf(
+    "%+.1f%%",
+    -results$peak_rss_reduction_percent
+  ),
+  `Exact output` = ifelse(results$output_identical, "yes", "no"),
+  check.names = FALSE
+)
+knitr::kable(display, align = c("l", rep("r", 6), "c"))
+```
+
+```{r benchmark-figure, echo=FALSE}
+plot_data <- rbind(
+  data.frame(
+    workflow = results$workflow,
+    metric = "Elapsed time (seconds)",
+    condition = "Baseline",
+    value = results$baseline_seconds
+  ),
+  data.frame(
+    workflow = results$workflow,
+    metric = "Elapsed time (seconds)",
+    condition = "Accelerated",
+    value = results$accelerated_seconds
+  ),
+  data.frame(
+    workflow = results$workflow,
+    metric = "Peak worker RSS (MB)",
+    condition = "Baseline",
+    value = results$baseline_peak_rss_mb
+  ),
+  data.frame(
+    workflow = results$workflow,
+    metric = "Peak worker RSS (MB)",
+    condition = "Accelerated",
+    value = results$accelerated_peak_rss_mb
+  )
+)
+plot_data$workflow <- factor(
+  plot_data$workflow,
+  levels = unname(operation_labels)
+)
+plot_data$condition <- factor(
+  plot_data$condition,
+  levels = c("Baseline", "Accelerated")
+)
+
+ggplot2::ggplot(
+  plot_data,
+  ggplot2::aes(x = workflow, y = value, fill = condition)
+) +
+  ggplot2::geom_col(position = "dodge", width = 0.72) +
+  ggplot2::facet_wrap(~metric, scales = "free_y") +
+  ggplot2::scale_fill_manual(values = c("#8C8C8C", "#0072B2")) +
+  ggplot2::labs(x = NULL, y = NULL, fill = NULL) +
+  ggplot2::theme_minimal(base_size = 12) +
+  ggplot2::theme(
+    legend.position = "top",
+    panel.grid.major.x = ggplot2::element_blank()
+  )
+```
+
+## Interpretation
+
+All three accelerated outputs were byte-stable under the benchmark's canonical
+snapshots, and every worker reported its patch inactive after the operation.
+
+- `merge()` improved from `r round(merge_result$baseline_seconds, 3)` to
+  `r round(merge_result$accelerated_seconds, 3)` seconds
+  (`r merge_speedup`). For this small end-to-end worker, peak RSS increased by
+  `r merge_rss_increase`. This is a real regression for this fixture and measurement
+  boundary, even though larger patch-level fixtures previously showed lower
+  peak memory. The patch is therefore a speed win here, not a universal memory
+  win.
+- `JoinLayers()` improved by `r join_speedup` and reduced whole-worker peak RSS
+  by `r join_rss_reduction`.
+- `sn_find_doublets()` with the default scDblFinder path improved by
+  `r doublet_speedup` and reduced peak RSS by `r doublet_rss_reduction`.
+
+These numbers describe one machine, package set, and real-data fixture. Use the
+included script on the intended deployment host before making capacity claims.
+
+## Compatibility boundaries
+
+The benchmark does not widen the patches' verified scope:
+
+- `seurat_merge` replaces only `SeuratObject::merge.Assay5`; top-level Seurat
+  merge benefits only through normal dispatch. Unsupported classes and call
+  shapes use captured upstream behavior.
+- `seurat_joinlayers` accelerates an explicit counts-to-counts join on a plain
+  `Assay5`. Unsupported layers, renamed outputs, custom subclasses, or mixed
+  backends fall back upstream.
+- `scdblfinder` is limited to the validated scDblFinder 1.27.6 default call on
+  exact in-memory `dgCMatrix` counts with at most 33,000 cells. Grouped and
+  BPCells-backed Shennong workflows remain outside this fast path.
+
+Check eligibility before a run:
+
+```{r check-patches}
+Shennong::sn_check_autozyme(c(
+  "seurat_merge",
+  "seurat_joinlayers",
+  "scdblfinder"
+))[, c(
+  "patch", "installed_version", "version_match",
+  "bundled_by_shennong", "eligible", "active"
+)]
+```
+
+## Reproduce the benchmark
+
+The heavy benchmark is deliberately not executed during pkgdown builds. Point
+the script at the locally prepared fixture and choose an output path:
+
+```{r reproduce, eval=FALSE}
+system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    "scripts/real-data/benchmark-single-cell-autozyme.R",
+    "--root", "data-local/pkgdown-real",
+    "--output", "inst/benchmarks/single-cell-autozyme-benchmark.json",
+    "--repetitions", "3"
+  )
+)
+```
+
+The script validates the fixture manifest before running, launches every
+condition in a new process with GNU `time`, checks exact output fingerprints,
+checks patch rollback, and writes both JSON evidence and a compact CSV summary.
+
+Benchmark generated at `r benchmark$generated_at_utc` on
+`r benchmark$environment$cpu`, using R `r benchmark$environment$r`, Shennong
+`r benchmark$environment$shennong`, AutoZyme
+`r benchmark$environment$autozyme`, SeuratObject
+`r benchmark$environment$seurat_object`, and scDblFinder
+`r benchmark$environment$scdblfinder`.

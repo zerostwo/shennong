@@ -9,6 +9,12 @@ Released 2026-08-01.
 
 ### Added
 
+- Added a reproducible real-data AutoZyme benchmark and pkgdown article for
+  `seurat_merge`, `seurat_joinlayers`, and `scdblfinder`. The benchmark runs
+  baseline and accelerated conditions in fresh R processes against the
+  validated 2,000-cell Kotliarov PBMC fixture, records operation time and
+  whole-worker peak RSS, requires exact outputs and patch rollback, and ships
+  both raw JSON evidence and a compact CSV summary.
 - Added `sn_set_layer_backend()` as the bidirectional Seurat layer-storage
   interface. Selected layers can be written and rebound to BPCells or safely
   materialized as in-memory `dgCMatrix` objects without changing assay/layer
