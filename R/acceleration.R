@@ -8,6 +8,8 @@
   "fgsea",
   "nichenetr",
   "seurat",
+  "seurat_joinlayers",
+  "seurat_merge",
   "soupx",
   "tradeseq",
   "wgcna"
@@ -65,6 +67,16 @@
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),
     equivalence = "numeric_tolerance_scoped", approximate = FALSE
+  ),
+  seurat_joinlayers = list(
+    upstream = "SeuratObject", versions = c("5.4.0", "5.4.0.9001"),
+    equivalence = "exact_scoped", approximate = FALSE,
+    source_sha256 = "b2379438658f8c39f8073b214ba446b72c3d8d2a059921d163eaa9abf9c761dc"
+  ),
+  seurat_merge = list(
+    upstream = "SeuratObject", versions = c("5.4.0", "5.4.0.9001"),
+    equivalence = "exact_scoped", approximate = FALSE,
+    source_sha256 = "cbb4af06fa7ad8994af70627b7420154137c7d743bae0e06ce7c942fcae7f78d"
   ),
   slingshot = list(
     upstream = "slingshot", versions = "2.16.0",
@@ -708,10 +720,23 @@
 .sn_with_default_seurat_autozyme <- function(expr, object, assay = NULL) {
   if (.sn_seurat_uses_bpcells(object = object, assay = assay)) {
     .sn_record_autozyme_suppression("seurat")
-    return(.sn_with_autozyme_disabled(expr))
+    active <- tryCatch(
+      .sn_autozyme_effective_active_patches(),
+      error = function(error) character()
+    )
+    if ("seurat" %in% active) {
+      return(.sn_with_autozyme_disabled(expr))
+    }
+    return(.sn_with_default_autozyme(
+      expr,
+      patches = c("seurat_joinlayers", "seurat_merge")
+    ))
   }
 
-  .sn_with_default_autozyme(expr, patches = "seurat")
+  .sn_with_default_autozyme(
+    expr,
+    patches = c("seurat", "seurat_joinlayers", "seurat_merge")
+  )
 }
 
 #' Check optional AutoZyme acceleration compatibility
@@ -732,12 +757,15 @@
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
 #' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
+#' clusterProfiler, fgsea, NicheNet, Seurat, SeuratObject
+#' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, and WGCNA. It
 #' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
 #' by Shennong, and an exactly validated upstream version. Shennong bundles the
-#' SoupX patch and its compiled kernels, validates the bundled fingerprint, and
-#' registers it through AutoZyme when the official package does not provide
-#' `soupx`. The returned `patch_provider` and `bundled_by_shennong` columns make
+#' SeuratObject merge/JoinLayers and SoupX patches (plus SoupX's compiled
+#' kernels), validates each bundled fingerprint, and registers them through
+#' AutoZyme when the official package does not provide `seurat_joinlayers`,
+#' `seurat_merge`, or `soupx`. The returned `patch_provider` and
+#' `bundled_by_shennong` columns make
 #' this source explicit. Set
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
@@ -745,8 +773,10 @@
 #' Newly activated patches are restored even when the workflow errors. These
 #' controls do not disable patches that are already active and do not affect
 #' explicit calls to [sn_enable_autozyme()] or [sn_with_autozyme()]. Seurat
-#' acceleration is bypassed for BPCells-backed objects so an on-disk layer is
-#' never coerced to an in-memory sparse matrix by the accelerated path.
+#' The older broad Seurat acceleration is bypassed for BPCells-backed objects
+#' so an on-disk layer is never coerced to an in-memory sparse matrix. The
+#' narrow `seurat_joinlayers` patch remains eligible because its validated
+#' fast path supports public BPCells `IterableMatrix` layers.
 #' @export
 #'
 #' @examples
@@ -754,7 +784,7 @@
 sn_check_autozyme <- function(
     patches = c(
       "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-      "soupx", "tradeseq", "wgcna"
+      "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna"
     ),
     strict = TRUE,
     allow_approximate = FALSE) {
@@ -1098,7 +1128,7 @@ sn_enable_autozyme <- function(
 #' }
 sn_disable_autozyme <- function(patches = c(
     "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-    "soupx", "tradeseq", "wgcna"
+    "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna"
   )) {
   patches <- .sn_validate_autozyme_patches(patches)
   if (!.sn_autozyme_is_installed("autozyme")) {

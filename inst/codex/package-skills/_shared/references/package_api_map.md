@@ -106,9 +106,10 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX, tradeSeq, and
-  WGCNA.
-  Shennong bundles the SoupX patch and native kernels; official AutoZyme only
+  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SeuratObject
+  merge/JoinLayers, SoupX, tradeSeq, and WGCNA.
+  Shennong bundles the SeuratObject merge/JoinLayers and SoupX patches plus
+  SoupX native kernels; official AutoZyme only
   supplies the registration and scoped activation engine for this backend.
   AutoZyme and each upstream package must be installed at the pinned/exactly
   validated versions. Eligible patches are active only inside the compatible
@@ -119,9 +120,9 @@ Runtime reference datasets:
   `AUTOZYME_DISABLE=true` prevent automatic scopes but do not turn off a
   manually active patch. Explicit `sn_enable_autozyme()` and
   `sn_with_autozyme()` calls ignore these automatic opt-outs. BPCells-backed
-  Seurat layers are the safety exception: they bypass the Seurat fast patch to
-  avoid coercion to an in-memory `dgCMatrix`, and a manually active Seurat patch
-  is suspended for that call and then restored. Active scope details are
+  Seurat layers are the safety exception: they bypass the broad Seurat fast
+  patch to avoid coercion to an in-memory `dgCMatrix`; the narrow validated
+  JoinLayers BPCells route remains eligible. Active scope details are
   retained in result provenance. Shennong does not install AutoZyme, upstream
   packages, or a Python environment. Automatic loading also restores the
   caller's `future.globals.maxSize` option before analysis. This Seurat guard is

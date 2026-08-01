@@ -1,0 +1,74 @@
+schema_version: 2
+patch: seurat_joinlayers
+ecosystem: r
+upstream_package: SeuratObject
+autozyme_package: autozyme
+last_reviewed: 2026-08-01
+
+purpose: >
+  Guarded acceleration of SeuratObject::JoinLayers.Assay5 for exact counts
+  joins across dgCMatrix and public BPCells IterableMatrix backends.
+
+truth_source:
+  registration: inst/patches/seurat_joinlayers/patch.R
+  scope: inst/patches/seurat_joinlayers/SCOPE.md
+  changelog: inst/patches/seurat_joinlayers/CHANGELOG.md
+  contract_tests:
+    - tests/testthat/test-contract-seurat_joinlayers.R
+  task: test_seurat_joinlayers
+  accepted_task_commit: 55da460
+
+upstream:
+  repository: https://github.com/satijalab/seurat-object
+  commit: b9a11fa46acc2142e142f08743b48c73a45b2742
+  package_version: 5.4.0.9001
+
+registration:
+  registry_key: seurat_joinlayers
+  upstream_namespace: SeuratObject
+  targets:
+    - JoinLayers.Assay5
+
+release_contract:
+  supported_fast_path: >
+    Exact plain Assay5, explicit counts to counts join, empty dots, valid
+    nonoverlapping maps, and uniform exact dgCMatrix or public BPCells layers.
+  unsupported_calls: captured upstream JoinLayers.Assay5
+  opt_out:
+    - autozyme::with_disabled()
+    - AUTOZYME_DISABLE or AUTOZYME_DISABLED
+  lazy_dots: nonempty dots fall back after ...length() without forcing promises
+  excluded_classes:
+    - Assay
+    - SCTAssay
+    - Assay5T
+    - custom Assay5 subclasses
+
+correctness:
+  comparator: exact upstream-disabled parity
+  contracts:
+    - input immutability
+    - result validity
+    - raw and accessor backend class and attributes
+    - exact selected and unselected layer payloads
+    - cells and features LogMaps
+    - metadata and variable features
+    - warning parity
+    - lazy dots
+    - guarded fallback
+
+evidence:
+  task_fixture_count: 15
+  task_metric_count: 51
+  task_all_exact_metrics_passed: true
+  auto_structure_per_tier: 12/12
+  package_only_attest: passed_linux_small_medium_3_reps_large_1_rep
+  cross_platform_correctness: pending_preflight_ci
+  cross_platform_speed: pending
+  benchmark_note: >
+    Task-host results show lower peak RSS on all three real-data sizes; the
+    partial-feature edge fixture prioritizes memory and exactness over speed.
+
+caveats:
+  task_caveats_file: absent
+  partial_feature_edge_speed: may regress on very small inputs

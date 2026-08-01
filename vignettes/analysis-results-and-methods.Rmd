@@ -195,7 +195,8 @@ full envelope, diagnostics, or provenance is required.
 
 Shennong never patches another package during loading. When an integrated
 workflow first needs one of the lazy defaults—CellChat, NicheNetR,
-clusterProfiler, fgsea, Seurat, tradeSeq, or WGCNA—it checks that relevant patch.
+clusterProfiler, fgsea, Seurat, the narrow SeuratObject merge/JoinLayers paths,
+tradeSeq, or WGCNA—it checks that relevant patch.
 Each patch requires the pinned AutoZyme build plus an installed, exactly
 validated upstream-package version. Eligible patches are activated only inside
 the compatible Shennong workflow call, and the pre-call state is restored after
@@ -207,7 +208,7 @@ runs.
 ```{r autozyme-check}
 autozyme_defaults <- c(
   "cellchat", "nichenetr", "clusterprofiler", "fgsea",
-  "seurat", "tradeseq", "wgcna"
+  "seurat", "seurat_merge", "seurat_joinlayers", "tradeseq", "wgcna"
 )
 sn_check_autozyme(autozyme_defaults)
 ```
@@ -230,15 +231,23 @@ communication <- sn_with_autozyme({
     group_by = "cell_type"
   )
 }, patches = "cellchat")
+
+# Keep both narrow SeuratObject methods active for direct Seurat calls.
+sn_enable_autozyme(c("seurat_merge", "seurat_joinlayers"))
+merged <- merge(object_a, object_b)
+merged[["RNA"]] <- SeuratObject::JoinLayers(
+  merged[["RNA"]], layers = "counts", new = "counts"
+)
+sn_disable_autozyme(c("seurat_joinlayers", "seurat_merge"))
 ```
 
 `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
 `AUTOZYME_DISABLE=true` block automatic scopes; none deactivates a patch that
 the user activated manually, and explicit helpers ignore these controls. For
-memory safety, BPCells-backed Seurat layers bypass the Seurat fast patch because
-the pinned implementation would coerce them to an in-memory `dgCMatrix`. An
-already active Seurat patch is suspended only for that BPCells-backed call and
-restored afterward. NicheNetR automatic use remains limited to `single = TRUE`
+memory safety, BPCells-backed Seurat layers bypass the older broad Seurat patch
+because it can coerce them to an in-memory `dgCMatrix`. The narrow
+`seurat_joinlayers` patch remains eligible for public BPCells `IterableMatrix`
+count layers; unsupported calls fall back to upstream. NicheNetR automatic use remains limited to `single = TRUE`
 and a dense numeric ligand-target matrix. Relaxing `strict` or setting
 `allow_approximate = TRUE` remains an explicit manual reproducibility decision.
 Shennong does not install AutoZyme, upstream packages, or a Python environment.

@@ -1,0 +1,84 @@
+schema_version: 2
+patch: seurat_merge
+ecosystem: r
+upstream_package: SeuratObject
+autozyme_package: autozyme
+last_reviewed: 2026-08-01
+
+purpose: >
+  Conservative single-target acceleration of SeuratObject::merge.Assay5 by
+  building Assay5 layers and LogMaps directly while retaining exact upstream
+  fallback for every unvalidated class or call shape.
+
+truth_source:
+  registration: inst/patches/seurat_merge/patch.R
+  scope: inst/patches/seurat_merge/SCOPE.md
+  changelog: inst/patches/seurat_merge/CHANGELOG.md
+  contract_tests:
+    - tests/testthat/test-contract-seurat_merge.R
+  task: test_seurat_merge
+  accepted_task_commit: eeba1054ef0aa9def7010dbac6a1a559e6306039
+  audited_merge_assay5_commit: b1cf81af6250c160df88759b9cd2f319d6735915
+
+upstream:
+  repository: https://github.com/satijalab/seurat-object
+  commit: b9a11fa46acc2142e142f08743b48c73a45b2742
+  package_version: 5.4.0.9001
+
+registration:
+  registry_key: seurat_merge
+  upstream_namespace: SeuratObject
+  targets:
+    - merge.Assay5
+  intentionally_not_registered:
+    - merge.Seurat
+    - merge.StdAssay
+    - merge.Assay
+
+release_contract:
+  supported_fast_path: >
+    Exact plain SeuratObject Assay5 inputs; collapse exactly false; null or
+    length-matched character labels and add.cell.ids; unique generated layer
+    names; canonical backend attributes and vf metadata names; optional
+    validated private .cell.names.
+  unsupported_calls: captured upstream merge.Assay5
+  opt_out:
+    - zyme = FALSE
+    - autozyme::with_disabled()
+    - AUTOZYME_DISABLE or AUTOZYME_DISABLED
+  lazy_dots: >
+    Dot names are inspected with ...names(); only .cell.names is selected with
+    ...elt(), so unrelated promises are not forced.
+  excluded_classes:
+    - Assay
+    - SCTAssay
+    - Assay5T
+    - custom Assay5 subclasses
+
+correctness:
+  comparator: exact upstream-disabled parity
+  contracts:
+    - input immutability
+    - result validity
+    - raw backend class and attributes
+    - cells and features LogMaps
+    - feature metadata
+    - default layer and default slot
+    - lazy dots
+    - fallback class and condition behavior
+
+evidence:
+  task_fixture_count: 15
+  task_metric_count: 35
+  task_all_exact_metrics_passed: true
+  package_only_attest: passed_linux_3_reps_per_tier
+  cross_platform_correctness: pending_preflight_ci
+  cross_platform_speed: pending
+  benchmark_note: >
+    Package-only Linux attest for the one-target patch measured 3.2x, 2.5x,
+    and 1.3x median speedups with 13.1%, 19.2%, and 21.0% lower peak RSS on
+    small, medium, and large fixtures. Round-56 task timings remain excluded.
+
+caveats:
+  task_caveats_file: absent
+  new_packaging_caveat: none

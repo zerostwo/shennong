@@ -4,6 +4,15 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- Shennong temporarily vendors AutoZyme's finalized `seurat_merge` and
+  `seurat_joinlayers` patches because the pinned official AutoZyme revision
+  does not yet register them. The integration retains the one-method target
+  boundary, exact source fingerprints, captured-upstream fallback, and scoped
+  activation/rollback. The broad legacy `seurat` patch remains disabled on
+  BPCells-backed calls, while the narrow JoinLayers path may use its separately
+  validated public BPCells fast route. Shennong additionally admits released
+  SeuratObject 5.4.0 after local exact-parity tests, alongside AutoZyme's
+  original 5.4.0.9001 development target.
 - Automatic AutoZyme acceleration is a lazy workflow boundary, not a
   package-load side effect. The exact non-approximate Shennong integration set
   is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, SoupX, tradeSeq, and

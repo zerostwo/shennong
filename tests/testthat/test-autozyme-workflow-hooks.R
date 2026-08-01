@@ -214,7 +214,7 @@ test_that("Seurat clustering, priority, and plotting hooks precede patched targe
   }
 })
 
-test_that("the Seurat wrapper suspends AutoZyme for BPCells-backed objects", {
+test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
   uses_bpcells <- TRUE
   disabled_calls <- 0L
   scoped_calls <- 0L
@@ -222,13 +222,19 @@ test_that("the Seurat wrapper suspends AutoZyme for BPCells-backed objects", {
 
   testthat::local_mocked_bindings(
     .sn_seurat_uses_bpcells = function(object, assay = NULL) uses_bpcells,
+    .sn_autozyme_effective_active_patches = function() character(),
     .sn_with_autozyme_disabled = function(expr) {
       disabled_calls <<- disabled_calls + 1L
       force(expr)
     },
     .sn_with_default_autozyme = function(expr, patches) {
       scoped_calls <<- scoped_calls + 1L
-      expect_identical(patches, "seurat")
+      expected <- if (uses_bpcells) {
+        c("seurat_joinlayers", "seurat_merge")
+      } else {
+        c("seurat", "seurat_joinlayers", "seurat_merge")
+      }
+      expect_identical(patches, expected)
       force(expr)
     },
     .package = "Shennong"
@@ -244,8 +250,8 @@ test_that("the Seurat wrapper suspends AutoZyme for BPCells-backed objects", {
   )
   expect_identical(value, 41L)
   expect_identical(executions, 1L)
-  expect_identical(disabled_calls, 1L)
-  expect_identical(scoped_calls, 0L)
+  expect_identical(disabled_calls, 0L)
+  expect_identical(scoped_calls, 1L)
 
   uses_bpcells <- FALSE
   value <- Shennong:::.sn_with_default_seurat_autozyme(
@@ -258,8 +264,8 @@ test_that("the Seurat wrapper suspends AutoZyme for BPCells-backed objects", {
   )
   expect_identical(value, 42L)
   expect_identical(executions, 2L)
-  expect_identical(disabled_calls, 1L)
-  expect_identical(scoped_calls, 1L)
+  expect_identical(disabled_calls, 0L)
+  expect_identical(scoped_calls, 2L)
 })
 
 test_that("BPCells-backed Seurat assays are detected before acceleration", {
