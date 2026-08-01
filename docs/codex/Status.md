@@ -48,7 +48,10 @@ release gate.
   patch around `adjustCounts()` and restores the prior patch state on exit.
   Shennong now ships the patch R source and compiled native kernels, validates
   their SHA-256, and registers them through official AutoZyme at runtime when
-  that package does not provide `soupx` itself.
+  that package does not provide `soupx` itself. The installed patch directory
+  also carries its exact `SCOPE.md` and a finalized benchmark table containing
+  only equivalence-passing PBMC 10k/20k measurements; failed and baseline-less
+  runs are excluded.
   Shennong requests the attested fractional correction and then applies the
   same stochastic integer rounding as `SoupX::adjustCounts(roundToInt = TRUE)`;
   a seeded `scToy` comparison returned an identical `dgCMatrix`. Local strict

@@ -21,8 +21,11 @@ Last updated: 2026-08-01
   the exact AutoZyme sparse kernel to run. Shennong owns and distributes the
   SoupX patch source and compiled kernel under the upstream MIT license, checks
   the bundled SHA-256 before sourcing it, and registers it through AutoZyme's
-  public API. Official AutoZyme therefore need not ship `soupx`; exact AutoZyme
-  and SoupX version checks still apply.
+  public API. The vendored patch directory also retains the validated scope and
+  only finalized equivalence-passing benchmark rows, so its compatibility and
+  performance claims remain auditable independently of the AutoZyme checkout.
+  Official AutoZyme therefore need not ship `soupx`; exact AutoZyme and SoupX
+  version checks still apply.
 - Seurat assay/layer names describe analytical semantics, while BPCells and
   `dgCMatrix` describe storage backends. `sn_set_layer_backend()` is therefore
   the bidirectional public boundary; it changes storage without renaming

@@ -77,9 +77,11 @@ Released 2026-08-01.
   exact-scoped AutoZyme `soupx` patch for `SoupX::adjustCounts()`. The patch and
   its native C++ kernels are now bundled by Shennong and registered through
   AutoZyme at runtime, so the official AutoZyme package no longer needs to ship
-  a SoupX patch. Shennong retains SoupX's stochastic integer-rounding behavior,
-  restores the pre-call patch state, and falls back to upstream SoupX when
-  AutoZyme is absent or incompatible.
+  a SoupX patch. The installed patch also includes its validated scope and the
+  finalized, equivalence-passing PBMC 10k/20k benchmark summary. Shennong
+  retains SoupX's stochastic integer-rounding behavior, restores the pre-call
+  patch state, and falls back to upstream SoupX when AutoZyme is absent or
+  incompatible.
 - AutoZyme automatic activation is now lazy and scoped to compatible Shennong
   workflow calls rather than package loading or persistent process mutation. Set
   `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or

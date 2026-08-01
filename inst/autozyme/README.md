@@ -6,8 +6,11 @@ when the official AutoZyme package does not ship this patch.
 
 - Upstream project: <https://github.com/ElliotXie/autozyme>
 - Upstream source revision: `9952189`
-- Vendored files: installed `patches/soupx/patch.R` plus package source
-  `src/soupx.cpp`
+- Vendored files: installed `patches/soupx/patch.R`, its validated scope in
+  `patches/soupx/SCOPE.md`, the successful equivalence-passing benchmark
+  summary in `patches/soupx/speedups_finalized.tsv`, and package source
+  `src/soupx.cpp`. The recorded speedups use cached baseline measurements from
+  AutoZyme's verifier; failed or baseline-less runs are not finalized.
 - License: MIT; see `LICENSE.autozyme.md`
 
 Shennong compiles the native kernel into its own shared library. At runtime it
