@@ -21,6 +21,30 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- clusterProfiler 4.20 and fgsea 1.38 now activate independently inside
+  `sn_enrich()`: the Shennong-bundled clusterProfiler patch reports one active
+  `get_GO_data()` target and the official fgsea patch reports three active
+  targets. Focused enrichment/acceleration/hook tests passed 407 assertions
+  without warnings. The measured enrichment file completed in 161.8 seconds
+  versus 224.5 seconds before activation in this same checkout; a final
+  post-refactor rerun passed its 91 assertions in 136.8 seconds. Repeated cached GSEA
+  calls fell from about 15 seconds on the first call to about 1 second. ORA
+  remains dominated by the upstream enrichit statistical core, so this is a
+  measured local improvement rather than a universal speed claim. The source
+  tarball built successfully; its isolated `R CMD check` tests passed 2,619
+  assertions with 15 Seurat 5.5.1 SCTransform validation warnings and 14
+  optional/repository-only skips. Check completed with zero errors/warnings and
+  one known local `.codegraph` NOTE. The complete pkgdown site rebuilt in
+  206.4 seconds.
+- Ambient and doublet clustering are now explicit backend choices. decontX and
+  scDblFinder default to their native automatic clustering, while callers can
+  select `cluster_backend = "shennong"`; SoupX retains Shennong clustering.
+  Seurat AutoZyme scopes now tolerate version-label drift and cover neighbor and
+  cluster calls in addition to the earlier stages. A Seurat 5.5.1 smoke run
+  completed with all scopes restored, and a paired 1,000-feature/400-cell run
+  returned identical clusters with 6.213 s upstream versus 5.483 s accelerated
+  in that single directional sample. This is compatibility evidence, not a
+  generalized performance claim.
 - The SoupX, scDblFinder, and Seurat merge/JoinLayers accelerator branches are
   integrated into `main`. A reproducible formal
   benchmark uses the validated 2,000-cell, 32,738-feature Kotliarov PBMC

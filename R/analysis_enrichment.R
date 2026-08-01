@@ -447,18 +447,21 @@ sn_enrich <- function(
     gene_list <- NULL
   }
 
+  with_enrichment_autozyme <- function(expr) {
+    .sn_with_default_autozyme(
+      .sn_with_default_autozyme(
+        expr,
+        patches = if (identical(analysis, "gsea")) "fgsea" else character(0),
+        strict = FALSE
+      ),
+      patches = "clusterprofiler",
+      strict = FALSE
+    )
+  }
+
   run_one <- function(current_database) {
     current_cfg <- msigdb_cfgs[[current_database]]
     .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
-    with_enrichment_autozyme <- function(expr) {
-      .sn_with_default_autozyme(
-        expr,
-        patches = c(
-          "clusterprofiler",
-          if (identical(analysis, "gsea")) "fgsea" else character(0)
-        )
-      )
-    }
 
     if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
       ont <- switch(EXPR = current_database,
@@ -639,52 +642,49 @@ sn_enrich <- function(
     stop(glue("Unsupported database '{current_database}'."), call. = FALSE)
   }
 
-  .sn_with_default_autozyme({
-  results <- stats::setNames(lapply(databases, run_one), databases)
+  with_enrichment_autozyme({
+    results <- stats::setNames(lapply(databases, run_one), databases)
 
-  if (!is_null(outdir)) {
-    outdir <- sn_set_path(path = outdir)
-    prefix_part <- if (!is_null(prefix) && nzchar(prefix)) paste0(prefix, ".") else ""
-    for (current_database in names(results)) {
-      filename <- glue("{prefix_part}enrichment.{.sn_enrich_output_label(current_database)}.rds")
-      saveRDS(results[[current_database]], file = file.path(outdir, filename))
-    }
-  }
-
-  if (!is_null(object)) {
-    store_names <- .sn_enrich_store_names(store_name = store_name, databases = names(results))
-    for (current_database in names(results)) {
-      current_store <- if (length(databases) == 1) {
-        store_names
-      } else {
-        store_names[[current_database]]
+    if (!is_null(outdir)) {
+      outdir <- sn_set_path(path = outdir)
+      prefix_part <- if (!is_null(prefix) && nzchar(prefix)) paste0(prefix, ".") else ""
+      for (current_database in names(results)) {
+        filename <- glue("{prefix_part}enrichment.{.sn_enrich_output_label(current_database)}.rds")
+        saveRDS(results[[current_database]], file = file.path(outdir, filename))
       }
-      object <- sn_store_enrichment(
-        object = object,
-        result = results[[current_database]],
-        store_name = current_store,
-        analysis = analysis,
-        database = current_database,
-        species = species,
-        source_de_name = source_de_name,
-        gene_col = gene_col,
-        score_col = if (identical(analysis, "gsea") && !is_null(mapping)) mapping$value_col else NULL,
-        return_object = TRUE
-      )
     }
 
-    if (isTRUE(return_object)) {
-      return(object)
+    if (!is_null(object)) {
+      store_names <- .sn_enrich_store_names(store_name = store_name, databases = names(results))
+      for (current_database in names(results)) {
+        current_store <- if (length(databases) == 1) {
+          store_names
+        } else {
+          store_names[[current_database]]
+        }
+        object <- sn_store_enrichment(
+          object = object,
+          result = results[[current_database]],
+          store_name = current_store,
+          analysis = analysis,
+          database = current_database,
+          species = species,
+          source_de_name = source_de_name,
+          gene_col = gene_col,
+          score_col = if (identical(analysis, "gsea") && !is_null(mapping)) mapping$value_col else NULL,
+          return_object = TRUE
+        )
+      }
+
+      if (isTRUE(return_object)) {
+        return(object)
+      }
     }
-  }
 
-  if (length(results) == 1) {
-    return(results[[1]])
-  }
+    if (length(results) == 1) {
+      return(results[[1]])
+    }
 
-  results
-  }, patches = c(
-    "clusterprofiler",
-    if (identical(analysis, "gsea")) "fgsea" else character(0)
-  ))
+    results
+  })
 }

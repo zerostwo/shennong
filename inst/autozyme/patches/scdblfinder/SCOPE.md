@@ -1,8 +1,7 @@
 # autozyme `scdblfinder` (R) — supported parameter scope
 
-This preparatory patch accelerates the current scDblFinder default workflow.
-It is release-locked to scDblFinder 1.27.6 at upstream commit
-`2d0e5e4760e3d6d7525ec9a215fbeaab51915e36`.
+This preparatory patch accelerates the validated scDblFinder default workflow
+from upstream commit `2d0e5e4760e3d6d7525ec9a215fbeaab51915e36`.
 
 ## `scDblFinder::scDblFinder`
 
@@ -29,14 +28,14 @@ It is release-locked to scDblFinder 1.27.6 at upstream commit
   positive and finite. Expanded inputs above 35,000 retain upstream
   normalization/PCA behavior for RSS neutrality and carry no normalization
   speed claim.
-- **Release guard:** The package version must be exactly 1.27.6 and both the
-  body and formal-list SHA-256 hashes of all four targets must match the pinned
-  source. The public-driver feature-selection call-site transform must match
-  exactly once. Any mismatch fails closed.
+- **Compatibility guard:** Both the body and formal-list SHA-256 hashes of all
+  four targets must match the pinned source, independent of the package version
+  label. The public-driver feature-selection call-site transform must match
+  exactly once. Any implementation mismatch fails closed.
 - **Fallback:** Direct calls to `.defaultProcessing`, `.evaluateKNN`, or
   `cxds2`; dense/delayed/unsupported sparse inputs; NA values; non-positive
   library sizes or size factors; non-default public arguments; unsupported
-  thread backends/counts; inputs above 33,000 cells; source/version drift;
+  thread backends/counts; inputs above 33,000 cells; targeted source drift;
   `lgCMatrix` and every other sparse representation; `autozyme::with_disabled()`;
   and runtime fast-path errors all call the captured upstream implementation.
   Error-triggered retries restore `.Random.seed` before calling upstream.

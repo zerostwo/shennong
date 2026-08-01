@@ -47,10 +47,15 @@ user request to the right Shennong function family quickly.
    patches; treat this as activation evidence, not proof that every guarded
    internal fast path accepted the input. Verify that success and error both
    restore the pre-call patch state.
-3. Missing packages and version drift are skipped safely. Approximate patches
-   are never automatic. Keep `strict = TRUE`; treat `strict = FALSE` or
-   `allow_approximate = TRUE` as an explicit reproducibility decision, not a
-   generic speed switch.
+3. Missing packages and approximate patches are skipped safely. Automatic
+   Seurat and enrichment workflow scopes deliberately allow version-label
+   drift. clusterProfiler and fgsea are activated independently; the bundled
+   clusterProfiler 4.20 patch caches exact GSON annotation objects, while the
+   statistical core remains upstream. Seurat relies on runtime structure
+   guards and captured-upstream fallback; scDblFinder relies
+   on exact target-function fingerprints. Manual activation remains strict by
+   default. Treat `strict = FALSE` or `allow_approximate = TRUE` in explicit
+   management calls as a reproducibility decision, not a generic speed switch.
 4. Set `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or
    `AUTOZYME_DISABLE=true` to block automatic scopes. These settings do not
    deactivate a manually active patch, and explicit `sn_enable_autozyme()` and
@@ -71,11 +76,13 @@ user request to the right Shennong function family quickly.
    so official AutoZyme does not need to contain `soupx`; AutoZyme still manages
    temporary activation and rollback. Shennong then performs SoupX's original
    stochastic integer rounding. Check the seed when reproducibility matters.
-9. `sn_find_doublets()` scopes Shennong's bundled `scdblfinder` patch only for
-   the validated scDblFinder 1.27.6 default call on exact `dgCMatrix` inputs of
+9. `sn_find_doublets()` defaults to scDblFinder's native automatic clustering
+   and scopes Shennong's bundled `scdblfinder` patch only for the validated
+   default call on exact `dgCMatrix` inputs of
    at most 33,000 cells. Grouped/BPCells calls and non-default arguments remain
    upstream paths. Treat the installed scope and finalized benchmark table as
-   the boundary for speed and memory claims.
+   the boundary for speed and memory claims. Select
+   `cluster_backend = "shennong"` only when Shennong clustering is intentional.
 10. For direct Seurat calls, explicitly activate
     `c("seurat_merge", "seurat_joinlayers")`, run `merge()` and an explicit
     `JoinLayers(..., layers = "counts", new = "counts")`, then disable them.

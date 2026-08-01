@@ -164,9 +164,9 @@ The benchmark does not widen the patches' verified scope:
 - `seurat_joinlayers` accelerates an explicit counts-to-counts join on a plain
   `Assay5`. Unsupported layers, renamed outputs, custom subclasses, or mixed
   backends fall back upstream.
-- `scdblfinder` is limited to the validated scDblFinder 1.27.6 default call on
-  exact in-memory `dgCMatrix` counts with at most 33,000 cells. Grouped and
-  BPCells-backed Shennong workflows remain outside this fast path.
+- `scdblfinder` is limited to a target-function-fingerprint-compatible default
+  call on exact in-memory `dgCMatrix` counts with at most 33,000 cells. Grouped
+  and BPCells-backed Shennong workflows remain outside this fast path.
 
 Check eligibility before a run:
 

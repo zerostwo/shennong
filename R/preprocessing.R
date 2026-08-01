@@ -1126,13 +1126,15 @@ sn_filter_cells <- function(
         verbose = FALSE,
         BPPARAM = BiocParallel::SerialParam(progressbar = FALSE)
       ),
-      patches = "scdblfinder"
+      patches = "scdblfinder",
+      strict = FALSE
     ))
   }
 
   .sn_with_default_autozyme(
     scDblFinder::scDblFinder(sce = sce, ...),
-    patches = "scdblfinder"
+    patches = "scdblfinder",
+    strict = FALSE
   )
 }
 
@@ -1234,13 +1236,20 @@ sn_filter_cells <- function(
 #'
 #' This function identifies potential doublets in a Seurat object by converting
 #' it to a SingleCellExperiment and using the \code{scDblFinder} package.
-#' For the validated scDblFinder 1.27.6 default workflow on an in-memory
+#' For the validated scDblFinder default workflow on an in-memory
 #' \code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
 #' scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
-#' the captured upstream implementation.
+#' the captured upstream implementation. Compatibility is determined from the
+#' targeted function fingerprints rather than the package version label.
 #'
 #' @param object A \code{Seurat} object.
-#' @param clusters Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.
+#' @param clusters Optional cluster assignments. A metadata column name or one
+#'   value per cell. Explicit assignments take precedence over
+#'   \code{cluster_backend}.
+#' @param cluster_backend Clustering implementation used when \code{clusters}
+#'   is \code{NULL}. \code{"native"} (the default) lets scDblFinder perform its
+#'   own automatic clustering. \code{"shennong"} first obtains assignments from
+#'   \code{sn_run_cluster()} using the selected assay and layer.
 #' @param group_by An optional metadata column used as the donor or sample grouping.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
 #' @param ncores Number of sample groups to process concurrently. For a BPCells
@@ -1276,6 +1285,7 @@ sn_filter_cells <- function(
 sn_find_doublets <- function(
   object,
   clusters = NULL,
+  cluster_backend = c("native", "shennong"),
   group_by = NULL,
   dbr_sd = NULL,
   ncores = 1,
@@ -1290,6 +1300,7 @@ sn_find_doublets <- function(
     stop("`ncores` must be one positive integer.", call. = FALSE)
   }
   ncores <- as.integer(ncores)
+  cluster_backend <- match.arg(cluster_backend)
 
   if (!is_null(group_by)) {
     if (!is.character(group_by) || length(group_by) != 1L || !nzchar(group_by)) {
@@ -1345,6 +1356,22 @@ sn_find_doublets <- function(
 
   counts <- counts[, keep_cells, drop = FALSE]
   metadata <- metadata[keep_cells, , drop = FALSE]
+
+  if (is_null(clusters) && identical(cluster_backend, "shennong")) {
+    .sn_log_info("Inferring doublet-detection clusters with `sn_run_cluster()`.")
+    cluster_object <- object[, keep_cells, drop = FALSE]
+    clusters <- sn_run_cluster(
+      object = cluster_object,
+      assay = assay,
+      layer = layer,
+      return_cluster = TRUE,
+      resolution = 2,
+      block_genes = NULL,
+      verbose = FALSE
+    )
+  } else if (is_null(clusters)) {
+    .sn_log_info("Using scDblFinder's native automatic clustering.")
+  }
 
   .sn_log_info("Converting the Seurat object to SingleCellExperiment for doublet detection.")
   sce <- SingleCellExperiment::SingleCellExperiment(
@@ -1628,6 +1655,27 @@ sn_find_doublets <- function(
   cluster
 }
 
+.sn_resolve_ambient_cluster_backend <- function(method,
+                                                cluster_backend = NULL,
+                                                cluster = NULL) {
+  if (is_null(cluster_backend)) {
+    cluster_backend <- if (identical(method, "decontx")) "native" else "shennong"
+  } else {
+    cluster_backend <- match.arg(cluster_backend, c("native", "shennong"))
+  }
+
+  if (!is_null(cluster)) {
+    return("provided")
+  }
+  if (identical(method, "soupx") && identical(cluster_backend, "native")) {
+    stop(
+      "SoupX does not provide native clustering; use `cluster_backend = \"shennong\"` or supply `cluster`.",
+      call. = FALSE
+    )
+  }
+  cluster_backend
+}
+
 .sn_round_soupx_counts <- function(counts) {
   fractional <- counts@x - floor(counts@x)
   counts@x <- floor(counts@x) + stats::rbinom(
@@ -1723,6 +1771,7 @@ sn_find_doublets <- function(
 .sn_remove_ambient_decontx <- function(x_info,
                                        raw_info = NULL,
                                        cluster = NULL,
+                                       cluster_backend = "native",
                                        remove_zero_count_cells = FALSE,
                                        verbose = FALSE,
                                        ...) {
@@ -1744,19 +1793,30 @@ sn_find_doublets <- function(
     background <- SingleCellExperiment::SingleCellExperiment(list(counts = background_counts))
   }
 
-  z <- .sn_resolve_ambient_clusters(
-    x_info = list(object = x_info$object, counts = counts),
-    cluster = cluster,
-    verbose = verbose
-  )
+  z <- NULL
+  if (!identical(cluster_backend, "native")) {
+    z <- .sn_resolve_ambient_clusters(
+      x_info = list(object = x_info$object, counts = counts),
+      cluster = cluster,
+      verbose = verbose
+    )
+  }
 
   sce <- withCallingHandlers(
-    celda::decontX(
-      x = sce,
-      z = z,
-      background = background,
-      ...
-    ),
+    if (identical(cluster_backend, "native")) {
+      celda::decontX(
+        x = sce,
+        background = background,
+        ...
+      )
+    } else {
+      celda::decontX(
+        x = sce,
+        z = z,
+        background = background,
+        ...
+      )
+    },
     warning = function(w) {
       message <- conditionMessage(w)
       benign_patterns <- c("librarySizeFactors", "normalizeCounts")
@@ -1849,8 +1909,13 @@ sn_find_doublets <- function(
 #'   \code{decontx}, it is used as the background matrix.
 #' @param method One of \code{"decontx"} or \code{"soupx"}.
 #' @param cluster Optional cluster labels. This can be a vector with one value
-#'   per cell, or a metadata column name when \code{x} is a Seurat object. If
-#'   \code{NULL}, clusters are inferred with \code{sn_run_cluster()}.
+#'   per cell, or a metadata column name when \code{x} is a Seurat object.
+#'   Explicit labels take precedence over \code{cluster_backend}.
+#' @param cluster_backend Clustering implementation used when \code{cluster}
+#'   is \code{NULL}. The method-specific default is \code{"native"} for decontX,
+#'   which lets decontX perform its own clustering, and \code{"shennong"} for
+#'   SoupX, which requires assignments and obtains them from
+#'   \code{sn_run_cluster()}. SoupX does not support \code{"native"}.
 #' @param remove_zero_count_cells Logical; if \code{TRUE}, remove cells whose
 #'   decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by
 #'   restoring their original counts and emit a warning.
@@ -1883,6 +1948,7 @@ sn_remove_ambient_contamination <- function(
   raw = NULL,
   method = c("decontx", "soupx"),
   cluster = NULL,
+  cluster_backend = NULL,
   remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
@@ -1892,6 +1958,11 @@ sn_remove_ambient_contamination <- function(
   check_installed(pkg = "SeuratObject", reason = "to handle Seurat objects.")
 
   method <- match.arg(method)
+  cluster_backend <- .sn_resolve_ambient_cluster_backend(
+    method = method,
+    cluster_backend = cluster_backend,
+    cluster = cluster
+  )
   x_info <- .sn_resolve_counts_input(x, arg = "x")
   raw_info <- if (is_null(raw)) NULL else .sn_resolve_counts_input(raw, arg = "raw")
   if (is_null(raw_info)) {
@@ -1915,6 +1986,7 @@ sn_remove_ambient_contamination <- function(
       x_info = x_info,
       raw_info = raw_info,
       cluster = cluster,
+      cluster_backend = cluster_backend,
       remove_zero_count_cells = remove_zero_count_cells,
       verbose = verbose,
       ...

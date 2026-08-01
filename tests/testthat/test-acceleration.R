@@ -339,6 +339,33 @@ test_that("SeuratObject merge and JoinLayers are exact vendored defaults", {
   }
 })
 
+test_that("clusterProfiler 4.20 uses the trusted vendored GSON cache patch", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$clusterprofiler
+  expect_identical(spec$upstream, "clusterProfiler")
+  expect_identical(spec$versions, "4.20.0")
+  expect_identical(spec$equivalence, "exact_scoped")
+  expect_false(spec$approximate)
+  expect_identical(
+    spec$source_sha256,
+    "97711d3821dabfe497c3cecb9932c6e1829af01ba86e5289487996de1b544e77"
+  )
+
+  testthat::local_mocked_bindings(
+    .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
+    .sn_autozyme_call = function(fun, ...) {
+      if (identical(fun, "list_patches")) return("clusterprofiler")
+      stop("Unexpected mocked AutoZyme call: ", fun)
+    },
+    .package = "Shennong"
+  )
+  status <- Shennong:::.sn_autozyme_patch_source_status(
+    "clusterprofiler", spec
+  )
+  expect_true(status$bundled_by_shennong)
+  expect_true(status$vendored_source_match)
+  expect_identical(status$provider, "shennong")
+})
+
 test_that("Shennong bundles the trusted SoupX patch independently", {
   spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
   testthat::local_mocked_bindings(
@@ -407,8 +434,9 @@ test_that("scDblFinder workflow scopes the patch only around its call", {
   marker <- structure(list(value = 1L), class = "scdblfinder-test-marker")
 
   testthat::local_mocked_bindings(
-    .sn_with_default_autozyme = function(expr, patches) {
+    .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
       captured$patch <- patches
+      captured$strict <- strict
       force(expr)
     },
     .package = "Shennong"
@@ -429,6 +457,7 @@ test_that("scDblFinder workflow scopes the patch only around its call", {
   )
   expect_identical(actual, marker)
   expect_identical(captured$patch, "scdblfinder")
+  expect_false(captured$strict)
   expect_false(captured$args$verbose)
   expect_s4_class(captured$args$BPPARAM, "SerialParam")
   expect_identical(BiocParallel::bpnworkers(captured$args$BPPARAM), 1L)

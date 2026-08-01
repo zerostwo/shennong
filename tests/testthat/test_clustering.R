@@ -2404,6 +2404,42 @@ test_that("sn_remove_ambient_contamination requires raw counts for SoupX", {
   )
 })
 
+test_that("sn_remove_ambient_contamination routes decontX clustering backends", {
+  counts <- Matrix::Matrix(
+    matrix(rpois(60, lambda = 2), nrow = 10, ncol = 6),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  observed <- character()
+
+  run <- function(cluster = NULL, cluster_backend = NULL) {
+    with_mocked_bindings(
+      sn_remove_ambient_contamination(
+        x = counts,
+        method = "decontx",
+        cluster = cluster,
+        cluster_backend = cluster_backend,
+        return_object = FALSE
+      ),
+      .sn_remove_ambient_decontx = function(x_info,
+                                            raw_info,
+                                            cluster,
+                                            cluster_backend,
+                                            ...) {
+        observed <<- c(observed, cluster_backend)
+        list(counts = x_info$counts)
+      },
+      .package = "Shennong"
+    )
+  }
+
+  expect_equal(run(), counts)
+  expect_equal(run(cluster_backend = "shennong"), counts)
+  expect_equal(run(cluster = rep(c("a", "b"), each = 3)), counts)
+  expect_identical(observed, c("native", "shennong", "provided"))
+})
+
 test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
   skip_if_not_installed("SoupX")
 
@@ -2829,6 +2865,52 @@ test_that("sn_find_doublets can analyze a non-default layer", {
     as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
     as.matrix(zero_counts)
   )
+})
+
+test_that("sn_find_doublets selects native or Shennong clustering", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("scDblFinder")
+  skip_if_not_installed("SingleCellExperiment")
+
+  object <- make_test_object(
+    seed = 121,
+    prefix = "doublet-backend",
+    n_genes = 250,
+    n_cells = 12
+  )
+  cluster_calls <- 0L
+  observed_clusters <- list()
+
+  local_mocked_bindings(
+    sn_run_cluster = function(object, ...) {
+      cluster_calls <<- cluster_calls + 1L
+      rep(c("a", "b"), length.out = ncol(object))
+    },
+    .sn_run_scDblFinder = function(sce, clusters = NULL, ...) {
+      observed_clusters[length(observed_clusters) + 1L] <<- list(clusters)
+      sce$scDblFinder.class <- rep("singlet", ncol(sce))
+      sce$scDblFinder.score <- seq_len(ncol(sce)) / ncol(sce)
+      sce
+    },
+    .package = "Shennong"
+  )
+
+  native <- sn_find_doublets(
+    object,
+    cluster_backend = "native",
+    min_features = 1
+  )
+  shennong <- sn_find_doublets(
+    object,
+    cluster_backend = "shennong",
+    min_features = 1
+  )
+
+  expect_s4_class(native, "Seurat")
+  expect_s4_class(shennong, "Seurat")
+  expect_identical(cluster_calls, 1L)
+  expect_null(observed_clusters[[1]])
+  expect_equal(unname(observed_clusters[[2]]), rep(c("a", "b"), 6))
 })
 
 test_that("sn_find_doublets skips zero-count cells in corrected layers", {

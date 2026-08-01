@@ -61,7 +61,9 @@ This skill is the main entry point for package usage.
   Seurat object
 - expect eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq,
   and WGCNA AutoZyme patches to activate lazily only inside compatible workflow
-  calls and restore the prior state afterward; never apply the Seurat fast patch
+  calls and restore the prior state afterward; clusterProfiler and fgsea use
+  independent scopes so either can remain accelerated if the other is
+  unavailable; never apply the Seurat fast patch
   to BPCells-backed layers because it can materialize them as `dgCMatrix`, and
   do not infer that CellChat, tradeSeq, or every other backend is BPCells-native
 - if work is happening inside an initialized project, also respect the project
@@ -83,9 +85,11 @@ This skill is the main entry point for package usage.
    `sn_initialize_seurat_object()`. When finding doublets on a BPCells-backed
    object, require a donor/capture `group_by` column and default to
    `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
-   For in-memory `dgCMatrix` input, the exact scDblFinder 1.27.6 default call
-   can use Shennong's bundled, 33,000-cell-capped AutoZyme patch; grouped and
-   non-default calls remain on the upstream path.
+   For in-memory `dgCMatrix` input, scDblFinder native clustering is the default
+   and the fingerprint-compatible default call can use Shennong's bundled,
+   33,000-cell-capped AutoZyme patch; grouped and non-default calls remain on
+   the upstream path. Use `cluster_backend = "shennong"` only when the caller
+   explicitly wants `sn_run_cluster()` assignments.
    Use `sn_set_layer_backend()` when selected Seurat layers must move between
    BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
    by an in-memory-only operation.

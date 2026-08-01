@@ -3640,11 +3640,15 @@ sn_run_cluster <- function(object,
         args = wnn_args
       )
     } else {
-      object <- Seurat::FindNeighbors(
-        object,
-        reduction = reduction,
-        dims = dims,
-        verbose = verbose
+      object <- .sn_with_default_seurat_autozyme(
+        Seurat::FindNeighbors(
+          object,
+          reduction = reduction,
+          dims = dims,
+          verbose = verbose
+        ),
+        object = object,
+        assay = assay
       )
     }
     graph_names_after <- names(object@graphs)
@@ -3715,10 +3719,14 @@ sn_run_cluster <- function(object,
       repos = install_repos,
       ask = install_ask
     )
-    object <- .sn_call_with_symbolic_object(
-      fun_call = quote(Seurat::FindClusters),
+    object <- .sn_with_default_seurat_autozyme(
+      .sn_call_with_symbolic_object(
+        fun_call = quote(Seurat::FindClusters),
+        object = object,
+        args = find_clusters_args
+      ),
       object = object,
-      args = find_clusters_args
+      assay = assay
     )
     object <- .sn_record_cluster_stage(object, "clusters", cluster_signature, cluster_column = cluster_column)
   }

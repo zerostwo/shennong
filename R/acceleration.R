@@ -15,6 +15,7 @@
   "tradeseq",
   "wgcna"
 )
+.sn_autozyme_clusterprofiler_cache <- new.env(parent = emptyenv())
 
 # This manifest is intentionally conservative. Versions are the exact upstream
 # versions against which the pinned AutoZyme revision declares its patches.
@@ -30,8 +31,9 @@
     equivalence = "exact_scoped", approximate = FALSE
   ),
   clusterprofiler = list(
-    upstream = "clusterProfiler", versions = "4.16.0",
-    equivalence = "exact_scoped", approximate = FALSE
+    upstream = "clusterProfiler", versions = "4.20.0",
+    equivalence = "exact_scoped", approximate = FALSE,
+    source_sha256 = "97711d3821dabfe497c3cecb9932c6e1829af01ba86e5289487996de1b544e77"
   ),
   decontx = list(
     upstream = "celda", versions = "1.24.0",
@@ -68,7 +70,7 @@
   scdblfinder = list(
     upstream = "scDblFinder", versions = "1.27.6",
     equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "cb49cc1a47a0c29897a4513a701059fd29c8794668964e42c6db760f22f0cbae"
+    source_sha256 = "50f128d3e3f40ea3a25cdebef2b5c522a3cb6db1edf3c7c2d26646bdc9431423"
   ),
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),
@@ -430,20 +432,36 @@
   invisible(NULL)
 }
 
-.sn_with_default_autozyme <- function(expr, patches) {
+.sn_with_default_autozyme <- function(expr, patches, strict = TRUE) {
   patches <- unique(tolower(trimws(as.character(patches))))
   patches <- intersect(patches, .sn_autozyme_default_patches)
   .sn_with_autozyme_provenance_context(
-    .sn_with_default_autozyme_impl(expr, patches = patches),
+    .sn_with_default_autozyme_impl(expr, patches = patches, strict = strict),
     patches = patches
   )
 }
 
-.sn_with_default_autozyme_impl <- function(expr, patches) {
+.sn_with_default_autozyme_impl <- function(expr, patches, strict = TRUE) {
   patches <- unique(tolower(trimws(as.character(patches))))
   patches <- intersect(patches, .sn_autozyme_default_patches)
+  strict <- .sn_validate_autozyme_flag(strict, "strict")
+  future_option <- .sn_capture_autozyme_future_option()
+  future_option_pending <- TRUE
+  restore_before_analysis <- function() {
+    if (isTRUE(future_option_pending)) {
+      .sn_restore_autozyme_future_option(future_option)
+      future_option_pending <<- FALSE
+    }
+    invisible(NULL)
+  }
+  force_analysis <- function() {
+    restore_before_analysis()
+    force(expr)
+  }
+  on.exit(restore_before_analysis(), add = TRUE)
+
   if (length(patches) == 0L) {
-    return(force(expr))
+    return(force_analysis())
   }
   if (!.sn_autozyme_default_enabled() ||
       !.sn_autozyme_is_installed("autozyme")) {
@@ -451,14 +469,14 @@
       patches,
       tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
     ))
-    return(force(expr))
+    return(force_analysis())
   }
 
   check_error <- NULL
   checks <- tryCatch(
     sn_check_autozyme(
       patches = patches,
-      strict = TRUE,
+      strict = strict,
       allow_approximate = FALSE
     ),
     error = function(error) {
@@ -474,7 +492,7 @@
       ),
       call. = FALSE
     )
-    return(force(expr))
+    return(force_analysis())
   }
 
   eligible <- checks$patch[checks$eligible & !checks$active]
@@ -483,7 +501,7 @@
       patches,
       tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
     ))
-    return(force(expr))
+    return(force_analysis())
   }
 
   before_error <- NULL
@@ -506,17 +524,8 @@
       patches,
       tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
     ))
-    return(force(expr))
+    return(force_analysis())
   }
-
-  future_option <- .sn_capture_autozyme_future_option()
-  future_option_pending <- TRUE
-  on.exit({
-    if (isTRUE(future_option_pending)) {
-      .sn_restore_autozyme_future_option(future_option)
-      future_option_pending <- FALSE
-    }
-  }, add = TRUE)
 
   activation_error <- NULL
   tryCatch(
@@ -524,7 +533,7 @@
       suppressMessages(
         sn_enable_autozyme(
           patches = eligible,
-          strict = TRUE,
+          strict = strict,
           allow_approximate = FALSE
         )
       )
@@ -534,8 +543,7 @@
       NULL
     }
   )
-  .sn_restore_autozyme_future_option(future_option)
-  future_option_pending <- FALSE
+  restore_before_analysis()
   if (!is_null(activation_error)) {
     after_error <- NULL
     after <- tryCatch(
@@ -579,7 +587,7 @@
       patches,
       tryCatch(.sn_autozyme_effective_active_patches(), error = function(error) character())
     ))
-    return(force(expr))
+    return(force_analysis())
   }
 
   newly_activated <- setdiff(eligible, before)
@@ -624,11 +632,17 @@
   value <- NULL
   analysis_error <- NULL
   tryCatch(
-    value <- force(expr),
+    value <- force_analysis(),
     error = function(error) {
       analysis_error <<- error
       NULL
     }
+  )
+  analysis_future_option <- .sn_capture_autozyme_future_option()
+  on.exit(
+    .sn_restore_autozyme_future_option(analysis_future_option),
+    add = TRUE,
+    after = TRUE
   )
 
   rollback <- .sn_autozyme_rollback(newly_activated)
@@ -748,7 +762,8 @@
 
   .sn_with_default_autozyme(
     expr,
-    patches = c("seurat", "seurat_joinlayers", "seurat_merge")
+    patches = c("seurat", "seurat_joinlayers", "seurat_merge"),
+    strict = FALSE
   )
 }
 
@@ -772,8 +787,11 @@
 #' of an integrated workflow call. Automatic activation covers CellChat,
 #' clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
 #' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, and WGCNA. It
-#' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
-#' by Shennong, and an exactly validated upstream version. Shennong bundles the
+#' normally requires the pinned AutoZyme build, or an exact patch fingerprint
+#' recorded by Shennong, and an exactly validated upstream version. Automatic
+#' Seurat scopes relax the version-label check and retain runtime structure
+#' guards; the scDblFinder patch instead requires exact target-function
+#' fingerprints. Shennong bundles the
 #' scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
 #' SoupX's compiled kernels), validates
 #' each bundled fingerprint, and registers them through AutoZyme when the
@@ -914,6 +932,9 @@ sn_check_autozyme <- function(
 }
 
 .sn_autozyme_rollback <- function(patches) {
+  future_option <- .sn_capture_autozyme_future_option()
+  on.exit(.sn_restore_autozyme_future_option(future_option), add = TRUE)
+
   patches <- unique(as.character(patches))
   if (length(patches) == 0L) {
     return(list(

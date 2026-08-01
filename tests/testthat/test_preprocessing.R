@@ -656,6 +656,39 @@ test_that("ambient-cluster resolution supports metadata columns and explicit vec
   )
 })
 
+test_that("ambient cluster backends use method-specific defaults and explicit overrides", {
+  expect_identical(
+    Shennong:::.sn_resolve_ambient_cluster_backend("decontx"),
+    "native"
+  )
+  expect_identical(
+    Shennong:::.sn_resolve_ambient_cluster_backend("soupx"),
+    "shennong"
+  )
+  expect_identical(
+    Shennong:::.sn_resolve_ambient_cluster_backend(
+      "decontx",
+      cluster_backend = "shennong"
+    ),
+    "shennong"
+  )
+  expect_identical(
+    Shennong:::.sn_resolve_ambient_cluster_backend(
+      "decontx",
+      cluster_backend = "native",
+      cluster = c("a", "b")
+    ),
+    "provided"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_ambient_cluster_backend(
+      "soupx",
+      cluster_backend = "native"
+    ),
+    "SoupX does not provide native clustering"
+  )
+})
+
 test_that("sn_filter_cells stores grouped QC thresholds in misc metadata", {
   skip_if_not_installed("Seurat")
 

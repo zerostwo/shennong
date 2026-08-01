@@ -34,8 +34,11 @@ Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
 clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
 \code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, and WGCNA. It
-requires the pinned AutoZyme build, or an exact patch fingerprint recorded
-by Shennong, and an exactly validated upstream version. Shennong bundles the
+normally requires the pinned AutoZyme build, or an exact patch fingerprint
+recorded by Shennong, and an exactly validated upstream version. Automatic
+Seurat scopes relax the version-label check and retain runtime structure
+guards; the scDblFinder patch instead requires exact target-function
+fingerprints. Shennong bundles the
 scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
 SoupX's compiled kernels), validates
 each bundled fingerprint, and registers them through AutoZyme when the

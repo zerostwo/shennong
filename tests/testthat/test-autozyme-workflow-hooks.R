@@ -70,9 +70,10 @@ test_that("enrichment, WGCNA, and tradeSeq use scoped default patches", {
     ".sn_with_default_autozyme"
   )
   expect_length(enrichment_wrapper, 2L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, '"clusterprofiler"'), 2L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, '"fgsea"'), 2L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, "with_enrichment_autozyme"), 10L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, '"clusterprofiler"'), 1L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, '"fgsea"'), 1L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, "strict = FALSE"), 2L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, "with_enrichment_autozyme"), 11L)
 
   for (target in c(
     "clusterProfiler::gseGO", "clusterProfiler::enrichGO",
@@ -197,9 +198,17 @@ test_that("Seurat clustering, priority, and plotting hooks precede patched targe
     "Seurat::ScaleData"
   )
 
+  expect_true(
+    .sn_autozyme_target_is_wrapped(
+      ".sn_run_cluster_impl",
+      ".sn_with_default_seurat_autozyme",
+      "Seurat::FindNeighbors"
+    ),
+    info = ".sn_run_cluster_impl must scope the available FindNeighbors patch target"
+  )
+
   for (name in c(
     ".sn_make_temporary_grouping",
-    ".sn_run_cluster_impl",
     ".sn_priority_rareq",
     ".sn_priority_scissor_impl"
   )) {
@@ -227,7 +236,7 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
       disabled_calls <<- disabled_calls + 1L
       force(expr)
     },
-    .sn_with_default_autozyme = function(expr, patches) {
+    .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
       scoped_calls <<- scoped_calls + 1L
       expected <- if (uses_bpcells) {
         c("seurat_joinlayers", "seurat_merge")
@@ -235,6 +244,7 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
         c("seurat", "seurat_joinlayers", "seurat_merge")
       }
       expect_identical(patches, expected)
+      expect_identical(strict, uses_bpcells)
       force(expr)
     },
     .package = "Shennong"

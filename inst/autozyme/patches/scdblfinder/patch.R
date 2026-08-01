@@ -85,9 +85,13 @@ if (requireNamespace("scDblFinder", quietly = TRUE) &&
     .evaluateKNN = .scdblfinder_fn_hashes(.orig_evaluateKNN),
     cxds2 = .scdblfinder_fn_hashes(.orig_cxds2)
   )
+  # Compatibility follows the exact public/internal function fingerprints,
+  # not the package version label. A release with unchanged implementations
+  # can use the validated fast path; changed implementations fail closed.
   .scdblfinder_release_ok <- identical(
-    as.character(utils::packageVersion("scDblFinder")), "1.27.6"
-  ) && identical(.scdblfinder_actual_hashes, .scdblfinder_expected_hashes)
+    .scdblfinder_actual_hashes,
+    .scdblfinder_expected_hashes
+  )
 
   # Process-local, nest-safe transient context.  It is intentionally entered
   # only by the supported public call, never by direct internal calls.

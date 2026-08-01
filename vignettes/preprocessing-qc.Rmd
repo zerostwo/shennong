@@ -254,12 +254,15 @@ pbmc_doublets <- sn_run_cluster(
 sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
-For scDblFinder 1.27.6, the ungrouped default call above can use Shennong's
-bundled exact AutoZyme `scdblfinder` patch. The patch is admitted only for an
-in-memory `dgCMatrix` with 1--33,000 cells, default analytical parameters,
-positive finite library sizes, and the exact validated upstream function
-fingerprints. It is activated only for the call and then restored; unsupported
-inputs, parameters, package versions, or source drift use upstream scDblFinder.
+The ungrouped default call above uses scDblFinder's native automatic clustering
+and can use Shennong's bundled exact AutoZyme `scdblfinder` patch. Set
+`cluster_backend = "shennong"` only when `sn_run_cluster()` assignments are an
+intentional analytical choice. The patch is admitted only for an in-memory
+`dgCMatrix` with 1--33,000 cells, default analytical parameters, positive finite
+library sizes, and the exact validated upstream function fingerprints. It is
+activated only for the call and then restored; unsupported inputs, parameters,
+or source drift use upstream scDblFinder. A different package version with
+identical targeted functions remains eligible.
 Set `options(shennong.autozyme = FALSE)` to disable automatic acceleration.
 
 For a BPCells-backed object, provide a donor or capture column through
@@ -312,6 +315,7 @@ pbmc_soupx <- sn_remove_ambient_contamination(
 pbmc_decont <- sn_remove_ambient_contamination(
   x = pbmc_norm,
   method = "decontx",
+  cluster_backend = "native",
   layer = "decontaminated_counts",
   verbose = FALSE
 )
@@ -324,6 +328,11 @@ sn_plot_ambient_correction(
   layer_after = "decontaminated_counts"
 )
 ```
+
+`cluster_backend = "native"` is the decontX default and avoids an extra
+Shennong/Seurat clustering workflow. Use `cluster_backend = "shennong"` to
+retain the previous behavior, or supply `cluster` explicitly. SoupX has no
+native clustering backend and therefore defaults to `"shennong"`.
 
 ## Store a QC assessment
 

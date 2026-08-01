@@ -7,6 +7,7 @@
 sn_find_doublets(
   object,
   clusters = NULL,
+  cluster_backend = c("native", "shennong"),
   group_by = NULL,
   dbr_sd = NULL,
   ncores = 1,
@@ -18,7 +19,14 @@ sn_find_doublets(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{clusters}{Optional cluster assignments. If not provided, scDblFinder will attempt automatic clustering.}
+\item{clusters}{Optional cluster assignments. A metadata column name or one
+value per cell. Explicit assignments take precedence over
+\code{cluster_backend}.}
+
+\item{cluster_backend}{Clustering implementation used when \code{clusters}
+is \code{NULL}. \code{"native"} (the default) lets scDblFinder perform its
+own automatic clustering. \code{"shennong"} first obtains assignments from
+\code{sn_run_cluster()} using the selected assay and layer.}
 
 \item{group_by}{An optional metadata column used as the donor or sample grouping.}
 
@@ -51,10 +59,11 @@ materializes each sample independently instead of the complete matrix.
 \description{
 This function identifies potential doublets in a Seurat object by converting
 it to a SingleCellExperiment and using the \code{scDblFinder} package.
-For the validated scDblFinder 1.27.6 default workflow on an in-memory
+For the validated scDblFinder default workflow on an in-memory
 \code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
 scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
-the captured upstream implementation.
+the captured upstream implementation. Compatibility is determined from the
+targeted function fingerprints rather than the package version label.
 }
 \examples{
 \dontrun{

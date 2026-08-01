@@ -48,10 +48,12 @@ Released 2026-08-01.
   `sn_with_autozyme()`. The strict automatic set now covers CellChat, NicheNetR,
   clusterProfiler, fgsea, Seurat, tradeSeq, and WGCNA. Shennong checks these
   patches lazily only when a compatible workflow needs them, then restores the
-  pre-call patch state after success or error. Automatic activation requires the
-  pinned AutoZyme build, an installed upstream package, and an exactly validated
-  upstream version; missing or drifted dependencies are skipped safely and
-  approximate patches are never automatic. Result-producing scopes record the
+  pre-call patch state after success or error. Automatic activation normally
+  requires the pinned AutoZyme build, an installed upstream package, and an
+  exactly validated upstream version. Seurat scopes deliberately admit
+  version-label drift behind runtime structure guards, while scDblFinder uses
+  exact target-function fingerprints. Missing dependencies are skipped safely
+  and approximate patches are never automatic. Result-producing scopes record the
   patches that were active for the compatible call in provenance before the
   automatic scope is restored.
 - Added a local-only real-public-data harness under `scripts/real-data/`. Its
@@ -79,6 +81,28 @@ Released 2026-08-01.
 
 ### Changed
 
+- `sn_remove_ambient_contamination(method = "decontx")` now defaults to
+  decontX's native clustering instead of unconditionally running a complete
+  `sn_run_cluster()` workflow first. The new `cluster_backend` argument selects
+  `"native"` or `"shennong"`; explicit `cluster` labels still take precedence.
+  SoupX keeps its method-specific `"shennong"` default because SoupX has no
+  native clustering implementation.
+- `sn_find_doublets()` now exposes the same `cluster_backend` choice. Its
+  default remains scDblFinder's native automatic clustering; selecting
+  `"shennong"` explicitly obtains assignments from `sn_run_cluster()`.
+- Automatic Seurat AutoZyme scopes now admit registered non-approximate
+  patches across upstream version labels and guard execution by the patch's
+  runtime input/structure checks. `sn_run_cluster()` now scopes its neighbor
+  and cluster stages as well as normalization, HVG, scaling, and PCA calls, so
+  every currently supported Seurat fast path can participate. BPCells-backed
+  objects still suppress the broad Seurat patch. The scDblFinder patch likewise
+  uses exact function fingerprints rather than the package version string and
+  fails closed when any targeted implementation changes.
+- Enrichment AutoZyme scopes now activate clusterProfiler and fgsea
+  independently, so failure of one patch cannot roll back the other. Shennong
+  bundles a clusterProfiler 4.20/enrichit-compatible exact cache for repeated
+  `get_GO_data()` requests, while ranked GSEA calls use AutoZyme's three-target
+  fgsea patch with relaxed version-label gating.
 - Successful automatic AutoZyme scopes now emit an INFO log naming the patches
   enabled for the current workflow call. The message is printed only after
   activation and state verification; it does not claim that every guarded
@@ -90,8 +114,8 @@ Released 2026-08-01.
   registration, preserve captured-upstream fallback, and can be enabled with
   `sn_enable_autozyme(c("seurat_merge", "seurat_joinlayers"))`.
 - `sn_find_doublets()` now lazily scopes Shennong's bundled exact AutoZyme
-  `scdblfinder` patch around the validated scDblFinder 1.27.6 default call.
-  The fast path is release/body/formals guarded, limited to exact `dgCMatrix`
+  `scdblfinder` patch around the validated default call.
+  The fast path is body/formals guarded, limited to exact `dgCMatrix`
   inputs with 1--33,000 cells and positive finite library sizes, and restores
   the pre-call AutoZyme state. Non-default, BPCells-grouped, oversized, drifted,
   or otherwise unsupported calls continue through captured upstream code.

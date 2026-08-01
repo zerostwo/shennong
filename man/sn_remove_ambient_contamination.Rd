@@ -9,6 +9,7 @@ sn_remove_ambient_contamination(
   raw = NULL,
   method = c("decontx", "soupx"),
   cluster = NULL,
+  cluster_backend = NULL,
   remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
@@ -26,8 +27,14 @@ unless recoverable from stored initialization metadata. If supplied for
 \item{method}{One of \code{"decontx"} or \code{"soupx"}.}
 
 \item{cluster}{Optional cluster labels. This can be a vector with one value
-per cell, or a metadata column name when \code{x} is a Seurat object. If
-\code{NULL}, clusters are inferred with \code{sn_run_cluster()}.}
+per cell, or a metadata column name when \code{x} is a Seurat object.
+Explicit labels take precedence over \code{cluster_backend}.}
+
+\item{cluster_backend}{Clustering implementation used when \code{cluster}
+is \code{NULL}. The method-specific default is \code{"native"} for decontX,
+which lets decontX perform its own clustering, and \code{"shennong"} for
+SoupX, which requires assignments and obtains them from
+\code{sn_run_cluster()}. SoupX does not support \code{"native"}.}
 
 \item{remove_zero_count_cells}{Logical; if \code{TRUE}, remove cells whose
 decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by

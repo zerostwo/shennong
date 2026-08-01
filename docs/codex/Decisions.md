@@ -4,6 +4,25 @@ Last updated: 2026-08-01
 
 ## 2026-08-01
 
+- clusterProfiler and fgsea use independent relaxed-version AutoZyme scopes.
+  The official clusterProfiler patch targets the retired 4.16/DOSE ORA path and
+  cannot register on 4.20, so Shennong vendors an exact cache-only replacement
+  for `get_GO_data()` on the 4.20/enrichit path. Statistical ORA/GSEA kernels,
+  p-value adjustment, and result construction remain upstream. The process
+  cache key includes annotation package/version, ontology, and key type.
+- Ambient and doublet backends own their default preliminary clustering.
+  decontX and scDblFinder therefore use native clustering unless the caller
+  selects `cluster_backend = "shennong"` or supplies assignments. SoupX is the
+  exception because it has no native clustering and retains the Shennong
+  default. This avoids silently paying for a full Seurat workflow before a
+  backend that can construct its own groups.
+- Seurat automatic AutoZyme activation is version-label tolerant but remains
+  input/structure guarded and transactionally scoped. Registered patches are
+  activated with relaxed upstream-version gating so compatible Seurat releases
+  are not excluded solely by version metadata; guarded fast paths retain
+  captured-upstream fallback. BPCells suppression remains mandatory. The
+  scDblFinder patch uses exact target function fingerprints instead of a version
+  equality check, so changed internals fail closed.
 - Performance evidence must report regressions as well as wins. AutoZyme
   comparisons therefore run baseline and accelerated conditions in fresh
   workers, require exact output fingerprints and rollback, summarize medians
@@ -25,7 +44,7 @@ Last updated: 2026-08-01
   original 5.4.0.9001 development target.
 - Shennong vendors the exact-scoped scDblFinder patch until the official
   AutoZyme package ships the same finalized source. Automatic use is limited
-  to scDblFinder 1.27.6 default public calls on exact `dgCMatrix` inputs with
+  to fingerprint-compatible default public calls on exact `dgCMatrix` inputs with
   1--33,000 cells and positive finite library sizes. The four-target source and
   formal hashes, runtime fallback, RNG restoration, and 35,000 expanded-column
   eager-normalization boundary remain unchanged from AutoZyme verification.
