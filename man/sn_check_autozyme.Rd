@@ -34,7 +34,11 @@ Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
 clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
 requires the pinned AutoZyme build, or an exact patch fingerprint recorded
-by Shennong, and an exactly validated upstream version. Set
+by Shennong, and an exactly validated upstream version. Shennong bundles the
+SoupX patch and its compiled kernels, validates the bundled fingerprint, and
+registers it through AutoZyme when the official package does not provide
+\code{soupx}. The returned \code{patch_provider} and \code{bundled_by_shennong} columns make
+this source explicit. Set
 \code{options(shennong.autozyme = FALSE)}
 or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
 \code{AUTOZYME_DISABLE=true} is also accepted) to prevent automatic activation.

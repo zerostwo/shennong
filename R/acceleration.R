@@ -73,7 +73,7 @@
   soupx = list(
     upstream = "SoupX", versions = "1.6.2",
     equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "0d96bedecf9473641eedb3589a0db9340ab5ac70dd7617d7caa668055b0e07d4"
+    source_sha256 = "757185c34a34f5500733d3f5044023d9d22e27bf0de4c7670299225c1f70dc85"
   ),
   tradeseq = list(
     upstream = "tradeSeq", versions = "1.22.0",
@@ -162,30 +162,105 @@
   )
 }
 
-.sn_autozyme_patch_source_status <- function(patch, spec) {
-  absent <- list(registered = FALSE, source_match = FALSE)
-  if (!.sn_autozyme_is_installed("autozyme")) {
-    return(absent)
-  }
-
-  patch_path <- system.file(
-    "patches", patch, "patch.R",
-    package = "autozyme"
+.sn_autozyme_vendored_patch_path <- function(patch) {
+  system.file(
+    "autozyme", "patches", patch, "patch.R",
+    package = "Shennong"
   )
-  registered <- nzchar(patch_path) && file.exists(patch_path)
-  expected <- spec$source_sha256
-  if (!registered || is_null(expected) || !nzchar(expected)) {
-    return(list(registered = registered, source_match = FALSE))
+}
+
+.sn_autozyme_source_matches <- function(path, expected) {
+  if (!nzchar(path) || !file.exists(path) ||
+      is_null(expected) || !nzchar(expected)) {
+    return(FALSE)
   }
 
   actual <- tryCatch(
-    digest::digest(file = patch_path, algo = "sha256"),
+    digest::digest(file = path, algo = "sha256"),
     error = function(error) NA_character_
   )
-  list(
-    registered = TRUE,
-    source_match = !is.na(actual) && identical(actual, expected)
+  !is.na(actual) && identical(actual, expected)
+}
+
+.sn_autozyme_patch_source_status <- function(patch, spec) {
+  autozyme_path <- system.file(
+    "patches", patch, "patch.R",
+    package = "autozyme"
   )
+  expected <- spec$source_sha256
+  autozyme_source_match <- .sn_autozyme_source_matches(
+    autozyme_path,
+    expected
+  )
+  vendored_path <- .sn_autozyme_vendored_patch_path(patch)
+  bundled_by_shennong <- nzchar(vendored_path) && file.exists(vendored_path)
+  vendored_source_match <- .sn_autozyme_source_matches(
+    vendored_path,
+    expected
+  )
+
+  registered <- FALSE
+  if (.sn_autozyme_is_installed("autozyme")) {
+    registered <- tryCatch(
+      patch %in% .sn_autozyme_call("list_patches"),
+      error = function(error) FALSE
+    )
+  }
+
+  provider <- if (isTRUE(autozyme_source_match)) {
+    "autozyme"
+  } else if (isTRUE(vendored_source_match)) {
+    "shennong"
+  } else if (registered) {
+    "autozyme"
+  } else {
+    NA_character_
+  }
+
+  list(
+    registered = registered,
+    bundled_by_shennong = bundled_by_shennong,
+    source_match = isTRUE(autozyme_source_match) ||
+      isTRUE(vendored_source_match),
+    vendored_source_match = vendored_source_match,
+    provider = provider
+  )
+}
+
+.sn_register_vendored_autozyme_patch <- function(patch) {
+  patch_path <- .sn_autozyme_vendored_patch_path(patch)
+  if (!nzchar(patch_path) || !file.exists(patch_path)) {
+    stop(
+      sprintf("Shennong does not bundle AutoZyme patch `%s`.", patch),
+      call. = FALSE
+    )
+  }
+  expected <- .sn_autozyme_patch_manifest[[patch]]$source_sha256
+  if (!.sn_autozyme_source_matches(patch_path, expected)) {
+    stop(
+      sprintf(
+        "Shennong's vendored AutoZyme patch `%s` failed source validation.",
+        patch
+      ),
+      call. = FALSE
+    )
+  }
+
+  patch_env <- new.env(parent = asNamespace("Shennong"))
+  patch_env$register_patch <- base::getExportedValue(
+    "autozyme",
+    "register_patch"
+  )
+  sys.source(patch_path, envir = patch_env)
+
+  available <- .sn_autozyme_call("list_patches")
+  if (!patch %in% available) {
+    stop(
+      sprintf("Shennong's vendored AutoZyme patch `%s` did not register.", patch),
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
 }
 
 .sn_autozyme_call <- function(fun, ...) {
@@ -659,7 +734,11 @@
 #' of an integrated workflow call. Automatic activation covers CellChat,
 #' clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
 #' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
-#' by Shennong, and an exactly validated upstream version. Set
+#' by Shennong, and an exactly validated upstream version. Shennong bundles the
+#' SoupX patch and its compiled kernels, validates the bundled fingerprint, and
+#' registers it through AutoZyme when the official package does not provide
+#' `soupx`. The returned `patch_provider` and `bundled_by_shennong` columns make
+#' this source explicit. Set
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
 #' `AUTOZYME_DISABLE=true` is also accepted) to prevent automatic activation.
@@ -706,13 +785,15 @@ sn_check_autozyme <- function(
     upstream_installed <- !is.na(installed_version)
     version_match <- upstream_installed && installed_version %in% spec$versions
     approximation_allowed <- !isTRUE(spec$approximate) || allow_approximate
-    eligible <- autozyme_installed && patch_source$registered && upstream_installed &&
+    patch_available <- isTRUE(patch_source$registered) ||
+      isTRUE(patch_source$vendored_source_match)
+    eligible <- autozyme_installed && patch_available && upstream_installed &&
       approximation_allowed && (!strict || (build_match && version_match))
 
     reason <- if (!autozyme_installed) {
       "autozyme is not installed"
-    } else if (!patch_source$registered) {
-      "patch is not registered by the installed autozyme package"
+    } else if (!patch_available) {
+      "patch is unavailable from both AutoZyme and Shennong"
     } else if (strict && !build_version_match) {
       sprintf(
         "installed AutoZyme version %s does not match pinned version %s",
@@ -720,7 +801,10 @@ sn_check_autozyme <- function(
         .sn_autozyme_expected_version
       )
     } else if (strict && !accepted_source) {
-      "installed AutoZyme source does not match the pinned revision"
+      paste0(
+        "AutoZyme source does not match the pinned revision and no trusted ",
+        "Shennong-vendored patch is available"
+      )
     } else if (!upstream_installed) {
       sprintf("upstream package %s is not installed", spec$upstream)
     } else if (!approximation_allowed) {
@@ -751,6 +835,8 @@ sn_check_autozyme <- function(
       autozyme_source_match = source_match,
       autozyme_patch_source_match = patch_source$source_match,
       registered = patch_source$registered,
+      bundled_by_shennong = patch_source$bundled_by_shennong,
+      patch_provider = patch_source$provider,
       upstream_installed = upstream_installed,
       version_match = version_match,
       active = patch %in% active,
@@ -884,6 +970,13 @@ sn_enable_autozyme <- function(
       sprintf("Cannot enable AutoZyme: %s.", paste(details, collapse = "; ")),
       call. = FALSE
     )
+  }
+
+  vendored <- checks$patch[
+    checks$patch_provider == "shennong" & !checks$active
+  ]
+  for (patch in stats::na.omit(vendored)) {
+    .sn_register_vendored_autozyme_patch(patch)
   }
 
   available <- .sn_autozyme_call("list_patches")
@@ -1108,6 +1201,7 @@ sn_with_autozyme <- function(
       return(list(patch = patch))
     }
     installed_version <- .sn_autozyme_installed_version(spec$upstream)
+    patch_source <- .sn_autozyme_patch_source_status(patch, spec)
     list(
       patch = patch,
       upstream = spec$upstream,
@@ -1115,7 +1209,9 @@ sn_with_autozyme <- function(
       tested_versions = spec$versions,
       version_match = !is.na(installed_version) && installed_version %in% spec$versions,
       equivalence = spec$equivalence,
-      approximate = isTRUE(spec$approximate)
+      approximate = isTRUE(spec$approximate),
+      provider = patch_source$provider,
+      bundled_by_shennong = isTRUE(patch_source$bundled_by_shennong)
     )
   })
   names(patch_details) <- active

@@ -61,8 +61,10 @@ user request to the right Shennong function family quickly.
 7. Confirm that the caller's `future.globals.maxSize` option is unchanged after
    the workflow; Shennong restores AutoZyme's load-time mutation before analysis.
 8. `sn_remove_ambient_contamination(method = "soupx")` scopes the `soupx`
-   patch only around `adjustCounts()`, then performs SoupX's original stochastic
-   integer rounding. Check the seed when exact integer reproducibility matters.
+   patch only around `adjustCounts()`. Shennong bundles and registers this patch,
+   so official AutoZyme does not need to contain `soupx`; AutoZyme still manages
+   temporary activation and rollback. Shennong then performs SoupX's original
+   stochastic integer rounding. Check the seed when reproducibility matters.
 
 ## Recipe: Start from raw counts or 10x outputs
 

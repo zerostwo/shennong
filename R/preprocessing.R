@@ -1810,11 +1810,12 @@ sn_find_doublets <- function(
 #' count matrix-like object, or a path that \code{sn_read()} can import. When a
 #' Seurat object was initialized from a detected 10x `outs` directory, stored
 #' raw matrix metadata is reused automatically if \code{raw = NULL}.
-#' The SoupX method lazily activates the exact-scoped AutoZyme `soupx` patch
-#' when the validated AutoZyme and SoupX builds are available. The patch is
-#' active only for `SoupX::adjustCounts()` and is restored afterward. Shennong
-#' then applies SoupX's stochastic integer rounding unchanged, preserving the
-#' existing count-layer contract. Set `options(shennong.autozyme = FALSE)` or
+#' The SoupX method lazily registers Shennong's bundled exact-scoped AutoZyme
+#' `soupx` patch when the validated AutoZyme and SoupX builds are available;
+#' official AutoZyme does not need to ship that patch. It is active only for
+#' `SoupX::adjustCounts()` and is restored afterward. Shennong then applies
+#' SoupX's stochastic integer rounding unchanged, preserving the existing
+#' count-layer contract. Set `options(shennong.autozyme = FALSE)` or
 #' `AUTOZYME_DISABLED=true` to prevent automatic activation; a manually active
 #' patch remains active until [sn_disable_autozyme()] is called.
 #'

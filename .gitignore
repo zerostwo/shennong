@@ -17,6 +17,9 @@ omnipathr-log/
 vignettes/omnipathr-log/
 *.tar.gz
 *.Rcheck/
+src/*.o
+src/*.so
+src/*.dll
 benchmarks/coralysis_capacity/results*/inputs/
 benchmarks/coralysis_capacity/results*/runs/
 data-local/

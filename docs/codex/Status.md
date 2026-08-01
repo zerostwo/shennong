@@ -46,11 +46,19 @@ release gate.
 
 - The SoupX ambient-correction path now scopes the exact AutoZyme `soupx`
   patch around `adjustCounts()` and restores the prior patch state on exit.
+  Shennong now ships the patch R source and compiled native kernels, validates
+  their SHA-256, and registers them through official AutoZyme at runtime when
+  that package does not provide `soupx` itself.
   Shennong requests the attested fractional correction and then applies the
   same stochastic integer rounding as `SoupX::adjustCounts(roundToInt = TRUE)`;
   a seeded `scToy` comparison returned an identical `dgCMatrix`. Local strict
-  compatibility accepts the exact recorded patch SHA-256 when a development
-  AutoZyme install has no `RemoteSha` metadata.
+  compatibility accepts the exact recorded Shennong-bundled patch SHA-256.
+  A clean source installation found the installed bundled patch, compiled and
+  loaded the Shennong native library, registered against an official AutoZyme
+  build with no `soupx` entry, returned an identical result, and restored the
+  patch to inactive. Focused acceleration and clustering suites passed 146 and
+  460 assertions; the fresh-process full suite passed 2,875 assertions with
+  four optional/local-fixture skips, and pkgdown rebuilt successfully.
 - `sn_set_layer_backend()` now provides a bidirectional Seurat layer-storage
   boundary: selected layers can be staged and rebound to external BPCells
   directories or materialized directly as `dgCMatrix` without a dense

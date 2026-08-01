@@ -2438,12 +2438,14 @@ test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
   expect_identical(actual, expected)
 })
 
-test_that("installed SoupX AutoZyme patch is exact and restores state", {
+test_that("Shennong registers its vendored SoupX patch and restores state", {
   skip_if_not_installed("SoupX")
   skip_if_not_installed("autozyme")
 
   compatibility <- Shennong:::sn_check_autozyme("soupx")
   skip_if_not(isTRUE(compatibility$eligible[[1]]))
+  expect_true(compatibility$bundled_by_shennong[[1]])
+  expect_identical(compatibility$patch_provider[[1]], "shennong")
 
   data_env <- new.env(parent = emptyenv())
   utils::data("scToy", package = "SoupX", envir = data_env)
@@ -2454,13 +2456,65 @@ test_that("installed SoupX AutoZyme patch is exact and restores state", {
   expected <- suppressWarnings(
     SoupX::adjustCounts(sc, roundToInt = TRUE, verbose = 0)
   )
-  before <- autozyme::status()[["soupx"]]
+  before <- autozyme::status()
+  before_soupx <- if ("soupx" %in% names(before)) {
+    before[["soupx"]]
+  } else {
+    NULL
+  }
 
   set.seed(718)
   actual <- suppressWarnings(Shennong:::.sn_adjust_soupx_counts(sc))
 
   expect_identical(actual, expected)
-  expect_identical(autozyme::status()[["soupx"]], before)
+  after_soupx <- autozyme::status()[["soupx"]]
+  if (is.null(before_soupx)) {
+    expect_identical(after_soupx, "inactive")
+  } else {
+    expect_identical(after_soupx, before_soupx)
+  }
+  registered <- Shennong:::sn_check_autozyme("soupx")
+  expect_true(registered$registered[[1]])
+  expect_false(registered$active[[1]])
+})
+
+test_that("Shennong SoupX native kernels stay finite and reject invalid support", {
+  clustered <- Shennong:::soupx_cluster_soup_from_cells_cpp(
+    as.integer(c(0, 2)),
+    as.integer(c(0, 1)),
+    c(0.1, 1),
+    1L,
+    0.5,
+    c(1, 1e-17),
+    2L,
+    1L
+  )
+  corrected <- Shennong:::soupx_adjust_counts_no_cluster_x_cpp(
+    as.integer(c(0, 2)),
+    as.integer(c(0, 1)),
+    c(0.1, 1),
+    0.5,
+    c(1, 1e-17),
+    2L
+  )
+
+  expect_true(all(is.finite(clustered)))
+  expect_equal(sum(clustered), 0.5, tolerance = 1e-12)
+  expect_true(all(is.finite(corrected)))
+  expect_true(all(corrected >= 0))
+  expect_equal(sum(c(0.1, 1) - corrected), 0.5, tolerance = 1e-12)
+
+  expect_error(
+    Shennong:::soupx_expand_corrected_x_cpp(
+      as.integer(c(0, 1)),
+      0L,
+      1,
+      matrix(0.5, nrow = 1, ncol = 1),
+      1L,
+      0
+    ),
+    "positive finite weight sum"
+  )
 })
 
 test_that("sn_remove_ambient_contamination reuses stored raw paths from initialization metadata", {

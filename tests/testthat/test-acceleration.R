@@ -72,7 +72,10 @@ mock_autozyme_bindings <- function(state,
     .sn_autozyme_patch_source_status = function(patch, spec) {
       list(
         registered = patch %in% names(state$status),
-        source_match = FALSE
+        bundled_by_shennong = FALSE,
+        source_match = FALSE,
+        vendored_source_match = FALSE,
+        provider = "autozyme"
       )
     },
     .sn_autozyme_status_vector = function() state$status,
@@ -278,6 +281,40 @@ test_that("SoupX is an exact default patch with scoped activation", {
   expect_identical(state$activated, "soupx")
   expect_identical(state$deactivated, "soupx")
   expect_identical(state$status[["soupx"]], "inactive")
+})
+
+test_that("Shennong bundles the trusted SoupX patch independently", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
+  testthat::local_mocked_bindings(
+    .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
+    .sn_autozyme_call = function(fun, ...) {
+      if (identical(fun, "list_patches")) return(character())
+      stop("Unexpected mocked AutoZyme call: ", fun)
+    },
+    .package = "Shennong"
+  )
+
+  status <- Shennong:::.sn_autozyme_patch_source_status("soupx", spec)
+  expect_false(status$registered)
+  expect_true(status$bundled_by_shennong)
+  expect_true(status$vendored_source_match)
+  expect_true(status$source_match)
+  expect_identical(status$provider, "shennong")
+})
+
+test_that("vendored AutoZyme patches are validated again before sourcing", {
+  patch_file <- tempfile("untrusted-soupx-", fileext = ".R")
+  writeLines("stop('must not be sourced')", patch_file)
+  testthat::local_mocked_bindings(
+    .sn_autozyme_vendored_patch_path = function(patch) patch_file,
+    .sn_autozyme_source_matches = function(path, expected) FALSE,
+    .package = "Shennong"
+  )
+
+  expect_error(
+    Shennong:::.sn_register_vendored_autozyme_patch("soupx"),
+    "failed source validation"
+  )
 })
 
 test_that("automatic AutoZyme activation honors session opt-outs", {

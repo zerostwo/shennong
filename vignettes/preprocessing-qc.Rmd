@@ -278,9 +278,12 @@ so the original counts remain inspectable.
 
 When `method = "soupx"`, Shennong lazily activates the exact-scoped AutoZyme
 `soupx` patch for the `adjustCounts()` step when AutoZyme 0.3.1 and SoupX 1.6.2
-match the validated patch. The patch is restored immediately after the call,
-and Shennong applies SoupX's original stochastic integer rounding so the
-corrected count layer keeps its existing integer contract. Set
+match the validated contract. Shennong bundles the R patch and native C++
+kernels itself, then registers them through AutoZyme at runtime; the official
+AutoZyme installation does not need to contain a SoupX patch. The patch is
+restored immediately after the call, and Shennong applies SoupX's original
+stochastic integer rounding so the corrected count layer keeps its existing
+integer contract. Set
 `options(shennong.autozyme = FALSE)` to prevent automatic activation. If the
 patch was enabled manually, call `sn_disable_autozyme("soupx")` to return to
 the upstream SoupX path.
