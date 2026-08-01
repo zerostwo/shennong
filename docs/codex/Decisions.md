@@ -6,7 +6,8 @@ Last updated: 2026-08-01
 
 - Automatic AutoZyme acceleration is a lazy workflow boundary, not a
   package-load side effect. The exact non-approximate Shennong integration set
-  is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, tradeSeq, and WGCNA;
+  is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, SoupX, tradeSeq, and
+  WGCNA;
   each patch requires the pinned AutoZyme build and exact validated upstream
   version, and is restored to its pre-call state after success or error.
   Missing or drifted dependencies skip acceleration instead of changing
@@ -14,6 +15,13 @@ Last updated: 2026-08-01
   because its validated fast path can materialize the full counts matrix.
   Result provenance is attributed only inside the workflow scope where a
   compatible patch was active.
+- SoupX acceleration is scoped only to the fractional `adjustCounts()` step.
+  Shennong performs the upstream stochastic integer rounding afterward, which
+  preserves the existing count-layer and seeded-RNG contract while allowing
+  the exact AutoZyme sparse kernel to run. A patch-specific SHA-256 may satisfy
+  strict source validation when a local AutoZyme development install has no
+  GitHub `RemoteSha`; package version, registration, and exact SoupX version
+  checks still apply.
 - Seurat assay/layer names describe analytical semantics, while BPCells and
   `dgCMatrix` describe storage backends. `sn_set_layer_backend()` is therefore
   the bidirectional public boundary; it changes storage without renaming

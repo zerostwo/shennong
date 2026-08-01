@@ -73,6 +73,12 @@ Released 2026-08-01.
 
 ### Changed
 
+- `sn_remove_ambient_contamination(method = "soupx")` now lazily activates the
+  exact-scoped AutoZyme `soupx` patch for `SoupX::adjustCounts()`. Shennong
+  retains SoupX's stochastic integer-rounding behavior after the accelerated
+  fractional correction, restores the pre-call patch state, and falls back to
+  upstream SoupX when AutoZyme is absent or incompatible. Automatic opt-outs
+  prevent activation without deactivating a patch the user enabled manually.
 - AutoZyme automatic activation is now lazy and scoped to compatible Shennong
   workflow calls rather than package loading or persistent process mutation. Set
   `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or

@@ -8,6 +8,7 @@
   "fgsea",
   "nichenetr",
   "seurat",
+  "soupx",
   "tradeseq",
   "wgcna"
 )
@@ -68,6 +69,11 @@
   slingshot = list(
     upstream = "slingshot", versions = "2.16.0",
     equivalence = "approximate", approximate = TRUE
+  ),
+  soupx = list(
+    upstream = "SoupX", versions = "1.6.2",
+    equivalence = "exact_scoped", approximate = FALSE,
+    source_sha256 = "c60022c668f86dc08e903194bababb738cd0b46789c488ce07f0159703d17954"
   ),
   tradeseq = list(
     upstream = "tradeSeq", versions = "1.22.0",
@@ -153,6 +159,32 @@
   list(
     version = if (is.null(version) || !nzchar(version)) NA_character_ else version,
     remote_sha = if (is.null(remote_sha) || !nzchar(remote_sha)) NA_character_ else remote_sha
+  )
+}
+
+.sn_autozyme_patch_source_status <- function(patch, spec) {
+  absent <- list(registered = FALSE, source_match = FALSE)
+  if (!.sn_autozyme_is_installed("autozyme")) {
+    return(absent)
+  }
+
+  patch_path <- system.file(
+    "patches", patch, "patch.R",
+    package = "autozyme"
+  )
+  registered <- nzchar(patch_path) && file.exists(patch_path)
+  expected <- spec$source_sha256
+  if (!registered || is_null(expected) || !nzchar(expected)) {
+    return(list(registered = registered, source_match = FALSE))
+  }
+
+  actual <- tryCatch(
+    digest::digest(file = patch_path, algo = "sha256"),
+    error = function(error) NA_character_
+  )
+  list(
+    registered = TRUE,
+    source_match = !is.na(actual) && identical(actual, expected)
   )
 }
 
@@ -625,8 +657,9 @@
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
 #' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, fgsea, NicheNet, Seurat, tradeSeq, and WGCNA. It requires
-#' the pinned AutoZyme build and an exactly validated upstream version. Set
+#' clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
+#' requires the pinned AutoZyme build, or an exact patch fingerprint recorded
+#' by Shennong, and an exactly validated upstream version. Set
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
 #' `AUTOZYME_DISABLE=true` is also accepted) to prevent automatic activation.
@@ -642,7 +675,7 @@
 sn_check_autozyme <- function(
     patches = c(
       "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-      "tradeseq", "wgcna"
+      "soupx", "tradeseq", "wgcna"
     ),
     strict = TRUE,
     allow_approximate = FALSE) {
@@ -662,27 +695,31 @@ sn_check_autozyme <- function(
   }
   build_version_match <- !is.na(description$version) &&
     identical(description$version, .sn_autozyme_expected_version)
-  build_match <- build_version_match && isTRUE(source_match)
   active <- if (autozyme_installed) .sn_autozyme_active_patches() else character(0)
 
   rows <- lapply(patches, function(patch) {
     spec <- .sn_autozyme_patch_manifest[[patch]]
+    patch_source <- .sn_autozyme_patch_source_status(patch, spec)
+    accepted_source <- isTRUE(source_match) || isTRUE(patch_source$source_match)
+    build_match <- build_version_match && accepted_source
     installed_version <- .sn_autozyme_installed_version(spec$upstream)
     upstream_installed <- !is.na(installed_version)
     version_match <- upstream_installed && installed_version %in% spec$versions
     approximation_allowed <- !isTRUE(spec$approximate) || allow_approximate
-    eligible <- autozyme_installed && upstream_installed &&
+    eligible <- autozyme_installed && patch_source$registered && upstream_installed &&
       approximation_allowed && (!strict || (build_match && version_match))
 
     reason <- if (!autozyme_installed) {
       "autozyme is not installed"
+    } else if (!patch_source$registered) {
+      "patch is not registered by the installed autozyme package"
     } else if (strict && !build_version_match) {
       sprintf(
         "installed AutoZyme version %s does not match pinned version %s",
         description$version,
         .sn_autozyme_expected_version
       )
-    } else if (strict && !isTRUE(source_match)) {
+    } else if (strict && !accepted_source) {
       "installed AutoZyme source does not match the pinned revision"
     } else if (!upstream_installed) {
       sprintf("upstream package %s is not installed", spec$upstream)
@@ -712,6 +749,8 @@ sn_check_autozyme <- function(
       autozyme_version_match = build_version_match,
       autozyme_remote_sha = description$remote_sha,
       autozyme_source_match = source_match,
+      autozyme_patch_source_match = patch_source$source_match,
+      registered = patch_source$registered,
       upstream_installed = upstream_installed,
       version_match = version_match,
       active = patch %in% active,
@@ -966,7 +1005,7 @@ sn_enable_autozyme <- function(
 #' }
 sn_disable_autozyme <- function(patches = c(
     "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-    "tradeseq", "wgcna"
+    "soupx", "tradeseq", "wgcna"
   )) {
   patches <- .sn_validate_autozyme_patches(patches)
   if (!.sn_autozyme_is_installed("autozyme")) {

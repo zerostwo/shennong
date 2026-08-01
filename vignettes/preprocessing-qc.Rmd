@@ -276,6 +276,25 @@ For ambient RNA, materialize a matching raw-count resource with
 uses the filtered object directly and writes corrected counts to a new layer,
 so the original counts remain inspectable.
 
+When `method = "soupx"`, Shennong lazily activates the exact-scoped AutoZyme
+`soupx` patch for the `adjustCounts()` step when AutoZyme 0.3.1 and SoupX 1.6.2
+match the validated patch. The patch is restored immediately after the call,
+and Shennong applies SoupX's original stochastic integer rounding so the
+corrected count layer keeps its existing integer contract. Set
+`options(shennong.autozyme = FALSE)` to prevent automatic activation. If the
+patch was enabled manually, call `sn_disable_autozyme("soupx")` to return to
+the upstream SoupX path.
+
+```{r ambient-soupx, eval = FALSE}
+pbmc_soupx <- sn_remove_ambient_contamination(
+  x = pbmc_norm,
+  raw = raw_counts,
+  method = "soupx",
+  layer = "decontaminated_counts",
+  verbose = FALSE
+)
+```
+
 ```{r ambient, eval = run_vignette && requireNamespace("celda", quietly = TRUE)}
 pbmc_decont <- sn_remove_ambient_contamination(
   x = pbmc_norm,

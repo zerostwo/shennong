@@ -5,8 +5,8 @@
 \title{Check optional AutoZyme acceleration compatibility}
 \usage{
 sn_check_autozyme(
-  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat", "tradeseq",
-    "wgcna"),
+  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat", "soupx",
+    "tradeseq", "wgcna"),
   strict = TRUE,
   allow_approximate = FALSE
 )
@@ -32,8 +32,9 @@ install packages, activate patches, prepare Python, or change thread counts.
 \details{
 Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
-clusterProfiler, fgsea, NicheNet, Seurat, tradeSeq, and WGCNA. It requires
-the pinned AutoZyme build and an exactly validated upstream version. Set
+clusterProfiler, fgsea, NicheNet, Seurat, SoupX, tradeSeq, and WGCNA. It
+requires the pinned AutoZyme build, or an exact patch fingerprint recorded
+by Shennong, and an exactly validated upstream version. Set
 \code{options(shennong.autozyme = FALSE)}
 or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
 \code{AUTOZYME_DISABLE=true} is also accepted) to prevent automatic activation.

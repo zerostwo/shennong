@@ -21,9 +21,10 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
-- Eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq, and
-  WGCNA patches now activate lazily only inside compatible Shennong workflow
-  calls, with the pre-call state restored after success or error. The automatic
+- Eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX,
+  tradeSeq, and WGCNA patches now activate lazily only inside compatible
+  Shennong workflow calls, with the pre-call state restored after success or
+  error. The automatic
   path requires the pinned AutoZyme build and installed, exactly validated
   upstream versions; absent or drifted dependencies and approximate patches are
   skipped safely. Option/environment opt-outs block automatic scopes without
@@ -42,6 +43,14 @@ release gate.
   CodeGraph daemon socket during local source staging; `.codegraph` is already
   excluded and a clean checkout has no socket. The complete pkgdown site also
   rebuilt successfully under `site/dev`.
+
+- The SoupX ambient-correction path now scopes the exact AutoZyme `soupx`
+  patch around `adjustCounts()` and restores the prior patch state on exit.
+  Shennong requests the attested fractional correction and then applies the
+  same stochastic integer rounding as `SoupX::adjustCounts(roundToInt = TRUE)`;
+  a seeded `scToy` comparison returned an identical `dgCMatrix`. Local strict
+  compatibility accepts the exact recorded patch SHA-256 when a development
+  AutoZyme install has no `RemoteSha` metadata.
 - `sn_set_layer_backend()` now provides a bidirectional Seurat layer-storage
   boundary: selected layers can be staged and rebound to external BPCells
   directories or materialized directly as `dgCMatrix` without a dense

@@ -2404,6 +2404,65 @@ test_that("sn_remove_ambient_contamination requires raw counts for SoupX", {
   )
 })
 
+test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
+  skip_if_not_installed("SoupX")
+
+  data_env <- new.env(parent = emptyenv())
+  utils::data("scToy", package = "SoupX", envir = data_env)
+  sc <- data_env$scToy
+  sc$toc <- methods::as(sc$toc, "CsparseMatrix")
+
+  set.seed(717)
+  expected <- suppressWarnings(
+    SoupX::adjustCounts(
+      sc,
+      roundToInt = TRUE,
+      verbose = 0
+    )
+  )
+
+  selected_patch <- NULL
+  set.seed(717)
+  actual <- suppressWarnings(
+    with_mocked_bindings(
+      Shennong:::.sn_adjust_soupx_counts(sc),
+      .sn_with_default_autozyme = function(expr, patches) {
+        selected_patch <<- patches
+        force(expr)
+      },
+      .package = "Shennong"
+    )
+  )
+
+  expect_identical(selected_patch, "soupx")
+  expect_identical(actual, expected)
+})
+
+test_that("installed SoupX AutoZyme patch is exact and restores state", {
+  skip_if_not_installed("SoupX")
+  skip_if_not_installed("autozyme")
+
+  compatibility <- Shennong:::sn_check_autozyme("soupx")
+  skip_if_not(isTRUE(compatibility$eligible[[1]]))
+
+  data_env <- new.env(parent = emptyenv())
+  utils::data("scToy", package = "SoupX", envir = data_env)
+  sc <- data_env$scToy
+  sc$toc <- methods::as(sc$toc, "CsparseMatrix")
+
+  set.seed(718)
+  expected <- suppressWarnings(
+    SoupX::adjustCounts(sc, roundToInt = TRUE, verbose = 0)
+  )
+  before <- autozyme::status()[["soupx"]]
+
+  set.seed(718)
+  actual <- suppressWarnings(Shennong:::.sn_adjust_soupx_counts(sc))
+
+  expect_identical(actual, expected)
+  expect_identical(autozyme::status()[["soupx"]], before)
+})
+
 test_that("sn_remove_ambient_contamination reuses stored raw paths from initialization metadata", {
   skip_if_not_installed("Seurat")
 

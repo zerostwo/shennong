@@ -69,6 +69,12 @@ mock_autozyme_bindings <- function(state,
         remote_sha = remote_sha
       )
     },
+    .sn_autozyme_patch_source_status = function(patch, spec) {
+      list(
+        registered = patch %in% names(state$status),
+        source_match = FALSE
+      )
+    },
     .sn_autozyme_status_vector = function() state$status,
     .sn_autozyme_call = state$call,
     .package = "Shennong",
@@ -216,7 +222,7 @@ test_that("automatic patch set covers every integrated non-approximate backend",
     Shennong:::.sn_autozyme_default_patches,
     c(
       "cellchat", "clusterprofiler", "fgsea", "nichenetr", "seurat",
-      "tradeseq", "wgcna"
+      "soupx", "tradeseq", "wgcna"
     )
   )
 
@@ -252,6 +258,26 @@ test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware
     result$provenance$acceleration$active_patches,
     c("cellchat", "wgcna")
   )
+})
+
+test_that("SoupX is an exact default patch with scoped activation", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
+  expect_identical(spec$upstream, "SoupX")
+  expect_identical(spec$versions, "1.6.2")
+  expect_identical(spec$equivalence, "exact_scoped")
+  expect_false(spec$approximate)
+
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+
+  active_inside <- Shennong:::.sn_with_default_autozyme(
+    state$status[["soupx"]],
+    patches = "soupx"
+  )
+  expect_identical(active_inside, "active")
+  expect_identical(state$activated, "soupx")
+  expect_identical(state$deactivated, "soupx")
+  expect_identical(state$status[["soupx"]], "inactive")
 })
 
 test_that("automatic AutoZyme activation honors session opt-outs", {

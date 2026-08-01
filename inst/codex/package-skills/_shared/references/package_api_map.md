@@ -66,7 +66,9 @@ Runtime reference datasets:
 - `sn_filter_cells()`: cell-level QC filtering
 - `sn_assess_qc()`: summarize QC outcomes and before/after status
 - `sn_find_doublets()`: doublet detection via `scDblFinder`; BPCells-backed objects require `group_by` and are materialized per sample, with `ncores = 1` providing the lowest peak memory
-- `sn_remove_ambient_contamination()`: ambient RNA correction
+- `sn_remove_ambient_contamination()`: ambient RNA correction; the SoupX method
+  lazily scopes the exact AutoZyme `soupx` patch around `adjustCounts()` and
+  preserves SoupX's stochastic integer output contract
 
 ## Clustering and Integration
 
@@ -104,7 +106,8 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq, and WGCNA.
+  CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, SoupX, tradeSeq, and
+  WGCNA.
   AutoZyme and each upstream package must be installed at the pinned/exactly
   validated versions. Eligible patches are active only inside the compatible
   Shennong workflow call, with the pre-call state restored after success or

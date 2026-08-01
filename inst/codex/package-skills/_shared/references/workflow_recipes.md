@@ -36,9 +36,9 @@ user request to the right Shennong function family quickly.
 ## Recipe: Use AutoZyme acceleration
 
 1. The lazy automatic set is CellChat, NicheNetR, clusterProfiler, fgsea,
-   Seurat, tradeSeq, and WGCNA. Inspect the full set with
+   Seurat, SoupX, tradeSeq, and WGCNA. Inspect the full set with
    `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "seurat", "tradeseq", "wgcna"))` to report the pinned build, installed
+   "seurat", "soupx", "tradeseq", "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.
 2. Eligible defaults are active only inside the compatible Shennong workflow
    call. Verify that success and error both restore the pre-call patch state.
@@ -60,6 +60,9 @@ user request to the right Shennong function family quickly.
    ligand-target matrix. Confirm active-patch details in result provenance.
 7. Confirm that the caller's `future.globals.maxSize` option is unchanged after
    the workflow; Shennong restores AutoZyme's load-time mutation before analysis.
+8. `sn_remove_ambient_contamination(method = "soupx")` scopes the `soupx`
+   patch only around `adjustCounts()`, then performs SoupX's original stochastic
+   integer rounding. Check the seed when exact integer reproducibility matters.
 
 ## Recipe: Start from raw counts or 10x outputs
 

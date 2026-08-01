@@ -1604,6 +1604,28 @@ sn_find_doublets <- function(
   cluster
 }
 
+.sn_round_soupx_counts <- function(counts) {
+  fractional <- counts@x - floor(counts@x)
+  counts@x <- floor(counts@x) + stats::rbinom(
+    length(counts@x),
+    size = 1L,
+    prob = fractional
+  )
+  counts
+}
+
+.sn_adjust_soupx_counts <- function(sc) {
+  corrected <- .sn_with_default_autozyme(
+    SoupX::adjustCounts(
+      sc,
+      roundToInt = FALSE,
+      verbose = 0
+    ),
+    patches = "soupx"
+  )
+  .sn_round_soupx_counts(corrected)
+}
+
 .sn_remove_ambient_soupx <- function(x_info,
                                      raw_info,
                                      cluster = NULL,
@@ -1656,7 +1678,7 @@ sn_find_doublets <- function(
     forceAccept = force_accept,
     contaminationRange = contamination_range
   )
-  out <- SoupX::adjustCounts(sc, roundToInt = TRUE)
+  out <- .sn_adjust_soupx_counts(sc)
 
   tod_sum <- sum(Matrix::rowSums(tod_common))
   toc_sum <- sum(Matrix::rowSums(toc_common))
@@ -1788,6 +1810,13 @@ sn_find_doublets <- function(
 #' count matrix-like object, or a path that \code{sn_read()} can import. When a
 #' Seurat object was initialized from a detected 10x `outs` directory, stored
 #' raw matrix metadata is reused automatically if \code{raw = NULL}.
+#' The SoupX method lazily activates the exact-scoped AutoZyme `soupx` patch
+#' when the validated AutoZyme and SoupX builds are available. The patch is
+#' active only for `SoupX::adjustCounts()` and is restored afterward. Shennong
+#' then applies SoupX's stochastic integer rounding unchanged, preserving the
+#' existing count-layer contract. Set `options(shennong.autozyme = FALSE)` or
+#' `AUTOZYME_DISABLED=true` to prevent automatic activation; a manually active
+#' patch remains active until [sn_disable_autozyme()] is called.
 #'
 #' @param x A Seurat object, count matrix-like object, or path to filtered data.
 #' @param raw Optional raw/background counts. Required for \code{method = "soupx"}
