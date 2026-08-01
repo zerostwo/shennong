@@ -5,8 +5,8 @@ doublet-detection and ambient-RNA workflows can use AutoZyme even when the
 official AutoZyme package does not ship these patches.
 
 - Upstream project: <https://github.com/ElliotXie/autozyme>
-- Upstream source revisions: scDblFinder task best
-  `34b1fc7a9132b6e646512688018d4be353bba6a5`; SoupX `9952189`
+- Upstream source revisions: scDblFinder task candidate `c7a87c8` and
+  Autozyme package commits `ab5a470`, `97747ea`; SoupX `9952189`
 - Vendored files: installed `patches/scdblfinder/patch.R`, its validated scope
   and finalized benchmark summary under `patches/scdblfinder/`, plus
   `patches/soupx/patch.R`, its validated scope in

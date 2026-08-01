@@ -66,7 +66,7 @@
   scdblfinder = list(
     upstream = "scDblFinder", versions = "1.27.6",
     equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "cb49cc1a47a0c29897a4513a701059fd29c8794668964e42c6db760f22f0cbae"
+    source_sha256 = "2bb94876f7a87f088d9cc475070fa6fca3b7996fa9eb2b3feb12883b3664f414"
   ),
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),

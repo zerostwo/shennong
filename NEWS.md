@@ -79,6 +79,9 @@ Released 2026-08-01.
   inputs with 1--33,000 cells and positive finite library sizes, and restores
   the pre-call AutoZyme state. Non-default, BPCells-grouped, oversized, drifted,
   or otherwise unsupported calls continue through captured upstream code.
+  The vendored patch now uses a non-materialized sparse transpose operator for
+  exact generic IRLBA PCA and sparse-only artificial-doublet Poisson resampling;
+  expanded inputs above 50,000 columns retain the upstream PCA path.
 - `sn_remove_ambient_contamination(method = "soupx")` now lazily activates the
   exact-scoped AutoZyme `soupx` patch for `SoupX::adjustCounts()`. The patch and
   its native C++ kernels are now bundled by Shennong and registered through
