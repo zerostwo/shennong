@@ -1444,23 +1444,28 @@ sn_find_doublets <- function(
   .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_doublets")
 }
 
-.sn_resolve_counts_input <- function(x, arg = "x") {
+.sn_resolve_counts_input <- function(x, arg = "x", assay = NULL) {
   if (inherits(x, "Seurat")) {
+    assay <- assay %||% SeuratObject::DefaultAssay(x)
     return(list(
       object = x,
-      counts = .sn_as_sparse_matrix(SeuratObject::LayerData(object = x, layer = "counts"))
+      assay = assay,
+      counts = .sn_as_sparse_matrix(
+        .sn_get_seurat_layer_data(object = x, assay = assay, layer = "counts")
+      )
     ))
   }
 
   if (is.character(x)) {
     return(list(
       object = NULL,
+      assay = NULL,
       counts = .sn_as_sparse_matrix(sn_read(path = x))
     ))
   }
 
   if (inherits(x, c("Matrix", "matrix", "data.frame", "MatrixDir", "IterableMatrix", "RenameDims"))) {
-    return(list(object = NULL, counts = .sn_as_sparse_matrix(x)))
+    return(list(object = NULL, assay = NULL, counts = .sn_as_sparse_matrix(x)))
   }
 
   stop(glue("`{arg}` must be a Seurat object, matrix-like object, or path."))
@@ -1553,7 +1558,7 @@ sn_find_doublets <- function(
   )
 }
 
-.sn_resolve_stored_raw_input <- function(object, method, verbose = FALSE) {
+.sn_resolve_stored_raw_input <- function(object, method, assay = NULL, verbose = FALSE) {
   if (is_null(object) || !inherits(object, "Seurat")) {
     return(NULL)
   }
@@ -1567,7 +1572,7 @@ sn_find_doublets <- function(
   .sn_log_info(
     "No `raw` argument supplied; using the stored raw matrix at '{raw_path}' for `{method}`."
   )
-  .sn_resolve_counts_input(raw_path, arg = "raw")
+  .sn_resolve_counts_input(raw_path, arg = "raw", assay = assay)
 }
 
 .sn_restore_count_shape <- function(original_counts, corrected_counts) {
@@ -1583,7 +1588,8 @@ sn_find_doublets <- function(
 
 .sn_handle_zero_count_cells <- function(original_counts,
                                         corrected_counts,
-                                        remove_zero_count_cells = FALSE) {
+                                        remove_zero_count_cells = FALSE,
+                                        method = "decontX") {
   original_sums <- Matrix::colSums(original_counts)
   corrected_sums <- Matrix::colSums(corrected_counts)
   zero_cells <- colnames(corrected_counts)[original_sums > 0 & corrected_sums == 0]
@@ -1599,7 +1605,7 @@ sn_find_doublets <- function(
   if (remove_zero_count_cells) {
     keep_cells <- setdiff(colnames(corrected_counts), zero_cells)
     .sn_log_warn(
-      "decontX produced {length(zero_cells)} zero-count cell(s); removing them because ",
+      "{method} produced {length(zero_cells)} zero-count cell(s); removing them because ",
       "`remove_zero_count_cells = TRUE`."
     )
     return(list(
@@ -1611,7 +1617,7 @@ sn_find_doublets <- function(
 
   corrected_counts[, zero_cells] <- original_counts[, zero_cells, drop = FALSE]
   .sn_log_warn(
-    "decontX produced {length(zero_cells)} zero-count cell(s); restored the original counts ",
+    "{method} produced {length(zero_cells)} zero-count cell(s); restored the original counts ",
     "for those cells. Set `remove_zero_count_cells = TRUE` to drop them instead."
   )
 
@@ -1655,6 +1661,55 @@ sn_find_doublets <- function(
   cluster
 }
 
+.sn_detect_cite_seq_assay <- function(object, assay = NULL) {
+  if (!inherits(object, "Seurat")) {
+    if (!is.null(assay)) {
+      stop("`assay` can only be used with a Seurat object.", call. = FALSE)
+    }
+    return(NULL)
+  }
+
+  assays <- names(object@assays)
+  if (!is.null(assay)) {
+    if (!is.character(assay) || length(assay) != 1L || is.na(assay) ||
+        !nzchar(assay) || !assay %in% assays) {
+      stop(
+        "CITE-seq assay `", assay %||% "", "` was not found in the Seurat object.",
+        call. = FALSE
+      )
+    }
+    return(assay)
+  }
+
+  candidates <- assays[grepl("adt|protein|cite", assays, ignore.case = TRUE)]
+  if (length(candidates) > 1L) {
+    stop(
+      "Multiple CITE-seq-like assays were detected (",
+      paste(candidates, collapse = ", "),
+      "); supply `assay` explicitly.",
+      call. = FALSE
+    )
+  }
+  if (length(candidates) == 1L) candidates[[1]] else NULL
+}
+
+.sn_resolve_ambient_method <- function(x, method, assay = NULL) {
+  method <- match.arg(method, c("auto", "decontx", "decontpro", "soupx"))
+  if (!identical(method, "auto")) {
+    return(method)
+  }
+
+  detected_assay <- .sn_detect_cite_seq_assay(
+    object = if (inherits(x, "Seurat")) x else NULL,
+    assay = assay
+  )
+  if (!is.null(detected_assay) &&
+      grepl("adt|protein|cite", detected_assay, ignore.case = TRUE)) {
+    return("decontpro")
+  }
+  "decontx"
+}
+
 .sn_resolve_ambient_cluster_backend <- function(method,
                                                 cluster_backend = NULL,
                                                 cluster = NULL) {
@@ -1667,9 +1722,10 @@ sn_find_doublets <- function(
   if (!is_null(cluster)) {
     return("provided")
   }
-  if (identical(method, "soupx") && identical(cluster_backend, "native")) {
+  if (method %in% c("soupx", "decontpro") && identical(cluster_backend, "native")) {
     stop(
-      "SoupX does not provide native clustering; use `cluster_backend = \"shennong\"` or supply `cluster`.",
+      if (identical(method, "soupx")) "SoupX" else "decontPro",
+      " does not provide native clustering; use `cluster_backend = \"shennong\"` or supply `cluster`.",
       call. = FALSE
     )
   }
@@ -1775,22 +1831,18 @@ sn_find_doublets <- function(
                                        remove_zero_count_cells = FALSE,
                                        verbose = FALSE,
                                        ...) {
-  check_installed(pkg = "celda", reason = "to remove ambient RNA contamination with decontX.")
-  check_installed(pkg = "SingleCellExperiment", reason = "to run decontX.")
+  check_installed(pkg = "decontX", reason = "to remove ambient RNA contamination with decontX.")
 
   counts <- x_info$counts
   background_counts <- NULL
 
   if (!is_null(raw_info)) {
     common_genes <- intersect(rownames(counts), rownames(raw_info$counts))
+    if (length(common_genes) == 0L) {
+      stop("`raw` and filtered counts have no common genes.", call. = FALSE)
+    }
     counts <- counts[common_genes, , drop = FALSE]
     background_counts <- raw_info$counts[common_genes, , drop = FALSE]
-  }
-
-  sce <- SingleCellExperiment::SingleCellExperiment(list(counts = counts))
-  background <- NULL
-  if (!is_null(background_counts)) {
-    background <- SingleCellExperiment::SingleCellExperiment(list(counts = background_counts))
   }
 
   z <- NULL
@@ -1802,21 +1854,30 @@ sn_find_doublets <- function(
     )
   }
 
-  sce <- withCallingHandlers(
-    if (identical(cluster_backend, "native")) {
-      celda::decontX(
-        x = sce,
-        background = background,
-        ...
-      )
-    } else {
-      celda::decontX(
-        x = sce,
-        z = z,
-        background = background,
-        ...
-      )
-    },
+  decontx_args <- c(
+    list(x = counts, background = background_counts),
+    if (is.null(z)) list() else list(z = as.integer(factor(z)))
+  )
+  extra_args <- list(...)
+  reserved <- intersect(names(extra_args), names(decontx_args))
+  if (length(reserved) > 0L) {
+    stop(
+      "The following `...` argument(s) are controlled by Shennong: ",
+      paste(reserved, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (!"verbose" %in% names(extra_args)) {
+    extra_args$verbose <- verbose
+  }
+  decontx_args <- c(decontx_args, extra_args)
+
+  result <- withCallingHandlers(
+    .sn_with_default_autozyme(
+      do.call(decontX::decontX, decontx_args),
+      patches = "decontx_standalone",
+      strict = FALSE
+    ),
     warning = function(w) {
       message <- conditionMessage(w)
       benign_patterns <- c("librarySizeFactors", "normalizeCounts")
@@ -1825,20 +1886,121 @@ sn_find_doublets <- function(
       }
     }
   )
-  out <- round(celda::decontXcounts(sce))
+  out_counts <- .sn_as_sparse_matrix(round(result$decontXcounts))
   out <- .sn_handle_zero_count_cells(
     original_counts = counts,
-    corrected_counts = out,
-    remove_zero_count_cells = remove_zero_count_cells
+    corrected_counts = out_counts,
+    remove_zero_count_cells = remove_zero_count_cells,
+    method = "decontX"
   )
-  metadata <- as.data.frame(
-    SummarizedExperiment::colData(sce)[, c("decontX_contamination", "decontX_clusters"), drop = FALSE]
+  contamination <- as.numeric(result$contamination %||% rep(NA_real_, ncol(counts)))
+  clusters <- as.character(result$z %||% rep(NA_character_, ncol(counts)))
+  if (length(contamination) != ncol(counts)) {
+    contamination <- rep(NA_real_, ncol(counts))
+  }
+  if (length(clusters) != ncol(counts)) {
+    clusters <- rep(NA_character_, ncol(counts))
+  }
+  metadata <- data.frame(
+    decontX_contamination = contamination,
+    decontX_clusters = clusters,
+    row.names = colnames(counts),
+    stringsAsFactors = FALSE
   )
   metadata <- metadata[colnames(out$counts), , drop = FALSE]
   metadata$nCount_corrected <- Matrix::colSums(out$counts)
   metadata$nFeature_corrected <- Matrix::colSums(out$counts > 0)
   base_counts <- counts
   if (length(out$removed_cells) > 0) {
+    base_counts <- base_counts[, colnames(out$counts), drop = FALSE]
+  }
+
+  list(
+    counts = .sn_restore_count_shape(base_counts, out$counts),
+    metadata = metadata,
+    zero_cells = out$zero_cells,
+    removed_cells = out$removed_cells
+  )
+}
+
+.sn_remove_ambient_decontpro <- function(x_info,
+                                         raw_info = NULL,
+                                         cluster = NULL,
+                                         cluster_backend = "shennong",
+                                         remove_zero_count_cells = FALSE,
+                                         verbose = FALSE,
+                                         ...) {
+  check_installed(pkg = "decontX", reason = "to remove CITE-seq contamination with decontPro.")
+
+  counts <- x_info$counts
+  background_counts <- NULL
+  if (!is_null(raw_info)) {
+    common_features <- intersect(rownames(counts), rownames(raw_info$counts))
+    if (length(common_features) == 0L) {
+      stop("`raw` and filtered CITE-seq counts have no common features.", call. = FALSE)
+    }
+    counts <- counts[common_features, , drop = FALSE]
+    background_counts <- raw_info$counts[common_features, , drop = FALSE]
+  }
+
+  clusters <- .sn_resolve_ambient_clusters(
+    x_info = list(object = x_info$object, counts = counts),
+    cluster = cluster,
+    verbose = verbose
+  )
+  if (anyNA(clusters) || any(!nzchar(clusters))) {
+    stop("`cluster` must contain non-missing, non-empty labels for decontPro.", call. = FALSE)
+  }
+  cell_type <- match(as.character(clusters), unique(as.character(clusters)))
+  decontpro_args <- list(
+    filtered_counts = counts,
+    cell_type = as.integer(cell_type),
+    ambient_counts = background_counts
+  )
+  extra_args <- list(...)
+  reserved <- intersect(names(extra_args), names(decontpro_args))
+  if (length(reserved) > 0L) {
+    stop(
+      "The following `...` argument(s) are controlled by Shennong: ",
+      paste(reserved, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  result <- do.call(decontX::decontPro, c(decontpro_args, extra_args))
+  corrected_counts <- .sn_as_sparse_matrix(round(result$decontaminated_counts))
+  out <- .sn_handle_zero_count_cells(
+    original_counts = counts,
+    corrected_counts = corrected_counts,
+    remove_zero_count_cells = remove_zero_count_cells,
+    method = "decontPro"
+  )
+
+  ambient_counts <- result$ambient_counts %||% Matrix::Matrix(
+    0,
+    nrow = nrow(counts),
+    ncol = ncol(counts),
+    sparse = TRUE
+  )
+  background_estimates <- result$background_counts %||% Matrix::Matrix(
+    0,
+    nrow = nrow(counts),
+    ncol = ncol(counts),
+    sparse = TRUE
+  )
+  metadata <- data.frame(
+    decontPro_cell_type = as.integer(cell_type),
+    decontPro_ambient_fraction = Matrix::colSums(ambient_counts) /
+      pmax(Matrix::colSums(counts), 1),
+    decontPro_background_fraction = Matrix::colSums(background_estimates) /
+      pmax(Matrix::colSums(counts), 1),
+    row.names = colnames(counts),
+    stringsAsFactors = FALSE
+  )
+  metadata <- metadata[colnames(out$counts), , drop = FALSE]
+  metadata$nCount_corrected <- Matrix::colSums(out$counts)
+  metadata$nFeature_corrected <- Matrix::colSums(out$counts > 0)
+  base_counts <- counts
+  if (length(out$removed_cells) > 0L) {
     base_counts <- base_counts[, colnames(out$counts), drop = FALSE]
   }
 
@@ -1889,33 +2051,39 @@ sn_find_doublets <- function(
 
 #' Remove ambient RNA contamination from counts
 #'
-#' This function provides a unified interface for ambient RNA correction using
-#' either \code{SoupX} or \code{decontX}. The input can be a Seurat object, a
+#' This function provides a unified interface for ambient RNA or CITE-seq
+#' contamination correction using \code{SoupX}, \code{decontX::decontX()}, or
+#' \code{decontX::decontPro()}. The input can be a Seurat object, a
 #' count matrix-like object, or a path that \code{sn_read()} can import. When a
 #' Seurat object was initialized from a detected 10x `outs` directory, stored
 #' raw matrix metadata is reused automatically if \code{raw = NULL}.
-#' The SoupX method lazily registers Shennong's bundled exact-scoped AutoZyme
-#' `soupx` patch when the validated AutoZyme and SoupX builds are available;
-#' official AutoZyme does not need to ship that patch. It is active only for
-#' `SoupX::adjustCounts()` and is restored afterward. Shennong then applies
-#' SoupX's stochastic integer rounding unchanged, preserving the existing
-#' count-layer contract. Set `options(shennong.autozyme = FALSE)` or
-#' `AUTOZYME_DISABLED=true` to prevent automatic activation; a manually active
-#' patch remains active until [sn_disable_autozyme()] is called.
+#' The `auto` method routes a Seurat object with one CITE-seq-like ADT, protein,
+#' or CITE assay to `decontX::decontPro()`; otherwise it uses
+#' `decontX::decontX()`. Set `options(shennong.autozyme = FALSE)` or
+#' `AUTOZYME_DISABLED=true` to prevent automatic AutoZyme activation; a
+#' manually active patch remains active until [sn_disable_autozyme()] is called.
 #'
 #' @param x A Seurat object, count matrix-like object, or path to filtered data.
 #' @param raw Optional raw/background counts. Required for \code{method = "soupx"}
 #'   unless recoverable from stored initialization metadata. If supplied for
 #'   \code{decontx}, it is used as the background matrix.
-#' @param method One of \code{"decontx"} or \code{"soupx"}.
+#' @param method One of \code{"auto"}, \code{"decontx"},
+#'   \code{"decontpro"}, or \code{"soupx"}. The default \code{"auto"}
+#'   selects \code{"decontpro"} for a detected CITE-seq-like assay and
+#'   \code{"decontx"} otherwise.
+#' @param assay Optional Seurat assay containing the counts to correct. For
+#'   \code{method = "auto"}, an assay whose name contains `ADT`, `protein`, or
+#'   `CITE` selects \code{"decontpro"}; supply it explicitly when more than one
+#'   such assay is present. For matrices and paths, `assay` is not applicable.
 #' @param cluster Optional cluster labels. This can be a vector with one value
 #'   per cell, or a metadata column name when \code{x} is a Seurat object.
 #'   Explicit labels take precedence over \code{cluster_backend}.
 #' @param cluster_backend Clustering implementation used when \code{cluster}
-#'   is \code{NULL}. The method-specific default is \code{"native"} for decontX,
-#'   which lets decontX perform its own clustering, and \code{"shennong"} for
-#'   SoupX, which requires assignments and obtains them from
-#'   \code{sn_run_cluster()}. SoupX does not support \code{"native"}.
+#'   is \code{NULL}. The method-specific default is \code{"native"} for
+#'   decontX, which lets decontX perform its own clustering, and
+#'   \code{"shennong"} for SoupX and decontPro, which require assignments and
+#'   obtain them from \code{sn_run_cluster()}. SoupX and decontPro do not
+#'   support \code{"native"}.
 #' @param remove_zero_count_cells Logical; if \code{TRUE}, remove cells whose
 #'   decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by
 #'   restoring their original counts and emit a warning.
@@ -1926,15 +2094,16 @@ sn_find_doublets <- function(
 #'   the updated Seurat object. Otherwise return the corrected counts matrix.
 #' @param verbose Logical; whether to print progress from helper clustering.
 #' @param ... Additional method-specific arguments passed to
-#'   \code{celda::decontX()} when \code{method = "decontx"}, or to
-#'   \code{SoupX::autoEstCont()} when \code{method = "soupx"}.
+#'   \code{decontX::decontX()}, \code{decontX::decontPro()}, or
+#'   \code{SoupX::autoEstCont()} and \code{SoupX::adjustCounts()}.
 #'
 #' @return A corrected counts matrix, or an updated Seurat object when
 #'   \code{return_object = TRUE} and \code{x} is a Seurat object. For
 #'   Seurat returns, \code{nCount_<assay>_corrected} and
 #'   \code{nFeature_<assay>_corrected} are added to \code{meta.data}. For
 #'   decontX-based Seurat returns, the \code{decontX_contamination} and
-#'   \code{decontX_clusters} columns are also added.
+#'   \code{decontX_clusters} columns are added. decontPro-based returns also
+#'   include the inferred cell type and ambient/background fraction columns.
 #'
 #' @examples
 #' \dontrun{
@@ -1946,29 +2115,43 @@ sn_find_doublets <- function(
 sn_remove_ambient_contamination <- function(
   x,
   raw = NULL,
-  method = c("decontx", "soupx"),
+  method = c("auto", "decontx", "decontpro", "soupx"),
   cluster = NULL,
   cluster_backend = NULL,
   remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
-  ...
+  ...,
+  assay = NULL
 ) {
   check_installed(pkg = "SeuratObject", reason = "to handle Seurat objects.")
 
-  method <- match.arg(method)
+  method <- .sn_resolve_ambient_method(x = x, method = method, assay = assay)
+  selected_assay <- if (identical(method, "decontpro")) {
+    .sn_detect_cite_seq_assay(
+      object = if (inherits(x, "Seurat")) x else NULL,
+      assay = assay
+    )
+  } else {
+    assay %||% NULL
+  }
   cluster_backend <- .sn_resolve_ambient_cluster_backend(
     method = method,
     cluster_backend = cluster_backend,
     cluster = cluster
   )
-  x_info <- .sn_resolve_counts_input(x, arg = "x")
-  raw_info <- if (is_null(raw)) NULL else .sn_resolve_counts_input(raw, arg = "raw")
-  if (is_null(raw_info)) {
+  x_info <- .sn_resolve_counts_input(x, arg = "x", assay = selected_assay)
+  raw_info <- if (is_null(raw)) {
+    NULL
+  } else {
+    .sn_resolve_counts_input(raw, arg = "raw", assay = selected_assay)
+  }
+  if (is_null(raw_info) && !identical(method, "decontpro")) {
     raw_info <- .sn_resolve_stored_raw_input(
       object = x_info$object,
       method = method,
+      assay = x_info$assay,
       verbose = verbose
     )
   }
@@ -1990,15 +2173,23 @@ sn_remove_ambient_contamination <- function(
       remove_zero_count_cells = remove_zero_count_cells,
       verbose = verbose,
       ...
+    ),
+    decontpro = .sn_remove_ambient_decontpro(
+      x_info = x_info,
+      raw_info = raw_info,
+      cluster = cluster,
+      cluster_backend = cluster_backend,
+      remove_zero_count_cells = remove_zero_count_cells,
+      verbose = verbose,
+      ...
     )
   )
 
   if (return_object && !is_null(x_info$object)) {
-    assay <- SeuratObject::DefaultAssay(x_info$object)
     x_info$object <- .sn_apply_ambient_result_to_object(
       object = x_info$object,
       out = out,
-      assay = assay,
+      assay = x_info$assay %||% SeuratObject::DefaultAssay(x_info$object),
       layer = layer
     )
     return(.sn_log_seurat_command(object = x_info$object, name = "sn_remove_ambient_contamination"))

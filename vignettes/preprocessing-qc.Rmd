@@ -234,8 +234,8 @@ Doublet detection and ambient correction depend on optional backends. Shennong
 keeps them as explicit steps rather than hiding them in clustering. These
 steps run only when their R backend is installed. The doublet re-estimation is
 reserved for the `all` profile because the fixture already contains the
-authors' singlet calls; the core profile runs DecontX and its before/after plot
-when `celda` is available.
+authors' singlet calls; the core profile runs standalone decontX and its
+before/after plot when `decontX` is available.
 
 ```{r doublets, eval = run_extended && requireNamespace("scDblFinder", quietly = TRUE)}
 pbmc_doublets <- sn_find_doublets(pbmc_norm)
@@ -255,7 +255,7 @@ sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
 The ungrouped default call above uses scDblFinder's native automatic clustering
-and can use Shennong's bundled exact AutoZyme `scdblfinder` patch. Set
+and can use the pinned fork's exact AutoZyme `scdblfinder` patch. Set
 `cluster_backend = "shennong"` only when `sn_run_cluster()` assignments are an
 intentional analytical choice. The patch is admitted only for an in-memory
 `dgCMatrix` with 1--33,000 cells, default analytical parameters, positive finite
@@ -289,14 +289,12 @@ For ambient RNA, materialize a matching raw-count resource with
 uses the filtered object directly and writes corrected counts to a new layer,
 so the original counts remain inspectable.
 
-When `method = "soupx"`, Shennong lazily activates the exact-scoped AutoZyme
-`soupx` patch for the `adjustCounts()` step when AutoZyme 0.3.1 and SoupX 1.6.2
-match the validated contract. Shennong bundles the R patch and native C++
-kernels itself, then registers them through AutoZyme at runtime; the official
-AutoZyme installation does not need to contain a SoupX patch. The patch is
-restored immediately after the call, and Shennong applies SoupX's original
-stochastic integer rounding so the corrected count layer keeps its existing
-integer contract. Set
+When `method = "soupx"`, Shennong lazily activates the pinned fork's
+exact-scoped AutoZyme `soupx` patch for the `adjustCounts()` step when AutoZyme
+0.3.1 and SoupX 1.6.2 match the validated contract. The patch is restored
+immediately after the call, and Shennong applies SoupX's original stochastic
+integer rounding so the corrected count layer keeps its existing integer
+contract. Set
 `options(shennong.autozyme = FALSE)` to prevent automatic activation. If the
 patch was enabled manually, call `sn_disable_autozyme("soupx")` to return to
 the upstream SoupX path.
@@ -311,10 +309,10 @@ pbmc_soupx <- sn_remove_ambient_contamination(
 )
 ```
 
-```{r ambient, eval = run_vignette && requireNamespace("celda", quietly = TRUE)}
+```{r ambient, eval = run_vignette && requireNamespace("decontX", quietly = TRUE)}
 pbmc_decont <- sn_remove_ambient_contamination(
   x = pbmc_norm,
-  method = "decontx",
+  method = "auto",
   cluster_backend = "native",
   layer = "decontaminated_counts",
   verbose = FALSE
@@ -329,10 +327,25 @@ sn_plot_ambient_correction(
 )
 ```
 
-`cluster_backend = "native"` is the decontX default and avoids an extra
-Shennong/Seurat clustering workflow. Use `cluster_backend = "shennong"` to
-retain the previous behavior, or supply `cluster` explicitly. SoupX has no
-native clustering backend and therefore defaults to `"shennong"`.
+`method = "auto"` uses direct `decontX::decontX()` for RNA-only objects and
+routes a single ADT/protein/CITE assay to `decontX::decontPro()`. The
+`decontx_standalone` AutoZyme hook is scoped only around the direct RNA call
+when the installed fork registers it. `cluster_backend = "native"` is the
+decontX default and avoids an extra Shennong/Seurat clustering workflow. For
+decontPro, supply `cluster` or use the default `"shennong"` backend because
+decontPro requires cell types. SoupX has no native clustering backend and
+therefore defaults to `"shennong"`.
+
+```{r ambient-cite-seq, eval = FALSE}
+pbmc_cite_decont <- sn_remove_ambient_contamination(
+  x = pbmc_cite,
+  method = "decontpro",
+  assay = "ADT",
+  cluster = "seurat_clusters",
+  layer = "decontaminated_counts",
+  verbose = FALSE
+)
+```
 
 ## Store a QC assessment
 

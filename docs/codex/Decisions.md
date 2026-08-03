@@ -2,6 +2,22 @@
 
 Last updated: 2026-08-01
 
+## 2026-08-03
+
+- The package pins the user's `zerostwo/autozyme` fork rather than mixing
+  Shennong copies with upstream patches. UCell, LISI, scDblFinder, and SoupX
+  therefore use the fork's registered implementations; only the unrelated
+  SeuratObject merge/JoinLayers patches remain vendored.
+- Ambient RNA correction calls the standalone `decontX::decontX()` API on
+  count matrices. `method = "auto"` selects `decontX::decontPro()` for one
+  detected ADT/protein/CITE assay, while `method = "decontx"` remains the
+  explicit RNA path. CITE-seq correction requires explicit/provided cell
+  types or Shennong clustering because decontPro does not infer them natively.
+- The `decontx_standalone` AutoZyme hook is fail-closed and scoped only around
+  the direct decontX call. The local AutoZyme checkout has the hook, but the
+  pinned fork `main` revision currently lacks it; this source/revision gap is
+  reported rather than hidden behind a bundled substitute.
+
 ## 2026-08-01
 
 - clusterProfiler and fgsea use independent relaxed-version AutoZyme scopes.
@@ -47,17 +63,15 @@ Last updated: 2026-08-01
   validated public BPCells fast route. Shennong additionally admits released
   SeuratObject 5.4.0 after local exact-parity tests, alongside AutoZyme's
   original 5.4.0.9001 development target.
-- Shennong vendors the exact-scoped scDblFinder patch until the official
-  AutoZyme package ships the same finalized source. Automatic use is limited
-  to fingerprint-compatible default public calls on exact `dgCMatrix` inputs with
-  1--33,000 cells and positive finite library sizes. The four-target source and
-  formal hashes, runtime fallback, RNG restoration, and 35,000 expanded-column
-  eager-normalization boundary remain unchanged from AutoZyme verification.
-  Grouped/BPCells and non-default calls remain upstream behavior.
+- The former Shennong-local scDblFinder patch was removed on 2026-08-03 after
+  the user's AutoZyme fork `main` shipped the refreshed direct provider set.
+  The 1--33,000-cell, exact-`dgCMatrix` and default-call boundaries remain
+  AutoZyme's runtime contract; grouped/BPCells and non-default calls remain
+  upstream behavior.
 - Automatic AutoZyme acceleration is a lazy workflow boundary, not a
   package-load side effect. The exact non-approximate Shennong integration set
-  is CellChat, clusterProfiler, fgsea, NicheNetR, Seurat, SoupX, tradeSeq, and
-  WGCNA;
+  is CellChat, clusterProfiler, standalone decontX, fgsea, LISI, NicheNetR,
+  Seurat, SoupX, tradeSeq, UCell, scDblFinder, and WGCNA;
   each patch requires the pinned AutoZyme build and exact validated upstream
   version, and is restored to its pre-call state after success or error.
   Missing or drifted dependencies skip acceleration instead of changing
@@ -67,15 +81,10 @@ Last updated: 2026-08-01
   compatible patch was active.
 - SoupX acceleration is scoped only to the fractional `adjustCounts()` step.
   Shennong performs the upstream stochastic integer rounding afterward, which
-  preserves the existing count-layer and seeded-RNG contract while allowing
-  the exact AutoZyme sparse kernel to run. Shennong owns and distributes the
-  SoupX patch source and compiled kernel under the upstream MIT license, checks
-  the bundled SHA-256 before sourcing it, and registers it through AutoZyme's
-  public API. The vendored patch directory also retains the validated scope and
-  only finalized equivalence-passing benchmark rows, so its compatibility and
-  performance claims remain auditable independently of the AutoZyme checkout.
-  Official AutoZyme therefore need not ship `soupx`; exact AutoZyme and SoupX
-  version checks still apply.
+  preserves the existing count-layer and seeded-RNG contract while allowing the
+  exact fork AutoZyme sparse kernel to run. The old Shennong-local SoupX patch
+  and compiled kernel were removed on 2026-08-03; exact AutoZyme and SoupX
+  version checks remain the source boundary.
 - Seurat assay/layer names describe analytical semantics, while BPCells and
   `dgCMatrix` describe storage backends. `sn_set_layer_backend()` is therefore
   the bidirectional public boundary; it changes storage without renaming

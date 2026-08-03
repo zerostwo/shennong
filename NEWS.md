@@ -81,6 +81,17 @@ Released 2026-08-01.
 
 ### Changed
 
+- AutoZyme integration now pins the `zerostwo/autozyme` fork and scopes its
+  `scDblFinder`, UCell, LISI, and SoupX accelerators around the corresponding
+  package calls. The former Shennong-local scDblFinder and SoupX patches and
+  SoupX C++ kernels were removed so the fork is the single provider for those
+  implementations.
+- `sn_remove_ambient_contamination()` now calls the standalone
+  `decontX::decontX()` API directly instead of `celda::decontX()`. Its
+  `method = "auto"` default detects a single ADT, protein, or CITE assay and
+  routes it to `decontX::decontPro()`; use `method = "decontpro"` and
+  `assay =` to make the CITE-seq choice explicit. The standalone decontX
+  AutoZyme hook is scoped only around `decontX::decontX()`.
 - `sn_remove_ambient_contamination(method = "decontx")` now defaults to
   decontX's native clustering instead of unconditionally running a complete
   `sn_run_cluster()` workflow first. The new `cluster_backend` argument selects

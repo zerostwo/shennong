@@ -67,15 +67,15 @@ Runtime reference datasets:
 - `sn_assess_qc()`: summarize QC outcomes and before/after status
 - `sn_find_doublets()`: doublet detection via `scDblFinder`; native automatic
   clustering is the default and `cluster_backend = "shennong"` is explicit.
-  The exact default `dgCMatrix` call can use Shennong's bundled,
-  33,000-cell-capped AutoZyme patch, while BPCells-backed objects require
-  `group_by` and are materialized per sample, with `ncores = 1` providing the
-  lowest peak memory
-- `sn_remove_ambient_contamination()`: ambient RNA correction; decontX defaults
-  to its native clustering and accepts `cluster_backend = "shennong"` for the
-  previous Seurat/Shennong path. The SoupX method
-  registers Shennong's bundled exact AutoZyme `soupx` patch, scopes it around
-  `adjustCounts()`, and preserves SoupX's stochastic integer output contract
+  The exact default `dgCMatrix` call can use the pinned AutoZyme fork's
+  scDblFinder patch, while BPCells-backed objects require `group_by` and are
+  materialized per sample, with `ncores = 1` providing the lowest peak memory
+- `sn_remove_ambient_contamination()`: direct standalone `decontX::decontX()`
+  for RNA and `decontX::decontPro()` for CITE-seq/ADT or protein assays.
+  `method = "auto"` detects one CITE-seq-like assay; `cluster_backend =
+  "shennong"` is required for decontPro when labels are not supplied. SoupX
+  retains its stochastic integer output contract and uses the pinned fork's
+  `soupx` patch when eligible.
 
 ## Clustering and Integration
 
@@ -113,12 +113,13 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, fgsea, scDblFinder, Seurat,
-  SeuratObject merge/JoinLayers, SoupX, tradeSeq, and WGCNA.
-  Shennong bundles the clusterProfiler 4.20 GSON cache, scDblFinder,
-  SeuratObject merge/JoinLayers, and SoupX patches plus SoupX native kernels;
-  official AutoZyme only
-  supplies the registration and scoped activation engine for this backend.
+  CellChat, NicheNetR, clusterProfiler, standalone decontX, fgsea, LISI,
+  scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq, UCell,
+  and WGCNA. The pinned AutoZyme fork supplies the scDblFinder, UCell, LISI,
+  SoupX, and (when registered) standalone decontX patches. Shennong only
+  vendors the clusterProfiler 4.20 GSON cache and SeuratObject
+  merge/JoinLayers patches; official AutoZyme supplies the registration and
+  scoped activation engine for the direct fork backends.
   AutoZyme and each upstream package must be installed. Seurat, CellChat, and
   call-safe NicheNetR workflow scopes currently tolerate upstream version-label
   drift behind runtime/input guards; other strict checks remain available via

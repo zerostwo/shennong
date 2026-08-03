@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-01
+Last updated: 2026-08-03
 
 ## Current structure
 
@@ -20,6 +20,23 @@ Last updated: 2026-08-01
 The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
+
+- AutoZyme integration now pins `zerostwo/autozyme` commit
+  `3fe148271a21db90a6cc47ed91d82ed834de6bc4`. UCell, LISI, the refreshed
+  scDblFinder patch, and SoupX are direct fork providers; the old Shennong
+  scDblFinder and SoupX source/kernels were removed. The Shennong ambient
+  path calls standalone `decontX::decontX()` and requests the
+  `decontx_standalone` hook. The local AutoZyme build currently registers that
+  hook, while the pinned public fork `main` revision does not yet contain it;
+  `sn_check_autozyme()` therefore remains the source of truth for whether the
+  decontX fast path is available in a given installation.
+- `sn_remove_ambient_contamination(method = "auto")` now detects one
+  ADT/protein/CITE assay and routes it to `decontX::decontPro()`; explicit
+  `method = "decontpro"` and `assay =` are available for reproducible CITE-seq
+  runs. The direct decontX matrix path was smoke-tested with integer output,
+  zero-count handling, and scoped local AutoZyme activation. decontPro is
+  intentionally not described as accelerated until a combined fork revision
+  registers a validated patch for it.
 
 - CellChat and call-safe NicheNetR communication workflows now pass
   `strict = FALSE` to their scoped AutoZyme manager. Their runtime/backend

@@ -35,12 +35,13 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Use AutoZyme acceleration
 
-1. The lazy automatic set is CellChat, NicheNetR, clusterProfiler, fgsea,
-   scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq, and
-   WGCNA. Inspect the full set with
-   `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "scdblfinder", "seurat", "seurat_merge", "seurat_joinlayers", "soupx",
-   "tradeseq", "wgcna"))` to report the pinned build, installed
+1. The lazy automatic set is CellChat, clusterProfiler, standalone decontX,
+   fgsea, LISI, NicheNetR, scDblFinder, Seurat, SeuratObject merge/JoinLayers,
+   SoupX, tradeSeq, UCell, and WGCNA. Inspect the full set with
+   `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
+   "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
+   "seurat_merge", "seurat_joinlayers", "soupx", "tradeseq", "ucell",
+   "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.
 2. Eligible defaults are active only inside the compatible Shennong workflow
    call. A successful automatic scope emits an INFO log naming the enabled
@@ -71,13 +72,15 @@ user request to the right Shennong function family quickly.
    ligand-target matrix. Confirm active-patch details in result provenance.
 7. Confirm that the caller's `future.globals.maxSize` option is unchanged after
    the workflow; Shennong restores AutoZyme's load-time mutation before analysis.
-8. `sn_remove_ambient_contamination(method = "soupx")` scopes the `soupx`
-   patch only around `adjustCounts()`. Shennong bundles and registers this patch,
-   so official AutoZyme does not need to contain `soupx`; AutoZyme still manages
-   temporary activation and rollback. Shennong then performs SoupX's original
-   stochastic integer rounding. Check the seed when reproducibility matters.
+8. `sn_remove_ambient_contamination()` calls standalone `decontX::decontX()`
+   for RNA. With `method = "auto"`, one ADT/protein/CITE assay routes to
+   `decontX::decontPro()`; provide `assay =` and `cluster =` for a reproducible
+   CITE-seq call. The `decontx_standalone` hook is scoped only around
+   `decontX::decontX()` and is used only when the installed fork registers it.
+   For `method = "soupx"`, the `soupx` patch is scoped only around
+   `adjustCounts()`, followed by SoupX's original stochastic integer rounding.
 9. `sn_find_doublets()` defaults to scDblFinder's native automatic clustering
-   and scopes Shennong's bundled `scdblfinder` patch only for the validated
+   and scopes the pinned fork's `scdblfinder` patch only for the validated
    default call on exact `dgCMatrix` inputs of
    at most 33,000 cells. Grouped/BPCells calls and non-default arguments remain
    upstream paths. Treat the installed scope and finalized benchmark table as

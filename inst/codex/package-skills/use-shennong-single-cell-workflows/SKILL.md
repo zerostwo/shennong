@@ -59,8 +59,9 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
-- expect eligible CellChat, NicheNetR, clusterProfiler, fgsea, Seurat, tradeSeq,
-  and WGCNA AutoZyme patches to activate lazily only inside compatible workflow
+- expect eligible CellChat, NicheNetR, clusterProfiler, standalone decontX,
+  fgsea, LISI, Seurat, SoupX, tradeSeq, UCell, scDblFinder, and WGCNA AutoZyme
+  patches to activate lazily only inside compatible workflow
   calls and restore the prior state afterward; CellChat and call-safe NicheNetR
   communication scopes allow upstream version-label drift behind runtime guards;
   clusterProfiler and fgsea use
@@ -88,10 +89,12 @@ This skill is the main entry point for package usage.
    object, require a donor/capture `group_by` column and default to
    `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
    For in-memory `dgCMatrix` input, scDblFinder native clustering is the default
-   and the fingerprint-compatible default call can use Shennong's bundled,
+   and the fingerprint-compatible default call can use the pinned fork's
    33,000-cell-capped AutoZyme patch; grouped and non-default calls remain on
    the upstream path. Use `cluster_backend = "shennong"` only when the caller
-   explicitly wants `sn_run_cluster()` assignments.
+   explicitly wants `sn_run_cluster()` assignments. `sn_score_programs()` uses
+   UCell by default for per-cell programs, and LISI metrics use the fork patch
+   when their validated matrix contract is met.
    Use `sn_set_layer_backend()` when selected Seurat layers must move between
    BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
    by an in-memory-only operation.
@@ -233,8 +236,9 @@ This skill is the main entry point for package usage.
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks.
 14. For R acceleration, inspect all strict lazy defaults with
-   `sn_check_autozyme(c("cellchat", "nichenetr", "clusterprofiler", "fgsea",
-   "scdblfinder", "seurat", "soupx", "tradeseq", "wgcna"))`. Eligible patches are scoped to the
+   `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
+   "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat", "soupx",
+   "tradeseq", "ucell", "wgcna"))`. Eligible patches are scoped to the
    compatible workflow call and the prior state must be restored after success
    or error. Missing or version-drifted dependencies and approximate patches
    are never activated automatically. Option/environment opt-outs block the

@@ -27,7 +27,6 @@ Imports:
     logger,
     Matrix,
     methods,
-    Rcpp,
     rlang,
     tictoc,
     RColorBrewer,
@@ -36,9 +35,7 @@ Imports:
 Roxygen: list(markdown = TRUE)
 Depends: 
     R (>= 4.1.0)
-LinkingTo:
-    Rcpp
-NeedsCompilation: yes
+NeedsCompilation: no
 Suggests: 
     anndataR,
     apeglm,
@@ -53,7 +50,7 @@ Suggests:
     BiocSingular,
     BPCells,
     catplot,
-    celda,
+    decontX,
     CellChat,
     clusterProfiler,
     ComplexHeatmap,
@@ -139,7 +136,7 @@ Suggests:
     survival,
     withr
 Remotes:
-    github::ElliotXie/autozyme/autozyme_r@718541d9489596c7c1d75f52e9b3a8b2a429d1f9,
+    github::zerostwo/autozyme/autozyme_r@3fe148271a21db90a6cc47ed91d82ed834de6bc4,
     github::cole-trapnell-lab/monocle3,
     github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,

@@ -666,6 +666,10 @@ test_that("ambient cluster backends use method-specific defaults and explicit ov
     "shennong"
   )
   expect_identical(
+    Shennong:::.sn_resolve_ambient_cluster_backend("decontpro"),
+    "shennong"
+  )
+  expect_identical(
     Shennong:::.sn_resolve_ambient_cluster_backend(
       "decontx",
       cluster_backend = "shennong"
@@ -686,6 +690,13 @@ test_that("ambient cluster backends use method-specific defaults and explicit ov
       cluster_backend = "native"
     ),
     "SoupX does not provide native clustering"
+  )
+  expect_error(
+    Shennong:::.sn_resolve_ambient_cluster_backend(
+      "decontpro",
+      cluster_backend = "native"
+    ),
+    "decontPro does not provide native clustering"
   )
 })
 

@@ -224,9 +224,9 @@ test_that("automatic patch set covers every integrated non-approximate backend",
   expect_identical(
     Shennong:::.sn_autozyme_default_patches,
     c(
-      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-      "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq",
-      "wgcna"
+      "cellchat", "clusterprofiler", "decontx_standalone", "fgsea", "lisi",
+      "nichenetr", "scdblfinder", "seurat", "seurat_joinlayers", "seurat_merge",
+      "soupx", "tradeseq", "ucell", "wgcna"
     )
   )
 
@@ -366,44 +366,27 @@ test_that("clusterProfiler 4.20 uses the trusted vendored GSON cache patch", {
   expect_identical(status$provider, "shennong")
 })
 
-test_that("Shennong bundles the trusted SoupX patch independently", {
-  spec <- Shennong:::.sn_autozyme_patch_manifest$soupx
+test_that("the fork AutoZyme build is the provider for direct accelerators", {
   testthat::local_mocked_bindings(
     .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
     .sn_autozyme_call = function(fun, ...) {
-      if (identical(fun, "list_patches")) return(character())
+      if (identical(fun, "list_patches")) {
+        return(c("lisi", "scdblfinder", "soupx", "ucell"))
+      }
       stop("Unexpected mocked AutoZyme call: ", fun)
     },
     .package = "Shennong"
   )
 
-  status <- Shennong:::.sn_autozyme_patch_source_status("soupx", spec)
-  expect_false(status$registered)
-  expect_true(status$bundled_by_shennong)
-  expect_true(status$vendored_source_match)
-  expect_true(status$source_match)
-  expect_identical(status$provider, "shennong")
-})
-
-test_that("Shennong bundles the trusted scDblFinder patch independently", {
-  spec <- Shennong:::.sn_autozyme_patch_manifest$scdblfinder
-  testthat::local_mocked_bindings(
-    .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
-    .sn_autozyme_call = function(fun, ...) {
-      if (identical(fun, "list_patches")) return(character())
-      stop("Unexpected mocked AutoZyme call: ", fun)
-    },
-    .package = "Shennong"
-  )
-
-  status <- Shennong:::.sn_autozyme_patch_source_status("scdblfinder", spec)
-  expect_false(status$registered)
-  expect_true(status$bundled_by_shennong)
-  expect_true(status$vendored_source_match)
-  expect_true(status$source_match)
-  # Prefer AutoZyme when this development library already contains the same
-  # finalized source; otherwise the trusted Shennong copy is the provider.
-  expect_true(status$provider %in% c("autozyme", "shennong"))
+  for (patch in c("lisi", "scdblfinder", "soupx", "ucell")) {
+    spec <- Shennong:::.sn_autozyme_patch_manifest[[patch]]
+    status <- Shennong:::.sn_autozyme_patch_source_status(patch, spec)
+    expect_true(status$registered)
+    expect_false(status$bundled_by_shennong)
+    expect_false(status$vendored_source_match)
+    expect_false(status$source_match)
+    expect_identical(status$provider, "autozyme")
+  }
 })
 
 test_that("Shennong bundles both trusted SeuratObject patches independently", {
@@ -468,7 +451,7 @@ test_that("scDblFinder workflow scopes the patch only around its call", {
 })
 
 test_that("vendored AutoZyme patches are validated again before sourcing", {
-  patch_file <- tempfile("untrusted-soupx-", fileext = ".R")
+  patch_file <- tempfile("untrusted-seurat-", fileext = ".R")
   writeLines("stop('must not be sourced')", patch_file)
   testthat::local_mocked_bindings(
     .sn_autozyme_vendored_patch_path = function(patch) patch_file,
@@ -477,7 +460,7 @@ test_that("vendored AutoZyme patches are validated again before sourcing", {
   )
 
   expect_error(
-    Shennong:::.sn_register_vendored_autozyme_patch("soupx"),
+    Shennong:::.sn_register_vendored_autozyme_patch("seurat_merge"),
     "failed source validation"
   )
 })
@@ -974,7 +957,7 @@ test_that("DESCRIPTION pins AutoZyme without making it a required dependency", {
   expect_match(
     desc[["Remotes"]],
     paste0(
-      "ElliotXie/autozyme/autozyme_r@",
+      "zerostwo/autozyme/autozyme_r@",
       Shennong:::.sn_autozyme_expected_sha
     ),
     fixed = TRUE

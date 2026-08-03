@@ -7,14 +7,15 @@
 sn_remove_ambient_contamination(
   x,
   raw = NULL,
-  method = c("decontx", "soupx"),
+  method = c("auto", "decontx", "decontpro", "soupx"),
   cluster = NULL,
   cluster_backend = NULL,
   remove_zero_count_cells = FALSE,
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
-  ...
+  ...,
+  assay = NULL
 )
 }
 \arguments{
@@ -24,17 +25,21 @@ sn_remove_ambient_contamination(
 unless recoverable from stored initialization metadata. If supplied for
 \code{decontx}, it is used as the background matrix.}
 
-\item{method}{One of \code{"decontx"} or \code{"soupx"}.}
+\item{method}{One of \code{"auto"}, \code{"decontx"},
+\code{"decontpro"}, or \code{"soupx"}. The default \code{"auto"}
+selects \code{"decontpro"} for a detected CITE-seq-like assay and
+\code{"decontx"} otherwise.}
 
 \item{cluster}{Optional cluster labels. This can be a vector with one value
 per cell, or a metadata column name when \code{x} is a Seurat object.
 Explicit labels take precedence over \code{cluster_backend}.}
 
 \item{cluster_backend}{Clustering implementation used when \code{cluster}
-is \code{NULL}. The method-specific default is \code{"native"} for decontX,
-which lets decontX perform its own clustering, and \code{"shennong"} for
-SoupX, which requires assignments and obtains them from
-\code{sn_run_cluster()}. SoupX does not support \code{"native"}.}
+is \code{NULL}. The method-specific default is \code{"native"} for
+decontX, which lets decontX perform its own clustering, and
+\code{"shennong"} for SoupX and decontPro, which require assignments and
+obtain them from \code{sn_run_cluster()}. SoupX and decontPro do not
+support \code{"native"}.}
 
 \item{remove_zero_count_cells}{Logical; if \code{TRUE}, remove cells whose
 decontX-corrected counts sum to zero. If \code{FALSE}, keep those cells by
@@ -50,8 +55,13 @@ the updated Seurat object. Otherwise return the corrected counts matrix.}
 \item{verbose}{Logical; whether to print progress from helper clustering.}
 
 \item{...}{Additional method-specific arguments passed to
-\code{celda::decontX()} when \code{method = "decontx"}, or to
-\code{SoupX::autoEstCont()} when \code{method = "soupx"}.}
+\code{decontX::decontX()}, \code{decontX::decontPro()}, or
+\code{SoupX::autoEstCont()} and \code{SoupX::adjustCounts()}.}
+
+\item{assay}{Optional Seurat assay containing the counts to correct. For
+\code{method = "auto"}, an assay whose name contains \code{ADT}, \code{protein}, or
+\code{CITE} selects \code{"decontpro"}; supply it explicitly when more than one
+such assay is present. For matrices and paths, \code{assay} is not applicable.}
 }
 \value{
 A corrected counts matrix, or an updated Seurat object when
@@ -59,22 +69,21 @@ A corrected counts matrix, or an updated Seurat object when
 Seurat returns, \code{nCount_<assay>_corrected} and
 \code{nFeature_<assay>_corrected} are added to \code{meta.data}. For
 decontX-based Seurat returns, the \code{decontX_contamination} and
-\code{decontX_clusters} columns are also added.
+\code{decontX_clusters} columns are added. decontPro-based returns also
+include the inferred cell type and ambient/background fraction columns.
 }
 \description{
-This function provides a unified interface for ambient RNA correction using
-either \code{SoupX} or \code{decontX}. The input can be a Seurat object, a
+This function provides a unified interface for ambient RNA or CITE-seq
+contamination correction using \code{SoupX}, \code{decontX::decontX()}, or
+\code{decontX::decontPro()}. The input can be a Seurat object, a
 count matrix-like object, or a path that \code{sn_read()} can import. When a
 Seurat object was initialized from a detected 10x \code{outs} directory, stored
 raw matrix metadata is reused automatically if \code{raw = NULL}.
-The SoupX method lazily registers Shennong's bundled exact-scoped AutoZyme
-\code{soupx} patch when the validated AutoZyme and SoupX builds are available;
-official AutoZyme does not need to ship that patch. It is active only for
-\code{SoupX::adjustCounts()} and is restored afterward. Shennong then applies
-SoupX's stochastic integer rounding unchanged, preserving the existing
-count-layer contract. Set \code{options(shennong.autozyme = FALSE)} or
-\code{AUTOZYME_DISABLED=true} to prevent automatic activation; a manually active
-patch remains active until \code{\link[=sn_disable_autozyme]{sn_disable_autozyme()}} is called.
+The \code{auto} method routes a Seurat object with one CITE-seq-like ADT, protein,
+or CITE assay to \code{decontX::decontPro()}; otherwise it uses
+\code{decontX::decontX()}. Set \code{options(shennong.autozyme = FALSE)} or
+\code{AUTOZYME_DISABLED=true} to prevent automatic AutoZyme activation; a
+manually active patch remains active until \code{\link[=sn_disable_autozyme]{sn_disable_autozyme()}} is called.
 }
 \examples{
 \dontrun{

@@ -4,10 +4,7 @@
 \alias{sn_disable_autozyme}
 \title{Disable optional AutoZyme patches}
 \usage{
-sn_disable_autozyme(
-  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-    "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna")
-)
+sn_disable_autozyme(patches = .sn_autozyme_default_patches)
 }
 \arguments{
 \item{patches}{Character vector of supported patch names to disable.}

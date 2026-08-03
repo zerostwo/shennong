@@ -1,11 +1,13 @@
 # Optional AutoZyme acceleration ------------------------------------------------
 
 .sn_autozyme_expected_version <- "0.3.1"
-.sn_autozyme_expected_sha <- "718541d9489596c7c1d75f52e9b3a8b2a429d1f9"
+.sn_autozyme_expected_sha <- "3fe148271a21db90a6cc47ed91d82ed834de6bc4"
 .sn_autozyme_default_patches <- c(
   "cellchat",
   "clusterprofiler",
+  "decontx_standalone",
   "fgsea",
+  "lisi",
   "nichenetr",
   "scdblfinder",
   "seurat",
@@ -13,6 +15,7 @@
   "seurat_merge",
   "soupx",
   "tradeseq",
+  "ucell",
   "wgcna"
 )
 .sn_autozyme_clusterprofiler_cache <- new.env(parent = emptyenv())
@@ -35,9 +38,9 @@
     equivalence = "exact_scoped", approximate = FALSE,
     source_sha256 = "97711d3821dabfe497c3cecb9932c6e1829af01ba86e5289487996de1b544e77"
   ),
-  decontx = list(
-    upstream = "celda", versions = "1.24.0",
-    equivalence = "approximate", approximate = TRUE
+  decontx_standalone = list(
+    upstream = "decontX", versions = "1.4.0",
+    equivalence = "exact_scoped", approximate = FALSE
   ),
   fgsea = list(
     upstream = "fgsea", versions = "1.34.2",
@@ -69,8 +72,7 @@
   ),
   scdblfinder = list(
     upstream = "scDblFinder", versions = "1.27.6",
-    equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "e0f74282b9e12eb2d61dd6e202b29df74e81640379b3e2ede2326d72fd1e44ee"
+    equivalence = "exact_scoped", approximate = FALSE
   ),
   seurat = list(
     upstream = "Seurat", versions = c("5.2.1", "5.4.0"),
@@ -92,8 +94,7 @@
   ),
   soupx = list(
     upstream = "SoupX", versions = "1.6.2",
-    equivalence = "exact_scoped", approximate = FALSE,
-    source_sha256 = "757185c34a34f5500733d3f5044023d9d22e27bf0de4c7670299225c1f70dc85"
+    equivalence = "exact_scoped", approximate = FALSE
   ),
   tradeseq = list(
     upstream = "tradeSeq", versions = "1.22.0",
@@ -106,6 +107,14 @@
   wgcna = list(
     upstream = "WGCNA", versions = "1.74",
     equivalence = "numeric_tolerance_scoped", approximate = FALSE
+  ),
+  lisi = list(
+    upstream = "lisi", versions = "1.0",
+    equivalence = "exact_scoped", approximate = FALSE
+  ),
+  ucell = list(
+    upstream = "UCell", versions = "2.16.0",
+    equivalence = "exact_scoped", approximate = FALSE
   )
 )
 
@@ -785,18 +794,10 @@
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
 #' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
-#' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, and WGCNA. It
-#' normally requires the pinned AutoZyme build, or an exact patch fingerprint
-#' recorded by Shennong, and an exactly validated upstream version. Automatic
-#' Seurat, CellChat, and NicheNetR workflow scopes relax the version-label check
-#' and retain runtime/input safety guards; the scDblFinder patch instead
-#' requires exact target-function fingerprints. Shennong bundles the
-#' scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
-#' SoupX's compiled kernels), validates
-#' each bundled fingerprint, and registers them through AutoZyme when the
-#' official package does not provide `scdblfinder`, `seurat_joinlayers`,
-#' `seurat_merge`, or `soupx`. The returned
+#' clusterProfiler, the standalone decontX hook, fgsea, LISI, NicheNet,
+#' scDblFinder, Seurat, SeuratObject `merge.Assay5`/`JoinLayers.Assay5`,
+#' SoupX, tradeSeq, UCell, and WGCNA. It normally requires the pinned fork
+#' AutoZyme build and an exactly validated upstream version. The returned
 #' `patch_provider` and `bundled_by_shennong` columns make this source explicit.
 #' Set
 #' `options(shennong.autozyme = FALSE)`
@@ -818,11 +819,7 @@
 #' @examples
 #' sn_check_autozyme()
 sn_check_autozyme <- function(
-    patches = c(
-      "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-      "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq",
-      "wgcna"
-    ),
+    patches = .sn_autozyme_default_patches,
     strict = TRUE,
     allow_approximate = FALSE) {
   patches <- .sn_validate_autozyme_patches(patches)
@@ -1166,11 +1163,7 @@ sn_enable_autozyme <- function(
 #' \dontrun{
 #' sn_disable_autozyme()
 #' }
-sn_disable_autozyme <- function(patches = c(
-    "cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-    "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq",
-    "wgcna"
-)) {
+sn_disable_autozyme <- function(patches = .sn_autozyme_default_patches) {
   patches <- .sn_validate_autozyme_patches(patches)
   if (!.sn_autozyme_is_installed("autozyme")) {
     return(invisible(FALSE))

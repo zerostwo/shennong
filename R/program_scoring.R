@@ -71,11 +71,49 @@
 
 .sn_score_programs_ucell <- function(matrix, signatures, control) {
   check_installed("UCell", reason = "to run UCell program scoring.")
-  defaults <- list(matrix = matrix, features = signatures, name = "", ncores = 1)
-  scores <- do.call(UCell::ScoreSignatures_UCell, utils::modifyList(defaults, control, keep.null = TRUE))
-  scores <- as.matrix(scores)
-  scores <- t(scores)
+  check_installed("SeuratObject", reason = "to run UCell program scoring.")
+
+  matrix <- .sn_as_sparse_matrix(matrix)
+  object <- SeuratObject::CreateSeuratObject(
+    counts = matrix,
+    min.cells = 0,
+    min.features = 0
+  )
+  control <- control %||% list()
+  control <- control[setdiff(names(control), c("obj", "features", "matrix"))]
+  defaults <- list(
+    obj = object,
+    features = signatures,
+    name = "",
+    ncores = 1L,
+    BPPARAM = NULL,
+    storeRanks = FALSE,
+    slot = "counts"
+  )
+  scored <- .sn_with_default_autozyme(
+    do.call(
+      UCell::AddModuleScore_UCell,
+      utils::modifyList(defaults, control, keep.null = TRUE)
+    ),
+    patches = "ucell",
+    strict = FALSE
+  )
+
+  score_name <- as.character(control$name %||% "")[[1]]
+  score_columns <- paste0(names(signatures), score_name)
+  metadata <- scored[[]]
+  missing_columns <- setdiff(score_columns, colnames(metadata))
+  if (length(missing_columns) > 0L) {
+    stop(
+      "UCell did not return the expected score column(s): ",
+      paste(missing_columns, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  scores <- t(as.matrix(metadata[, score_columns, drop = FALSE]))
   rownames(scores) <- names(signatures)
+  colnames(scores) <- rownames(metadata)
   scores
 }
 

@@ -2440,6 +2440,96 @@ test_that("sn_remove_ambient_contamination routes decontX clustering backends", 
   expect_identical(observed, c("native", "shennong", "provided"))
 })
 
+test_that("ambient auto mode detects a CITE-seq assay and routes to decontPro", {
+  skip_if_not_installed("SeuratObject")
+
+  rna <- Matrix::Matrix(
+    matrix(rpois(60, lambda = 2), nrow = 10, ncol = 6),
+    sparse = TRUE
+  )
+  rownames(rna) <- paste0("gene", seq_len(nrow(rna)))
+  colnames(rna) <- paste0("cell", seq_len(ncol(rna)))
+  adt <- Matrix::Matrix(
+    matrix(rpois(24, lambda = 2), nrow = 4, ncol = 6),
+    sparse = TRUE
+  )
+  rownames(adt) <- paste0("ADT", seq_len(nrow(adt)))
+  colnames(adt) <- colnames(rna)
+  object <- SeuratObject::CreateSeuratObject(counts = rna, project = "cite-test")
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = adt)
+
+  expect_identical(Shennong:::.sn_detect_cite_seq_assay(object), "ADT")
+  expect_identical(Shennong:::.sn_resolve_ambient_method(object, "auto"), "decontpro")
+  expect_identical(
+    Shennong:::.sn_resolve_ambient_method(object, "auto", assay = "RNA"),
+    "decontx"
+  )
+
+  observed_assay <- NULL
+  corrected <- with_mocked_bindings(
+    sn_remove_ambient_contamination(
+      x = object,
+      method = "auto",
+      cluster = rep(c("a", "b"), each = 3),
+      return_object = FALSE
+    ),
+    .sn_remove_ambient_decontpro = function(x_info, ...) {
+      observed_assay <<- x_info$assay
+      list(
+        counts = x_info$counts,
+        metadata = NULL,
+        zero_cells = character(0),
+        removed_cells = character(0)
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(observed_assay, "ADT")
+  expect_equal(dim(corrected), dim(adt))
+  expect_identical(rownames(corrected), rownames(adt))
+})
+
+test_that("decontPro matrix results are normalized into Shennong metadata", {
+  skip_if_not_installed("decontX")
+
+  counts <- Matrix::Matrix(
+    matrix(c(4, 0, 2, 1, 3, 5, 0, 2, 1, 4, 2, 3), nrow = 3, ncol = 4),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("ADT", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  clusters <- c("a", "a", "b", "b")
+  captured <- new.env(parent = emptyenv())
+
+  out <- with_mocked_bindings(
+    Shennong:::.sn_remove_ambient_decontpro(
+      x_info = list(object = NULL, counts = counts),
+      cluster = clusters,
+      verbose = FALSE
+    ),
+    decontPro = function(filtered_counts, cell_type, ambient_counts = NULL, ...) {
+      captured$cell_type <- cell_type
+      list(
+        decontaminated_counts = filtered_counts,
+        ambient_counts = filtered_counts * 0.1,
+        background_counts = filtered_counts * 0.05
+      )
+    },
+    .package = "decontX"
+  )
+
+  expect_identical(captured$cell_type, c(1L, 1L, 2L, 2L))
+  expect_equal(as.matrix(out$counts), as.matrix(counts))
+  expect_true(all(c(
+    "decontPro_cell_type",
+    "decontPro_ambient_fraction",
+    "decontPro_background_fraction",
+    "nCount_corrected",
+    "nFeature_corrected"
+  ) %in% colnames(out$metadata)))
+})
+
 test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
   skip_if_not_installed("SoupX")
 
@@ -2474,85 +2564,6 @@ test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
   expect_identical(actual, expected)
 })
 
-test_that("Shennong registers its vendored SoupX patch and restores state", {
-  skip_if_not_installed("SoupX")
-  skip_if_not_installed("autozyme")
-
-  compatibility <- Shennong:::sn_check_autozyme("soupx")
-  skip_if_not(isTRUE(compatibility$eligible[[1]]))
-  expect_true(compatibility$bundled_by_shennong[[1]])
-  expect_identical(compatibility$patch_provider[[1]], "shennong")
-
-  data_env <- new.env(parent = emptyenv())
-  utils::data("scToy", package = "SoupX", envir = data_env)
-  sc <- data_env$scToy
-  sc$toc <- methods::as(sc$toc, "CsparseMatrix")
-
-  set.seed(718)
-  expected <- suppressWarnings(
-    SoupX::adjustCounts(sc, roundToInt = TRUE, verbose = 0)
-  )
-  before <- autozyme::status()
-  before_soupx <- if ("soupx" %in% names(before)) {
-    before[["soupx"]]
-  } else {
-    NULL
-  }
-
-  set.seed(718)
-  actual <- suppressWarnings(Shennong:::.sn_adjust_soupx_counts(sc))
-
-  expect_identical(actual, expected)
-  after_soupx <- autozyme::status()[["soupx"]]
-  if (is.null(before_soupx)) {
-    expect_identical(after_soupx, "inactive")
-  } else {
-    expect_identical(after_soupx, before_soupx)
-  }
-  registered <- Shennong:::sn_check_autozyme("soupx")
-  expect_true(registered$registered[[1]])
-  expect_false(registered$active[[1]])
-})
-
-test_that("Shennong SoupX native kernels stay finite and reject invalid support", {
-  clustered <- Shennong:::soupx_cluster_soup_from_cells_cpp(
-    as.integer(c(0, 2)),
-    as.integer(c(0, 1)),
-    c(0.1, 1),
-    1L,
-    0.5,
-    c(1, 1e-17),
-    2L,
-    1L
-  )
-  corrected <- Shennong:::soupx_adjust_counts_no_cluster_x_cpp(
-    as.integer(c(0, 2)),
-    as.integer(c(0, 1)),
-    c(0.1, 1),
-    0.5,
-    c(1, 1e-17),
-    2L
-  )
-
-  expect_true(all(is.finite(clustered)))
-  expect_equal(sum(clustered), 0.5, tolerance = 1e-12)
-  expect_true(all(is.finite(corrected)))
-  expect_true(all(corrected >= 0))
-  expect_equal(sum(c(0.1, 1) - corrected), 0.5, tolerance = 1e-12)
-
-  expect_error(
-    Shennong:::soupx_expand_corrected_x_cpp(
-      as.integer(c(0, 1)),
-      0L,
-      1,
-      matrix(0.5, nrow = 1, ncol = 1),
-      1L,
-      0
-    ),
-    "positive finite weight sum"
-  )
-})
-
 test_that("sn_remove_ambient_contamination reuses stored raw paths from initialization metadata", {
   skip_if_not_installed("Seurat")
 
@@ -2576,7 +2587,7 @@ test_that("sn_remove_ambient_contamination reuses stored raw paths from initiali
       return_object = FALSE,
       verbose = FALSE
     ),
-    .sn_resolve_counts_input = function(x, arg = "x") {
+    .sn_resolve_counts_input = function(x, arg = "x", assay = NULL) {
       if (inherits(x, "Seurat")) {
         return(list(object = x, counts = counts))
       }
@@ -2652,8 +2663,7 @@ test_that("sn_remove_ambient_contamination writes corrected QC metadata for Soup
 })
 
 test_that("sn_remove_ambient_contamination supports decontX on matrices", {
-  skip_if_not_installed("celda")
-  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("decontX")
 
   counts <- matrix(rpois(200 * 20, lambda = 3), nrow = 200, ncol = 20)
   rownames(counts) <- paste0("gene", seq_len(200))
@@ -2676,10 +2686,33 @@ test_that("sn_remove_ambient_contamination supports decontX on matrices", {
   expect_true(all(corrected == round(corrected)))
 })
 
+test_that("direct decontX reports disjoint raw and filtered genes", {
+  skip_if_not_installed("decontX")
+
+  counts <- Matrix::Matrix(
+    matrix(c(2, 0, 1, 3), nrow = 2, ncol = 2),
+    sparse = TRUE,
+    dimnames = list(c("gene1", "gene2"), c("cell1", "cell2"))
+  )
+  raw <- Matrix::Matrix(
+    matrix(c(4, 1, 0, 2), nrow = 2, ncol = 2),
+    sparse = TRUE,
+    dimnames = list(c("other1", "other2"), colnames(counts))
+  )
+
+  expect_error(
+    Shennong:::.sn_remove_ambient_decontx(
+      x_info = list(object = NULL, counts = counts),
+      raw_info = list(object = NULL, counts = raw),
+      cluster_backend = "native"
+    ),
+    "no common genes"
+  )
+})
+
 test_that("sn_remove_ambient_contamination defaults to decontX and writes a new layer for Seurat", {
   skip_if_not_installed("Seurat")
-  skip_if_not_installed("celda")
-  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("decontX")
 
   object <- make_test_object(seed = 5, prefix = "decontx", n_genes = 120, n_cells = 20)
   cluster <- rep(c("a", "b"), each = 10)
@@ -2741,8 +2774,7 @@ test_that("sn_remove_ambient_contamination marks zero-count corrected cells in m
 test_that("sn_remove_ambient_contamination supports BPCells-backed Seurat layers", {
   skip_if_not_installed("BPCells")
   skip_if_not_installed("Seurat")
-  skip_if_not_installed("celda")
-  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("decontX")
 
   counts <- Matrix::Matrix(matrix(rpois(120 * 20, lambda = 3), nrow = 120), sparse = TRUE)
   rownames(counts) <- paste0("gene", seq_len(120))

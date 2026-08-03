@@ -64,12 +64,16 @@ sn_calculate_lisi <- function(
     required_cols = label_by
   )
 
-  lisi_score <- lisi::compute_lisi(
-    X = metric_input$embeddings,
-    meta_data = metric_input$metadata,
-    label_colnames = label_by
-  ) |>
-    rownames_to_column("cell_id")
+  lisi_score <- .sn_with_default_autozyme(
+    lisi::compute_lisi(
+      X = metric_input$embeddings,
+      meta_data = metric_input$metadata,
+      label_colnames = label_by
+    ) |>
+      rownames_to_column("cell_id"),
+    patches = "lisi",
+    strict = FALSE
+  )
 
   lisi_score
 }

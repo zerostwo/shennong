@@ -1,27 +1,23 @@
-# Vendored AutoZyme patches
+# AutoZyme fork integration
 
-Shennong vendors exact-scoped `scdblfinder`, `seurat_merge`,
-`seurat_joinlayers`, and `soupx` patches so its single-cell workflows can use
-them even when the official AutoZyme package does not ship these patches.
+Shennong pins the `zerostwo/autozyme` fork at the revision declared in
+`DESCRIPTION` and uses its registered patches for `scDblFinder`, UCell, LISI,
+and SoupX. These are direct AutoZyme providers; Shennong does not copy their
+patch sources into the package.
 
-- Upstream project: <https://github.com/ElliotXie/autozyme>
-- Upstream source revisions: scDblFinder task candidate `c7a87c8` and
-  Autozyme package commits `ab5a470`, `97747ea`; Seurat merge
-  `eeba1054ef0aa9def7010dbac6a1a559e6306039`; Seurat JoinLayers `55da460`;
-  SoupX `9952189`
-- Vendored files: installed `patches/scdblfinder/patch.R`, its validated scope
-  and finalized benchmark summary under `patches/scdblfinder/`;
-  `patches/soupx/patch.R`, plus SoupX's validated scope in
-  `patches/soupx/SCOPE.md`, the successful equivalence-passing benchmark
-  summary in `patches/soupx/speedups_finalized.tsv`; and the corresponding
-  source, scope, manifest, changelog, and benchmark evidence under
-  `patches/seurat_merge/` and `patches/seurat_joinlayers/`. The SoupX package
-  source is `src/soupx.cpp`. The recorded speedups use cached baseline measurements from
-  AutoZyme's verifier; failed or baseline-less runs are not finalized.
-- License: MIT; see `LICENSE.autozyme.md`
+The ambient-correction path also requests the `decontx_standalone` patch
+around the direct `decontX::decontX()` call. That patch is used automatically
+when the installed fork build registers it. `decontX::decontPro()` is the
+explicit CITE-seq/protein backend and currently has no Shennong-local native
+replacement.
 
-Shennong compiles the SoupX native kernel into its own shared library. At
-runtime it validates each vendored `patch.R` fingerprint and registers the
-closures through AutoZyme's exported `register_patch()` API, activates each
-patch only around its compatible workflow call, then restores the caller's
-previous AutoZyme state.
+Only the exact-scoped `seurat_merge` and `seurat_joinlayers` patches remain
+vendored under `patches/`; their source fingerprints and registration logic
+are package-owned because the pinned fork does not provide those two entries.
+There is no Shennong SoupX or scDblFinder native kernel to maintain.
+
+- AutoZyme fork: <https://github.com/zerostwo/autozyme>
+- Pinned revision: see `DESCRIPTION` and `R/acceleration.R`
+- Runtime controls: `sn_check_autozyme()`, `sn_enable_autozyme()`,
+  `sn_disable_autozyme()`, and `sn_with_autozyme()`
+- License: MIT, following the upstream AutoZyme and patch licenses

@@ -5,8 +5,7 @@
 \title{Check optional AutoZyme acceleration compatibility}
 \usage{
 sn_check_autozyme(
-  patches = c("cellchat", "clusterprofiler", "fgsea", "nichenetr", "scdblfinder",
-    "seurat", "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "wgcna"),
+  patches = .sn_autozyme_default_patches,
   strict = TRUE,
   allow_approximate = FALSE
 )
@@ -32,18 +31,10 @@ install packages, activate patches, prepare Python, or change thread counts.
 \details{
 Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
-clusterProfiler, fgsea, NicheNet, scDblFinder, Seurat, SeuratObject
-\code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, and WGCNA. It
-normally requires the pinned AutoZyme build, or an exact patch fingerprint
-recorded by Shennong, and an exactly validated upstream version. Automatic
-Seurat, CellChat, and NicheNetR workflow scopes relax the version-label check
-and retain runtime/input safety guards; the scDblFinder patch instead
-requires exact target-function fingerprints. Shennong bundles the
-scDblFinder, SeuratObject merge/JoinLayers, and SoupX patches (plus
-SoupX's compiled kernels), validates
-each bundled fingerprint, and registers them through AutoZyme when the
-official package does not provide \code{scdblfinder}, \code{seurat_joinlayers},
-\code{seurat_merge}, or \code{soupx}. The returned
+clusterProfiler, the standalone decontX hook, fgsea, LISI, NicheNet,
+scDblFinder, Seurat, SeuratObject \code{merge.Assay5}/\code{JoinLayers.Assay5},
+SoupX, tradeSeq, UCell, and WGCNA. It normally requires the pinned fork
+AutoZyme build and an exactly validated upstream version. The returned
 \code{patch_provider} and \code{bundled_by_shennong} columns make this source explicit.
 Set
 \code{options(shennong.autozyme = FALSE)}
