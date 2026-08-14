@@ -7,6 +7,13 @@ import argparse
 import importlib.metadata as metadata
 import json
 from pathlib import Path
+import sys
+
+_SHENNONG_PIXI_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(_SHENNONG_PIXI_SHARED))
+from shennong_autozyme import activate_autozyme
+
+AUTOZYME_STATUS = activate_autozyme(["scanpy"])
 
 import bbknn.matrix
 import anndata as ad
@@ -97,6 +104,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
         "umap_csv": str(output_dir / "umap.csv"),
         "parameters": parameters,
         "bbknn_version": _version("bbknn"),
+        "autozyme": AUTOZYME_STATUS,
     }
     (output_dir / "manifest.json").write_text(
         json.dumps(

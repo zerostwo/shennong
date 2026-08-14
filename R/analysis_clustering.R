@@ -930,6 +930,10 @@
       useBytes = TRUE
     )
   }
+  .sn_refresh_managed_pixi_autozyme(
+    manifest_path = manifest_path,
+    environment = environment
+  )
   normalizePath(manifest_path, winslash = "/", mustWork = TRUE)
 }
 

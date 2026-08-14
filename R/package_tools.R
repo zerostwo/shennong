@@ -597,6 +597,10 @@ sn_prepare_pixi_environment <- function(environment = NULL,
     )
     writeLines(rendered, con = paths$manifest_path, useBytes = TRUE)
   }
+  .sn_refresh_managed_pixi_autozyme(
+    manifest_path = paths$manifest_path,
+    environment = environment
+  )
   paths$manifest_path <- normalizePath(paths$manifest_path, winslash = "/", mustWork = TRUE)
 
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
@@ -2273,6 +2277,31 @@ sn_install_shennong <- function(
     template <- gsub(pattern, replacements[[pattern]], template, fixed = TRUE)
   }
   template
+}
+
+.sn_refresh_managed_pixi_autozyme <- function(manifest_path, environment) {
+  if (!file.exists(manifest_path)) return(invisible(FALSE))
+  bundled <- readLines(sn_pixi_config_path(environment), warn = FALSE)
+  dependency <- grep(
+    "^autozyme[[:space:]]*=",
+    bundled,
+    value = TRUE
+  )
+  if (length(dependency) != 1L) return(invisible(FALSE))
+
+  current <- readLines(manifest_path, warn = FALSE)
+  workspace_name <- paste0('name = "shennong-', environment, '"')
+  if (!workspace_name %in% trimws(current) ||
+      any(grepl("^autozyme[[:space:]]*=", current))) {
+    return(invisible(FALSE))
+  }
+  section <- which(trimws(current) == "[pypi-dependencies]")
+  if (length(section) != 1L) return(invisible(FALSE))
+  next_section <- which(seq_along(current) > section & grepl("^\\s*\\[", current))
+  insert_before <- if (length(next_section) > 0L) next_section[[1]] else length(current) + 1L
+  current <- append(current, dependency, after = insert_before - 1L)
+  writeLines(current, con = manifest_path, useBytes = TRUE)
+  invisible(TRUE)
 }
 
 .sn_pixi_command_env <- function(pixi_home = NULL) {

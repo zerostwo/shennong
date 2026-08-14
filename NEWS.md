@@ -11,6 +11,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `Coralysis::RunParallelDivisiveICP()`. Coralysis integration activates the
   patch only around the backend call, restores prior AutoZyme state on exit,
   and remains pinned to the validated Coralysis 0.99.10 and AutoZyme revision.
+- Managed Python backends now pin the same `zerostwo/autozyme` revision and
+  activate only patches that match executed hotspots: Scanpy for BBKNN,
+  scArches, stLearn, and velocity preprocessing; scVelo for dynamical recovery;
+  cell2location training; and CellPhoneDB statistical analysis. Activation is
+  fail-closed outside the exact validated upstream versions and unsafe
+  cell2location GPU/minibatch modes, falls back to the original implementation,
+  honors
+  `AUTOZYME_DISABLED`/`AUTOZYME_DISABLE`, and is recorded in backend manifests.
 - `sn_run_cluster()` now accepts multiple RNA integration methods in one call,
   including an explicit `"unintegrated"` PCA baseline. Shared preprocessing is
   reused while each method retains its own low-dimensional reduction, neighbor

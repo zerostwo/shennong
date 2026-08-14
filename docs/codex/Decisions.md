@@ -52,6 +52,15 @@ Last updated: 2026-08-15
   required by its neural network, and low-dimensional latent/PCA/UMAP outputs
   are dense by definition, but full-matrix `toarray()` or dense scaling is not
   an acceptable implementation path.
+- Python AutoZyme activation is backend-call evidence, not environment-level
+  marketing. A managed pixi template includes the pinned fork only when its
+  bundled runner executes a registered patch target. The runner must activate
+  before the hot call, require the validated upstream version and input scope,
+  preserve upstream fallback and environment-variable opt-out, and serialize
+  requested/active/inactive status. Cell2location is restricted to CPU
+  full-batch training because its cached likelihood is unsafe for minibatches.
+  Merely importing
+  Scanpy, scVelo, Squidpy, or another patchable package is insufficient.
 - AutoZyme user logs describe the operation whose acceleration scope was
   enabled, not every patch that happens to be active. Unpatched Seurat calls do
   not activate or advertise unrelated patches; guarded fast-path provenance

@@ -7,6 +7,11 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
+import sys
+
+_SHENNONG_PIXI_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(_SHENNONG_PIXI_SHARED))
+from shennong_autozyme import read_autozyme_status, subprocess_autozyme_env
 
 import pandas as pd
 from scipy import io, sparse
@@ -67,10 +72,26 @@ def main() -> None:
         cmd.extend(["--threads", str(config["threads"])])
     if config.get("iterations") is not None:
         cmd.extend(["--iterations", str(config["iterations"])])
-    subprocess.run(cmd, check=True)
+    autozyme_status_path = output_dir / "autozyme-status.json"
+    subprocess.run(
+        cmd,
+        check=True,
+        env=subprocess_autozyme_env(["cellphonedb"], autozyme_status_path),
+    )
+    autozyme_status = read_autozyme_status(autozyme_status_path, ["cellphonedb"])
 
     with (output_dir / "manifest.json").open("w", encoding="utf-8") as handle:
-        json.dump({"method": "cellphonedb", "meta_path": str(meta_path), "counts_path": str(counts_path), "output_dir": str(output_dir)}, handle, indent=2)
+        json.dump(
+            {
+                "method": "cellphonedb",
+                "meta_path": str(meta_path),
+                "counts_path": str(counts_path),
+                "output_dir": str(output_dir),
+                "autozyme": autozyme_status,
+            },
+            handle,
+            indent=2,
+        )
 
 
 if __name__ == "__main__":

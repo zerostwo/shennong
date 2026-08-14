@@ -169,6 +169,13 @@ user request to the right Shennong function family quickly.
    scANVI, and scPoli export that layer, while BBKNN derives its PCA from it.
    Python expression matrices remain sparse; only bounded neural-network
    minibatches and low-dimensional embeddings may be dense.
+   Where the pinned fork has a matching Python patch, the runner activates it
+   before the hot call and records the actual requested/active/inactive set in
+   the backend manifest. This currently covers BBKNN UMAP, scArches Scanpy
+   preprocessing, and dynamical scVelo in the integration/trajectory families;
+   it does not imply that scVI, scANVI, scPoli training, or scIB metrics are
+   AutoZyme-accelerated. Set `AUTOZYME_DISABLED=true` to force the original
+   Python implementations.
    For BPCells-backed Coralysis runs, the complete normalized layer stays on
    disk and only the selected integration features are materialized as a sparse
    `dgCMatrix` for `Coralysis::PrepareData()`. The default is one Coralysis

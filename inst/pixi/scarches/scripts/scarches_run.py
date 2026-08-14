@@ -6,6 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
+
+_SHENNONG_PIXI_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(_SHENNONG_PIXI_SHARED))
+from shennong_autozyme import activate_autozyme
 
 import anndata as ad
 import numpy as np
@@ -51,6 +56,7 @@ def main() -> None:
         run_scpoli(input_dir=input_dir, output_dir=output_dir, config=config)
         return
 
+    autozyme_status = activate_autozyme(["scanpy"])
     import scanpy as sc
     import scarches  # noqa: F401
 
@@ -90,6 +96,7 @@ def main() -> None:
                 "latent_path": str(output_dir / "latent.csv"),
                 "obs_path": str(output_dir / "obs.csv"),
                 "output_h5ad": str(output_dir / "scarches.h5ad"),
+                "autozyme": autozyme_status,
                 "note": "Default Shennong runner exports a PCA latent after validating the scarches environment; pass a custom script for a trained reference mapping workflow.",
             },
             handle,

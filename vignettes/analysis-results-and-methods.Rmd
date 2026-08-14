@@ -264,6 +264,19 @@ it does not make every downstream backend BPCells-native. CellChat and tradeSeq,
 for example, may still need a controlled sparse materialization or an aggregated
 input that fits memory.
 
+That installation statement applies to the optional R package integration.
+Shennong's managed pixi templates for BBKNN, scArches, stLearn, trajectory,
+cell2location, and CellPhoneDB separately pin the Python package from the same
+`zerostwo/autozyme` revision. Each runner requests only a patch that intersects
+the code it executes. Patchable upstreams are pinned to the versions AutoZyme
+validated and checked again at runtime; cell2location is limited to CPU
+full-batch training. The runner falls back to the original Python implementation
+when the patch is missing, disabled, incompatible, or outside its safe scope, and
+writes requested/active/inactive evidence to its backend `manifest.json`.
+`AUTOZYME_DISABLED=true` (or the legacy `AUTOZYME_DISABLE=true`) disables both
+automatic R scopes and these managed Python activations. No AutoZyme claim is
+made for Shennong Python paths without a matching patch.
+
 ## Give agents a read-only discovery surface
 
 Install the packaged Shennong Agent Skills and register the bundled stdio MCP

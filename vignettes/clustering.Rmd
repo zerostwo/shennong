@@ -605,6 +605,17 @@ scPoli uses the `scarches` environment. Spatial tools are represented by
 specific environment names such as `cell2location`, `tangram`, `squidpy`,
 `spatialdata`, and `stlearn`.
 
+The BBKNN, scArches, stLearn, trajectory, and cell2location templates also pin
+the Python AutoZyme package from the same `zerostwo/autozyme` revision used by
+Shennong's R integration. Only runners with a matching executed hotspot request
+a patch. Patchable upstreams are pinned to validated versions and checked again
+at runtime; cell2location acceleration is restricted to CPU full-batch training.
+Each output manifest distinguishes requested, active, and inactive patches.
+scVI/scANVI, scPoli training, Tangram, MMoCHi, infercnvpy, scIB, and
+the current Squidpy path remain ordinary upstream execution because the fork
+does not provide a patch for the code they call. Set `AUTOZYME_DISABLED=true`
+to compare against the unpatched Python path.
+
 The layer contract also applies to scANVI and scPoli. BBKNN consumes the PCA
 computed from that same selected layer, imports its batch-balanced connectivity
 graph, and uses the graph directly for Seurat clustering and UMAP. Therefore a

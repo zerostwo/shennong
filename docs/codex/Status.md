@@ -21,6 +21,20 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- Managed Python acceleration now uses the same pinned `zerostwo/autozyme`
+  revision as the R integration. Static call-path review found real patch
+  intersections only for BBKNN/Scanpy UMAP, scArches and stLearn Scanpy
+  preprocessing, trajectory Scanpy preprocessing and dynamical scVelo,
+  cell2location training, and CellPhoneDB statistical analysis. Those runners
+  pin validated upstream versions, apply a second fail-closed runtime gate,
+  activate guarded patches before their hot calls, and record activation
+  evidence in backend manifests. Existing Shennong-managed pixi manifests gain
+  the pinned dependency on their next preparation; custom workspaces are left
+  unchanged. Backends without a matching patch remain explicitly unaccelerated.
+  Focused Python tests passed 47 assertions; the full local suite passed 3,192
+  assertions with the existing BBKNN warning and four optional/local-fixture
+  skips. The source package built, `R CMD check --no-manual` completed with only
+  the known `.codegraph` NOTE, and pkgdown rebuilt successfully under `site/dev`.
 - `sn_compare_integrations()` now exports one sparse normalized matrix and the
   native reductions registered by a multi-method clustering run to a managed
   scib-metrics/JAX environment. It stores aggregate, per-metric, and ranking
