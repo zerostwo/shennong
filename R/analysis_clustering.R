@@ -662,6 +662,30 @@
                                           npcs,
                                           integration_control = list(),
                                           verbose = TRUE) {
+  .sn_with_default_autozyme(
+    .sn_run_coralysis_integration_impl(
+      object = object,
+      batch = batch,
+      assay = assay,
+      features = features,
+      dims = dims,
+      npcs = npcs,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    patches = "coralysis",
+    operation = "runparalleldivisiveicp"
+  )
+}
+
+.sn_run_coralysis_integration_impl <- function(object,
+                                               batch,
+                                               assay,
+                                               features,
+                                               dims,
+                                               npcs,
+                                               integration_control = list(),
+                                               verbose = TRUE) {
   backend <- "Coralysis"
   method <- "coralysis"
   check_installed(c("Coralysis", "SingleCellExperiment", "SummarizedExperiment"))

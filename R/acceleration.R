@@ -1,10 +1,11 @@
 # Optional AutoZyme acceleration ------------------------------------------------
 
 .sn_autozyme_expected_version <- "0.3.1"
-.sn_autozyme_expected_sha <- "3fe148271a21db90a6cc47ed91d82ed834de6bc4"
+.sn_autozyme_expected_sha <- "8fc2e9c3a7f70302f97589aaa9b0395dcf86f9bc"
 .sn_autozyme_default_patches <- c(
   "cellchat",
   "clusterprofiler",
+  "coralysis",
   "decontx_standalone",
   "fgsea",
   "lisi",
@@ -37,6 +38,10 @@
     upstream = "clusterProfiler", versions = "4.20.0",
     equivalence = "exact_scoped", approximate = FALSE,
     source_sha256 = "97711d3821dabfe497c3cecb9932c6e1829af01ba86e5289487996de1b544e77"
+  ),
+  coralysis = list(
+    upstream = "Coralysis", versions = "0.99.10",
+    equivalence = "exact_scoped", approximate = FALSE
   ),
   decontx_standalone = list(
     upstream = "decontX", versions = "1.4.0",
@@ -236,7 +241,9 @@
     )
   }
 
-  provider <- if (isTRUE(autozyme_source_match)) {
+  provider <- if (isTRUE(vendored_source_match) && !registered) {
+    "shennong"
+  } else if (isTRUE(autozyme_source_match)) {
     "autozyme"
   } else if (isTRUE(vendored_source_match)) {
     "shennong"
@@ -850,9 +857,10 @@
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
 #' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, the standalone decontX hook, fgsea, LISI, NicheNet,
-#' scDblFinder, Seurat, SeuratObject `merge.Assay5`/`JoinLayers.Assay5`,
-#' SoupX, tradeSeq, UCell, and WGCNA. It normally requires the pinned fork
+#' clusterProfiler, Coralysis, the standalone decontX hook, fgsea, LISI,
+#' NicheNet, scDblFinder, Seurat, SeuratObject
+#' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, UCell, and WGCNA. It
+#' normally requires the pinned fork
 #' AutoZyme build and an exactly validated upstream version. The returned
 #' `patch_provider` and `bundled_by_shennong` columns make this source explicit.
 #' Set

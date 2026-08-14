@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added exact-scoped, single-core AutoZyme acceleration for
+  `Coralysis::RunParallelDivisiveICP()`. Coralysis integration activates the
+  patch only around the backend call, restores prior AutoZyme state on exit,
+  and remains pinned to the validated Coralysis 0.99.10 and AutoZyme revision.
 - `sn_run_cluster()` now accepts multiple RNA integration methods in one call,
   including an explicit `"unintegrated"` PCA baseline. Shared preprocessing is
   reused while each method retains its own low-dimensional reduction, neighbor

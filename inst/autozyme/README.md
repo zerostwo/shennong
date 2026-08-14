@@ -1,9 +1,10 @@
 # AutoZyme fork integration
 
 Shennong pins the `zerostwo/autozyme` fork at the revision declared in
-`DESCRIPTION` and uses its registered patches for `scDblFinder`, UCell, LISI,
-and SoupX. These are direct AutoZyme providers; Shennong does not copy their
-patch sources into the package.
+`DESCRIPTION` and uses its registered patches for Coralysis, `scDblFinder`,
+UCell, LISI, and SoupX. These are direct AutoZyme providers; Shennong does not
+copy their patch sources into the package. The Coralysis patch includes an
+AutoZyme-native Rcpp kernel, so it must come from the pinned compiled provider.
 
 The ambient-correction path also requests the `decontx_standalone` patch
 around the direct `decontX::decontX()` call. That patch is used automatically

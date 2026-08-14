@@ -113,10 +113,11 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, standalone decontX, fgsea, LISI,
-  scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq, UCell,
-  and WGCNA. The pinned AutoZyme fork supplies the scDblFinder, UCell, LISI,
-  SoupX, and (when registered) standalone decontX patches. Shennong only
+  CellChat, NicheNetR, clusterProfiler, Coralysis, standalone decontX, fgsea,
+  LISI, scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq,
+  UCell, and WGCNA. The pinned AutoZyme fork supplies the Coralysis,
+  scDblFinder, UCell, LISI, SoupX, and (when registered) standalone decontX
+  patches. Shennong only
   vendors the clusterProfiler 4.20 GSON cache and SeuratObject
   merge/JoinLayers patches; official AutoZyme supplies the registration and
   scoped activation engine for the direct fork backends.

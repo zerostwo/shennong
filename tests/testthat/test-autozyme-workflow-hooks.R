@@ -223,6 +223,22 @@ test_that("Seurat clustering, priority, and plotting hooks precede patched targe
   }
 })
 
+test_that("Coralysis integration scopes its exact AutoZyme patch", {
+  .sn_expect_autozyme_wrapper_before(
+    ".sn_run_coralysis_integration",
+    ".sn_with_default_autozyme",
+    ".sn_run_coralysis_integration_impl",
+    patch = "coralysis"
+  )
+  text <- .sn_autozyme_workflow_body(".sn_run_coralysis_integration")
+  expect_true(grepl('operation = "runparalleldivisiveicp"', text, fixed = TRUE))
+  expect_true(grepl(
+    'get("RunParallelDivisiveICP"',
+    .sn_autozyme_workflow_body(".sn_run_coralysis_integration_impl"),
+    fixed = TRUE
+  ))
+})
+
 test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
   uses_bpcells <- TRUE
   disabled_calls <- 0L

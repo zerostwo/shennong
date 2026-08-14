@@ -31,9 +31,10 @@ install packages, activate patches, prepare Python, or change thread counts.
 \details{
 Shennong lazily activates compatible, non-approximate patches for the scope
 of an integrated workflow call. Automatic activation covers CellChat,
-clusterProfiler, the standalone decontX hook, fgsea, LISI, NicheNet,
-scDblFinder, Seurat, SeuratObject \code{merge.Assay5}/\code{JoinLayers.Assay5},
-SoupX, tradeSeq, UCell, and WGCNA. It normally requires the pinned fork
+clusterProfiler, Coralysis, the standalone decontX hook, fgsea, LISI,
+NicheNet, scDblFinder, Seurat, SeuratObject
+\code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, UCell, and WGCNA. It
+normally requires the pinned fork
 AutoZyme build and an exactly validated upstream version. The returned
 \code{patch_provider} and \code{bundled_by_shennong} columns make this source explicit.
 Set

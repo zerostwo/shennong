@@ -35,11 +35,11 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Use AutoZyme acceleration
 
-1. The lazy automatic set is CellChat, clusterProfiler, standalone decontX,
-   fgsea, LISI, NicheNetR, scDblFinder, Seurat, SeuratObject merge/JoinLayers,
-   SoupX, tradeSeq, UCell, and WGCNA. Inspect the full set with
-   `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
-   "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
+1. The lazy automatic set is CellChat, clusterProfiler, Coralysis, standalone
+   decontX, fgsea, LISI, NicheNetR, scDblFinder, Seurat, SeuratObject
+   merge/JoinLayers, SoupX, tradeSeq, UCell, and WGCNA. Inspect the full set with
+   `sn_check_autozyme(c("cellchat", "clusterprofiler", "coralysis",
+   "decontx_standalone", "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
    "seurat_merge", "seurat_joinlayers", "soupx", "tradeseq", "ucell",
    "wgcna"))` to report the pinned build, installed
    upstream dependencies, exact version matches, and active state.

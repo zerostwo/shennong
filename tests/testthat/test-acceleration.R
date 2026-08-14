@@ -224,9 +224,10 @@ test_that("automatic patch set covers every integrated non-approximate backend",
   expect_identical(
     Shennong:::.sn_autozyme_default_patches,
     c(
-      "cellchat", "clusterprofiler", "decontx_standalone", "fgsea", "lisi",
-      "nichenetr", "scdblfinder", "seurat", "seurat_joinlayers", "seurat_merge",
-      "soupx", "tradeseq", "ucell", "wgcna"
+      "cellchat", "clusterprofiler", "coralysis", "decontx_standalone",
+      "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
+      "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "ucell",
+      "wgcna"
     )
   )
 
@@ -239,6 +240,27 @@ test_that("automatic patch set covers every integrated non-approximate backend",
   expect_true(status$default)
   expect_false(status$approximate)
   expect_identical(status$equivalence, "numeric_tolerance_scoped")
+})
+
+test_that("Coralysis is an exact single-core default patch", {
+  spec <- Shennong:::.sn_autozyme_patch_manifest$coralysis
+  expect_identical(spec$upstream, "Coralysis")
+  expect_identical(spec$versions, "0.99.10")
+  expect_identical(spec$equivalence, "exact_scoped")
+  expect_false(spec$approximate)
+  expect_true("coralysis" %in% Shennong:::.sn_autozyme_default_patches)
+
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+  active_inside <- Shennong:::.sn_with_default_autozyme(
+    state$status[["coralysis"]],
+    patches = "coralysis",
+    operation = "runparalleldivisiveicp"
+  )
+  expect_identical(active_inside, "active")
+  expect_identical(state$activated, "coralysis")
+  expect_identical(state$deactivated, "coralysis")
+  expect_identical(state$status[["coralysis"]], "inactive")
 })
 
 test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware", {
@@ -371,14 +393,14 @@ test_that("the fork AutoZyme build is the provider for direct accelerators", {
     .sn_autozyme_is_installed = function(package = "autozyme") TRUE,
     .sn_autozyme_call = function(fun, ...) {
       if (identical(fun, "list_patches")) {
-        return(c("lisi", "scdblfinder", "soupx", "ucell"))
+        return(c("coralysis", "lisi", "scdblfinder", "soupx", "ucell"))
       }
       stop("Unexpected mocked AutoZyme call: ", fun)
     },
     .package = "Shennong"
   )
 
-  for (patch in c("lisi", "scdblfinder", "soupx", "ucell")) {
+  for (patch in c("coralysis", "lisi", "scdblfinder", "soupx", "ucell")) {
     spec <- Shennong:::.sn_autozyme_patch_manifest[[patch]]
     status <- Shennong:::.sn_autozyme_patch_source_status(patch, spec)
     expect_true(status$registered)

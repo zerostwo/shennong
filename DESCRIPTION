@@ -136,7 +136,7 @@ Suggests:
     survival,
     withr
 Remotes:
-    github::zerostwo/autozyme/autozyme_r@3fe148271a21db90a6cc47ed91d82ed834de6bc4,
+    github::zerostwo/autozyme/autozyme_r@8fc2e9c3a7f70302f97589aaa9b0395dcf86f9bc,
     github::cole-trapnell-lab/monocle3,
     github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,

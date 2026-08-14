@@ -117,8 +117,8 @@ option is also restored after AutoZyme is loaded.
 
 ``` r
 default_patches <- c(
-  "cellchat", "nichenetr", "clusterprofiler", "fgsea",
-  "seurat", "tradeseq", "wgcna"
+  "cellchat", "nichenetr", "clusterprofiler", "coralysis",
+  "fgsea", "seurat", "tradeseq", "wgcna"
 )
 sn_check_autozyme(default_patches)
 

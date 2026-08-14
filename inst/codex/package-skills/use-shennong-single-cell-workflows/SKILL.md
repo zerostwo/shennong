@@ -59,8 +59,8 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
-- expect eligible CellChat, NicheNetR, clusterProfiler, standalone decontX,
-  fgsea, LISI, Seurat, SoupX, tradeSeq, UCell, scDblFinder, and WGCNA AutoZyme
+- expect eligible CellChat, NicheNetR, clusterProfiler, Coralysis, standalone
+  decontX, fgsea, LISI, Seurat, SoupX, tradeSeq, UCell, scDblFinder, and WGCNA AutoZyme
   patches to activate lazily only inside compatible workflow
   calls and restore the prior state afterward; CellChat and call-safe NicheNetR
   communication scopes allow upstream version-label drift behind runtime guards;
