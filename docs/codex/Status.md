@@ -21,6 +21,29 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- `sn_compare_integrations()` now exports one sparse normalized matrix and the
+  native reductions registered by a multi-method clustering run to a managed
+  scib-metrics/JAX environment. It stores aggregate, per-metric, and ranking
+  tables as a standard `integration_benchmark` result, records backend versions
+  and JAX devices, excludes graph-only methods from the embedding comparison,
+  and flags supervised reuse of the evaluation label. A real validation joined
+  the official 10x PBMC 1k, 3k, and 4k matrices into 8,274 cells and 19,721
+  features, retained unchanged raw count column sums, and completed
+  unintegrated, Harmony, and Coralysis branches plus scib-metrics 0.6.0 over all
+  8,274 cells and 2,000 shared features. The resulting total scores were
+  Harmony 0.7544, Coralysis 0.7254, and unintegrated PCA 0.5750; these labels are
+  coarse canonical-marker scores for runtime validation, not a curated gold
+  standard. The saved 71.3 MiB qs2 object retains all three cluster columns and
+  native/UMAP reductions, and its stored benchmark passes `sn_validate_result()`.
+  The focused test file passes 27 assertions. On the local NVIDIA RTX 2000 Ada
+  host, a clean managed GPU environment resolved the CUDA build of JAX and
+  reported `jax.default_backend() == "gpu"` with device `cuda:0`; the temporary
+  validation environment was removed afterward. The final full local suite
+  passed 3,141 assertions with four optional/local-fixture skips and the
+  existing BBKNN command-log warning. The 0.3.0 source tarball built
+  successfully; `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual
+  --no-tests` completed with only the known `.codegraph` NOTE; and the complete
+  pkgdown site rebuilt successfully under `site/dev`.
 - `sn_run_cluster()` now accepts an ordered vector of RNA analysis methods and
   reuses normalization, HVG selection, scaling, and PCA across them. The
   returned object keeps method-specific graphs, `<method>_clusters`,

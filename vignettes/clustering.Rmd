@@ -447,6 +447,39 @@ retain their native corrected low-dimensional spaces (for example `harmony` or
 each method to its reduction, graph names, cluster column, UMAP, and t-SNE so
 downstream integration metrics can iterate over one returned object.
 
+Use `sn_compare_integrations()` when the object also contains an independent
+biological annotation column. The scib-metrics adapter evaluates the native
+PCA or integrated latent spaces on exactly the same stratified cells and
+features; it does not score UMAP or t-SNE coordinates. The unintegrated PCA is
+required as the pre-integration baseline. Supervised methods trained with the
+same column as `label_by` are flagged, and graph-only methods such as BBKNN are
+listed as non-comparable rather than silently treated as embeddings.
+
+```{r scib-integration-benchmark, eval = FALSE}
+pbmc_comparison <- sn_compare_integrations(
+  object = pbmc_comparison,
+  batch_by = "real_batch",
+  label_by = "cell_type",
+  accelerator = "auto",
+  n_jobs = 4
+)
+
+# Discover and retrieve the stored benchmark.
+sn_list_results(pbmc_comparison, type = "integration_benchmark")
+integration_benchmark <- sn_get_result(
+  pbmc_comparison,
+  type = "integration_benchmark",
+  name = "integration_benchmark"
+)
+integration_benchmark$tables$ranking
+integration_benchmark$tables$metrics
+integration_benchmark$diagnostics$backend_manifest$jax_devices
+```
+
+`accelerator = "auto"` selects the managed GPU environment when Shennong
+detects a usable NVIDIA CUDA runtime, otherwise it uses CPU. The recorded JAX
+device list is the runtime evidence for the device scib-metrics actually used.
+
 The same integration switch can be used with SCTransform normalization. This
 heavier optional backend runs in the `all` profile when both Harmony and
 `glmGamPoi` are installed:

@@ -140,6 +140,7 @@ reference:
   - title: Diagnostics and Benchmarking
     contents:
       - sn_assess_integration
+      - sn_compare_integrations
       - sn_detect_rare_cells
       - sn_calculate_lisi
       - sn_calculate_silhouette

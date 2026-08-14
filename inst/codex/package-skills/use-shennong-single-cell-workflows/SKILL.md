@@ -154,6 +154,8 @@ This skill is the main entry point for package usage.
 	   single CITE-seq sample.
 3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
+   `sn_compare_integrations()` for a scib-metrics benchmark of the native
+   reductions retained in a multi-method object,
    `sn_calculate_variance_explained()`,
    `sn_calculate_isolated_label_score()`, or
    `sn_identify_challenging_groups()` when sample mixing, rare groups,

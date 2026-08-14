@@ -145,6 +145,10 @@ Runtime reference datasets:
 ## Diagnostics and Benchmarking
 
 - `sn_assess_integration()`: aggregate integration quality summary
+- `sn_compare_integrations()`: run a shared-cell, shared-feature scib-metrics
+  benchmark over the native reductions retained by multi-method
+  `sn_run_cluster()`; retrieve it with `sn_list_results(type =
+  "integration_benchmark")` and `sn_get_result()`
 - `sn_sweep_cluster_resolution()`: compare candidate Seurat resolutions with cluster-quality diagnostics and a recommended resolution
 - `sn_detect_rare_cells()`: rare-cell diagnostics
 - `sn_calculate_lisi()`: batch_by mixing and label_by mixing scores

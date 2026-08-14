@@ -2204,6 +2204,9 @@ sn_install_shennong <- function(
     "scpoli" = "scarches",
     "sc_poli" = "scarches",
     "scarches" = "scarches",
+    "scib_metrics" = "scib-metrics",
+    "scibmetrics" = "scib-metrics",
+    "scib-metrics" = "scib-metrics",
     "infercnv" = "infercnvpy",
     "infercnvpy" = "infercnvpy",
     "cellphone" = "cellphonedb",
@@ -2233,7 +2236,7 @@ sn_install_shennong <- function(
 }
 
 .sn_pixi_gpu_aware_environment <- function(environment) {
-  environment %in% c("scvi", "scarches", "cell2location", "tangram")
+  environment %in% c("scvi", "scarches", "scib-metrics", "cell2location", "tangram")
 }
 
 .sn_select_pixi_environment <- function(environment, pixi_environment = "auto", cuda_version = NULL) {

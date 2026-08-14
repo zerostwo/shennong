@@ -18,6 +18,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   family and imports its latent representation. BBKNN runs in a dedicated
   managed pixi environment, imports the batch-balanced connectivity graph, and
   uses that graph directly for Seurat clustering and UMAP.
+- Added `sn_compare_integrations()` to benchmark the native reductions retained
+  by a multi-method `sn_run_cluster()` result with scib-metrics. Every method
+  uses the same cells, features, batch labels, and biological labels; normalized
+  expression remains sparse; UMAP/t-SNE coordinates are never metric inputs;
+  graph-only methods and supervised label reuse are reported explicitly. The
+  summary, per-metric values, ranking, backend versions, and JAX devices are
+  stored as a discoverable `integration_benchmark` analysis result. Managed CPU
+  and CUDA-specific JAX builds are selected explicitly, and a selected GPU
+  environment that does not report a JAX GPU device is retained as a result
+  warning.
 
 ### Fixed
 

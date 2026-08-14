@@ -195,6 +195,13 @@ user request to the right Shennong function family quickly.
 	   registration on the ADT assay. MMoCHi can run as a single-sample CITE-seq
 	   workflow with `batch = NULL`.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
+   For a multi-method object with independent biological labels, use
+   `sn_compare_integrations(object, batch_by = ..., label_by = ...)` to run the
+   scib-metrics suite on each native PCA/latent reduction. Keep the
+   `"unintegrated"` branch as the baseline, then discover the stored result via
+   `sn_list_results(type = "integration_benchmark")` and retrieve it with
+   `sn_get_result()`. Do not use UMAP/t-SNE as metric inputs, and interpret the
+   supervised-label-leakage flag before comparing rankings.
 4. Use `sn_calculate_variance_explained(variables = c(...))` to rank platform,
    study, tissue, sample, or other metadata drivers of residual embedding
    variation.

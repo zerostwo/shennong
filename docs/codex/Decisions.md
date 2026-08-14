@@ -15,6 +15,13 @@ Last updated: 2026-08-15
   stored Seurat components and their backend parameters. The canonical baseline
   spelling is `unintegrated`; `unintergrated` remains a warning-producing alias
   for compatibility with early user code.
+- Integration benchmarking uses each method's native low-dimensional reduction,
+  never its UMAP or t-SNE. scib-metrics receives one shared sparse normalized
+  matrix and one shared, batch-by-label-stratified cell set, with the
+  unintegrated PCA as its required pre-integration baseline. Graph-only methods
+  remain discoverable but are marked non-comparable in this embedding contract.
+  A supervised method trained with the evaluation label is flagged as label
+  leakage and must not be ranked as if it were an unsupervised method.
 
 ## 2026-08-14
 
