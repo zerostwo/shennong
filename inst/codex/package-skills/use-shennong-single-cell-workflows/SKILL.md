@@ -107,11 +107,18 @@ This skill is the main entry point for package usage.
    custom gene symbols from internally selected HVGs in log-normalization or
    SCTransform workflows, and use
 	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
-	   `"seurat_rpca"`, `"scvi"`, or `"scanvi"` when a specific
-	   batch-integration backend is requested. For scVI/scANVI, Shennong manages a
+	   `"seurat_rpca"`, `"scvi"`, `"scanvi"`, `"scpoli"`, or `"bbknn"` when a
+	   specific batch-integration backend is requested. scVI/scANVI/scPoli honor
+	   the requested `assay`/`layer`; BBKNN derives PCA from the same selected
+	   layer and supplies the graph used for clustering and UMAP. Python runners
+	   retain complete expression matrices as sparse objects; only bounded
+	   neural-network minibatches and low-dimensional outputs may be dense. For scVI/scANVI,
+	   Shennong manages a
    shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
    artifacts under `~/.shennong/runs/`, and imports the latent reduction back
    into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
+   scPoli uses the shared `scarches` pixi family and accepts optional
+   `integration_control = list(label_by = ...)` for prototype supervision.
    Coralysis stores the trained reference SingleCellExperiment by default for
    label transfer; use `integration_control = list(store_sce = FALSE)` only for
    clustering-only runs.

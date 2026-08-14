@@ -173,8 +173,9 @@ supported results.}
 
 \item{assay}{Assay used for object-level infercnvpy input.}
 
-\item{layer}{Assay layer used for object-level infercnvpy input. Defaults to
-\code{"data"} when present and otherwise \code{"counts"}.}
+\item{layer}{Assay layer used for object-level Python input. scPoli defaults
+to \code{"counts"}; infercnvpy and the other generic object wrappers
+default to \code{"data"} when present and otherwise \code{"counts"}.}
 
 \item{batch_by, label_by}{Metadata columns used by scArches/scPoli-style
 object workflows.}

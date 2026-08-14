@@ -46,6 +46,8 @@ def _read_input(input_dir: Path) -> ad.AnnData:
     adata.obs_names = cells
     adata.var_names = features
     adata.var_names_make_unique()
+    if not sp.issparse(adata.X):
+        raise MemoryError("The complete RNA expression matrix must remain sparse.")
 
     protein_counts_path = input_dir / "protein_counts.mtx"
     proteins_path = input_dir / "proteins.csv"
@@ -55,11 +57,10 @@ def _read_input(input_dir: Path) -> ad.AnnData:
         proteins = pd.read_csv(proteins_path)["protein_id"].astype(str).to_numpy()
         if protein_counts.shape[0] != adata.n_obs:
             raise ValueError("protein_counts.mtx must have one row per cell after transposition.")
-        adata.obsm["protein_expression"] = pd.DataFrame(
-            protein_counts.toarray(),
-            index=adata.obs_names,
-            columns=proteins,
-        )
+        adata.obsm["protein_expression"] = protein_counts
+        adata.uns["protein_names"] = proteins
+        if not sp.issparse(adata.obsm["protein_expression"]):
+            raise MemoryError("The complete protein expression matrix must remain sparse.")
     return adata
 
 
@@ -107,6 +108,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
             adata.obsm[protein_obsm_key] = adata.obsm["protein_expression"]
         totalvi_setup_kwargs = dict(setup_kwargs)
         totalvi_setup_kwargs["protein_expression_obsm_key"] = protein_obsm_key
+        totalvi_setup_kwargs["protein_names_uns_key"] = "protein_names"
         scvi.model.TOTALVI.setup_anndata(adata, **totalvi_setup_kwargs)
         totalvi_model_args = _drop_none(config.get("totalvi_model_args"))
         totalvi_model_args.setdefault("n_latent", n_latent)
@@ -127,6 +129,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
             "method": method,
             "batch_key": batch_key,
             "labels_key": labels_key,
+            "source_layer": config.get("source_layer"),
             "latent_csv": str(latent_path),
             "obs_csv": str(obs_path),
             "output_h5ad": str(h5ad_path) if h5ad_path.exists() else None,
@@ -185,6 +188,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
         "method": method,
         "batch_key": batch_key,
         "labels_key": labels_key,
+        "source_layer": config.get("source_layer"),
         "latent_csv": str(latent_path),
         "obs_csv": str(obs_path),
         "output_h5ad": str(h5ad_path) if h5ad_path.exists() else None,

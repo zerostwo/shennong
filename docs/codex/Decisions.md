@@ -1,6 +1,30 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-01
+Last updated: 2026-08-14
+
+## 2026-08-14
+
+- Integration input provenance is an executable contract: scVI-family and
+  scPoli exporters must read the exact `assay`/`layer` selected by
+  `sn_run_cluster()`, record that source, and be tested with values that differ
+  from the ordinary `counts` layer. A Python config field alone is not evidence
+  that the selected layer was exported.
+- scPoli is a learned latent-space backend, so Shennong trains
+  `scarches.models.scpoli.scPoli` and imports its latent representation. A PCA
+  placeholder may not be labeled as scPoli integration.
+- BBKNN is a graph integration method rather than an expression correction or
+  latent-space method. Shennong therefore imports BBKNN connectivities, uses
+  that graph for `FindClusters()` and graph-based UMAP, and does not run a
+  second ordinary `FindNeighbors()` step that would erase the BBKNN result.
+- Python backends must retain complete expression and protein matrices as sparse
+  objects. A learned backend may create a bounded dense minibatch tensor when
+  required by its neural network, and low-dimensional latent/PCA/UMAP outputs
+  are dense by definition, but full-matrix `toarray()` or dense scaling is not
+  an acceptable implementation path.
+- AutoZyme user logs describe the operation whose acceleration scope was
+  enabled, not every patch that happens to be active. Unpatched Seurat calls do
+  not activate or advertise unrelated patches; guarded fast-path provenance
+  remains distinct from scope activation.
 
 ## 2026-08-03
 

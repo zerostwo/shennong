@@ -212,6 +212,7 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
                                            reduction,
                                            features,
                                            assay,
+                                           layer,
                                            dims,
                                            npcs,
                                            theta,
@@ -503,7 +504,7 @@ test_that("sn_run_cluster can return cluster assignments directly and supports s
         species = "human",
         verbose = FALSE
       ),
-      .sn_run_batch_integration = function(object, method, batch, reduction, features, assay, dims, npcs, theta, group_by_vars, integration_control = list(), verbose = TRUE) {
+      .sn_run_batch_integration = function(object, method, batch, reduction, features, assay, layer, dims, npcs, theta, group_by_vars, integration_control = list(), verbose = TRUE) {
         integration_called <<- TRUE
         object@misc$integration <- list(
           method = method,
@@ -1082,6 +1083,7 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
                                            reduction,
                                            features,
                                            assay,
+                                           layer,
                                            dims,
                                            npcs,
                                            theta,
@@ -1160,6 +1162,10 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
   object2$sample <- "pbmc3k"
   merged <- merge(x = object1, y = object2, add.cell.ids = c("pbmc1k", "pbmc3k"))
   merged$cell_label <- rep(c("T", "B"), length.out = ncol(merged))
+  original_counts <- Shennong:::.sn_get_seurat_layer_data(merged, assay = "RNA", layer = "counts")
+  decontaminated_counts <- original_counts
+  decontaminated_counts@x <- decontaminated_counts@x + 7
+  SeuratObject::LayerData(merged, assay = "RNA", layer = "decontaminated_counts") <- decontaminated_counts
 
   for (backend in c("scvi", "scanvi")) {
     captured <- NULL
@@ -1182,6 +1188,7 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
         normalization_method = "seurat",
         integration_method = backend,
         integration_control = control,
+        layer = "decontaminated_counts",
         nfeatures = 50,
         block_genes = NULL,
         npcs = 10,
@@ -1209,7 +1216,10 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
           environment = environment,
           pixi_home = pixi_home,
           install_pixi = install_pixi,
-          config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+          config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+          exported = Matrix::readMM(file.path(input_dir, "counts.mtx")),
+          exported_features = utils::read.csv(file.path(input_dir, "features.csv"), stringsAsFactors = FALSE)$feature_id,
+          exported_cells = utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
         )
         dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
         cells <- utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
@@ -1235,11 +1245,19 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
     expect_false("pca" %in% names(clustered@reductions))
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
     expect_equal(clustered@misc$integration$method, backend)
-    expect_equal(clustered@misc$integration$batch, "sample")
+    expect_equal(clustered@misc$integration$batch_by, "sample")
+    expect_equal(clustered@misc$integration$source_layer, "decontaminated_counts")
     expect_true(file.exists(file.path(control$pixi_project, "pixi.toml")))
     expect_equal(captured$config$method, backend)
     expect_equal(captured$config$batch_key, "sample")
+    expect_equal(captured$config$source_layer, "decontaminated_counts")
     expect_equal(captured$config$n_latent, 6)
+    expected_export <- decontaminated_counts[captured$exported_features, captured$exported_cells, drop = FALSE]
+    expect_equal(unname(as.matrix(captured$exported)), unname(as.matrix(expected_export)))
+    expect_equal(
+      as.matrix(Shennong:::.sn_get_seurat_layer_data(clustered, assay = "RNA", layer = "counts")),
+      as.matrix(original_counts)
+    )
     expect_true(captured$environment %in% c("cpu", "gpu"))
     expect_true(grepl("pixi/home$", captured$pixi_home))
     expect_true("scvi_qc" %in% colnames(clustered[[]]))
@@ -1247,6 +1265,172 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
       expect_true("scanvi_prediction" %in% colnames(clustered[[]]))
     }
   }
+})
+
+test_that("sn_run_cluster imports a layer-aware scPoli latent", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 181, prefix = "spolia")
+  object1$sample <- "batch_a"
+  object2 <- make_test_object(seed = 182, prefix = "spolib")
+  object2$sample <- "batch_b"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("a", "b"))
+  selected_counts <- Shennong:::.sn_get_seurat_layer_data(merged, assay = "RNA", layer = "counts")
+  selected_counts@x <- selected_counts@x + 3
+  SeuratObject::LayerData(merged, assay = "RNA", layer = "decontaminated_counts") <- selected_counts
+  runtime_dir <- tempfile("shennong-scpoli-runtime-")
+  captured <- NULL
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = merged,
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_method = "scpoli",
+      layer = "decontaminated_counts",
+      integration_control = list(
+        runtime_dir = runtime_dir,
+        pixi_project = file.path(runtime_dir, "pixi", "scarches"),
+        n_latent = 5,
+        n_epochs = 2,
+        write_h5ad = FALSE,
+        save_model = FALSE
+      ),
+      nfeatures = 50,
+      block_genes = NULL,
+      npcs = 8,
+      dims = 1:5,
+      verbose = FALSE
+    ),
+    .sn_execute_scvi_pixi = function(pixi,
+                                     manifest_path,
+                                     script,
+                                     input_dir,
+                                     output_dir,
+                                     config_path,
+                                     environment = NULL,
+                                     pixi_home = NULL,
+                                     install_pixi = TRUE,
+                                     pixi_version = "latest",
+                                     pixi_download_url = NULL,
+                                     verbose = TRUE,
+                                     backend_label = "scVI") {
+      captured <<- list(
+        input_dir = input_dir,
+        backend_label = backend_label,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+        exported = Matrix::readMM(file.path(input_dir, "counts.mtx")),
+        features = utils::read.csv(file.path(input_dir, "features.csv"), stringsAsFactors = FALSE)$feature_id,
+        cells = utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
+      )
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      latent <- matrix(
+        seq_len(length(captured$cells) * 5),
+        nrow = length(captured$cells),
+        dimnames = list(captured$cells, paste0("SCPOLI_", 1:5))
+      )
+      utils::write.csv(latent, file.path(output_dir, "latent.csv"))
+      utils::write.csv(data.frame(scpoli_qc = seq_along(captured$cells), row.names = captured$cells), file.path(output_dir, "obs.csv"))
+      jsonlite::write_json(list(scarches_version = "0.test"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true("scpoli" %in% names(clustered@reductions))
+  expect_false("pca" %in% names(clustered@reductions))
+  expect_equal(clustered@misc$integration$method, "scpoli")
+  expect_equal(clustered@misc$integration$source_layer, "decontaminated_counts")
+  expect_equal(captured$backend_label, "scPoli")
+  expect_equal(captured$config$source_layer, "decontaminated_counts")
+  expect_equal(captured$config$n_epochs, 2)
+  expected_export <- selected_counts[captured$features, captured$cells, drop = FALSE]
+  expect_equal(unname(as.matrix(captured$exported)), unname(as.matrix(expected_export)))
+})
+
+test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 183, prefix = "bbknna")
+  object1$sample <- "batch_a"
+  object2 <- make_test_object(seed = 184, prefix = "bbknnb")
+  object2$sample <- "batch_b"
+  merged <- merge(x = object1, y = object2, add.cell.ids = c("a", "b"))
+  original_counts <- Shennong:::.sn_get_seurat_layer_data(merged, assay = "RNA", layer = "counts")
+  decontaminated_counts <- original_counts
+  decontaminated_counts@x <- decontaminated_counts@x + 5
+  SeuratObject::LayerData(merged, assay = "RNA", layer = "decontaminated_counts") <- decontaminated_counts
+  runtime_dir <- tempfile("shennong-bbknn-runtime-")
+  captured <- NULL
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = merged,
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_method = "bbknn",
+      layer = "decontaminated_counts",
+      integration_control = list(
+        runtime_dir = runtime_dir,
+        pixi_project = file.path(runtime_dir, "pixi", "bbknn"),
+        bbknn_args = list(neighbors_within_batch = 2L)
+      ),
+      nfeatures = 50,
+      block_genes = NULL,
+      npcs = 8,
+      dims = 1:5,
+      resolution = 0.3,
+      verbose = FALSE
+    ),
+    .sn_execute_scvi_pixi = function(pixi,
+                                     manifest_path,
+                                     script,
+                                     input_dir,
+                                     output_dir,
+                                     config_path,
+                                     environment = NULL,
+                                     pixi_home = NULL,
+                                     install_pixi = TRUE,
+                                     pixi_version = "latest",
+                                     pixi_download_url = NULL,
+                                     verbose = TRUE,
+                                     backend_label = "scVI") {
+      pca <- utils::read.csv(file.path(input_dir, "pca.csv"), row.names = 1, check.names = FALSE)
+      captured <<- list(
+        pca = pca,
+        backend_label = backend_label,
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+      )
+      n <- nrow(pca)
+      graph <- Matrix::Matrix(matrix(1 / max(1, n - 1), nrow = n, ncol = n), sparse = TRUE)
+      diag(graph) <- 0
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      Matrix::writeMM(graph, file.path(output_dir, "connectivities.mtx"))
+      utils::write.csv(
+        matrix(seq_len(n * 2), nrow = n, dimnames = list(rownames(pca), c("UMAP_1", "UMAP_2"))),
+        file.path(output_dir, "umap.csv")
+      )
+      jsonlite::write_json(list(bbknn_version = "1.6.test"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true("pca" %in% names(clustered@reductions))
+  expect_true("bbknn_snn" %in% names(clustered@graphs))
+  expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  expect_true("umap" %in% names(clustered@reductions))
+  expect_equal(clustered@misc$integration$method, "bbknn")
+  expect_equal(clustered@misc$integration$graph, "bbknn_snn")
+  expect_equal(clustered@misc$integration$source_layer, "decontaminated_counts")
+  expect_equal(clustered@misc$sn_run_cluster$stages$neighbors$snn_graph, "bbknn_snn")
+  expect_equal(clustered@misc$sn_run_cluster$stages$umap$signature$graph, "bbknn_snn")
+  expect_equal(captured$backend_label, "BBKNN")
+  expect_equal(captured$config$source_layer, "decontaminated_counts")
+  expect_equal(captured$config$bbknn_args$neighbors_within_batch, 2)
+  expect_equal(nrow(captured$pca), ncol(merged))
+  expect_equal(
+    as.matrix(Shennong:::.sn_get_seurat_layer_data(clustered, assay = "RNA", layer = "counts")),
+    as.matrix(original_counts)
+  )
 })
 
 test_that("sn_run_cluster writes totalVI RNA and protein inputs", {

@@ -45,10 +45,18 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     config = _read_json(Path(args.config))
 
+    if config.get("method") == "scpoli":
+        from scpoli_integration import run as run_scpoli
+
+        run_scpoli(input_dir=input_dir, output_dir=output_dir, config=config)
+        return
+
     import scanpy as sc
     import scarches  # noqa: F401
 
     adata = _read_adata(input_dir / "query")
+    if not sparse.issparse(adata.X):
+        raise MemoryError("The complete scArches expression matrix must remain sparse.")
     batch_key = config.get("batch_key")
     labels_key = config.get("labels_key")
     n_pcs = int(config.get("n_pcs", 30))
@@ -58,8 +66,14 @@ def main() -> None:
     sc.pp.highly_variable_genes(adata, n_top_genes=min(2000, adata.n_vars), batch_key=batch_key)
     if "highly_variable" in adata.var:
         adata = adata[:, adata.var["highly_variable"].to_numpy()].copy()
-    sc.pp.scale(adata, max_value=10)
-    sc.tl.pca(adata, n_comps=min(n_pcs, max(1, adata.n_obs - 1), max(1, adata.n_vars - 1)))
+    sc.pp.scale(adata, zero_center=False, max_value=10)
+    if not sparse.issparse(adata.X):
+        raise MemoryError("Sparse scArches preprocessing unexpectedly materialized the expression matrix.")
+    sc.tl.pca(
+        adata,
+        n_comps=min(n_pcs, max(1, adata.n_obs - 1), max(1, adata.n_vars - 1)),
+        zero_center=False,
+    )
     latent_key = config.get("latent_key", "X_scarches")
     adata.obsm[latent_key] = adata.obsm["X_pca"]
     if labels_key and labels_key in adata.obs:

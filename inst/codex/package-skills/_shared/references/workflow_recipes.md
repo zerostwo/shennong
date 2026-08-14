@@ -159,9 +159,17 @@ user request to the right Shennong function family quickly.
    default fast workflow. Use `integration_method = "coralysis"` for
    Coralysis multi-level integration on imbalanced datasets, or
    `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration
-   backends. Use `"scvi"` or `"scanvi"` when the workflow should run through a
-   pixi-managed scverse environment under `~/.shennong/pixi/`; scANVI requires
-   `integration_control = list(label_by = ...)`. Use `sn_pixi_paths()` to
+   backends. Use `"scvi"`, `"scanvi"`, or `"scpoli"` for learned latent
+   integration through pixi-managed environments under `~/.shennong/pixi/`;
+   scANVI requires `integration_control = list(label_by = ...)`, while scPoli
+   accepts an optional `label_by` for prototype supervision. Use `"bbknn"` to
+   compute a batch-balanced graph from the selected-layer PCA and use that graph
+   directly for clustering and UMAP. For layer-consistent comparisons, pass the
+   same explicit value such as `layer = "decontaminated_counts"`; scVI,
+   scANVI, and scPoli export that layer, while BBKNN derives its PCA from it.
+   Python expression matrices remain sparse; only bounded neural-network
+   minibatches and low-dimensional embeddings may be dense.
+   Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`. Use

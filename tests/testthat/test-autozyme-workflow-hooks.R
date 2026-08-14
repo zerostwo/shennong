@@ -236,15 +236,16 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
       disabled_calls <<- disabled_calls + 1L
       force(expr)
     },
-    .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
+    .sn_with_default_autozyme = function(expr, patches, strict = TRUE, operation = NULL) {
       scoped_calls <<- scoped_calls + 1L
       expected <- if (uses_bpcells) {
-        c("seurat_joinlayers", "seurat_merge")
+        "seurat_joinlayers"
       } else {
-        c("seurat", "seurat_joinlayers", "seurat_merge")
+        "seurat"
       }
       expect_identical(patches, expected)
       expect_identical(strict, uses_bpcells)
+      expect_identical(operation, if (uses_bpcells) "joinlayers" else "runpca")
       force(expr)
     },
     .package = "Shennong"
@@ -253,12 +254,12 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
   value <- Shennong:::.sn_with_default_seurat_autozyme(
     {
       executions <- executions + 1L
-      41L
+      quote(Seurat::JoinLayers(object))
     },
     object = structure(list(), class = "mock_seurat"),
     assay = "RNA"
   )
-  expect_identical(value, 41L)
+  expect_true(is.call(value))
   expect_identical(executions, 1L)
   expect_identical(disabled_calls, 0L)
   expect_identical(scoped_calls, 1L)
@@ -267,15 +268,26 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
   value <- Shennong:::.sn_with_default_seurat_autozyme(
     {
       executions <- executions + 1L
-      42L
+      quote(Seurat::RunPCA(object))
     },
     object = structure(list(), class = "mock_seurat"),
     assay = "RNA"
   )
-  expect_identical(value, 42L)
+  expect_true(is.call(value))
   expect_identical(executions, 2L)
   expect_identical(disabled_calls, 0L)
   expect_identical(scoped_calls, 2L)
+})
+
+test_that("Seurat AutoZyme scopes resolve to the actual operation", {
+  expect_identical(
+    Shennong:::.sn_seurat_autozyme_operations(quote(Seurat::RunPCA(object))),
+    "runpca"
+  )
+  expect_identical(Shennong:::.sn_seurat_autozyme_patches("runpca"), "seurat")
+  expect_identical(Shennong:::.sn_seurat_autozyme_patches("joinlayers"), "seurat_joinlayers")
+  expect_identical(Shennong:::.sn_seurat_autozyme_patches("merge"), "seurat_merge")
+  expect_length(Shennong:::.sn_seurat_autozyme_patches("findneighbors"), 0L)
 })
 
 test_that("BPCells-backed Seurat assays are detected before acceleration", {

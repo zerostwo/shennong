@@ -29,7 +29,7 @@
   if (identical(modality, "cite_seq")) {
     return(identical(multimodal_method, "wnn"))
   }
-  is.null(batch) || integration_method %in% c("harmony", "seurat_cca", "seurat_rpca")
+  is.null(batch) || integration_method %in% c("harmony", "seurat_cca", "seurat_rpca", "bbknn")
 }
 
 .sn_cluster_requires_adt_data <- function(modality,
@@ -191,6 +191,7 @@
                                       reduction,
                                       features,
                                       assay,
+                                      layer,
                                       dims,
                                       npcs,
                                       theta,
@@ -245,6 +246,7 @@
       batch = batch,
       features = features,
       assay = assay,
+      layer = layer,
       integration_control = integration_control,
       verbose = verbose
     ),
@@ -254,6 +256,7 @@
       batch = batch,
       features = features,
       assay = assay,
+      layer = layer,
       integration_control = integration_control,
       verbose = verbose
     ),
@@ -263,6 +266,26 @@
       batch = batch,
       features = features,
       assay = assay,
+      layer = layer,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    scpoli = .sn_run_scpoli_integration(
+      object = object,
+      batch = batch,
+      features = features,
+      assay = assay,
+      layer = layer,
+      integration_control = integration_control,
+      verbose = verbose
+    ),
+    bbknn = .sn_run_bbknn_integration(
+      object = object,
+      batch = batch,
+      reduction = reduction,
+      assay = assay,
+      layer = layer,
+      dims = dims,
       integration_control = integration_control,
       verbose = verbose
     )
@@ -869,6 +892,7 @@
                                  input_dir,
                                  features,
                                  assay,
+                                 layer = "counts",
                                  batch,
                                  labels_key = NULL,
                                  protein_assay = NULL,
@@ -881,7 +905,7 @@
     stop("scVI integration requires at least two selected features present in the object.", call. = FALSE)
   }
 
-  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = "counts")
+  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
   counts <- counts[feature_set, colnames(object), drop = FALSE]
   counts <- .sn_as_sparse_matrix(counts)
 
@@ -944,6 +968,7 @@
     protein_counts_path = if (!is.null(protein_counts_path)) normalizePath(protein_counts_path, winslash = "/", mustWork = TRUE) else NULL,
     proteins_path = if (!is.null(proteins_path)) normalizePath(proteins_path, winslash = "/", mustWork = TRUE) else NULL,
     features = feature_set,
+    layer = layer,
     protein_features = protein_feature_set
   )
 }
@@ -1059,6 +1084,7 @@
                                     output_dir,
                                     method,
                                     assay,
+                                    layer,
                                     batch,
                                     features,
                                     reduction = NULL) {
@@ -1101,6 +1127,8 @@
     method = method,
     batch_by = batch,
     reduction = reduction,
+    assay = assay,
+    source_layer = layer,
     input_features = features,
     run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
     output_h5ad = backend_manifest$output_h5ad %||% file.path(output_dir, "integrated.h5ad")
@@ -1114,6 +1142,7 @@
                                      batch,
                                      features,
                                      assay,
+                                     layer = "counts",
                                      integration_control = list(),
                                      verbose = TRUE) {
   protein_assay <- NULL
@@ -1178,6 +1207,7 @@
     input_dir = input_dir,
     features = features,
     assay = assay,
+    layer = layer,
     batch = batch,
     labels_key = labels_key,
     protein_assay = protein_assay,
@@ -1188,6 +1218,7 @@
   config <- list(
     method = method,
     batch_key = batch,
+    source_layer = layer,
     labels_key = labels_key,
     unlabeled_category = integration_control$unlabeled_category %||% "Unknown",
     reduction = integration_control$reduction %||% method,
@@ -1232,10 +1263,272 @@
     output_dir = output_dir,
     method = method,
     assay = assay,
+    layer = layer,
     batch = batch,
     features = input$features,
     reduction = config$reduction
   )
+}
+
+.sn_scpoli_script_path <- function(script = NULL) {
+  if (!is.null(script) && nzchar(script)) {
+    script <- path.expand(script)
+    if (!file.exists(script)) {
+      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+    }
+    return(normalizePath(script, winslash = "/", mustWork = TRUE))
+  }
+
+  installed <- system.file("pixi", "scarches", "scripts", "scpoli_integration.py", package = "Shennong")
+  if (nzchar(installed) && file.exists(installed)) {
+    return(normalizePath(installed, winslash = "/", mustWork = TRUE))
+  }
+  source_path <- file.path(getwd(), "inst", "pixi", "scarches", "scripts", "scpoli_integration.py")
+  if (file.exists(source_path)) {
+    return(normalizePath(source_path, winslash = "/", mustWork = TRUE))
+  }
+  stop("Could not locate Shennong's scPoli integration runner.", call. = FALSE)
+}
+
+.sn_run_scpoli_integration <- function(object,
+                                       batch,
+                                       features,
+                                       assay,
+                                       layer = "counts",
+                                       integration_control = list(),
+                                       verbose = TRUE) {
+  labels_key <- integration_control$label_by %||% NULL
+  if (!is.null(labels_key) && (!nzchar(labels_key) || !labels_key %in% colnames(object[[]]))) {
+    stop("`integration_control$label_by` must name a metadata column when supplied for scPoli.", call. = FALSE)
+  }
+
+  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  pixi_paths <- sn_pixi_paths(environment = "scpoli", runtime_dir = runtime_dir)
+  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
+  accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
+  pixi_environment <- integration_control$environment %||% accelerator$environment
+  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
+  if (!identical(resolved_mirror, "default")) {
+    sn_configure_pixi_mirror(
+      mirror = mirror,
+      pixi_home = pixi_home,
+      runtime_dir = runtime_dir,
+      append_original = integration_control$mirror_append_original %||% TRUE
+    )
+  }
+  pixi_project <- integration_control$pixi_project %||%
+    integration_control$pixi_project_dir %||%
+    pixi_paths$project_dir
+  run_dir <- integration_control$run_dir %||% .sn_default_scvi_run_dir(method = "scpoli", runtime_dir = runtime_dir)
+  input_dir <- file.path(run_dir, "input")
+  output_dir <- file.path(run_dir, "output")
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+  manifest_path <- .sn_prepare_scvi_pixi_project(
+    project_dir = pixi_project,
+    environment = "scpoli",
+    manifest_path = integration_control$manifest_path %||% NULL,
+    manifest_lines = integration_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(integration_control$overwrite_manifest),
+    cuda_version = integration_control$cuda_version %||% accelerator$cuda_version,
+    platforms = integration_control$platforms %||% NULL
+  )
+  input <- .sn_write_scvi_input(
+    object = object,
+    input_dir = input_dir,
+    features = features,
+    assay = assay,
+    layer = layer,
+    batch = batch,
+    labels_key = labels_key
+  )
+  n_epochs <- as.integer(integration_control$n_epochs %||% integration_control$max_epochs %||% 100L)
+  config <- list(
+    method = "scpoli",
+    batch_key = batch,
+    labels_key = labels_key,
+    source_layer = layer,
+    reduction = integration_control$reduction %||% "scpoli",
+    n_latent = integration_control$n_latent %||% 10L,
+    embedding_dims = integration_control$embedding_dims %||% 5L,
+    latent_batch_size = integration_control$latent_batch_size %||% 2048L,
+    seed = integration_control$seed %||% 717L,
+    n_epochs = n_epochs,
+    pretraining_epochs = integration_control$pretraining_epochs %||% floor(n_epochs * 0.9),
+    model_args = integration_control$model_args %||% list(),
+    train_args = integration_control$train_args %||% list(),
+    write_h5ad = integration_control$write_h5ad %||% TRUE,
+    save_model = integration_control$save_model %||% TRUE,
+    accelerator = accelerator$requested,
+    pixi_environment = pixi_environment
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
+  .sn_execute_scvi_pixi(
+    pixi = integration_control$pixi %||% NULL,
+    manifest_path = manifest_path,
+    script = .sn_scpoli_script_path(integration_control$script %||% NULL),
+    input_dir = input$input_dir,
+    output_dir = output_dir,
+    config_path = config_path,
+    environment = pixi_environment,
+    pixi_home = pixi_home,
+    install_pixi = integration_control$install_pixi %||% TRUE,
+    pixi_version = integration_control$pixi_version %||% "latest",
+    pixi_download_url = integration_control$pixi_download_url %||% NULL,
+    verbose = verbose,
+    backend_label = "scPoli"
+  )
+  .sn_import_scvi_results(
+    object = object,
+    output_dir = output_dir,
+    method = "scpoli",
+    assay = assay,
+    layer = layer,
+    batch = batch,
+    features = input$features,
+    reduction = config$reduction
+  )
+}
+
+.sn_bbknn_script_path <- function(script = NULL) {
+  if (!is.null(script) && nzchar(script)) {
+    script <- path.expand(script)
+    if (!file.exists(script)) {
+      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+    }
+    return(normalizePath(script, winslash = "/", mustWork = TRUE))
+  }
+  installed <- system.file("pixi", "bbknn", "scripts", "bbknn_integration.py", package = "Shennong")
+  if (nzchar(installed) && file.exists(installed)) {
+    return(normalizePath(installed, winslash = "/", mustWork = TRUE))
+  }
+  source_path <- file.path(getwd(), "inst", "pixi", "bbknn", "scripts", "bbknn_integration.py")
+  if (file.exists(source_path)) {
+    return(normalizePath(source_path, winslash = "/", mustWork = TRUE))
+  }
+  stop("Could not locate Shennong's BBKNN integration runner.", call. = FALSE)
+}
+
+.sn_run_bbknn_integration <- function(object,
+                                      batch,
+                                      reduction = "pca",
+                                      assay,
+                                      layer = "counts",
+                                      dims,
+                                      integration_control = list(),
+                                      verbose = TRUE) {
+  if (is.null(batch) || !nzchar(batch) || !batch %in% colnames(object[[]])) {
+    stop("BBKNN integration requires `batch` to name a metadata column.", call. = FALSE)
+  }
+  dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
+  embedding <- Seurat::Embeddings(object = object, reduction = reduction)[, dims, drop = FALSE]
+  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  pixi_paths <- sn_pixi_paths(environment = "bbknn", runtime_dir = runtime_dir)
+  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
+  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
+  if (!identical(resolved_mirror, "default")) {
+    sn_configure_pixi_mirror(
+      mirror = mirror,
+      pixi_home = pixi_home,
+      runtime_dir = runtime_dir,
+      append_original = integration_control$mirror_append_original %||% TRUE
+    )
+  }
+  pixi_project <- integration_control$pixi_project %||%
+    integration_control$pixi_project_dir %||%
+    pixi_paths$project_dir
+  run_dir <- integration_control$run_dir %||% .sn_default_scvi_run_dir(method = "bbknn", runtime_dir = runtime_dir)
+  input_dir <- file.path(run_dir, "input")
+  output_dir <- file.path(run_dir, "output")
+  dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  utils::write.csv(embedding, file.path(input_dir, "pca.csv"), quote = TRUE)
+  utils::write.csv(
+    data.frame(cell_id = rownames(embedding), batch = as.character(object[[]][rownames(embedding), batch]), stringsAsFactors = FALSE),
+    file.path(input_dir, "obs.csv"),
+    row.names = FALSE,
+    quote = TRUE
+  )
+  manifest_path <- .sn_prepare_scvi_pixi_project(
+    project_dir = pixi_project,
+    environment = "bbknn",
+    manifest_path = integration_control$manifest_path %||% NULL,
+    manifest_lines = integration_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(integration_control$overwrite_manifest),
+    platforms = integration_control$platforms %||% NULL
+  )
+  graph_name <- integration_control$graph_name %||% "bbknn_snn"
+  config <- list(
+    method = "bbknn",
+    batch_key = "batch",
+    source_layer = layer,
+    graph_name = graph_name,
+    seed = integration_control$seed %||% 717L,
+    bbknn_args = integration_control$bbknn_args %||% list(),
+    umap_args = integration_control$umap_args %||% list()
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
+  .sn_execute_scvi_pixi(
+    pixi = integration_control$pixi %||% NULL,
+    manifest_path = manifest_path,
+    script = .sn_bbknn_script_path(integration_control$script %||% NULL),
+    input_dir = normalizePath(input_dir, winslash = "/", mustWork = TRUE),
+    output_dir = output_dir,
+    config_path = config_path,
+    environment = integration_control$environment %||% "default",
+    pixi_home = pixi_home,
+    install_pixi = integration_control$install_pixi %||% TRUE,
+    pixi_version = integration_control$pixi_version %||% "latest",
+    pixi_download_url = integration_control$pixi_download_url %||% NULL,
+    verbose = verbose,
+    backend_label = "BBKNN"
+  )
+  graph_path <- file.path(output_dir, "connectivities.mtx")
+  if (!file.exists(graph_path)) {
+    stop("BBKNN output is missing `connectivities.mtx`: ", graph_path, call. = FALSE)
+  }
+  graph <- .sn_as_sparse_matrix(Matrix::readMM(graph_path))
+  if (length(dim(graph)) != 2L || any(dim(graph) != c(ncol(object), ncol(object)))) {
+    stop("BBKNN connectivity output must contain one row and column per input cell.", call. = FALSE)
+  }
+  dimnames(graph) <- list(colnames(object), colnames(object))
+  object[[graph_name]] <- SeuratObject::as.Graph(graph)
+  umap_path <- file.path(output_dir, "umap.csv")
+  if (!file.exists(umap_path)) {
+    stop("BBKNN output is missing `umap.csv`: ", umap_path, call. = FALSE)
+  }
+  umap <- as.matrix(utils::read.csv(umap_path, row.names = 1, check.names = FALSE))
+  if (!setequal(rownames(umap), colnames(object))) {
+    stop("BBKNN UMAP output cell identifiers do not match the input object.", call. = FALSE)
+  }
+  umap <- umap[colnames(object), , drop = FALSE]
+  umap_reduction <- integration_control$umap_reduction %||% "umap"
+  colnames(umap) <- paste0("UMAP_", seq_len(ncol(umap)))
+  object[[umap_reduction]] <- Seurat::CreateDimReducObject(
+    embeddings = umap,
+    key = "UMAP_",
+    assay = assay
+  )
+  backend_manifest <- if (file.exists(file.path(output_dir, "manifest.json"))) {
+    jsonlite::read_json(file.path(output_dir, "manifest.json"), simplifyVector = TRUE)
+  } else {
+    list()
+  }
+  object@misc$integration <- list(
+    method = "bbknn",
+    batch_by = batch,
+    reduction = reduction,
+    assay = assay,
+    source_layer = layer,
+    input_dims = dims,
+    graph = graph_name,
+    umap_reduction = umap_reduction,
+    run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
+    bbknn_version = backend_manifest$bbknn_version %||% NULL
+  )
+  list(object = object, reduction = reduction, graph = graph_name, umap = umap_reduction)
 }
 
 #' Run scVI or scANVI integration through Shennong
@@ -2370,18 +2663,25 @@ sn_detect_rare_cells <- function(object,
 #' @param integration_method Batch-integration backend used when \code{batch}
 #'   is supplied. Supported values are \code{"harmony"},
 #'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
-#'   \code{"scvi"}, \code{"scanvi"}, and \code{"totalvi"}. \code{"mmochi"} is
+#'   \code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
+#'   \code{"totalvi"}. \code{"mmochi"} is
 #'   accepted as a CITE-seq convenience alias and requires
 #'   \code{modality = "cite_seq"}.
 #'   \code{"harmony"} preserves the historical Shennong behavior.
 #'   \code{"coralysis"} runs native Coralysis on the selected log-normalized
 #'   feature set and stores the integrated embedding as the \code{"coralysis"}
-#'   reduction. \code{"scvi"} and \code{"scanvi"} export the selected count
-#'   matrix to a pixi-managed scverse environment under \code{~/.shennong/pixi/},
-#'   run the Python backend, and import the latent representation as a Seurat
-#'   reduction. \code{"totalvi"} is used for RNA+ADT CITE-seq workflows and is
+#'   reduction. \code{"scvi"}, \code{"scanvi"}, and \code{"scpoli"} export
+#'   the selected \code{assay}/\code{layer} count matrix to a pixi-managed
+#'   environment under \code{~/.shennong/pixi/}, run the Python backend, and
+#'   import the latent representation as a Seurat reduction. \code{"bbknn"}
+#'   computes a batch-balanced graph from the selected-layer PCA and uses that
+#'   graph directly for clustering and UMAP. \code{"totalvi"} is used for
+#'   RNA+ADT CITE-seq workflows and is
 #'   usually selected through \code{modality = "cite_seq"} and
 #'   \code{multimodal_method = "totalvi"}.
+#'   Python expression/protein inputs remain sparse; learned backends may create
+#'   bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
+#'   low-dimensional dense outputs.
 #' @param integration_control Optional named list of backend-specific
 #'   parameters. For \code{"coralysis"}, use \code{icp_args} for
 #'   \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
@@ -2398,7 +2698,13 @@ sn_detect_rare_cells <- function(object,
 #'   \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 #'   \code{model_args}, \code{train_args}, and \code{write_h5ad};
 #'   \code{"scanvi"} additionally requires \code{label_by} and accepts
-#'   \code{unlabeled_category}. \code{"totalvi"} additionally accepts
+#'   \code{unlabeled_category}. \code{"scpoli"} accepts optional
+#'   \code{label_by}, \code{n_epochs}, \code{pretraining_epochs},
+#'   \code{embedding_dims}, \code{latent_batch_size}, \code{model_args}, and
+#'   \code{train_args}.
+#'   \code{"bbknn"} accepts \code{bbknn_args} plus an optional
+#'   \code{graph_name}; its imported graph is used instead of running
+#'   \code{Seurat::FindNeighbors()}. \code{"totalvi"} additionally accepts
 #'   \code{totalvi_model_args}, \code{totalvi_train_args}, and
 #'   \code{protein_obsm_key}. \code{"mmochi"} additionally accepts
 #'   \code{protein_layer}, \code{single_peaks}, \code{marker_bandwidths},
@@ -2498,7 +2804,9 @@ sn_detect_rare_cells <- function(object,
 #'   \code{species}: optional species label. Used when block genes must be resolved
 #'   from built-in signatures.
 #'   \code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
-#'   \code{layer}: layer used as the input count matrix. Defaults to \code{"counts"}.
+#'   \code{layer}: layer used as the input matrix. Defaults to \code{"counts"}.
+#'   scVI, scANVI, scPoli, and the PCA upstream of BBKNN all honor this value,
+#'   so a layer such as \code{"decontaminated_counts"} is used consistently.
 #'   \code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 #'   workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
 #'   \code{multimodal_method}.
@@ -2562,7 +2870,7 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi"),
+                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
                            integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
@@ -2689,7 +2997,7 @@ sn_run_cluster <- function(object,
   )
   integration_method <- match.arg(
     integration_method,
-    c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "totalvi", "mmochi")
+    c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi")
   )
   modality <- match.arg(modality, c("rna", "cite_seq"))
   multimodal_method <- if (identical(modality, "cite_seq")) {
@@ -3364,6 +3672,12 @@ sn_run_cluster <- function(object,
     SeuratObject::DefaultAssay(object = object) <- if (isTRUE(needs_rna_workflow) && identical(normalization_method, "sctransform")) "SCT" else assay
   }
 
+  integration_graph <- NULL
+  integration_umap <- NULL
+  backend_integration_control <- integration_control
+  if (identical(integration_method, "bbknn")) {
+    backend_integration_control$umap_args <- umap_control
+  }
   if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
     reduction <- "wnn"
     integration_signature <- NULL
@@ -3410,6 +3724,7 @@ sn_run_cluster <- function(object,
         reduction = NULL,
         features = adt_feature_set,
         assay = adt_assay,
+        layer = adt_layer,
         dims = adt_dims,
         npcs = adt_npcs,
         theta = theta,
@@ -3517,6 +3832,7 @@ sn_run_cluster <- function(object,
         batch = batch,
         features = hvg,
         assay = assay,
+        layer = layer,
         integration_control = totalvi_control,
         verbose = verbose
       )
@@ -3532,12 +3848,14 @@ sn_run_cluster <- function(object,
     integration_signature <- list(
       method = integration_method,
       batch = batch,
+      assay = assay,
+      layer = layer,
       features = hvg,
       dims = dims,
       npcs = npcs,
       theta = theta,
       group_by_vars = group_by_vars,
-      integration_control = integration_control,
+      integration_control = backend_integration_control,
       store_sce = if (identical(integration_method, "coralysis")) {
         .sn_coralysis_store_sce(integration_control)
       } else {
@@ -3554,10 +3872,18 @@ sn_run_cluster <- function(object,
       reuse = reuse,
       rerun_from = rerun_from,
       required = function(current_object, stage_info) {
-        !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+        has_reduction <- !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+        if (!identical(integration_method, "bbknn")) {
+          return(has_reduction)
+        }
+        has_reduction &&
+          !is.null(stage_info$graph_name) && stage_info$graph_name %in% names(current_object@graphs) &&
+          !is.null(stage_info$umap_reduction) && stage_info$umap_reduction %in% names(current_object@reductions)
       }
     )) {
       reduction <- object@misc$sn_run_cluster$stages$integration$reduction
+      integration_graph <- object@misc$sn_run_cluster$stages$integration$graph_name %||% NULL
+      integration_umap <- object@misc$sn_run_cluster$stages$integration$umap_reduction %||% NULL
       if (verbose) .sn_log_info("[5/6] Reusing {reduction} integration reduction.")
     } else {
       if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
@@ -3568,20 +3894,31 @@ sn_run_cluster <- function(object,
         reduction = if (isTRUE(needs_rna_pca)) "pca" else NULL,
         features = hvg,
         assay = assay,
+        layer = layer,
         dims = dims,
         npcs = npcs,
         theta = theta,
         group_by_vars = group_by_vars,
-        integration_control = integration_control,
+        integration_control = backend_integration_control,
         verbose = verbose
       )
       object <- integration$object
       reduction <- integration$reduction
-      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+      integration_graph <- integration$graph %||% NULL
+      integration_umap <- integration$umap %||% NULL
+      object <- .sn_record_cluster_stage(
+        object,
+        "integration",
+        integration_signature,
+        reduction = reduction,
+        graph_name = integration_graph,
+        umap_reduction = integration_umap
+      )
     }
     reduction_signature <- if (is_null(x = batch)) pca_signature else integration_signature
   }
 
+  use_bbknn_graph <- identical(modality, "rna") && identical(integration_method, "bbknn") && !is.null(batch)
   if (verbose) .sn_log_info("[6/6] Clustering with integrated embeddings.")
   if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
     dims <- .sn_valid_reduction_dims(object = object, reduction = "pca", dims = dims)
@@ -3593,6 +3930,18 @@ sn_run_cluster <- function(object,
       modality_weight_name = c("RNA.weight", "ADT.weight"),
       knn_range = max(1L, min(200L, ncol(object) - 1L)),
       wnn_control = wnn_control,
+      upstream = reduction_signature
+    )
+  } else if (use_bbknn_graph) {
+    if (is.null(integration_graph) || !integration_graph %in% names(object@graphs)) {
+      stop("BBKNN integration did not provide a connectivity graph.", call. = FALSE)
+    }
+    dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
+    neighbors_signature <- list(
+      method = "bbknn",
+      reduction = reduction,
+      dims = dims,
+      graph_name = integration_graph,
       upstream = reduction_signature
     )
   } else {
@@ -3621,49 +3970,54 @@ sn_run_cluster <- function(object,
   )) {
     if (verbose) .sn_log_info("[6/6] Reusing nearest-neighbor graph.")
   } else {
-    graph_names_before <- names(object@graphs)
-    if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
-      wnn_args <- .sn_merge_control_args(
-        defaults = list(
+    if (use_bbknn_graph) {
+      graph_names <- integration_graph
+      snn_graph <- integration_graph
+    } else {
+      graph_names_before <- names(object@graphs)
+      if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+        wnn_args <- .sn_merge_control_args(
+          defaults = list(
+            object = object,
+            reduction.list = list("pca", "apca"),
+            dims.list = list(dims, adt_dims),
+            modality.weight.name = c("RNA.weight", "ADT.weight"),
+            knn.range = max(1L, min(200L, ncol(object) - 1L)),
+            verbose = verbose
+          ),
+          control = wnn_control
+        )
+        object <- .sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::FindMultiModalNeighbors),
           object = object,
-          reduction.list = list("pca", "apca"),
-          dims.list = list(dims, adt_dims),
-          modality.weight.name = c("RNA.weight", "ADT.weight"),
-          knn.range = max(1L, min(200L, ncol(object) - 1L)),
-          verbose = verbose
-        ),
-        control = wnn_control
-      )
-      object <- .sn_call_with_symbolic_object(
-        fun_call = quote(Seurat::FindMultiModalNeighbors),
-        object = object,
-        args = wnn_args
-      )
-    } else {
-      object <- .sn_with_default_seurat_autozyme(
-        Seurat::FindNeighbors(
-          object,
-          reduction = reduction,
-          dims = dims,
-          verbose = verbose
-        ),
-        object = object,
-        assay = assay
-      )
-    }
-    graph_names_after <- names(object@graphs)
-    graph_names <- setdiff(graph_names_after, graph_names_before)
-    if (length(graph_names) == 0L) {
-      graph_names <- graph_names_after
-    }
-    snn_graph <- if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn") && "wsnn" %in% graph_names_after) {
-      "wsnn"
-    } else {
-      snn_candidates <- grep("_snn$", graph_names, value = TRUE)
-      if (length(snn_candidates) > 0L) {
-        snn_candidates[[1]]
+          args = wnn_args
+        )
       } else {
-        utils::tail(graph_names, n = 1L)
+        object <- .sn_with_default_seurat_autozyme(
+          Seurat::FindNeighbors(
+            object,
+            reduction = reduction,
+            dims = dims,
+            verbose = verbose
+          ),
+          object = object,
+          assay = assay
+        )
+      }
+      graph_names_after <- names(object@graphs)
+      graph_names <- setdiff(graph_names_after, graph_names_before)
+      if (length(graph_names) == 0L) {
+        graph_names <- graph_names_after
+      }
+      snn_graph <- if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn") && "wsnn" %in% graph_names_after) {
+        "wsnn"
+      } else {
+        snn_candidates <- grep("_snn$", graph_names, value = TRUE)
+        if (length(snn_candidates) > 0L) {
+          snn_candidates[[1]]
+        } else {
+          utils::tail(graph_names, n = 1L)
+        }
       }
     }
     object <- .sn_record_cluster_stage(
@@ -3753,6 +4107,18 @@ sn_run_cluster <- function(object,
       umap_signature$verbose <- NULL
       umap_signature$method <- "weighted_nearest_neighbor"
       umap_signature$upstream <- neighbors_signature
+    } else if (use_bbknn_graph) {
+      if (is.null(integration_umap) || !integration_umap %in% names(object@reductions)) {
+        stop("BBKNN integration did not provide a graph-derived UMAP reduction.", call. = FALSE)
+      }
+      umap_args <- list(reduction.name = integration_umap)
+      umap_signature <- list(
+        method = "bbknn_graph",
+        graph = integration_graph,
+        reduction = integration_umap,
+        umap_control = umap_control
+      )
+      umap_signature$upstream <- neighbors_signature
     } else {
       umap_args <- .sn_merge_control_args(
         defaults = list(
@@ -3783,7 +4149,10 @@ sn_run_cluster <- function(object,
     } else {
       if (verbose) .sn_log_info("[7/7] Running UMAP.")
       umap_reduction <- umap_args$reduction.name %||% "umap"
-      if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+      if (use_bbknn_graph) {
+        umap_reduction <- integration_umap
+        object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = umap_reduction)
+      } else if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
         object <- suppressWarnings(.sn_call_with_symbolic_object(
           fun_call = quote(Seurat::RunUMAP),
           object = object,

@@ -358,6 +358,7 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_true(file.exists(paths$source_config_path))
   expect_true("scvi" %in% sn_list_pixi_environments())
   expect_true("scarches" %in% sn_list_pixi_environments())
+  expect_true("bbknn" %in% sn_list_pixi_environments())
   expect_true("infercnvpy" %in% sn_list_pixi_environments())
   expect_true("cell2location" %in% sn_list_pixi_environments())
   expect_true("tangram" %in% sn_list_pixi_environments())
@@ -371,6 +372,7 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_true(file.exists(sn_pixi_config_path("cellphonedb")))
   expect_equal(dirname(sn_pixi_config_path("scanvi")), dirname(sn_pixi_config_path("scvi")))
   expect_equal(dirname(sn_pixi_config_path("scpoli")), dirname(sn_pixi_config_path("scarches")))
+  expect_true(file.exists(sn_pixi_config_path("bbknn")))
   expect_equal(dirname(sn_pixi_config_path("tarngram")), dirname(sn_pixi_config_path("tangram")))
   expect_equal(basename(dirname(sn_pixi_config_path("mmochi-landmark"))), "mmochi")
 
@@ -387,6 +389,16 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   prepared_manifest <- readLines(prepared$manifest_path)
   expect_true(any(grepl('name = "shennong-scarches"', prepared_manifest, fixed = TRUE)))
   expect_true(any(grepl('platforms = ["linux-64"]', prepared_manifest, fixed = TRUE)))
+
+  python_backends <- c(
+    system.file("pixi", "scvi", "scripts", "scvi_integration.py", package = "Shennong"),
+    system.file("pixi", "scarches", "scripts", "scpoli_integration.py", package = "Shennong")
+  )
+  expect_true(all(nzchar(python_backends) & file.exists(python_backends)))
+  backend_source <- paste(unlist(lapply(python_backends, readLines, warn = FALSE)), collapse = "\n")
+  expect_false(grepl("adata.X.toarray()", backend_source, fixed = TRUE))
+  expect_false(grepl("protein_counts.toarray()", backend_source, fixed = TRUE))
+  expect_true(grepl("adata.X[start:stop, :]", backend_source, fixed = TRUE))
 
   pixi_home <- tempfile("pixi-home-")
   config_path <- sn_configure_pixi_mirror("tuna", pixi_home = pixi_home)

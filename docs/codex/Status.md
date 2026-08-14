@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-03
+Last updated: 2026-08-14
 
 ## Current structure
 
@@ -20,6 +20,26 @@ Last updated: 2026-08-03
 The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
+
+- RNA integration is now layer-consistent across the Python backends:
+  scVI/scANVI/totalVI and scPoli export the requested `assay`/`layer`, and the
+  provenance records `source_layer`. `sn_run_cluster()` also supports a real
+  scPoli latent backend and a BBKNN backend whose imported connectivity graph
+  is used directly for clustering and graph-derived UMAP. Complete expression
+  and protein inputs remain sparse; scPoli only densifies one bounded encoder
+  minibatch, and low-dimensional PCA/latent/UMAP outputs are dense by design.
+  Real pixi smoke tests completed with scArches/scPoli 0.6.1 (one training epoch,
+  20-by-3 latent), BBKNN 1.6.0 (20-by-20 graph and 20-by-2 UMAP), and a sparse
+  totalVI registration preserving both RNA and protein CSR matrices. Focused
+  tests cover a deliberately distinct `decontaminated_counts` layer and prevent
+  regression to hard-coded
+  `counts`. AutoZyme Seurat scopes now select and log the actual operation
+  (`runpca`, `scaledata`, and so on); unpatched operations no longer announce
+  unrelated join/merge patches. The final local suite passed 3,094 assertions
+  with four optional/local-fixture skips and one existing warning. The 0.3.0
+  source tarball built successfully; `_R_CHECK_FORCE_SUGGESTS_=false R CMD
+  check --no-manual` completed with only the known `.codegraph` hidden-directory
+  NOTE; and the complete pkgdown site rebuilt under `site/dev` in 145.7 seconds.
 
 - AutoZyme integration now pins `zerostwo/autozyme` commit
   `3fe148271a21db90a6cc47ed91d82ed834de6bc4`. UCell, LISI, the refreshed

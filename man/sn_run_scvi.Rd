@@ -33,7 +33,13 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 \code{model_args}, \code{train_args}, and \code{write_h5ad};
 \code{"scanvi"} additionally requires \code{label_by} and accepts
-\code{unlabeled_category}. \code{"totalvi"} additionally accepts
+\code{unlabeled_category}. \code{"scpoli"} accepts optional
+\code{label_by}, \code{n_epochs}, \code{pretraining_epochs},
+\code{embedding_dims}, \code{latent_batch_size}, \code{model_args}, and
+\code{train_args}.
+\code{"bbknn"} accepts \code{bbknn_args} plus an optional
+\code{graph_name}; its imported graph is used instead of running
+\code{Seurat::FindNeighbors()}. \code{"totalvi"} additionally accepts
 \code{totalvi_model_args}, \code{totalvi_train_args}, and
 \code{protein_obsm_key}. \code{"mmochi"} additionally accepts
 \code{protein_layer}, \code{single_peaks}, \code{marker_bandwidths},

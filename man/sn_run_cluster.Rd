@@ -9,7 +9,7 @@ sn_run_cluster(
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
-    "scanvi", "totalvi", "mmochi"),
+    "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
   integration_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
@@ -44,18 +44,25 @@ combined with \code{integration_method = "harmony"} by supplying
 \item{integration_method}{Batch-integration backend used when \code{batch}
 is supplied. Supported values are \code{"harmony"},
 \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
-\code{"scvi"}, \code{"scanvi"}, and \code{"totalvi"}. \code{"mmochi"} is
+\code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
+\code{"totalvi"}. \code{"mmochi"} is
 accepted as a CITE-seq convenience alias and requires
 \code{modality = "cite_seq"}.
 \code{"harmony"} preserves the historical Shennong behavior.
 \code{"coralysis"} runs native Coralysis on the selected log-normalized
 feature set and stores the integrated embedding as the \code{"coralysis"}
-reduction. \code{"scvi"} and \code{"scanvi"} export the selected count
-matrix to a pixi-managed scverse environment under \code{~/.shennong/pixi/},
-run the Python backend, and import the latent representation as a Seurat
-reduction. \code{"totalvi"} is used for RNA+ADT CITE-seq workflows and is
+reduction. \code{"scvi"}, \code{"scanvi"}, and \code{"scpoli"} export
+the selected \code{assay}/\code{layer} count matrix to a pixi-managed
+environment under \code{~/.shennong/pixi/}, run the Python backend, and
+import the latent representation as a Seurat reduction. \code{"bbknn"}
+computes a batch-balanced graph from the selected-layer PCA and uses that
+graph directly for clustering and UMAP. \code{"totalvi"} is used for
+RNA+ADT CITE-seq workflows and is
 usually selected through \code{modality = "cite_seq"} and
-\code{multimodal_method = "totalvi"}.}
+\code{multimodal_method = "totalvi"}.
+Python expression/protein inputs remain sparse; learned backends may create
+bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
+low-dimensional dense outputs.}
 
 \item{integration_control}{Optional named list of backend-specific
 parameters. For \code{"coralysis"}, use \code{icp_args} for
@@ -73,7 +80,13 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{cuda_version}, \code{mirror}, \code{n_latent}, \code{max_epochs},
 \code{model_args}, \code{train_args}, and \code{write_h5ad};
 \code{"scanvi"} additionally requires \code{label_by} and accepts
-\code{unlabeled_category}. \code{"totalvi"} additionally accepts
+\code{unlabeled_category}. \code{"scpoli"} accepts optional
+\code{label_by}, \code{n_epochs}, \code{pretraining_epochs},
+\code{embedding_dims}, \code{latent_batch_size}, \code{model_args}, and
+\code{train_args}.
+\code{"bbknn"} accepts \code{bbknn_args} plus an optional
+\code{graph_name}; its imported graph is used instead of running
+\code{Seurat::FindNeighbors()}. \code{"totalvi"} additionally accepts
 \code{totalvi_model_args}, \code{totalvi_train_args}, and
 \code{protein_obsm_key}. \code{"mmochi"} additionally accepts
 \code{protein_layer}, \code{single_peaks}, \code{marker_bandwidths},
@@ -185,7 +198,9 @@ clustering, and UMAP.
 \code{species}: optional species label. Used when block genes must be resolved
 from built-in signatures.
 \code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
-\code{layer}: layer used as the input count matrix. Defaults to \code{"counts"}.
+\code{layer}: layer used as the input matrix. Defaults to \code{"counts"}.
+scVI, scANVI, scPoli, and the PCA upstream of BBKNN all honor this value,
+so a layer such as \code{"decontaminated_counts"} is used consistently.
 \code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
 \code{multimodal_method}.

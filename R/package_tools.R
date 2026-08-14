@@ -801,8 +801,9 @@ sn_call_stlearn <- function(command, args = character(), ...) {
 #' @param method_control Optional named list of backend-specific settings passed
 #'   to the Python runner config.
 #' @param assay Assay used for object-level infercnvpy input.
-#' @param layer Assay layer used for object-level infercnvpy input. Defaults to
-#'   \code{"data"} when present and otherwise \code{"counts"}.
+#' @param layer Assay layer used for object-level Python input. scPoli defaults
+#'   to \code{"counts"}; infercnvpy and the other generic object wrappers
+#'   default to \code{"data"} when present and otherwise \code{"counts"}.
 #' @param species Species used to match bundled gene positions when
 #'   \code{gene_order} and \code{gtf_file} are not supplied.
 #' @param reference_by Metadata column containing normal/tumor annotations.
@@ -898,7 +899,7 @@ sn_run_scpoli <- function(object,
     script_name = "scarches_run.py",
     method = "scpoli",
     assay = assay,
-    layer = layer,
+    layer = layer %||% "counts",
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,

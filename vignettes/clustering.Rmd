@@ -498,8 +498,9 @@ sn_plot_dim(
 
 Python integration methods can be run through a pixi-managed scverse project
 kept under the user-level Shennong runtime directory, `~/.shennong/`. When
-`integration_method = "scvi"`, Shennong exports the selected count matrix and
-metadata, renders `~/.shennong/pixi/scvi/pixi.toml` from the package-bundled
+`integration_method = "scvi"`, Shennong exports the count matrix from the
+requested `assay` and `layer` together with metadata, renders
+`~/.shennong/pixi/scvi/pixi.toml` from the package-bundled
 `inst/pixi/scvi/pixi.toml` template when needed, runs
 the Python backend, imports `latent.csv` as the `scvi` reduction, and then
 continues with Seurat neighbors, clusters, and UMAP.
@@ -522,6 +523,35 @@ scPoli uses the `scarches` environment. Spatial tools are represented by
 specific environment names such as `cell2location`, `tangram`, `squidpy`,
 `spatialdata`, and `stlearn`.
 
+The layer contract also applies to scANVI and scPoli. BBKNN consumes the PCA
+computed from that same selected layer, imports its batch-balanced connectivity
+graph, and uses the graph directly for Seurat clustering and UMAP. Therefore a
+comparison on decontaminated counts can keep one explicit input across all
+methods instead of silently falling back to `counts`:
+
+The Python runners keep complete expression matrices sparse. scPoli converts
+only one bounded neural-network minibatch to a dense tensor during latent
+encoding; the complete cells-by-genes matrix is never materialized as dense.
+Dense PCA, latent, and UMAP outputs remain low-dimensional by construction.
+
+```{r layer-consistent-python-integration, eval=FALSE}
+methods <- c("scvi", "scanvi", "scpoli", "bbknn")
+integrated <- lapply(methods, function(method) {
+  control <- if (method == "scanvi") list(label_by = "cell_type") else list()
+  sn_run_cluster(
+    object = pbmc,
+    batch = "real_batch",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    integration_method = method,
+    integration_control = control,
+    normalization_method = "seurat",
+    dims = 1:30,
+    verbose = FALSE
+  )
+})
+```
+
 Cancer CNV and spatial Python wrappers require disease-matched references or
 spatial coordinates, so they are intentionally exercised in the corresponding
 real melanoma and Visium articles rather than against this PBMC object.
@@ -534,6 +564,7 @@ pbmc_scvi <- qs2::qs_read(real_data_file)
 pbmc_scvi <- sn_run_scvi(
   object = pbmc_scvi,
   batch = "real_batch",
+  layer = "counts",
   normalization_method = "seurat",
   hvg_group_by = "real_batch",
   nfeatures = 3000,
@@ -558,6 +589,7 @@ scanvi_input$scanvi_label[scanvi_input$real_sample %in% held_out_samples] <- "Un
 pbmc_scanvi <- sn_run_scanvi(
   object = scanvi_input,
   batch = "real_batch",
+  layer = "counts",
   normalization_method = "seurat",
   nfeatures = 3000,
   dims = 1:30,
@@ -575,9 +607,11 @@ pbmc_scanvi <- sn_run_scanvi(
 table(pbmc_scanvi$scanvi_prediction, pbmc_scanvi$real_response)
 ```
 
-The scArches and scPoli object wrappers use the same real batch column and the
-RNA clusters computed above as analytical labels. They are not run unless the
-shared scArches pixi environment has already been materialized.
+The scPoli object wrapper trains the same real scPoli model used by
+`integration_method = "scpoli"`; it uses the real batch column as its condition
+and can use RNA clusters as prototype labels. The generic scArches wrapper
+remains a custom-runner surface for reference-mapping workflows. Neither is run
+unless the shared scArches pixi environment has already been materialized.
 
 ```{r scarches-and-scpoli, eval = run_extended && pixi_environment_ready("scarches")}
 pbmc_scarches <- sn_run_scarches(

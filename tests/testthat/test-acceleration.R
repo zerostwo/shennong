@@ -780,12 +780,12 @@ test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
   )
 
   expect_identical(
-    Shennong:::.sn_with_default_seurat_autozyme(42L, fake_object),
-    42L
+    Shennong:::.sn_with_default_seurat_autozyme(quote(Seurat::JoinLayers(object)), fake_object),
+    quote(Seurat::JoinLayers(object))
   )
   expect_false(suspended)
-  expect_identical(state$activated, c("seurat_joinlayers", "seurat_merge"))
-  expect_identical(state$deactivated, c("seurat_merge", "seurat_joinlayers"))
+  expect_identical(state$activated, "seurat_joinlayers")
+  expect_identical(state$deactivated, "seurat_joinlayers")
 
   suspended <- FALSE
   testthat::local_mocked_bindings(
@@ -793,19 +793,51 @@ test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
     .package = "Shennong"
   )
   expect_identical(
-    Shennong:::.sn_with_default_seurat_autozyme(43L, fake_object),
-    43L
+    Shennong:::.sn_with_default_seurat_autozyme(quote(Seurat::RunPCA(object)), fake_object),
+    quote(Seurat::RunPCA(object))
   )
   expect_false(suspended)
   expect_identical(
-    tail(state$activated, 3L),
-    c("seurat", "seurat_joinlayers", "seurat_merge")
+    tail(state$activated, 1L),
+    "seurat"
   )
   expect_identical(
-    tail(state$deactivated, 3L),
-    c("seurat_merge", "seurat_joinlayers", "seurat")
+    tail(state$deactivated, 1L),
+    "seurat"
   )
   expect_identical(state$status[["seurat"]], "inactive")
+})
+
+test_that("Seurat acceleration logs the operation instead of ambient patches", {
+  state <- make_autozyme_mock_state()
+  mock_autozyme_bindings(state)
+  fake_object <- structure(list(), class = "Seurat")
+  logs <- character()
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) FALSE,
+    .sn_log_info = function(..., .envir = parent.frame()) {
+      logs <<- c(logs, as.character(glue::glue(..., .envir = .envir, .sep = "")))
+      invisible(NULL)
+    },
+    .package = "Shennong"
+  )
+
+  Shennong:::.sn_with_default_seurat_autozyme(
+    quote(Seurat::RunPCA(object)),
+    fake_object
+  )
+  expect_identical(state$activated, "seurat")
+  expect_identical(
+    logs,
+    "[AutoZyme] Acceleration enabled for runpca (patch: seurat)."
+  )
+
+  Shennong:::.sn_with_default_seurat_autozyme(
+    quote(Seurat::FindNeighbors(object)),
+    fake_object
+  )
+  expect_identical(state$activated, "seurat")
+  expect_length(logs, 1L)
 })
 
 test_that("an active broad Seurat patch still suspends BPCells calls", {
@@ -822,8 +854,8 @@ test_that("an active broad Seurat patch still suspends BPCells calls", {
   )
 
   expect_identical(
-    Shennong:::.sn_with_default_seurat_autozyme(44L, fake_object),
-    44L
+    Shennong:::.sn_with_default_seurat_autozyme(quote(Seurat::RunPCA(object)), fake_object),
+    quote(Seurat::RunPCA(object))
   )
   expect_true(suspended)
 })
@@ -841,8 +873,8 @@ test_that("BPCells suppression prevents ambient Seurat provenance claims", {
   result <- Shennong:::.sn_with_autozyme_provenance_context(
     {
       expect_identical(
-        Shennong:::.sn_with_default_seurat_autozyme(42L, fake_object),
-        42L
+        Shennong:::.sn_with_default_seurat_autozyme(quote(Seurat::RunPCA(object)), fake_object),
+        quote(Seurat::RunPCA(object))
       )
       Shennong:::.sn_new_analysis_result(
         analysis_type = "test_result",

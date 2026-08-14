@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# Development version
+
+### Added
+
+- `sn_run_cluster()` now accepts `integration_method = "scpoli"` and
+  `"bbknn"`. scPoli trains a real scPoli model in the managed scArches pixi
+  family and imports its latent representation. BBKNN runs in a dedicated
+  managed pixi environment, imports the batch-balanced connectivity graph, and
+  uses that graph directly for Seurat clustering and UMAP.
+
+### Fixed
+
+- scVI, scANVI, and totalVI integration now export the requested `layer`
+  instead of always reading `counts`. The selected source layer is recorded in
+  backend configuration and `object@misc$integration`, so comparisons using
+  inputs such as `decontaminated_counts` are auditable. scPoli follows the same
+  explicit layer contract, while BBKNN derives its PCA from that selected layer.
+- Python expression inputs remain SciPy sparse matrices. scPoli latent export
+  densifies only one bounded neural-network minibatch at a time, totalVI keeps
+  its protein matrix sparse, and the generic scArches fallback uses sparse
+  scaling and truncated PCA rather than materializing a full expression matrix.
+- Automatic Seurat acceleration now scopes and logs the actual operation, such
+  as `runpca`, instead of reporting unrelated active `seurat_joinlayers` and
+  `seurat_merge` patches for every wrapped call.
+
 # Version 0.3.0
 
 Released 2026-08-01.

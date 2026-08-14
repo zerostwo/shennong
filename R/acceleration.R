@@ -441,16 +441,21 @@
   invisible(NULL)
 }
 
-.sn_with_default_autozyme <- function(expr, patches, strict = TRUE) {
+.sn_with_default_autozyme <- function(expr, patches, strict = TRUE, operation = NULL) {
   patches <- unique(tolower(trimws(as.character(patches))))
   patches <- intersect(patches, .sn_autozyme_default_patches)
   .sn_with_autozyme_provenance_context(
-    .sn_with_default_autozyme_impl(expr, patches = patches, strict = strict),
+    .sn_with_default_autozyme_impl(
+      expr,
+      patches = patches,
+      strict = strict,
+      operation = operation
+    ),
     patches = patches
   )
 }
 
-.sn_with_default_autozyme_impl <- function(expr, patches, strict = TRUE) {
+.sn_with_default_autozyme_impl <- function(expr, patches, strict = TRUE, operation = NULL) {
   patches <- unique(tolower(trimws(as.character(patches))))
   patches <- intersect(patches, .sn_autozyme_default_patches)
   strict <- .sn_validate_autozyme_flag(strict, "strict")
@@ -606,10 +611,21 @@
   )
   .sn_record_autozyme_usage(active_for_call)
   if (length(active_for_call) > 0L) {
-    .sn_log_info(sprintf(
-      "[AutoZyme] Acceleration enabled for this call (patches: %s).",
-      paste(active_for_call, collapse = ", ")
-    ))
+    operation <- unique(tolower(trimws(as.character(operation %||% character()))))
+    operation <- operation[nzchar(operation)]
+    if (length(operation) > 0L) {
+      .sn_log_info(sprintf(
+        "[AutoZyme] Acceleration enabled for %s (patch%s: %s).",
+        paste(operation, collapse = ", "),
+        if (length(active_for_call) == 1L) "" else "es",
+        paste(active_for_call, collapse = ", ")
+      ))
+    } else {
+      .sn_log_info(sprintf(
+        "[AutoZyme] Acceleration enabled for this call (patches: %s).",
+        paste(active_for_call, collapse = ", ")
+      ))
+    }
   }
   cleanup_pending <- length(newly_activated) > 0L
   on.exit({
@@ -753,7 +769,44 @@
   FALSE
 }
 
+.sn_seurat_autozyme_operations <- function(expr) {
+  if (!is.call(expr)) {
+    return(character())
+  }
+  call_head <- expr[[1L]]
+  operation <- character()
+  if (is.call(call_head) && identical(call_head[[1L]], as.name("::"))) {
+    operation <- as.character(call_head[[3L]])
+  } else if (is.name(call_head)) {
+    operation <- as.character(call_head)
+  }
+  nested <- unlist(lapply(as.list(expr)[-1L], .sn_seurat_autozyme_operations), use.names = FALSE)
+  unique(tolower(c(operation, nested)))
+}
+
+.sn_seurat_autozyme_patches <- function(operations) {
+  mapping <- list(
+    seurat = c(
+      "normalizedata", "findvariablefeatures", "vst", "scaledata",
+      "findallmarkers", "findmarkers", "runpca", "runcca",
+      "findintegrationanchors", "findweights", "ccaintegration",
+      "integratelayers", "sctransform"
+    ),
+    seurat_joinlayers = "joinlayers",
+    seurat_merge = "merge"
+  )
+  names(mapping)[vapply(mapping, function(targets) any(operations %in% targets), logical(1))]
+}
+
 .sn_with_default_seurat_autozyme <- function(expr, object, assay = NULL) {
+  operations <- .sn_seurat_autozyme_operations(substitute(expr))
+  patches <- .sn_seurat_autozyme_patches(operations)
+  reported_operations <- operations[operations %in% c(
+    "normalizedata", "findvariablefeatures", "vst", "scaledata",
+    "findallmarkers", "findmarkers", "runpca", "runcca",
+    "findintegrationanchors", "findweights", "ccaintegration",
+    "integratelayers", "sctransform", "joinlayers", "merge"
+  )]
   if (.sn_seurat_uses_bpcells(object = object, assay = assay)) {
     .sn_record_autozyme_suppression("seurat")
     active <- tryCatch(
@@ -763,16 +816,19 @@
     if ("seurat" %in% active) {
       return(.sn_with_autozyme_disabled(expr))
     }
+    patches <- intersect(patches, c("seurat_joinlayers", "seurat_merge"))
     return(.sn_with_default_autozyme(
       expr,
-      patches = c("seurat_joinlayers", "seurat_merge")
+      patches = patches,
+      operation = reported_operations
     ))
   }
 
   .sn_with_default_autozyme(
     expr,
-    patches = c("seurat", "seurat_joinlayers", "seurat_merge"),
-    strict = FALSE
+    patches = patches,
+    strict = FALSE,
+    operation = reported_operations
   )
 }
 
