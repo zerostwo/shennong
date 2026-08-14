@@ -108,7 +108,13 @@ This skill is the main entry point for package usage.
    SCTransform workflows, and use
 	   `integration_method = "harmony"`, `"coralysis"`, `"seurat_cca"`,
 	   `"seurat_rpca"`, `"scvi"`, `"scanvi"`, `"scpoli"`, or `"bbknn"` when a
-	   specific batch-integration backend is requested. scVI/scANVI/scPoli honor
+	   specific batch-integration backend is requested.
+	   Pass a vector such as `c("unintegrated", "harmony", "coralysis")` when
+	   methods should share preprocessing and coexist in one object. Key
+	   `integration_control` by method, then inspect
+	   `object@misc$integration_comparison$results` for the stored reduction,
+	   graph, cluster, UMAP, and t-SNE names.
+	   scVI/scANVI/scPoli honor
 	   the requested `assay`/`layer`; BBKNN derives PCA from the same selected
 	   layer and supplies the graph used for clustering and UMAP. Python runners
 	   retain complete expression matrices as sparse objects; only bounded

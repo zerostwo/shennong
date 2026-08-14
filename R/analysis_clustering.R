@@ -5,6 +5,42 @@
   dims[dims > 0]
 }
 
+.sn_supported_integration_methods <- function() {
+  c(
+    "unintegrated", "harmony", "coralysis", "seurat_cca", "seurat_rpca",
+    "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"
+  )
+}
+
+.sn_normalize_integration_methods <- function(integration_method) {
+  if (!is.character(integration_method) || length(integration_method) == 0L ||
+      anyNA(integration_method) || any(!nzchar(integration_method))) {
+    stop("`integration_method` must contain one or more method names.", call. = FALSE)
+  }
+  if (any(integration_method == "unintergrated")) {
+    warning(
+      "`integration_method = \"unintergrated\"` is deprecated; use \"unintegrated\".",
+      call. = FALSE
+    )
+    integration_method[integration_method == "unintergrated"] <- "unintegrated"
+  }
+  unknown <- setdiff(integration_method, .sn_supported_integration_methods())
+  if (length(unknown) > 0L) {
+    stop(
+      "Unsupported `integration_method`: ", paste(unique(unknown), collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  if (anyDuplicated(integration_method)) {
+    stop("`integration_method` must not contain duplicate methods.", call. = FALSE)
+  }
+  integration_method
+}
+
+.sn_reduction_key <- function(prefix, method) {
+  paste0(toupper(gsub("[^A-Za-z0-9]", "", paste0(prefix, method))), "_")
+}
+
 .sn_resolve_multimodal_method <- function(multimodal_method = NULL,
                                           integration_method = "harmony",
                                           integration_method_supplied = FALSE) {
@@ -29,7 +65,7 @@
   if (identical(modality, "cite_seq")) {
     return(identical(multimodal_method, "wnn"))
   }
-  is.null(batch) || integration_method %in% c("harmony", "seurat_cca", "seurat_rpca", "bbknn")
+  is.null(batch) || integration_method %in% c("unintegrated", "harmony", "seurat_cca", "seurat_rpca", "bbknn")
 }
 
 .sn_cluster_requires_adt_data <- function(modality,
@@ -84,7 +120,8 @@
   integration = 6L,
   neighbors = 7L,
   clusters = 8L,
-  umap = 9L
+  umap = 9L,
+  tsne = 10L
 )
 
 .sn_resolve_cluster_rerun_from <- function(rerun_from = NULL) {
@@ -2603,6 +2640,8 @@ sn_detect_rare_cells <- function(object,
     adt_dims = NULL,
     wnn_control = list(),
     umap_control = list(),
+    run_tsne = FALSE,
+    tsne_control = list(),
     return_cluster = FALSE,
     verbose = TRUE
   )
@@ -2666,8 +2705,12 @@ sn_detect_rare_cells <- function(object,
 #'   is supplied. The SCTransform workflow can currently be
 #'   combined with \code{integration_method = "harmony"} by supplying
 #'   \code{batch}.
-#' @param integration_method Batch-integration backend used when \code{batch}
-#'   is supplied. Supported values are \code{"harmony"},
+#' @param integration_method One or more batch-analysis methods used when
+#'   \code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
+#'   multiple values run against the same normalized/HVG/PCA preparation and
+#'   retain method-specific reductions, graphs, cluster columns, UMAP, and
+#'   t-SNE results in one object. Supported integration backends are
+#'   \code{"harmony"},
 #'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 #'   \code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
 #'   \code{"totalvi"}. \code{"mmochi"} is
@@ -2689,7 +2732,10 @@ sn_detect_rare_cells <- function(object,
 #'   bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
 #'   low-dimensional dense outputs.
 #' @param integration_control Optional named list of backend-specific
-#'   parameters. For \code{"coralysis"}, use \code{icp_args} for
+#'   parameters. With multiple methods, provide a list keyed by method, for
+#'   example \code{list(harmony = list(theta = 3), coralysis = list(...))};
+#'   an optional \code{.default} entry is merged into every method. For
+#'   \code{"coralysis"}, use \code{icp_args} for
 #'   \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 #'   \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
 #'   trained Coralysis SingleCellExperiment should not be kept under
@@ -2765,7 +2811,7 @@ sn_detect_rare_cells <- function(object,
 #'   onward while still allowing earlier matching stages to be reused. Supported
 #'   values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
 #'   \code{"pca"}, \code{"adt"}, \code{"integration"}, \code{"neighbors"},
-#'   \code{"clusters"}, and \code{"umap"}.
+#'   \code{"clusters"}, \code{"umap"}, and \code{"tsne"}.
 #'   \code{auto_install}: logical; when \code{TRUE}, install missing optional
 #'   clustering dependencies such as \pkg{leidenbase} before the relevant stage.
 #'   \code{install_repos}: CRAN-like repositories used when \code{auto_install}
@@ -2846,7 +2892,13 @@ sn_detect_rare_cells <- function(object,
 #'   \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 #'   generated defaults, for example \code{n.neighbors}, \code{min.dist},
 #'   \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
-#'   \code{return_cluster}: if \code{TRUE}, return only the cluster_by assignments.
+#'   \code{run_tsne}: logical; run t-SNE in addition to UMAP. In multi-method
+#'   integration mode this defaults to \code{TRUE} unless explicitly supplied.
+#'   \code{tsne_control}: optional named list of additional
+#'   \code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
+#'   and key are generated per method and cannot overwrite another result.
+#'   \code{return_cluster}: if \code{TRUE}, return only the cluster assignments.
+#'   Multi-method calls return a data frame with one cluster column per method.
 #'   \code{verbose}: whether to print/log progress messages.
 #'
 #' @return A \code{Seurat} object with clustering results and embeddings, or a
@@ -2876,7 +2928,7 @@ sn_detect_rare_cells <- function(object,
 sn_run_cluster <- function(object,
                            batch = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
-                           integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
+                           integration_method = c("harmony", "unintegrated", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
                            integration_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
@@ -2918,11 +2970,139 @@ sn_run_cluster <- function(object,
     tail$values,
     list(
       .integration_method_supplied = integration_method_supplied,
-      .block_genes_supplied = block_genes_supplied
+      .block_genes_supplied = block_genes_supplied,
+      .run_tsne_supplied = "run_tsne" %in% tail$supplied
     )
   )
 
+  if (integration_method_supplied && length(integration_method) > 1L) {
+    return(.sn_run_cluster_multi(cluster_args))
+  }
   .sn_run_cluster_impl(cluster_args)
+}
+
+.sn_multi_method_control <- function(integration_control, methods, method) {
+  if (!is.list(integration_control)) {
+    stop("`integration_control` must be a named list.", call. = FALSE)
+  }
+  control_names <- names(integration_control) %||% character(0)
+  mapped <- any(control_names %in% c(.sn_supported_integration_methods(), ".default"))
+  if (!mapped) {
+    return(integration_control)
+  }
+  unknown <- setdiff(control_names, c(methods, ".default"))
+  if (length(unknown) > 0L) {
+    stop(
+      "Unknown multi-method `integration_control` name(s): ",
+      paste(unknown, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  default <- integration_control[[".default"]] %||% list()
+  specific <- integration_control[[method]] %||% list()
+  if (!is.list(default) || !is.list(specific)) {
+    stop("Each per-method `integration_control` entry must be a named list.", call. = FALSE)
+  }
+  utils::modifyList(default, specific, keep.null = TRUE)
+}
+
+.sn_run_cluster_multi <- function(args) {
+  methods <- .sn_normalize_integration_methods(args$integration_method)
+  if (is.null(args$batch)) {
+    stop("Multiple `integration_method` values require `batch`.", call. = FALSE)
+  }
+  modality <- match.arg(args$modality, c("rna", "cite_seq"))
+  if (!identical(modality, "rna")) {
+    stop("Multiple `integration_method` values currently support `modality = \"rna\"` only.", call. = FALSE)
+  }
+  if (any(methods %in% c("totalvi", "mmochi"))) {
+    stop("`totalvi` and `mmochi` cannot be used in an RNA multi-method comparison.", call. = FALSE)
+  }
+
+  return_cluster <- isTRUE(args$return_cluster)
+  base_cluster_name <- args$cluster_name
+  comparison <- list(
+    methods = methods,
+    batch_by = args$batch,
+    assay = args$assay,
+    layer = args$layer,
+    results = stats::setNames(vector("list", length(methods)), methods),
+    created_at = as.character(Sys.time())
+  )
+  current <- args$object
+
+  for (method in methods) {
+    method_args <- args
+    method_control <- .sn_multi_method_control(
+      integration_control = args$integration_control,
+      methods = methods,
+      method = method
+    )
+    method_args$object <- current
+    method_args$integration_method <- method
+    method_args$integration_control <- method_control
+    method_args$theta <- method_control$theta %||% args$theta
+    method_args$group_by_vars <- method_control$group_by_vars %||% args$group_by_vars
+    method_args$integration_control$theta <- NULL
+    method_args$integration_control$group_by_vars <- NULL
+    if (identical(method, "bbknn")) {
+      method_args$integration_control$graph_name <- paste0(method, "_snn")
+      method_args$integration_control$umap_reduction <- paste0("umap.", method)
+    }
+    method_args$cluster_name <- if (is.null(base_cluster_name)) {
+      paste0(method, "_clusters")
+    } else {
+      paste0(base_cluster_name, ".", method)
+    }
+    method_args$umap_control <- utils::modifyList(
+      args$umap_control,
+      list(
+        reduction.name = paste0("umap.", method),
+        reduction.key = .sn_reduction_key("umap", method)
+      ),
+      keep.null = TRUE
+    )
+    method_args$run_tsne <- if (isTRUE(args$.run_tsne_supplied)) isTRUE(args$run_tsne) else TRUE
+    method_args$tsne_control <- utils::modifyList(
+      args$tsne_control,
+      list(
+        reduction.name = paste0("tsne.", method),
+        reduction.key = .sn_reduction_key("tsne", method)
+      ),
+      keep.null = TRUE
+    )
+    method_args$return_cluster <- return_cluster
+    method_args$.return_object_for_multi <- return_cluster
+    method_args$.result_namespace <- method
+
+    if (isTRUE(args$verbose)) {
+      .sn_log_info("[sn_run_cluster] Running comparison method '{method}'.")
+    }
+    current <- .sn_run_cluster_impl(method_args)
+    stages <- current@misc$sn_run_cluster$stages %||% list()
+    comparison$results[[method]] <- list(
+      method = method,
+      integration_reduction = stages$integration$reduction %||%
+        if (identical(method, "unintegrated")) "pca" else method,
+      cluster_column = method_args$cluster_name,
+      graph_names = stages$neighbors$graph_names %||% character(0),
+      umap_reduction = if (!return_cluster) stages$umap$reduction %||% NULL else NULL,
+      tsne_reduction = if (!return_cluster && isTRUE(method_args$run_tsne)) {
+        stages$tsne$reduction %||% NULL
+      } else {
+        NULL
+      },
+      integration_control = method_control,
+      integration = current@misc$integration %||% NULL
+    )
+  }
+
+  current@misc$integration_comparison <- comparison
+  if (return_cluster) {
+    columns <- vapply(comparison$results, `[[`, character(1), "cluster_column")
+    return(current[[]][, columns, drop = FALSE])
+  }
+  .sn_log_seurat_command(object = current, assay = args$assay, name = "sn_run_cluster_multi")
 }
 
 .sn_run_cluster_impl <- function(args) {
@@ -2971,10 +3151,14 @@ sn_run_cluster <- function(object,
   adt_dims <- args$adt_dims
   wnn_control <- args$wnn_control
   umap_control <- args$umap_control
+  run_tsne <- args$run_tsne
+  tsne_control <- args$tsne_control
   return_cluster <- args$return_cluster
   verbose <- args$verbose
   .integration_method_supplied <- args$.integration_method_supplied
   .block_genes_supplied <- args$.block_genes_supplied
+  result_namespace <- args$.result_namespace %||% NULL
+  return_object_for_multi <- isTRUE(args$.return_object_for_multi)
 
   check_installed("Seurat")
   check_installed("HGNChelper")
@@ -3001,10 +3185,13 @@ sn_run_cluster <- function(object,
     normalization_method,
     c("seurat", "scran", "sctransform")
   )
-  integration_method <- match.arg(
-    integration_method,
-    c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi")
-  )
+  if (!integration_method_supplied) {
+    integration_method <- integration_method[[1L]]
+  }
+  integration_method <- .sn_normalize_integration_methods(integration_method)
+  if (length(integration_method) != 1L) {
+    stop("Internal clustering calls require one `integration_method`.", call. = FALSE)
+  }
   modality <- match.arg(modality, c("rna", "cite_seq"))
   multimodal_method <- if (identical(modality, "cite_seq")) {
     .sn_resolve_multimodal_method(
@@ -3036,6 +3223,12 @@ sn_run_cluster <- function(object,
   }
   if (!is.list(umap_control)) {
     stop("`umap_control` must be a named list.", call. = FALSE)
+  }
+  if (!is.logical(run_tsne) || length(run_tsne) != 1L || is.na(run_tsne)) {
+    stop("`run_tsne` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  if (!is.list(tsne_control)) {
+    stop("`tsne_control` must be a named list.", call. = FALSE)
   }
   rare_feature_method <- unique(match.arg(
     rare_feature_method,
@@ -3126,8 +3319,12 @@ sn_run_cluster <- function(object,
     if (!(batch %in% colnames(object@meta.data))) {
       stop(glue("Batch variable '{batch}' not found in metadata."))
     }
-    if (normalization_method == "sctransform" && integration_method != "harmony") {
-      stop("SCTransform integration is currently supported only with `integration_method = \"harmony\"`.", call. = FALSE)
+    if (normalization_method == "sctransform" && !integration_method %in% c("harmony", "unintegrated")) {
+      stop(
+        "SCTransform integration is currently supported only with `integration_method = \"harmony\"`; ",
+        "use `\"unintegrated\"` only for the uncorrected PCA baseline.",
+        call. = FALSE
+      )
     }
     if (verbose) {
       .sn_log_info("[sn_run_cluster] Starting {integration_method} integration for batch = '{batch}'.")
@@ -3871,6 +4068,20 @@ sn_run_cluster <- function(object,
     )
     if (is_null(x = batch)) {
       reduction <- "pca"
+    } else if (identical(integration_method, "unintegrated")) {
+      reduction <- "pca"
+      object@misc$integration <- list(
+        method = "unintegrated",
+        batch_by = batch,
+        reduction = reduction,
+        input_reduction = reduction
+      )
+      object <- .sn_record_cluster_stage(
+        object,
+        "integration",
+        integration_signature,
+        reduction = reduction
+      )
     } else if (.sn_can_reuse_cluster_stage(
       object = object,
       stage = "integration",
@@ -3999,16 +4210,33 @@ sn_run_cluster <- function(object,
           args = wnn_args
         )
       } else {
-        object <- .sn_with_default_seurat_autozyme(
-          Seurat::FindNeighbors(
-            object,
-            reduction = reduction,
-            dims = dims,
-            verbose = verbose
-          ),
-          object = object,
-          assay = assay
-        )
+        if (is.null(result_namespace)) {
+          object <- .sn_with_default_seurat_autozyme(
+            Seurat::FindNeighbors(
+              object,
+              reduction = reduction,
+              dims = dims,
+              verbose = verbose
+            ),
+            object = object,
+            assay = assay
+          )
+        } else {
+          object <- .sn_with_default_seurat_autozyme(
+            Seurat::FindNeighbors(
+              object,
+              reduction = reduction,
+              dims = dims,
+              graph.name = c(
+                paste0(result_namespace, "_nn"),
+                paste0(result_namespace, "_snn")
+              ),
+              verbose = verbose
+            ),
+            object = object,
+            assay = assay
+          )
+        }
       }
       graph_names_after <- names(object@graphs)
       graph_names <- setdiff(graph_names_after, graph_names_before)
@@ -4094,6 +4322,9 @@ sn_run_cluster <- function(object,
   if (return_cluster) {
     object <- restore_analysis_inputs(object)
     if (verbose) .sn_log_info("Integration completed successfully.")
+    if (return_object_for_multi) {
+      return(.sn_log_seurat_command(object = object, assay = assay, name = "sn_run_cluster"))
+    }
     return(object@meta.data[, cluster_column])
   } else {
     if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
@@ -4172,6 +4403,50 @@ sn_run_cluster <- function(object,
           args = umap_args
         ))
         object <- .sn_record_cluster_stage(object, "umap", umap_signature, reduction = umap_reduction)
+      }
+    }
+    if (isTRUE(run_tsne)) {
+      if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn")) {
+        stop("`run_tsne = TRUE` is not yet supported for WNN graph clustering.", call. = FALSE)
+      }
+      tsne_args <- .sn_merge_control_args(
+        defaults = list(
+          reduction = reduction,
+          dims = dims,
+          reduction.name = "tsne",
+          reduction.key = "tSNE_",
+          perplexity = max(1, min(30, floor((ncol(object) - 1L) / 3L))),
+          check_duplicates = FALSE,
+          seed.use = 717
+        ),
+        control = tsne_control
+      )
+      tsne_signature <- tsne_args
+      tsne_signature$upstream <- reduction_signature
+      if (.sn_can_reuse_cluster_stage(
+        object = object,
+        stage = "tsne",
+        signature = tsne_signature,
+        reuse = reuse,
+        rerun_from = rerun_from,
+        required = function(current_object, stage_info) {
+          !is.null(stage_info$reduction) && stage_info$reduction %in% names(current_object@reductions)
+        }
+      )) {
+        if (verbose) .sn_log_info("[8/8] Reusing t-SNE reduction.")
+      } else {
+        if (verbose) .sn_log_info("[8/8] Running t-SNE.")
+        object <- suppressWarnings(.sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::RunTSNE),
+          object = object,
+          args = tsne_args
+        ))
+        object <- .sn_record_cluster_stage(
+          object,
+          "tsne",
+          tsne_signature,
+          reduction = tsne_args$reduction.name %||% "tsne"
+        )
       }
     }
     object <- restore_analysis_inputs(object)

@@ -174,6 +174,11 @@ user request to the right Shennong function family quickly.
    `dgCMatrix` for `Coralysis::PrepareData()`. The default is one Coralysis
    worker; increase `integration_control$icp_args$threads` only when RAM can
    hold one materialized copy per worker.
+   To compare methods without rebuilding preprocessing, pass a vector such as
+   `integration_method = c("unintegrated", "harmony", "coralysis")` and key
+   backend parameters by method under `integration_control`. Read
+   `object@misc$integration_comparison$results` to discover each method's native
+   reduction, graphs, cluster column, `umap.<method>`, and `tsne.<method>`.
    Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled

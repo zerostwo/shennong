@@ -2,6 +2,20 @@
 
 Last updated: 2026-08-15
 
+## 2026-08-15
+
+- Multi-method RNA integration is one shared preprocessing run followed by
+  independently named analytical branches. The uncorrected baseline retains
+  the real `pca` reduction, while Harmony, Coralysis, Seurat integration, and
+  learned backends retain their native corrected spaces; corrected coordinates
+  must not be relabeled as method-specific PCA.
+- Every comparison branch must keep its graph, cluster metadata column, UMAP,
+  and t-SNE without overwriting another branch. The discoverable contract is
+  `object@misc$integration_comparison$results`, which maps method names to the
+  stored Seurat components and their backend parameters. The canonical baseline
+  spelling is `unintegrated`; `unintergrated` remains a warning-producing alias
+  for compatibility with early user code.
+
 ## 2026-08-14
 
 - Coralysis accepts `matrix`, `data.frame`, or `dgCMatrix` inputs but not a

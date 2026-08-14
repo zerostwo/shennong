@@ -156,6 +156,86 @@ test_that("sn_run_cluster forwards UMAP control arguments", {
   expect_equal(clustered@misc$sn_run_cluster$stages$umap$signature$min.dist, 0.05)
 })
 
+test_that("sn_run_cluster keeps multi-method integration results side by side", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("harmony")
+
+  object <- make_test_object(seed = 4, prefix = "multi", n_genes = 100, n_cells = 48)
+  object$sample <- rep(c("A", "B"), each = 24)
+  counts_before <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+
+  clustered <- sn_run_cluster(
+    object = object,
+    batch = "sample",
+    normalization_method = "seurat",
+    integration_method = c("unintegrated", "harmony"),
+    integration_control = list(
+      harmony = list(theta = 3)
+    ),
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 8,
+    dims = 1:8,
+    resolution = 0.3,
+    verbose = FALSE
+  )
+
+  expect_true(all(c(
+    "pca", "harmony",
+    "umap.unintegrated", "umap.harmony",
+    "tsne.unintegrated", "tsne.harmony"
+  ) %in% names(clustered@reductions)))
+  expect_true(all(c(
+    "unintegrated_nn", "unintegrated_snn",
+    "harmony_nn", "harmony_snn"
+  ) %in% names(clustered@graphs)))
+  expect_true(all(c("unintegrated_clusters", "harmony_clusters") %in% colnames(clustered[[]])))
+
+  comparison <- clustered@misc$integration_comparison
+  expect_identical(comparison$methods, c("unintegrated", "harmony"))
+  expect_identical(comparison$results$unintegrated$integration_reduction, "pca")
+  expect_identical(comparison$results$harmony$integration_reduction, "harmony")
+  expect_identical(comparison$results$harmony$integration$theta, 3)
+  expect_identical(
+    SeuratObject::LayerData(clustered, assay = "RNA", layer = "counts"),
+    counts_before
+  )
+})
+
+test_that("multi-method integration normalizes the historical unintegrated typo", {
+  expect_warning(
+    methods <- .sn_normalize_integration_methods(c("unintergrated", "coralysis")),
+    "deprecated"
+  )
+  expect_identical(methods, c("unintegrated", "coralysis"))
+  expect_error(
+    suppressWarnings(.sn_normalize_integration_methods(c("unintegrated", "unintergrated"))),
+    "duplicate"
+  )
+})
+
+test_that("multi-method integration resolves backend controls independently", {
+  controls <- list(
+    .default = list(store_sce = FALSE),
+    harmony = list(theta = 4),
+    coralysis = list(icp_args = list(threads = 1))
+  )
+  methods <- c("unintegrated", "harmony", "coralysis")
+
+  expect_identical(
+    .sn_multi_method_control(controls, methods, "unintegrated"),
+    list(store_sce = FALSE)
+  )
+  expect_identical(
+    .sn_multi_method_control(controls, methods, "harmony"),
+    list(store_sce = FALSE, theta = 4)
+  )
+  expect_identical(
+    .sn_multi_method_control(controls, methods, "coralysis"),
+    list(store_sce = FALSE, icp_args = list(threads = 1))
+  )
+})
+
 test_that("sn_run_cluster supports CITE-seq WNN clustering", {
   skip_if_not_installed("Seurat")
 

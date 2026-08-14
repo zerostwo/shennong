@@ -404,6 +404,49 @@ integration use the same entry point; adding `batch` turns on integration, and
 `integration_method` names the backend. Harmony is the default because it is
 fast and broadly useful.
 
+### Compare several integration methods in one object
+
+Pass a vector to retain an unintegrated baseline and several corrected spaces
+without repeating normalization, HVG selection, or PCA. Parameters can be
+keyed by method; the historical spelling `"unintergrated"` is accepted with a
+deprecation warning, but new code should use `"unintegrated"`.
+
+```{r multi-integration, eval = run_extended && requireNamespace("harmony", quietly = TRUE) && requireNamespace("Coralysis", quietly = TRUE)}
+pbmc_comparison <- sn_run_cluster(
+  object = pbmc,
+  batch = "real_batch",
+  integration_method = c("unintegrated", "harmony", "coralysis"),
+  integration_control = list(
+    harmony = list(theta = 3),
+    coralysis = list(
+      icp_args = list(L = 25, threads = 1),
+      pca_args = list(p = 20),
+      store_sce = FALSE
+    )
+  ),
+  normalization_method = "seurat",
+  hvg_group_by = "real_batch",
+  nfeatures = 2000,
+  dims = 1:20,
+  resolution = 0.6,
+  verbose = FALSE
+)
+
+# Discover the stored result names.
+pbmc_comparison@misc$integration_comparison$results
+
+# Retrieve one method's clusters and embeddings directly from the object.
+harmony_clusters <- pbmc_comparison$harmony_clusters
+harmony_umap <- Seurat::Embeddings(pbmc_comparison, "umap.harmony")
+coralysis_tsne <- Seurat::Embeddings(pbmc_comparison, "tsne.coralysis")
+```
+
+The unintegrated entry points to the shared `pca` reduction. Integrated methods
+retain their native corrected low-dimensional spaces (for example `harmony` or
+`coralysis`) rather than relabeling those coordinates as PCA. The manifest maps
+each method to its reduction, graph names, cluster column, UMAP, and t-SNE so
+downstream integration metrics can iterate over one returned object.
+
 The same integration switch can be used with SCTransform normalization. This
 heavier optional backend runs in the `all` profile when both Harmony and
 `glmGamPoi` are installed:
@@ -431,7 +474,6 @@ Coralysis SingleCellExperiment is stored by default under
 `object@misc$coralysis`, so the returned object can be used later as a native
 Coralysis label-transfer reference. Set
 `integration_control = list(store_sce = FALSE)` only for clustering-only runs.
-
 For BPCells-backed assays, Shennong keeps the complete normalized layer on disk
 and materializes only the selected integration features as a sparse
 `dgCMatrix`, which is the input class required by Coralysis. Coralysis defaults

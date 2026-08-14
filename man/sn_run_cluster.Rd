@@ -8,8 +8,8 @@ sn_run_cluster(
   object,
   batch = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
-  integration_method = c("harmony", "coralysis", "seurat_cca", "seurat_rpca", "scvi",
-    "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
+  integration_method = c("harmony", "unintegrated", "coralysis", "seurat_cca",
+    "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
   integration_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
@@ -41,8 +41,12 @@ is supplied. The SCTransform workflow can currently be
 combined with \code{integration_method = "harmony"} by supplying
 \code{batch}.}
 
-\item{integration_method}{Batch-integration backend used when \code{batch}
-is supplied. Supported values are \code{"harmony"},
+\item{integration_method}{One or more batch-analysis methods used when
+\code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
+multiple values run against the same normalized/HVG/PCA preparation and
+retain method-specific reductions, graphs, cluster columns, UMAP, and
+t-SNE results in one object. Supported integration backends are
+\code{"harmony"},
 \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 \code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
 \code{"totalvi"}. \code{"mmochi"} is
@@ -65,7 +69,10 @@ bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
 low-dimensional dense outputs.}
 
 \item{integration_control}{Optional named list of backend-specific
-parameters. For \code{"coralysis"}, use \code{icp_args} for
+parameters. With multiple methods, provide a list keyed by method, for
+example \code{list(harmony = list(theta = 3), coralysis = list(...))};
+an optional \code{.default} entry is merged into every method. For
+\code{"coralysis"}, use \code{icp_args} for
 \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
 trained Coralysis SingleCellExperiment should not be kept under
@@ -153,7 +160,7 @@ feature selection instead of rerunning all earlier steps.
 onward while still allowing earlier matching stages to be reused. Supported
 values are \code{"normalize"}, \code{"cell_cycle"}, \code{"hvg"},
 \code{"pca"}, \code{"adt"}, \code{"integration"}, \code{"neighbors"},
-\code{"clusters"}, and \code{"umap"}.
+\code{"clusters"}, \code{"umap"}, and \code{"tsne"}.
 \code{auto_install}: logical; when \code{TRUE}, install missing optional
 clustering dependencies such as \pkg{leidenbase} before the relevant stage.
 \code{install_repos}: CRAN-like repositories used when \code{auto_install}
@@ -234,7 +241,13 @@ defaults.
 \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 generated defaults, for example \code{n.neighbors}, \code{min.dist},
 \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
-\code{return_cluster}: if \code{TRUE}, return only the cluster_by assignments.
+\code{run_tsne}: logical; run t-SNE in addition to UMAP. In multi-method
+integration mode this defaults to \code{TRUE} unless explicitly supplied.
+\code{tsne_control}: optional named list of additional
+\code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
+and key are generated per method and cannot overwrite another result.
+\code{return_cluster}: if \code{TRUE}, return only the cluster assignments.
+Multi-method calls return a data frame with one cluster column per method.
 \code{verbose}: whether to print/log progress messages.}
 }
 \value{

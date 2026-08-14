@@ -21,6 +21,23 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- `sn_run_cluster()` now accepts an ordered vector of RNA analysis methods and
+  reuses normalization, HVG selection, scaling, and PCA across them. The
+  returned object keeps method-specific graphs, `<method>_clusters`,
+  `umap.<method>`, and `tsne.<method>` results plus a discovery manifest under
+  `object@misc$integration_comparison`. Per-method `integration_control` values
+  are supported, including Harmony `theta` and Coralysis `icp_args`/`pca_args`.
+  Real 48-cell `unintegrated + harmony` and 36-cell `unintegrated + coralysis`
+  smoke runs completed with all expected components and unchanged raw counts.
+  A separate `return_cluster = TRUE` smoke run confirmed the multi-method data
+  frame contract.
+  The focused clustering test file passed 515 assertions with only the existing
+  BBKNN command-log warning. The full local suite passed 3,112 assertions with
+  the same warning and four optional/local-fixture skips. The 0.3.0 source
+  tarball built successfully; `_R_CHECK_FORCE_SUGGESTS_=false R CMD check
+  --no-manual --no-tests` completed with only the known `.codegraph` NOTE; and
+  the complete pkgdown site rebuilt successfully in 57.9 seconds after one
+  transient CRAN DNS retry.
 - HILCA's 183,547-cell Coralysis run exposed that Seurat v5 returned the
   normalized BPCells layer as `RenameDims`, which `Coralysis::PrepareData()`
   rejects. The adapter now subsets the selected integration features before

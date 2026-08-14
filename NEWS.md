@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_run_cluster()` now accepts multiple RNA integration methods in one call,
+  including an explicit `"unintegrated"` PCA baseline. Shared preprocessing is
+  reused while each method retains its own low-dimensional reduction, neighbor
+  graphs, cluster column, UMAP, and t-SNE. The result map is stored under
+  `object@misc$integration_comparison`, and `integration_control` can be keyed
+  by method for backend-specific parameters.
 - `sn_run_cluster()` now accepts `integration_method = "scpoli"` and
   `"bbknn"`. scPoli trains a real scPoli model in the managed scArches pixi
   family and imports its latent representation. BBKNN runs in a dedicated

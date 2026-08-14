@@ -18,7 +18,10 @@ performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 internal constant batch key to the Python backend.}
 
 \item{integration_control}{Optional named list of backend-specific
-parameters. For \code{"coralysis"}, use \code{icp_args} for
+parameters. With multiple methods, provide a list keyed by method, for
+example \code{list(harmony = list(theta = 3), coralysis = list(...))};
+an optional \code{.default} entry is merged into every method. For
+\code{"coralysis"}, use \code{icp_args} for
 \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
 trained Coralysis SingleCellExperiment should not be kept under
