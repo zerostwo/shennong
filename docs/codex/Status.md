@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 ## Current structure
 
@@ -21,6 +21,26 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- HILCA's 183,547-cell Coralysis run exposed that Seurat v5 returned the
+  normalized BPCells layer as `RenameDims`, which `Coralysis::PrepareData()`
+  rejects. The adapter now subsets the selected integration features before
+  sparse coercion. On the exact HILCA counts workflow, the 3,000-by-183,547
+  input became a 76,692,818-nonzero `dgCMatrix` occupying about 0.875 GiB,
+  while the complete 18,149-feature layer stayed BPCells-backed. The focused
+  clustering suite passed 501 assertions; the full local suite passed 3,098
+  assertions with four optional/local-fixture skips and the existing BBKNN
+  command-log warning. The complete pkgdown site rebuilt successfully in 140.4
+  seconds. A subsequent real rerun passed `PrepareData()` and built the
+  Coralysis training set, but upstream `threads = 0` forked about 20 R workers
+  during cluster-seed computation and exhausted 91 GiB RAM plus 8 GiB swap.
+  Shennong and the HILCA script now default explicitly to one Coralysis worker.
+  A fresh real-data rerun passed `PrepareData()`, built the training set, and
+  entered cluster-seed computation with `Parallelism disabled, because threads
+  = 1`; across 39 minutes it retained one R process at roughly 12--14 GiB RSS
+  with 68--70 GiB host memory available and no new kernel OOM event. The
+  rerun session ended before a completed Coralysis artifact was written, so
+  this evidence closes the original type error and worker-fan-out OOM but is
+  not an end-to-end output acceptance result.
 - RNA integration is now layer-consistent across the Python backends:
   scVI/scANVI/totalVI and scPoli export the requested `assay`/`layer`, and the
   provenance records `source_layer`. `sn_run_cluster()` also supports a real

@@ -15,6 +15,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Coralysis integration now accepts BPCells-backed Seurat v5 assays by
+  materializing only the selected integration features as a sparse
+  `dgCMatrix` before `Coralysis::PrepareData()`. The complete expression layer
+  is never converted to a dense matrix. Coralysis now defaults to one worker
+  instead of `threads = 0` (all available workers), preventing forked R workers
+  from multiplying the in-memory sparse matrix on large datasets; callers can
+  still opt into more workers through `integration_control$icp_args$threads`.
 - scVI, scANVI, and totalVI integration now export the requested `layer`
   instead of always reading `counts`. The selected source layer is recorded in
   backend configuration and `object@misc$integration`, so comparisons using

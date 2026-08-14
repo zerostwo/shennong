@@ -645,6 +645,10 @@
 
   expr <- SeuratObject::LayerData(object = object, assay = assay, layer = "data")
   expr <- expr[feature_set, colnames(object), drop = FALSE]
+  expr <- .sn_as_sparse_matrix(expr)
+  if (!inherits(expr, "dgCMatrix")) {
+    expr <- methods::as(expr, "dgCMatrix")
+  }
   metadata <- object[[]]
 
   sce <- SingleCellExperiment::SingleCellExperiment(
@@ -660,7 +664,7 @@
       defaults <- list(
         object = sce,
         batch.label = batch,
-        threads = 0,
+        threads = .sn_coralysis_default_threads(),
         verbose = verbose,
         RNGseed = 717
       )
@@ -726,6 +730,8 @@
 
   list(object = object, reduction = reduction_name)
 }
+
+.sn_coralysis_default_threads <- function() 1L
 
 .sn_run_seurat_layer_integration <- function(object,
                                              method,

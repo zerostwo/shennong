@@ -1,9 +1,19 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 ## 2026-08-14
 
+- Coralysis accepts `matrix`, `data.frame`, or `dgCMatrix` inputs but not a
+  BPCells `IterableMatrix`. Shennong therefore subsets to the selected
+  integration features first and then performs a direct sparse coercion to
+  `dgCMatrix`; it must never call `as.matrix()` or materialize the complete
+  BPCells expression layer at this boundary.
+- Coralysis defaults to one worker in Shennong. Its upstream `threads = 0`
+  behavior can fork across the host and multiply the resident sparse matrix;
+  on the 183,547-cell HILCA run this created about 20 R workers and exhausted
+  91 GiB RAM plus 8 GiB swap during cluster-seed computation. Higher worker
+  counts require an explicit user override and a host-memory budget.
 - Integration input provenance is an executable contract: scVI-family and
   scPoli exporters must read the exact `assay`/`layer` selected by
   `sn_run_cluster()`, record that source, and be tested with values that differ

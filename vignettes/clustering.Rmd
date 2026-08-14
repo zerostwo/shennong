@@ -432,6 +432,13 @@ Coralysis SingleCellExperiment is stored by default under
 Coralysis label-transfer reference. Set
 `integration_control = list(store_sce = FALSE)` only for clustering-only runs.
 
+For BPCells-backed assays, Shennong keeps the complete normalized layer on disk
+and materializes only the selected integration features as a sparse
+`dgCMatrix`, which is the input class required by Coralysis. Coralysis defaults
+to one worker because forked workers can each copy this in-memory matrix; set
+`integration_control = list(icp_args = list(threads = ...))` only after sizing
+the aggregate worker memory against the host.
+
 ```{r coralysis-integration, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
 pbmc_coral <- sn_run_cluster(
   object = pbmc,

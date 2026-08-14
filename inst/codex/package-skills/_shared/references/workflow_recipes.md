@@ -169,6 +169,11 @@ user request to the right Shennong function family quickly.
    scANVI, and scPoli export that layer, while BBKNN derives its PCA from it.
    Python expression matrices remain sparse; only bounded neural-network
    minibatches and low-dimensional embeddings may be dense.
+   For BPCells-backed Coralysis runs, the complete normalized layer stays on
+   disk and only the selected integration features are materialized as a sparse
+   `dgCMatrix` for `Coralysis::PrepareData()`. The default is one Coralysis
+   worker; increase `integration_control$icp_args$threads` only when RAM can
+   hold one materialized copy per worker.
    Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled

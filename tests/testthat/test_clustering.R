@@ -296,6 +296,10 @@ test_that("Coralysis backend object storage is opt-in", {
   expect_true(.sn_coralysis_store_sce(list(store_sce = TRUE)))
 })
 
+test_that("Coralysis defaults to one worker to bound forked memory", {
+  expect_identical(.sn_coralysis_default_threads(), 1L)
+})
+
 test_that("sn_run_cluster reuses matching stages when only clustering resolution changes", {
   skip_if_not_installed("Seurat")
 
@@ -1891,6 +1895,73 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
   expect_equal(clustered@misc$integration$method, "coralysis")
   expect_true(clustered@misc$integration$stored_sce)
   expect_false("backend_package" %in% names(clustered@misc$integration))
+})
+
+test_that("Coralysis receives BPCells expression as a sparse dgCMatrix", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("BPCells")
+  skip_if_not_installed("Coralysis")
+  skip_if_not_installed("SingleCellExperiment")
+
+  source_object <- make_test_object(
+    seed = 160,
+    prefix = "coralysis_bpcells",
+    n_genes = 80,
+    n_cells = 36
+  )
+  counts <- SeuratObject::LayerData(source_object, assay = "RNA", layer = "counts")
+  matrix_dir <- tempfile("shennong-coralysis-bpcells-")
+  on.exit(unlink(matrix_dir, recursive = TRUE), add = TRUE)
+  BPCells::write_matrix_dir(
+    BPCells::convert_matrix_type(counts, "uint32_t"),
+    dir = matrix_dir
+  )
+  object <- SeuratObject::CreateSeuratObject(BPCells::open_matrix_dir(matrix_dir))
+  object$sample <- rep(c("A", "B", "C"), each = 12)
+
+  seen_logcounts <- NULL
+  clustered <- testthat::with_mocked_bindings(
+    suppressWarnings(sn_run_cluster(
+      object = object,
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_method = "coralysis",
+      nfeatures = 30,
+      block_genes = NULL,
+      npcs = 3,
+      dims = 1:3,
+      resolution = 0.2,
+      integration_control = list(
+        icp_args = list(
+          k = 2,
+          L = 3,
+          C = 1,
+          threads = 1,
+          train.with.bnn = FALSE,
+          train.k.nn.prop = NULL,
+          build.train.set = FALSE,
+          use.cluster.seed = FALSE,
+          ari.cutoff = 0.1
+        ),
+        pca_args = list(
+          p = 3,
+          pca.method = "stats",
+          return.model = TRUE
+        )
+      ),
+      verbose = FALSE
+    )),
+    .sn_as_sparse_matrix = function(x) {
+      materialized <- methods::as(x, "dgCMatrix")
+      seen_logcounts <<- materialized
+      materialized
+    },
+    .package = "Shennong"
+  )
+
+  expect_s4_class(seen_logcounts, "dgCMatrix")
+  expect_equal(dim(seen_logcounts), c(30L, 36L))
+  expect_true("coralysis" %in% names(clustered@reductions))
 })
 
 test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
