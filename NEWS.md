@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Parameter-grid `sn_run_cluster()` calls can now persist and resume completed
+  combinations with `checkpoint_dir`, `resume`, and `checkpoint_compress`.
+  Checkpoints are atomically published after each run, retain only the latest
+  complete state, and are matched by a package/object/grid/argument signature.
+  Each comparison result now records workflow and integration wall time, peak R
+  heap memory, and, on Linux pixi backends, maximum backend process-tree RSS;
+  `sn_compare_integrations()` joins these fields into its scIB tables.
+- Added `sn_integration_control_template()` with complete executable templates
+  for every supported integration backend, including shared pixi/runtime,
+  accelerator, model/training, graph, CITE-seq, and method-specific controls.
 - `sn_run_cluster()` now expands explicitly vectorized scalar controls such as
   `nfeatures`, `npcs`, `resolution`, `cluster_algorithm`, `rare_feature_n`, and
   Harmony `theta` into a conditional Cartesian grid. Natural vector inputs such

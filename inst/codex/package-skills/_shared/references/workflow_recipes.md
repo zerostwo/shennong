@@ -191,6 +191,12 @@ user request to the right Shennong function family quickly.
    count, and Harmony theta form a conditional Cartesian grid; `dims`, forced
    HVGs, regression covariates, and blocked genes remain natural vectors. UMAP
    is the default; t-SNE requires `run_tsne = TRUE`.
+   For large grids, set `checkpoint_dir` and leave `resume = TRUE`; matching
+   calls skip completed combinations. Inspect
+   `object@misc$integration_comparison$performance` for workflow/integration
+   time and peak-memory provenance. Use
+   `sn_integration_control_template()` to obtain the complete backend control
+   surface rather than guessing nested runtime or model fields.
    Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled

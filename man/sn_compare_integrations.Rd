@@ -67,4 +67,7 @@ method is evaluated on the same cells. Parameter-grid objects are grouped by
 preprocessing identity, each group uses its matching unintegrated baseline,
 and each unique native embedding is scored once before its score is mapped
 back to all cluster-resolution runs that share it.
+Stored clustering runtime and peak-memory provenance is joined into the scIB
+summary, metrics, and ranking tables so quality and compute cost can be
+compared without a separate object lookup.
 }

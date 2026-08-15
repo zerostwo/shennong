@@ -12,6 +12,210 @@
   )
 }
 
+.sn_cluster_performance <- function(code) {
+  invisible(gc(reset = TRUE))
+  started_at <- Sys.time()
+  elapsed_start <- proc.time()[["elapsed"]]
+  value <- force(code)
+  elapsed_seconds <- unname(proc.time()[["elapsed"]] - elapsed_start)
+  memory <- gc()
+  peak_r_memory_mb <- if (ncol(memory) >= 6L) {
+    sum(memory[, 6L], na.rm = TRUE)
+  } else {
+    NA_real_
+  }
+  list(
+    value = value,
+    performance = list(
+      elapsed_seconds = elapsed_seconds,
+      peak_memory_mb = peak_r_memory_mb,
+      peak_r_memory_mb = peak_r_memory_mb,
+      backend_peak_rss_mb = NA_real_,
+      memory_scope = "R_heap",
+      started_at = as.character(started_at),
+      completed_at = as.character(Sys.time())
+    )
+  )
+}
+
+.sn_complete_integration_performance <- function(performance, object) {
+  backend <- object@misc$integration$backend_performance %||% NULL
+  backend_peak <- backend$backend_peak_rss_mb %||% NA_real_
+  performance$backend_peak_rss_mb <- backend_peak
+  peaks <- c(performance$peak_r_memory_mb, backend_peak)
+  peaks <- peaks[is.finite(peaks)]
+  performance$peak_memory_mb <- if (length(peaks) > 0L) max(peaks) else NA_real_
+  performance$memory_scope <- if (is.finite(backend_peak)) {
+    "max_of_R_heap_and_backend_process_tree_rss"
+  } else {
+    "R_heap"
+  }
+  performance$backend <- backend
+  performance
+}
+
+.sn_external_integration_control <- function() {
+  list(
+    runtime_dir = NULL,
+    pixi_project = NULL,
+    pixi_project_dir = NULL,
+    pixi_home = NULL,
+    run_dir = NULL,
+    pixi = NULL,
+    manifest_path = NULL,
+    manifest_lines = NULL,
+    overwrite_manifest = FALSE,
+    platforms = NULL,
+    install_pixi = TRUE,
+    pixi_version = "latest",
+    pixi_download_url = NULL,
+    mirror = "default",
+    mirror_append_original = TRUE,
+    script = NULL,
+    environment = NULL
+  )
+}
+
+.sn_integration_control_templates <- function() {
+  external <- .sn_external_integration_control()
+  accelerator <- c(external, list(accelerator = "auto", cuda_version = NULL))
+  list(
+    unintegrated = list(),
+    harmony = list(theta = 2, group_by_vars = NULL),
+    coralysis = list(
+      icp_args = list(
+        threads = 1L,
+        verbose = TRUE,
+        RNGseed = 717L,
+        build.train.params = list(nhvg = 2000L, p = 30L)
+      ),
+      pca_args = list(
+        assay.name = "joint.probability",
+        p = 30L,
+        dimred.name = "Coralysis",
+        return.model = TRUE
+      ),
+      store_sce = TRUE
+    ),
+    seurat_cca = list(
+      orig.reduction = "pca", assay = "RNA", features = NULL,
+      dims = 1:30, new.reduction = "integrated.cca", verbose = TRUE
+    ),
+    seurat_rpca = list(
+      orig.reduction = "pca", assay = "RNA", features = NULL,
+      dims = 1:30, new.reduction = "integrated.rpca", verbose = TRUE
+    ),
+    scvi = c(accelerator, list(
+      reduction = "scvi", label_by = NULL, unlabeled_category = "Unknown",
+      n_latent = 30L, seed = 717L, max_epochs = NULL,
+      model_args = list(), train_args = list(), write_h5ad = TRUE
+    )),
+    scanvi = c(accelerator, list(
+      reduction = "scanvi", label_by = NULL, unlabeled_category = "Unknown",
+      n_latent = 30L, seed = 717L, max_epochs = NULL,
+      scanvi_max_epochs = NULL, model_args = list(), train_args = list(),
+      scanvi_model_args = list(), scanvi_train_args = list(), write_h5ad = TRUE
+    )),
+    scpoli = c(accelerator, list(
+      reduction = "scpoli", label_by = NULL, n_latent = 10L,
+      embedding_dims = 5L, latent_batch_size = 2048L, seed = 717L,
+      n_epochs = 100L, max_epochs = NULL, pretraining_epochs = 90L,
+      model_args = list(), train_args = list(), write_h5ad = TRUE,
+      save_model = TRUE
+    )),
+    bbknn = c(external, list(
+      graph_name = "bbknn_snn", umap_reduction = "umap", seed = 717L,
+      bbknn_args = list(), umap_args = list()
+    )),
+    totalvi = c(accelerator, list(
+      reduction = "totalvi", label_by = NULL, n_latent = 30L, seed = 717L,
+      max_epochs = NULL, model_args = list(), train_args = list(),
+      totalvi_model_args = list(), totalvi_train_args = list(),
+      protein_assay = NULL, protein_layer = "counts", protein_features = NULL,
+      adt_assay = "ADT", adt_layer = "counts", adt_features = NULL,
+      protein_obsm_key = "protein_expression", write_h5ad = TRUE
+    )),
+    mmochi = c(external, list(
+      protein_layer = "data", data_key = "protein",
+      key_added = "landmark_protein", single_peaks = list(),
+      marker_bandwidths = list(), peak_overrides = list(),
+      inclusion_mask = NULL, landmark_args = list(), show = FALSE,
+      reduction = "mmochi", corrected_layer = "mmochi.data",
+      store_corrected_layer = TRUE,
+      single_sample_batch_key = ".sn_mmochi_single_sample",
+      keep_single_sample_batch = FALSE
+    ))
+  )
+}
+
+#' Inspect complete integration-control templates
+#'
+#' Returns the Shennong-supported `integration_control` fields and their
+#' defaults for each integration backend. Values that depend on the input data,
+#' such as Coralysis PCA rank or Seurat integration features, are illustrative
+#' defaults and are resolved against the object by [sn_run_cluster()]. Extra
+#' fields supplied for Seurat CCA/RPCA are forwarded to
+#' `Seurat::IntegrateLayers()`.
+#'
+#' @details The returned templates enumerate every field consumed directly by
+#'   Shennong. The main method-specific controls are:
+#'
+#'   - `unintegrated`: no backend controls.
+#'   - `harmony`: `theta`, `group_by_vars`.
+#'   - `coralysis`: `icp_args`, `pca_args`, `store_sce`.
+#'   - `seurat_cca`, `seurat_rpca`: `orig.reduction`, `assay`, `features`,
+#'     `dims`, `new.reduction`, `verbose`; additional fields are forwarded to
+#'     `Seurat::IntegrateLayers()`.
+#'   - `scvi`: runtime/pixi controls plus `accelerator`, `cuda_version`,
+#'     `reduction`, `label_by`, `unlabeled_category`, `n_latent`, `seed`,
+#'     `max_epochs`, `model_args`, `train_args`, `write_h5ad`.
+#'   - `scanvi`: all scVI controls plus `scanvi_max_epochs`,
+#'     `scanvi_model_args`, and `scanvi_train_args`; `label_by` is required.
+#'   - `scpoli`: runtime/pixi/accelerator controls plus `reduction`, `label_by`,
+#'     `n_latent`, `embedding_dims`, `latent_batch_size`, `seed`, `n_epochs`,
+#'     `max_epochs`, `pretraining_epochs`, `model_args`, `train_args`,
+#'     `write_h5ad`, and `save_model`.
+#'   - `bbknn`: runtime/pixi controls plus `graph_name`, `umap_reduction`,
+#'     `seed`, `bbknn_args`, and `umap_args`.
+#'   - `totalvi`: all scVI runtime/accelerator controls plus
+#'     `totalvi_model_args`, `totalvi_train_args`, `protein_assay`,
+#'     `protein_layer`, `protein_features`, `adt_assay`, `adt_layer`,
+#'     `adt_features`, and `protein_obsm_key`.
+#'   - `mmochi`: runtime/pixi controls plus `protein_layer`, `data_key`,
+#'     `key_added`, `single_peaks`, `marker_bandwidths`, `peak_overrides`,
+#'     `inclusion_mask`, `landmark_args`, `show`, `reduction`,
+#'     `corrected_layer`, `store_corrected_layer`, `single_sample_batch_key`,
+#'     and `keep_single_sample_batch`.
+#'
+#'   Runtime/pixi fields are `runtime_dir`, `pixi_project`,
+#'   `pixi_project_dir`, `pixi_home`, `run_dir`, `pixi`, `manifest_path`,
+#'   `manifest_lines`, `overwrite_manifest`, `platforms`, `install_pixi`,
+#'   `pixi_version`, `pixi_download_url`, `mirror`,
+#'   `mirror_append_original`, `script`, and `environment`.
+#'
+#' @param method Optional integration method name or vector. When `NULL`, return
+#'   templates for every supported method.
+#'
+#' @return A named list keyed by integration method, or one named control list
+#'   when a single `method` is requested.
+#' @examples
+#' sn_integration_control_template("harmony")
+#' sn_integration_control_template(c("scvi", "scanvi"))
+#' @export
+sn_integration_control_template <- function(method = NULL) {
+  templates <- .sn_integration_control_templates()
+  if (is.null(method)) {
+    return(templates)
+  }
+  method <- .sn_normalize_integration_methods(method)
+  unknown <- setdiff(method, names(templates))
+  if (length(unknown) > 0L) {
+    stop("Unsupported integration method(s): ", paste(unknown, collapse = ", "), ".", call. = FALSE)
+  }
+  selected <- templates[method]
+  if (length(selected) == 1L) selected[[1L]] else selected
+}
+
 .sn_normalize_integration_methods <- function(integration_method) {
   if (!is.character(integration_method) || length(integration_method) == 0L ||
       anyNA(integration_method) || any(!nzchar(integration_method))) {
@@ -615,7 +819,7 @@
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
   script <- .sn_mmochi_script_path(integration_control$script %||% NULL)
 
-  .sn_execute_scvi_pixi(
+  backend_run <- .sn_execute_scvi_pixi(
     pixi = integration_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = script,
@@ -651,6 +855,7 @@
   if (single_sample_batch && !isTRUE(integration_control$keep_single_sample_batch)) {
     result$object@meta.data[[backend_batch]] <- NULL
   }
+  result$object@misc$integration$backend_performance <- backend_run$performance
   result
 }
 
@@ -1093,8 +1298,20 @@
     character(0)
   }
 
+  resource_path <- file.path(output_dir, "resource-usage.txt")
+  use_gnu_time <- identical(Sys.info()[["sysname"]], "Linux") &&
+    file.exists("/usr/bin/time")
+  command <- pixi
+  command_args <- args
+  if (use_gnu_time) {
+    command <- "/usr/bin/time"
+    command_args <- c("-v", "-o", shQuote(resource_path), shQuote(pixi), args)
+  }
+  started_at <- Sys.time()
+  elapsed_start <- proc.time()[["elapsed"]]
+
   status <- tryCatch(
-    system2(command = pixi, args = args, env = env, stdout = TRUE, stderr = TRUE),
+    system2(command = command, args = command_args, env = env, stdout = TRUE, stderr = TRUE),
     error = function(e) {
       stop(backend_label, " pixi execution failed. ", conditionMessage(e), call. = FALSE)
     }
@@ -1103,7 +1320,26 @@
   if (!identical(exit_code, 0L)) {
     stop(backend_label, " pixi execution failed.\n", paste(status, collapse = "\n"), call. = FALSE)
   }
-  invisible(status)
+  peak_rss_mb <- NA_real_
+  if (file.exists(resource_path)) {
+    resource <- readLines(resource_path, warn = FALSE)
+    rss_line <- grep("Maximum resident set size", resource, value = TRUE)
+    if (length(rss_line) > 0L) {
+      peak_rss_kb <- suppressWarnings(as.numeric(sub("^.*:[[:space:]]*", "", rss_line[[1L]])))
+      if (is.finite(peak_rss_kb)) peak_rss_mb <- peak_rss_kb / 1024
+    }
+  }
+  invisible(list(
+    output = status,
+    performance = list(
+      elapsed_seconds = unname(proc.time()[["elapsed"]] - elapsed_start),
+      backend_peak_rss_mb = peak_rss_mb,
+      memory_scope = if (is.finite(peak_rss_mb)) "backend_process_tree_rss" else "unavailable",
+      started_at = as.character(started_at),
+      completed_at = as.character(Sys.time()),
+      resource_path = if (file.exists(resource_path)) normalizePath(resource_path, winslash = "/", mustWork = TRUE) else NULL
+    )
+  ))
 }
 
 .sn_normalize_cuda_requirement <- function(cuda_version) {
@@ -1314,7 +1550,7 @@
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
   script <- .sn_scvi_script_path(integration_control$script %||% NULL)
 
-  .sn_execute_scvi_pixi(
+  backend_run <- .sn_execute_scvi_pixi(
     pixi = integration_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = script,
@@ -1329,7 +1565,7 @@
     verbose = verbose
   )
 
-  .sn_import_scvi_results(
+  result <- .sn_import_scvi_results(
     object = object,
     output_dir = output_dir,
     method = method,
@@ -1339,6 +1575,8 @@
     features = input$features,
     reduction = config$reduction
   )
+  result$object@misc$integration$backend_performance <- backend_run$performance
+  result
 }
 
 .sn_scpoli_script_path <- function(script = NULL) {
@@ -1435,7 +1673,7 @@
     pixi_environment = pixi_environment
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
-  .sn_execute_scvi_pixi(
+  backend_run <- .sn_execute_scvi_pixi(
     pixi = integration_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = .sn_scpoli_script_path(integration_control$script %||% NULL),
@@ -1450,7 +1688,7 @@
     verbose = verbose,
     backend_label = "scPoli"
   )
-  .sn_import_scvi_results(
+  result <- .sn_import_scvi_results(
     object = object,
     output_dir = output_dir,
     method = "scpoli",
@@ -1460,6 +1698,8 @@
     features = input$features,
     reduction = config$reduction
   )
+  result$object@misc$integration$backend_performance <- backend_run$performance
+  result
 }
 
 .sn_bbknn_script_path <- function(script = NULL) {
@@ -1541,7 +1781,7 @@
     umap_args = integration_control$umap_args %||% list()
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
-  .sn_execute_scvi_pixi(
+  backend_run <- .sn_execute_scvi_pixi(
     pixi = integration_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = .sn_bbknn_script_path(integration_control$script %||% NULL),
@@ -1597,7 +1837,8 @@
     graph = graph_name,
     umap_reduction = umap_reduction,
     run_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
-    bbknn_version = backend_manifest$bbknn_version %||% NULL
+    bbknn_version = backend_manifest$bbknn_version %||% NULL,
+    backend_performance = backend_run$performance
   )
   list(object = object, reduction = reduction, graph = graph_name, umap = umap_reduction)
 }
@@ -2670,6 +2911,9 @@ sn_detect_rare_cells <- function(object,
     umap_control = list(),
     run_tsne = FALSE,
     tsne_control = list(),
+    checkpoint_dir = NULL,
+    resume = TRUE,
+    checkpoint_compress = FALSE,
     return_cluster = FALSE,
     verbose = TRUE
   )
@@ -2767,6 +3011,9 @@ sn_detect_rare_cells <- function(object,
 #'   parameters. With multiple methods, provide a list keyed by method, for
 #'   example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 #'   an optional \code{.default} entry is merged into every method. For
+#'   a complete executable template of every accepted field and its default,
+#'   call \code{sn_integration_control_template()} or
+#'   \code{sn_integration_control_template("scvi")}. For
 #'   \code{"coralysis"}, use \code{icp_args} for
 #'   \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 #'   \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
@@ -2936,12 +3183,28 @@ sn_detect_rare_cells <- function(object,
 #'   \code{tsne_control}: optional named list of additional
 #'   \code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
 #'   and key are generated per method and cannot overwrite another result.
+#'   \code{checkpoint_dir}: optional directory for persistent parameter-grid
+#'   checkpoints. After every completed run Shennong writes the current object,
+#'   comparison manifest, performance records, and completed run IDs to a
+#'   temporary file and atomically publishes it. Only the latest complete
+#'   checkpoint for the call signature is retained.
+#'   \code{resume}: logical; when \code{TRUE} (default), resume a matching
+#'   checkpoint in \code{checkpoint_dir}. The signature covers package version,
+#'   cells, features, batch labels, grid, and analysis arguments; incomplete
+#'   \code{.partial} files are ignored.
+#'   \code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
+#'   to \code{FALSE} for faster writes at the cost of more disk space.
 #'   \code{return_cluster}: if \code{TRUE}, return only the cluster assignments.
 #'   Multi-method calls return a data frame with one cluster column per method.
 #'   \code{verbose}: whether to print/log progress messages.
 #'
 #' @return A \code{Seurat} object with clustering results and embeddings, or a
-#'   cluster_by vector if \code{return_cluster = TRUE}.
+#'   cluster_by vector if \code{return_cluster = TRUE}. Parameter-grid objects
+#'   store per-run timing and memory fields in
+#'   \code{object@misc$integration_comparison$performance}; native R backends
+#'   report peak R heap usage, and Linux pixi backends additionally report the
+#'   maximum child-process-tree RSS measured by GNU \code{time}. These values do
+#'   not include GPU device memory.
 #'
 #' @examples
 #' \dontrun{
@@ -3228,6 +3491,107 @@ sn_run_cluster <- function(object,
   )
 }
 
+.sn_cluster_checkpoint_signature <- function(args, grid) {
+  signature_args <- args
+  signature_args$object <- NULL
+  signature_args$checkpoint_dir <- NULL
+  signature_args$resume <- NULL
+  signature_args$checkpoint_compress <- NULL
+  signature_args$verbose <- NULL
+  object <- args$object
+  object_signature <- list(
+    cells = colnames(object),
+    features = rownames(object),
+    assays = names(object@assays),
+    assay = args$assay,
+    layer = args$layer,
+    layer_class = if (args$assay %in% names(object@assays)) {
+      class(.sn_get_seurat_layer_data(object, assay = args$assay, layer = args$layer))
+    } else {
+      NULL
+    },
+    batch = if (!is.null(args$batch) && args$batch %in% colnames(object[[]])) {
+      as.character(object[[args$batch, drop = TRUE]])
+    } else {
+      NULL
+    }
+  )
+  digest::digest(
+    list(
+      schema_version = 1L,
+      package_version = as.character(utils::packageVersion("Shennong")),
+      object = object_signature,
+      arguments = signature_args,
+      grid = grid[, setdiff(colnames(grid), ".method_control"), drop = FALSE]
+    ),
+    algo = "sha256",
+    serialize = TRUE
+  )
+}
+
+.sn_cluster_checkpoint_files <- function(checkpoint_dir, signature) {
+  pattern <- paste0("^sn-run-cluster-", substr(signature, 1L, 16L), "-[0-9]{6}\\.rds$")
+  list.files(checkpoint_dir, pattern = pattern, full.names = TRUE)
+}
+
+.sn_read_cluster_checkpoint <- function(checkpoint_dir, signature) {
+  files <- .sn_cluster_checkpoint_files(checkpoint_dir, signature)
+  if (length(files) == 0L) return(NULL)
+  indices <- suppressWarnings(as.integer(sub("^.*-([0-9]{6})\\.rds$", "\\1", files)))
+  files <- files[order(indices, decreasing = TRUE)]
+  for (path in files) {
+    state <- tryCatch(readRDS(path), error = function(error) NULL)
+    if (is.list(state) && identical(state$signature, signature)) {
+      state$checkpoint_path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+      return(state)
+    }
+  }
+  NULL
+}
+
+.sn_write_cluster_checkpoint <- function(state, checkpoint_dir, compress = FALSE) {
+  dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+  prefix <- substr(state$signature, 1L, 16L)
+  target <- file.path(
+    checkpoint_dir,
+    sprintf("sn-run-cluster-%s-%06d.rds", prefix, as.integer(state$completed_index))
+  )
+  partial <- paste0(target, ".", Sys.getpid(), ".partial")
+  on.exit(if (file.exists(partial)) unlink(partial), add = TRUE)
+  saveRDS(state, file = partial, compress = compress)
+  if (!file.rename(partial, target)) {
+    stop("Could not atomically publish clustering checkpoint: ", target, call. = FALSE)
+  }
+  previous <- setdiff(.sn_cluster_checkpoint_files(checkpoint_dir, state$signature), target)
+  if (length(previous) > 0L) unlink(previous)
+  normalizePath(target, winslash = "/", mustWork = TRUE)
+}
+
+.sn_cluster_performance_table <- function(results) {
+  rows <- lapply(results, function(result) {
+    if (is.null(result)) return(NULL)
+    workflow <- result$performance$workflow %||% list()
+    integration <- result$performance$integration %||% list()
+    data.frame(
+      run_id = result$run_id,
+      embedding_id = result$embedding_id,
+      preprocess_id = result$preprocess_id,
+      method = result$method,
+      elapsed_seconds = workflow$elapsed_seconds %||% NA_real_,
+      peak_memory_mb = workflow$peak_memory_mb %||% NA_real_,
+      integration_elapsed_seconds = integration$elapsed_seconds %||% NA_real_,
+      integration_peak_memory_mb = integration$peak_memory_mb %||% NA_real_,
+      integration_peak_r_memory_mb = integration$peak_r_memory_mb %||% NA_real_,
+      integration_backend_peak_rss_mb = integration$backend_peak_rss_mb %||% NA_real_,
+      reused_embedding = isTRUE(result$performance$reused_embedding),
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- Filter(Negate(is.null), rows)
+  if (length(rows) == 0L) return(data.frame())
+  do.call(rbind, rows)
+}
+
 .sn_run_cluster_multi <- function(args) {
   grid <- .sn_expand_cluster_grid(args)
   methods <- unique(grid$method)
@@ -3251,8 +3615,27 @@ sn_run_cluster <- function(object,
 
   return_cluster <- isTRUE(args$return_cluster)
   base_cluster_name <- args$cluster_name
+  checkpoint_dir <- args$checkpoint_dir %||% NULL
+  resume <- isTRUE(args$resume)
+  checkpoint_compress <- args$checkpoint_compress
+  if (!is.null(checkpoint_dir) && (!is.character(checkpoint_dir) || length(checkpoint_dir) != 1L || !nzchar(checkpoint_dir))) {
+    stop("`checkpoint_dir` must be `NULL` or one non-empty directory path.", call. = FALSE)
+  }
+  if (!is.logical(args$resume) || length(args$resume) != 1L || is.na(args$resume)) {
+    stop("`resume` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  if (!is.logical(checkpoint_compress) || length(checkpoint_compress) != 1L || is.na(checkpoint_compress)) {
+    stop("`checkpoint_compress` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  checkpoint_signature <- .sn_cluster_checkpoint_signature(args, grid)
+  checkpoint_dir <- if (!is.null(checkpoint_dir)) {
+    dir.create(path.expand(checkpoint_dir), recursive = TRUE, showWarnings = FALSE)
+    normalizePath(path.expand(checkpoint_dir), winslash = "/", mustWork = TRUE)
+  } else {
+    NULL
+  }
   comparison <- list(
-    schema_version = "2.0.0",
+    schema_version = "2.1.0",
     run_ids = grid$run_id,
     methods = methods,
     batch_by = args$batch,
@@ -3260,12 +3643,46 @@ sn_run_cluster <- function(object,
     layer = args$layer,
     grid = grid[, setdiff(colnames(grid), ".method_control"), drop = FALSE],
     results = stats::setNames(vector("list", nrow(grid)), grid$run_id),
+    performance = data.frame(),
+    checkpoint = list(
+      enabled = !is.null(checkpoint_dir),
+      directory = checkpoint_dir,
+      signature = checkpoint_signature,
+      resumed = FALSE,
+      completed_run_ids = character(0),
+      latest_path = NULL
+    ),
     created_at = as.character(Sys.time())
   )
   current <- args$object
   simple_multi <- isTRUE(attr(grid, "simple_multi"))
   previous_preprocess_id <- NULL
   normalization_layers <- list()
+  start_index <- 1L
+
+  checkpoint_state <- if (!is.null(checkpoint_dir) && resume) {
+    .sn_read_cluster_checkpoint(checkpoint_dir, checkpoint_signature)
+  } else {
+    NULL
+  }
+  if (!is.null(checkpoint_state)) {
+    current <- checkpoint_state$object
+    comparison <- checkpoint_state$comparison %||%
+      current@misc$integration_comparison
+    if (is.null(comparison)) {
+      stop("The clustering checkpoint is missing its comparison manifest.", call. = FALSE)
+    }
+    comparison$checkpoint$resumed <- TRUE
+    comparison$checkpoint$latest_path <- checkpoint_state$checkpoint_path
+    previous_preprocess_id <- checkpoint_state$previous_preprocess_id %||% NULL
+    normalization_layers <- checkpoint_state$normalization_layers %||% list()
+    start_index <- as.integer(checkpoint_state$completed_index) + 1L
+    if (isTRUE(args$verbose)) {
+      .sn_log_info(
+        "[sn_run_cluster] Resuming after {length(comparison$checkpoint$completed_run_ids)} completed run(s) from {checkpoint_state$checkpoint_path}."
+      )
+    }
+  }
 
   if (isTRUE(args$verbose)) {
     .sn_log_info(
@@ -3274,7 +3691,8 @@ sn_run_cluster <- function(object,
     )
   }
 
-  for (row_index in seq_len(nrow(grid))) {
+  row_indices <- if (start_index <= nrow(grid)) seq.int(start_index, nrow(grid)) else integer(0)
+  for (row_index in row_indices) {
     row <- grid[row_index, , drop = FALSE]
     method <- row$method[[1L]]
     run_id <- row$run_id[[1L]]
@@ -3344,29 +3762,57 @@ sn_run_cluster <- function(object,
       } else {
         existing$graph_names[[1L]]
       }
-      current <- .sn_cluster_existing_grid_graph(
+      profiled_run <- .sn_cluster_performance(.sn_cluster_existing_grid_graph(
         object = current,
         args = method_args,
         graph_name = graph_name,
         cluster_name = method_args$cluster_name
-      )
+      ))
+      current <- profiled_run$value
       comparison$results[[run_id]] <- utils::modifyList(
         existing,
         list(
           run_id = run_id,
           cluster_column = method_args$cluster_name,
-          parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE])
+          parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
+          performance = list(
+            workflow = profiled_run$performance,
+            integration = existing$performance$integration %||% list(),
+            reused_embedding = TRUE,
+            source_run_id = existing$run_id
+          )
         ),
         keep.null = TRUE
       )
       previous_preprocess_id <- preprocess_id
+      comparison$performance <- .sn_cluster_performance_table(comparison$results)
+      comparison$checkpoint$completed_run_ids <- grid$run_id[seq_len(row_index)]
+      current@misc$integration_comparison <- comparison
+      if (!is.null(checkpoint_dir)) {
+        checkpoint_path <- .sn_write_cluster_checkpoint(
+          list(
+            schema_version = 1L,
+            signature = checkpoint_signature,
+            completed_index = row_index,
+            object = current,
+            previous_preprocess_id = previous_preprocess_id,
+            normalization_layers = normalization_layers,
+            saved_at = as.character(Sys.time())
+          ),
+          checkpoint_dir = checkpoint_dir,
+          compress = checkpoint_compress
+        )
+        comparison$checkpoint$latest_path <- checkpoint_path
+        current@misc$integration_comparison <- comparison
+      }
       next
     }
 
     if (isTRUE(args$verbose)) {
       .sn_log_info("[sn_run_cluster] Running grid entry '{run_id}'.")
     }
-    current <- .sn_run_cluster_impl(method_args)
+    profiled_run <- .sn_cluster_performance(.sn_run_cluster_impl(method_args))
+    current <- profiled_run$value
     stages <- current@misc$sn_run_cluster$stages %||% list()
     normalization_method <- row$normalization_method[[1L]]
     normalized_layer <- "data"
@@ -3411,9 +3857,36 @@ sn_run_cluster <- function(object,
       input_features = selected_features,
       normalized_layer = normalized_layer,
       integration_control = method_control,
-      integration = current@misc$integration %||% NULL
+      integration = current@misc$integration %||% NULL,
+      performance = list(
+        workflow = profiled_run$performance,
+        integration = stages$integration$performance %||%
+          current@misc$integration$performance %||% list(),
+        reused_embedding = FALSE,
+        source_run_id = run_id
+      )
     )
     previous_preprocess_id <- preprocess_id
+    comparison$performance <- .sn_cluster_performance_table(comparison$results)
+    comparison$checkpoint$completed_run_ids <- grid$run_id[seq_len(row_index)]
+    current@misc$integration_comparison <- comparison
+    if (!is.null(checkpoint_dir)) {
+      checkpoint_path <- .sn_write_cluster_checkpoint(
+        list(
+          schema_version = 1L,
+          signature = checkpoint_signature,
+          completed_index = row_index,
+          object = current,
+          previous_preprocess_id = previous_preprocess_id,
+          normalization_layers = normalization_layers,
+          saved_at = as.character(Sys.time())
+        ),
+        checkpoint_dir = checkpoint_dir,
+        compress = checkpoint_compress
+      )
+      comparison$checkpoint$latest_path <- checkpoint_path
+      current@misc$integration_comparison <- comparison
+    }
   }
 
   current@misc$integration_comparison <- comparison
@@ -3533,6 +4006,10 @@ sn_run_cluster <- function(object,
   rerun_from <- .sn_resolve_cluster_rerun_from(rerun_from)
   if (!is.list(integration_control)) {
     stop("`integration_control` must be a named list.", call. = FALSE)
+  }
+  if (identical(integration_method, "harmony")) {
+    theta <- integration_control$theta %||% theta
+    group_by_vars <- integration_control$group_by_vars %||% group_by_vars
   }
   if (!is.list(cluster_control)) {
     stop("`cluster_control` must be a named list.", call. = FALSE)
@@ -4196,6 +4673,7 @@ sn_run_cluster <- function(object,
 
   integration_graph <- NULL
   integration_umap <- NULL
+  integration_performance <- NULL
   backend_integration_control <- integration_control
   if (identical(integration_method, "bbknn")) {
     backend_integration_control$umap_args <- umap_control
@@ -4239,7 +4717,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[5/6] Reusing {reduction} protein integration reduction.")
     } else {
       if (verbose) .sn_log_info("[5/6] Running {multimodal_method} protein integration.")
-      integration <- .sn_run_batch_integration(
+      profiled_integration <- .sn_cluster_performance(.sn_run_batch_integration(
         object = object,
         method = multimodal_method,
         batch = batch,
@@ -4253,13 +4731,22 @@ sn_run_cluster <- function(object,
         group_by_vars = group_by_vars,
         integration_control = integration_control,
         verbose = verbose
-      )
+      ))
+      integration <- profiled_integration$value
       object <- integration$object
+      integration_performance <- .sn_complete_integration_performance(
+        profiled_integration$performance,
+        object
+      )
+      object@misc$integration$performance <- integration_performance
       reduction <- integration$reduction
       object@misc$integration$modality <- "cite_seq"
       object@misc$integration$protein_assay <- adt_assay
       object@misc$integration$protein_layer <- adt_layer
-      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+      object <- .sn_record_cluster_stage(
+        object, "integration", integration_signature,
+        reduction = reduction, performance = integration_performance
+      )
     }
     reduction_signature <- integration_signature
   } else if (identical(modality, "cite_seq") && identical(multimodal_method, "mmochi")) {
@@ -4295,7 +4782,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[5/6] Reusing MMoCHi protein integration reduction.")
     } else {
       if (verbose) .sn_log_info("[5/6] Running MMoCHi ADT landmark registration.")
-      integration <- .sn_run_mmochi_integration(
+      profiled_integration <- .sn_cluster_performance(.sn_run_mmochi_integration(
         object = object,
         batch = batch,
         assay = adt_assay,
@@ -4305,13 +4792,22 @@ sn_run_cluster <- function(object,
         npcs = adt_npcs,
         integration_control = mmochi_control,
         verbose = verbose
-      )
+      ))
+      integration <- profiled_integration$value
       object <- integration$object
+      integration_performance <- .sn_complete_integration_performance(
+        profiled_integration$performance,
+        object
+      )
+      object@misc$integration$performance <- integration_performance
       reduction <- integration$reduction
       object@misc$integration$modality <- "cite_seq"
       object@misc$integration$protein_assay <- adt_assay
       object@misc$integration$protein_layer <- mmochi_control$protein_layer
-      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+      object <- .sn_record_cluster_stage(
+        object, "integration", integration_signature,
+        reduction = reduction, performance = integration_performance
+      )
     }
     reduction_signature <- integration_signature
   } else if (identical(modality, "cite_seq") && identical(multimodal_method, "totalvi")) {
@@ -4348,7 +4844,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[5/6] Reusing totalVI integration reduction.")
     } else {
       if (verbose) .sn_log_info("[5/6] Running totalVI RNA+ADT integration.")
-      integration <- .sn_run_scvi_integration(
+      profiled_integration <- .sn_cluster_performance(.sn_run_scvi_integration(
         object = object,
         method = "totalvi",
         batch = batch,
@@ -4357,13 +4853,22 @@ sn_run_cluster <- function(object,
         layer = layer,
         integration_control = totalvi_control,
         verbose = verbose
-      )
+      ))
+      integration <- profiled_integration$value
       object <- integration$object
+      integration_performance <- .sn_complete_integration_performance(
+        profiled_integration$performance,
+        object
+      )
+      object@misc$integration$performance <- integration_performance
       reduction <- integration$reduction
       object@misc$integration$modality <- "cite_seq"
       object@misc$integration$protein_assay <- adt_assay
       object@misc$integration$protein_layer <- adt_layer
-      object <- .sn_record_cluster_stage(object, "integration", integration_signature, reduction = reduction)
+      object <- .sn_record_cluster_stage(
+        object, "integration", integration_signature,
+        reduction = reduction, performance = integration_performance
+      )
     }
     reduction_signature <- integration_signature
   } else {
@@ -4389,17 +4894,27 @@ sn_run_cluster <- function(object,
       reduction <- "pca"
     } else if (identical(integration_method, "unintegrated")) {
       reduction <- "pca"
+      integration_performance <- list(
+        elapsed_seconds = 0,
+        peak_memory_mb = NA_real_,
+        peak_r_memory_mb = NA_real_,
+        backend_peak_rss_mb = NA_real_,
+        memory_scope = "not_applicable",
+        reused = TRUE
+      )
       object@misc$integration <- list(
         method = "unintegrated",
         batch_by = batch,
         reduction = reduction,
-        input_reduction = reduction
+        input_reduction = reduction,
+        performance = integration_performance
       )
       object <- .sn_record_cluster_stage(
         object,
         "integration",
         integration_signature,
-        reduction = reduction
+        reduction = reduction,
+        performance = integration_performance
       )
     } else if (.sn_can_reuse_cluster_stage(
       object = object,
@@ -4423,7 +4938,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[5/6] Reusing {reduction} integration reduction.")
     } else {
       if (verbose) .sn_log_info("[5/6] Running {integration_method} integration.")
-      integration <- .sn_run_batch_integration(
+      profiled_integration <- .sn_cluster_performance(.sn_run_batch_integration(
         object = object,
         method = integration_method,
         batch = batch,
@@ -4437,8 +4952,14 @@ sn_run_cluster <- function(object,
         group_by_vars = group_by_vars,
         integration_control = backend_integration_control,
         verbose = verbose
-      )
+      ))
+      integration <- profiled_integration$value
       object <- integration$object
+      integration_performance <- .sn_complete_integration_performance(
+        profiled_integration$performance,
+        object
+      )
+      object@misc$integration$performance <- integration_performance
       reduction <- integration$reduction
       integration_graph <- integration$graph %||% NULL
       integration_umap <- integration$umap %||% NULL
@@ -4448,7 +4969,8 @@ sn_run_cluster <- function(object,
         integration_signature,
         reduction = reduction,
         graph_name = integration_graph,
-        umap_reduction = integration_umap
+        umap_reduction = integration_umap,
+        performance = integration_performance
       )
     }
     reduction_signature <- if (is_null(x = batch)) pca_signature else integration_signature

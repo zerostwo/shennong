@@ -45,6 +45,8 @@ object <- sn_run_cluster(
   nfeatures = c(1000, 2000),
   dims = 1:20,
   resolution = c(0.4, 0.6),
+  checkpoint_dir = file.path(output_dir, "cluster-checkpoints"),
+  resume = TRUE,
   verbose = TRUE
 )
 
@@ -76,6 +78,18 @@ if (nrow(comparison$grid) != 12L || length(unique(comparison$grid$embedding_id))
 }
 if (any(grepl("^tsne\\.", names(object@reductions)))) {
   stop("The default PBMC grid unexpectedly created a t-SNE reduction.")
+}
+required_performance <- c(
+  "elapsed_seconds", "peak_memory_mb", "integration_elapsed_seconds",
+  "integration_peak_memory_mb", "integration_backend_peak_rss_mb"
+)
+if (!all(required_performance %in% names(comparison$performance)) ||
+    nrow(comparison$performance) != nrow(comparison$grid)) {
+  stop("The PBMC parameter grid did not preserve one performance record per run.")
+}
+if (!isTRUE(comparison$checkpoint$enabled) ||
+    !file.exists(comparison$checkpoint$latest_path)) {
+  stop("The PBMC parameter grid did not publish a resumable checkpoint.")
 }
 if (!identical(
   counts_before,
@@ -127,6 +141,8 @@ report <- list(
     counts_before,
     Matrix::colSums(SeuratObject::LayerData(object, assay = "RNA", layer = "counts"))
   ),
+  performance_columns = names(comparison$performance),
+  checkpoint = comparison$checkpoint,
   backend_manifest = result$diagnostics$backend_manifest
 )
 jsonlite::write_json(report, file.path(output_dir, "validation.json"), auto_unbox = TRUE, pretty = TRUE)

@@ -24,3 +24,4 @@ benchmarks/coralysis_capacity/results*/inputs/
 benchmarks/coralysis_capacity/results*/runs/
 data-local/
 .positai
+__pycache__/

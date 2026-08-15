@@ -76,6 +76,9 @@ low-dimensional dense outputs.}
 parameters. With multiple methods, provide a list keyed by method, for
 example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 an optional \code{.default} entry is merged into every method. For
+a complete executable template of every accepted field and its default,
+call \code{sn_integration_control_template()} or
+\code{sn_integration_control_template("scvi")}. For
 \code{"coralysis"}, use \code{icp_args} for
 \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
@@ -257,13 +260,29 @@ generated defaults, for example \code{n.neighbors}, \code{min.dist},
 \code{tsne_control}: optional named list of additional
 \code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
 and key are generated per method and cannot overwrite another result.
+\code{checkpoint_dir}: optional directory for persistent parameter-grid
+checkpoints. After every completed run Shennong writes the current object,
+comparison manifest, performance records, and completed run IDs to a
+temporary file and atomically publishes it. Only the latest complete
+checkpoint for the call signature is retained.
+\code{resume}: logical; when \code{TRUE} (default), resume a matching
+checkpoint in \code{checkpoint_dir}. The signature covers package version,
+cells, features, batch labels, grid, and analysis arguments; incomplete
+\code{.partial} files are ignored.
+\code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
+to \code{FALSE} for faster writes at the cost of more disk space.
 \code{return_cluster}: if \code{TRUE}, return only the cluster assignments.
 Multi-method calls return a data frame with one cluster column per method.
 \code{verbose}: whether to print/log progress messages.}
 }
 \value{
 A \code{Seurat} object with clustering results and embeddings, or a
-cluster_by vector if \code{return_cluster = TRUE}.
+cluster_by vector if \code{return_cluster = TRUE}. Parameter-grid objects
+store per-run timing and memory fields in
+\code{object@misc$integration_comparison$performance}; native R backends
+report peak R heap usage, and Linux pixi backends additionally report the
+maximum child-process-tree RSS measured by GNU \code{time}. These values do
+not include GPU device memory.
 }
 \description{
 This function is the main clustering entry point in \code{Shennong}.

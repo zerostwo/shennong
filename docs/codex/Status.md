@@ -2,6 +2,24 @@
 
 Last updated: 2026-08-15
 
+Parameter-grid clustering now writes optional atomic RDS checkpoints after each
+completed combination and resumes matching calls without re-entering completed
+runs. The comparison manifest schema is 2.1.0 and includes a run-level
+performance table plus integration-specific elapsed time, R heap peak, and
+Linux pixi backend process-tree RSS. `sn_integration_control_template()` exposes
+the complete supported control surface for all eleven method names. Focused
+clustering validation passes 554 assertions with the existing BBKNN command-log
+warning, including a two-resolution checkpoint/resume test that mocks the
+compute entry point on recovery to prove no recomputation occurs.
+The complete local suite passes with `FAIL 0 | WARN 1 | SKIP 3 | PASS 3265`.
+The real PBMC1K/PBMC3K/PBMC4K validation also passes on 8,274 cells and
+19,721 features across 12 grid runs and six unique embeddings: raw counts are
+unchanged, no default t-SNE is created, every run has performance columns, and
+a second identical invocation resumes all 12 runs from the persisted
+checkpoint before rerunning the scIB evaluation. The source package builds,
+`R CMD check` completes with its existing `.codegraph` NOTE only, and the
+incremental pkgdown site rebuild includes the new control-template reference.
+
 ## Current structure
 
 - CodeGraph is initialized and synchronized for the repository's R, Python, and

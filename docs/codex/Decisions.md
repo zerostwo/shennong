@@ -4,6 +4,18 @@ Last updated: 2026-08-15
 
 ## 2026-08-15
 
+- Persistent clustering recovery is run-granular and signature-gated. A
+  parameter-grid checkpoint is written only after one complete `run_id`, using
+  a same-directory partial file followed by atomic rename; the previous
+  checkpoint is removed only after the new one is complete. Recovery must match
+  package version, cell/feature identity, batch labels, grid, and analysis
+  arguments. Runtime provenance distinguishes R heap peak from Linux backend
+  process-tree RSS and does not claim GPU-memory coverage.
+- `integration_control` discoverability is an executable API: the exported
+  `sn_integration_control_template()` is the canonical complete list of fields
+  consumed by each backend. Static help and the clustering article describe the
+  same templates; Seurat CCA/RPCA remain intentionally open to extra
+  `IntegrateLayers()` arguments.
 - Clustering comparison identity has three levels: `preprocess_id` identifies
   normalization/HVG/PCA preparation, `embedding_id` identifies a native PCA or
   integrated latent space and its graph/projections, and `run_id` identifies a

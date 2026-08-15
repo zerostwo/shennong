@@ -22,7 +22,15 @@ make_integration_benchmark_object <- function() {
     method = method,
     integration_reduction = reduction,
     graph_names = paste0(method, "_snn"),
-    integration_control = if (is.null(label_by)) list() else list(label_by = label_by)
+    integration_control = if (is.null(label_by)) list() else list(label_by = label_by),
+    performance = list(
+      workflow = list(elapsed_seconds = 12, peak_memory_mb = 256),
+      integration = list(
+        elapsed_seconds = 7, peak_memory_mb = 192,
+        peak_r_memory_mb = 128, backend_peak_rss_mb = 192
+      ),
+      reused_embedding = FALSE
+    )
   )
   object@misc$integration_comparison <- list(
     methods = c("unintegrated", "harmony", "scanvi", "bbknn"),
@@ -88,6 +96,8 @@ test_that("sn_compare_integrations stores a discoverable benchmark result", {
   expect_match(result$tables$summary$reason[result$tables$summary$method == "bbknn"], "graph_only")
   expect_equal(result$input$cells, 24L)
   expect_equal(result$input$features, 12L)
+  expect_true(all(result$tables$summary$elapsed_seconds == 12))
+  expect_true(all(result$tables$ranking$integration_peak_memory_mb == 192))
   listing <- sn_list_results(updated, type = "integration_benchmark")
   expect_equal(listing$name, "integration_benchmark")
 })

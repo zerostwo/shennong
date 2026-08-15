@@ -50,6 +50,8 @@
     reduction <- info$integration_reduction %||% if (identical(method, "unintegrated")) "pca" else method
     graph_only <- identical(method, "bbknn") || is.null(reduction) || !reduction %in% names(object@reductions)
     label_by <- info$integration_control$label_by %||% info$integration$label_by %||% NA_character_
+    workflow_performance <- info$performance$workflow %||% list()
+    integration_performance <- info$performance$integration %||% list()
     data.frame(
       run_id = run_id,
       embedding_id = info$embedding_id %||% run_id,
@@ -58,6 +60,13 @@
       reduction = if (is.null(reduction)) NA_character_ else reduction,
       graph_only = graph_only,
       training_label_by = as.character(label_by),
+      elapsed_seconds = workflow_performance$elapsed_seconds %||% NA_real_,
+      peak_memory_mb = workflow_performance$peak_memory_mb %||% NA_real_,
+      integration_elapsed_seconds = integration_performance$elapsed_seconds %||% NA_real_,
+      integration_peak_memory_mb = integration_performance$peak_memory_mb %||% NA_real_,
+      integration_peak_r_memory_mb = integration_performance$peak_r_memory_mb %||% NA_real_,
+      integration_backend_peak_rss_mb = integration_performance$backend_peak_rss_mb %||% NA_real_,
+      reused_embedding = isTRUE(info$performance$reused_embedding),
       stringsAsFactors = FALSE
     )
   })
@@ -245,6 +254,9 @@
 #' preprocessing identity, each group uses its matching unintegrated baseline,
 #' and each unique native embedding is scored once before its score is mapped
 #' back to all cluster-resolution runs that share it.
+#' Stored clustering runtime and peak-memory provenance is joined into the scIB
+#' summary, metrics, and ranking tables so quality and compute cost can be
+#' compared without a separate object lookup.
 #'
 #' @param object A Seurat object containing `misc$integration_comparison`.
 #' @param batch_by Metadata column containing batch identities.

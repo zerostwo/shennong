@@ -18,6 +18,7 @@ sn_calculate_rogue,analysis,kotliarov_pbmc,extended,ROGUE,Optional R backend on 
 sn_calculate_silhouette,analysis,kotliarov_pbmc,core,Shennong,Real PBMC embedding,vignettes/metrics-diagnostics.Rmd
 sn_calculate_variance_explained,analysis,kotliarov_pbmc,core,Shennong,Real batch and response fields,vignettes/metrics-diagnostics.Rmd
 sn_compare_integrations,analysis,kotliarov_pbmc,extended,scib-metrics,Managed Python benchmark over shared real PBMC cells and reductions,vignettes/clustering.Rmd
+sn_integration_control_template,analysis,kotliarov_pbmc,core,Shennong,Static integration-control templates for every supported backend,vignettes/clustering.Rmd
 sn_compare_composition,analysis,kotliarov_pbmc,core,Shennong,Real high and low responders,vignettes/composition-analysis.Rmd
 sn_detect_rare_cells,analysis,kotliarov_pbmc,core,Shennong,Real rare PBMC populations,vignettes/clustering.Rmd
 sn_discover_programs,analysis,kotliarov_pbmc,core,NMF,Real PBMC expression programs,vignettes/program-discovery-grn.Rmd

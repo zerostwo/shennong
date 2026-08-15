@@ -119,6 +119,10 @@ This skill is the main entry point for package usage.
 	   theta form a conditional Cartesian grid; natural vectors such as `dims`
 	   remain intact. UMAP is the default and t-SNE requires
 	   `run_tsne = TRUE`.
+	   For large grids, set `checkpoint_dir`; matching calls resume completed
+	   combinations by default. Read `$performance` for time and memory
+	   provenance, and call `sn_integration_control_template()` for the complete
+	   control template of each backend.
 	   scVI/scANVI/scPoli honor
 	   the requested `assay`/`layer`; BBKNN derives PCA from the same selected
 	   layer and supplies the graph used for clustering and UMAP. Python runners

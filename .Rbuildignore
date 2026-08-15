@@ -29,3 +29,4 @@ dev
 ^data-local$
 ^\.positai$
 ^\.claude$
+^inst/pixi/.*/__pycache__$

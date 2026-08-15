@@ -21,6 +21,9 @@ internal constant batch key to the Python backend.}
 parameters. With multiple methods, provide a list keyed by method, for
 example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 an optional \code{.default} entry is merged into every method. For
+a complete executable template of every accepted field and its default,
+call \code{sn_integration_control_template()} or
+\code{sn_integration_control_template("scvi")}. For
 \code{"coralysis"}, use \code{icp_args} for
 \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the

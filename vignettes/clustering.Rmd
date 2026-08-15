@@ -437,6 +437,7 @@ pbmc_comparison <- sn_run_cluster(
   nfeatures = c(2000, 3000),
   dims = 1:20,
   resolution = c(0.4, 0.8),
+  checkpoint_dir = "checkpoints/pbmc-integration-grid",
   verbose = FALSE
 )
 
@@ -448,6 +449,9 @@ comparison_grid <- pbmc_comparison@misc$integration_comparison$grid
 first_run <- pbmc_comparison@misc$integration_comparison$results[[1]]
 clusters <- pbmc_comparison[[first_run$cluster_column, drop = TRUE]]
 umap <- Seurat::Embeddings(pbmc_comparison, first_run$umap_reduction)
+
+# Compare compute cost per run and per unique integration embedding.
+pbmc_comparison@misc$integration_comparison$performance
 ```
 
 For a method-only comparison with scalar parameters, the historical names such
@@ -460,6 +464,41 @@ each run to its preprocessing/embedding IDs, reduction, graph names, cluster
 column, UMAP, and optional t-SNE so
 downstream integration metrics can iterate over one returned object.
 
+When `checkpoint_dir` is supplied, every completed grid entry is saved through
+a `.partial` file followed by an atomic rename. A repeated call with the same
+object identity, batch labels, package version, grid, and analysis arguments
+resumes automatically (`resume = TRUE`) and skips completed entries. Only the
+latest complete checkpoint is retained; interrupted `.partial` files are
+ignored. Set `checkpoint_compress = TRUE` when disk space matters more than
+checkpoint write speed.
+
+The `performance` table contains wall-clock seconds, peak R heap memory, and
+integration-specific values. On Linux, pixi/Python backends also capture the
+maximum backend process-tree RSS with GNU `time`; GPU device memory is not
+included. Resolution-only entries have `reused_embedding = TRUE` and retain the
+source embedding's integration cost while recording only the new clustering
+work as their workflow time.
+
+### Integration-control templates
+
+Use the executable templates to discover every Shennong-consumed backend
+field, including runtime, accelerator, model, training, graph, and
+backend-specific arguments:
+
+```{r integration-control-templates}
+names(sn_integration_control_template())
+sn_integration_control_template("harmony")
+sn_integration_control_template("coralysis")
+sn_integration_control_template(c("scvi", "scanvi", "scpoli"))
+sn_integration_control_template(c("bbknn", "totalvi", "mmochi"))
+```
+
+For Seurat CCA/RPCA, fields beyond the displayed template are passed directly
+to `Seurat::IntegrateLayers()`. For nested model calls, place native backend
+arguments in `model_args`, `train_args`, `scanvi_model_args`,
+`scanvi_train_args`, `totalvi_model_args`, `totalvi_train_args`, `bbknn_args`,
+or the corresponding Coralysis/MMoCHi argument list.
+
 Use `sn_compare_integrations()` when the object also contains an independent
 biological annotation column. The scib-metrics adapter evaluates the native
 PCA or integrated latent spaces on exactly the same stratified cells and
@@ -469,6 +508,9 @@ group. Each unique embedding is scored once, so resolution-only runs inherit
 the same embedding metrics. Supervised methods trained with the
 same column as `label_by` are flagged, and graph-only methods such as BBKNN are
 listed as non-comparable rather than silently treated as embeddings.
+The stored clustering timing and memory columns are joined into the scIB
+summary, metric, and ranking tables, enabling quality-versus-compute
+comparisons from the benchmark result alone.
 
 ```{r scib-integration-benchmark, eval = FALSE}
 pbmc_comparison <- sn_compare_integrations(
@@ -489,6 +531,7 @@ integration_benchmark <- sn_get_result(
 integration_benchmark$tables$ranking
 integration_benchmark$tables$summary[, c(
   "run_id", "embedding_id", "preprocess_id", "method", "Total",
+  "integration_elapsed_seconds", "integration_peak_memory_mb",
   "rank_within_preprocess", "rank_overall"
 )]
 integration_benchmark$tables$metrics

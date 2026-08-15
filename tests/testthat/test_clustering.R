@@ -196,12 +196,108 @@ test_that("sn_run_cluster keeps multi-method integration results side by side", 
   expect_identical(comparison$results$unintegrated$integration_reduction, "pca")
   expect_identical(comparison$results$harmony$integration_reduction, "harmony")
   expect_identical(comparison$results$harmony$integration$theta, 3)
-  expect_identical(comparison$schema_version, "2.0.0")
+  expect_identical(comparison$schema_version, "2.1.0")
+  expect_equal(nrow(comparison$performance), 2L)
+  expect_true(all(c(
+    "elapsed_seconds", "peak_memory_mb", "integration_elapsed_seconds",
+    "integration_peak_memory_mb", "reused_embedding"
+  ) %in% colnames(comparison$performance)))
+  expect_true(is.finite(comparison$results$harmony$performance$integration$elapsed_seconds))
+  expect_true(is.finite(comparison$results$harmony$performance$integration$peak_r_memory_mb))
   expect_true(is.null(comparison$results$harmony$tsne_reduction))
   expect_identical(
     SeuratObject::LayerData(clustered, assay = "RNA", layer = "counts"),
     counts_before
   )
+})
+
+test_that("integration control templates cover every supported backend", {
+  templates <- sn_integration_control_template()
+  expect_setequal(names(templates), .sn_supported_integration_methods())
+  expect_identical(sn_integration_control_template("harmony")$theta, 2)
+  expect_true(all(c("icp_args", "pca_args", "store_sce") %in% names(templates$coralysis)))
+  expect_true(all(c("accelerator", "model_args", "train_args", "write_h5ad") %in% names(templates$scvi)))
+  expect_true(all(c("label_by", "scanvi_model_args", "scanvi_train_args") %in% names(templates$scanvi)))
+  expect_true(all(c("n_epochs", "pretraining_epochs", "latent_batch_size") %in% names(templates$scpoli)))
+  expect_true(all(c("bbknn_args", "umap_args", "graph_name") %in% names(templates$bbknn)))
+  expect_true(all(c("totalvi_model_args", "protein_obsm_key", "adt_assay") %in% names(templates$totalvi)))
+  expect_true(all(c("landmark_args", "single_peaks", "corrected_layer") %in% names(templates$mmochi)))
+})
+
+test_that("pixi execution records backend process resource usage when available", {
+  output_dir <- tempfile("resource-usage-")
+  dir.create(output_dir)
+  on.exit(unlink(output_dir, recursive = TRUE), add = TRUE)
+
+  result <- testthat::with_mocked_bindings(
+    .sn_execute_scvi_pixi(
+      pixi = NULL,
+      manifest_path = tempfile(),
+      script = tempfile(),
+      input_dir = tempfile(),
+      output_dir = output_dir,
+      config_path = tempfile(),
+      install_pixi = FALSE,
+      verbose = FALSE
+    ),
+    sn_ensure_pixi = function(...) list(path = "/bin/true"),
+    .package = "Shennong"
+  )
+
+  expect_true(is.list(result$performance))
+  expect_true(is.finite(result$performance$elapsed_seconds))
+  if (identical(Sys.info()[["sysname"]], "Linux") && file.exists("/usr/bin/time")) {
+    expect_true(file.exists(result$performance$resource_path))
+    expect_true(is.finite(result$performance$backend_peak_rss_mb))
+  }
+})
+
+test_that("parameter-grid checkpoints resume completed combinations", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 404, prefix = "checkpoint", n_genes = 80, n_cells = 40)
+  object$sample <- rep(c("A", "B"), each = 20)
+  checkpoint_dir <- tempfile("sn-cluster-checkpoint-")
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+
+  run_grid <- function() {
+    sn_run_cluster(
+      object = object,
+      batch = "sample",
+      normalization_method = "seurat",
+      integration_method = "unintegrated",
+      nfeatures = 35,
+      block_genes = NULL,
+      npcs = 6,
+      dims = 1:6,
+      resolution = c(0.2, 0.4),
+      checkpoint_dir = checkpoint_dir,
+      verbose = FALSE
+    )
+  }
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      run_grid(),
+      .sn_cluster_existing_grid_graph = function(...) stop("simulated kill"),
+      .package = "Shennong"
+    ),
+    "simulated kill"
+  )
+  expect_length(list.files(checkpoint_dir, pattern = "\\.rds$"), 1L)
+
+  resumed <- testthat::with_mocked_bindings(
+    run_grid(),
+    .sn_run_cluster_impl = function(...) stop("completed grid should not rerun"),
+    .package = "Shennong"
+  )
+  resumed_comparison <- resumed@misc$integration_comparison
+  expect_true(resumed_comparison$checkpoint$resumed)
+  expect_length(resumed_comparison$checkpoint$completed_run_ids, 2L)
+  expect_equal(nrow(resumed_comparison$performance), 2L)
+  expect_true(file.exists(resumed_comparison$checkpoint$latest_path))
+  expect_true(resumed_comparison$performance$reused_embedding[[2L]])
 })
 
 test_that("sn_run_cluster expands scalar parameter axes and reuses embeddings across resolutions", {
