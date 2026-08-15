@@ -2,6 +2,16 @@
 
 Last updated: 2026-08-15
 
+BPCells-backed scran normalization now crosses the unsupported
+BPCells-to-scran boundary through direct sparse `dgCMatrix` materialization.
+The original BPCells counts layer remains attached to the returned Seurat
+object. Focused preprocessing tests pass 119 assertions, and an end-to-end
+120-cell `sn_run_cluster()` scran plus Harmony regression reproducer completes
+with a Harmony reduction and cluster metadata. The complete local suite passes
+with `FAIL 0 | WARN 1 | SKIP 3 | PASS 3269`; the warning is the existing BBKNN
+command-log warning. Source build, structural `R CMD check`, and the complete
+pkgdown site rebuild also pass.
+
 Parameter-grid clustering now writes optional atomic RDS checkpoints after each
 completed combination and resumes matching calls without re-entering completed
 runs. The comparison manifest schema is 2.1.0 and includes a run-level

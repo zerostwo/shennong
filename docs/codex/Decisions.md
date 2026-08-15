@@ -4,6 +4,11 @@ Last updated: 2026-08-15
 
 ## 2026-08-15
 
+- scran does not support BPCells `IterableMatrix` inputs through
+  `quickCluster()` and `computeSumFactors()`. Shennong therefore materializes
+  the selected scran input directly as a sparse `dgCMatrix`, never through a
+  dense intermediate, while leaving the Seurat object's original BPCells count
+  layer unchanged.
 - Persistent clustering recovery is run-granular and signature-gated. A
   parameter-grid checkpoint is written only after one complete `run_id`, using
   a same-directory partial file followed by atomic rename; the previous

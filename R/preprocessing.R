@@ -382,6 +382,9 @@ sn_initialize_seurat_object <- function(
 #'
 #' This function provides a unified normalization entry point for Seurat-style
 #' log-normalization, scran normalization, and SCTransform.
+#' BPCells-backed inputs remain attached to the returned object's count layer;
+#' the scran path materializes the selected layer directly as an in-memory
+#' sparse matrix because scran does not accept BPCells iterable matrices.
 #'
 #' @param object A \code{Seurat} object.
 #' @param method One of \code{"seurat"}, \code{"scran"}, or
@@ -432,6 +435,7 @@ sn_normalize_data <- function(
     check_installed("scran", reason = "to perform scran normalization.")
     check_installed("SingleCellExperiment")
     counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+    counts <- .sn_as_sparse_matrix(counts)
 
     .sn_log_info("Converting the Seurat object to SingleCellExperiment for scran normalization.")
     sce <- SingleCellExperiment::SingleCellExperiment(

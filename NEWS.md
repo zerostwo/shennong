@@ -64,6 +64,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- `sn_normalize_data(method = "scran")` and scran-backed
+  `sn_run_cluster()` workflows now accept BPCells-backed count layers. The
+  selected layer is materialized directly as a sparse `dgCMatrix` at the scran
+  compatibility boundary, while the returned Seurat object's original BPCells
+  counts layer remains on disk.
 - Multi-method `sn_run_cluster()` calls now honor the existing
   `run_tsne = FALSE` default. UMAP remains the default projection and t-SNE is
   created only when explicitly requested with `run_tsne = TRUE`.

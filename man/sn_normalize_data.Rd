@@ -36,6 +36,9 @@ chosen method.
 \description{
 This function provides a unified normalization entry point for Seurat-style
 log-normalization, scran normalization, and SCTransform.
+BPCells-backed inputs remain attached to the returned object's count layer;
+the scran path materializes the selected layer directly as an in-memory
+sparse matrix because scran does not accept BPCells iterable matrices.
 }
 \examples{
 \dontrun{

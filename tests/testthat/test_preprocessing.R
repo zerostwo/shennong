@@ -353,6 +353,43 @@ test_that("sn_normalize_data can normalize from a non-default layer", {
   )
 })
 
+test_that("sn_normalize_data supports automatic scran clustering from BPCells counts", {
+  skip_if_not_installed("BPCells")
+  skip_if_not_installed("scran")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("SeuratObject")
+
+  set.seed(717)
+  counts <- Matrix::Matrix(
+    matrix(rpois(100 * 120, lambda = 2), nrow = 100),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  path <- tempfile("shennong-scran-bpcells-")
+  on.exit(unlink(path, recursive = TRUE), add = TRUE)
+  BPCells::write_matrix_dir(
+    BPCells::convert_matrix_type(counts, "uint32_t"),
+    dir = path
+  )
+  object <- sn_initialize_seurat_object(
+    x = BPCells::open_matrix_dir(path),
+    project = "scran-bpcells"
+  )
+
+  normalized <- sn_normalize_data(object = object, method = "scran")
+
+  expect_true(Shennong:::.sn_is_iterable_matrix(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "counts")
+  ))
+  expect_s4_class(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "data"),
+    "dgCMatrix"
+  )
+  expect_true(all(is.finite(normalized$size.factor)))
+  expect_gt(sum(SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")), 0)
+})
+
 test_that("sn_normalize_data SCTransform restores future globals option", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("glmGamPoi")

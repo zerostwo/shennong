@@ -190,6 +190,10 @@ c(before = nrow(pbmc_cells), after = nrow(pbmc_genes))
 
 `sn_normalize_data()` and `sn_score_cell_cycle()` keep preprocessing inside the
 same Shennong vocabulary used later by clustering and plotting.
+When `method = "scran"` reads a BPCells-backed layer, Shennong materializes that
+selected layer directly as a sparse matrix for scran compatibility; it does not
+create a dense intermediate, and the returned object's count layer remains
+BPCells-backed.
 
 ```{r normalize-cycle}
 pbmc_norm <- sn_normalize_data(
