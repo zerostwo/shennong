@@ -21,6 +21,36 @@ The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
 
+- `sn_run_cluster()` now expands conditional parameter grids for explicitly
+  vectorized scalar controls and stores a versioned run/embedding/preprocessing
+  manifest. The default multi-method path now creates UMAP only; t-SNE is
+  explicit. Resolution variants recluster the existing graph and reuse the
+  same UMAP. A real 40-cell smoke run covered 8 runs from two methods, two HVG
+  counts, and two resolutions, yielding four unique embeddings/UMAPs and no
+  t-SNE. `sn_compare_integrations()` now groups by preprocessing identity,
+  exports each embedding once against its matching unintegrated baseline, uses
+  one shared stratified cell set, and maps scores back to run-level rows. The
+  focused two-group fake-backend test passed 36 assertions together with the
+  legacy result-contract tests (38 assertions after embedding-level ranking was
+  added). A real official PBMC1k/3k/4k run covered 8,274 cells and 19,721 genes
+  with three methods, 1,000/2,000 HVGs, and resolutions 0.4/0.6: the object
+  contains 12 run rows, six unique embeddings/UMAPs, zero t-SNE reductions, and
+  unchanged raw count column sums. scib-metrics ran once per embedding in each
+  preprocessing group; total scores for 1,000/2,000 HVGs were Harmony
+  0.7615/0.7544, Coralysis 0.7135/0.7254, and unintegrated PCA 0.5785/0.5750.
+  Both resolutions inherit the same embedding score, while within-group ranks
+  are correctly 1/2/3. The saved qs2 result passes `sn_validate_result()`.
+  The first full-suite pass reached 3,192 assertions before exposing an
+  unrelated Seurat 5.4 `FeaturePlot()` signature change; the minimal assay
+  compatibility repair then passed all 104 assertions in the original failing
+  visualization file. The clean rerun of the original full-suite command passed
+  3,237 assertions with three documented optional/local-fixture skips and only
+  the existing BBKNN command-log warning. The final 0.3.0 source tarball built successfully;
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-tests` completed
+  with only the known `.codegraph` NOTE after an added namespace NOTE was fixed;
+  and the complete pkgdown site rebuilt successfully under `site/dev` after two
+  transient CRAN/Bioconductor DNS timeouts.
+
 - Managed Python acceleration now uses the same pinned `zerostwo/autozyme`
   revision as the R integration. Static call-path review found real patch
   intersections only for BBKNN/Scanpy UMAP, scArches and stLearn Scanpy

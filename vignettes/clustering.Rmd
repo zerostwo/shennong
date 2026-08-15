@@ -411,6 +411,14 @@ without repeating normalization, HVG selection, or PCA. Parameters can be
 keyed by method; the historical spelling `"unintergrated"` is accepted with a
 deprecation warning, but new code should use `"unintegrated"`.
 
+Scalar-by-contract parameters also accept vectors. Shennong expands their
+conditional Cartesian product: for example, two `nfeatures` values and two
+`resolution` values create four runs per method, but the two resolutions share
+one graph and one UMAP for each method/HVG combination. Natural vectors such as
+`dims`, `hvg_features`, `vars_to_regress`, and `block_genes` remain one value.
+UMAP is the only projection run by default; set the existing `run_tsne = TRUE`
+explicitly when t-SNE is also required.
+
 ```{r multi-integration, eval = run_extended && requireNamespace("harmony", quietly = TRUE) && requireNamespace("Coralysis", quietly = TRUE)}
 pbmc_comparison <- sn_run_cluster(
   object = pbmc,
@@ -426,32 +434,39 @@ pbmc_comparison <- sn_run_cluster(
   ),
   normalization_method = "seurat",
   hvg_group_by = "real_batch",
-  nfeatures = 2000,
+  nfeatures = c(2000, 3000),
   dims = 1:20,
-  resolution = 0.6,
+  resolution = c(0.4, 0.8),
   verbose = FALSE
 )
 
 # Discover the stored result names.
 pbmc_comparison@misc$integration_comparison$results
 
-# Retrieve one method's clusters and embeddings directly from the object.
-harmony_clusters <- pbmc_comparison$harmony_clusters
-harmony_umap <- Seurat::Embeddings(pbmc_comparison, "umap.harmony")
-coralysis_tsne <- Seurat::Embeddings(pbmc_comparison, "tsne.coralysis")
+# Inspect the run/embedding/preprocessing map, then retrieve exact components.
+comparison_grid <- pbmc_comparison@misc$integration_comparison$grid
+first_run <- pbmc_comparison@misc$integration_comparison$results[[1]]
+clusters <- pbmc_comparison[[first_run$cluster_column, drop = TRUE]]
+umap <- Seurat::Embeddings(pbmc_comparison, first_run$umap_reduction)
 ```
 
-The unintegrated entry points to the shared `pca` reduction. Integrated methods
+For a method-only comparison with scalar parameters, the historical names such
+as `results$harmony`, `harmony_clusters`, and `umap.harmony` remain unchanged.
+Grid runs use deterministic run IDs. The unintegrated entry points to a stored
+PCA branch. Integrated methods
 retain their native corrected low-dimensional spaces (for example `harmony` or
 `coralysis`) rather than relabeling those coordinates as PCA. The manifest maps
-each method to its reduction, graph names, cluster column, UMAP, and t-SNE so
+each run to its preprocessing/embedding IDs, reduction, graph names, cluster
+column, UMAP, and optional t-SNE so
 downstream integration metrics can iterate over one returned object.
 
 Use `sn_compare_integrations()` when the object also contains an independent
 biological annotation column. The scib-metrics adapter evaluates the native
 PCA or integrated latent spaces on exactly the same stratified cells and
-features; it does not score UMAP or t-SNE coordinates. The unintegrated PCA is
-required as the pre-integration baseline. Supervised methods trained with the
+features within each preprocessing group; it does not score UMAP or t-SNE
+coordinates. A matching unintegrated PCA is required in every preprocessing
+group. Each unique embedding is scored once, so resolution-only runs inherit
+the same embedding metrics. Supervised methods trained with the
 same column as `label_by` are flagged, and graph-only methods such as BBKNN are
 listed as non-comparable rather than silently treated as embeddings.
 
@@ -472,6 +487,10 @@ integration_benchmark <- sn_get_result(
   name = "integration_benchmark"
 )
 integration_benchmark$tables$ranking
+integration_benchmark$tables$summary[, c(
+  "run_id", "embedding_id", "preprocess_id", "method", "Total",
+  "rank_within_preprocess", "rank_overall"
+)]
 integration_benchmark$tables$metrics
 integration_benchmark$diagnostics$backend_manifest$jax_devices
 ```

@@ -2590,13 +2590,18 @@ sn_plot_feature <-
     # Seurat requires ggrastr for ordered rasterization. Build the ordinary
     # vector layer first, then rasterize it below only when ggrastr is present.
     featureplot_raster <- FALSE
+    if (!is.null(assay)) {
+      if (!assay %in% names(object@assays)) {
+        stop("Assay '", assay, "' was not found in the Seurat object.", call. = FALSE)
+      }
+      SeuratObject::DefaultAssay(object) <- assay
+    }
     p <- withCallingHandlers(
       Seurat::FeaturePlot(
         object = object,
         features = features,
         dims = dims,
         cells = cells,
-        assay = assay,
         reduction = reduction,
         split.by = split_by,
         label = label,

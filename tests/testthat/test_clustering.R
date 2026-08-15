@@ -182,9 +182,9 @@ test_that("sn_run_cluster keeps multi-method integration results side by side", 
 
   expect_true(all(c(
     "pca", "harmony",
-    "umap.unintegrated", "umap.harmony",
-    "tsne.unintegrated", "tsne.harmony"
+    "umap.unintegrated", "umap.harmony"
   ) %in% names(clustered@reductions)))
+  expect_false(any(grepl("^tsne\\.", names(clustered@reductions))))
   expect_true(all(c(
     "unintegrated_nn", "unintegrated_snn",
     "harmony_nn", "harmony_snn"
@@ -196,10 +196,75 @@ test_that("sn_run_cluster keeps multi-method integration results side by side", 
   expect_identical(comparison$results$unintegrated$integration_reduction, "pca")
   expect_identical(comparison$results$harmony$integration_reduction, "harmony")
   expect_identical(comparison$results$harmony$integration$theta, 3)
+  expect_identical(comparison$schema_version, "2.0.0")
+  expect_true(is.null(comparison$results$harmony$tsne_reduction))
   expect_identical(
     SeuratObject::LayerData(clustered, assay = "RNA", layer = "counts"),
     counts_before
   )
+})
+
+test_that("sn_run_cluster expands scalar parameter axes and reuses embeddings across resolutions", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("harmony")
+
+  object <- make_test_object(seed = 44, prefix = "grid", n_genes = 90, n_cells = 40)
+  object$sample <- rep(c("A", "B"), each = 20)
+  clustered <- sn_run_cluster(
+    object = object,
+    batch = "sample",
+    normalization_method = "seurat",
+    integration_method = c("unintegrated", "harmony"),
+    nfeatures = c(35, 45),
+    block_genes = NULL,
+    npcs = 6,
+    dims = 1:6,
+    resolution = c(0.2, 0.4),
+    verbose = FALSE
+  )
+
+  comparison <- clustered@misc$integration_comparison
+  expect_equal(nrow(comparison$grid), 8L)
+  expect_equal(length(comparison$results), 8L)
+  expect_equal(length(unique(comparison$grid$embedding_id)), 4L)
+  expect_equal(length(unique(comparison$grid$preprocess_id)), 2L)
+  expect_true(all(vapply(comparison$results, function(x) x$cluster_column %in% colnames(clustered[[]]), logical(1))))
+  expect_true(all(vapply(comparison$results, function(x) x$umap_reduction %in% names(clustered@reductions), logical(1))))
+  expect_false(any(grepl("^tsne\\.", names(clustered@reductions))))
+  expect_equal(
+    length(unique(vapply(comparison$results, `[[`, character(1), "umap_reduction"))),
+    4L
+  )
+  expect_true(all(vapply(
+    comparison$results,
+    function(x) x$integration_reduction %in% names(clustered@reductions),
+    logical(1)
+  )))
+})
+
+test_that("cluster parameter grids expand Harmony theta conditionally", {
+  args <- list(
+    integration_method = c("unintegrated", "harmony"),
+    integration_control = list(),
+    normalization_method = "seurat",
+    nfeatures = c(2000, 3000),
+    npcs = 30,
+    resolution = 0.5,
+    cluster_algorithm = "louvain",
+    rare_feature_n = 200,
+    adt_npcs = 30,
+    theta = c(2, 4),
+    .integration_method_supplied = TRUE,
+    .normalization_method_supplied = TRUE,
+    .nfeatures_supplied = TRUE,
+    .resolution_supplied = TRUE,
+    .cluster_algorithm_supplied = TRUE,
+    .tail_supplied = c("npcs", "theta")
+  )
+  grid <- .sn_expand_cluster_grid(args)
+  expect_equal(sum(grid$method == "unintegrated"), 2L)
+  expect_equal(sum(grid$method == "harmony"), 4L)
+  expect_equal(sort(unique(grid$theta[grid$method == "harmony"])), c(2, 4))
 })
 
 test_that("multi-method integration normalizes the historical unintegrated typo", {

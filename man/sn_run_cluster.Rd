@@ -45,7 +45,11 @@ combined with \code{integration_method = "harmony"} by supplying
 \code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
 multiple values run against the same normalized/HVG/PCA preparation and
 retain method-specific reductions, graphs, cluster columns, UMAP, and
-t-SNE results in one object. Supported integration backends are
+optional t-SNE results in one object. Scalar analysis parameters supplied
+as vectors are expanded as a conditional Cartesian grid; parameters that
+are naturally vector-valued, such as \code{dims}, \code{hvg_features},
+\code{vars_to_regress}, and \code{block_genes}, remain intact. Supported
+integration backends are
 \code{"harmony"},
 \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 \code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
@@ -111,7 +115,8 @@ generated directory layout, \code{sn_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
 
-\item{nfeatures}{Number of variable features to select.}
+\item{nfeatures}{Number of variable features to select. Multiple values
+create separate preprocessing/embedding branches in a parameter-grid run.}
 
 \item{hvg_features}{Optional character vector of user-supplied features to
 force into the selected backend feature set. For PCA-based workflows this
@@ -121,13 +126,16 @@ that they are present in \code{object}.}
 
 \item{vars_to_regress}{Covariates to regress out in \code{ScaleData}.}
 
-\item{resolution}{Resolution parameter for \code{FindClusters}.}
+\item{resolution}{Resolution parameter for \code{FindClusters}. Multiple
+values create separate cluster columns while reusing the same graph and
+dimensional reductions.}
 
 \item{cluster_algorithm}{Community-detection algorithm passed to
 \code{Seurat::FindClusters()}. Supported names are \code{"louvain"}
 (Seurat algorithm 1), \code{"louvain_multilevel"} (algorithm 2),
 \code{"slm"} (algorithm 3), and \code{"leiden"} (algorithm 4). Numeric
-values 1 through 4 are also accepted.}
+values 1 through 4 are also accepted.
+Multiple explicitly supplied values form a parameter-grid axis.}
 
 \item{cluster_name}{Optional metadata column name for the cluster labels.
 Defaults to Seurat's \code{"seurat_clusters"} behavior.}
@@ -182,6 +190,7 @@ coarse clustering from the base HVGs.
 method. For example, \code{c("gini", "local_markers")} with
 \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
 before de-duplication.
+Multiple values form a parameter-grid axis.
 \code{rare_feature_control}: named list of advanced rare-feature thresholds.
 Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 \code{gene_max_fraction}, and \code{min_cells}.
@@ -195,11 +204,13 @@ log-normalization and SCTransform workflows; explicit \code{hvg_features}
 are preserved even when they overlap a blocked signature.
 \code{theta}: the \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 diversity preservation vs. correction. Used only when
-\code{integration_method = "harmony"}.
+\code{integration_method = "harmony"}. Multiple values expand only the
+Harmony branch and do not duplicate other integration methods.
 \code{group_by_vars}: optional column name or character vector passed to
 \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
 and is used only when \code{integration_method = "harmony"}.
-\code{npcs}: number of PCs to compute in \code{RunPCA}.
+\code{npcs}: number of PCs to compute in \code{RunPCA}. Multiple values
+form a parameter-grid axis.
 \code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
 clustering, and UMAP.
 \code{species}: optional species label. Used when block genes must be resolved
@@ -241,8 +252,8 @@ defaults.
 \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 generated defaults, for example \code{n.neighbors}, \code{min.dist},
 \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
-\code{run_tsne}: logical; run t-SNE in addition to UMAP. In multi-method
-integration mode this defaults to \code{TRUE} unless explicitly supplied.
+\code{run_tsne}: logical; run t-SNE in addition to UMAP. It defaults to
+\code{FALSE}, including for multi-method and parameter-grid runs.
 \code{tsne_control}: optional named list of additional
 \code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
 and key are generated per method and cannot overwrite another result.

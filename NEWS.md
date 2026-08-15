@@ -7,6 +7,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_run_cluster()` now expands explicitly vectorized scalar controls such as
+  `nfeatures`, `npcs`, `resolution`, `cluster_algorithm`, `rare_feature_n`, and
+  Harmony `theta` into a conditional Cartesian grid. Natural vector inputs such
+  as `dims`, `hvg_features`, regression covariates, and blocked genes remain
+  intact. The versioned comparison manifest records run, embedding, and
+  preprocessing identities; resolution variants reuse their graph and UMAP.
+- `sn_compare_integrations()` now evaluates each unique native embedding once
+  within its matching preprocessing group and unintegrated baseline, then maps
+  scores back to every run sharing that embedding. Results include run,
+  embedding, preprocessing, baseline, within-group rank, and overall rank.
+
 - Added exact-scoped, single-core AutoZyme acceleration for
   `Coralysis::RunParallelDivisiveICP()`. Coralysis integration activates the
   patch only around the backend call, restores prior AutoZyme state on exit,
@@ -42,6 +53,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   warning.
 
 ### Fixed
+
+- Multi-method `sn_run_cluster()` calls now honor the existing
+  `run_tsne = FALSE` default. UMAP remains the default projection and t-SNE is
+  created only when explicitly requested with `run_tsne = TRUE`.
+- `sn_plot_feature()` now selects its requested assay through the local Seurat
+  object's default assay instead of forwarding the removed `assay` argument to
+  `Seurat::FeaturePlot()`, restoring compatibility with Seurat 5.4.
 
 - Coralysis integration now accepts BPCells-backed Seurat v5 assays by
   materializing only the selected integration features as a sparse

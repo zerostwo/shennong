@@ -29,7 +29,8 @@ sn_compare_integrations(
 
 \item{label_by}{Metadata column containing biological labels.}
 
-\item{methods}{Optional methods to evaluate. Defaults to all registered methods.}
+\item{methods}{Optional method names or run IDs to evaluate. A method name
+selects all of its registered parameter-grid runs.}
 
 \item{assay}{RNA assay containing normalized expression.}
 
@@ -62,5 +63,8 @@ A Seurat object with an \code{integration_benchmark} result, or the result.
 Benchmarks the integration reductions registered by a multi-method
 \code{\link[=sn_run_cluster]{sn_run_cluster()}} call. UMAP and t-SNE coordinates are never used as metric
 inputs. The normalized expression matrix is exported sparsely and every
-method is evaluated on the same cells and features.
+method is evaluated on the same cells. Parameter-grid objects are grouped by
+preprocessing identity, each group uses its matching unintegrated baseline,
+and each unique native embedding is scored once before its score is mapped
+back to all cluster-resolution runs that share it.
 }

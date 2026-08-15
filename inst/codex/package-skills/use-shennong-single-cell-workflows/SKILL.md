@@ -112,8 +112,13 @@ This skill is the main entry point for package usage.
 	   Pass a vector such as `c("unintegrated", "harmony", "coralysis")` when
 	   methods should share preprocessing and coexist in one object. Key
 	   `integration_control` by method, then inspect
-	   `object@misc$integration_comparison$results` for the stored reduction,
-	   graph, cluster, UMAP, and t-SNE names.
+	   `object@misc$integration_comparison$grid` and `$results` for the stored
+	   preprocessing/embedding IDs, reduction, graph, cluster, UMAP, and optional
+	   t-SNE names. Multiple values for scalar controls such as `nfeatures`,
+	   `npcs`, `resolution`, clustering algorithm, rare-feature count, or Harmony
+	   theta form a conditional Cartesian grid; natural vectors such as `dims`
+	   remain intact. UMAP is the default and t-SNE requires
+	   `run_tsne = TRUE`.
 	   scVI/scANVI/scPoli honor
 	   the requested `assay`/`layer`; BBKNN derives PCA from the same selected
 	   layer and supplies the graph used for clustering and UMAP. Python runners
@@ -155,7 +160,8 @@ This skill is the main entry point for package usage.
 3. Assess integration quality or cluster_by structure with
    `sn_assess_integration()`, `sn_calculate_lisi()`,
    `sn_compare_integrations()` for a scib-metrics benchmark of the native
-   reductions retained in a multi-method object,
+   reductions retained in a multi-method/grid object (one score per unique
+   embedding, with a matching unintegrated baseline per preprocessing group),
    `sn_calculate_variance_explained()`,
    `sn_calculate_isolated_label_score()`, or
    `sn_identify_challenging_groups()` when sample mixing, rare groups,

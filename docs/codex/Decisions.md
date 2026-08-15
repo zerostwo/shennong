@@ -4,6 +4,21 @@ Last updated: 2026-08-15
 
 ## 2026-08-15
 
+- Clustering comparison identity has three levels: `preprocess_id` identifies
+  normalization/HVG/PCA preparation, `embedding_id` identifies a native PCA or
+  integrated latent space and its graph/projections, and `run_id` identifies a
+  clustering parameter combination. Explicit vectors for scalar controls form
+  a conditional Cartesian grid, while naturally vector-valued controls remain
+  whole values. Resolution is deliberately excluded from `embedding_id`, so
+  resolution variants reuse the graph and UMAP. Method-only calls preserve the
+  historical method-keyed names. UMAP is the only default projection; t-SNE is
+  opt-in through the existing `run_tsne` control.
+- scIB comparison is stratified by `preprocess_id`. Every preprocessing group
+  requires its own unintegrated baseline and every `embedding_id` is exported
+  once; run-level rows sharing an embedding inherit the same metric values.
+  Rankings are reported both within preprocessing group and across selected
+  runs, and UMAP/t-SNE remain excluded from metric inputs.
+
 - Multi-method RNA integration is one shared preprocessing run followed by
   independently named analytical branches. The uncorrected baseline retains
   the real `pca` reduction, while Harmony, Coralysis, Seurat integration, and

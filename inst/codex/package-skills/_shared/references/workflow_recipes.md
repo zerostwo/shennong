@@ -184,8 +184,13 @@ user request to the right Shennong function family quickly.
    To compare methods without rebuilding preprocessing, pass a vector such as
    `integration_method = c("unintegrated", "harmony", "coralysis")` and key
    backend parameters by method under `integration_control`. Read
-   `object@misc$integration_comparison$results` to discover each method's native
-   reduction, graphs, cluster column, `umap.<method>`, and `tsne.<method>`.
+   `object@misc$integration_comparison$grid` and `$results` to discover each
+   run's preprocessing/embedding identity, native reduction, graphs, cluster
+   column, UMAP, and optional t-SNE. Explicit vectors for scalar controls such
+   as `nfeatures`, `npcs`, `resolution`, clustering algorithm, rare-feature
+   count, and Harmony theta form a conditional Cartesian grid; `dims`, forced
+   HVGs, regression covariates, and blocked genes remain natural vectors. UMAP
+   is the default; t-SNE requires `run_tsne = TRUE`.
    Use `sn_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
@@ -204,8 +209,9 @@ user request to the right Shennong function family quickly.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
    For a multi-method object with independent biological labels, use
    `sn_compare_integrations(object, batch_by = ..., label_by = ...)` to run the
-   scib-metrics suite on each native PCA/latent reduction. Keep the
-   `"unintegrated"` branch as the baseline, then discover the stored result via
+   scib-metrics suite once per unique native PCA/latent reduction. Keep one
+   matching `"unintegrated"` branch in every preprocessing group; resolution
+   variants inherit their shared embedding score. Discover the stored result via
    `sn_list_results(type = "integration_benchmark")` and retrieve it with
    `sn_get_result()`. Do not use UMAP/t-SNE as metric inputs, and interpret the
    supervised-label-leakage flag before comparing rankings.

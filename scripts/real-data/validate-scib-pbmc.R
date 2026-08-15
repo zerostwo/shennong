@@ -42,10 +42,9 @@ object <- sn_run_cluster(
       store_sce = FALSE
     )
   ),
-  nfeatures = 2000,
+  nfeatures = c(1000, 2000),
   dims = 1:20,
-  resolution = 0.6,
-  run_tsne = FALSE,
+  resolution = c(0.4, 0.6),
   verbose = TRUE
 )
 
@@ -70,6 +69,19 @@ label_counts <- as.data.frame.matrix(table(object$dataset, object$benchmark_labe
 utils::write.csv(label_counts, file.path(output_dir, "label_counts.csv"))
 if (any(rowSums(label_counts > 0) < 2L)) {
   stop("Canonical-marker benchmark labels did not retain at least two labels in every dataset.")
+}
+comparison <- object@misc$integration_comparison
+if (nrow(comparison$grid) != 12L || length(unique(comparison$grid$embedding_id)) != 6L) {
+  stop("The PBMC parameter grid did not produce 12 runs and 6 unique embeddings.")
+}
+if (any(grepl("^tsne\\.", names(object@reductions)))) {
+  stop("The default PBMC grid unexpectedly created a t-SNE reduction.")
+}
+if (!identical(
+  counts_before,
+  Matrix::colSums(SeuratObject::LayerData(object, assay = "RNA", layer = "counts"))
+)) {
+  stop("Raw counts changed during the PBMC parameter-grid run.")
 }
 
 object <- sn_compare_integrations(
@@ -108,6 +120,9 @@ report <- list(
   features = nrow(object),
   evaluation_label = "canonical PBMC marker maximum score; runtime validation only, not a curated gold standard",
   methods = c("unintegrated", "harmony", "coralysis"),
+  grid_runs = nrow(object@misc$integration_comparison$grid),
+  unique_embeddings = length(unique(object@misc$integration_comparison$grid$embedding_id)),
+  default_tsne_reductions = grep("^tsne\\.", names(object@reductions), value = TRUE),
   raw_counts_preserved = identical(
     counts_before,
     Matrix::colSums(SeuratObject::LayerData(object, assay = "RNA", layer = "counts"))

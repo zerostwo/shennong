@@ -2737,7 +2737,11 @@ sn_detect_rare_cells <- function(object,
 #'   \code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
 #'   multiple values run against the same normalized/HVG/PCA preparation and
 #'   retain method-specific reductions, graphs, cluster columns, UMAP, and
-#'   t-SNE results in one object. Supported integration backends are
+#'   optional t-SNE results in one object. Scalar analysis parameters supplied
+#'   as vectors are expanded as a conditional Cartesian grid; parameters that
+#'   are naturally vector-valued, such as \code{dims}, \code{hvg_features},
+#'   \code{vars_to_regress}, and \code{block_genes}, remain intact. Supported
+#'   integration backends are
 #'   \code{"harmony"},
 #'   \code{"coralysis"}, \code{"seurat_cca"}, \code{"seurat_rpca"},
 #'   \code{"scvi"}, \code{"scanvi"}, \code{"scpoli"}, \code{"bbknn"}, and
@@ -2801,19 +2805,23 @@ sn_detect_rare_cells <- function(object,
 #'   generated directory layout, \code{sn_pixi_config_path()} to inspect the
 #'   bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 #'   pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.
-#' @param nfeatures Number of variable features to select.
+#' @param nfeatures Number of variable features to select. Multiple values
+#'   create separate preprocessing/embedding branches in a parameter-grid run.
 #' @param hvg_features Optional character vector of user-supplied features to
 #'   force into the selected backend feature set. For PCA-based workflows this
 #'   is also the feature set used for scaling/PCA. These features are merged
 #'   with internally selected HVGs and any rare-aware features after validating
 #'   that they are present in \code{object}.
 #' @param vars_to_regress Covariates to regress out in \code{ScaleData}.
-#' @param resolution Resolution parameter for \code{FindClusters}.
+#' @param resolution Resolution parameter for \code{FindClusters}. Multiple
+#'   values create separate cluster columns while reusing the same graph and
+#'   dimensional reductions.
 #' @param cluster_algorithm Community-detection algorithm passed to
 #'   \code{Seurat::FindClusters()}. Supported names are \code{"louvain"}
 #'   (Seurat algorithm 1), \code{"louvain_multilevel"} (algorithm 2),
 #'   \code{"slm"} (algorithm 3), and \code{"leiden"} (algorithm 4). Numeric
 #'   values 1 through 4 are also accepted.
+#'   Multiple explicitly supplied values form a parameter-grid axis.
 #' @param cluster_name Optional metadata column name for the cluster labels.
 #'   Defaults to Seurat's \code{"seurat_clusters"} behavior.
 #' @param cluster_n_start,cluster_n_iter Number of starts and iterations passed
@@ -2861,6 +2869,7 @@ sn_detect_rare_cells <- function(object,
 #'   method. For example, \code{c("gini", "local_markers")} with
 #'   \code{rare_feature_n = 50} can contribute up to 100 rare-aware features
 #'   before de-duplication.
+#'   Multiple values form a parameter-grid axis.
 #'   \code{rare_feature_control}: named list of advanced rare-feature thresholds.
 #'   Supported fields are \code{group_max_fraction}, \code{group_max_cells},
 #'   \code{gene_max_fraction}, and \code{min_cells}.
@@ -2874,11 +2883,13 @@ sn_detect_rare_cells <- function(object,
 #'   are preserved even when they overlap a blocked signature.
 #'   \code{theta}: the \code{theta} parameter for \code{harmony::RunHarmony}, controlling batch
 #'   diversity preservation vs. correction. Used only when
-#'   \code{integration_method = "harmony"}.
+#'   \code{integration_method = "harmony"}. Multiple values expand only the
+#'   Harmony branch and do not duplicate other integration methods.
 #'   \code{group_by_vars}: optional column name or character vector passed to
 #'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
 #'   and is used only when \code{integration_method = "harmony"}.
-#'   \code{npcs}: number of PCs to compute in \code{RunPCA}.
+#'   \code{npcs}: number of PCs to compute in \code{RunPCA}. Multiple values
+#'   form a parameter-grid axis.
 #'   \code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
 #'   clustering, and UMAP.
 #'   \code{species}: optional species label. Used when block genes must be resolved
@@ -2920,8 +2931,8 @@ sn_detect_rare_cells <- function(object,
 #'   \code{Seurat::RunUMAP()} arguments. Values here override Shennong's
 #'   generated defaults, for example \code{n.neighbors}, \code{min.dist},
 #'   \code{spread}, \code{metric}, \code{seed.use}, or \code{reduction.name}.
-#'   \code{run_tsne}: logical; run t-SNE in addition to UMAP. In multi-method
-#'   integration mode this defaults to \code{TRUE} unless explicitly supplied.
+#'   \code{run_tsne}: logical; run t-SNE in addition to UMAP. It defaults to
+#'   \code{FALSE}, including for multi-method and parameter-grid runs.
 #'   \code{tsne_control}: optional named list of additional
 #'   \code{Seurat::RunTSNE()} arguments. In multi-method mode the reduction name
 #'   and key are generated per method and cannot overwrite another result.
@@ -2972,6 +2983,10 @@ sn_run_cluster <- function(object,
                            leiden_objective_function = c("modularity", "CPM"),
                            ...) {
   integration_method_supplied <- !missing(integration_method)
+  normalization_method_supplied <- !missing(normalization_method)
+  nfeatures_supplied <- !missing(nfeatures)
+  resolution_supplied <- !missing(resolution)
+  cluster_algorithm_supplied <- !missing(cluster_algorithm)
   tail <- .sn_resolve_cluster_tail_args(list(...))
   block_genes_supplied <- "block_genes" %in% tail$supplied
 
@@ -2998,12 +3013,28 @@ sn_run_cluster <- function(object,
     tail$values,
     list(
       .integration_method_supplied = integration_method_supplied,
+      .normalization_method_supplied = normalization_method_supplied,
+      .nfeatures_supplied = nfeatures_supplied,
+      .resolution_supplied = resolution_supplied,
+      .cluster_algorithm_supplied = cluster_algorithm_supplied,
       .block_genes_supplied = block_genes_supplied,
-      .run_tsne_supplied = "run_tsne" %in% tail$supplied
+      .run_tsne_supplied = "run_tsne" %in% tail$supplied,
+      .tail_supplied = tail$supplied
     )
   )
 
-  if (integration_method_supplied && length(integration_method) > 1L) {
+  grid_requested <-
+    (integration_method_supplied && length(integration_method) > 1L) ||
+    (normalization_method_supplied && length(normalization_method) > 1L) ||
+    (nfeatures_supplied && length(nfeatures) > 1L) ||
+    (resolution_supplied && length(resolution) > 1L) ||
+    (cluster_algorithm_supplied && length(cluster_algorithm) > 1L) ||
+    any(vapply(
+      intersect(c("rare_feature_n", "theta", "npcs"), tail$supplied),
+      function(name) length(tail$values[[name]]) > 1L,
+      logical(1)
+    ))
+  if (grid_requested) {
     return(.sn_run_cluster_multi(cluster_args))
   }
   .sn_run_cluster_impl(cluster_args)
@@ -3034,10 +3065,181 @@ sn_run_cluster <- function(object,
   utils::modifyList(default, specific, keep.null = TRUE)
 }
 
+.sn_cluster_grid_id_value <- function(value) {
+  value <- paste(value, collapse = "-")
+  value <- gsub("-", "m", value, fixed = TRUE)
+  value <- gsub("\\.", "p", value)
+  value <- gsub("[^A-Za-z0-9]+", "-", value)
+  gsub("(^-+|-+$)", "", value)
+}
+
+.sn_cluster_grid_axes <- function(args) {
+  supplied <- args$.tail_supplied %||% character(0)
+  choose <- function(value, was_supplied) {
+    value <- unique(value)
+    if (isTRUE(was_supplied)) value else value[[1L]]
+  }
+  list(
+    normalization_method = choose(
+      args$normalization_method,
+      args$.normalization_method_supplied
+    ),
+    nfeatures = choose(args$nfeatures, args$.nfeatures_supplied),
+    npcs = choose(args$npcs, "npcs" %in% supplied),
+    resolution = choose(args$resolution, args$.resolution_supplied),
+    cluster_algorithm = choose(
+      args$cluster_algorithm,
+      args$.cluster_algorithm_supplied
+    ),
+    rare_feature_n = choose(args$rare_feature_n, "rare_feature_n" %in% supplied)
+  )
+}
+
+.sn_expand_cluster_grid <- function(args) {
+  id_values <- function(values) {
+    vapply(values, .sn_cluster_grid_id_value, character(1))
+  }
+  methods <- if (isTRUE(args$.integration_method_supplied)) {
+    .sn_normalize_integration_methods(args$integration_method)
+  } else {
+    .sn_normalize_integration_methods(args$integration_method[[1L]])
+  }
+  axes <- .sn_cluster_grid_axes(args)
+  base_grid <- do.call(
+    expand.grid,
+    c(axes, list(KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE))
+  )
+  theta_supplied <- "theta" %in% (args$.tail_supplied %||% character(0))
+  rows <- list()
+  index <- 0L
+  for (method in methods) {
+    method_control <- .sn_multi_method_control(
+      integration_control = args$integration_control,
+      methods = methods,
+      method = method
+    )
+    theta_values <- if (identical(method, "harmony")) {
+      unique(method_control$theta %||% if (theta_supplied) args$theta else args$theta[[1L]])
+    } else {
+      args$theta[[1L]]
+    }
+    for (theta in theta_values) {
+      part <- base_grid
+      part$method <- method
+      part$theta <- theta
+      part$.method_control <- I(rep(list(method_control), nrow(part)))
+      index <- index + 1L
+      rows[[index]] <- part
+    }
+  }
+  grid <- do.call(rbind, rows)
+  rownames(grid) <- NULL
+  grid$preprocess_id <- paste0(
+    "prep.", id_values(grid$normalization_method),
+    ".hvg", id_values(grid$nfeatures),
+    ".pc", id_values(grid$npcs),
+    ".rare", id_values(grid$rare_feature_n)
+  )
+  grid$embedding_id <- paste0(
+    grid$method, ".", grid$preprocess_id,
+    ifelse(
+      grid$method == "harmony",
+      paste0(".theta", id_values(grid$theta)),
+      ""
+    )
+  )
+  axis_lengths <- vapply(axes, length, integer(1))
+  expanded <- any(axis_lengths > 1L) ||
+    (identical("harmony", methods) && length(unique(grid$theta)) > 1L) ||
+    ("harmony" %in% methods && length(unique(grid$theta[grid$method == "harmony"])) > 1L)
+  simple_multi <- !expanded && !anyDuplicated(grid$method)
+  if (simple_multi) {
+    grid$run_id <- grid$method
+    grid$embedding_id <- grid$method
+    grid$preprocess_id <- "shared"
+  } else {
+    grid$run_id <- paste0(
+      grid$embedding_id,
+      ".res", id_values(grid$resolution),
+      ".", id_values(grid$cluster_algorithm),
+      ifelse(
+        length(unique(grid$rare_feature_n)) > 1L,
+        paste0(".rare", id_values(grid$rare_feature_n)),
+        ""
+      )
+    )
+    grid$run_id <- make.unique(grid$run_id, sep = ".v")
+  }
+  grid <- grid[
+    order(grid$preprocess_id, match(grid$method, methods), grid$embedding_id, grid$resolution, grid$run_id),
+    , drop = FALSE
+  ]
+  rownames(grid) <- NULL
+  attr(grid, "simple_multi") <- simple_multi
+  grid
+}
+
+.sn_alias_cluster_reduction <- function(object, reduction, alias, key_prefix = "integrated") {
+  if (is.null(reduction) || !reduction %in% names(object@reductions) || identical(reduction, alias)) {
+    return(object)
+  }
+  aliased <- object[[reduction]]
+  SeuratObject::Key(aliased) <- .sn_reduction_key(key_prefix, alias)
+  object[[alias]] <- aliased
+  object
+}
+
+.sn_cluster_existing_grid_graph <- function(object, args, graph_name, cluster_name) {
+  algorithm <- .sn_resolve_find_clusters_algorithm(args$cluster_algorithm)
+  leiden_method <- match.arg(args$leiden_method, c("leidenbase", "igraph"))
+  leiden_objective_function <- match.arg(args$leiden_objective_function, c("modularity", "CPM"))
+  .sn_ensure_cluster_algorithm_dependencies(
+    cluster_algorithm_value = algorithm,
+    leiden_method = leiden_method,
+    auto_install = args$auto_install,
+    repos = args$install_repos,
+    ask = args$install_ask
+  )
+  cluster_args <- .sn_merge_control_args(
+    defaults = list(
+      object = object,
+      graph.name = graph_name,
+      resolution = args$resolution,
+      algorithm = algorithm,
+      n.start = args$cluster_n_start,
+      n.iter = args$cluster_n_iter,
+      random.seed = args$cluster_random_seed,
+      group.singletons = args$cluster_group_singletons,
+      leiden_method = leiden_method,
+      leiden_objective_function = leiden_objective_function,
+      cluster.name = cluster_name,
+      verbose = args$verbose
+    ),
+    control = args$cluster_control
+  )
+  .sn_with_default_seurat_autozyme(
+    .sn_call_with_symbolic_object(
+      fun_call = quote(Seurat::FindClusters),
+      object = object,
+      args = cluster_args
+    ),
+    object = object,
+    assay = args$assay
+  )
+}
+
 .sn_run_cluster_multi <- function(args) {
-  methods <- .sn_normalize_integration_methods(args$integration_method)
+  grid <- .sn_expand_cluster_grid(args)
+  methods <- unique(grid$method)
+  if (nrow(grid) > 100L) {
+    warning(
+      "The requested clustering parameter grid contains ", nrow(grid),
+      " runs and may require substantial compute and storage.",
+      call. = FALSE
+    )
+  }
   if (is.null(args$batch)) {
-    stop("Multiple `integration_method` values require `batch`.", call. = FALSE)
+    stop("Parameter-grid and multi-method runs currently require `batch`.", call. = FALSE)
   }
   modality <- match.arg(args$modality, c("rna", "cite_seq"))
   if (!identical(modality, "rna")) {
@@ -3050,68 +3252,154 @@ sn_run_cluster <- function(object,
   return_cluster <- isTRUE(args$return_cluster)
   base_cluster_name <- args$cluster_name
   comparison <- list(
+    schema_version = "2.0.0",
+    run_ids = grid$run_id,
     methods = methods,
     batch_by = args$batch,
     assay = args$assay,
     layer = args$layer,
-    results = stats::setNames(vector("list", length(methods)), methods),
+    grid = grid[, setdiff(colnames(grid), ".method_control"), drop = FALSE],
+    results = stats::setNames(vector("list", nrow(grid)), grid$run_id),
     created_at = as.character(Sys.time())
   )
   current <- args$object
+  simple_multi <- isTRUE(attr(grid, "simple_multi"))
+  previous_preprocess_id <- NULL
+  normalization_layers <- list()
 
-  for (method in methods) {
-    method_args <- args
-    method_control <- .sn_multi_method_control(
-      integration_control = args$integration_control,
-      methods = methods,
-      method = method
+  if (isTRUE(args$verbose)) {
+    .sn_log_info(
+      "[sn_run_cluster] Expanding {nrow(grid)} run(s) across ",
+      "{length(unique(grid$embedding_id))} unique embedding(s)."
     )
+  }
+
+  for (row_index in seq_len(nrow(grid))) {
+    row <- grid[row_index, , drop = FALSE]
+    method <- row$method[[1L]]
+    run_id <- row$run_id[[1L]]
+    embedding_id <- row$embedding_id[[1L]]
+    preprocess_id <- row$preprocess_id[[1L]]
+    if (!is.null(previous_preprocess_id) && !identical(previous_preprocess_id, preprocess_id)) {
+      assay_layers <- SeuratObject::Layers(current[[args$assay]])
+      if ("scale.data" %in% assay_layers) {
+        current[[args$assay]]["scale.data"] <- NULL
+      }
+    }
+    method_args <- args
+    method_control <- row$.method_control[[1L]]
     method_args$object <- current
+    method_args$normalization_method <- row$normalization_method[[1L]]
     method_args$integration_method <- method
     method_args$integration_control <- method_control
-    method_args$theta <- method_control$theta %||% args$theta
+    method_args$nfeatures <- row$nfeatures[[1L]]
+    method_args$npcs <- row$npcs[[1L]]
+    method_args$resolution <- row$resolution[[1L]]
+    method_args$cluster_algorithm <- row$cluster_algorithm[[1L]]
+    method_args$rare_feature_n <- row$rare_feature_n[[1L]]
+    method_args$theta <- row$theta[[1L]]
     method_args$group_by_vars <- method_control$group_by_vars %||% args$group_by_vars
     method_args$integration_control$theta <- NULL
     method_args$integration_control$group_by_vars <- NULL
     if (identical(method, "bbknn")) {
-      method_args$integration_control$graph_name <- paste0(method, "_snn")
-      method_args$integration_control$umap_reduction <- paste0("umap.", method)
+      method_args$integration_control$graph_name <- paste0(embedding_id, "_snn")
+      method_args$integration_control$umap_reduction <- paste0("umap.", embedding_id)
     }
     method_args$cluster_name <- if (is.null(base_cluster_name)) {
-      paste0(method, "_clusters")
+      paste0(run_id, "_clusters")
     } else {
-      paste0(base_cluster_name, ".", method)
+      paste0(base_cluster_name, ".", run_id)
     }
     method_args$umap_control <- utils::modifyList(
       args$umap_control,
       list(
-        reduction.name = paste0("umap.", method),
-        reduction.key = .sn_reduction_key("umap", method)
+        reduction.name = paste0("umap.", embedding_id),
+        reduction.key = .sn_reduction_key("umap", embedding_id)
       ),
       keep.null = TRUE
     )
-    method_args$run_tsne <- if (isTRUE(args$.run_tsne_supplied)) isTRUE(args$run_tsne) else TRUE
+    method_args$run_tsne <- isTRUE(args$run_tsne)
     method_args$tsne_control <- utils::modifyList(
       args$tsne_control,
       list(
-        reduction.name = paste0("tsne.", method),
-        reduction.key = .sn_reduction_key("tsne", method)
+        reduction.name = paste0("tsne.", embedding_id),
+        reduction.key = .sn_reduction_key("tsne", embedding_id)
       ),
       keep.null = TRUE
     )
     method_args$return_cluster <- return_cluster
     method_args$.return_object_for_multi <- return_cluster
-    method_args$.result_namespace <- method
+    method_args$.result_namespace <- embedding_id
+
+    existing_run <- names(comparison$results)[vapply(
+      comparison$results,
+      function(info) !is.null(info) && identical(info$embedding_id, embedding_id),
+      logical(1)
+    )]
+    if (length(existing_run) > 0L) {
+      existing <- comparison$results[[existing_run[[1L]]]]
+      snn_candidates <- existing$graph_names[grepl("_snn$", existing$graph_names)]
+      graph_name <- if (length(snn_candidates) > 0L) {
+        snn_candidates[[1L]]
+      } else {
+        existing$graph_names[[1L]]
+      }
+      current <- .sn_cluster_existing_grid_graph(
+        object = current,
+        args = method_args,
+        graph_name = graph_name,
+        cluster_name = method_args$cluster_name
+      )
+      comparison$results[[run_id]] <- utils::modifyList(
+        existing,
+        list(
+          run_id = run_id,
+          cluster_column = method_args$cluster_name,
+          parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE])
+        ),
+        keep.null = TRUE
+      )
+      previous_preprocess_id <- preprocess_id
+      next
+    }
 
     if (isTRUE(args$verbose)) {
-      .sn_log_info("[sn_run_cluster] Running comparison method '{method}'.")
+      .sn_log_info("[sn_run_cluster] Running grid entry '{run_id}'.")
     }
     current <- .sn_run_cluster_impl(method_args)
     stages <- current@misc$sn_run_cluster$stages %||% list()
-    comparison$results[[method]] <- list(
+    normalization_method <- row$normalization_method[[1L]]
+    normalized_layer <- "data"
+    if (length(unique(grid$normalization_method)) > 1L) {
+      normalized_layer <- normalization_layers[[normalization_method]] %||%
+        paste0("data.sn.", .sn_cluster_grid_id_value(normalization_method))
+      if (!normalized_layer %in% SeuratObject::Layers(current[[args$assay]])) {
+        SeuratObject::LayerData(
+          object = current,
+          assay = args$assay,
+          layer = normalized_layer
+        ) <- .sn_get_seurat_layer_data(current, assay = args$assay, layer = "data")
+      }
+      normalization_layers[[normalization_method]] <- normalized_layer
+    }
+    native_reduction <- stages$integration$reduction %||%
+      if (identical(method, "unintegrated")) "pca" else method
+    stored_reduction <- if (simple_multi) native_reduction else paste0("integrated.", embedding_id)
+    current <- .sn_alias_cluster_reduction(
+      current,
+      reduction = native_reduction,
+      alias = stored_reduction,
+      key_prefix = "integrated"
+    )
+    selected_features <- stages$integration$signature$features %||%
+      SeuratObject::VariableFeatures(current[[args$assay]])
+    comparison$results[[run_id]] <- list(
+      run_id = run_id,
+      embedding_id = embedding_id,
+      preprocess_id = preprocess_id,
       method = method,
-      integration_reduction = stages$integration$reduction %||%
-        if (identical(method, "unintegrated")) "pca" else method,
+      parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
+      integration_reduction = stored_reduction,
       cluster_column = method_args$cluster_name,
       graph_names = stages$neighbors$graph_names %||% character(0),
       umap_reduction = if (!return_cluster) stages$umap$reduction %||% NULL else NULL,
@@ -3120,9 +3408,12 @@ sn_run_cluster <- function(object,
       } else {
         NULL
       },
+      input_features = selected_features,
+      normalized_layer = normalized_layer,
       integration_control = method_control,
       integration = current@misc$integration %||% NULL
     )
+    previous_preprocess_id <- preprocess_id
   }
 
   current@misc$integration_comparison <- comparison
