@@ -22,7 +22,7 @@
       "edgeR::topTags"
     ],
     "repository": "https://git.bioconductor.org/packages/edgeR",
-    "versions": ["edgeR 4.10.1"],
+    "versions": ["edgeR 4.10.3"],
     "install_source": "Bioconductor"
   },
   "oracle": {
@@ -98,7 +98,7 @@
   "versions": {
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
-    "upstream": ["edgeR 4.10.1"],
+    "upstream": ["edgeR 4.10.3"],
     "material_dependencies": ["limma", "statmod"]
   },
   "ci": {
@@ -108,13 +108,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-pilots.R",
-    "date": "2026-08-20",
+    "date": "2026-08-23",
     "verdict": "pilot",
     "limitations": "The registered method remains in the frozen legacy inventory until fixture hashing, fresh-process, real/OOD, and release evidence are accepted."
   },
   "owner": {
     "subsystem": "bulk differential expression",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-20"
+    "last_reviewed": "2026-08-23"
   }
 }

@@ -1,6 +1,14 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-22
+Last updated: 2026-08-23
+
+## 2026-08-23
+
+- Strict backend-conformance CI must install the exact upstream versions named
+  by its executable contracts. An unversioned Bioconductor dependency is not a
+  floating compatibility test: it makes a reproducible contract fail whenever
+  the repository publishes a newer patch release. Version expansion requires a
+  separate comparison and contract update, not relaxation of the strict gate.
 
 ## 2026-08-22
 

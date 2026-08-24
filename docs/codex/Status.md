@@ -1,6 +1,13 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-22
+Last updated: 2026-08-23
+
+The strict backend-conformance workflow now installs the exact edgeR 4.10.3
+version recorded in the executable contract. The first remote run exposed that
+an unversioned `bioc::edgeR` specification resolved to 4.10.3: all direct
+scientific comparisons passed locally and remotely, but the old 4.10.1 label
+then failed the intended exact-version gate. The contract and CI dependency are
+now aligned to the newly exercised patch release.
 
 CellTypist Seurat export now preserves sparsity end to end. The selected layer
 is written as MatrixMarket plus exact gene/cell sidecars; the default retains

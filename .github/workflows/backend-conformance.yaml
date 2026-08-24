@@ -65,7 +65,7 @@ jobs:
             any::SeuratObject
             any::msigdbr
             bioc::clusterProfiler
-            bioc::edgeR
+            bioc::edgeR@4.10.3
 
       - name: Run static admission and micro-differential contracts
         run: |
