@@ -2084,8 +2084,10 @@ sn_check_version <- function(
 #'
 #' This helper installs the stable CRAN release when available, or the GitHub
 #' development version when requested, or installs from a local source tree or
-#' tarball. When `channel = "auto"`, it prefers CRAN and falls back to GitHub
-#' if no CRAN release is available.
+#' tarball. When `channel = "auto"`, an explicit local `source` is installed
+#' directly. Otherwise it prefers CRAN, falls back to GitHub, and, if neither
+#' remote can be reached, uses the current working directory when it is a
+#' source tree for `package`.
 #'
 #' @param channel One of \code{"auto"}, \code{"cran"}, \code{"github"}, or
 #'   \code{"local"}.
@@ -2093,7 +2095,8 @@ sn_check_version <- function(
 #' @param source Installation source. For \code{channel = "github"}, supply an
 #'   \code{"owner/repo"} string; when omitted, Shennong uses
 #'   \code{"zerostwo/shennong"}. For \code{channel = "local"}, supply a local
-#'   package directory or source tarball path.
+#'   package directory or source tarball path. An existing local package source
+#'   also selects the local channel automatically when `channel = "auto"`.
 #' @param ref GitHub ref used for \code{channel = "github"}. Defaults to
 #'   \code{"main"}.
 #' @param repos CRAN-like repositories used by \code{install.packages()}.
@@ -2109,6 +2112,7 @@ sn_check_version <- function(
 #' sn_install_shennong(channel = "github")
 #' sn_install_shennong(channel = "github", source = "zerostwo/shennong", ref = "main")
 #' sn_install_shennong(channel = "local", source = "~/personal/packages/shennong")
+#' sn_install_shennong(source = ".")
 #' }
 #'
 #' @export
@@ -2134,9 +2138,42 @@ sn_install_shennong <- function(
     return(invisible(channel))
   }
 
+  local_source <- .sn_find_local_package_source(
+    source = source,
+    package = package,
+    discover = FALSE
+  )
+  if (identical(channel, "auto") && !is.null(local_source)) {
+    check_installed("remotes", reason = "to install Shennong from a local path.")
+    .sn_install_local_release(path = local_source, args = list(...))
+    return(invisible("local"))
+  }
+
   source <- source %||% "zerostwo/shennong"
   cran_version <- .sn_get_cran_version(package = package, repos = repos)
   github_version <- .sn_get_github_version(repo = source, ref = ref)
+
+  if (identical(channel, "auto") &&
+      is.null(cran_version) && is.null(github_version)) {
+    local_source <- .sn_find_local_package_source(
+      package = package,
+      discover = TRUE
+    )
+    if (!is.null(local_source)) {
+      warning(
+        sprintf(
+          "CRAN and GitHub versions are unavailable; falling back to the local %s source at '%s'.",
+          package,
+          local_source
+        ),
+        call. = FALSE
+      )
+      check_installed("remotes", reason = "to install Shennong from a local path.")
+      .sn_install_local_release(path = local_source, args = list(...))
+      return(invisible("local"))
+    }
+  }
+
   resolved_channel <- .sn_resolve_release_channel(
     channel = channel,
     cran_version = cran_version,
@@ -2177,6 +2214,38 @@ sn_install_shennong <- function(
     remotes::install_local,
     c(list(path = path), args)
   )
+}
+
+.sn_find_local_package_source <- function(source = NULL,
+                                          package = "Shennong",
+                                          discover = FALSE) {
+  candidate <- source
+  if (is.null(candidate) && isTRUE(discover)) {
+    candidate <- getwd()
+  }
+  if (is.null(candidate) || length(candidate) != 1L || !nzchar(candidate)) {
+    return(NULL)
+  }
+
+  candidate <- path.expand(candidate)
+  if (!dir.exists(candidate)) {
+    return(NULL)
+  }
+
+  description <- file.path(candidate, "DESCRIPTION")
+  if (!file.exists(description)) {
+    return(NULL)
+  }
+
+  package_name <- tryCatch(
+    read.dcf(description, fields = "Package")[[1L]],
+    error = function(e) NA_character_
+  )
+  if (is.na(package_name) || !identical(package_name, package)) {
+    return(NULL)
+  }
+
+  normalizePath(candidate, winslash = "/", mustWork = TRUE)
 }
 
 .sn_pixi_environment_names <- function() {

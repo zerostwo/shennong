@@ -277,7 +277,9 @@ This skill is the main entry point for package usage.
    prepared, or invoked directly.
 13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
-   maintenance tasks.
+   maintenance tasks. From a Shennong source checkout, use
+   `sn_install_shennong(channel = "local", source = ".")` to install without
+   remote version discovery.
 14. For R acceleration, inspect all strict lazy defaults with
    `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
    "lisi", "nichenetr", "scdblfinder", "seurat", "soupx",

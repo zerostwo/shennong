@@ -156,6 +156,68 @@ test_that("sn_install_shennong supports local installs", {
   expect_equal(captured$path, "/tmp/Shennong")
 })
 
+test_that("sn_install_shennong auto installs an explicit local source without remote probes", {
+  source_dir <- withr::local_tempdir()
+  writeLines(c("Package: Shennong", "Version: 0.3.0.9000"), file.path(source_dir, "DESCRIPTION"))
+
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_get_cran_version = function(...) stop("CRAN should not be queried"),
+    .sn_get_github_version = function(...) stop("GitHub should not be queried"),
+    check_installed = function(...) invisible(TRUE),
+    .sn_install_local_release = function(path, args = list()) {
+      captured <<- list(path = path, args = args)
+      invisible(TRUE)
+    },
+    .package = "Shennong"
+  )
+
+  result <- Shennong::sn_install_shennong(source = source_dir)
+
+  expect_identical(result, "local")
+  expect_equal(captured$path, normalizePath(source_dir))
+})
+
+test_that("sn_install_shennong auto falls back to the current source tree", {
+  source_dir <- withr::local_tempdir()
+  writeLines(c("Package: Shennong", "Version: 0.3.0.9000"), file.path(source_dir, "DESCRIPTION"))
+  withr::local_dir(source_dir)
+
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_get_cran_version = function(...) NULL,
+    .sn_get_github_version = function(...) NULL,
+    check_installed = function(...) invisible(TRUE),
+    .sn_install_local_release = function(path, args = list()) {
+      captured <<- list(path = path, args = args)
+      invisible(TRUE)
+    },
+    .package = "Shennong"
+  )
+
+  expect_warning(
+    result <- Shennong::sn_install_shennong(),
+    "falling back to the local Shennong source"
+  )
+
+  expect_identical(result, "local")
+  expect_equal(captured$path, normalizePath(source_dir))
+})
+
+test_that("sn_install_shennong auto still errors without any available source", {
+  withr::local_dir(withr::local_tempdir())
+  local_mocked_bindings(
+    .sn_get_cran_version = function(...) NULL,
+    .sn_get_github_version = function(...) NULL,
+    .package = "Shennong"
+  )
+
+  expect_error(
+    Shennong::sn_install_shennong(),
+    "Could not determine a remote version"
+  )
+})
+
 test_that("sn_install_shennong requires source for local installs", {
   expect_error(
     Shennong::sn_install_shennong(

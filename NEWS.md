@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Fixed `sn_install_shennong()` so an explicit local source is installed
+  without remote version probes, while `channel = "auto"` falls back to the
+  current Shennong source tree when both CRAN and GitHub version checks are
+  unavailable.
 - Fixed `sn_run_regulatory_activity(method = "progeny")`: the PROGENy model is
   now reshaped from its wide gene-by-pathway form into the long
   source/target/weight network that `decoupleR` expects, instead of failing

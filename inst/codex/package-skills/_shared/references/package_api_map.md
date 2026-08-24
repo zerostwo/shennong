@@ -443,7 +443,9 @@ Runtime reference datasets:
 ## Utilities and Project Setup
 
 - `sn_check_version()`: check package version against CRAN or a GitHub `source` / `ref`
-- `sn_install_shennong()`: install Shennong from CRAN, GitHub `source` / `ref`, or a local `source`
+- `sn_install_shennong()`: install Shennong from CRAN, GitHub `source` / `ref`,
+  or a local `source`; `auto` can fall back to the current Shennong source tree
+  when both remote version checks are unavailable
 - `sn_check_file()`: verify file paths
 - `sn_get_codex_skill_path()`: locate packaged skills and template assets
 - `sn_list_dependencies()`: list required and recommended package dependencies

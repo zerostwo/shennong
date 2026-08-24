@@ -1313,6 +1313,15 @@ Last updated: 2026-08-23
   DE result under `object@misc$de_results` and keeps `sn_run_regulatory_activity()`
   as the API for footprint-style TF activity.
 
+## 2026-08-23
+
+- Automatic installation may recover from simultaneous CRAN and GitHub version
+  lookup failures by using the current working directory, but only after
+  validating that its DESCRIPTION `Package` field matches the requested
+  package. Explicit `cran` and `github` channels remain strict and do not fall
+  back silently. An explicit local `source` with `channel = "auto"` selects the
+  local path immediately and avoids unnecessary network probes.
+
 ## 2026-03-28
 
 - Project scaffolding should present one clear public entry point:

@@ -262,7 +262,10 @@ recommended, or optional for your workflow.
 ```{r dependencies, eval = FALSE}
 sn_check_version()
 
-sn_install_shennong(source = "github", ref = "main")
+sn_install_shennong(channel = "github", ref = "main")
+
+# From a local Shennong source checkout:
+sn_install_shennong(channel = "local", source = ".")
 
 deps <- sn_list_dependencies()
 dplyr::count(deps, scope, source)

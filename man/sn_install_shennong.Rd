@@ -22,7 +22,8 @@ sn_install_shennong(
 \item{source}{Installation source. For \code{channel = "github"}, supply an
 \code{"owner/repo"} string; when omitted, Shennong uses
 \code{"zerostwo/shennong"}. For \code{channel = "local"}, supply a local
-package directory or source tarball path.}
+package directory or source tarball path. An existing local package source
+also selects the local channel automatically when \code{channel = "auto"}.}
 
 \item{ref}{GitHub ref used for \code{channel = "github"}. Defaults to
 \code{"main"}.}
@@ -40,14 +41,17 @@ Invisibly returns the chosen installation channel.
 \description{
 This helper installs the stable CRAN release when available, or the GitHub
 development version when requested, or installs from a local source tree or
-tarball. When \code{channel = "auto"}, it prefers CRAN and falls back to GitHub
-if no CRAN release is available.
+tarball. When \code{channel = "auto"}, an explicit local \code{source} is installed
+directly. Otherwise it prefers CRAN, falls back to GitHub, and, if neither
+remote can be reached, uses the current working directory when it is a
+source tree for \code{package}.
 }
 \examples{
 \dontrun{
 sn_install_shennong(channel = "github")
 sn_install_shennong(channel = "github", source = "zerostwo/shennong", ref = "main")
 sn_install_shennong(channel = "local", source = "~/personal/packages/shennong")
+sn_install_shennong(source = ".")
 }
 
 }

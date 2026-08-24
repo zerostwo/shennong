@@ -953,3 +953,26 @@ release gate.
 Ignored `dev/outputs/` and benchmark input/run caches contain several gigabytes
 of untracked data and scripts. They were not deleted automatically; see
 `Roadmap.md`.
+
+## 2026-08-23 local installer fallback
+
+- Reproduced the installer state with installed Shennong 0.3.0 and source
+  0.3.0.9000. Shennong is not listed by the configured CRAN repository; the
+  GitHub DESCRIPTION endpoint was reachable during diagnosis, indicating the
+  reported dual-remote failure was transient or session-specific.
+- `sn_install_shennong(source = <local source>)` now selects the local channel
+  without querying CRAN or GitHub. With no explicit source, `channel = "auto"`
+  falls back to the current working directory only when its DESCRIPTION names
+  the requested package.
+- Focused versioning tests pass with `FAIL 0 | WARN 0 | SKIP 0 | PASS 102`.
+- The full local suite passes with `FAIL 0 | WARN 2 | SKIP 3 | PASS 4588`.
+  The warnings are the pre-existing Seurat command-log warning and a local
+  `glmmTMB`/`TMB` build-version mismatch; skips are for unavailable ROGUE,
+  scmap, and the optional public-data fixture.
+- `scripts/check-prepush.R --filter="versioning" --quick` passes targeted
+  tests, source build, structural `R CMD check`, and pkgdown reference-index
+  validation with `Status: OK`; the complete pkgdown site also rebuilds.
+- The source package installed successfully into the user R library, updating
+  the live installation from 0.3.0 to 0.3.0.9000. A subsequent real
+  `sn_install_shennong(source = ".")` call returned `channel = "local"` and
+  retained the installed 0.3.0.9000 version.
