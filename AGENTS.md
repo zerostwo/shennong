@@ -14,6 +14,7 @@
 
 - `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` runs the local test suite.
 - `Rscript -e 'testthat::test_local(filter = "composition", stop_on_failure = TRUE)'` runs the current focused tests while iterating on composition-related changes.
+- `Rscript -e 'testthat::test_local(filter = "backend-conformance", stop_on_failure = TRUE)'` runs the static method-admission gate and current micro-differential backend contracts.
 - `Rscript -e 'if (requireNamespace("devtools", quietly = TRUE)) devtools::document() else stop("devtools not installed")'` regenerates `NAMESPACE` and `man/` after roxygen changes.
 - `R CMD build .` builds the package tarball.
 - `R CMD check --no-manual Shennong_*.tar.gz` is the full package check after a successful build. In local environments without optional Suggests, use `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual Shennong_*.tar.gz`.
@@ -33,6 +34,8 @@
 ## Testing Guidelines
 
 - Add or update tests before changing behavior in risky areas.
+- Any new `implemented: true` analysis method or external backend must include an admitted machine-readable contract under `inst/conformance/contracts/`; do not extend `tests/conformance/legacy-methods.txt`. Follow `docs/codex/BackendConformance.md` and compare the Shennong call with a direct upstream reference using the same inputs, parameters, seed, threads, and dependency version.
+- Every public analysis parameter must appear in its backend contract as pass-through, transformed, wrapper-only, unsupported/fallback, or waived with a reason. A new or changed parameter without an executable case or explicit waiver fails admission.
 - Prefer lightweight tests that do not require external downloads or optional heavyweight packages unless the function contract truly depends on them.
 - Run the narrowest relevant tests first, then rerun the full local suite before closing a milestone.
 - If roxygen, exports, or package metadata change, regenerate documentation and rerun the relevant validation commands.

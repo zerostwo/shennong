@@ -18,6 +18,9 @@ run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
   nzchar(trajectory_fixture) && file.exists(trajectory_fixture)
 real_profile <- Sys.getenv("SHENNONG_REAL_PROFILE", unset = "core")
 run_extended <- run_vignette && identical(real_profile, "all")
+trajectory_ready <- run_extended &&
+  requireNamespace("slingshot", quietly = TRUE) &&
+  requireNamespace("tradeSeq", quietly = TRUE)
 run_monocle3 <- run_extended && requireNamespace("monocle3", quietly = TRUE)
 palantir_result_path <- Sys.getenv("SHENNONG_PALANTIR_RESULT", unset = "")
 run_palantir <- run_extended && nzchar(palantir_result_path) &&
@@ -42,6 +45,16 @@ This article reads the locally materialized Hermann mouse spermatogenesis
 fixture from `SHENNONG_REAL_DATA_DIR`. The analysis runs only when that file is
 present and `SHENNONG_RUN_VIGNETTES=true`; a normal package check therefore
 knits the article without downloading data or executing the analysis.
+
+```{r trajectory-runtime-status}
+data.frame(
+  step = c("fixture and clustering", "Slingshot + tradeSeq trajectory"),
+  status = c(
+    if (run_vignette) "executed below" else "disabled or fixture missing",
+    if (trajectory_ready) "executed below" else "extended profile or optional dependencies unavailable"
+  )
+)
+```
 
 ## Load and prepare the real trajectory fixture
 
@@ -92,7 +105,7 @@ sn_plot_dim(
 )
 ```
 
-## Infer and store the core trajectory
+## Infer and store the extended trajectory
 
 Trajectory orientation is not inferred from the embedding. The code resolves
 an early spermatogonial label and a late spermatid label from the source
@@ -102,7 +115,7 @@ avoiding unstable lineage geometry from very small source-label groups. If
 either anchor cannot be resolved, the article stops rather than guessing an
 orientation.
 
-```{r run-trajectory}
+```{r run-trajectory, eval=trajectory_ready}
 first_matching_label <- function(labels, patterns, role) {
   for (pattern in patterns) {
     hit <- labels[grepl(pattern, labels, ignore.case = TRUE)]
@@ -202,7 +215,7 @@ The cell table retains pseudotime and lineage probability for every inferred
 lineage. Dynamic-gene, fitted-trend, convergence, and terminal-state tables are
 kept with the topology rather than recomputed inside plotting code.
 
-```{r inspect-trajectory}
+```{r inspect-trajectory, eval=trajectory_ready}
 sn_list_results(trajectory_object, type = "trajectory")
 
 trajectory <- sn_get_result(
@@ -229,7 +242,7 @@ trajectory$tables$convergence |>
 The lineage name is taken from the stored graph, so the probability plot stays
 aligned with the backend result instead of assuming a hard-coded name.
 
-```{r plot-trajectory}
+```{r plot-trajectory, eval=trajectory_ready}
 lineage_name <- names(trajectory$graphs$lineages)[[1]]
 
 sn_plot_trajectory(trajectory)
@@ -239,7 +252,7 @@ sn_plot_dynamic_heatmap(trajectory)
 sn_plot_gene_trend(trajectory, features = trend_features)
 ```
 
-```{r plot-trajectory-branches, eval=run_vignette && trajectory$diagnostics$n_lineages > 1L}
+```{r plot-trajectory-branches, eval=trajectory_ready && trajectory$diagnostics$n_lineages > 1L}
 sn_plot_branch_comparison(trajectory, test = "pattern")
 ```
 

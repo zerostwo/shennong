@@ -5,7 +5,7 @@
 
 .sn_autozyme_fixed_positions <- function(text, pattern) {
   positions <- gregexpr(pattern, text, fixed = TRUE)[[1]]
-  if (identical(positions, -1L)) integer(0) else positions
+  if (length(positions) == 1L && positions[[1L]] == -1L) integer(0) else positions
 }
 
 .sn_expect_autozyme_wrapper_before <- function(name,
@@ -63,17 +63,17 @@
   inspect_call(body(fun))
 }
 
-test_that("enrichment, WGCNA, and tradeSeq use scoped default patches", {
+test_that("GO enrichment is scoped while unverified heavy patches stay explicit", {
   enrichment <- .sn_autozyme_workflow_body("sn_enrich")
   enrichment_wrapper <- .sn_autozyme_fixed_positions(
     enrichment,
     ".sn_with_default_autozyme"
   )
-  expect_length(enrichment_wrapper, 2L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, '"clusterprofiler"'), 1L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, '"fgsea"'), 1L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, "strict = FALSE"), 2L)
-  expect_length(.sn_autozyme_fixed_positions(enrichment, "with_enrichment_autozyme"), 11L)
+  expect_length(enrichment_wrapper, 1L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, '"clusterprofiler"'), 2L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, '"fgsea"'), 0L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, "strict = TRUE"), 1L)
+  expect_length(.sn_autozyme_fixed_positions(enrichment, "with_enrichment_autozyme"), 10L)
 
   for (target in c(
     "clusterProfiler::gseGO", "clusterProfiler::enrichGO",
@@ -102,20 +102,24 @@ test_that("enrichment, WGCNA, and tradeSeq use scoped default patches", {
 
   .sn_expect_autozyme_wrapper_before(
     "sn_run_wgcna",
-    ".sn_with_default_autozyme",
+    ".sn_with_explicit_autozyme_or_disabled",
     c("WGCNA::goodSamplesGenes", "WGCNA::blockwiseModules", ".sn_bulk_result"),
     minimum_wrappers = 1L,
     patch = "wgcna"
   )
   .sn_expect_autozyme_wrapper_before(
     ".sn_fit_trajectory_dynamics",
-    ".sn_with_default_autozyme",
+    ".sn_with_explicit_autozyme_or_disabled",
     "tradeSeq::fitGAM",
     patch = "tradeseq"
   )
+  expect_false("wgcna" %in% Shennong:::.sn_autozyme_default_patches)
+  expect_false("tradeseq" %in% Shennong:::.sn_autozyme_default_patches)
+  expect_false("coralysis" %in% Shennong:::.sn_autozyme_default_patches)
+  expect_false("decontx_standalone" %in% Shennong:::.sn_autozyme_default_patches)
   .sn_expect_autozyme_wrapper_before(
     "sn_run_trajectory",
-    ".sn_with_default_autozyme",
+    ".sn_with_explicit_autozyme_or_disabled",
     c(".sn_fit_trajectory_dynamics", ".sn_analysis_provenance"),
     patch = "tradeseq"
   )
@@ -125,6 +129,18 @@ test_that("enrichment, WGCNA, and tradeSeq use scoped default patches", {
     c(".sn_trajectory_slingshot", ".sn_analysis_provenance"),
     patch = "slingshot"
   )
+})
+
+test_that("automatic workflow scopes do not admit upstream version drift", {
+  for (name in c(
+    "sn_run_cell_communication",
+    ".sn_score_programs_ucell",
+    ".sn_with_default_seurat_autozyme"
+  )) {
+    text <- .sn_autozyme_workflow_body(name)
+    expect_true(grepl("strict = TRUE", text, fixed = TRUE), info = name)
+    expect_false(grepl("strict = FALSE", text, fixed = TRUE), info = name)
+  }
 })
 
 test_that("Seurat preprocessing and DE enable acceleration only on Seurat paths", {
@@ -156,8 +172,8 @@ test_that("Seurat preprocessing and DE enable acceleration only on Seurat paths"
 test_that("Seurat clustering, priority, and plotting hooks precede patched targets", {
   .sn_expect_autozyme_wrapper_before(
     ".sn_run_seurat_layer_integration",
-    ".sn_with_default_seurat_autozyme",
-    c("Seurat::CCAIntegration", "Seurat::IntegrateLayers"),
+    ".sn_with_autozyme_disabled",
+    c("Seurat::IntegrateLayers", "SeuratObject::JoinLayers"),
     minimum_wrappers = 2L
   )
   .sn_expect_autozyme_wrapper_before(
@@ -198,14 +214,7 @@ test_that("Seurat clustering, priority, and plotting hooks precede patched targe
     "Seurat::ScaleData"
   )
 
-  expect_true(
-    .sn_autozyme_target_is_wrapped(
-      ".sn_run_cluster_impl",
-      ".sn_with_default_seurat_autozyme",
-      "Seurat::FindNeighbors"
-    ),
-    info = ".sn_run_cluster_impl must scope the available FindNeighbors patch target"
-  )
+  expect_length(Shennong:::.sn_seurat_autozyme_patches("findneighbors"), 0L)
 
   for (name in c(
     ".sn_make_temporary_grouping",
@@ -223,19 +232,54 @@ test_that("Seurat clustering, priority, and plotting hooks precede patched targe
   }
 })
 
-test_that("Coralysis integration scopes its exact AutoZyme patch", {
+test_that("Coralysis remains explicit until its Shennong call shape is validated", {
   .sn_expect_autozyme_wrapper_before(
     ".sn_run_coralysis_integration",
-    ".sn_with_default_autozyme",
+    ".sn_with_explicit_autozyme_or_disabled",
     ".sn_run_coralysis_integration_impl",
     patch = "coralysis"
   )
   text <- .sn_autozyme_workflow_body(".sn_run_coralysis_integration")
-  expect_true(grepl('operation = "runparalleldivisiveicp"', text, fixed = TRUE))
   expect_true(grepl(
     'get("RunParallelDivisiveICP"',
     .sn_autozyme_workflow_body(".sn_run_coralysis_integration_impl"),
     fixed = TRUE
+  ))
+  expect_false("coralysis" %in% Shennong:::.sn_autozyme_default_patches)
+})
+
+test_that("unadmitted workflow patches are guarded by the explicit-only scope", {
+  targets <- list(
+    .sn_run_coralysis_integration = ".sn_run_coralysis_integration_impl",
+    .sn_remove_ambient_decontx = "decontX::decontX",
+    .sn_fit_trajectory_dynamics = "tradeSeq::fitGAM",
+    sn_run_wgcna = "WGCNA::blockwiseModules"
+  )
+  for (name in names(targets)) {
+    .sn_expect_autozyme_wrapper_before(
+      name,
+      ".sn_with_explicit_autozyme_or_disabled",
+      targets[[name]]
+    )
+  }
+})
+
+test_that("owned Seurat merges are scoped and layer integration fails closed", {
+  for (name in c(".sn_transfer_labels_scanvi", "sn_simulate_scdesign3")) {
+    expect_true(
+      .sn_autozyme_target_is_wrapped(
+        name,
+        ".sn_with_default_autozyme",
+        "merge"
+      ),
+      info = paste(name, "must scope its Seurat merge")
+    )
+    expect_match(.sn_autozyme_workflow_body(name), 'patches = "seurat_merge"')
+  }
+  expect_true(.sn_autozyme_target_is_wrapped(
+    ".sn_run_seurat_layer_integration",
+    ".sn_with_autozyme_disabled",
+    "SeuratObject::JoinLayers"
   ))
 })
 
@@ -255,12 +299,12 @@ test_that("the Seurat wrapper retains BPCells-safe narrow patches", {
     .sn_with_default_autozyme = function(expr, patches, strict = TRUE, operation = NULL) {
       scoped_calls <<- scoped_calls + 1L
       expected <- if (uses_bpcells) {
-        "seurat_joinlayers"
+        character()
       } else {
-        "seurat"
+        character()
       }
       expect_identical(patches, expected)
-      expect_identical(strict, uses_bpcells)
+      expect_true(strict)
       expect_identical(operation, if (uses_bpcells) "joinlayers" else "runpca")
       force(expr)
     },
@@ -300,8 +344,9 @@ test_that("Seurat AutoZyme scopes resolve to the actual operation", {
     Shennong:::.sn_seurat_autozyme_operations(quote(Seurat::RunPCA(object))),
     "runpca"
   )
-  expect_identical(Shennong:::.sn_seurat_autozyme_patches("runpca"), "seurat")
-  expect_identical(Shennong:::.sn_seurat_autozyme_patches("joinlayers"), "seurat_joinlayers")
+  expect_length(Shennong:::.sn_seurat_autozyme_patches("runpca"), 0L)
+  expect_length(Shennong:::.sn_seurat_autozyme_patches("joinlayers"), 0L)
+  expect_identical(Shennong:::.sn_seurat_autozyme_patches("normalizedata"), "seurat")
   expect_identical(Shennong:::.sn_seurat_autozyme_patches("merge"), "seurat_merge")
   expect_length(Shennong:::.sn_seurat_autozyme_patches("findneighbors"), 0L)
 })

@@ -45,3 +45,8 @@ runs, promoted derived data, and exported results.
 - Use project skills in `skills/` for repeatable governance actions.
 - Use `Shennong::sn_mcp_server_config()` when an agent needs read-only discovery
   of the installed package API; keep executable analysis in `scripts/`.
+- Store an opt-in `Shennong::sn_enable_usage_tracking()` SQLite file below the
+  ignored `runs/` tree, never in tracked source or results directories. Enable
+  before caching Shennong function references. Managed remote research remains
+  local-outbox-first and requires explicit consent plus
+  `Shennong::sn_flush_usage_tracking()`; never commit connection credentials.

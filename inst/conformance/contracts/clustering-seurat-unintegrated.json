@@ -1,0 +1,118 @@
+{
+  "schema_version": "shennong.dev/backend-conformance/v1",
+  "id": "clustering::seurat_unintegrated",
+  "status": "pilot",
+  "shennong": {
+    "function": "sn_run_cluster",
+    "selector": {"normalization_method": "seurat", "integration_method": "unintegrated", "batch": null},
+    "version": "0.3.0.9000",
+    "registry_key": null
+  },
+  "upstream": {
+    "language": "R",
+    "runtime": "r",
+    "package": "Seurat",
+    "api": [
+      "Seurat::NormalizeData",
+      "Seurat::FindVariableFeatures",
+      "Seurat::ScaleData",
+      "Seurat::RunPCA",
+      "Seurat::FindNeighbors",
+      "Seurat::FindClusters",
+      "Seurat::RunUMAP"
+    ],
+    "repository": "https://github.com/satijalab/seurat",
+    "versions": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "install_source": "CRAN or the repository dependency profile"
+  },
+  "oracle": {
+    "type": "versioned_upstream_only_pipeline",
+    "call": "NormalizeData -> FindVariableFeatures -> ScaleData -> RunPCA -> FindNeighbors -> FindClusters -> RunUMAP",
+    "harness": "tests/testthat/test-backend-conformance-clustering.R"
+  },
+  "inputs": {
+    "classes": ["Seurat", "Assay5"],
+    "modalities": ["single-cell RNA"],
+    "assays_layers": ["RNA/counts"],
+    "storage_backends": ["dgCMatrix"],
+    "requirements": ["one in-memory counts layer", "unique feature and cell names", "no batch integration"]
+  },
+  "parameters": [
+    {"wrapper": "object", "role": "input_adapter", "upstream": "object passed through every stage", "scenarios": ["synthetic RNA Assay5"]},
+    {"wrapper": "batch", "role": "backend_selector", "upstream": "NULL selects the unintegrated pipeline", "scenarios": ["NULL"]},
+    {"wrapper": "normalization_method", "role": "backend_selector", "upstream": "selects Seurat::NormalizeData", "scenarios": ["seurat"]},
+    {"wrapper": "integration_method", "role": "backend_selector", "upstream": "unintegrated retains the PCA reduction", "scenarios": ["unintegrated"]},
+    {"wrapper": "integration_control", "role": "not_applicable", "upstream": "no integration backend in this subject", "scenarios": ["empty list"]},
+    {"wrapper": "nfeatures", "role": "pass_through", "upstream": "FindVariableFeatures(nfeatures)", "scenarios": [40]},
+    {"wrapper": "hvg_features", "role": "wrapper_control", "upstream": "optional additions to the selected feature set", "scenarios": ["NULL"]},
+    {"wrapper": "vars_to_regress", "role": "pass_through", "upstream": "ScaleData(vars.to.regress)", "scenarios": ["NULL"]},
+    {"wrapper": "resolution", "role": "pass_through", "upstream": "FindClusters(resolution)", "scenarios": [0.4]},
+    {"wrapper": "cluster_algorithm", "role": "input_transform", "upstream": "louvain maps to FindClusters algorithm 1", "scenarios": ["louvain"]},
+    {"wrapper": "cluster_name", "role": "pass_through", "upstream": "FindClusters(cluster.name)", "scenarios": ["conformance_clusters"]},
+    {"wrapper": "cluster_n_start", "role": "pass_through", "upstream": "FindClusters(n.start)", "scenarios": [10]},
+    {"wrapper": "cluster_n_iter", "role": "pass_through", "upstream": "FindClusters(n.iter)", "scenarios": [10]},
+    {"wrapper": "cluster_random_seed", "role": "reproducibility", "upstream": "FindClusters(random.seed)", "scenarios": [717]},
+    {"wrapper": "cluster_group_singletons", "role": "pass_through", "upstream": "FindClusters(group.singletons)", "scenarios": [true]},
+    {"wrapper": "leiden_method", "role": "pass_through", "upstream": "FindClusters(leiden_method); ignored by algorithm 1", "scenarios": ["leidenbase"]},
+    {"wrapper": "leiden_objective_function", "role": "pass_through", "upstream": "FindClusters(leiden_objective_function); ignored by algorithm 1", "scenarios": ["modularity"]},
+    {"wrapper": "...", "role": "parameter_map", "upstream": "block_genes, rare features, PCA/dims, reuse, install, UMAP, t-SNE, assay/layer, and runtime controls", "scenarios": ["block_genes NULL", "rare features disabled", "8 PCs", "reuse FALSE", "single-thread UMAP"]}
+  ],
+  "outputs": {
+    "scientific": ["normalized data", "variable features", "scaled data", "PCA", "NN graph", "SNN graph", "cluster partition", "UMAP"],
+    "wrapper": ["counts unchanged", "stage manifest and command provenance added"],
+    "waivers": ["Shennong-owned misc and command records are not whole-object compared."]
+  },
+  "equivalence": {
+    "class": "semantic_exact",
+    "projection": ["RNA counts/data/scale.data", "variable features", "PCA embeddings", "RNA_nn", "RNA_snn", "cluster labels", "UMAP embeddings"],
+    "absolute_tolerance": 1e-12,
+    "relative_tolerance": 1e-12,
+    "ordering": "feature and cell order are exact",
+    "reason": "The reference reproduces every declared Seurat stage with identical effective arguments, seeds, and one UMAP thread."
+  },
+  "execution": {
+    "seed": 717,
+    "rng_kind": "R session default, recorded at runtime",
+    "threads": 1,
+    "fresh_process": false,
+    "acceleration": "AutoZyme disabled and any loaded patch suspended",
+    "environment": {"AUTOZYME_DISABLED": "true", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}
+  },
+  "fixtures": [
+    {
+      "id": "synthetic-seurat-cluster-tiny-v1",
+      "tier": "tiny",
+      "source": "generated in the executable test",
+      "license": "repository test fixture",
+      "sha256": null,
+      "role": "C1 stage-parity pilot",
+      "seed": 2601
+    }
+  ],
+  "conditions": {
+    "expected": ["none in the validated case"],
+    "outside_envelope": "Batch integration, blocked/rare features, alternate normalization, multimodal data, alternate clustering, t-SNE, and reuse require separate subjects or scenarios."
+  },
+  "versions": {
+    "R": "recorded at runtime",
+    "Shennong": "0.3.0.9000",
+    "upstream": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "material_dependencies": ["Matrix", "uwot", "igraph"]
+  },
+  "ci": {
+    "required_tiers": ["C0-static", "C1-dispatch-contract"],
+    "profile": "backend-conformance",
+    "platforms": ["ubuntu-latest"]
+  },
+  "evidence": {
+    "test_file": "tests/testthat/test-backend-conformance-clustering.R",
+    "date": "2026-08-21",
+    "verdict": "pilot",
+    "limitations": "Fixture hashing, fresh-process, real/OOD, alternate parameter, and integration-backend tiers remain pending."
+  },
+  "owner": {
+    "subsystem": "clustering",
+    "maintainer": "Shennong maintainers",
+    "last_reviewed": "2026-08-21"
+  }
+}

@@ -1131,15 +1131,11 @@ sn_filter_cells <- function(
         BPPARAM = BiocParallel::SerialParam(progressbar = FALSE)
       ),
       patches = "scdblfinder",
-      strict = FALSE
+      strict = TRUE
     ))
   }
 
-  .sn_with_default_autozyme(
-    scDblFinder::scDblFinder(sce = sce, ...),
-    patches = "scdblfinder",
-    strict = FALSE
-  )
+  .sn_with_autozyme_disabled(scDblFinder::scDblFinder(sce = sce, ...))
 }
 
 .sn_run_grouped_bpcells_scDblFinder <- function(
@@ -1877,10 +1873,9 @@ sn_find_doublets <- function(
   decontx_args <- c(decontx_args, extra_args)
 
   result <- withCallingHandlers(
-    .sn_with_default_autozyme(
+    .sn_with_explicit_autozyme_or_disabled(
       do.call(decontX::decontX, decontx_args),
-      patches = "decontx_standalone",
-      strict = FALSE
+      patches = "decontx_standalone"
     ),
     warning = function(w) {
       message <- conditionMessage(w)

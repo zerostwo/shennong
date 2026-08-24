@@ -41,6 +41,7 @@ sn_metabolic_signatures <- function(species = c("human", "mouse")) {
     scoring_method,
     mean = .sn_score_programs_mean(matrix, matched$signatures),
     ucell = .sn_score_programs_ucell(matrix, matched$signatures, backend_control$ucell %||% list()),
+    aucell = .sn_score_programs_aucell(matrix, matched$signatures, backend_control$aucell %||% list()),
     gsva = .sn_score_programs_gsva(matrix, matched$signatures, "gsva", backend_control$gsva %||% list()),
     ssgsea = .sn_score_programs_gsva(matrix, matched$signatures, "ssgsea", backend_control$ssgsea %||% list())
   )
@@ -90,7 +91,8 @@ sn_metabolic_signatures <- function(species = c("human", "mouse")) {
                                        method,
                                        assay,
                                        layer,
-                                       backend_control) {
+                                       backend_control,
+                                       min_genes = 3L) {
   if (is.function(backend_control$runner)) {
     output <- backend_control$runner(object = object, assay = assay, layer = layer, method = method)
     return(.sn_standardize_metabolism_output(output, colnames(object), method))
@@ -99,18 +101,30 @@ sn_metabolic_signatures <- function(species = c("human", "mouse")) {
     return(.sn_standardize_metabolism_output(backend_control$result, colnames(object), method))
   }
   if (identical(method, "scmetabolism")) {
-    check_installed("scMetabolism", reason = "to run the scMetabolism backend.")
+    check_installed("scMetabolism", reason = "to use its bundled metabolic gene sets.")
     controls <- backend_control
     controls$runner <- NULL
     controls$result <- NULL
-    defaults <- list(
-      obj = object, method = controls$scoring_method %||% "AUCell",
-      imputation = FALSE, ncores = 1, metabolism.type = controls$collection %||% "KEGG"
-    )
-    controls$scoring_method <- NULL
+    collection <- controls$collection %||% "KEGG"
     controls$collection <- NULL
-    scored <- do.call(scMetabolism::sc.metabolism.Seurat, utils::modifyList(defaults, controls, keep.null = TRUE))
-    return(.sn_standardize_metabolism_output(.sn_extract_scmetabolism_scores(scored), colnames(object), method))
+    scoring_method <- controls$scoring_method %||% "aucell"
+    controls$scoring_method <- NULL
+    gmt_name <- if (identical(collection, "REACTOME")) "REACTOME_metabolism.gmt" else "KEGG_metabolism_nc.gmt"
+    gmt_file <- system.file("data", gmt_name, package = "scMetabolism")
+    if (!nzchar(gmt_file) || !file.exists(gmt_file)) {
+      stop("scMetabolism does not ship a ", collection, " metabolism gene-set file.", call. = FALSE)
+    }
+    signatures <- .sn_read_metabolic_gmt(gmt_file)
+    scored <- .sn_metabolism_score_matrix(
+      object = object,
+      signatures = signatures,
+      scoring_method = scoring_method,
+      assay = assay,
+      layer = layer,
+      min_genes = min_genes,
+      backend_control = controls
+    )
+    return(.sn_standardize_metabolism_output(scored$scores, colnames(object), method))
   }
   stop(
     "The ", method, " adapter requires `backend_control$runner` or `backend_control$result` from the optional external backend.",
@@ -182,7 +196,9 @@ sn_metabolic_signatures <- function(species = c("human", "mouse")) {
 #' @param object A Seurat object.
 #' @param method Metabolism backend.
 #' @param signatures Optional named pathway gene sets. Defaults to curated core pathways.
-#' @param scoring_method Gene-set scoring method for `method = "geneset"`.
+#' @param scoring_method Gene-set scoring method for `method = "geneset"`, and
+#'   for `method = "scmetabolism"` through `backend_control$scoring_method`;
+#'   `"aucell"` reproduces the upstream scMetabolism default.
 #' @param assay,layer Expression assay and layer.
 #' @param sample_by Sample/patient metadata column used as the inferential unit.
 #' @param condition_by Optional condition metadata column.
@@ -209,7 +225,7 @@ sn_metabolic_signatures <- function(species = c("human", "mouse")) {
 sn_run_metabolism <- function(object,
                               method = c("geneset", "scmetabolism", "scfea", "compass"),
                               signatures = NULL,
-                              scoring_method = c("ucell", "gsva", "ssgsea", "mean"),
+                              scoring_method = c("aucell", "ucell", "gsva", "ssgsea", "mean"),
                               assay = NULL,
                               layer = "data",
                               sample_by = NULL,
@@ -246,7 +262,7 @@ sn_run_metabolism <- function(object,
     expression_info <- scored$expression
     backend <- scoring_method
   } else {
-    standardized <- .sn_run_metabolism_backend(object, method, assay, layer, backend_control)
+    standardized <- .sn_run_metabolism_backend(object, method, assay, layer, backend_control, min_genes)
     scores <- standardized$table
     backend <- method
   }
@@ -285,4 +301,39 @@ sn_run_metabolism <- function(object,
   object <- sn_store_result(object, "metabolism", store_name, result)
   object <- .sn_log_seurat_command(object, assay = expression_info$assay, name = "sn_run_metabolism")
   if (isTRUE(return_object)) object else sn_get_result(object, "metabolism", store_name)
+}
+
+.sn_read_metabolic_gmt <- function(path) {
+  check_installed("GSEABase", reason = "to read metabolism gene-set files.")
+  sets <- GSEABase::getGmt(path)
+  out <- lapply(sets, GSEABase::geneIds)
+  names(out) <- vapply(sets, GSEABase::setName, character(1))
+  out[lengths(out) > 0L]
+}
+
+.sn_score_programs_aucell <- function(matrix, signatures, control = list()) {
+  check_installed("AUCell", reason = "to run AUCell gene-set scoring.")
+  check_installed("GSEABase", reason = "to build AUCell gene sets.")
+  keep <- vapply(signatures, function(genes) any(genes %in% rownames(matrix)), logical(1))
+  signatures <- signatures[keep]
+  if (!length(signatures)) {
+    stop("No metabolism gene sets matched the object features.", call. = FALSE)
+  }
+  gene_sets <- GSEABase::GeneSetCollection(mapply(
+    function(name, genes) {
+      GSEABase::GeneSet(unique(intersect(genes, rownames(matrix))), setName = name)
+    },
+    names(signatures),
+    signatures,
+    USE.NAMES = FALSE
+  ))
+  rankings <- AUCell::AUCell_buildRankings(
+    as.matrix(matrix),
+    nCores = as.integer(control$ncores %||% 1L),
+    plotStats = FALSE
+  )
+  auc <- AUCell::AUCell_calcAUC(gene_sets, rankings)
+  scores <- t(as.matrix(AUCell::getAUC(auc)))
+  rownames(scores) <- names(signatures)
+  scores
 }

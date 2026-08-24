@@ -1,0 +1,8 @@
+operation,patch,cells,features,captures,repetitions,direct_seconds,shennong_off_seconds,shennong_on_seconds,off_on_speedup,shennong_off_peak_rss_mib,shennong_on_peak_rss_mib,output_equivalent,source_pinned,upstream_version_status,fast_path_hit_proven
+lisi,lisi,30000,20453,3,3,6.186,6.251,0.686,9.112245,3988.691,3988.547,true,true,exact,false
+ucell,ucell,30000,20453,3,3,57.857,57.678,1.734,33.262976,4073.320,2575.094,true,true,version_drift,false
+seurat_normalize,seurat,30000,20453,3,3,2.694,3.013,0.671,4.490313,2267.570,2131.188,true,true,version_drift,false
+merge,seurat_merge,30000,20453,3,3,0.621,0.627,0.206,3.043689,2577.059,2343.270,true,true,exact,false
+joinlayers,seurat_joinlayers,30000,20453,3,3,1.700,1.819,1.078,1.687384,3566.281,2808.207,true,true,exact,false
+scdblfinder,scdblfinder,30000,20453,3,3,99.967,100.150,57.288,1.748185,4037.668,4327.336,true,true,exact,false
+clusterprofiler_go_cache,clusterprofiler,1000,20453,3,1,28.647,28.677,27.496,1.042952,2097.660,2096.195,true,true,exact,false

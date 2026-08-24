@@ -13,6 +13,13 @@ sn_enrich(
   collection = NULL,
   subcollection = NULL,
   pvalue_cutoff = 0.05,
+  p_adjust_method = "BH",
+  qvalue_cutoff = 0.2,
+  universe = NULL,
+  min_gs_size = 10,
+  max_gs_size = 500,
+  gsea_exponent = 1,
+  duplicate_gene_method = c("error", "max_abs", "max", "mean"),
   store_name = "default",
   source_de_name = NULL,
   return_object = inherits(x, "Seurat"),
@@ -26,10 +33,14 @@ data frame, or a \code{Seurat} object when enriching a stored DE result.}
 
 \item{gene_clusters}{Optional two-sided formula describing the gene column
 and the grouping/ranking column. Examples include \code{gene ~ cluster} for
-grouped ORA and \code{gene ~ log2fc} for GSEA.}
+grouped ORA and \code{gene ~ log2fc} for one global GSEA ranking. The
+clusterProfiler grouped-GSEA formula \code{gene | score ~ group} is not yet
+supported and fails explicitly rather than being treated as global GSEA.}
 
-\item{analysis}{Optional explicit analysis mode. If omitted, Shennong
-infers ORA versus GSEA from the input type or the formula RHS column type.}
+\item{analysis}{Optional explicit analysis mode. Named numeric vectors infer
+GSEA and character/categorical inputs infer ORA. Supply \code{analysis}
+explicitly for a numeric formula RHS because numeric group codes and GSEA
+ranking statistics are otherwise ambiguous.}
 
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
@@ -44,8 +55,30 @@ databases such as \code{"GOBP"} and MSigDB collections such as
 \code{database = "MSIGDB"} or when you want to override the parsed
 subcollection for a collection-level request such as \code{"C2"}.}
 
-\item{pvalue_cutoff}{Raw p-value cutoff used to filter returned enrichment
-tables after the underlying enrichment call completes.}
+\item{pvalue_cutoff}{Cutoff passed unchanged to clusterProfiler. ORA applies
+the upstream raw-p, adjusted-p, and q-value reporting rules. GSEA cutoff
+behavior is defined by the validated clusterProfiler/enrichit version and
+is therefore recorded in the conformance contract.}
+
+\item{p_adjust_method}{Multiple-testing adjustment method passed as
+\code{pAdjustMethod}.}
+
+\item{qvalue_cutoff}{ORA q-value cutoff passed as \code{qvalueCutoff}. It is not
+used by GSEA.}
+
+\item{universe}{Optional ORA background gene universe in the same symbol
+namespace as \code{x}. For KEGG it is converted to ENTREZID together with the
+query genes. Supplying a universe for GSEA is an error.}
+
+\item{min_gs_size, max_gs_size}{Minimum and maximum tested gene-set sizes.}
+
+\item{gsea_exponent}{GSEA running-score exponent. For reproducible stochastic
+GSEA results with clusterProfiler 4.20, call \code{set.seed()} immediately before
+\code{sn_enrich()}, as for the direct upstream call.}
+
+\item{duplicate_gene_method}{Policy for duplicate identifiers in a GSEA
+ranked list. The default, \code{"error"}, avoids silent changes. Explicit
+alternatives are \code{"max_abs"}, \code{"max"}, and \code{"mean"}.}
 
 \item{store_name}{Name used when storing the enrichment result on a Seurat
 object. When multiple databases are requested, the database label is

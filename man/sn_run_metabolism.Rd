@@ -8,7 +8,7 @@ sn_run_metabolism(
   object,
   method = c("geneset", "scmetabolism", "scfea", "compass"),
   signatures = NULL,
-  scoring_method = c("ucell", "gsva", "ssgsea", "mean"),
+  scoring_method = c("aucell", "ucell", "gsva", "ssgsea", "mean"),
   assay = NULL,
   layer = "data",
   sample_by = NULL,
@@ -29,7 +29,9 @@ sn_run_metabolism(
 
 \item{signatures}{Optional named pathway gene sets. Defaults to curated core pathways.}
 
-\item{scoring_method}{Gene-set scoring method for \code{method = "geneset"}.}
+\item{scoring_method}{Gene-set scoring method for \code{method = "geneset"}, and
+for \code{method = "scmetabolism"} through \code{backend_control$scoring_method};
+\code{"aucell"} reproduces the upstream scMetabolism default.}
 
 \item{assay, layer}{Expression assay and layer.}
 

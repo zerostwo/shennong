@@ -153,7 +153,7 @@ test_that("AutoZyme absence is reported without installation or evaluation", {
   expect_identical(provenance, list())
 })
 
-test_that("strict gating requires the pinned AutoZyme build", {
+test_that("all gating modes require the pinned AutoZyme build", {
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state, autozyme_version = "0.3.2")
   version_drift <- Shennong:::sn_check_autozyme("cellchat")
@@ -167,7 +167,8 @@ test_that("strict gating requires the pinned AutoZyme build", {
   expect_match(source_drift$reason, "source does not match")
 
   relaxed <- Shennong:::sn_check_autozyme("cellchat", strict = FALSE)
-  expect_true(relaxed$eligible)
+  expect_false(relaxed$eligible)
+  expect_match(relaxed$reason, "source does not match")
 })
 
 test_that("strict gating blocks upstream version drift", {
@@ -220,16 +221,20 @@ test_that("approximate patches require a second explicit opt-in", {
   expect_true(provenance$patches$slingshot$approximate)
 })
 
-test_that("automatic patch set covers every integrated non-approximate backend", {
+test_that("automatic patch set covers integrated non-approximate call paths", {
   expect_identical(
     Shennong:::.sn_autozyme_default_patches,
     c(
-      "cellchat", "clusterprofiler", "coralysis", "decontx_standalone",
-      "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
-      "seurat_joinlayers", "seurat_merge", "soupx", "tradeseq", "ucell",
-      "wgcna"
+      "cellchat", "clusterprofiler", "lisi", "nichenetr", "scdblfinder",
+      "seurat", "seurat_merge", "soupx", "ucell"
     )
   )
+  expect_true("fgsea" %in% names(Shennong:::.sn_autozyme_patch_manifest))
+  expect_false("fgsea" %in% Shennong:::.sn_autozyme_default_patches)
+  expect_true(all(
+    Shennong:::.sn_autozyme_default_patches %in%
+      names(Shennong:::.sn_autozyme_workflow_contract)
+  ))
 
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
@@ -237,18 +242,20 @@ test_that("automatic patch set covers every integrated non-approximate backend",
   status <- Shennong:::sn_check_autozyme("wgcna")
 
   expect_true(status$eligible)
-  expect_true(status$default)
+  expect_false(status$default)
+  expect_identical(status$automatic_policy, "explicit_only")
+  expect_match(status$fast_path_status, "unvalidated")
   expect_false(status$approximate)
   expect_identical(status$equivalence, "numeric_tolerance_scoped")
 })
 
-test_that("Coralysis is an exact single-core default patch", {
+test_that("Coralysis remains exact-scoped but explicit-only", {
   spec <- Shennong:::.sn_autozyme_patch_manifest$coralysis
   expect_identical(spec$upstream, "Coralysis")
   expect_identical(spec$versions, "0.99.10")
   expect_identical(spec$equivalence, "exact_scoped")
   expect_false(spec$approximate)
-  expect_true("coralysis" %in% Shennong:::.sn_autozyme_default_patches)
+  expect_false("coralysis" %in% Shennong:::.sn_autozyme_default_patches)
 
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
@@ -257,9 +264,9 @@ test_that("Coralysis is an exact single-core default patch", {
     patches = "coralysis",
     operation = "runparalleldivisiveicp"
   )
-  expect_identical(active_inside, "active")
-  expect_identical(state$activated, "coralysis")
-  expect_identical(state$deactivated, "coralysis")
+  expect_identical(active_inside, "inactive")
+  expect_length(state$activated, 0L)
+  expect_length(state$deactivated, 0L)
   expect_identical(state$status[["coralysis"]], "inactive")
 })
 
@@ -282,19 +289,19 @@ test_that("automatic AutoZyme activation is strict, scoped, and provenance-aware
       method = "test",
       tables = list(primary = tibble::tibble(value = 1))
     ),
-    patches = c("cellchat", "wgcna")
+    patches = c("cellchat", "lisi")
   )
-  expect_identical(state$activated, c("cellchat", "wgcna"))
-  expect_identical(state$deactivated, c("wgcna", "cellchat"))
+  expect_identical(state$activated, c("cellchat", "lisi"))
+  expect_identical(state$deactivated, c("lisi", "cellchat"))
   expect_identical(state$status[["cellchat"]], "inactive")
-  expect_identical(state$status[["wgcna"]], "inactive")
+  expect_identical(state$status[["lisi"]], "inactive")
   expect_identical(
     logs,
-    "[AutoZyme] Acceleration enabled for this call (patches: cellchat, wgcna)."
+    "[AutoZyme] Acceleration enabled for this call (patches: cellchat, lisi)."
   )
   expect_identical(
     result$provenance$acceleration$active_patches,
-    c("cellchat", "wgcna")
+    c("cellchat", "lisi")
   )
 })
 
@@ -338,7 +345,7 @@ test_that("scDblFinder is an exact default patch with scoped activation", {
   expect_identical(state$status[["scdblfinder"]], "inactive")
 })
 
-test_that("SeuratObject merge and JoinLayers are exact vendored defaults", {
+test_that("SeuratObject merge and JoinLayers remain exact vendored patches", {
   expected <- list(
     seurat_joinlayers = list(
       hash = "b2379438658f8c39f8073b214ba446b72c3d8d2a059921d163eaa9abf9c761dc",
@@ -357,7 +364,10 @@ test_that("SeuratObject merge and JoinLayers are exact vendored defaults", {
     expect_identical(spec$equivalence, "exact_scoped")
     expect_false(spec$approximate)
     expect_identical(spec$source_sha256, expected[[patch]]$hash)
-    expect_true(patch %in% Shennong:::.sn_autozyme_default_patches)
+    expect_identical(
+      patch %in% Shennong:::.sn_autozyme_default_patches,
+      identical(patch, "seurat_merge")
+    )
   }
 })
 
@@ -444,6 +454,10 @@ test_that("scDblFinder workflow scopes the patch only around its call", {
       captured$strict <- strict
       force(expr)
     },
+    .sn_with_autozyme_disabled = function(expr) {
+      captured$disabled <- TRUE
+      force(expr)
+    },
     .package = "Shennong"
   )
   testthat::local_mocked_bindings(
@@ -462,12 +476,14 @@ test_that("scDblFinder workflow scopes the patch only around its call", {
   )
   expect_identical(actual, marker)
   expect_identical(captured$patch, "scdblfinder")
-  expect_false(captured$strict)
+  expect_true(captured$strict)
   expect_false(captured$args$verbose)
   expect_s4_class(captured$args$BPPARAM, "SerialParam")
   expect_identical(BiocParallel::bpnworkers(captured$args$BPPARAM), 1L)
 
+  captured$disabled <- FALSE
   Shennong:::.sn_run_scDblFinder(marker, clusters = "cluster-a")
+  expect_true(captured$disabled)
   expect_identical(captured$args$clusters, "cluster-a")
   expect_false("verbose" %in% names(captured$args))
 })
@@ -543,13 +559,6 @@ test_that("automatic activation restores AutoZyme's future option side effect", 
   expect_identical(value, 42L)
   expect_identical(getOption("future.globals.maxSize"), 456)
 
-  previous <- options()
-  previous_present <- "future.globals.maxSize" %in% names(previous)
-  previous_value <- previous[["future.globals.maxSize"]]
-  on.exit({
-    value <- if (previous_present) previous_value else NULL
-    options(future.globals.maxSize = value)
-  }, add = TRUE)
   options(future.globals.maxSize = NULL)
   state <- make_autozyme_mock_state()
   original_call <- state$call
@@ -731,8 +740,37 @@ test_that("workflow provenance retains used patches after scoped rollback", {
   expect_identical(state$status[["tradeseq"]], "inactive")
   expect_identical(
     result$provenance$acceleration$active_patches,
-    c("slingshot", "tradeseq")
+    "slingshot"
   )
+})
+
+test_that("explicit-only workflow patches cannot leak from ambient activation", {
+  state <- make_autozyme_mock_state(active = "wgcna")
+  mock_autozyme_bindings(state)
+  disabled_calls <- 0L
+  testthat::local_mocked_bindings(
+    .sn_with_autozyme_disabled = function(expr) {
+      disabled_calls <<- disabled_calls + 1L
+      force(expr)
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(
+    Shennong:::.sn_with_explicit_autozyme_or_disabled(41L, "wgcna"),
+    41L
+  )
+  expect_identical(disabled_calls, 1L)
+
+  expect_identical(
+    Shennong:::sn_with_autozyme(
+      Shennong:::.sn_with_explicit_autozyme_or_disabled(42L, "wgcna"),
+      patches = "wgcna"
+    ),
+    42L
+  )
+  expect_identical(disabled_calls, 1L)
+  expect_length(Shennong:::.sn_autozyme_explicit_patches(), 0L)
 })
 
 test_that("automatic AutoZyme silently skips missing and version-drifted patches", {
@@ -763,6 +801,32 @@ test_that("automatic AutoZyme silently skips missing and version-drifted patches
   expect_length(logs, 0L)
 })
 
+test_that("automatic UCell and Seurat scopes reject benchmark-only version drift", {
+  state <- make_autozyme_mock_state(versions = c(
+    UCell = "2.17.0",
+    Seurat = "5.5.1"
+  ))
+  mock_autozyme_bindings(state)
+  fake_object <- structure(list(), class = "Seurat")
+  testthat::local_mocked_bindings(
+    .sn_seurat_uses_bpcells = function(object, assay = NULL) FALSE,
+    .package = "Shennong"
+  )
+
+  expect_identical(
+    Shennong:::.sn_with_default_autozyme(41L, "ucell", strict = TRUE),
+    41L
+  )
+  expect_identical(
+    Shennong:::.sn_with_default_seurat_autozyme(
+      quote(Seurat::NormalizeData(object)),
+      fake_object
+    ),
+    quote(Seurat::NormalizeData(object))
+  )
+  expect_length(state$activated, 0L)
+})
+
 test_that("unsafe backend calls can temporarily suspend active patches", {
   suspended <- FALSE
   testthat::local_mocked_bindings(
@@ -786,7 +850,7 @@ test_that("unsafe backend calls can temporarily suspend active patches", {
   )
 })
 
-test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
+test_that("unapproved Seurat and JoinLayers operations remain unaccelerated", {
   state <- make_autozyme_mock_state()
   mock_autozyme_bindings(state)
   suspended <- FALSE
@@ -806,8 +870,8 @@ test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
     quote(Seurat::JoinLayers(object))
   )
   expect_false(suspended)
-  expect_identical(state$activated, "seurat_joinlayers")
-  expect_identical(state$deactivated, "seurat_joinlayers")
+  expect_length(state$activated, 0L)
+  expect_length(state$deactivated, 0L)
 
   suspended <- FALSE
   testthat::local_mocked_bindings(
@@ -819,14 +883,8 @@ test_that("Seurat automatic acceleration keeps narrow BPCells-safe patches", {
     quote(Seurat::RunPCA(object))
   )
   expect_false(suspended)
-  expect_identical(
-    tail(state$activated, 1L),
-    "seurat"
-  )
-  expect_identical(
-    tail(state$deactivated, 1L),
-    "seurat"
-  )
+  expect_length(state$activated, 0L)
+  expect_length(state$deactivated, 0L)
   expect_identical(state$status[["seurat"]], "inactive")
 })
 
@@ -845,13 +903,13 @@ test_that("Seurat acceleration logs the operation instead of ambient patches", {
   )
 
   Shennong:::.sn_with_default_seurat_autozyme(
-    quote(Seurat::RunPCA(object)),
+    quote(Seurat::NormalizeData(object)),
     fake_object
   )
   expect_identical(state$activated, "seurat")
   expect_identical(
     logs,
-    "[AutoZyme] Acceleration enabled for runpca (patch: seurat)."
+    "[AutoZyme] Acceleration enabled for normalizedata (patch: seurat)."
   )
 
   Shennong:::.sn_with_default_seurat_autozyme(

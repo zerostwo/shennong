@@ -56,8 +56,14 @@ pbmc <- qs2::qs_read(file.path(
   "single-cell", "kotliarov_pbmc.qs2"
 ))
 
-pbmc
-table(pbmc$real_sample)
+fixture_summary <- data.frame(
+  cells = ncol(pbmc),
+  features = nrow(pbmc),
+  assays = paste(names(pbmc@assays), collapse = ", "),
+  biological_samples = length(unique(pbmc$real_sample)),
+  acquisition_batches = length(unique(pbmc$real_batch))
+)
+knitr::kable(fixture_summary)
 ```
 
 ## Use ShennongData for discovery and materialization

@@ -76,6 +76,75 @@ test_that("sn_calculate_composition works with lightweight data frames", {
   expect_true(all(c("sample_id", "cell_type", "proportion") %in% colnames(result)))
 })
 
+test_that("base composition kernel matches the prior grouped semantics", {
+  set.seed(717)
+  metadata <- data.frame(
+    sample = factor(
+      sample(c("S1", "S2", "S3", NA), 10000L, replace = TRUE),
+      levels = c("S3", "S1", "S2", "unused")
+    ),
+    compartment = sample(c("blood", "tumor"), 10000L, replace = TRUE),
+    cell_type = factor(
+      sample(c("T", "B", "Mono", NA), 10000L, replace = TRUE),
+      levels = c("Mono", "T", "B", "unused")
+    )
+  )
+  expected <- metadata |>
+    dplyr::filter(
+      dplyr::if_all(dplyr::all_of(c("sample", "compartment")), ~ !is.na(.x)),
+      !is.na(.data$cell_type)
+    ) |>
+    dplyr::count(.data$sample, .data$compartment, .data$cell_type, name = "count") |>
+    dplyr::filter(.data$count >= 3L) |>
+    dplyr::group_by(.data$sample, .data$compartment) |>
+    dplyr::mutate(
+      group_total = sum(.data$count),
+      proportion = .data$count / .data$group_total * 100
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(.data$sample, .data$compartment, .data$cell_type)
+  actual <- sn_calculate_composition(
+    metadata,
+    group_by = c("sample", "compartment"),
+    variable = "cell_type",
+    min_cells = 3L,
+    measure = "both"
+  ) |>
+    dplyr::arrange(.data$sample, .data$compartment, .data$cell_type)
+
+  expect_equal(actual, expected, tolerance = 1e-12)
+})
+
+test_that("base ROE kernel matches a direct contingency calculation", {
+  set.seed(718)
+  metadata <- data.frame(
+    condition = sample(c("control", "treated", NA), 20000L, replace = TRUE),
+    cell_type = sample(c("T", "B", "Mono", NA), 20000L, replace = TRUE),
+    stringsAsFactors = FALSE
+  )
+  keep <- stats::complete.cases(metadata)
+  contingency <- table(
+    metadata$condition[keep],
+    metadata$cell_type[keep]
+  )
+  expected <- contingency / (
+    outer(rowSums(contingency), colSums(contingency)) / sum(contingency)
+  )
+  actual <- sn_calculate_roe(
+    metadata,
+    group_by = "condition",
+    variable = "cell_type",
+    return_matrix = TRUE,
+    matrix_value = "roe"
+  )
+
+  expect_equal(
+    unname(actual[rownames(expected), colnames(expected), drop = FALSE]),
+    unname(unclass(expected)),
+    tolerance = 1e-12
+  )
+})
+
 test_that("sn_calculate_composition supports multi-column grouping", {
   meta_df <- data.frame(
     sample = c("A", "A", "A", "A", "B", "B"),
@@ -171,6 +240,28 @@ test_that("sn_calculate_composition warns when additional columns vary within gr
   )
 
   expect_equal(unique(result$condition[result$sample == "A"]), "Control")
+})
+
+test_that("composition consistency warnings retain missing group levels", {
+  metadata <- data.frame(
+    sample = c("A", "A", NA, NA),
+    cell_type = c("T", "B", "T", "B"),
+    condition = c("control", "control", "control", "treated"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_warning(
+    result <- sn_calculate_composition(
+      metadata,
+      group_by = "sample",
+      variable = "cell_type",
+      min_cells = 1L,
+      additional_cols = "condition"
+    ),
+    "not constant"
+  )
+  expect_setequal(result$sample, "A")
+  expect_setequal(result$condition, "control")
 })
 
 test_that("sn_calculate_composition does not warn when varying columns are grouped explicitly", {

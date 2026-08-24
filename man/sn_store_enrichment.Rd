@@ -14,6 +14,7 @@ sn_store_enrichment(
   source_de_name = NULL,
   gene_col = "gene",
   score_col = NULL,
+  parameters = list(),
   return_object = TRUE
 )
 }
@@ -38,6 +39,9 @@ ranked gene list or gene set.}
 from a data frame.}
 
 \item{score_col}{Column containing ranking scores for GSEA inputs.}
+
+\item{parameters}{Named list of effective enrichment parameters retained for
+discovery and reproducibility.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 }

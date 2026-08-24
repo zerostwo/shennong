@@ -1,0 +1,16 @@
+patch,shennong_workflow,target_intersection,current_default_fast_path,benchmark_result,priority_note
+cellchat,sn_run_cell_communication(method=cellchat),true,dependency_missing,not_run,install pinned CellChat/backend before benchmarking
+clusterprofiler,sn_enrich(database=GO/GOBP/GOMF/GOCC),true,annotation_cache_only,1.04x_one_rep,not a statistical ORA/GSEA kernel acceleration
+coralysis,sn_run_cluster(integration_method=coralysis),true,explicit_only_guard_mismatch,not_run,current batch.label/build.train.params can never satisfy released fast-path guard
+decontx_standalone,sn_remove_ambient_contamination(method=decontx),false,explicit_only_provider_unavailable,not_run,pinned provider exposes celda decontx rather than the standalone decontX patch
+fgsea,none_in_current_sn_enrich,false,no_call_intersection,not_run,clusterProfiler 4.20 GSEA calls enrichit rather than fgsea
+lisi,sn_calculate_lisi,true,validated_call_shape,9.11x_r3,high-value exact-upstream patch
+nichenetr,sn_run_cell_communication(method=nichenet),true,dependency_missing,not_run,requires pinned backend and dense-prior envelope
+scdblfinder,sn_find_doublets,true,validated_default_sparse_envelope,1.75x_r3,time win with roughly 290 MiB higher peak worker RSS
+seurat,multiple preprocessing/clustering/DE workflows,true,normalize_only_strict,4.49x_normalize_r3,NormalizeData passed after standard-count preparation optimization; every other broad Seurat target is suppressed
+seurat_joinlayers,sn_run_cluster layer preparation and explicit JoinLayers,true,explicit_only_default_guard_mismatch,1.69x_r3,explicit counts-to-counts benchmark passed but the workflow default joins multiple layers and is not automatic
+seurat_merge,reference/query and object merge paths,true,validated_assay5_merge,3.04x_r3,exact output and lower worker RSS
+soupx,sn_remove_ambient_contamination(method=soupx),true,dependency_missing,not_run,install pinned SoupX before benchmarking
+tradeseq,sn_run_trajectory(test_dynamic=TRUE),true,explicit_only_mgcv_guard_pending,not_run,global mgcv overrides need an exact dependency guard before automatic admission
+ucell,sn_score_programs(method=ucell),true,strict_blocked_version_drift,33.26x_r3,UCell 2.17.0 parity passed but strict manifest version remains 2.16.0
+wgcna,sn_run_wgcna,true,explicit_only_shennong_defaults_unvalidated,not_run,Shennong TOM/module defaults differ from the released benchmark envelope

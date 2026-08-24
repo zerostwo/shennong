@@ -3,59 +3,120 @@ url: https://songqi.org/shennong
 development:
   mode: devel
 
+news:
+  cran_dates: false
+
 authors:
   Songqi Duan:
     href: https://songqi.org
 
 home:
   sidebar:
-    structure:
-      - links
-      - license
-      - community
-      - citation
-      - authors
-      - dev
-  links:
-    - text: Source code
-      href: https://github.com/zerostwo/shennong
-    - text: Issue tracker
-      href: https://github.com/zerostwo/shennong/issues
+    html: pkgdown/sidebar.html
 
 destination: site
 
 template:
-  package: tidytemplate
   bootstrap: 5
-  includes:
-    in_header:
-      <script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
+  light-switch: true
+  bslib:
+    bg: "#fbfdfc"
+    fg: "#17231f"
+    primary: "#0b6b63"
+    secondary: "#536d66"
+    success: "#247a52"
+    danger: "#a33a45"
+    border-color: "#d9e5e1"
+    code-bg: "#eef6f3"
+    code-color: "#194d47"
+    navbar-light-bg: "#f2f8f6"
+    navbar-dark-bg: "#12211e"
+    border-radius: "0.8rem"
+    btn-border-radius: "999px"
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github, lightswitch]
+  components:
+    intro:
+      text: Overview
+      href: index.html
+    articles:
+      text: Research workflows
+      menu:
+        - text: Start here
+        - text: From samples to evidence
+          href: articles/research-workflow-map.html
+        - text: -------
+        - text: Build a single-cell study
+        - text: Preprocessing and QC
+          href: articles/preprocessing-qc.html
+        - text: Clustering and integration
+          href: articles/clustering.html
+        - text: Annotation and pathways
+          href: articles/annotation-pathways.html
+        - text: -------
+        - text: Extend the biological question
+        - text: Trajectory and dynamics
+          href: articles/trajectory-dynamics.html
+        - text: Spatial workflows
+          href: articles/spatial-workflows.html
+        - text: Bulk transcriptomics
+          href: articles/bulk-transcriptomics.html
+        - text: -------
+        - text: Make the analysis auditable
+        - text: Results and method contracts
+          href: articles/analysis-results-and-methods.html
+        - text: Runtime observability
+          href: articles/runtime-observability.html
+    reference:
+      text: Function reference
+      href: reference/index.html
+    news:
+      text: Changes
+      href: news/index.html
 
 articles:
-  - title: Analysis Workflows
+  - title: Choose a research path
     navbar: Articles
+    desc: Start with the biological question, then follow the linked real-data workflow.
+    contents:
+      - research-workflow-map
+  - title: Build and validate a single-cell study
+    desc: Move from materialized observations through QC, integration, annotation, and figures.
     contents:
       - data-io-projects
       - preprocessing-qc
       - clustering
+      - layered-workflows
       - metrics-diagnostics
       - annotation-pathways
-      - program-discovery-grn
       - visualization
       - publication-figures
+  - title: Compare states and explain mechanisms
+    desc: Test sample-level changes, model cell-state mechanisms, and follow biological dynamics.
+    contents:
       - composition-analysis
-      - bulk-deconvolution
-      - bulk-transcriptomics
-      - layered-workflows
-      - interpretation-workflows
-      - analysis-results-and-methods
-      - autozyme-benchmarks
-      - trajectory-dynamics
-      - velocity-fate
       - abundance-priority
       - communication-consensus
+      - program-discovery-grn
+      - trajectory-dynamics
+      - velocity-fate
       - cnv-metabolism
       - spatial-workflows
+  - title: Translate across assays and cohorts
+    desc: Connect single-cell references to bulk cohorts, clinical endpoints, and interpretation-ready evidence.
+    contents:
+      - bulk-deconvolution
+      - bulk-transcriptomics
+      - interpretation-workflows
+  - title: Reproducibility, performance, and governance
+    desc: Discover backend status, retain versioned results, inspect runtime, and interpret acceleration safely.
+    contents:
+      - analysis-results-and-methods
+      - runtime-observability
+      - autozyme-benchmarks
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -76,6 +137,16 @@ reference:
       - sn_enable_autozyme
       - sn_disable_autozyme
       - sn_with_autozyme
+      - sn_create_usage_store
+      - sn_confirm_usage_consent
+      - sn_enable_usage_tracking
+      - sn_disable_usage_tracking
+      - sn_with_usage_tracking
+      - sn_check_usage_tracking
+      - sn_flush_usage_tracking
+      - sn_list_usage_runs
+      - sn_summarize_usage
+      - sn_time_call
   - title: Data and Import
     contents:
       - marker_genes

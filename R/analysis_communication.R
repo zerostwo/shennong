@@ -285,8 +285,10 @@
   }
   input <- list(input_object)
   names(input) <- input_name
+  args_base <- c(input, list(idents_col = group_by, assay = liana_assay, verbose = FALSE))
+  if (!is.null(resource)) args_base$resource <- resource
   args <- utils::modifyList(
-    c(input, list(idents_col = group_by, assay = liana_assay, resource = resource, verbose = FALSE)),
+    args_base,
     list(...),
     keep.null = TRUE
   )
@@ -676,7 +678,7 @@ sn_run_cell_communication <- function(object,
       stored
     },
     patches = autozyme_patches,
-    strict = FALSE
+    strict = TRUE
   )
 }
 

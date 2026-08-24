@@ -56,19 +56,24 @@ export(sn_call_trajectory)
 export(sn_check_autozyme)
 export(sn_check_file)
 export(sn_check_pixi)
+export(sn_check_usage_tracking)
 export(sn_check_version)
 export(sn_compare_composition)
 export(sn_compare_integrations)
 export(sn_configure_pixi_mirror)
+export(sn_confirm_usage_consent)
 export(sn_convert_bpcells)
+export(sn_create_usage_store)
 export(sn_deconvolve_bulk)
 export(sn_delete_result)
 export(sn_delete_signature)
 export(sn_detect_accelerator)
 export(sn_detect_rare_cells)
 export(sn_disable_autozyme)
+export(sn_disable_usage_tracking)
 export(sn_discover_programs)
 export(sn_enable_autozyme)
+export(sn_enable_usage_tracking)
 export(sn_enrich)
 export(sn_ensure_pixi)
 export(sn_export_figure)
@@ -82,6 +87,7 @@ export(sn_find_de)
 export(sn_find_doublets)
 export(sn_find_spatial_domains)
 export(sn_find_spatial_features)
+export(sn_flush_usage_tracking)
 export(sn_get_cell_communication_result)
 export(sn_get_codex_skill_path)
 export(sn_get_de_result)
@@ -114,6 +120,7 @@ export(sn_list_palettes)
 export(sn_list_pixi_environments)
 export(sn_list_results)
 export(sn_list_signatures)
+export(sn_list_usage_runs)
 export(sn_make_ellmer_provider)
 export(sn_map_cell_ontology)
 export(sn_mcp_server)
@@ -243,10 +250,12 @@ export(sn_store_enrichment)
 export(sn_store_milo)
 export(sn_store_regulatory_activity)
 export(sn_store_result)
+export(sn_summarize_usage)
 export(sn_sweep_cluster_resolution)
 export(sn_test_abundance)
 export(sn_test_llm_provider)
 export(sn_test_programs)
+export(sn_time_call)
 export(sn_transfer_labels)
 export(sn_update_signature)
 export(sn_upgrade_results)
@@ -254,6 +263,7 @@ export(sn_validate_figure)
 export(sn_validate_result)
 export(sn_validate_result_bundle)
 export(sn_with_autozyme)
+export(sn_with_usage_tracking)
 export(sn_write)
 export(sn_write_figure_legend)
 export(sn_write_presentation_summary)
@@ -262,42 +272,52 @@ import(glue)
 import(rlang)
 importFrom(RColorBrewer,brewer.pal)
 importFrom(cluster,silhouette)
-importFrom(dplyr,across)
-importFrom(dplyr,all_of)
-importFrom(dplyr,count)
-importFrom(dplyr,distinct)
-importFrom(dplyr,filter)
-importFrom(dplyr,first)
-importFrom(dplyr,group_by)
-importFrom(dplyr,left_join)
-importFrom(dplyr,mutate)
-importFrom(dplyr,n)
-importFrom(dplyr,pull)
-importFrom(dplyr,rename)
-importFrom(dplyr,select)
-importFrom(dplyr,summarise)
-importFrom(ggplot2,coord_fixed)
-importFrom(ggplot2,element_blank)
-importFrom(ggplot2,element_text)
-importFrom(ggplot2,expansion)
-importFrom(ggplot2,guide_axis)
-importFrom(ggplot2,guide_colorbar)
-importFrom(ggplot2,guide_legend)
-importFrom(ggplot2,guides)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,margin)
-importFrom(ggplot2,scale_color_manual)
-importFrom(ggplot2,scale_fill_manual)
-importFrom(ggplot2,scale_y_discrete)
-importFrom(ggplot2,theme)
+importFrom(dplyr,
+  across,
+  all_of,
+  count,
+  distinct,
+  filter,
+  first,
+  group_by,
+  left_join,
+  mutate,
+  n,
+  pull,
+  rename,
+  select,
+  summarise
+)
+importFrom(ggplot2,
+  coord_fixed,
+  element_blank,
+  element_text,
+  expansion,
+  guide_axis,
+  guide_colorbar,
+  guide_legend,
+  guides,
+  labs,
+  margin,
+  scale_color_manual,
+  scale_fill_manual,
+  scale_y_discrete,
+  theme
+)
 importFrom(grDevices,colorRampPalette)
-importFrom(logger,log_debug)
-importFrom(logger,log_error)
-importFrom(logger,log_info)
-importFrom(logger,log_warn)
-importFrom(methods,"slot<-")
-importFrom(methods,slot)
+importFrom(logger,
+  log_debug,
+  log_error,
+  log_info,
+  log_warn
+)
+importFrom(methods,
+  "slot<-",
+  slot
+)
 importFrom(tibble,rownames_to_column)
-importFrom(tictoc,tic)
-importFrom(tictoc,toc)
+importFrom(tictoc,
+  tic,
+  toc
+)
 importFrom(utils,modifyList)

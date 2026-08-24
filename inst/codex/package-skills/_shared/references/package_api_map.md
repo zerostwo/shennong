@@ -79,7 +79,7 @@ Runtime reference datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, pixi-managed scVI/scANVI/scPoli latent integration, BBKNN graph integration, and totalVI/MMoCHi integration. RNA workflows can pass multiple methods, including `"unintegrated"`, in one call. Explicit vectors for scalar controls such as `nfeatures`, `npcs`, `resolution`, clustering algorithm, rare-feature count, and Harmony theta form a conditional Cartesian grid; natural vectors such as `dims`, forced HVGs, regression covariates, and blocked genes remain intact. `object@misc$integration_comparison` records run, embedding, and preprocessing identities plus exact native reductions, graphs, cluster columns, UMAP, optional t-SNE, and per-run timing/memory provenance. Resolution variants reuse one graph/UMAP. Set `checkpoint_dir` for atomic run-level persistence and automatic matching-call recovery. Key `integration_control` by method when parameters differ; use `sn_integration_control_template()` for the complete accepted control surface. scVI, scANVI, and scPoli export the requested `assay`/`layer`; BBKNN computes PCA from that same selected layer and uses its imported batch-balanced graph directly for clustering and UMAP. Python expression/protein inputs remain sparse; only bounded neural-network minibatches and low-dimensional outputs may be dense. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform batch analysis currently supports Harmony and the unintegrated baseline. Coralysis, scVI/scANVI/scPoli, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. UMAP is the default projection; set `run_tsne = TRUE` explicitly when t-SNE is also needed. Re-running on the returned object reuses matching stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
+- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, pixi-managed scVI/scANVI/scPoli latent integration, BBKNN graph integration, and totalVI/MMoCHi integration. RNA workflows can pass multiple methods, including `"unintegrated"`, in one call. Explicit vectors for scalar controls such as `nfeatures`, `npcs`, `resolution`, clustering algorithm, rare-feature count, and Harmony theta form a conditional Cartesian grid; natural vectors such as `dims`, forced HVGs, regression covariates, and blocked genes remain intact. `object@misc$integration_comparison` records run, embedding, and preprocessing identities plus exact native reductions, graphs, cluster columns, UMAP, optional t-SNE, and per-run timing/memory provenance. Resolution variants reuse one graph/UMAP. Set `checkpoint_dir` for atomic run-level persistence and content/metadata-digest-matched recovery. Key `integration_control` by method when parameters differ; use `sn_integration_control_template()` for the complete accepted control surface. scVI, scANVI, and scPoli export the requested `assay`/`layer`; BBKNN computes PCA from that same selected layer and uses its imported batch-balanced graph directly for clustering and UMAP. Python expression/protein inputs remain sparse; only bounded neural-network minibatches and low-dimensional outputs may be dense. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform batch analysis currently supports Harmony and the unintegrated baseline. Coralysis, scVI/scANVI/scPoli, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. UMAP is the default projection; set `run_tsne = TRUE` explicitly when t-SNE is also needed. Re-running on the returned object reuses only content- and metadata-matched stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
 - `sn_integration_control_template()`: return complete executable defaults for
   one or every integration backend, including pixi/runtime, accelerator,
   training, graph, and CITE-seq-specific fields.
@@ -117,17 +117,19 @@ Runtime reference datasets:
 - `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
   restore the caller's prior patch state on exit
 - Shennong never activates AutoZyme on package load. The lazy automatic set is
-  CellChat, NicheNetR, clusterProfiler, Coralysis, standalone decontX, fgsea,
-  LISI, scDblFinder, Seurat, SeuratObject merge/JoinLayers, SoupX, tradeSeq,
-  UCell, and WGCNA. The pinned AutoZyme fork supplies the Coralysis,
-  scDblFinder, UCell, LISI, SoupX, and (when registered) standalone decontX
-  patches. Shennong only
-  vendors the clusterProfiler 4.20 GSON cache and SeuratObject
-  merge/JoinLayers patches; official AutoZyme supplies the registration and
-  scoped activation engine for the direct fork backends.
+  exactly CellChat, NicheNetR, the clusterProfiler annotation cache, LISI,
+  all-default scDblFinder, Seurat NormalizeData, owned SeuratObject Assay5
+  merge, SoupX, and UCell. The pinned AutoZyme fork supplies the corresponding
+  direct backend patches; Shennong vendors the trusted clusterProfiler 4.20
+  GSON-cache and SeuratObject sources when required. Coralysis, standalone
+  decontX, broad Seurat operations beyond NormalizeData, JoinLayers, tradeSeq,
+  and WGCNA remain explicit-only until their Shennong call shapes and guards
+  pass the required contracts. Official AutoZyme still supplies registration
+  and scoped activation for the direct fork backends.
   AutoZyme and each upstream package must be installed. Seurat, CellChat, and
   call-safe NicheNetR workflow scopes currently tolerate upstream version-label
-  drift behind runtime/input guards; other strict checks remain available via
+  drift behind runtime/input guards, but the AutoZyme source revision is always
+  verified; other strict checks remain available via
   `sn_check_autozyme()`. Eligible patches are active only inside the compatible
   Shennong workflow call, with the pre-call state restored after success or
   error. Successful automatic scopes emit an INFO log naming the enabled
@@ -140,12 +142,51 @@ Runtime reference datasets:
   `sn_with_autozyme()` calls ignore these automatic opt-outs. BPCells-backed
   Seurat layers are the safety exception: they bypass the broad Seurat fast
   patch to avoid coercion to an in-memory `dgCMatrix`; the narrow validated
-  JoinLayers BPCells route remains eligible. Active scope details are
+  JoinLayers BPCells route remains eligible for explicit use but is not in the
+  automatic set. Active scope details are
   retained in result provenance. Shennong does not install AutoZyme, upstream
   packages, or a Python environment. Automatic loading also restores the
   caller's `future.globals.maxSize` option before analysis. This Seurat guard is
   not whole-package BPCells compatibility: CellChat, tradeSeq, and other backend
   contracts may still require deliberate sparse materialization or aggregation.
+  The `fgsea` patch remains available for explicit direct fgsea work, but is not
+  an automatic Shennong workflow patch because current `sn_enrich()` GSEA calls
+  clusterProfiler/enrichit rather than the fgsea namespace.
+
+## Local and Managed-Remote Runtime Observability
+
+- `sn_enable_usage_tracking()` / `sn_disable_usage_tracking()`: explicitly
+  instrument and restore every safely wrappable public export for one process,
+  including plots, get/list, store, IO and administrative calls. Usage-control
+  APIs are excluded to prevent recursion. This is enable-time namespace
+  replacement: references saved or imported earlier are not intercepted, as
+  reported by `sn_check_usage_tracking()`.
+- `sn_create_usage_store()` / `sn_confirm_usage_consent()` /
+  `sn_flush_usage_tracking()`: construct a local outbox or managed DBI
+  destination, bind an explicit remote-research policy receipt, and deliver
+  completed sanitized rows without making science depend on the network.
+- `sn_with_usage_tracking()`: temporary opt-in scope with the same outbox-first
+  contract.
+- `sn_check_usage_tracking()`: inspect the active path, mode, options, session,
+  and number of instrumented workflow functions.
+- `sn_list_usage_runs()`: retrieve run status, elapsed/CPU time, warning/error
+  state, nested parentage, workflow invocation number, same-parameter-set
+  invocation number, sanitized parameter JSON/hash, and activation-only
+  AutoZyme evidence.
+- `sn_summarize_usage()`: rank root calls by frequency, cumulative time, or
+  median time; set `by_parameters = TRUE` to separate configurations such as
+  `sn_run_cluster()` integration methods.
+- `sn_time_call()`: time one additional expression without changing its value,
+  visibility, warning/error behavior, or RNG state.
+- Usage tracking never records object/matrix contents, gene/signature/cell/
+  sample/patient values, paths, credentials, prompts, responses, or free text,
+  and generates no participant/installation ID. Remote DBI requires an exact,
+  tamper-checked consent receipt, projects optional fields by its data
+  categories, omits PID/error text, and is intended only for managed deployments.
+  An AutoZyme patch in a run row proves only scope activation, not a fast hit.
+- The shipped public-API parameter inventory and method matrices are static
+  completeness/admission artifacts. They classify formals and required cases;
+  they do not show that every case ran or passed an upstream comparison.
 
 ## Diagnostics and Benchmarking
 
@@ -185,12 +226,21 @@ Runtime reference datasets:
 - `sn_review_annotation()`: inspect low-confidence cells/clusters and evidence
 - `sn_plot_annotation_confidence()` / `sn_plot_annotation_markers()` /
   `sn_plot_annotation_confusion()`: result-aware annotation diagnostics
-- `sn_run_celltypist()`: external CellTypist-based annotation
+- `sn_run_celltypist()`: external CellTypist-based annotation; Seurat layers
+  are exported as sparse MatrixMarket plus exact gene/cell sidecars, preserving
+  gene-by-cell / `--transpose-input` semantics without dense CSV materialization;
+  existing path inputs return a table without requiring Seurat, and their
+  `transpose_input` setting must match the file's stored orientation. Unified
+  annotation defaults this backend to the raw/count-like `counts` layer and
+  uses selected-label probabilities rather than fabricated confidence
 - `sn_find_de()`: unified DE entry point; Seurat inputs run markers, contrasts,
   or pseudobulk DE, while matrix/list/`SummarizedExperiment` inputs run
   standalone bulk DE with explicit design and contrast
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
-- `sn_enrich()`: ORA or GSEA from vectors, tables, or stored DE
+- `sn_enrich()`: ORA or GSEA from vectors, tables, or stored DE; grouped ORA
+  uses `gene ~ group`, a numeric ranking formula requires explicit
+  `analysis = "gsea"`, ORA should receive the tested `universe`, and upstream
+  p-adjustment/q-value and gene-set-size controls are exposed explicitly
 - `sn_list_signatures()`: list bundled signatures
 - `sn_get_signatures()`: retrieve signatures by path or category
 - `sn_add_signature()`: add a signature to the editable registry

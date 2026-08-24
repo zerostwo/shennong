@@ -1,6 +1,141 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-15
+Last updated: 2026-08-22
+
+CellTypist Seurat export now preserves sparsity end to end. The selected layer
+is written as MatrixMarket plus exact gene/cell sidecars; the default retains
+gene-by-cell orientation with `--transpose-input`, while the explicit false
+branch writes a sparse cell-by-gene transpose. A 20,000-by-10,000 matrix with
+three nonzero values round-trips as sparse with an MTX file below 1 KB, and the
+helper contains no dense matrix/data-frame conversion. The focused clustering
+suite passes 531 assertions with the pre-existing BBKNN warning and 20 optional
+dependency skips in the current dependency profile. BPCells still crosses into an in-memory sparse Matrix object
+at O(nnz); a zero-materialization BPCells writer remains separate work.
+
+Pkgdown now starts from a research-workflow map rather than a flat article
+list. Four real-data narratives connect immune-cohort, tumour/clinical,
+cell-dynamics and spatial questions to module articles and explicit visual
+checkpoints. Five article groups, a local Bootstrap 5 theme, accessible
+light/dark colors, responsive cards, print/reduced-motion styles and a local
+sidebar replace the external tidytemplate/font/analytics runtime. The final
+core real-data build at `site/dev` contains 24 article HTML pages and 65
+audited figure assets across the 15 mapped core articles. Runtime tracing observed all 94 declared core
+analysis/visualization functions across 15 mapped executable articles, with
+zero missing functions, zero failed articles and zero attempted downloads; 58
+optional-backend cells remain explicitly extended. The same-build manifest
+records 678 static-site files. Local-link validation passes and the site has no
+external runtime scripts or stylesheets.
+
+The repository redundancy audit found no exact duplicate tracked source or
+duplicate R function definitions. A guarded cleanup script removed 20.71 MiB
+of reproducible check/build products, logs, test plots and Python bytecode plus
+one stale Git worktree record. The stale 9.01 MiB pkgdown tree was then removed
+and replaced by the current real-data site. Cleanup deliberately retained 2.50 GiB of research
+outputs, 1.30 GiB of real fixtures, and 1.86 GiB of Coralysis benchmark inputs
+whose exact base object is not yet governed. The classification and future
+canonical-cache work are recorded in `RedundancyAudit-2026-08-21.md`.
+
+Usage observability now instruments 257 of 267 exports after explicit
+`sn_enable_usage_tracking()`: every analysis, plot/get/list/store, IO,
+validation, administration and rio adapter except ten tracking-control APIs.
+The SQLite v2 contract records session mode and
+material package versions plus per-run invocation/configuration ordinals,
+nested parentage, sanitized parameter JSON/hash, elapsed and CPU time,
+warnings/errors, entrypoint/component scope, consent/outbox state and
+activation-only AutoZyme evidence. Focused usage tests pass 127
+assertions. A 100-call microbenchmark measured about 6.14 ms of incremental
+wall overhead per tiny call; after excluding the initial database insert from
+the stored analytical timer, its persisted median matched the approximately
+2 ms function body. Scientific return values and RNG state were unchanged.
+Managed remote DBI delivery now requires a tamper-checked, versioned
+`remote_research` consent, uses the SQLite file as an outbox, and is explicit or
+on-disable rather than a network dependency of scientific calls. Delivery
+selects only sessions with the exact consent receipt, applies field-level data
+category gates, omits PID/error text, and keeps differently consented rows
+pending. A temporary second SQLite database exercises the generic DBI contract,
+unique remote IDs, idempotent retry and remote query path. The current
+namespace-binding model explicitly reports that function references saved
+before enablement are outside interception.
+
+The generated public API matrix inventories all 253 `sn_*` functions and every
+formal/selector digest; its gate passes 682 assertions. The clustering matrix
+accounts for all three normalization and eleven integration methods with
+selector-exhaustive, pairwise and high-risk case requirements. A separate
+24-cell enrichment matrix inventories ORA/GSEA, GO/KEGG/MSigDB and
+grouped/ungrouped dispatch, marking grouped GSEA unsupported and only the two
+existing MSigDB pilots as pilot evidence. These artifacts
+are static coverage/admission requirements: `runtime_classified` means the
+parameter was classified, not that its case executed, and neither matrix is a
+claim that every pending backend has passed a real execution contract.
+
+A governed 30,000-cell PBMC benchmark fixture now combines three independent
+public captures, 10,000 cells each, over 20,453 common features; its SHA-256 is
+`20b884fb6c8f20c932ae0eb3e56484e40089386208653156b447439032945013`.
+The fresh-process, three-arm benchmark uses the exact pinned AutoZyme revision
+and rotating order. Three-repetition medians with passing output comparators
+are LISI 9.11x, UCell 33.26x, Seurat NormalizeData 4.49x, Assay5 merge 3.04x,
+JoinLayers 1.69x, and scDblFinder 1.75x. The repeated clusterProfiler GO
+annotation scope was only
+1.04x in its focused one-repetition test; fgsea has no current `sn_enrich()`
+call intersection. scDblFinder is retained as a separate time/memory tradeoff
+result because its speedup raised peak worker RSS by about 290 MiB.
+The standard-counts preparation fast branch reduced the unaccelerated
+NormalizeData wrapper from 3.45 to 3.01 seconds against a 2.69-second direct
+call and reduced its worker RSS by nearly 1 GiB relative to the pre-fix report.
+The automatic patch set is now the explicit nine-patch subset `cellchat`,
+`clusterprofiler`, `lisi`, `nichenetr`, `scdblfinder`, `seurat`,
+`seurat_merge`, `soupx`, and `ucell`, each behind its operation/input guard; it
+is narrower than the manual catalog. Coralysis and
+WGCNA guards do not match Shennong's scientific defaults; the pinned build has
+no standalone decontX provider; broad Seurat includes unvalidated/unsafe
+targets (especially RPCA anchors); default JoinLayers does not match its
+counts-only guard; and tradeSeq lacks an mgcv dependency guard. Those paths are
+explicit-only. NormalizeData is the sole automatic broad-Seurat operation,
+RPCA/CCA and default JoinLayers fail closed, all-default scDblFinder is strict,
+and owned label-transfer/simulation merges now scope the exact Assay5 patch.
+Profile-guided backend cleanup moves only composition/ROE grouping to a shared
+base-R contingency kernel. Randomized 10k/20k differential tests plus the
+existing composition suite pass 74 assertions, preserving factors, NA rules,
+multi-column grouping, `min_cells`, proportions and RO/E. Repo-wide tidyverse
+replacement is rejected: PBMC30k wrapper overhead is already negligible in
+most paths, grouped QC was faster in dplyr than data.table, and tibble result
+classes are public contracts. A zero-materialization BPCells-to-MatrixMarket
+writer remains separate work; the current sparse handoff is O(nnz).
+The complete local testthat suite finishes with
+`FAIL 0 | WARN 2 | SKIP 66 | PASS 4277`. The warnings are the pre-existing
+BBKNN command-log warning and sandbox `timedatectl` discovery; skips are
+optional backend packages or the unavailable local figure fixture. Focused
+usage/matrix/composition tests pass 883 assertions; the AutoZyme hooks plus
+clustering/enrichment conformance group passes 410 with one BPCells skip.
+Focused clustering passes 531 with the known warning and 20 optional skips,
+and program scoring passes 49 with one optional GSVA skip.
+`R CMD build .` completes. After the full local suite, the rebuilt tarball
+passes `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-tests` with
+`Status: OK`, including examples and vignette reconstruction; all three
+installed conformance matrix paths were then opened and parsed explicitly.
+The real-data pkgdown build under `site/dev` contains the new usage references,
+`runtime-observability.html`, the revised `autozyme-benchmarks.html`, and the
+research-workflow map; its same-build manifest and publisher dry audit are
+regenerated after final source changes. Runtime coverage observes 94/94 core
+functions across 15/15 successful articles with no download attempts. The
+publisher dry audit accepts 678 static files and 65 mapped core figure assets,
+and a separate scan resolves 292 HTML pages with zero broken relative links.
+The strict backend-conformance profile passes 381 assertions without warnings
+or skips.
+
+Backend conformance v1 now defines the repository's AutoZyme-inspired
+scientific admission contract: direct upstream oracle versus Shennong with
+acceleration disabled, followed by an optional accelerated arm. Six
+machine-readable pilot contracts now cover Seurat log-normalization, silhouette
+widths, edgeR quasi-likelihood bulk DE, the full no-batch Seurat clustering
+policy pipeline, and MSigDB-style ORA/GSEA. A frozen inventory
+accounts for all 64 methods that already had `implemented: true`; a new method
+cannot enter that historical backlog and must instead supply an admitted
+contract. The dedicated strict CI profile installs all pilot dependencies,
+forces single-thread execution, and permits no dependency skip. The focused
+local run passes 363 assertions with no warnings or skips. These pilots are C0
+and C1 evidence only; none is yet represented as fresh-process C2 or release
+admission evidence.
 
 BPCells-backed scran normalization now crosses the unsupported
 BPCells-to-scran boundary through direct sparse `dgCMatrix` materialization.
@@ -48,6 +183,54 @@ incremental pkgdown site rebuild includes the new control-template reference.
 The newest entries appear first. Older entries remain as point-in-time evidence;
 historical validation counts and removed APIs do not describe the current
 release gate.
+
+- Added explicit local usage/timing tracking, its SQLite schema and privacy
+  policy, a pkgdown article, a workflow-registry coverage assertion, and an
+  overhead benchmark. Added the PBMC30k preparation and three-arm AutoZyme
+  runners. The benchmark audit also found and fixed exact feature matching in
+  program scoring and tightened relaxed AutoZyme gating so source trust is
+  never disabled.
+
+- Direct-reference audits found and repaired stale clustering reuse after count
+  or metadata mutation, selection of an unrelated pre-existing SNN graph,
+  hard-coded CCA/RPCA reduction provenance, split-count layer loss, unconditional
+  HGNChelper admission, and missing blocked-HVG evidence. Six focused clustering
+  regressions pass 34 assertions, and the no-batch Seurat stage projection
+  matches its direct pipeline. Enrichment now passes its universe, adjustment,
+  q-value, size, and exponent controls to the versioned upstream; rejects
+  ambiguous numeric formulas and silent duplicate-rank collapse; preserves
+  serious backend warnings; and no longer claims an fgsea patch intersection
+  for clusterProfiler 4.20/enrichit. Direct ORA/GSEA plus storage-provenance
+  pilots pass 10 assertions without warnings. The complete DE/enrichment file
+  passes 92 assertions with three deliberately preserved upstream mapping/
+  q-value diagnostics and one unavailable-COSG skip. The focused clustering
+  regressions pass 34 assertions, preprocessing passes 77 assertions with ten
+  optional-package skips, and the source build plus structural `R CMD check`
+  finish with `Status: OK`. The pkgdown rebuild was attempted twice: the normal
+  destination is not touchable by the current `pi` process because existing
+  files are owned by `duansq`. A temporary-destination build successfully
+  rendered the home/reference pages and the changed analysis-results,
+  annotation, bulk-transcriptomics, and clustering articles; the all-article
+  pass later stopped at the unrelated AutoZyme benchmark fixture. The checked-in
+  `site/dev` tree was therefore not rewritten in this session.
+
+- Added `shennong.dev/backend-conformance/v1`, installed JSON contracts, a
+  static formals-to-parameter audit, a frozen legacy-method inventory, and a
+  strict `backend-conformance` workflow. Six executable pilots compare
+  Shennong with direct Seurat, cluster, edgeR, and clusterProfiler/enrichit
+  calls while checking input immutability and wrapper-owned projections. The
+  strict focused run passes 363 assertions with
+  `FAIL 0 | WARN 0 | SKIP 0`; related preprocessing,
+  metrics, bulk, and CI tests pass 483 assertions with 13 expected missing-
+  optional-backend skips. The quick source build and structural `R CMD check`
+  complete with `Status: OK`. A full-suite attempt in this reduced local
+  dependency profile reaches the pre-existing Harmony-dependent clustering
+  tests but cannot complete because Harmony is not installed; the dedicated
+  conformance profile is complete.
+  Pilot status is
+  deliberately below admission: fixture hashes, fresh worker processes,
+  real/OOD fixtures, evidence records, and extended version/platform matrices
+  remain future C2--C4 work.
 
 - `sn_run_cluster()` now expands conditional parameter grids for explicitly
   vectorized scalar controls and stores a versioned run/embedding/preprocessing
@@ -190,16 +373,18 @@ release gate.
   intentionally not described as accelerated until a combined fork revision
   registers a validated patch for it.
 
-- CellChat and call-safe NicheNetR communication workflows now pass
-  `strict = FALSE` to their scoped AutoZyme manager. Their runtime/backend
-  guards and upstream fallback remain unchanged, while installed version labels
-  no longer block patch activation. The scDblFinder refresh branch is merged
+- Historical note, superseded by the strict 2026-08-21 admission policy:
+  CellChat and call-safe NicheNetR communication workflows temporarily passed
+  `strict = FALSE` to their scoped AutoZyme manager. They now require exact
+  admitted upstream versions. The scDblFinder refresh branch is merged
   into `main` with its five-target sparse/IRLBA patch and updated
   source fingerprint; the already-merged Seurat branch has no remaining delta.
-- clusterProfiler 4.20 and fgsea 1.38 now activate independently inside
-  `sn_enrich()`: the Shennong-bundled clusterProfiler patch reports one active
+- Historical benchmark note, superseded by the current enrichment call graph:
+  clusterProfiler 4.20 and fgsea 1.38 were once scoped independently inside
+  `sn_enrich()`. The Shennong-bundled clusterProfiler patch reports one active
   `get_GO_data()` target and the official fgsea patch reports three active
-  targets. Focused enrichment/acceleration/hook tests passed 407 assertions
+  targets, but current GSEA uses enrichit and no longer intersects fgsea.
+  Focused enrichment/acceleration/hook tests passed 407 assertions
   without warnings. The measured enrichment file completed in 161.8 seconds
   versus 224.5 seconds before activation in this same checkout; a final
   post-refactor rerun passed its 91 assertions in 136.8 seconds. Repeated cached GSEA

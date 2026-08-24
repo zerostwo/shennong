@@ -39,9 +39,10 @@ remain visible in the roadmap without being misrepresented as available.
 ```{r method-registry}
 library(Shennong)
 
-sn_list_methods("trajectory")[, c(
+method_table <- sn_list_methods("trajectory")[, c(
   "name", "default", "implemented", "available", "runtime", "package"
 )]
+knitr::kable(method_table)
 
 sn_method_status("slingshot", task = "trajectory")
 ```
@@ -195,7 +196,7 @@ full envelope, diagnostics, or provenance is required.
 
 Shennong never patches another package during loading. When an integrated
 workflow first needs one of the lazy defaults—CellChat, NicheNetR,
-clusterProfiler, fgsea, Seurat, the narrow SeuratObject merge/JoinLayers paths,
+clusterProfiler, Seurat, the narrow SeuratObject merge/JoinLayers paths,
 tradeSeq, or WGCNA—it checks that relevant patch.
 Each patch requires the pinned AutoZyme build plus an installed upstream
 package. Seurat, CellChat, and call-safe NicheNetR workflow scopes currently
@@ -210,10 +211,14 @@ or drifted dependencies are skipped safely.
 Approximate patches are never part of the automatic set. AutoZyme's load-time
 change to `future.globals.maxSize` is restored before the analytical expression
 runs.
+The clusterProfiler 4.20 GSEA path used by `sn_enrich()` executes enrichit, not
+the fgsea namespace. It therefore scopes only the clusterProfiler GSON-cache
+patch; the separately available fgsea patch is not evidence that this workflow
+used an accelerated statistical kernel.
 
 ```{r autozyme-check}
 autozyme_defaults <- c(
-  "cellchat", "nichenetr", "clusterprofiler", "fgsea",
+  "cellchat", "nichenetr", "clusterprofiler",
   "seurat", "seurat_merge", "seurat_joinlayers", "tradeseq", "wgcna"
 )
 sn_check_autozyme(autozyme_defaults)

@@ -29,11 +29,11 @@
 
 .sn_match_program_features <- function(signatures, features, min_genes = 1L) {
   feature_keys <- toupper(sub("\\.[0-9]+$", "", features))
-  feature_lookup <- stats::setNames(features, feature_keys)
   matched <- lapply(signatures, function(genes) {
-    unique(unname(feature_lookup[toupper(sub("\\.[0-9]+$", "", genes))])) |>
-      stats::na.omit() |>
-      as.character()
+    exact <- match(genes, features)
+    fallback <- match(toupper(sub("\\.[0-9]+$", "", genes)), feature_keys)
+    indices <- ifelse(!is.na(exact), exact, fallback)
+    unique(features[stats::na.omit(indices)])
   })
   coverage <- tibble::tibble(
     program = names(signatures),
@@ -43,7 +43,8 @@
     matched_genes = vapply(matched, paste, collapse = ";", character(1)),
     missing_genes = vapply(names(signatures), function(program) {
       keys <- toupper(sub("\\.[0-9]+$", "", signatures[[program]]))
-      paste(signatures[[program]][!keys %in% feature_keys], collapse = ";")
+      exact <- signatures[[program]] %in% features
+      paste(signatures[[program]][!exact & !keys %in% feature_keys], collapse = ";")
     }, character(1))
   )
   keep <- lengths(matched) >= as.integer(min_genes)
@@ -69,6 +70,22 @@
   scores
 }
 
+.sn_ucell_bpparam <- function(control) {
+  if ("BPPARAM" %in% names(control)) {
+    return(control$BPPARAM)
+  }
+  active <- tryCatch(
+    .sn_autozyme_effective_active_patches(),
+    error = function(error) character()
+  )
+  if ("ucell" %in% active) {
+    # The validated AutoZyme envelope requires UCell's public NULL default.
+    return(NULL)
+  }
+  check_installed("BiocParallel", reason = "to run UCell program scoring serially.")
+  BiocParallel::SerialParam(progressbar = FALSE)
+}
+
 .sn_score_programs_ucell <- function(matrix, signatures, control) {
   check_installed("UCell", reason = "to run UCell program scoring.")
   check_installed("SeuratObject", reason = "to run UCell program scoring.")
@@ -81,22 +98,24 @@
   )
   control <- control %||% list()
   control <- control[setdiff(names(control), c("obj", "features", "matrix"))]
-  defaults <- list(
-    obj = object,
-    features = signatures,
-    name = "",
-    ncores = 1L,
-    BPPARAM = NULL,
-    storeRanks = FALSE,
-    slot = "counts"
-  )
   scored <- .sn_with_default_autozyme(
-    do.call(
-      UCell::AddModuleScore_UCell,
-      utils::modifyList(defaults, control, keep.null = TRUE)
-    ),
+    {
+      defaults <- list(
+        obj = object,
+        features = signatures,
+        name = "",
+        ncores = 1L,
+        BPPARAM = .sn_ucell_bpparam(control),
+        storeRanks = FALSE,
+        slot = "counts"
+      )
+      do.call(
+        UCell::AddModuleScore_UCell,
+        utils::modifyList(defaults, control, keep.null = TRUE)
+      )
+    },
     patches = "ucell",
-    strict = FALSE
+    strict = TRUE
   )
 
   score_name <- as.character(control$name %||% "")[[1]]

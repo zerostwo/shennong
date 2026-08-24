@@ -2655,6 +2655,8 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
 #' @param gene_col Column containing gene symbols when the enrichment input came
 #'   from a data frame.
 #' @param score_col Column containing ranking scores for GSEA inputs.
+#' @param parameters Named list of effective enrichment parameters retained for
+#'   discovery and reproducibility.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #'
 #' @return A \code{Seurat} object or a stored-result list.
@@ -2687,12 +2689,18 @@ sn_store_enrichment <- function(object,
                                 source_de_name = NULL,
                                 gene_col = "gene",
                                 score_col = NULL,
+                                parameters = list(),
                                 return_object = TRUE) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
 
   analysis <- match.arg(analysis)
+  if (!is.list(parameters) ||
+      (length(parameters) > 0L &&
+        (is.null(names(parameters)) || any(!nzchar(names(parameters)))))) {
+    stop("`parameters` must be a named list.", call. = FALSE)
+  }
   stored_result <- list(
     schema_version = "1.0.0",
     package_version = as.character(utils::packageVersion("Shennong")),
@@ -2704,6 +2712,7 @@ sn_store_enrichment <- function(object,
     source_de_name = source_de_name,
     gene_col = gene_col,
     score_col = score_col,
+    parameters = parameters,
     provenance = .sn_contextual_analysis_provenance()
   )
 

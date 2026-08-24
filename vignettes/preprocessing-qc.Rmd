@@ -22,6 +22,7 @@ run_vignette <- run_requested &&
   requireNamespace("qs2", quietly = TRUE) &&
   file.exists(real_data_file)
 run_extended <- run_vignette && identical(real_profile, "all")
+hgnc_ready <- run_extended && requireNamespace("HGNChelper", quietly = TRUE)
 
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -102,7 +103,11 @@ analysis. If `HGNChelper` cannot provide an unambiguous replacement for an
 otherwise valid symbol, Shennong preserves the original symbol instead of
 returning an `NA` feature name.
 
-```{r standardize-symbols, eval = run_vignette}
+The symbol-correction example is an extended step because it requires the
+optional `HGNChelper` snapshot. Core preprocessing retains the source symbols
+and shows the exact call without installing a package during rendering.
+
+```{r standardize-symbols, eval = hgnc_ready}
 symbols_before <- rownames(pbmc)
 pbmc_standardized <- sn_standardize_gene_symbols(
   pbmc,

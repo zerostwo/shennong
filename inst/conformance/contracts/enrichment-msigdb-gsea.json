@@ -1,0 +1,91 @@
+{
+  "schema_version": "shennong.dev/backend-conformance/v1",
+  "id": "enrichment::msigdb_gsea",
+  "status": "pilot",
+  "shennong": {
+    "function": "sn_enrich",
+    "selector": {"analysis": "gsea", "database": "H"},
+    "version": "0.3.0.9000",
+    "registry_key": null
+  },
+  "upstream": {
+    "language": "R",
+    "runtime": "r",
+    "package": "clusterProfiler",
+    "api": ["clusterProfiler::GSEA", "enrichit::gsea_gson"],
+    "repository": "https://git.bioconductor.org/packages/clusterProfiler",
+    "versions": ["clusterProfiler 4.20.0", "enrichit 0.2.1", "msigdbr 26.1.1"],
+    "install_source": "Bioconductor plus CRAN msigdbr/enrichit"
+  },
+  "oracle": {
+    "type": "direct_public_api",
+    "call": "set.seed(seed); clusterProfiler::GSEA(geneList, exponent, minGSSize, maxGSSize, pvalueCutoff, pAdjustMethod, TERM2GENE, TERM2NAME)",
+    "harness": "tests/testthat/test-backend-conformance-enrichment.R"
+  },
+  "inputs": {
+    "classes": ["named numeric vector"],
+    "modalities": ["ranked-list GSEA"],
+    "assays_layers": ["not applicable"],
+    "storage_backends": ["base numeric vector and two-column term tables"],
+    "requirements": ["finite decreasing statistics", "unique non-empty gene identifiers", "explicit analysis"]
+  },
+  "parameters": [
+    {"wrapper": "x", "role": "input_adapter", "upstream": "geneList", "scenarios": ["40-gene signed ranking"]},
+    {"wrapper": "gene_clusters", "role": "not_applicable", "upstream": "NULL for named-vector GSEA", "scenarios": ["NULL"]},
+    {"wrapper": "analysis", "role": "backend_selector", "upstream": "selects GSEA", "scenarios": ["gsea"]},
+    {"wrapper": "species", "role": "input_adapter", "upstream": "selects msigdbr species", "scenarios": ["human"]},
+    {"wrapper": "database", "role": "backend_selector", "upstream": "selects MSigDB TERM2GENE", "scenarios": ["H"]},
+    {"wrapper": "collection", "role": "input_adapter", "upstream": "MSigDB collection override", "scenarios": ["NULL"]},
+    {"wrapper": "subcollection", "role": "input_adapter", "upstream": "MSigDB subcollection override", "scenarios": ["NULL"]},
+    {"wrapper": "pvalue_cutoff", "role": "pass_through", "upstream": "pvalueCutoff", "scenarios": [1]},
+    {"wrapper": "p_adjust_method", "role": "pass_through", "upstream": "pAdjustMethod", "scenarios": ["BH"]},
+    {"wrapper": "qvalue_cutoff", "role": "not_applicable", "upstream": "ORA-only parameter", "scenarios": [0.2]},
+    {"wrapper": "universe", "role": "not_applicable", "upstream": "GSEA rejects an ORA universe", "scenarios": ["NULL"]},
+    {"wrapper": "min_gs_size", "role": "pass_through", "upstream": "minGSSize", "scenarios": [3, "ten-member set with only two ranked-list overlaps is excluded"]},
+    {"wrapper": "max_gs_size", "role": "pass_through", "upstream": "maxGSSize", "scenarios": [20]},
+    {"wrapper": "gsea_exponent", "role": "pass_through", "upstream": "exponent", "scenarios": [1]},
+    {"wrapper": "duplicate_gene_method", "role": "input_transform", "upstream": "requires unique geneList names", "scenarios": ["error"]},
+    {"wrapper": "store_name", "role": "wrapper_only", "upstream": "stored-result name", "scenarios": ["default"]},
+    {"wrapper": "source_de_name", "role": "wrapper_only", "upstream": "stored-DE provenance", "scenarios": ["NULL"]},
+    {"wrapper": "return_object", "role": "wrapper_only", "upstream": "return representation", "scenarios": [false]},
+    {"wrapper": "prefix", "role": "wrapper_only", "upstream": "output filename prefix", "scenarios": ["NULL"]},
+    {"wrapper": "outdir", "role": "wrapper_only", "upstream": "optional RDS output directory", "scenarios": ["NULL"]}
+  ],
+  "outputs": {
+    "scientific": ["term IDs", "set sizes", "enrichment scores", "NES", "raw and adjusted p values", "q values", "rank", "leading edge", "core enrichment"],
+    "wrapper": ["rank validation, optional explicit duplicate collapse, and optional storage"],
+    "waivers": ["The pilot mocks only term retrieval; intrinsic-noise and real msigdbr calibration remain C2/C3 tasks."]
+  },
+  "equivalence": {
+    "class": "standardized_numeric",
+    "projection": ["complete as.data.frame(gseaResult) aligned by ID"],
+    "absolute_tolerance": 1e-12,
+    "relative_tolerance": 1e-12,
+    "ordering": "align by term ID",
+    "reason": "The wrapper and oracle use identical ranks, term mappings, enrichit backend arguments, and seed."
+  },
+  "execution": {
+    "seed": 717,
+    "rng_kind": "R session default; the harness calls set.seed before both arms",
+    "threads": 1,
+    "fresh_process": false,
+    "acceleration": "AutoZyme disabled",
+    "environment": {"AUTOZYME_DISABLED": "true", "OMP_NUM_THREADS": "1"}
+  },
+  "fixtures": [
+    {"id": "synthetic-msigdb-gsea-tiny-v1", "tier": "tiny", "source": "generated term table and signed ranking in executable test", "license": "repository test fixture", "sha256": null, "role": "C1 direct-call pilot", "seed": 717}
+  ],
+  "conditions": {
+    "expected": ["none in validated case"],
+    "outside_envelope": "GO, KEGG, grouped GSEA, duplicate-collapse alternatives, default RNG consumption, real terms, and alternate enrichit methods require more scenarios."
+  },
+  "versions": {
+    "R": "recorded at runtime",
+    "Shennong": "0.3.0.9000",
+    "upstream": ["clusterProfiler 4.20.0", "enrichit 0.2.1", "msigdbr 26.1.1"],
+    "material_dependencies": ["gson", "qvalue"]
+  },
+  "ci": {"required_tiers": ["C0-static", "C1-dispatch-contract"], "profile": "backend-conformance", "platforms": ["ubuntu-latest"]},
+  "evidence": {"test_file": "tests/testthat/test-backend-conformance-enrichment.R", "date": "2026-08-21", "verdict": "pilot", "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, grouped, intrinsic-noise, and warning/error tiers remain pending."},
+  "owner": {"subsystem": "enrichment", "maintainer": "Shennong maintainers", "last_reviewed": "2026-08-21"}
+}

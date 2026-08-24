@@ -1,7 +1,7 @@
 Package: Shennong
 Type: Package
 Title: Toolkit for Interpreting Omics Data
-Version: 0.3.0
+Version: 0.3.0.9000
 Authors@R: c(
     person("Songqi", "Duan", , "duan@songqi.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-0822-5883"))
@@ -59,6 +59,7 @@ Suggests:
     COSG,
     copykat,
     data.table,
+    DBI,
     DESeq2,
     DelayedArray,
     decoupleR,
@@ -66,12 +67,14 @@ Suggests:
     DOSE,
     edgeR,
     ellmer,
+    enrichit,
     GapClust,
     GENIE3,
     ggrepel,
     ggridges,
     ggrastr,
     glmGamPoi,
+    GSEABase,
     GSVA,
     harmony,
     hdf5r,
@@ -102,6 +105,8 @@ Suggests:
     rhdf5,
     rio,
     ROGUE,
+    RSQLite,
+    RPostgres,
     RareQ,
     rmarkdown,
     rtracklayer,
@@ -127,7 +132,6 @@ Suggests:
     SpatialExperiment,
     symphony,
     svglite,
-    tidytemplate,
     testthat (>= 3.0.0),
     tradeSeq,
     UCell,
@@ -153,10 +157,7 @@ Remotes:
     github::saeyslab/nichenetr,
     github::saeyslab/multinichenetr,
     github::wu-yc/scMetabolism,
-    github::scverse/anndataR,
-    github::tidyverse/tidytemplate
+    github::scverse/anndataR
 VignetteBuilder: knitr
-Config/Needs/website: tidyverse/tidytemplate
 Config/testthat/edition: 3
-Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.1.0

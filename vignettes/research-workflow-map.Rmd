@@ -1,0 +1,367 @@
+---
+title: "From samples to evidence: a research workflow map"
+author:
+- name: Songqi Duan
+  email: duan@songqi.org
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{From samples to evidence: a research workflow map}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  eval = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+::: {.sn-hero-panel}
+[Start with the question]{.sn-kicker}
+
+Shennong's functions form an evidence chain rather than a menu of unrelated
+methods. Start with the biological unit of replication, preserve the source
+assay and layer, compare plausible methods, and finish with a stored table and
+an inspectable figure.
+
+<div class="sn-flow" role="list" aria-label="Shennong research evidence chain">
+<span role="listitem">observations</span><b aria-hidden="true">→</b>
+<span role="listitem">quality control</span><b aria-hidden="true">→</b>
+<span role="listitem">representation</span><b aria-hidden="true">→</b>
+<span role="listitem">biological comparison</span><b aria-hidden="true">→</b>
+<span role="listitem">stored evidence</span><b aria-hidden="true">→</b>
+<span role="listitem">figure + provenance</span>
+</div>
+
+Use this page to choose a route. The linked articles contain the executable
+real-data analysis and its visual checkpoints.
+:::
+
+## What the examples do—and do not—claim
+
+The website uses locally materialized subsets of public observations. They are
+not bundled in the package and the articles never download them during
+`R CMD check`. A normal build shows the code and input contract. A designated
+real-data build executes an article only when its fixture and dependencies are
+present:
+
+```sh
+SHENNONG_RUN_VIGNETTES=true \
+SHENNONG_REAL_DATA_DIR=/path/to/pkgdown-real \
+Rscript -e 'pkgdown::build_site()'
+```
+
+<span class="sn-tier">core</span> uses a bounded local fixture and the default
+workflow. <span class="sn-tier">extended</span> additionally requires
+`SHENNONG_REAL_PROFILE=all` and optional dependencies. External services,
+credentials, model files, or imported backend results remain explicitly
+opt-in. A displayed plot is therefore evidence from an executed chunk, not a
+placeholder manufactured when a backend is absent.
+
+## Choose a scientific narrative
+
+::: {.sn-module-grid}
+
+::: {.sn-path-card}
+### Longitudinal immune cohort
+
+Use the real Kotliarov PBMC CITE-seq subset to ask how RNA and ADT cell states,
+batch, and vaccine response vary across 20 biological samples. Begin with
+[preprocessing](preprocessing-qc.html), continue through
+[integration](clustering.html), [annotation and pathways](annotation-pathways.html),
+then test [composition](composition-analysis.html) or
+[differential abundance](abundance-priority.html).
+:::
+
+::: {.sn-path-card}
+### Tumour ecosystem and clinical translation
+
+Use author-normalized malignant cells from GSE72056 for programs, regulatory
+networks, malignancy evidence, and metabolism. Connect those hypotheses to
+TCGA-SKCM expression and follow-up without relabelling TPM as counts. Follow
+[program discovery](program-discovery-grn.html), [CNV and metabolism](cnv-metabolism.html),
+and [bulk clinical analysis](bulk-transcriptomics.html).
+:::
+
+::: {.sn-path-card}
+### Cell-state dynamics
+
+Use the Hermann spermatogenesis fixture when the question is ordered change,
+not only discrete clusters. Separate trajectory topology, gene trends,
+velocity, and terminal-state probabilities. Follow
+[trajectory and dynamic genes](trajectory-dynamics.html), then the optional
+[velocity and fate](velocity-fate.html) path.
+:::
+
+::: {.sn-path-card}
+### Tissue organization
+
+Use the real Visium lymph-node sections to keep expression and coordinates
+together. Inspect native neighborhoods and spatial features before introducing
+an extended backend or reference mapping. Follow the
+[spatial workflow](spatial-workflows.html).
+:::
+
+:::
+
+## The core single-cell evidence chain
+
+<ol class="sn-steps">
+<li><strong>Define the observation and replicate.</strong> Materialize the
+source once, retain sample metadata, and decide whether the scientific replicate
+is a donor, capture, section, or bulk sample.</li>
+<li><strong>Audit quality before filtering.</strong> Plot distributions and
+thresholds, record flags, and retain the pre-filter evidence needed to explain
+cell and feature loss.</li>
+<li><strong>Choose a representation.</strong> Cluster without integration as a
+baseline, then compare batch-aware methods against both mixing and biological
+separation metrics.</li>
+<li><strong>Name and test states.</strong> Join marker evidence, reference
+evidence, signatures, and ontology terms. Test replicate-aware changes instead
+of treating cells as independent samples.</li>
+<li><strong>Store the result, then plot it.</strong> Retrieve the exact result
+name from the object so tables, figures, prompts, and exported source data all
+refer to the same analysis.</li>
+<li><strong>Report runtime and provenance.</strong> Record backend versions,
+parameter fingerprints, and optional acceleration separately from the
+scientific result.</li>
+</ol>
+
+### 1. Materialize once and retain sample identity
+
+Dataset discovery and publication belong to ShennongData. Shennong begins with
+a materialized matrix, file, or object and preserves the metadata that defines
+the study design. See [Data input, output, and project setup](data-io-projects.html).
+
+```{r load-real-pbmc}
+library(Shennong)
+
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"),
+  "single-cell",
+  "kotliarov_pbmc.qs2"
+))
+
+table(pbmc$real_sample, pbmc$real_response)
+```
+
+### 2. Make QC decisions visible
+
+The filtering calls return an analysis object; plotting functions expose the
+decision boundary and retained fraction. The complete real-data sequence is in
+[Preprocessing and QC](preprocessing-qc.html).
+
+```{r qc-checkpoints}
+pbmc <- sn_filter_cells(
+  pbmc,
+  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  plot = FALSE
+)
+pbmc <- sn_filter_genes(pbmc, min_cells = 3, plot = FALSE)
+
+sn_plot_qc_thresholds(
+  pbmc,
+  features = c("nFeature_RNA", "nCount_RNA", "percent.mt")
+)
+```
+
+### 3. Establish a baseline before integration
+
+`sn_run_cluster()` exposes the normalization and integration choices in one
+call. Compare batch mixing and biological conservation; a UMAP alone is not an
+integration test. See [Clustering and integration](clustering.html),
+[layer-aware workflows](layered-workflows.html), and
+[integration metrics](metrics-diagnostics.html).
+
+```{r representation-checkpoints}
+pbmc <- sn_run_cluster(
+  pbmc,
+  normalization_method = "seurat",
+  integration_method = "harmony",
+  batch = "real_batch",
+  resolution = 0.6
+)
+
+sn_plot_dim(pbmc, reduction = "umap", group_by = "real_batch")
+sn_plot_dim(pbmc, reduction = "umap", group_by = "seurat_clusters", label = TRUE)
+
+assessment <- sn_assess_integration(
+  pbmc,
+  batch_by = "real_batch",
+  cluster_by = "seurat_clusters",
+  reduction = "harmony",
+  baseline_reduction = "pca"
+)
+sn_plot_integration(assessment)
+```
+
+### 4. Connect states to genes and pathways
+
+Store marker results on the object, then let downstream plots and enrichment
+retrieve them by name. ORA and GSEA answer different questions: ORA tests a
+selected gene set against an explicit universe, whereas GSEA uses the complete
+ranked statistic. See [Markers, signatures, pathways, and annotation](annotation-pathways.html).
+
+```{r annotation-checkpoints}
+pbmc <- sn_find_de(
+  pbmc,
+  analysis = "markers",
+  group_by = "seurat_clusters",
+  store_name = "cluster_markers",
+  return_object = TRUE,
+  verbose = FALSE
+)
+
+sn_plot_dot(pbmc, features = "top_markers", de_name = "cluster_markers")
+
+pbmc <- sn_enrich(
+  pbmc,
+  source_de_name = "cluster_markers",
+  gene_clusters = gene ~ cluster,
+  database = c("GOBP", "H"),
+  universe = rownames(pbmc),
+  store_name = "cluster_pathways",
+  return_object = TRUE
+)
+
+pathways <- sn_get_enrichment_result(
+  pbmc,
+  enrichment_name = "cluster_pathways.GOBP"
+)
+sn_plot_enrichment(pathways, type = "dot")
+```
+
+### 5. Return to the sample as the replicate
+
+Cell counts are descriptive until they are summarized within biological
+samples. Compare sample-level proportions or use a differential-abundance
+model with an explicit design. See [Composition analysis](composition-analysis.html)
+and [Differential abundance and state priority](abundance-priority.html).
+
+```{r sample-comparison-checkpoints}
+composition <- sn_calculate_composition(
+  pbmc,
+  group_by = c("real_sample", "real_response"),
+  variable = "seurat_clusters"
+)
+
+sn_plot_composition(
+  composition,
+  x = "real_sample",
+  fill = "seurat_clusters",
+  facet_col = "real_response"
+)
+```
+
+### 6. Extend only when the question requires it
+
+The common object and result contract supports several distinct extensions:
+
+- [cell-cell communication](communication-consensus.html) for sender-receiver
+  evidence and cross-method consensus;
+- [program discovery and GRNs](program-discovery-grn.html) for latent programs
+  and regulatory hypotheses;
+- [trajectory](trajectory-dynamics.html) and [velocity/fate](velocity-fate.html)
+  for directed or ordered change;
+- [spatial analysis](spatial-workflows.html) for coordinate-aware expression;
+- [bulk deconvolution](bulk-deconvolution.html) and
+  [bulk transcriptomics](bulk-transcriptomics.html) for cohort-level translation.
+
+Each extension has its own admissible input. A normalized tumour matrix is not
+silently treated as UMI counts, and an absent external backend never produces
+a substitute result.
+
+### 7. Retrieve, validate, and publish the same evidence
+
+Discover a stored result before retrieving it, validate its versioned envelope,
+then export the plot together with source data and a figure specification. See
+[result and method contracts](analysis-results-and-methods.html),
+[publication figures](publication-figures.html), and
+[interpretation and reporting](interpretation-workflows.html).
+
+```{r evidence-export}
+sn_list_results(pbmc)
+markers <- sn_get_result(pbmc, type = "de", name = "cluster_markers")
+sn_validate_result(markers)
+
+figure <- sn_plot_de(markers, type = "effect")
+sn_export_figure_bundle(
+  figure,
+  path = "figures/cluster-markers"
+)
+```
+
+## Module directory
+
+| Research decision | Principal entry points | Visual checkpoint | Detailed article |
+|---|---|---|---|
+| Materialize and govern inputs | `sn_read()`, `sn_write()`, `sn_initialize_project()` | input and metadata audit tables | [Data and projects](data-io-projects.html) |
+| Filter and normalize | `sn_filter_cells()`, `sn_filter_genes()`, `sn_normalize_data()` | `sn_plot_qc_thresholds()`, `sn_plot_qc()` | [Preprocessing and QC](preprocessing-qc.html) |
+| Cluster or integrate modalities | `sn_run_cluster()`, `sn_run_multimodal()` | `sn_plot_dim()`, `sn_plot_resolution_sweep()` | [Clustering](clustering.html) |
+| Respect assay layers | layer-aware arguments across preprocessing, DE, and scoring | embedding and layer audit | [Layered workflows](layered-workflows.html) |
+| Validate integration | `sn_assess_integration()`, `sn_compare_integrations()` | `sn_plot_integration()` | [Metrics and diagnostics](metrics-diagnostics.html) |
+| Annotate and test features | `sn_run_annotation()`, `sn_find_de()`, `sn_enrich()` | marker dot plots, ORA dots, GSEA curves | [Annotation and pathways](annotation-pathways.html) |
+| Score or discover programs | `sn_score_programs()`, `sn_discover_programs()`, `sn_run_grn()` | activity heatmaps and regulon networks | [Programs and GRNs](program-discovery-grn.html) |
+| Compare sample composition | `sn_calculate_composition()`, `sn_test_abundance()` | composition bars and abundance effects | [Composition](composition-analysis.html), [abundance](abundance-priority.html) |
+| Model communication | `sn_run_cell_communication()` | bubble, heatmap, network, ligand-target plot | [Communication](communication-consensus.html) |
+| Follow dynamic states | `sn_run_trajectory()`, `sn_run_velocity()`, `sn_run_fate()` | topology, trends, velocity, fate | [Trajectory](trajectory-dynamics.html), [velocity](velocity-fate.html) |
+| Explain tumour states | `sn_run_cnv()`, `sn_run_metabolism()` | CNV heatmap and pathway activity | [CNV and metabolism](cnv-metabolism.html) |
+| Keep tissue coordinates | `sn_run_spatial()` and spatial sub-workflows | features, domains, neighborhoods, mapping | [Spatial workflows](spatial-workflows.html) |
+| Translate to cohorts | `sn_run_bulk()`, `sn_find_de()`, `sn_run_survival()`, `sn_deconvolve_bulk()` | QC, PCA, DE, pathways, survival, fractions | [Bulk](bulk-transcriptomics.html), [deconvolution](bulk-deconvolution.html) |
+| Build publication evidence | result retrieval, figure specification, interpretation helpers | exported figure and source-data bundle | [Visualization](visualization.html), [publication](publication-figures.html), [interpretation](interpretation-workflows.html) |
+| Profile the workflow | usage tracking and AutoZyme controls | timing summaries and benchmark figures | [Runtime observability](runtime-observability.html), [AutoZyme benchmarks](autozyme-benchmarks.html) |
+
+## Read acceleration evidence as four separate gates
+
+An active patch is not proof that a Shennong call used a fast kernel. The full
+sequence is:
+
+::: {.sn-gate-grid}
+::: {.sn-gate data-state="accepted"}
+### 1. Activation
+The replacement is installed in a namespace for a bounded scope. This reports
+availability, not use.
+:::
+::: {.sn-gate data-state="accepted"}
+### 2. Target intersection
+The workflow must actually call the replaced upstream symbol. A loaded patch
+for an unused backend has no effect.
+:::
+::: {.sn-gate data-state="blocked"}
+### 3. Guard accepted
+The real call shape, input class, operation, version, and parameters must match
+the validated fast-path guard. Otherwise the replacement must fall back.
+:::
+::: {.sn-gate data-state="accepted"}
+### 4. Fast-path hit
+Runtime evidence must show that the guarded kernel executed. Shennong does not
+infer this from activation alone.
+:::
+:::
+
+This distinction prevents scientifically unsafe false hits. The pinned
+JoinLayers and Coralysis replacements can be active while Shennong's real call
+shape fails their benchmark-specific guards and falls back. An older broad
+Seurat `FindIntegrationAnchors` replacement lacked a reduction guard, so an
+RPCA request could incorrectly enter a CCA-oriented path. The tradeSeq patch
+globally replaced `mgcv` behavior without an exact dependency guard. Shennong
+therefore uses strict source/version checks, operation-specific scopes, and
+temporary `with_disabled` boundaries around incompatible calls. Those patches
+remain explicit-only until a three-arm contract proves the actual Shennong
+workflow. See [Validated AutoZyme benchmarks](autozyme-benchmarks.html) for the
+measured intersections and quarantine rationale.
+
+## Find the next article from an output
+
+If the output is a table, call `sn_list_results()` and retrieve its exact stored
+name before interpretation. If it is a figure, keep the source table beside the
+export. If it is only an embedding, continue to diagnostics or biological
+testing before treating it as evidence. Runtime statistics belong in a separate
+opt-in database and never replace the result stored on the analysis object.

@@ -143,6 +143,40 @@ test_that("SingleR predictions and raw backend evidence are retained", {
   expect_true(all(c("singleR", "markers") %in% unique(c(result$tables$evidence$method, "markers"))))
 })
 
+test_that("unified CellTypist annotation uses count-like input by default", {
+  object <- make_annotation_test_object()
+  observed_layers <- character()
+
+  local_mocked_bindings(
+    sn_run_celltypist = function(x, layer, ...) {
+      observed_layers <<- c(observed_layers, layer)
+      x$mock_predicted_labels <- rep(c("B cells", "T cells"), each = 4)
+      x
+    },
+    .package = "Shennong"
+  )
+
+  default <- .sn_annotation_backend(
+    object,
+    method = "celltypist",
+    assay = NULL,
+    layer = "data",
+    backend_control = list()
+  )
+  overridden <- .sn_annotation_backend(
+    object,
+    method = "celltypist",
+    assay = NULL,
+    layer = "data",
+    backend_control = list(celltypist = list(layer = "decontaminated_counts"))
+  )
+
+  expect_identical(observed_layers, c("counts", "decontaminated_counts"))
+  expect_identical(default$input$layer, "counts")
+  expect_identical(overridden$input$layer, "decontaminated_counts")
+  expect_identical(default$evidence$score, rep(0, ncol(object)))
+})
+
 test_that("Symphony mapping retains confidence and the query embedding", {
   skip_if_not_installed("symphony")
   query <- make_annotation_test_object()

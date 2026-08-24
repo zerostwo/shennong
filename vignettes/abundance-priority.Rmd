@@ -92,23 +92,14 @@ sample_design
 
 ## Sample-level differential abundance
 
-Propeller models the 20 biological samples. The contrast is high versus low
-baseline vaccine response. One donor has cells in both acquisition batches, so
-batch is reported above but is not forced into an invalid one-value-per-sample
-covariate. A sample-label permutation analysis provides a second result whose
-null is easy to audit.
+The built-in sample-label permutation analysis models the 20 biological
+samples and exposes an auditable null without an optional backend. When
+`speckle` is installed, the same design is also fitted with Propeller. The
+contrast is high versus low baseline vaccine response. One donor has cells in
+both acquisition batches, so batch is reported above but is not forced into an
+invalid one-value-per-sample covariate.
 
 ```{r abundance, eval=core_ready}
-abundance <- sn_test_abundance(
-  pbmc,
-  method = "propeller",
-  sample_by = "real_sample",
-  condition_by = "real_response",
-  cell_type_by = "cell_state",
-  contrast = c("d0 high", "d0 low"),
-  return_object = FALSE
-)
-
 permutation <- sn_test_abundance(
   pbmc,
   method = "permutation",
@@ -121,10 +112,28 @@ permutation <- sn_test_abundance(
   return_object = FALSE
 )
 
-abundance$tables$primary[order(abundance$tables$primary$adjusted_p_value), ]
-head(abundance$tables$sample_proportions)
+permutation$tables$primary[
+  order(permutation$tables$primary$adjusted_p_value),
+]
+head(permutation$tables$sample_proportions)
 head(permutation$tables$permutation_null)
-sn_plot_abundance(abundance)
+sn_plot_abundance(permutation)
+
+if (requireNamespace("speckle", quietly = TRUE)) {
+  abundance <- sn_test_abundance(
+    pbmc,
+    method = "propeller",
+    sample_by = "real_sample",
+    condition_by = "real_response",
+    cell_type_by = "cell_state",
+    contrast = c("d0 high", "d0 low"),
+    return_object = FALSE
+  )
+  abundance$tables$primary[
+    order(abundance$tables$primary$adjusted_p_value),
+  ]
+  sn_plot_abundance(abundance)
+}
 ```
 
 ## Prioritize response-separable states

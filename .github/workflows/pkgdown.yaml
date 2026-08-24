@@ -47,7 +47,6 @@ jobs:
             any::pkgdown
             any::knitr
             any::rmarkdown
-            github::tidyverse/tidytemplate
             any::msigdbr
             any::Seurat
             any::hdf5r

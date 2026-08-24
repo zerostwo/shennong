@@ -410,7 +410,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
   variable <- apply(expression, 1L, stats::var)
   expression <- expression[is.finite(variable) & variable > 0, , drop = FALSE]
   dat_expr <- t(expression)
-  .sn_with_default_autozyme({
+  .sn_with_explicit_autozyme_or_disabled({
   quality <- WGCNA::goodSamplesGenes(dat_expr, verbose = 0)
   dat_expr <- dat_expr[quality$goodSamples, quality$goodGenes, drop = FALSE]
   selected_power <- power

@@ -28,7 +28,9 @@ sn_run_celltypist(
 \arguments{
 \item{x}{A Seurat object or a path to a count matrix / AnnData file that CellTypist can consume.}
 
-\item{celltypist}{Path to the \code{celltypist} binary. Defaults to "/opt/mambaforge/envs/scverse/bin/celltypist".}
+\item{celltypist}{Path to the \code{celltypist} binary. When \code{NULL}, use
+\code{getOption("shennong.celltypist_path")} and otherwise search \code{PATH} with
+\code{Sys.which("celltypist")}.}
 
 \item{model}{Model used for predictions. Defaults to "Immune_All_Low.pkl".}
 
@@ -46,17 +48,30 @@ sn_run_celltypist(
 
 \item{min_prop}{For the dominant cell type within a subcluster, the minimum proportion of cells required to name the subcluster by this cell type.}
 
-\item{transpose_input}{Logical. If \code{TRUE}, add the \code{--transpose-input} argument when calling \code{celltypist}.}
+\item{transpose_input}{Logical. For Seurat input, \code{TRUE} exports counts in
+gene-by-cell orientation and \code{FALSE} exports a sparse cell-by-gene
+transpose. For an existing path, the input file is not rewritten. In both
+cases, \code{TRUE} adds CellTypist's \code{--transpose-input} flag and \code{FALSE} does
+not, so path inputs must set this to match their stored orientation.}
 
-\item{gene_file}{If the provided input is in the \code{mtx} format, path to the file storing gene information. Otherwise ignored.}
+\item{gene_file}{If the provided input is in the \code{mtx} format, path to the
+file storing gene information. For Seurat input, a sidecar is generated
+from the feature names when this is \code{NULL}.}
 
-\item{cell_file}{If the provided input is in the \code{mtx} format, path to the file storing cell information. Otherwise ignored.}
+\item{cell_file}{If the provided input is in the \code{mtx} format, path to the
+file storing cell information. For Seurat input, a sidecar is generated
+from the cell names when this is \code{NULL}.}
 
 \item{assay}{Assay used when exporting Seurat counts to CellTypist. Defaults to \code{"RNA"}.}
 
-\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
+\item{layer}{Raw or count-like layer used as the input matrix for Seurat
+objects. Defaults to \code{"counts"}. MatrixMarket/CSV input is normalized
+by CellTypist, so passing a log-normalized \code{data} layer would normalize it
+twice and is rejected; negative values are also rejected.}
 
-\item{xlsx}{Logical. If \code{TRUE}, merge output tables into a single Excel (.xlsx). Defaults to \code{FALSE}.}
+\item{xlsx}{Logical. If \code{TRUE}, ask CellTypist for its combined
+\code{annotation_result.xlsx} workbook and import the first (prediction) sheet
+through the optional \code{rio} dependency. Defaults to \code{FALSE}.}
 
 \item{plot_results}{Logical. If \code{TRUE}, plot the prediction results. Defaults to \code{FALSE}.}
 

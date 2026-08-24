@@ -68,7 +68,7 @@ sn_run_squidpy,analysis,visium_lymph_node,extended,Squidpy,External Python backe
 sn_run_stlearn,analysis,visium_lymph_node,extended,stLearn,External Python backend,vignettes/spatial-workflows.Rmd
 sn_run_survival,analysis,melanoma_bridge,core,survival,Real TCGA time and event,vignettes/bulk-transcriptomics.Rmd
 sn_run_tangram,analysis,visium_lymph_node,extended,Tangram,External Python backend,vignettes/spatial-workflows.Rmd
-sn_run_trajectory,analysis,hermann_spermatogenesis,core,slingshot,Real spermatogenic stages,vignettes/trajectory-dynamics.Rmd
+sn_run_trajectory,analysis,hermann_spermatogenesis,extended,slingshot+tradeSeq,Optional trajectory and dynamic-gene fit on real spermatogenic stages,vignettes/trajectory-dynamics.Rmd
 sn_run_velocity,analysis,hermann_spermatogenesis,extended,scVelo,Real spliced and unspliced layers,vignettes/velocity-fate.Rmd
 sn_run_wgcna,analysis,melanoma_bridge,extended,WGCNA,Real TCGA normalized expression,vignettes/bulk-transcriptomics.Rmd
 sn_score_bulk_pathways,analysis,melanoma_bridge,core,GSVA,Real TCGA expression,vignettes/bulk-transcriptomics.Rmd
@@ -76,7 +76,7 @@ sn_score_cell_cycle,analysis,kotliarov_pbmc,core,Seurat,Real PBMC counts,vignett
 sn_score_programs,analysis,kotliarov_pbmc,core,Seurat,Real PBMC expression,vignettes/annotation-pathways.Rmd
 sn_simulate,analysis,kotliarov_pbmc,extended,scDesign3,Optional simulation dispatcher calibrated from real PBMC inputs,vignettes/layered-workflows.Rmd
 sn_simulate_scdesign3,analysis,kotliarov_pbmc,extended,scDesign3,Optional R backend,vignettes/layered-workflows.Rmd
-sn_standardize_gene_symbols,analysis,kotliarov_pbmc,core,Shennong,Real human gene symbols,vignettes/preprocessing-qc.Rmd
+sn_standardize_gene_symbols,analysis,kotliarov_pbmc,extended,HGNChelper,Optional symbol correction on real human genes,vignettes/preprocessing-qc.Rmd
 sn_sweep_cluster_resolution,analysis,kotliarov_pbmc,core,Seurat,Real PBMC neighbor graph,vignettes/clustering.Rmd
 sn_test_abundance,analysis,kotliarov_pbmc,core,Shennong,Real sample-level response design,vignettes/abundance-priority.Rmd
 sn_test_programs,analysis,kotliarov_pbmc,core,Shennong,Real sample-level response design,vignettes/annotation-pathways.Rmd
@@ -97,7 +97,7 @@ sn_plot_annotation_confusion,visualization,kotliarov_pbmc,core,ggplot2,Disjoint 
 sn_plot_annotation_markers,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC marker genes,vignettes/annotation-pathways.Rmd
 sn_plot_barplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
 sn_plot_boxplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
-sn_plot_branch_comparison,visualization,hermann_spermatogenesis,core,ggplot2,Real lineage branches,vignettes/trajectory-dynamics.Rmd
+sn_plot_branch_comparison,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real lineage branches,vignettes/trajectory-dynamics.Rmd
 sn_plot_bulk_de,visualization,kotliarov_pbmc,core,ggplot2,Real pseudobulk differential result,vignettes/bulk-transcriptomics.Rmd
 sn_plot_bulk_pca,visualization,kotliarov_pbmc,core,ggplot2,Real biological-sample pseudobulk,vignettes/bulk-transcriptomics.Rmd
 sn_plot_bulk_qc,visualization,kotliarov_pbmc,core,ggplot2,Real biological-sample pseudobulk QC,vignettes/bulk-transcriptomics.Rmd
@@ -111,23 +111,23 @@ sn_plot_dim,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC embedding,vignet
 sn_plot_discovered_programs,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC programs,vignettes/program-discovery-grn.Rmd
 sn_plot_dot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC markers,vignettes/annotation-pathways.Rmd
 sn_plot_doublets,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended real PBMC doublet result,vignettes/preprocessing-qc.Rmd
-sn_plot_dynamic_heatmap,visualization,hermann_spermatogenesis,core,ggplot2,Real dynamic genes,vignettes/trajectory-dynamics.Rmd
+sn_plot_dynamic_heatmap,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real dynamic genes,vignettes/trajectory-dynamics.Rmd
 sn_plot_elbow,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC PCA,vignettes/clustering.Rmd
 sn_plot_enrichment,visualization,kotliarov_pbmc,core,ggplot2,Real signed pseudobulk GOBP GSEA result,vignettes/bulk-transcriptomics.Rmd
 sn_plot_fate,visualization,hermann_spermatogenesis,extended,ggplot2,Requires the extended real CellRank fate probabilities,vignettes/velocity-fate.Rmd
 sn_plot_feature,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC features,vignettes/visualization.Rmd
-sn_plot_gene_trend,visualization,hermann_spermatogenesis,core,ggplot2,Real pseudotime trends,vignettes/trajectory-dynamics.Rmd
+sn_plot_gene_trend,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real pseudotime trends,vignettes/trajectory-dynamics.Rmd
 sn_plot_gsea,visualization,kotliarov_pbmc,core,ggplot2,Real signed pseudobulk GOBP GSEA result,vignettes/bulk-transcriptomics.Rmd
 sn_plot_heatmap,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC expression,vignettes/visualization.Rmd
 sn_plot_hvg,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC variable genes,vignettes/clustering.Rmd
 sn_plot_integration,visualization,kotliarov_pbmc,core,ggplot2,Real batch integration,vignettes/metrics-diagnostics.Rmd
 sn_plot_ligand_target,visualization,kotliarov_pbmc,extended,ggplot2,Requires an extended real ligand-target result,vignettes/communication-consensus.Rmd
-sn_plot_lineage_probability,visualization,hermann_spermatogenesis,core,ggplot2,Real lineage probabilities,vignettes/trajectory-dynamics.Rmd
+sn_plot_lineage_probability,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real lineage probabilities,vignettes/trajectory-dynamics.Rmd
 sn_plot_metabolism,visualization,melanoma_bridge,core,ggplot2,Real melanoma metabolism result,vignettes/cnv-metabolism.Rmd
 sn_plot_milo,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended real Milo differential-abundance result,vignettes/composition-analysis.Rmd
 sn_plot_program_activity,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC program activity,vignettes/annotation-pathways.Rmd
 sn_plot_program_heatmap,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC programs,vignettes/annotation-pathways.Rmd
-sn_plot_pseudotime,visualization,hermann_spermatogenesis,core,ggplot2,Real spermatogenic pseudotime,vignettes/trajectory-dynamics.Rmd
+sn_plot_pseudotime,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real spermatogenic pseudotime,vignettes/trajectory-dynamics.Rmd
 sn_plot_qc,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC QC,vignettes/preprocessing-qc.Rmd
 sn_plot_qc_thresholds,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC QC thresholds,vignettes/preprocessing-qc.Rmd
 sn_plot_reference_projection,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC reference projection,vignettes/annotation-pathways.Rmd
@@ -144,7 +144,7 @@ sn_plot_spatial_neighborhood,visualization,visium_lymph_node,core,ggplot2,Real n
 sn_plot_spatial_svg,visualization,visium_lymph_node,core,ggplot2,Real spatially variable genes,vignettes/spatial-workflows.Rmd
 sn_plot_state_priority,visualization,kotliarov_pbmc,core,ggplot2,Real state priorities,vignettes/abundance-priority.Rmd
 sn_plot_survival,visualization,melanoma_bridge,core,ggplot2,Real TCGA survival result,vignettes/bulk-transcriptomics.Rmd
-sn_plot_trajectory,visualization,hermann_spermatogenesis,core,ggplot2,Real spermatogenic trajectory,vignettes/trajectory-dynamics.Rmd
+sn_plot_trajectory,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real spermatogenic trajectory,vignettes/trajectory-dynamics.Rmd
 sn_plot_velocity,visualization,hermann_spermatogenesis,extended,ggplot2,Requires the extended real scVelo dynamics result,vignettes/velocity-fate.Rmd
 sn_plot_violin,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC expression,vignettes/visualization.Rmd
 sn_plot_wgcna,visualization,melanoma_bridge,extended,ggplot2,Requires the extended real TCGA WGCNA modules,vignettes/bulk-transcriptomics.Rmd

@@ -45,7 +45,10 @@ sn_run_annotation(
 
 \item{store_name}{Stored-result and metadata prefix.}
 
-\item{assay, layer}{Query expression source.}
+\item{assay, layer}{Query expression source for marker scoring and most
+reference backends. CellTypist independently defaults to the raw/count-like
+\code{counts} layer because its MatrixMarket/CSV loader normalizes internally;
+override that backend only with \code{backend_control = list(celltypist = list(layer = "your_count_layer"))}.}
 
 \item{marker_database}{Optional marker data frame with high- and
 low-hierarchy labels plus species gene columns.}

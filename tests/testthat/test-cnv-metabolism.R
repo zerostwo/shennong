@@ -220,3 +220,21 @@ test_that("CNV and metabolism backends are discoverable", {
   expect_true(sn_method_status("infercnvpy", task = "cnv")$implemented)
   expect_true(sn_method_status("geneset", task = "metabolism")$implemented)
 })
+
+test_that("scmetabolism backend scores v5 objects through bundled gene sets", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("scMetabolism")
+  object <- make_cnv_metabolism_object()
+  result <- sn_run_metabolism(
+    object,
+    method = "scmetabolism",
+    scoring_method = "ucell",
+    group_by = "cell_type",
+    return_object = FALSE
+  )
+  table <- result$table
+  expect_s3_class(table, "tbl_df")
+  expect_true(all(c("cell", "pathway", "score", "method") %in% names(table)))
+  expect_true(all(unique(table$cell) %in% colnames(object)))
+  expect_true(all(is.finite(table$score)))
+})

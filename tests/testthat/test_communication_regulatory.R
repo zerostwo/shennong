@@ -204,7 +204,7 @@ test_that("communication backends enable only call-safe default AutoZyme patches
 
   testthat::local_mocked_bindings(
     .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
-      expect_false(strict)
+      expect_true(strict)
       Shennong:::.sn_with_autozyme_provenance_context({
         state$enable_requests <- c(state$enable_requests, patches)
         before <- state$active
@@ -323,7 +323,7 @@ test_that("NicheNet AutoZyme safety uses effective backend arguments", {
 
   testthat::local_mocked_bindings(
     .sn_with_default_autozyme = function(expr, patches, strict = TRUE) {
-      expect_false(strict)
+      expect_true(strict)
       Shennong:::.sn_with_autozyme_provenance_context({
         state$enable_requests <- c(state$enable_requests, patches)
         before <- state$active
@@ -602,4 +602,48 @@ test_that("regulatory activity can run DoRothEA-style and PROGENy-style networks
   expect_true(all(tf$source == "TF1"))
   expect_equal(unique(tf$analysis_type), "transcription_factor")
   expect_equal(unique(pathway$table$analysis_type), "pathway")
+})
+
+test_that("progeny network is reshaped to long source-target form", {
+  skip_if_not_installed("progeny")
+  network <- Shennong:::.sn_progeny_network("human", top = 50)
+  expect_s3_class(network, "data.frame")
+  expect_true(all(c("source", "target", "weight") %in% colnames(network)))
+  expect_true(nrow(network) > 0)
+  expect_false(anyNA(network$weight))
+  normalized <- Shennong:::.sn_normalize_regulatory_network(network, method = "progeny")
+  expect_true(all(c("source", "target", "mor") %in% colnames(normalized)))
+})
+
+test_that("liana backend tolerates an unset resource argument", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("liana")
+  genes <- unique(c(paste0("G", seq_len(40)), "CD3E", "CD8A", "IL2RG", "CXCL12", "CXCR4"))
+  set.seed(717)
+  counts <- matrix(rpois(length(genes) * 90, lambda = 2), nrow = length(genes))
+  rownames(counts) <- genes
+  colnames(counts) <- paste0("cell", seq_len(90))
+  counts["CXCL12", 1:30] <- counts["CXCL12", 1:30] + 8
+  counts["CXCR4", 61:90] <- counts["CXCR4", 61:90] + 8
+  object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
+  Seurat::NormalizeData(object, verbose = FALSE)
+  object$seurat_clusters <- factor(rep(c("0", "1", "2"), each = 30))
+  result <- tryCatch(
+    sn_run_cell_communication(
+      object,
+      method = "liana",
+      group_by = "seurat_clusters",
+      species = "human",
+      min_cells = 10,
+      return_object = FALSE
+    ),
+    error = function(e) e
+  )
+  if (!inherits(result, "error")) {
+    table <- result$table
+    expect_s3_class(table, "data.frame")
+    expect_true(nrow(table) >= 0)
+  } else {
+    expect_false(grepl("argument is of length zero", conditionMessage(result)))
+  }
 })

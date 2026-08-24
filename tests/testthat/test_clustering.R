@@ -72,8 +72,12 @@ make_block_gene_test_object <- function() {
 
   set.seed(91)
   counts <- matrix(rpois(length(features) * n_cells, lambda = 2), nrow = length(features), ncol = n_cells)
-  counts[seq_along(blocked_features), seq_len(n_cells / 2)] <-
-    counts[seq_along(blocked_features), seq_len(n_cells / 2)] + 25
+  # Make the blocked signatures variable within both samples. If the spike is
+  # aligned exactly with `sample`, grouped HVG selection correctly removes the
+  # sample-level effect before `block_genes` has anything left to filter.
+  blocked_cells <- c(seq_len(12), 26:37)
+  counts[seq_along(blocked_features), blocked_cells] <-
+    counts[seq_along(blocked_features), blocked_cells] + 25
   counts[(length(blocked_features) + 1):30, (n_cells / 2 + 1):n_cells] <-
     counts[(length(blocked_features) + 1):30, (n_cells / 2 + 1):n_cells] + 8
   counts <- Matrix::Matrix(counts, sparse = TRUE)
@@ -552,7 +556,7 @@ test_that("sn_run_cluster reuses matching stages when only clustering resolution
     block_genes = NULL,
     npcs = 10,
     dims = 1:10,
-    resolution = 0.4,
+    resolution = 0.2,
     verbose = FALSE
   )
   initial_stages <- clustered@misc$sn_run_cluster$stages
@@ -564,7 +568,7 @@ test_that("sn_run_cluster reuses matching stages when only clustering resolution
     block_genes = NULL,
     npcs = 10,
     dims = 1:10,
-    resolution = 1.2,
+    resolution = 0.3,
     verbose = FALSE
   )
   updated_stages <- reclustered@misc$sn_run_cluster$stages
@@ -574,7 +578,249 @@ test_that("sn_run_cluster reuses matching stages when only clustering resolution
   expect_identical(updated_stages$pca, initial_stages$pca)
   expect_identical(updated_stages$neighbors, initial_stages$neighbors)
   expect_identical(updated_stages$umap, initial_stages$umap)
-  expect_equal(updated_stages$clusters$signature$resolution, 1.2)
+  expect_equal(updated_stages$clusters$signature$resolution, 0.3)
+})
+
+test_that("cluster input fingerprints invalidate stale stages after counts change", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 111, prefix = "stale-input")
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    resolution = 0.4,
+    reuse = FALSE,
+    return_cluster = FALSE,
+    verbose = FALSE
+  )
+  original_signature <- clustered@misc$sn_run_cluster$stages$normalize$signature
+
+  counts <- SeuratObject::LayerData(clustered, assay = "RNA", layer = "counts")
+  counts[1, ] <- counts[1, ] + 100
+  SeuratObject::LayerData(clustered, assay = "RNA", layer = "counts") <- counts
+
+  reused <- suppressWarnings(sn_run_cluster(
+    object = clustered,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    resolution = 0.4,
+    reuse = TRUE,
+    return_cluster = FALSE,
+    verbose = FALSE
+  ))
+  forced <- suppressWarnings(sn_run_cluster(
+    object = clustered,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    resolution = 0.4,
+    reuse = FALSE,
+    return_cluster = FALSE,
+    verbose = FALSE
+  ))
+
+  expect_false(identical(
+    reused@misc$sn_run_cluster$stages$normalize$signature,
+    original_signature
+  ))
+  expect_identical(
+    reused@misc$sn_run_cluster$stages$normalize$signature,
+    forced@misc$sn_run_cluster$stages$normalize$signature
+  )
+  expect_equal(
+    SeuratObject::LayerData(reused, assay = "RNA", layer = "data"),
+    SeuratObject::LayerData(forced, assay = "RNA", layer = "data"),
+    tolerance = 0
+  )
+})
+
+test_that("cluster fingerprints include analysis values and relevant metadata", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 112, prefix = "fingerprint")
+  object$batch <- rep(c("a", "b"), each = ncol(object) / 2)
+  object$hvg_group <- rep(c("left", "right"), times = ncol(object) / 2)
+  object$covariate <- seq_len(ncol(object))
+
+  input_signature <- Shennong:::.sn_cluster_analysis_input_signature(
+    object = object,
+    assay = "RNA",
+    layer = "counts"
+  )
+  metadata_signature <- Shennong:::.sn_cluster_metadata_signature(
+    object = object,
+    columns = c("batch", "covariate")
+  )
+  expect_identical(
+    input_signature,
+    Shennong:::.sn_cluster_analysis_input_signature(object, "RNA", "counts")
+  )
+  expect_identical(
+    metadata_signature,
+    Shennong:::.sn_cluster_metadata_signature(object, c("batch", "covariate"))
+  )
+
+  changed_counts <- object
+  counts <- SeuratObject::LayerData(changed_counts, assay = "RNA", layer = "counts")
+  counts[1, 1] <- counts[1, 1] + 1
+  SeuratObject::LayerData(changed_counts, assay = "RNA", layer = "counts") <- counts
+  expect_false(identical(
+    input_signature,
+    Shennong:::.sn_cluster_analysis_input_signature(changed_counts, "RNA", "counts")
+  ))
+  expect_false(identical(
+    input_signature,
+    Shennong:::.sn_cluster_analysis_input_signature(
+      SeuratObject::RenameCells(
+        object,
+        new.names = paste0("renamed_", seq_len(ncol(object)))
+      ),
+      "RNA",
+      "counts"
+    )
+  ))
+  expect_false(identical(
+    input_signature,
+    Shennong:::.sn_cluster_analysis_input_signature(
+      object[-1L, ],
+      "RNA",
+      "counts"
+    )
+  ))
+
+  changed_metadata <- object
+  changed_metadata$batch[[1]] <- "b"
+  changed_metadata$covariate[[2]] <- -1
+  expect_false(identical(
+    metadata_signature,
+    Shennong:::.sn_cluster_metadata_signature(
+      changed_metadata,
+      c("batch", "covariate")
+    )
+  ))
+
+  checkpoint_args <- list(
+    object = object,
+    assay = "RNA",
+    layer = "counts",
+    batch = "batch",
+    hvg_group_by = "hvg_group",
+    rare_feature_group_by = NULL,
+    vars_to_regress = "covariate",
+    group_by_vars = NULL,
+    integration_control = list(),
+    checkpoint_dir = NULL,
+    resume = TRUE,
+    checkpoint_compress = FALSE,
+    verbose = FALSE
+  )
+  grid <- data.frame(run_id = "one", stringsAsFactors = FALSE)
+  checkpoint_signature <- function(current_object) {
+    current_args <- checkpoint_args
+    current_args$object <- current_object
+    Shennong:::.sn_cluster_checkpoint_signature(current_args, grid)
+  }
+  original_checkpoint <- checkpoint_signature(object)
+  expect_false(identical(original_checkpoint, checkpoint_signature(changed_counts)))
+
+  changed_batch <- object
+  changed_batch$batch[[1L]] <- "b"
+  expect_false(identical(original_checkpoint, checkpoint_signature(changed_batch)))
+
+  changed_hvg_group <- object
+  changed_hvg_group$hvg_group[[1L]] <- "right"
+  expect_false(identical(original_checkpoint, checkpoint_signature(changed_hvg_group)))
+
+  changed_covariate <- object
+  changed_covariate$covariate[[1L]] <- -1
+  expect_false(identical(original_checkpoint, checkpoint_signature(changed_covariate)))
+})
+
+test_that("log-normalized clustering records the blocked HVG projection", {
+  skip_if_not_installed("Seurat")
+  withr::local_options(list(shennong.autozyme = FALSE))
+
+  object <- make_test_object(seed = 116, prefix = "blocked-projection")
+  hvg_reference <- Seurat::NormalizeData(object, verbose = FALSE)
+  hvg_reference <- Seurat::FindVariableFeatures(
+    hvg_reference,
+    nfeatures = 21,
+    verbose = FALSE
+  )
+  blocked_feature <- Seurat::VariableFeatures(hvg_reference)[[1L]]
+
+  clustered <- testthat::with_mocked_bindings(
+    sn_run_cluster(
+      object = object,
+      normalization_method = "seurat",
+      nfeatures = 20,
+      block_genes = blocked_feature,
+      species = "human",
+      npcs = 5,
+      dims = 1:5,
+      reuse = FALSE,
+      verbose = FALSE
+    ),
+    sn_get_species = function(object, species = NULL) "human",
+    .sn_resolve_block_genes = function(block_genes, species, verbose = TRUE) blocked_feature,
+    sn_score_cell_cycle = function(object, species = NULL) object,
+    .package = "Shennong"
+  )
+
+  expect_identical(clustered@misc$hvg_selection$blocked_features, blocked_feature)
+  expect_identical(
+    clustered@misc$sn_run_cluster$stages$hvg$blocked_features,
+    blocked_feature
+  )
+  expect_false(blocked_feature %in% clustered@misc$hvg_selection$selected_features)
+})
+
+test_that("current FindNeighbors graphs win over pre-existing SNN graphs", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 113, prefix = "graph-choice")
+  cells <- colnames(object)
+  next_cell <- c(seq.int(2L, length(cells)), 1L)
+  graph <- Matrix::sparseMatrix(
+    i = c(seq_along(cells), next_cell),
+    j = c(next_cell, seq_along(cells)),
+    x = 1,
+    dims = c(length(cells), length(cells)),
+    dimnames = list(cells, cells)
+  )
+  graph <- SeuratObject::as.Graph(graph)
+  object[["aaa_snn"]] <- graph
+  object[["RNA_nn"]] <- graph
+  object[["RNA_snn"]] <- graph
+
+  clustered <- sn_run_cluster(
+    object = object,
+    normalization_method = "seurat",
+    nfeatures = 50,
+    block_genes = NULL,
+    npcs = 10,
+    dims = 1:10,
+    reuse = FALSE,
+    verbose = FALSE
+  )
+
+  expect_identical(
+    clustered@misc$sn_run_cluster$stages$neighbors$snn_graph,
+    "RNA_snn"
+  )
+  expect_identical(
+    clustered@misc$sn_run_cluster$stages$clusters$signature$graph.name,
+    "RNA_snn"
+  )
 })
 
 test_that("sn_run_cluster catches duplicate object arguments in pipe-style calls", {
@@ -856,6 +1102,18 @@ test_that("sn_run_cluster removes bundled block signatures from final HVGs", {
   ) %in% blocked_features))
   expect_length(intersect(Seurat::VariableFeatures(clustered), blocked_features), 0)
   expect_length(intersect(clustered@misc$hvg_selection$selected_features, blocked_features), 0)
+  expect_gt(length(clustered@misc$hvg_selection$blocked_features), 0L)
+  expect_identical(
+    clustered@misc$hvg_selection$blocked_features,
+    clustered@misc$sn_run_cluster$stages$hvg$blocked_features
+  )
+  expect_length(
+    intersect(
+      clustered@misc$hvg_selection$selected_features,
+      clustered@misc$hvg_selection$blocked_features
+    ),
+    0L
+  )
   expect_equal(length(Seurat::VariableFeatures(clustered)), 20)
 })
 
@@ -1395,6 +1653,82 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
       expect_true(clustered@misc$sn_run_cluster$stages$integration$signature$store_sce)
     }
     expect_true("seurat_clusters" %in% colnames(clustered[[]]))
+  }
+})
+
+test_that("Seurat CCA and RPCA report an overridden integration reduction", {
+  skip_if_not_installed("Seurat")
+
+  object1 <- make_test_object(seed = 114, prefix = "overridea", n_genes = 120, n_cells = 40)
+  object1$sample <- "a"
+  object2 <- make_test_object(seed = 115, prefix = "overrideb", n_genes = 120, n_cells = 40)
+  object2$sample <- "b"
+  object <- merge(object1, object2, add.cell.ids = c("a", "b"))
+  original_counts <- Shennong:::.sn_get_seurat_layer_data(
+    object = object,
+    assay = "RNA",
+    layer = "counts"
+  )
+  original_count_layers <- Shennong:::.sn_match_seurat_layers(
+    object = object,
+    assay = "RNA",
+    layer = "counts"
+  )
+  prepared <- Shennong:::.sn_prepare_seurat_analysis_input(
+    object = object,
+    assay = "RNA",
+    layer = "counts"
+  )
+  object <- Seurat::NormalizeData(
+    prepared$object,
+    assay = "RNA",
+    layer = "counts",
+    verbose = FALSE
+  )
+  object <- Seurat::FindVariableFeatures(object, nfeatures = 50, verbose = FALSE)
+  features <- Seurat::VariableFeatures(object)
+  object <- Seurat::ScaleData(object, features = features, verbose = FALSE)
+  object <- Seurat::RunPCA(
+    object,
+    features = features,
+    npcs = 8,
+    seed.use = 717,
+    verbose = FALSE
+  )
+
+  for (method in c("seurat_cca", "seurat_rpca")) {
+    reduction <- paste0("custom.", method)
+    integrated <- suppressMessages(Shennong:::.sn_run_seurat_layer_integration(
+      object = object,
+      method = method,
+      batch = "sample",
+      reduction = "pca",
+      features = features,
+      assay = "RNA",
+      dims = 1:8,
+      integration_control = list(
+        k.weight = 20,
+        new.reduction = reduction
+      ),
+      verbose = FALSE
+    ))
+
+    expect_identical(integrated$reduction, reduction)
+    expect_true(reduction %in% names(integrated$object@reductions))
+    expect_identical(integrated$object@misc$integration$reduction, reduction)
+    restored <- Shennong:::.sn_restore_seurat_analysis_input(
+      object = integrated$object,
+      context = prepared$context
+    )
+    expect_setequal(
+      Shennong:::.sn_match_seurat_layers(restored, "RNA", "counts"),
+      original_count_layers
+    )
+    expect_equal(
+      Shennong:::.sn_get_seurat_layer_data(restored, "RNA", "counts"),
+      original_counts,
+      tolerance = 0
+    )
   }
 })
 
@@ -2014,6 +2348,9 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
 
 test_that("python method wrappers accept Seurat object inputs", {
   skip_if_not_installed("Seurat")
+  withr::local_options(list(
+    shennong.runtime_dir = tempfile("shennong-python-methods-")
+  ))
 
   genes <- c("ACTB", "GAPDH", "TP53", "EGFR", "MYC", "PTEN")
   counts <- Matrix::Matrix(
@@ -2275,6 +2612,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
   sn_run_cluster(
     object = merged,
     batch = "sample",
+    integration_method = "unintegrated",
     normalization_method = "seurat",
     nfeatures = 30,
     block_genes = NULL,
@@ -2289,6 +2627,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
   sn_run_cluster(
     object = merged,
     batch = "sample",
+    integration_method = "unintegrated",
     hvg_group_by = "orig.ident",
     normalization_method = "seurat",
     nfeatures = 30,
@@ -2841,6 +3180,7 @@ test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not o
     clustered <- suppressWarnings(sn_run_cluster(
       object = merged,
       batch = "sample",
+      integration_method = "unintegrated",
       species = "human",
       normalization_method = "seurat",
       nfeatures = 50,
@@ -3528,6 +3868,66 @@ test_that("sn_find_doublets skips low-feature cells before running scDblFinder",
   )
 })
 
+test_that("CellTypist sparse export preserves a large sparse matrix", {
+  outdir <- tempfile("celltypist-sparse-")
+  dir.create(outdir)
+
+  counts <- Matrix::sparseMatrix(
+    i = c(1L, 10000L, 20000L),
+    j = c(1L, 5000L, 10000L),
+    x = c(1, 2, 3),
+    dims = c(20000L, 10000L),
+    dimnames = list(
+      paste0("gene", seq_len(20000L)),
+      paste0("cell", seq_len(10000L))
+    )
+  )
+
+  exported <- Shennong:::.sn_write_celltypist_sparse_input(
+    counts = counts,
+    outdir = outdir,
+    transpose_input = TRUE
+  )
+
+  expect_identical(basename(exported$input_data), "counts.mtx")
+  expect_true(all(file.exists(unlist(exported, use.names = FALSE))))
+  roundtrip <- Matrix::readMM(exported$input_data)
+  expect_s4_class(roundtrip, "sparseMatrix")
+  expect_equal(dim(roundtrip), dim(counts))
+  expect_equal(Matrix::nnzero(roundtrip), 3L)
+  expect_lt(file.size(exported$input_data), 1000)
+  expect_equal(length(readLines(exported$gene_file)), nrow(counts))
+  expect_equal(length(readLines(exported$cell_file)), ncol(counts))
+
+  helper_source <- paste(deparse(body(Shennong:::.sn_write_celltypist_sparse_input)), collapse = "\n")
+  expect_false(grepl("as.data.frame", helper_source, fixed = TRUE))
+  expect_false(grepl("as.matrix", helper_source, fixed = TRUE))
+})
+
+test_that("CellTypist sparse export uses cell-by-gene orientation without transpose flag", {
+  outdir <- tempfile("celltypist-cell-by-gene-")
+  dir.create(outdir)
+  counts <- Matrix::sparseMatrix(
+    i = c(1L, 3L),
+    j = c(1L, 2L),
+    x = c(4, 5),
+    dims = c(3L, 2L),
+    dimnames = list(c("g1", "g2", "g3"), c("c1", "c2"))
+  )
+
+  exported <- Shennong:::.sn_write_celltypist_sparse_input(
+    counts = counts,
+    outdir = outdir,
+    transpose_input = FALSE
+  )
+
+  roundtrip <- Matrix::readMM(exported$input_data)
+  expect_equal(dim(roundtrip), rev(dim(counts)))
+  expect_equal(unname(as.matrix(roundtrip)), unname(as.matrix(Matrix::t(counts))))
+  expect_equal(gsub('^"|"$', "", readLines(exported$gene_file)), rownames(counts))
+  expect_equal(gsub('^"|"$', "", readLines(exported$cell_file)), colnames(counts))
+})
+
 test_that("sn_run_celltypist adds predicted labels back onto the Seurat object", {
   skip_if_not_installed("Seurat")
 
@@ -3543,34 +3943,51 @@ test_that("sn_run_celltypist adds predicted labels back onto the Seurat object",
       "outdir=''",
       "prefix=''",
       "indata=''",
+      "gene_file=''",
+      "cell_file=''",
+      "transpose='false'",
       "majority='false'",
       "while [[ $# -gt 0 ]]; do",
       "  case \"$1\" in",
       "    --indata) indata=$2; shift 2 ;;",
       "    --outdir) outdir=$2; shift 2 ;;",
       "    --prefix) prefix=$2; shift 2 ;;",
+      "    --gene-file) gene_file=$2; shift 2 ;;",
+      "    --cell-file) cell_file=$2; shift 2 ;;",
+      "    --transpose-input) transpose='true'; shift ;;",
       "    --majority-voting) majority='true'; shift ;;",
       "    *) shift ;;",
       "  esac",
       "done",
-      "python3 - <<'PY' \"$indata\" \"$outdir\" \"$prefix\" \"$majority\"",
+      "[[ \"$indata\" == *.mtx ]]",
+      "[[ -f \"$gene_file\" ]]",
+      "[[ -f \"$cell_file\" ]]",
+      "[[ \"$transpose\" == 'true' ]]",
+      "python3 - <<'PY' \"$indata\" \"$gene_file\" \"$cell_file\" \"$outdir\" \"$prefix\" \"$majority\" \"$transpose\"",
       "import csv, os, sys",
-      "indata, outdir, prefix, majority = sys.argv[1:]",
-      "with open(indata, newline='') as handle:",
+      "indata, gene_file, cell_file, outdir, prefix, majority, transpose = sys.argv[1:]",
+      "with open(cell_file, newline='') as handle:",
       "    reader = csv.reader(handle)",
-      "    header = next(reader)",
-      "cells = header[1:]",
+      "    cells = [row[0] for row in reader]",
+      "with open(os.path.join(outdir, 'captured_args.txt'), 'w') as handle:",
+      "    handle.write('\\n'.join([indata, gene_file, cell_file, transpose]) + '\\n')",
       "output_path = os.path.join(outdir, prefix + 'predicted_labels.csv')",
+      "probability_path = os.path.join(outdir, prefix + 'probability_matrix.csv')",
       "with open(output_path, 'w', newline='') as handle:",
       "    writer = csv.writer(handle)",
       "    if majority == 'true':",
       "        writer.writerow(['', 'predicted_labels', 'over_clustering', 'majority_voting'])",
       "        for i, cell in enumerate(cells):",
-      "            writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell', f'cluster_{(i % 2) + 1}', 'T lineage' if i % 2 == 0 else 'B lineage'])",
+      "            writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell', f'cluster_{(i % 2) + 1}', 'Tcell' if i % 2 == 0 else 'Bcell'])",
       "    else:",
       "        writer.writerow(['', 'predicted_labels'])",
       "        for i, cell in enumerate(cells):",
       "            writer.writerow([cell, 'Tcell' if i % 2 == 0 else 'Bcell'])",
+      "with open(probability_path, 'w', newline='') as handle:",
+      "    writer = csv.writer(handle)",
+      "    writer.writerow(['', 'Tcell', 'Bcell'])",
+      "    for i, cell in enumerate(cells):",
+      "        writer.writerow([cell, 0.9 if i % 2 == 0 else 0.1, 0.1 if i % 2 == 0 else 0.9])",
       "PY"
     ),
     fake_celltypist
@@ -3591,19 +4008,54 @@ test_that("sn_run_celltypist adds predicted labels back onto the Seurat object",
   )
 
   expect_true(file.exists(file.path(outdir, "over_clustering.txt")))
+  expect_true(file.exists(file.path(outdir, "counts.mtx")))
+  expect_false(file.exists(file.path(outdir, "counts.csv")))
+  captured_args <- readLines(file.path(outdir, "captured_args.txt"))
+  expect_identical(basename(captured_args[[1L]]), "counts.mtx")
+  expect_identical(basename(captured_args[[2L]]), "genes.csv")
+  expect_identical(basename(captured_args[[3L]]), "cells.csv")
+  expect_identical(captured_args[[4L]], "true")
+  exported_counts <- Matrix::readMM(file.path(outdir, "counts.mtx"))
+  expect_s4_class(exported_counts, "sparseMatrix")
+  expect_equal(unname(as.matrix(exported_counts)), unname(as.matrix(original_counts)))
   expect_true(all(c(
     "Immune_All_Low_predicted_labels",
     "Immune_All_Low_over_clustering",
-    "Immune_All_Low_majority_voting"
+    "Immune_All_Low_majority_voting",
+    "Immune_All_Low_confidence"
   ) %in% colnames(updated[[]])))
+  expect_equal(unname(updated$Immune_All_Low_confidence), rep(0.9, ncol(updated)))
   expect_true("sn_run_celltypist" %in% names(updated@commands))
   expect_equal(
     as.matrix(SeuratObject::LayerData(updated, layer = "counts")),
     as.matrix(original_counts)
   )
+
+  normalized_outdir <- tempfile("celltypist-normalized-out-")
+  dir.create(normalized_outdir)
+  SeuratObject::LayerData(object, layer = "data") <- log1p(original_counts)
+  expect_error(
+    sn_run_celltypist(
+      x = object,
+      celltypist = fake_celltypist,
+      outdir = normalized_outdir,
+      layer = "data",
+      quiet = TRUE
+    ),
+    "raw counts"
+  )
 })
 
 test_that("sn_run_celltypist returns prediction tables for path inputs", {
+  checked_packages <- character()
+  local_mocked_bindings(
+    check_installed = function(packages, ...) {
+      checked_packages <<- c(checked_packages, packages)
+      invisible(TRUE)
+    },
+    .package = "Shennong"
+  )
+
   input_data <- tempfile(fileext = ".csv")
   utils::write.csv(
     matrix(
@@ -3649,15 +4101,17 @@ test_that("sn_run_celltypist returns prediction tables for path inputs", {
   )
   Sys.chmod(fake_celltypist, mode = "0755")
 
-  outdir <- tempfile("celltypist-path-out-")
+  outdir <- tempfile("celltypist_user_")
   dir.create(outdir)
+  sentinel <- file.path(outdir, "keep-me.txt")
+  writeLines("user-owned", sentinel)
 
   predicted <- sn_run_celltypist(
     x = input_data,
     celltypist = fake_celltypist,
     model = "Immune_All_Low.pkl",
     outdir = outdir,
-    majority_voting = FALSE,
+    majority_voting = TRUE,
     over_clustering = "obs_cluster",
     quiet = TRUE
   )
@@ -3665,6 +4119,87 @@ test_that("sn_run_celltypist returns prediction tables for path inputs", {
   expect_s3_class(predicted, "tbl_df")
   expect_equal(predicted$cell, c("cell1", "cell2", "cell3"))
   expect_true("Immune_All_Low_predicted_labels" %in% colnames(predicted))
+  expect_setequal(checked_packages, c("logger", "glue"))
+  expect_false("Seurat" %in% checked_packages)
+  expect_true(dir.exists(outdir))
+  expect_identical(readLines(sentinel), "user-owned")
+})
+
+test_that("sn_run_celltypist imports the prediction sheet from XLSX output", {
+  input_data <- tempfile(fileext = ".csv")
+  utils::write.csv(matrix(1:4, nrow = 2), input_data)
+
+  fake_celltypist <- tempfile("fake-celltypist-xlsx-")
+  writeLines(
+    c(
+      "#!/usr/bin/env bash",
+      "set -euo pipefail",
+      "outdir=''",
+      "prefix=''",
+      "xlsx='false'",
+      "while [[ $# -gt 0 ]]; do",
+      "  case \"$1\" in",
+      "    --outdir) outdir=$2; shift 2 ;;",
+      "    --prefix) prefix=$2; shift 2 ;;",
+      "    --xlsx) xlsx='true'; shift ;;",
+      "    *) shift ;;",
+      "  esac",
+      "done",
+      "[[ \"$xlsx\" == 'true' ]]",
+      "touch \"$outdir/${prefix}annotation_result.xlsx\""
+    ),
+    fake_celltypist
+  )
+  Sys.chmod(fake_celltypist, mode = "0755")
+
+  imported <- list()
+  checked_packages <- character()
+  local_mocked_bindings(
+    check_installed = function(packages, ...) {
+      checked_packages <<- c(checked_packages, packages)
+      invisible(TRUE)
+    },
+    sn_read = function(path, format, which, row_names, ...) {
+      imported[[length(imported) + 1L]] <<- list(
+        path = path, format = format, which = which, row_names = row_names
+      )
+      if (identical(which, 1)) {
+        data.frame(
+          predicted_labels = c("T cell", "B cell"),
+          row.names = c("cell1", "cell2"),
+          check.names = FALSE
+        )
+      } else {
+        data.frame(
+          `T cell` = c(0.8, 0.2),
+          `B cell` = c(0.2, 0.8),
+          row.names = c("cell1", "cell2"),
+          check.names = FALSE
+        )
+      }
+    },
+    .package = "Shennong"
+  )
+
+  outdir <- tempfile("celltypist-xlsx-out-")
+  dir.create(outdir)
+  predicted <- sn_run_celltypist(
+    x = input_data,
+    celltypist = fake_celltypist,
+    prefix = "custom prefix;safe.",
+    outdir = outdir,
+    xlsx = TRUE,
+    majority_voting = TRUE,
+    quiet = TRUE
+  )
+
+  expect_identical(basename(imported[[1L]]$path), "custom prefix;safe.annotation_result.xlsx")
+  expect_identical(vapply(imported, `[[`, numeric(1), "which"), c(1, 3))
+  expect_true(all(vapply(imported, `[[`, character(1), "format") == "xlsx"))
+  expect_true(all(vapply(imported, `[[`, numeric(1), "row_names") == 1))
+  expect_true("rio" %in% checked_packages)
+  expect_equal(predicted$Immune_All_Low_predicted_labels, c("T cell", "B cell"))
+  expect_equal(predicted$Immune_All_Low_confidence, c(0.8, 0.8))
 })
 
 test_that("sn_run_celltypist errors when expected outputs are missing", {

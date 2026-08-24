@@ -30,13 +30,24 @@ install packages, activate patches, prepare Python, or change thread counts.
 }
 \details{
 Shennong lazily activates compatible, non-approximate patches for the scope
-of an integrated workflow call. Automatic activation covers CellChat,
-clusterProfiler, Coralysis, the standalone decontX hook, fgsea, LISI,
-NicheNet, scDblFinder, Seurat, SeuratObject
-\code{merge.Assay5}/\code{JoinLayers.Assay5}, SoupX, tradeSeq, UCell, and WGCNA. It
-normally requires the pinned fork
-AutoZyme build and an exactly validated upstream version. The returned
-\code{patch_provider} and \code{bundled_by_shennong} columns make this source explicit.
+of an owned workflow call. The strict automatic policy contains CellChat,
+clusterProfiler, LISI, NicheNet, default sparse scDblFinder, Seurat
+NormalizeData, owned SeuratObject \code{merge.Assay5} calls, SoupX, and UCell.
+Each remains operation- and input-guarded: clusterProfiler covers GO
+annotation retrieval rather than the ORA/GSEA statistical kernel, and the
+broad Seurat patch is automatic only for NormalizeData. Coralysis,
+standalone decontX, fgsea, JoinLayers, broad Seurat targets, tradeSeq, and
+WGCNA remain explicit-only until their Shennong call shapes are admitted.
+Ordinary calls suppress an ambient explicit-only patch; use
+\code{\link[=sn_with_autozyme]{sn_with_autozyme()}} for a deliberate scoped opt-in.
+
+Every activation requires the pinned fork (or an exact
+Shennong-vendored patch source) and automatic workflows require an exactly
+validated upstream version. \code{strict = FALSE} is available to explicit
+management calls to permit a version-label drift, but it never admits an
+unverified AutoZyme build. The returned \code{automatic_policy},
+\code{workflow_intersection}, \code{fast_path_status}, \code{patch_provider}, and
+\code{bundled_by_shennong} columns keep these claims separate.
 Set
 \code{options(shennong.autozyme = FALSE)}
 or the environment variable \code{AUTOZYME_DISABLED=true} (the legacy alias
@@ -46,12 +57,13 @@ Automatic workflow scopes log the patch names after activation succeeds and
 before the analytical expression starts. This confirms that the patches are
 enabled for the call; individual AutoZyme fast paths may still fall back to
 upstream code when an input is outside their validated scope. These
-controls do not disable patches that are already active and do not affect
-explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or \code{\link[=sn_with_autozyme]{sn_with_autozyme()}}.
-The older broad Seurat acceleration is bypassed for BPCells-backed objects
-so an on-disk layer is never coerced to an in-memory sparse matrix. The
-narrow \code{seurat_joinlayers} patch remains eligible because its validated
-fast path supports public BPCells \code{IterableMatrix} layers.
+automatic opt-outs do not deactivate a manually active patch globally and
+do not affect explicit calls to \code{\link[=sn_enable_autozyme]{sn_enable_autozyme()}} or
+\code{\link[=sn_with_autozyme]{sn_with_autozyme()}}. Unsafe workflow boundaries can still suspend such a
+patch for their own call. Broad Seurat acceleration is bypassed for
+BPCells-backed objects so an on-disk layer is never coerced to an in-memory
+sparse matrix; JoinLayers remains explicit-only even though its narrow
+counts-to-counts patch has separate benchmark evidence.
 }
 \examples{
 sn_check_autozyme()

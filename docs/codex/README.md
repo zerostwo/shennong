@@ -13,9 +13,20 @@ Shennong users under `inst/codex/`.
   governance, and package-usage skills.
 - `ResultContractAudit.md`: current analytical-result coverage, corrected
   inconsistencies, and intentional runtime-artifact exclusions.
+- `BackendConformance.md`: AutoZyme-inspired oracle, parameter-envelope,
+  comparator, fixture, CI-tier, and new-method admission contract.
+- `BackendConformanceAudit.md`: current wrapper/backend evidence inventory,
+  confirmed drift and correctness findings, and migration priorities.
+- `UsageTracking.md`: opt-in local-outbox-first SQLite/managed-DBI timing and
+  usage architecture, consent/privacy boundary, instrumentation registry, and
+  evidence semantics.
+- `RedundancyAudit-2026-08-21.md`: disk/source redundancy classification,
+  cleanup whitelist, and retained-artifact rationale.
 - `Ecosystem.md`: current five-repository development state, interface ledger,
   modality compatibility matrix, shared-contract targets, and cross-repository
   release gates.
+- `NextEcosystemMilestone.md`: self-contained execution handoff for immutable
+  service deployment and the first PBMC3K five-repository end-to-end fixture.
 - `ecosystem-lock.json`: machine-readable compatibility lock for the five
   implementation revisions, package/source and image digests, shared contract
   schemas, CI evidence, and deployed status. All implementation/image fields

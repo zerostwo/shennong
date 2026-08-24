@@ -328,6 +328,139 @@ sn_integration_control_template <- function(method = NULL) {
   tsne = 10L
 )
 
+.sn_cluster_matrix_block_payload <- function(x) {
+  sparse <- tryCatch(
+    {
+      if (inherits(x, "sparseMatrix")) {
+        methods::as(x, "dgCMatrix")
+      } else if (inherits(x, "Matrix") || is.matrix(x)) {
+        methods::as(Matrix::Matrix(x, sparse = TRUE), "dgCMatrix")
+      } else {
+        methods::as(x, "dgCMatrix")
+      }
+    },
+    error = function(error) NULL
+  )
+  if (!is.null(sparse)) {
+    sparse <- Matrix::drop0(sparse)
+    return(list(
+      storage = "dgCMatrix",
+      dim = dim(sparse),
+      p = sparse@p,
+      i = sparse@i,
+      x = sparse@x
+    ))
+  }
+
+  dense <- as.matrix(x)
+  list(
+    storage = "matrix",
+    dim = dim(dense),
+    values = unname(dense)
+  )
+}
+
+.sn_cluster_matrix_signature <- function(x, block_ncol = 1024L) {
+  dimensions <- dim(x)
+  if (length(dimensions) != 2L) {
+    stop("Clustering analysis inputs must be two-dimensional.", call. = FALSE)
+  }
+  block_ncol <- max(1L, as.integer(block_ncol))
+  starts <- if (dimensions[[2L]] > 0L) {
+    seq.int(1L, dimensions[[2L]], by = block_ncol)
+  } else {
+    integer(0)
+  }
+  block_hashes <- vapply(starts, function(start) {
+    finish <- min(start + block_ncol - 1L, dimensions[[2L]])
+    block <- x[, seq.int(start, finish), drop = FALSE]
+    digest::digest(
+      .sn_cluster_matrix_block_payload(block),
+      algo = "sha256",
+      serialize = TRUE
+    )
+  }, character(1))
+
+  digest::digest(
+    list(
+      schema_version = 1L,
+      dim = dimensions,
+      rownames = rownames(x),
+      colnames = colnames(x),
+      block_ncol = block_ncol,
+      block_hashes = block_hashes
+    ),
+    algo = "sha256",
+    serialize = TRUE
+  )
+}
+
+.sn_cluster_analysis_input_signature <- function(object,
+                                                 assay = "RNA",
+                                                 layer = "counts") {
+  input <- .sn_get_seurat_layer_data(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
+  digest::digest(
+    list(
+      schema_version = 1L,
+      assay = assay,
+      layer = layer,
+      values = .sn_cluster_matrix_signature(input)
+    ),
+    algo = "sha256",
+    serialize = TRUE
+  )
+}
+
+.sn_cluster_metadata_signature <- function(object, columns = character(0)) {
+  columns <- unique(as.character(columns %||% character(0)))
+  columns <- columns[!is.na(columns) & nzchar(columns)]
+  if (length(columns) == 0L) {
+    return(NULL)
+  }
+
+  metadata <- object[[]]
+  values <- lapply(columns, function(column) {
+    if (!column %in% colnames(metadata)) {
+      return(structure(list(), class = "shennong_missing_metadata_column"))
+    }
+    metadata[[column]]
+  })
+  names(values) <- columns
+  digest::digest(
+    list(
+      schema_version = 1L,
+      cells = rownames(metadata),
+      columns = columns,
+      values = values
+    ),
+    algo = "sha256",
+    serialize = TRUE
+  )
+}
+
+.sn_cluster_control_metadata_columns <- function(control) {
+  if (!is.list(control)) {
+    return(character(0))
+  }
+  metadata_fields <- c(
+    "group_by_vars", "label_by", "batch_by", "batch_key",
+    "categorical_covariate_keys", "continuous_covariate_keys"
+  )
+  current <- unlist(
+    control[intersect(metadata_fields, names(control))],
+    use.names = FALSE
+  )
+  nested <- unlist(
+    lapply(Filter(is.list, control), .sn_cluster_control_metadata_columns),
+    use.names = FALSE
+  )
+  unique(c(as.character(current), nested))
+}
+
 .sn_resolve_cluster_rerun_from <- function(rerun_from = NULL) {
   if (is.null(rerun_from)) {
     return(NULL)
@@ -867,7 +1000,7 @@ sn_integration_control_template <- function(method = NULL) {
                                           npcs,
                                           integration_control = list(),
                                           verbose = TRUE) {
-  .sn_with_default_autozyme(
+  .sn_with_explicit_autozyme_or_disabled(
     .sn_run_coralysis_integration_impl(
       object = object,
       batch = batch,
@@ -878,8 +1011,7 @@ sn_integration_control_template <- function(method = NULL) {
       integration_control = integration_control,
       verbose = verbose
     ),
-    patches = "coralysis",
-    operation = "runparalleldivisiveicp"
+    patches = "coralysis"
   )
 }
 
@@ -1044,26 +1176,42 @@ sn_integration_control_template <- function(method = NULL) {
     ),
     control = integration_control
   )
+  resolved_new_reduction <- args$new.reduction %||% new_reduction
+  if (!is.character(resolved_new_reduction) ||
+      length(resolved_new_reduction) != 1L ||
+      is.na(resolved_new_reduction) ||
+      !nzchar(resolved_new_reduction)) {
+    stop("`integration_control$new.reduction` must be one non-empty reduction name.", call. = FALSE)
+  }
+  args$new.reduction <- resolved_new_reduction
   if (verbose) .sn_log_info("[sn_run_cluster] Running Seurat layer integration with method = {method}.")
-  object <- .sn_with_default_seurat_autozyme(
+  object <- .sn_with_autozyme_disabled(
     .sn_call_with_symbolic_object(
       fun_call = quote(Seurat::IntegrateLayers),
       object = object,
       args = args
-    ),
-    object = object,
-    assay = assay
+    )
   )
-  object[[assay]] <- SeuratObject::JoinLayers(object[[assay]])
+  object[[assay]] <- .sn_with_autozyme_disabled(
+    SeuratObject::JoinLayers(object[[assay]])
+  )
   SeuratObject::DefaultAssay(object = object) <- old_default_assay
+  if (!resolved_new_reduction %in% names(object@reductions)) {
+    stop(
+      "Seurat layer integration did not create the requested reduction `",
+      resolved_new_reduction,
+      "`.",
+      call. = FALSE
+    )
+  }
   object@misc$integration <- list(
     method = method,
     batch_by = batch,
-    reduction = new_reduction,
-    input_reduction = reduction
+    reduction = resolved_new_reduction,
+    input_reduction = args$orig.reduction %||% reduction
   )
 
-  list(object = object, reduction = new_reduction)
+  list(object = object, reduction = resolved_new_reduction)
 }
 
 .sn_shennong_runtime_dir <- function(path = NULL) {
@@ -2819,6 +2967,10 @@ sn_detect_rare_cells <- function(object,
 
   custom_genes <- character(0)
   if (length(custom_queries) > 0L) {
+    check_installed(
+      "HGNChelper",
+      reason = "to validate custom `block_genes` symbols."
+    )
     checked <- HGNChelper::checkGeneSymbols(custom_queries, species = species)
     suggested <- checked$Suggested.Symbol
     valid <- !is.na(suggested) & nzchar(suggested)
@@ -3187,11 +3339,14 @@ sn_detect_rare_cells <- function(object,
 #'   checkpoints. After every completed run Shennong writes the current object,
 #'   comparison manifest, performance records, and completed run IDs to a
 #'   temporary file and atomically publishes it. Only the latest complete
-#'   checkpoint for the call signature is retained.
+#'   checkpoint for the call signature is retained. The signature includes a
+#'   blockwise digest of the selected layer plus cell/feature identity and the
+#'   metadata values used by batching, grouped HVGs, regression, or supervised
+#'   integration.
 #'   \code{resume}: logical; when \code{TRUE} (default), resume a matching
-#'   checkpoint in \code{checkpoint_dir}. The signature covers package version,
-#'   cells, features, batch labels, grid, and analysis arguments; incomplete
-#'   \code{.partial} files are ignored.
+#'   checkpoint in \code{checkpoint_dir}. The same content/metadata-aware
+#'   signature also covers package version, grid, and analysis arguments;
+#'   incomplete \code{.partial} files are ignored.
 #'   \code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
 #'   to \code{FALSE} for faster writes at the cost of more disk space.
 #'   \code{return_cluster}: if \code{TRUE}, return only the cluster assignments.
@@ -3505,6 +3660,11 @@ sn_run_cluster <- function(object,
     assays = names(object@assays),
     assay = args$assay,
     layer = args$layer,
+    analysis_input = .sn_cluster_analysis_input_signature(
+      object = object,
+      assay = args$assay,
+      layer = args$layer
+    ),
     layer_class = if (args$assay %in% names(object@assays)) {
       class(.sn_get_seurat_layer_data(object, assay = args$assay, layer = args$layer))
     } else {
@@ -3514,7 +3674,18 @@ sn_run_cluster <- function(object,
       as.character(object[[args$batch, drop = TRUE]])
     } else {
       NULL
-    }
+    },
+    metadata = .sn_cluster_metadata_signature(
+      object = object,
+      columns = c(
+        args$batch,
+        args$hvg_group_by,
+        args$rare_feature_group_by,
+        args$vars_to_regress,
+        args$group_by_vars,
+        .sn_cluster_control_metadata_columns(args$integration_control)
+      )
+    )
   )
   digest::digest(
     list(
@@ -3953,7 +4124,6 @@ sn_run_cluster <- function(object,
   return_object_for_multi <- isTRUE(args$.return_object_for_multi)
 
   check_installed("Seurat")
-  check_installed("HGNChelper")
 
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.")
@@ -4097,6 +4267,11 @@ sn_run_cluster <- function(object,
     multimodal_method = multimodal_method
   )
 
+  analysis_input_signature <- .sn_cluster_analysis_input_signature(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
   prepared <- .sn_prepare_seurat_analysis_input(
     object = object,
     assay = assay,
@@ -4208,9 +4383,15 @@ sn_run_cluster <- function(object,
     assay = assay,
     layer = layer,
     layer_source_version = 2L,
+    analysis_input = analysis_input_signature,
     nfeatures = if (identical(normalization_method, "sctransform")) nfeatures else NULL,
     hvg_candidate_nfeatures = if (identical(normalization_method, "sctransform")) hvg_candidate_nfeatures else NULL,
     vars_to_regress = if (identical(normalization_method, "sctransform")) vars_to_regress else NULL,
+    vars_to_regress_metadata = if (identical(normalization_method, "sctransform")) {
+      .sn_cluster_metadata_signature(object = object, columns = vars_to_regress)
+    } else {
+      NULL
+    },
     user_hvg = if (identical(normalization_method, "sctransform")) user_hvg else NULL
   )
   can_reuse_normalization <- .sn_can_reuse_cluster_stage(
@@ -4278,6 +4459,7 @@ sn_run_cluster <- function(object,
       missing_user_hvg = user_hvg_info$missing,
       normalization = normalization_signature
     )
+    blocked_hvg <- character(0)
     if (.sn_can_reuse_cluster_stage(
       object = object,
       stage = "hvg",
@@ -4380,11 +4562,28 @@ sn_run_cluster <- function(object,
       )
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     } else {
-      object <- .sn_with_default_seurat_autozyme(
-        Seurat::NormalizeData(object = object, assay = assay, layer = layer, verbose = verbose),
-        object = object,
-        assay = assay
-      )
+      standard_counts <- identical(layer, "counts") &&
+        !isTRUE(prepared$context$needs_temp_counts)
+      object <- if (standard_counts) {
+        .sn_with_default_seurat_autozyme(
+          Seurat::NormalizeData(
+            object = object,
+            assay = assay,
+            verbose = verbose
+          ),
+          object = object,
+          assay = assay
+        )
+      } else {
+        .sn_with_autozyme_disabled(
+          Seurat::NormalizeData(
+            object = object,
+            assay = assay,
+            layer = layer,
+            verbose = verbose
+          )
+        )
+      }
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }
 
@@ -4418,11 +4617,20 @@ sn_run_cluster <- function(object,
       rare_feature_group_by = rare_feature_group_by,
       rare_feature_n = rare_feature_n,
       rare_feature_control = rare_feature_control,
-      rare_feature_resolution = min(resolution, 0.4),
+      rare_feature_resolution = if (identical(rare_feature_method, "none")) {
+        NULL
+      } else {
+        min(resolution, 0.4)
+      },
+      grouping_metadata = .sn_cluster_metadata_signature(
+        object = object,
+        columns = c(hvg_group_by, rare_feature_group_by)
+      ),
       user_hvg = user_hvg,
       missing_user_hvg = user_hvg_info$missing,
       normalization = normalization_signature
     )
+    blocked_hvg <- character(0)
     if (.sn_can_reuse_cluster_stage(
       object = object,
       stage = "hvg",
@@ -4434,6 +4642,7 @@ sn_run_cluster <- function(object,
       if (verbose) .sn_log_info("[3/6] Reusing selected feature set.")
       stage_info <- object@misc$sn_run_cluster$stages$hvg
       hvg <- stage_info$selected_features
+      blocked_hvg <- stage_info$blocked_features %||% character(0)
       selected_rare_features <- stage_info$rare_features %||% character(0)
       object@misc$rare_feature_selection <- stage_info$rare_feature_selection %||% object@misc$rare_feature_selection
     } else {
@@ -4453,6 +4662,7 @@ sn_run_cluster <- function(object,
 
       if (!is_null(block_genes)) {
         n_before <- length(hvg)
+        blocked_hvg <- intersect(hvg, block_genes)
         hvg <- setdiff(hvg, block_genes)
         n_after_filter <- length(hvg)
         hvg <- utils::head(hvg, nfeatures)
@@ -4507,6 +4717,7 @@ sn_run_cluster <- function(object,
         "hvg",
         hvg_signature,
         selected_features = hvg,
+        blocked_features = blocked_hvg,
         rare_features = selected_rare_features,
         rare_feature_selection = rare_feature_store
       )
@@ -4517,6 +4728,7 @@ sn_run_cluster <- function(object,
       hvg_group_by = hvg_group_by,
       base_hvg_n = nfeatures,
       selected_features = hvg,
+      blocked_features = blocked_hvg,
       user_features = user_hvg,
       missing_user_features = user_hvg_info$missing
     )
@@ -4526,6 +4738,10 @@ sn_run_cluster <- function(object,
         method = normalization_method,
         features = hvg,
         vars_to_regress = vars_to_regress,
+        regression_metadata = .sn_cluster_metadata_signature(
+          object = object,
+          columns = vars_to_regress
+        ),
         npcs = npcs,
         normalization = normalization_signature,
         hvg = hvg_signature
@@ -4627,16 +4843,14 @@ sn_run_cluster <- function(object,
           .sn_log_info("[5/6] Running ADT CLR normalization.")
         }
       }
-      object <- .sn_with_default_seurat_autozyme(
+      object <- .sn_with_autozyme_disabled(
         Seurat::NormalizeData(
           object = object,
           assay = adt_assay,
           normalization.method = "CLR",
           margin = 2,
           verbose = verbose
-        ),
-        object = object,
-        assay = adt_assay
+        )
       )
       if (isTRUE(needs_adt_pca)) {
         object <- .sn_with_default_seurat_autozyme(
@@ -4675,6 +4889,14 @@ sn_run_cluster <- function(object,
   integration_umap <- NULL
   integration_performance <- NULL
   backend_integration_control <- integration_control
+  integration_metadata_signature <- .sn_cluster_metadata_signature(
+    object = object,
+    columns = c(
+      batch,
+      group_by_vars,
+      .sn_cluster_control_metadata_columns(integration_control)
+    )
+  )
   if (identical(integration_method, "bbknn")) {
     backend_integration_control$umap_args <- umap_control
   }
@@ -4882,6 +5104,7 @@ sn_run_cluster <- function(object,
       npcs = npcs,
       theta = theta,
       group_by_vars = group_by_vars,
+      integration_metadata = integration_metadata_signature,
       integration_control = backend_integration_control,
       store_sce = if (identical(integration_method, "coralysis")) {
         .sn_coralysis_store_sce(integration_control)
@@ -5080,18 +5303,37 @@ sn_run_cluster <- function(object,
         }
       }
       graph_names_after <- names(object@graphs)
-      graph_names <- setdiff(graph_names_after, graph_names_before)
-      if (length(graph_names) == 0L) {
-        graph_names <- graph_names_after
-      }
-      snn_graph <- if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn") && "wsnn" %in% graph_names_after) {
-        "wsnn"
+      if (identical(modality, "cite_seq") && identical(multimodal_method, "wnn") && "wsnn" %in% graph_names_after) {
+        graph_names <- setdiff(graph_names_after, graph_names_before)
+        if (length(graph_names) == 0L) {
+          graph_names <- intersect(c("wknn", "wsnn"), graph_names_after)
+        }
+        snn_graph <- "wsnn"
       } else {
-        snn_candidates <- grep("_snn$", graph_names, value = TRUE)
-        if (length(snn_candidates) > 0L) {
-          snn_candidates[[1]]
+        reduction_assay <- tryCatch(
+          SeuratObject::DefaultAssay(object[[reduction]]),
+          error = function(error) assay
+        )
+        expected_graph_names <- if (is.null(result_namespace)) {
+          paste0(reduction_assay, c("_nn", "_snn"))
         } else {
-          utils::tail(graph_names, n = 1L)
+          paste0(result_namespace, c("_nn", "_snn"))
+        }
+        graph_names <- intersect(expected_graph_names, graph_names_after)
+        expected_snn <- expected_graph_names[[2L]]
+        if (expected_snn %in% graph_names_after) {
+          snn_graph <- expected_snn
+        } else {
+          added_graphs <- setdiff(graph_names_after, graph_names_before)
+          snn_candidates <- grep("_snn$", added_graphs, value = TRUE)
+          if (length(snn_candidates) != 1L) {
+            stop(
+              "Could not identify the SNN graph created by `Seurat::FindNeighbors()`.",
+              call. = FALSE
+            )
+          }
+          snn_graph <- snn_candidates[[1L]]
+          graph_names <- unique(c(graph_names, added_graphs))
         }
       }
     }
@@ -5374,7 +5616,12 @@ sn_run_cluster <- function(object,
   on.exit(SeuratObject::DefaultAssay(object_for_transfer) <- old_query_assay, add = TRUE)
   SeuratObject::DefaultAssay(reference) <- reference_assay
   SeuratObject::DefaultAssay(object_for_transfer) <- query_assay
-  combined <- merge(reference, y = object_for_transfer, merge.data = FALSE)
+  combined <- .sn_with_default_autozyme(
+    merge(reference, y = object_for_transfer, merge.data = FALSE),
+    patches = "seurat_merge",
+    strict = TRUE,
+    operation = "merge"
+  )
   combined_assay <- SeuratObject::DefaultAssay(combined)
 
   integration_control <- transfer_control
@@ -6414,11 +6661,16 @@ sn_simulate_scdesign3 <- function(object,
     original <- object
     original$simulation_source <- "original"
     sim_object$simulation_source <- "simulated"
-    combined <- merge(
-      x = original,
-      y = sim_object,
-      add.cell.ids = c("original", "simulated"),
-      project = project
+    combined <- .sn_with_default_autozyme(
+      merge(
+        x = original,
+        y = sim_object,
+        add.cell.ids = c("original", "simulated"),
+        project = project
+      ),
+      patches = "seurat_merge",
+      strict = TRUE,
+      operation = "merge"
     )
     combined@misc$scdesign3 <- result$shennong
     return(combined)
@@ -6427,10 +6679,63 @@ sn_simulate_scdesign3 <- function(object,
 }
 
 
+.sn_write_celltypist_sparse_input <- function(counts,
+                                               outdir,
+                                               transpose_input = TRUE,
+                                               gene_file = NULL,
+                                               cell_file = NULL) {
+  counts <- .sn_as_sparse_matrix(counts)
+  if (!inherits(counts, "Matrix")) {
+    stop("CellTypist export requires a matrix-like counts layer.", call. = FALSE)
+  }
+  if (is.null(rownames(counts)) || is.null(colnames(counts))) {
+    stop("CellTypist export requires feature and cell names.", call. = FALSE)
+  }
+
+  # CellTypist consumes a cell-by-gene Matrix Market file unless its
+  # --transpose-input flag is supplied. Preserve the established flag while
+  # keeping the in-memory representation sparse in either orientation.
+  export_counts <- if (isTRUE(transpose_input)) counts else Matrix::t(counts)
+  input_data <- file.path(outdir, "counts.mtx")
+  Matrix::writeMM(obj = export_counts, file = input_data)
+
+  if (is.null(gene_file)) {
+    gene_file <- file.path(outdir, "genes.csv")
+    utils::write.table(
+      data.frame(feature = rownames(counts), check.names = FALSE),
+      file = gene_file,
+      sep = ",",
+      row.names = FALSE,
+      col.names = FALSE,
+      quote = TRUE
+    )
+  }
+  if (is.null(cell_file)) {
+    cell_file <- file.path(outdir, "cells.csv")
+    utils::write.table(
+      data.frame(cell = colnames(counts), check.names = FALSE),
+      file = cell_file,
+      sep = ",",
+      row.names = FALSE,
+      col.names = FALSE,
+      quote = TRUE
+    )
+  }
+
+  list(
+    input_data = input_data,
+    gene_file = gene_file,
+    cell_file = cell_file
+  )
+}
+
+
 #' Run CellTypist for automated cell type annotation
 #'
 #' @param x A Seurat object or a path to a count matrix / AnnData file that CellTypist can consume.
-#' @param celltypist Path to the `celltypist` binary. Defaults to "/opt/mambaforge/envs/scverse/bin/celltypist".
+#' @param celltypist Path to the `celltypist` binary. When `NULL`, use
+#'   `getOption("shennong.celltypist_path")` and otherwise search `PATH` with
+#'   `Sys.which("celltypist")`.
 #' @param model Model used for predictions. Defaults to "Immune_All_Low.pkl".
 #' @param outdir Directory to store the output files. If NULL, use a temporary directory.
 #' @param prefix Prefix for the output files. By default, use the model name plus a dot.
@@ -6439,12 +6744,25 @@ sn_simulate_scdesign3 <- function(object,
 #' @param majority_voting Logical. Whether to refine labels using majority voting after over-clustering.
 #' @param over_clustering Input file or a string key specifying an existing metadata column in the AnnData object, or "auto".
 #' @param min_prop For the dominant cell type within a subcluster, the minimum proportion of cells required to name the subcluster by this cell type.
-#' @param transpose_input Logical. If `TRUE`, add the `--transpose-input` argument when calling `celltypist`.
-#' @param gene_file If the provided input is in the `mtx` format, path to the file storing gene information. Otherwise ignored.
-#' @param cell_file If the provided input is in the `mtx` format, path to the file storing cell information. Otherwise ignored.
+#' @param transpose_input Logical. For Seurat input, `TRUE` exports counts in
+#'   gene-by-cell orientation and `FALSE` exports a sparse cell-by-gene
+#'   transpose. For an existing path, the input file is not rewritten. In both
+#'   cases, `TRUE` adds CellTypist's `--transpose-input` flag and `FALSE` does
+#'   not, so path inputs must set this to match their stored orientation.
+#' @param gene_file If the provided input is in the `mtx` format, path to the
+#'   file storing gene information. For Seurat input, a sidecar is generated
+#'   from the feature names when this is `NULL`.
+#' @param cell_file If the provided input is in the `mtx` format, path to the
+#'   file storing cell information. For Seurat input, a sidecar is generated
+#'   from the cell names when this is `NULL`.
 #' @param assay Assay used when exporting Seurat counts to CellTypist. Defaults to \code{"RNA"}.
-#' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
-#' @param xlsx Logical. If `TRUE`, merge output tables into a single Excel (.xlsx). Defaults to `FALSE`.
+#' @param layer Raw or count-like layer used as the input matrix for Seurat
+#'   objects. Defaults to \code{"counts"}. MatrixMarket/CSV input is normalized
+#'   by CellTypist, so passing a log-normalized `data` layer would normalize it
+#'   twice and is rejected; negative values are also rejected.
+#' @param xlsx Logical. If `TRUE`, ask CellTypist for its combined
+#'   `annotation_result.xlsx` workbook and import the first (prediction) sheet
+#'   through the optional `rio` dependency. Defaults to `FALSE`.
 #' @param plot_results Logical. If `TRUE`, plot the prediction results. Defaults to `FALSE`.
 #' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
 #'
@@ -6478,18 +6796,26 @@ sn_run_celltypist <- function(x,
                               xlsx = FALSE,
                               plot_results = FALSE,
                               quiet = FALSE) {
-  check_installed(c("Seurat", "data.table", "logger", "glue"),
+  check_installed(c("logger", "glue"),
     reason = "to run CellTypist analysis."
   )
+  x_is_seurat <- inherits(x, "Seurat")
+  if (x_is_seurat) {
+    check_installed("Seurat", reason = "to annotate a Seurat object with CellTypist.")
+  }
 
   mode <- match.arg(mode)
   celltypist <- celltypist %||% getOption("shennong.celltypist_path", Sys.which("celltypist"))
   sn_check_file(celltypist)
+  if (isTRUE(xlsx)) {
+    check_installed("rio", reason = "to import CellTypist's Excel result workbook.")
+  }
 
   .sn_log_info("Starting CellTypist analysis with model = {model}.")
   tictoc::tic("Total CellTypist runtime")
 
-  if (is_null(outdir)) {
+  temporary_outdir <- is_null(outdir)
+  if (temporary_outdir) {
     outdir <- tempfile("celltypist_")
     dir.create(outdir, recursive = TRUE)
     .sn_log_info("Using a temporary output directory: {outdir}.")
@@ -6500,7 +6826,7 @@ sn_run_celltypist <- function(x,
 
   on.exit(
     {
-      if (dir.exists(outdir) && grepl("^celltypist_", basename(outdir))) {
+      if (temporary_outdir && dir.exists(outdir)) {
         unlink(outdir, recursive = TRUE)
         log_debug("Cleaned temporary directory: {outdir}")
       }
@@ -6508,10 +6834,8 @@ sn_run_celltypist <- function(x,
     add = TRUE
   )
 
-  if (inherits(x, "Seurat")) {
-    x_is_seurat <- TRUE
-    .sn_log_info("Converting the Seurat object to CellTypist input format.")
-    input_data <- file.path(outdir, "counts.csv")
+  if (x_is_seurat) {
+    .sn_log_info("Converting the Seurat object to sparse CellTypist input format.")
 
     counts <- tryCatch(
       .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer),
@@ -6520,24 +6844,45 @@ sn_run_celltypist <- function(x,
         stop("Counts layer extraction failed")
       }
     )
+    counts <- .sn_as_sparse_matrix(counts)
+    nonzero_values <- if ("x" %in% methods::slotNames(counts)) {
+      methods::slot(counts, "x")
+    } else {
+      numeric()
+    }
+    if (any(!is.finite(nonzero_values)) || any(nonzero_values < 0)) {
+      stop(
+        "CellTypist MatrixMarket input must contain finite, non-negative count-like values.",
+        call. = FALSE
+      )
+    }
+    if (tolower(layer) %in% c("data", "scale.data", "scaled.data")) {
+      stop(
+        "CellTypist treats MatrixMarket input as raw counts and normalizes it internally; ",
+        "use a raw/count-like layer instead of `", layer, "`.",
+        call. = FALSE
+      )
+    }
 
-    data.table::fwrite(
-      x = as.data.frame(counts),
-      file = input_data,
-      quote = FALSE,
-      row.names = TRUE,
-      showProgress = FALSE
+    exported_input <- .sn_write_celltypist_sparse_input(
+      counts = counts,
+      outdir = outdir,
+      transpose_input = transpose_input,
+      gene_file = gene_file,
+      cell_file = cell_file
     )
+    input_data <- exported_input$input_data
+    gene_file <- exported_input$gene_file
+    cell_file <- exported_input$cell_file
     log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
   } else {
-    x_is_seurat <- FALSE
     input_data <- x
     .sn_log_info("Using the precomputed input matrix: {input_data}.")
   }
 
   over_clustering_path <- NULL
 
-  if (over_clustering != "auto") {
+  if (!is_null(over_clustering) && !identical(over_clustering, "auto")) {
     if (isTRUE(x_is_seurat)) {
       if (over_clustering %in% colnames(x@meta.data)) {
         .sn_log_info("Using the existing clustering column: {over_clustering}.")
@@ -6557,20 +6902,24 @@ sn_run_celltypist <- function(x,
     } else {
       over_clustering_path <- over_clustering
     }
-  } else if (over_clustering == "auto") {
-    .sn_log_warn("Automatic over-clustering is not implemented yet.")
+  } else if (identical(over_clustering, "auto") && isTRUE(majority_voting)) {
+    .sn_log_info("Using CellTypist's automatic over-clustering for majority voting.")
   }
 
   model_name <- tools::file_path_sans_ext(basename(model))
   prefix <- prefix %||% glue("{model_name}.")
-  predicted_labels_path <- file.path(outdir, glue("{prefix}predicted_labels.csv"))
+  prediction_path <- if (isTRUE(xlsx)) {
+    file.path(outdir, glue("{prefix}annotation_result.xlsx"))
+  } else {
+    file.path(outdir, glue("{prefix}predicted_labels.csv"))
+  }
 
   cmd_args <- c(
     "--indata", shQuote(input_data),
     "--model", shQuote(model),
     "--mode", mode,
     "--outdir", shQuote(outdir),
-    "--prefix", prefix
+    "--prefix", shQuote(prefix)
   )
 
   add_arg <- function(args, flag, value, condition = TRUE) {
@@ -6603,23 +6952,84 @@ sn_run_celltypist <- function(x,
   }
   log_debug("CellTypist output written to {outdir}")
 
-  if (!file.exists(predicted_labels_path)) {
-    .sn_log_error("Prediction output is missing: {predicted_labels_path}.")
+  if (!file.exists(prediction_path)) {
+    .sn_log_error("Prediction output is missing: {prediction_path}.")
     stop("CellTypist did not generate expected output files")
   }
 
-  predicted_labels <- utils::read.csv(predicted_labels_path, row.names = 1)
-  if (majority_voting) {
-    colnames(predicted_labels) <- c(
-      paste0(gsub("\\.pkl$", "", model_name), "_predicted_labels"),
-      paste0(gsub("\\.pkl$", "", model_name), "_over_clustering"),
-      paste0(gsub("\\.pkl$", "", model_name), "_majority_voting")
+  predicted_labels <- if (isTRUE(xlsx)) {
+    sn_read(
+      prediction_path,
+      format = "xlsx",
+      which = 1,
+      row_names = 1
     )
   } else {
-    colnames(predicted_labels) <- c(
-      paste0(gsub("\\.pkl$", "", model_name), "_predicted_labels")
+    utils::read.csv(prediction_path, row.names = 1, check.names = FALSE)
+  }
+  predicted_labels <- as.data.frame(predicted_labels, check.names = FALSE)
+  normalized_columns <- tolower(gsub("[^A-Za-z0-9]+", "_", colnames(predicted_labels)))
+  normalized_columns <- gsub("^_+|_+$", "", normalized_columns)
+  if (!"predicted_labels" %in% normalized_columns) {
+    stop(
+      "CellTypist prediction output does not contain a `predicted_labels` column.",
+      call. = FALSE
     )
   }
+
+  probability_matrix <- if (isTRUE(xlsx)) {
+    tryCatch(
+      sn_read(
+        prediction_path,
+        format = "xlsx",
+        which = 3,
+        row_names = 1
+      ),
+      error = function(e) NULL
+    )
+  } else {
+    probability_path <- file.path(outdir, glue("{prefix}probability_matrix.csv"))
+    if (file.exists(probability_path)) {
+      utils::read.csv(probability_path, row.names = 1, check.names = FALSE)
+    } else {
+      NULL
+    }
+  }
+  if (!is_null(probability_matrix)) {
+    probability_matrix <- as.data.frame(probability_matrix, check.names = FALSE)
+    label_column <- match("majority_voting", normalized_columns)
+    if (is.na(label_column)) label_column <- match("predicted_labels", normalized_columns)
+    selected_labels <- as.character(predicted_labels[[label_column]])
+    probability_columns <- tolower(gsub(
+      "[^A-Za-z0-9]+", "_", colnames(probability_matrix)
+    ))
+    probability_columns <- gsub("^_+|_+$", "", probability_columns)
+    probability_rows <- match(rownames(predicted_labels), rownames(probability_matrix))
+    confidence <- vapply(seq_along(selected_labels), function(index) {
+      row_index <- probability_rows[[index]]
+      if (is.na(row_index)) return(NA_real_)
+      label_parts <- trimws(unlist(strsplit(selected_labels[[index]], "[|,]")))
+      label_parts <- tolower(gsub("[^A-Za-z0-9]+", "_", label_parts))
+      label_parts <- gsub("^_+|_+$", "", label_parts)
+      column_indices <- match(label_parts, probability_columns)
+      column_indices <- column_indices[!is.na(column_indices)]
+      if (!length(column_indices)) return(NA_real_)
+      values <- suppressWarnings(as.numeric(unlist(
+        probability_matrix[row_index, column_indices, drop = FALSE],
+        use.names = FALSE
+      )))
+      values <- values[is.finite(values)]
+      if (length(values)) max(values) else NA_real_
+    }, numeric(1))
+    predicted_labels$confidence <- confidence
+    normalized_columns <- c(normalized_columns, "confidence")
+  }
+
+  model_key <- gsub("\\.pkl$", "", model_name)
+  colnames(predicted_labels) <- make.unique(
+    paste0(model_key, "_", normalized_columns),
+    sep = "_"
+  )
 
   if (!isTRUE(x_is_seurat)) {
     tictoc::toc()

@@ -1,6 +1,183 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-15
+Last updated: 2026-08-22
+
+## 2026-08-22
+
+- CellTypist's Seurat dependency is input-specific. Seurat objects require the
+  Seurat package and are exported as sparse MatrixMarket bundles; existing file
+  paths are passed directly to the CLI and return a prediction table without
+  requiring Seurat. For path input, `transpose_input` controls only the CLI
+  flag and must match the orientation already stored on disk. The unified
+  annotation backend defaults independently to count-like `counts`; it must not
+  inherit the generic log-normalized `data` layer because CellTypist normalizes
+  MatrixMarket/CSV inputs internally. Output parsing follows the files and
+  columns CellTypist actually produced rather than assuming that a requested
+  majority vote always yields three CSV columns. Temporary-directory ownership
+  is recorded when the directory is created; cleanup must never infer ownership
+  from a user path's basename. Known normalized/scaled Seurat layers fail closed
+  rather than merely warning and continuing with a scientifically different
+  input transformation. Unified annotation uses selected-label probability
+  when the upstream probability matrix is present; absent confidence maps to a
+  conservative zero/low-confidence state, never an invented score of one.
+- Core real-data documentation must remain invariant to optional packages that
+  happen to be installed on the builder. Slingshot/tradeSeq execution therefore
+  requires the explicit extended profile as well as the packages themselves.
+- Unreleased work uses the package development suffix and a pkgdown-recognized
+  development NEWS heading so the website cannot silently omit current release
+  notes.
+
+## 2026-08-21
+
+- Sparse external-tool interchange is the default when the downstream public
+  API supports it. CellTypist accepts MatrixMarket with gene/cell sidecars, so
+  Shennong must not materialize a genes-by-cells data frame merely to write CSV.
+  Orientation is part of the adapter contract and is tested in both directions.
+- Repository cleanup is whitelist-based and dry-run-first. Generated checks,
+  tarballs, logs, bytecode and optional site output may be removed only after
+  proving that no target contains a tracked file. Real fixtures, research
+  outputs, user history/settings, CodeGraph state, Git state and benchmark
+  inputs without a governed reconstruction source are never inferred to be
+  disposable.
+- Documentation overlap is resolved through navigation and narrative entry
+  points, not by deleting executable module articles. The pkgdown home and
+  workflow map begin with the scientific question and biological replicate,
+  while detailed articles remain the source of check-safe code and real-data
+  visual evidence.
+- A core real-data article cannot silently depend on an install or download.
+  Dependency-free Shennong implementations are used for core examples where
+  available (for example abundance permutation and Louvain); network-backed
+  resources are frozen locally; and genuinely optional backends such as
+  HGNChelper or Slingshot/tradeSeq are classified as extended. Runtime coverage
+  must trace both the source namespace and its attached export bindings.
+- The documentation site must be usable without third-party runtime assets.
+  Bootstrap/bslib styling, CSS, navigation and sidebars are package-local;
+  external analytics, font downloads and CDN scripts are not part of the
+  rendered site contract. Light/dark contrast, keyboard focus, reduced motion,
+  responsive layouts and print output are explicit theme requirements.
+
+- Usage research is all-public-API by default, not analysis-only. Plot,
+  get/list, store, IO, validation, installation and backend-adapter calls are
+  classified alongside analysis entrypoints; usage-control APIs are excluded
+  from ordinary wrappers to avoid recursion. Root calls are research
+  entrypoints and nested public calls are components, so inclusive elapsed time
+  is not summed twice. The current namespace-binding implementation explicitly
+  does not claim references saved before tracking was enabled.
+- Public-API and method parameter matrices are static admission artifacts. They
+  must cover current formals, selector values, dispatch cells, pairwise axes and
+  named high-risk cases, but `runtime_classified` and a fresh matrix do not
+  assert execution or success. Clustering and enrichment have dedicated
+  matrices because their selectors encode scientifically distinct backends.
+  Only a contract runner with an independent upstream oracle can produce
+  backend-conformance evidence.
+- Remote research uses a local SQLite outbox and explicit delivery, never a
+  network write inside a scientific function. `remote_research` consent binds a
+  policy/version, purposes, data categories, expiry and optional cohort label
+  into a stable, tamper-checked receipt; no participant/installation identifier
+  is generated. A flush selects only sessions carrying the exact receipt and
+  applies its field-level category projection, leaving other receipts pending.
+  A fresh DBI connection factory stays in memory, credentials are never
+  serialized, remote PID/error text is omitted, and failed delivery remains
+  retryable locally. Shennong-created remote tables enforce unique session/run
+  IDs; administrator-created tables must do the same. Direct DBI is for managed
+  deployments; public desktop studies require an ingestion service.
+- Base R/data.table replacement is profile-gated. Public tibble boundaries and
+  small interpretation/result tables retain their tidyverse semantics. The
+  million-row composition/ROE contingency core moves to base R because it was
+  faster than both dplyr and data.table under an executable differential test;
+  grouped QC remains dplyr because data.table was slower in the measured case.
+- AutoZyme automatic admission is operation-specific. Only validated owned
+  intersections remain automatic: `cellchat`, `clusterprofiler`, `lisi`,
+  `nichenetr`, `scdblfinder`, `seurat`, `seurat_merge`, `soupx`, and `ucell`.
+  This decision supersedes the broader historical automatic-set entries below.
+  Coralysis, standalone decontX, broad Seurat targets, JoinLayers, tradeSeq and
+  WGCNA are explicit-only until their guards match Shennong's scientific
+  defaults. RPCA/CCA integration and default JoinLayers fail closed against a
+  manually active broad patch; scDblFinder is automatic only for its strict
+  all-default sparse envelope.
+- Workflow observability is explicit infrastructure rather than implicit
+  telemetry. Loading Shennong performs no tracking IO or remote connection. A
+  caller selects a local outbox and one of development, production, test, or
+  benchmark; production is never inferred. The process-local registry retains
+  nested parent/root identities and restores original bindings on disable.
+- Usage parameters follow an allow-and-summarize privacy boundary. Short
+  literals such as method names, seeds, dimensions, and thresholds may be
+  retained; objects, matrices, gene/signature/cell/sample/patient values,
+  paths, endpoints, credentials, prompts, responses, and free text are never
+  stored. Local mode has no remote path; managed remote delivery requires a
+  separate consent receipt and explicit flush. No installation identifier is
+  generated, and SQLite IDs must not consume the analytical R RNG.
+- AutoZyme source trust and upstream-version strictness are separate gates.
+  The pinned AutoZyme revision or exact trusted vendored patch source is always
+  required. `strict = FALSE` may admit an upstream version-label drift behind
+  the patch's runtime guards, but cannot admit an unverified AutoZyme build.
+- Acceleration performance evidence uses three fresh-process arms: direct
+  upstream, Shennong with AutoZyme disabled, and Shennong with it enabled.
+  Eligibility, scoped activation, target intersection, output parity, and an
+  internal fast-path hit are distinct claims. Until AutoZyme exposes per-call
+  hit counters, a benchmark may provide strong empirical speed/parity evidence
+  but must leave `fast_path_hit` unknown.
+- `sn_enrich()` follows a joint clusterProfiler/enrichit contract rather than a
+  Shennong-only raw-p filter. ORA forwards its explicit universe, raw/adjusted
+  cutoff, adjustment method, q-value cutoff, and gene-set-size bounds. GSEA
+  forwards the common supported controls; its exact cutoff and overlap behavior
+  is versioned because enrichit 0.2.1 and later releases differ. The conformance
+  profile therefore gates both clusterProfiler 4.20.0 and enrichit 0.2.1.
+- A two-variable numeric enrichment formula is ambiguous: it may be a GSEA rank
+  or a numeric-coded ORA group. Such calls now require explicit `analysis`.
+  Grouped ORA remains `gene ~ group`; current global GSEA remains
+  `gene ~ statistic`; clusterProfiler's three-variable grouped-GSEA formula is
+  explicitly outside the current envelope.
+- GSEA rank identifiers must be unique and finite. Silent `max()` collapse is
+  removed; callers must opt into `max_abs`, `max`, or `mean`, with `max_abs`
+  retaining the direction of the largest-magnitude statistic. clusterProfiler
+  4.20 accepts but does not forward `seed`/`eps` through its dots, so Shennong
+  does not expose those controls as false no-ops; reproducibility uses the same
+  caller-side `set.seed()` convention as the direct upstream call.
+- `sn_enrich()` on clusterProfiler 4.20 enters enrichit rather than fgsea. Only
+  the exact clusterProfiler annotation-cache patch belongs to that workflow
+  scope; the separately registered fgsea patch cannot be used as evidence for
+  this call path. Serious backend warnings remain visible, and the outer
+  provenance context survives until optional result storage.
+- The first `sn_run_cluster()` reference subject is the explicit no-batch
+  Seurat policy pipeline with blocked/rare features disabled and reuse off.
+  NormalizeData, HVGs, ScaleData, PCA, NN/SNN graphs, the fixed-seed partition,
+  and single-thread UMAP must all match stage by stage. `HGNChelper` is required
+  only for custom blocked-symbol validation, not an ordinary Seurat run.
+- A clustering reuse or checkpoint signature is an input-content contract, not
+  a parameter-only cache key. It binds a blockwise digest of the selected layer,
+  cell/feature identity, and the values of metadata used for batching, grouped
+  HVGs, regression, supervision, or integration. This intentionally pays one
+  bounded streaming read when reuse is enabled rather than returning stale
+  scientific state after same-shaped input mutation.
+- Graph and reduction ownership must be explicit. Clustering uses the SNN graph
+  named by the current `FindNeighbors()` call even when same-named graphs were
+  overwritten in place; CCA/RPCA propagate the actual `new.reduction` selected
+  by `integration_control`. Temporary joined analysis layers are restored to
+  the original split-layer topology and payload after integration.
+
+## 2026-08-20
+
+- Backend correctness is a three-arm contract. The base scientific comparison
+  is a direct upstream public API/reference pipeline versus the same Shennong
+  call with AutoZyme disabled; an accelerated Shennong arm is additional patch
+  evidence and cannot substitute for wrapper-to-upstream parity.
+- Conformance claims are parameter-envelope and output-field specific. Every
+  public formal is classified in a machine-readable installed contract, and
+  scientific payload, wrapper mutation/storage, input immutability, conditions,
+  seeds, threads, fixtures, and dependency identity are separate evidence.
+  Correlation alone is never sufficient for a non-exact numerical result.
+- The 64 methods already marked implemented form a frozen, explicitly
+  unverified migration backlog. A new method may not extend that list; it must
+  reach `admitted` status with a direct oracle, hashed tiny and real fixtures,
+  fresh-process C2 evidence, zero unexpected skips, and any risk-required C3
+  matrix. The first Seurat normalization, silhouette, and edgeR contracts remain
+  `pilot`, so their passing same-process tests do not overstate release
+  conformance.
+- Missing optional dependencies remain acceptable in the ordinary broad package
+  suite, but a dedicated conformance profile owns a fixed dependency shard and
+  treats a missing declared backend as failure. Correctness gates use one thread
+  unless the contract explicitly validates additional thread counts.
 
 ## 2026-08-15
 
@@ -116,7 +293,8 @@ Last updated: 2026-08-15
 
 ## 2026-08-01
 
-- clusterProfiler and fgsea use independent relaxed-version AutoZyme scopes.
+- Historical decision, superseded by the strict operation-specific 2026-08-21
+  policy: clusterProfiler and fgsea used independent relaxed-version AutoZyme scopes.
   The official clusterProfiler patch targets the retired 4.16/DOSE ORA path and
   cannot register on 4.20, so Shennong vendors an exact cache-only replacement
   for `get_GO_data()` on the 4.20/enrichit path. Statistical ORA/GSEA kernels,

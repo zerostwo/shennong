@@ -136,7 +136,15 @@ test_that("runtime coverage traces and reports without enabling external downloa
 
   expect_match(source, "validate-real-data.R", fixed = TRUE)
   expect_match(source, "pkgload::load_all", fixed = TRUE)
-  expect_match(source, "detach(\"package:Shennong\"", fixed = TRUE)
+  load_position <- regexpr("pkgload::load_all", source, fixed = TRUE)[[1L]]
+  detach_positions <- gregexpr(
+    "detach(\"package:Shennong\"",
+    source,
+    fixed = TRUE
+  )[[1L]]
+  detach_positions <- detach_positions[detach_positions > 0L]
+  expect_true(length(detach_positions) == 0L || all(detach_positions > load_position))
+  expect_match(source, 'as.environment("package:Shennong")', fixed = TRUE)
   expect_match(source, "get(\"trace\", envir = asNamespace(\"methods\"))", fixed = TRUE)
   expect_match(source, "rmarkdown::render", fixed = TRUE)
   expect_match(source, "runtime-coverage.csv", fixed = TRUE)

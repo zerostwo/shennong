@@ -3,10 +3,95 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Development version
+# Shennong (development version)
+
+### Fixed
+
+- Fixed `sn_run_regulatory_activity(method = "progeny")`: the PROGENy model is
+  now reshaped from its wide gene-by-pathway form into the long
+  source/target/weight network that `decoupleR` expects, instead of failing
+  with "subscript out of bounds". `progeny_top` still selects the top targets
+  per pathway through the upstream model.
+- Fixed `sn_run_cell_communication(method = "liana")` with an unset
+  `resource`: the default LIANA Consensus resource is no longer shadowed by an
+  explicit `NULL`, which previously failed with "argument is of length zero".
+- Fixed `sn_run_metabolism(method = "scmetabolism")` on Seurat v5 objects:
+  scoring now reads the bundled scMetabolism GMT gene sets directly and scores
+  them with Shennong's own gene-set machinery, so the upstream helper no
+  longer touches removed Assay slots. `scoring_method` gains `"aucell"` (the
+  upstream default) for this backend and for `method = "geneset"`.
 
 ### Added
 
+- Added opt-in SQLite workflow observability with
+  `sn_enable_usage_tracking()`, `sn_disable_usage_tracking()`,
+  `sn_with_usage_tracking()`, `sn_check_usage_tracking()`,
+  `sn_list_usage_runs()`, and `sn_summarize_usage()`. Every exported
+  non-control function family can record elapsed time, warning/error status,
+  nested parentage, explicit
+  development/production/test/benchmark mode, workflow invocation number, and
+  a privacy-sanitized parameter fingerprint. Tracking is disabled at load,
+  excludes objects, identifiers, paths, credentials, prompts, and free text,
+  and never uploads without a separately consented flush. `sn_time_call()`
+  provides the same timing display for an ad-hoc expression.
+- Usage observability now covers every safely wrappable public export, including
+  plot/get/list/store, IO, validation, installation, project and backend-call
+  APIs: 257 of the current 267 function exports, with only ten usage-control
+  functions excluded to prevent recursion. Because instrumentation replaces
+  namespace bindings when enabled, references saved or imported beforehand
+  remain outside interception and are reported as such by the status API.
+  `sn_create_usage_store()`, `sn_confirm_usage_consent()`, and
+  `sn_flush_usage_tracking()` add a managed DBI destination backed by a local
+  SQLite outbox. Remote connections require explicit versioned research
+  consent. Stable tamper-checked receipts isolate differently consented
+  sessions in one outbox, consent categories gate every optional remote field,
+  and unique session/run IDs make completed rows retry-safe. Scientific calls
+  never wait for the network. Allowlisted method selectors passed through
+  variables are resolved without evaluating objects, paths, text, or arbitrary
+  call expressions.
+- UCell scoring now uses a serial BiocParallel fallback when its exact
+  AutoZyme patch is not active, avoiding worker-socket requirements in
+  restricted runtimes. An active admitted patch retains the validated
+  `BPPARAM = NULL` fast-path envelope, and an explicit user `BPPARAM` is
+  preserved.
+- Added a generated all-public-API formal/selector inventory, an explicit
+  `sn_run_cluster()` method matrix covering all three normalization methods and
+  eleven integration methods, and a 24-cell `sn_enrich()` dispatch matrix for
+  ORA/GSEA across GO, KEGG, MSigDB and grouped/ungrouped inputs. Pairwise axes,
+  high-risk cases, unsupported grouped GSEA, and current pilot status are
+  explicit.
+  These are static completeness and admission matrices, not evidence that every
+  listed case has executed or passed a backend comparison.
+- Reorganized pkgdown around a new research-workflow map with four real-data
+  scientific narratives, module-specific visual checkpoints, and five article
+  groups. The Bootstrap 5 theme now has responsive workflow cards, accessible
+  light/dark palettes, keyboard focus, reduced-motion and print behavior, and
+  no external runtime fonts, stylesheets, analytics, or CDN scripts.
+  The obsolete tidytemplate Suggests/Remotes/website installation dependency
+  was removed from package metadata and pkgdown CI.
+- Added `scripts/clean-generated.R` and a dated repository redundancy audit.
+  The cleanup command is dry-run by default and refuses tracked files,
+  symlinks, scientific fixtures, research outputs, Git state, user history,
+  project settings, and CodeGraph data.
+- Added a fresh-process, three-arm AutoZyme workflow benchmark and a
+  deterministic preparation script for a 30,000-cell, three-capture public
+  PBMC fixture. The runner separates direct-upstream agreement, Shennong
+  wrapper overhead, acceleration parity, elapsed time, peak worker RSS, patch
+  eligibility, scoped activation, and the still-unknown internal fast-path-hit
+  state. On the maintainer host with the pinned AutoZyme revision, the
+  30,000-cell median speedups were 9.11x for LISI, 33.26x for UCell, 4.49x for
+  Seurat normalization, 3.04x for Assay5 merge, 1.69x for JoinLayers, and 1.75x
+  for scDblFinder, with all declared output comparators passing. scDblFinder
+  traded about 290 MiB of additional peak worker RSS for that time reduction.
+- `sn_enrich()` now exposes the upstream ORA/GSEA controls
+  `p_adjust_method`, `qvalue_cutoff`, `universe`, `min_gs_size`,
+  `max_gs_size`, and `gsea_exponent`. Stored enrichment results retain these
+  effective parameters plus the clusterProfiler, enrichit, annotation, and
+  MSigDB package versions used by the call.
+- Added direct backend-conformance pilots for the no-batch Seurat clustering
+  pipeline and for MSigDB-style ORA/GSEA against
+  `clusterProfiler::enricher()` and `clusterProfiler::GSEA()`, including an
+  explicit ORA universe and an enrichit gene-set-overlap boundary case.
 - Parameter-grid `sn_run_cluster()` calls can now persist and resume completed
   combinations with `checkpoint_dir`, `resume`, and `checkpoint_compress`.
   Checkpoints are atomically published after each run, retain only the latest
@@ -64,6 +149,95 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- `sn_run_celltypist()` now exports Seurat layers as sparse MatrixMarket with
+  exact gene/cell sidecars instead of materializing a dense genes-by-cells CSV.
+  Both orientations are tested, executable discovery follows the documented
+  option/`PATH` order, and existing path inputs no longer require Seurat. The
+  unified annotation adapter now uses `counts` instead of silently
+  double-normalizing the default `data` layer. XLSX-only output, CellTypist's
+  automatic over-clustering, and one-column small-cell majority-vote results
+  are handled according to the actual upstream output shape. User-supplied
+  output directories are never mistaken for temporary directories and removed,
+  and custom output prefixes are passed to the CLI as one quoted argument.
+  Explicit normalized/scaled Seurat layers now fail closed instead of producing
+  a known double-normalized result, and XLSX import dependencies are checked
+  before the external process starts. When CellTypist supplies its probability
+  matrix, Shennong stores the selected-label probability as confidence; missing
+  confidence is conservatively scored as unresolved instead of fabricating 1.0.
+- Real-data documentation now keeps core rendering dependency- and
+  download-safe: built-in abundance permutation replaces an unconditional
+  Propeller requirement, the feature-class example uses a frozen local
+  resource, Louvain replaces an auto-installing Leiden call, and
+  HGNChelper/Slingshot/tradeSeq examples are explicitly extended. Runtime
+  coverage traces both the source namespace and attached exports and Git
+  provenance commands accept the repository as an invocation-local safe
+  directory. The final core audit observes all 94 declared functions across 15
+  articles with no failures or network attempts.
+
+- Automatic AutoZyme admission now contains only owned call shapes that are
+  currently defensible. The automatic set is `cellchat`, `clusterprofiler`,
+  `lisi`, `nichenetr`, `scdblfinder`, `seurat`, `seurat_merge`, `soupx`, and
+  `ucell`; each still applies only to its documented operation and input
+  envelope. Coralysis, standalone decontX, broad Seurat targets, JoinLayers,
+  tradeSeq and WGCNA remain explicit-only until their guards and Shennong
+  defaults pass new contracts. RPCA/CCA layer integration and default
+  JoinLayers are forcibly suspended from a manually active broad patch;
+  all-default scDblFinder is strict while non-default calls are forcibly
+  upstream. Standard-count `sn_run_cluster()` no longer passes a redundant
+  `layer` through NormalizeData dots, so the validated normalization fast path
+  can execute, and owned label-transfer/simulation merges now scope the exact
+  Assay5 merge patch.
+- `sn_calculate_composition()` and `sn_calculate_roe()` now use a shared base-R
+  contingency kernel for their large metadata count/totals stage while
+  preserving factor, NA, `min_cells`, multi-group and tibble output semantics.
+  A one-million-row profile showed the base count core faster than both dplyr
+  and data.table; grouped QC and small result-table transformations remain in
+  their clearer existing form because profiling did not justify replacement.
+- Relaxed AutoZyme checks now relax only the tested upstream package version;
+  every automatic or explicit activation still requires the pinned AutoZyme
+  revision or an exact trusted Shennong-vendored patch source. An unverified
+  same-version AutoZyme installation can no longer be silently admitted by a
+  workflow using `strict = FALSE`.
+- Removed `fgsea` from the automatic workflow-default inventory because no
+  current Shennong call reaches its namespace: clusterProfiler 4.20 GSEA uses
+  enrichit. The fgsea patch remains available for explicit management of
+  direct fgsea calls.
+- Program scoring now prioritizes exact feature names before case/version
+  normalization. Signatures containing both an exact symbol and a
+  version-suffixed feature no longer lose one member through a duplicated
+  normalized lookup key, restoring direct UCell parity on the real PBMC
+  benchmark.
+- Standard single-`counts`-layer Seurat workflows no longer capture and restore
+  redundant full-matrix temporary layer snapshots. On the 30,000-cell
+  NormalizeData benchmark this reduced the unaccelerated wrapper boundary from
+  3.45 to 3.01 seconds and cut its whole-worker peak RSS from about 3.25 GiB to
+  2.27 GiB while preserving direct output parity.
+- `sn_enrich()` now delegates `pvalueCutoff` and related significance rules to
+  the versioned clusterProfiler/enrichit backend instead of forcing permissive
+  upstream cutoffs and then retaining terms by raw p-value alone. GSEA rejects
+  duplicate or non-finite ranked identifiers unless an explicit collapse policy
+  is selected, numeric formula RHS values require an explicit `analysis`, and
+  scientifically relevant mapping/q-value/invalid-p warnings remain visible.
+- `sn_enrich()` no longer advertises the AutoZyme fgsea patch around
+  clusterProfiler 4.20 GSEA calls, because that release executes enrichit and
+  does not enter the fgsea namespace. The clusterProfiler GSON-cache scope and
+  its acceleration provenance remain attached to stored results.
+- `sn_run_cluster()` no longer requires `HGNChelper` for ordinary Seurat
+  clustering or bundled blocked-gene signatures; the dependency is checked
+  only when custom blocked gene symbols require validation.
+- `sn_run_cluster()` reuse and persistent checkpoint signatures now include a
+  blockwise SHA-256 of the selected expression layer plus relevant batch, HVG,
+  regression, and integration-label metadata. Calls with the same names and
+  dimensions but changed values no longer reuse stale normalization, PCA,
+  graphs, or checkpoints.
+- Clustering now selects the SNN graph created or overwritten by the current
+  `FindNeighbors()` call instead of falling back to an unrelated pre-existing
+  `_snn` graph. Seurat CCA/RPCA also honor a custom
+  `integration_control$new.reduction` through downstream graph construction and
+  provenance, while restoring the original split count layers exactly.
+- Log-normalized clustering now records the actually removed blocked HVGs, and
+  resolution changes no longer invalidate HVG/PCA/graph reuse when rare-feature
+  selection is disabled.
 - `sn_normalize_data(method = "scran")` and scran-backed
   `sn_run_cluster()` workflows now accept BPCells-backed count layers. The
   selected layer is materialized directly as a sparse `dgCMatrix` at the scran

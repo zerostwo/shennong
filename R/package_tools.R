@@ -2624,9 +2624,9 @@ sn_install_shennong <- function(
     package = c(
       "anndataR", "BayesPrism", "BPCells", "COSG", "CellChat", "GapClust",
       "ROGUE", "SignatuR", "catplot", "copykat", "harmony", "liana", "lisi",
-      "nichenetr", "multinichenetr", "scMetabolism", "tidytemplate"
+      "nichenetr", "multinichenetr", "scMetabolism"
     ),
-    source = rep("GitHub", 17),
+    source = rep("GitHub", 16),
     remote = c(
       "scverse/anndataR",
       "Danko-Lab/BayesPrism/BayesPrism",
@@ -2643,8 +2643,7 @@ sn_install_shennong <- function(
       "immunogenomics/lisi",
       "saeyslab/nichenetr",
       "saeyslab/multinichenetr",
-      "wu-yc/scMetabolism",
-      "tidyverse/tidytemplate"
+      "wu-yc/scMetabolism"
     ),
     stringsAsFactors = FALSE
   )
@@ -2652,7 +2651,7 @@ sn_install_shennong <- function(
 
 .sn_bioconductor_packages <- function() {
   c(
-    "apeglm", "Banksy", "BiocParallel", "clusterProfiler", "Coralysis", "decoupleR", "decontX", "DESeq2", "dorothea", "edgeR", "GENIE3",
+    "apeglm", "Banksy", "BiocParallel", "clusterProfiler", "Coralysis", "decoupleR", "decontX", "DESeq2", "dorothea", "edgeR", "GENIE3", "GSEABase",
     "glmGamPoi", "miloR", "nnSVG", "org.Hs.eg.db", "org.Mm.eg.db", "progeny", "rhdf5",
     "rtracklayer", "S4Vectors", "scDblFinder", "scDesign3", "scran", "SingleCellExperiment", "SpatialExperiment", "Nebulosa",
     "SummarizedExperiment", "limma", "variancePartition"

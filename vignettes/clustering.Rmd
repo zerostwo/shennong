@@ -69,7 +69,7 @@ pbmc <- sn_run_cluster(
   npcs = 30,
   dims = 1:20,
   resolution = 0.6,
-  cluster_algorithm = "leiden",
+  cluster_algorithm = "louvain",
   species = "human",
   verbose = FALSE
 )
@@ -82,6 +82,10 @@ data.frame(
 )
 ```
 
+The check-safe core uses Seurat's Louvain implementation. Select
+`cluster_algorithm = "leiden"` only after installing `leidenbase`; Shennong
+does not substitute a different algorithm when that explicit backend is absent.
+
 Variable-feature and PCA diagnostics are produced from the same real RNA
 matrix used for clustering.
 
@@ -91,7 +95,9 @@ sn_plot_elbow(pbmc, reduction = "pca", ndims = 20)
 ```
 
 When the input already contains `sn_run_cluster()` stage metadata, the function
-reuses matching stages by default. This makes resolution tuning cheap:
+reuses a stage only when its parameters, selected-layer content digest, cell and
+feature identities, and relevant metadata values still match. This makes safe
+resolution tuning cheap:
 `sn_run_cluster(pbmc, resolution = 1.0)` reuses normalization, HVGs, PCA, the
 neighbor graph, and UMAP, then recomputes only the cluster labels. Use
 `rerun_from = "integration"` after changing an integration backend, or
@@ -152,7 +158,7 @@ pbmc_blocked <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   species = "human",
-  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo", "MYC"),
+  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo"),
   verbose = FALSE
 )
 
@@ -164,7 +170,9 @@ head(pbmc_blocked@misc$hvg_selection$blocked_features)
 ```
 
 Use this when a technical or lineage-specific gene family is overwhelming the
-structure you want to resolve.
+structure you want to resolve. Custom symbols such as `"MYC"` additionally use
+the optional `HGNChelper` validation backend; the core website build stays on
+the versioned bundled signatures.
 
 ## Rare-aware feature selection
 
@@ -466,8 +474,9 @@ downstream integration metrics can iterate over one returned object.
 
 When `checkpoint_dir` is supplied, every completed grid entry is saved through
 a `.partial` file followed by an atomic rename. A repeated call with the same
-object identity, batch labels, package version, grid, and analysis arguments
-resumes automatically (`resume = TRUE`) and skips completed entries. Only the
+selected-layer content digest, cell/feature identity, relevant metadata,
+package version, grid, and analysis arguments resumes automatically
+(`resume = TRUE`) and skips completed entries. Only the
 latest complete checkpoint is retained; interrupted `.partial` files are
 ignored. Set `checkpoint_compress = TRUE` when disk space matters more than
 checkpoint write speed.

@@ -264,11 +264,14 @@ and key are generated per method and cannot overwrite another result.
 checkpoints. After every completed run Shennong writes the current object,
 comparison manifest, performance records, and completed run IDs to a
 temporary file and atomically publishes it. Only the latest complete
-checkpoint for the call signature is retained.
+checkpoint for the call signature is retained. The signature includes a
+blockwise digest of the selected layer plus cell/feature identity and the
+metadata values used by batching, grouped HVGs, regression, or supervised
+integration.
 \code{resume}: logical; when \code{TRUE} (default), resume a matching
-checkpoint in \code{checkpoint_dir}. The signature covers package version,
-cells, features, batch labels, grid, and analysis arguments; incomplete
-\code{.partial} files are ignored.
+checkpoint in \code{checkpoint_dir}. The same content/metadata-aware
+signature also covers package version, grid, and analysis arguments;
+incomplete \code{.partial} files are ignored.
 \code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
 to \code{FALSE} for faster writes at the cost of more disk space.
 \code{return_cluster}: if \code{TRUE}, return only the cluster assignments.

@@ -35,14 +35,17 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Use AutoZyme acceleration
 
-1. The lazy automatic set is CellChat, clusterProfiler, Coralysis, standalone
-   decontX, fgsea, LISI, NicheNetR, scDblFinder, Seurat, SeuratObject
-   merge/JoinLayers, SoupX, tradeSeq, UCell, and WGCNA. Inspect the full set with
+1. The lazy automatic set is exactly CellChat, the clusterProfiler annotation
+   cache, LISI, NicheNetR, all-default scDblFinder, Seurat NormalizeData,
+   SeuratObject Assay5 merge, SoupX, and UCell. Inspect the automatic set with
+   `sn_check_autozyme()`. Inspect the wider manual catalog with
    `sn_check_autozyme(c("cellchat", "clusterprofiler", "coralysis",
-   "decontx_standalone", "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat",
+   "decontx_standalone", "lisi", "nichenetr", "scdblfinder", "seurat",
    "seurat_merge", "seurat_joinlayers", "soupx", "tradeseq", "ucell",
    "wgcna"))` to report the pinned build, installed
-   upstream dependencies, exact version matches, and active state.
+   upstream dependencies, exact version matches, automatic/explicit policy,
+   and active state. Coralysis, standalone decontX, broad Seurat targets,
+   JoinLayers, tradeSeq, and WGCNA are explicit-only.
 2. Eligible defaults are active only inside the compatible Shennong workflow
    call. A successful automatic scope emits an INFO log naming the enabled
    patches; treat this as activation evidence, not proof that every guarded
@@ -50,21 +53,25 @@ user request to the right Shennong function family quickly.
    restore the pre-call patch state.
 3. Missing packages and approximate patches are skipped safely. Automatic
    Seurat, CellChat, NicheNetR, and enrichment workflow scopes deliberately
-   allow version-label drift. clusterProfiler and fgsea are activated independently; the bundled
-   clusterProfiler 4.20 patch caches exact GSON annotation objects, while the
-   statistical core remains upstream. Seurat relies on runtime structure
+   allow version-label drift. The clusterProfiler 4.20 `sn_enrich()` path uses
+   enrichit rather than fgsea, so it activates only the bundled clusterProfiler
+   GSON-cache patch; an installed fgsea patch is not evidence for this workflow.
+   The statistical core remains upstream. Seurat relies on runtime structure
    guards and captured-upstream fallback; scDblFinder relies
    on exact target-function fingerprints. Manual activation remains strict by
    default. Treat `strict = FALSE` or `allow_approximate = TRUE` in explicit
    management calls as a reproducibility decision, not a generic speed switch.
+   `strict = FALSE` relaxes only an upstream version label; it never accepts an
+   unverified AutoZyme source revision.
 4. Set `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or
    `AUTOZYME_DISABLE=true` to block automatic scopes. These settings do not
    deactivate a manually active patch, and explicit `sn_enable_autozyme()` and
    `sn_with_autozyme({...})` calls ignore them.
 5. BPCells-backed Seurat layers bypass the older broad Seurat patch because it
    can coerce non-`dgCMatrix` input into memory. The narrow
-   `seurat_joinlayers` patch remains eligible for its validated public BPCells
-   counts path; unsupported call shapes retain captured upstream behavior.
+   `seurat_joinlayers` patch remains eligible for explicit use on its validated
+   public BPCells counts path, but it is not automatic; unsupported call shapes
+   retain captured upstream behavior.
    Do not infer whole-package BPCells compatibility from this guard: CellChat,
    tradeSeq, and other backends may still require controlled sparse
    materialization or an aggregated input sized to available RAM.
@@ -75,8 +82,9 @@ user request to the right Shennong function family quickly.
 8. `sn_remove_ambient_contamination()` calls standalone `decontX::decontX()`
    for RNA. With `method = "auto"`, one ADT/protein/CITE assay routes to
    `decontX::decontPro()`; provide `assay =` and `cluster =` for a reproducible
-   CITE-seq call. The `decontx_standalone` hook is scoped only around
-   `decontX::decontX()` and is used only when the installed fork registers it.
+   CITE-seq call. The explicit-only `decontx_standalone` hook is scoped only
+   around `decontX::decontX()` and can be used only when the installed fork
+   registers it.
    For `method = "soupx"`, the `soupx` patch is scoped only around
    `adjustCounts()`, followed by SoupX's original stochastic integer rounding.
 9. `sn_find_doublets()` defaults to scDblFinder's native automatic clustering
@@ -96,6 +104,43 @@ user request to the right Shennong function family quickly.
     performance claims. The formal real-data snapshot reports operation time
     and whole-worker peak RSS separately and intentionally retains the observed
     `merge()` peak-memory regression.
+
+## Recipe: Measure real workflow use and runtime
+
+1. Choose a private local SQLite path and explicitly label the session mode.
+   Use `mode = "development"` while iterating and `mode = "production"` only
+   for a caller-declared real analysis; never infer production from the host.
+2. Call `sn_enable_usage_tracking(path, mode, display = TRUE)`. Loading the
+   package does not enable tracking or create a database.
+3. Run ordinary Shennong APIs. Analysis, plot/get/list/store, IO, validation,
+   installation and backend calls receive invocation numbers,
+   sanitized parameter hashes, elapsed time, status, and optional nested
+   parent/root IDs. Scientific results and RNG state remain unchanged.
+4. Call `sn_disable_usage_tracking()` when the session ends, or use
+   `sn_with_usage_tracking()` for a temporary scope.
+5. Use `sn_summarize_usage(sort_by = "calls")` to find common methods and
+   `sort_by = "total_seconds"` or `"median_seconds"` to find optimization
+   targets. Set `by_parameters = TRUE` when different method/settings must not
+   be pooled.
+6. Use `sn_list_usage_runs()` to inspect exact call ordinals and sanitized
+   `params_json`. Never treat activation-only AutoZyme evidence as proof of a
+   guarded fast-path hit; use the three-arm benchmark for that question.
+7. Use `functions =` to reduce the complete public-API surface for a focused
+   study. Enable at process startup: references saved before enablement are a
+   documented limitation of the current namespace-binding implementation.
+8. For managed remote research, construct a DBI store with a local SQLite
+   outbox, create explicit `remote_research` consent, and call
+   `sn_flush_usage_tracking()`. The exact consent receipt selects eligible
+   sessions and its data categories gate optional remote fields. Do not
+   distribute database credentials to desktop users; use an ingestion service
+   for public studies.
+9. Keep the SQLite file under analysis-log access controls. It intentionally
+   excludes objects, matrices, identifiers, paths, credentials, prompts, and
+   responses and is never uploaded as a file, but it still describes workflow
+   activity. Only explicitly consented, sanitized rows may be flushed remotely.
+10. Treat the generated public-API and method parameter matrices as static
+    completeness plans. A classified selector or required case is not an
+    executed/pass result; consult an executable backend contract for parity.
 
 ## Recipe: Start from raw counts or 10x outputs
 
@@ -262,8 +307,17 @@ user request to the right Shennong function family quickly.
 ## Recipe: Run pathway analysis
 
 1. If enriching stored DE on a Seurat object, use `sn_enrich(x = object, source_de_name = ...)`.
-2. If enriching a direct table, supply `gene_clusters = gene ~ cluster` for grouped ORA or `gene ~ log2fc` for ranked GSEA.
-3. Store reusable results with `sn_store_enrichment()` when needed.
+2. For grouped ORA, use `gene_clusters = gene ~ cluster`, set
+   `analysis = "ora"`, and pass the genes that were actually tested as
+   `universe`; otherwise clusterProfiler uses every annotated database gene.
+3. For ranked GSEA, use `gene_clusters = gene ~ log2fc` with
+   `analysis = "gsea"`. Call `set.seed()` immediately beforehand when the
+   validated upstream engine is stochastic. Duplicate gene IDs fail unless an
+   explicit `duplicate_gene_method` is selected.
+4. Use `pvalue_cutoff`, `p_adjust_method`, `qvalue_cutoff`, and
+   `min_gs_size`/`max_gs_size` deliberately; Shennong delegates their reporting
+   semantics to the versioned clusterProfiler/enrichit backend.
+5. Store reusable results with `sn_store_enrichment()` when needed.
 
 ## Recipe: Analyze standalone bulk transcriptomics
 

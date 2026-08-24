@@ -5,21 +5,82 @@
 .sn_autozyme_default_patches <- c(
   "cellchat",
   "clusterprofiler",
-  "coralysis",
-  "decontx_standalone",
-  "fgsea",
   "lisi",
   "nichenetr",
   "scdblfinder",
   "seurat",
-  "seurat_joinlayers",
   "seurat_merge",
   "soupx",
-  "tradeseq",
-  "ucell",
-  "wgcna"
+  "ucell"
 )
 .sn_autozyme_clusterprofiler_cache <- new.env(parent = emptyenv())
+
+.sn_autozyme_workflow_contract <- list(
+  cellchat = list(
+    workflow = "sn_run_cell_communication(method='cellchat')",
+    status = "guarded_default_intersection"
+  ),
+  clusterprofiler = list(
+    workflow = "sn_enrich(database=GO/GOBP/GOMF/GOCC)",
+    status = "annotation_cache_only"
+  ),
+  coralysis = list(
+    workflow = "sn_run_cluster(integration_method='coralysis')",
+    status = "guard_mismatch_explicit_only"
+  ),
+  decontx_standalone = list(
+    workflow = "sn_remove_ambient_contamination(method='decontx')",
+    status = "provider_unavailable"
+  ),
+  fgsea = list(
+    workflow = "none (clusterProfiler 4.20 uses enrichit)",
+    status = "no_current_call_intersection"
+  ),
+  lisi = list(
+    workflow = "sn_calculate_lisi()",
+    status = "validated_default_intersection"
+  ),
+  nichenetr = list(
+    workflow = "sn_run_cell_communication(method='nichenet')",
+    status = "guarded_default_intersection"
+  ),
+  scdblfinder = list(
+    workflow = "sn_find_doublets() all-default sparse path",
+    status = "validated_default_intersection"
+  ),
+  seurat = list(
+    workflow = "NormalizeData only",
+    status = "normalize_only_other_targets_suppressed"
+  ),
+  seurat_joinlayers = list(
+    workflow = "Seurat layer integration",
+    status = "default_call_guard_mismatch_explicit_only"
+  ),
+  seurat_merge = list(
+    workflow = "label-transfer and simulation Seurat merges",
+    status = "validated_assay5_intersection"
+  ),
+  slingshot = list(
+    workflow = "sn_run_trajectory(method='slingshot')",
+    status = "approximate_explicit_only"
+  ),
+  soupx = list(
+    workflow = "sn_remove_ambient_contamination(method='soupx')",
+    status = "validated_default_intersection"
+  ),
+  tradeseq = list(
+    workflow = "sn_run_trajectory(test_dynamic=TRUE)",
+    status = "mgcv_dependency_guard_pending"
+  ),
+  ucell = list(
+    workflow = "sn_score_programs(method='ucell')",
+    status = "version_drift_evidence_not_admitted"
+  ),
+  wgcna = list(
+    workflow = "sn_run_wgcna()",
+    status = "shennong_defaults_unvalidated_explicit_only"
+  )
+)
 
 # This manifest is intentionally conservative. Versions are the exact upstream
 # versions against which the pinned AutoZyme revision declares its patches.
@@ -434,6 +495,9 @@
       intersect(as.character(patches), context$patches %||% character())
     )
   }
+  if (exists(".sn_usage_record_autozyme", mode = "function")) {
+    .sn_usage_record_autozyme(patches)
+  }
   invisible(NULL)
 }
 
@@ -446,6 +510,49 @@
     )
   }
   invisible(NULL)
+}
+
+.sn_autozyme_explicit_patches <- function() {
+  patches <- getOption("shennong.autozyme.explicit_patches", character())
+  unique(tolower(trimws(as.character(patches))))
+}
+
+.sn_with_autozyme_explicit_context <- function(expr, patches) {
+  option_name <- "shennong.autozyme.explicit_patches"
+  current_options <- options()
+  previous_present <- option_name %in% names(current_options)
+  previous <- current_options[[option_name]]
+  patches <- unique(tolower(trimws(as.character(patches))))
+  options(stats::setNames(list(union(
+    .sn_autozyme_explicit_patches(),
+    patches
+  )), option_name))
+  on.exit({
+    value <- if (previous_present) previous else NULL
+    options(stats::setNames(list(value), option_name))
+  }, add = TRUE)
+  force(expr)
+}
+
+.sn_with_explicit_autozyme_or_disabled <- function(expr, patches) {
+  patches <- unique(tolower(trimws(as.character(patches))))
+  patches <- patches[!is.na(patches) & nzchar(patches)]
+  if (length(patches) == 0L) {
+    return(force(expr))
+  }
+
+  explicit <- .sn_autozyme_explicit_patches()
+  if (all(patches %in% explicit)) {
+    return(.sn_with_autozyme_provenance_context(
+      force(expr),
+      patches = patches
+    ))
+  }
+
+  .sn_with_autozyme_provenance_context({
+    .sn_record_autozyme_suppression(patches)
+    .sn_with_autozyme_disabled(expr)
+  }, patches = patches)
 }
 
 .sn_with_default_autozyme <- function(expr, patches, strict = TRUE, operation = NULL) {
@@ -793,13 +900,7 @@
 
 .sn_seurat_autozyme_patches <- function(operations) {
   mapping <- list(
-    seurat = c(
-      "normalizedata", "findvariablefeatures", "vst", "scaledata",
-      "findallmarkers", "findmarkers", "runpca", "runcca",
-      "findintegrationanchors", "findweights", "ccaintegration",
-      "integratelayers", "sctransform"
-    ),
-    seurat_joinlayers = "joinlayers",
+    seurat = "normalizedata",
     seurat_merge = "merge"
   )
   names(mapping)[vapply(mapping, function(targets) any(operations %in% targets), logical(1))]
@@ -814,12 +915,20 @@
     "findintegrationanchors", "findweights", "ccaintegration",
     "integratelayers", "sctransform", "joinlayers", "merge"
   )]
+  active <- tryCatch(
+    .sn_autozyme_effective_active_patches(),
+    error = function(error) character()
+  )
+  unapproved_active <- intersect(
+    setdiff(active, patches),
+    c("seurat", "seurat_joinlayers")
+  )
+  if (length(unapproved_active) > 0L) {
+    .sn_record_autozyme_suppression(unapproved_active)
+    return(.sn_with_autozyme_disabled(expr))
+  }
   if (.sn_seurat_uses_bpcells(object = object, assay = assay)) {
     .sn_record_autozyme_suppression("seurat")
-    active <- tryCatch(
-      .sn_autozyme_effective_active_patches(),
-      error = function(error) character()
-    )
     if ("seurat" %in% active) {
       return(.sn_with_autozyme_disabled(expr))
     }
@@ -834,7 +943,7 @@
   .sn_with_default_autozyme(
     expr,
     patches = patches,
-    strict = FALSE,
+    strict = TRUE,
     operation = reported_operations
   )
 }
@@ -856,13 +965,24 @@
 #'
 #' @details
 #' Shennong lazily activates compatible, non-approximate patches for the scope
-#' of an integrated workflow call. Automatic activation covers CellChat,
-#' clusterProfiler, Coralysis, the standalone decontX hook, fgsea, LISI,
-#' NicheNet, scDblFinder, Seurat, SeuratObject
-#' `merge.Assay5`/`JoinLayers.Assay5`, SoupX, tradeSeq, UCell, and WGCNA. It
-#' normally requires the pinned fork
-#' AutoZyme build and an exactly validated upstream version. The returned
-#' `patch_provider` and `bundled_by_shennong` columns make this source explicit.
+#' of an owned workflow call. The strict automatic policy contains CellChat,
+#' clusterProfiler, LISI, NicheNet, default sparse scDblFinder, Seurat
+#' NormalizeData, owned SeuratObject `merge.Assay5` calls, SoupX, and UCell.
+#' Each remains operation- and input-guarded: clusterProfiler covers GO
+#' annotation retrieval rather than the ORA/GSEA statistical kernel, and the
+#' broad Seurat patch is automatic only for NormalizeData. Coralysis,
+#' standalone decontX, fgsea, JoinLayers, broad Seurat targets, tradeSeq, and
+#' WGCNA remain explicit-only until their Shennong call shapes are admitted.
+#' Ordinary calls suppress an ambient explicit-only patch; use
+#' [sn_with_autozyme()] for a deliberate scoped opt-in.
+#'
+#' Every activation requires the pinned fork (or an exact
+#' Shennong-vendored patch source) and automatic workflows require an exactly
+#' validated upstream version. `strict = FALSE` is available to explicit
+#' management calls to permit a version-label drift, but it never admits an
+#' unverified AutoZyme build. The returned `automatic_policy`,
+#' `workflow_intersection`, `fast_path_status`, `patch_provider`, and
+#' `bundled_by_shennong` columns keep these claims separate.
 #' Set
 #' `options(shennong.autozyme = FALSE)`
 #' or the environment variable `AUTOZYME_DISABLED=true` (the legacy alias
@@ -872,12 +992,13 @@
 #' before the analytical expression starts. This confirms that the patches are
 #' enabled for the call; individual AutoZyme fast paths may still fall back to
 #' upstream code when an input is outside their validated scope. These
-#' controls do not disable patches that are already active and do not affect
-#' explicit calls to [sn_enable_autozyme()] or [sn_with_autozyme()].
-#' The older broad Seurat acceleration is bypassed for BPCells-backed objects
-#' so an on-disk layer is never coerced to an in-memory sparse matrix. The
-#' narrow `seurat_joinlayers` patch remains eligible because its validated
-#' fast path supports public BPCells `IterableMatrix` layers.
+#' automatic opt-outs do not deactivate a manually active patch globally and
+#' do not affect explicit calls to [sn_enable_autozyme()] or
+#' [sn_with_autozyme()]. Unsafe workflow boundaries can still suspend such a
+#' patch for their own call. Broad Seurat acceleration is bypassed for
+#' BPCells-backed objects so an on-disk layer is never coerced to an in-memory
+#' sparse matrix; JoinLayers remains explicit-only even though its narrow
+#' counts-to-counts patch has separate benchmark evidence.
 #' @export
 #'
 #' @examples
@@ -906,9 +1027,12 @@ sn_check_autozyme <- function(
 
   rows <- lapply(patches, function(patch) {
     spec <- .sn_autozyme_patch_manifest[[patch]]
+    workflow <- .sn_autozyme_workflow_contract[[patch]] %||% list(
+      workflow = "none owned by a Shennong workflow",
+      status = "manual_catalog_only"
+    )
     patch_source <- .sn_autozyme_patch_source_status(patch, spec)
     accepted_source <- isTRUE(source_match) || isTRUE(patch_source$source_match)
-    build_match <- build_version_match && accepted_source
     installed_version <- .sn_autozyme_installed_version(spec$upstream)
     upstream_installed <- !is.na(installed_version)
     version_match <- upstream_installed && installed_version %in% spec$versions
@@ -916,19 +1040,20 @@ sn_check_autozyme <- function(
     patch_available <- isTRUE(patch_source$registered) ||
       isTRUE(patch_source$vendored_source_match)
     eligible <- autozyme_installed && patch_available && upstream_installed &&
-      approximation_allowed && (!strict || (build_match && version_match))
+      build_version_match && accepted_source && approximation_allowed &&
+      (!strict || version_match)
 
     reason <- if (!autozyme_installed) {
       "autozyme is not installed"
     } else if (!patch_available) {
       "patch is unavailable from both AutoZyme and Shennong"
-    } else if (strict && !build_version_match) {
+    } else if (!build_version_match) {
       sprintf(
         "installed AutoZyme version %s does not match pinned version %s",
         description$version,
         .sn_autozyme_expected_version
       )
-    } else if (strict && !accepted_source) {
+    } else if (!accepted_source) {
       paste0(
         "AutoZyme source does not match the pinned revision and no trusted ",
         "Shennong-vendored patch is available"
@@ -956,6 +1081,14 @@ sn_check_autozyme <- function(
       equivalence = spec$equivalence,
       approximate = isTRUE(spec$approximate),
       default = patch %in% .sn_autozyme_default_patches,
+      automatic_policy = if (patch %in% .sn_autozyme_default_patches) {
+        "automatic"
+      } else {
+        "explicit_only"
+      },
+      workflow_intersection = workflow$workflow,
+      fast_path_status = workflow$status,
+      fast_path_hit = NA,
       autozyme_installed = autozyme_installed,
       autozyme_version = description$version,
       autozyme_version_match = build_version_match,
@@ -1292,7 +1425,10 @@ sn_with_autozyme <- function(
     )
   }
 
-  force(expr)
+  .sn_with_autozyme_explicit_context(
+    force(expr),
+    patches = patches
+  )
 }
 
 .sn_autozyme_provenance <- function() {

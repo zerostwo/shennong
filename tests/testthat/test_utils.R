@@ -330,6 +330,30 @@ test_that("temporary analysis counts are restored after using a non-default laye
   expect_true("counts.alt" %in% SeuratObject::Layers(restored[["RNA"]]))
 })
 
+test_that("standard counts avoid unnecessary temporary layer snapshots", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_utils_test_object()
+  before <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+  prepared <- Shennong:::.sn_prepare_seurat_analysis_input(
+    object = object,
+    assay = "RNA",
+    layer = "counts"
+  )
+  restored <- Shennong:::.sn_restore_seurat_analysis_input(
+    object = prepared$object,
+    context = prepared$context
+  )
+
+  expect_false(prepared$context$needs_temp_counts)
+  expect_null(prepared$context$original_counts)
+  expect_length(prepared$context$original_analysis_layers, 0L)
+  expect_identical(
+    SeuratObject::LayerData(restored, assay = "RNA", layer = "counts"),
+    before
+  )
+})
+
 test_that("temporary combined counts for split layers are removed after restoration", {
   skip_if_not_installed("Seurat")
 

@@ -219,6 +219,10 @@
       next
     }
 
+    contrast_keep <- pb_meta$pb_group %in% c(ident_1, ident_2)
+    aggregated <- aggregated[, contrast_keep, drop = FALSE]
+    pb_meta <- pb_meta[contrast_keep, , drop = FALSE]
+
     if (identical(method, "DESeq2")) {
       check_installed("DESeq2")
       col_data <- data.frame(

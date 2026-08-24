@@ -72,7 +72,7 @@ sn_calculate_lisi <- function(
     ) |>
       rownames_to_column("cell_id"),
     patches = "lisi",
-    strict = FALSE
+    strict = TRUE
   )
 
   lisi_score
@@ -2050,19 +2050,32 @@ sn_calculate_composition <- function(x,
 
   group_levels <- if (is.factor(metadata[[group_by[[1]]]])) levels(metadata[[group_by[[1]]]]) else NULL
 
-  composition_full <- metadata |>
-    dplyr::filter(
-      dplyr::if_all(dplyr::all_of(group_by), ~ !is.na(.x)),
-      !is.na(.data[[variable]])
-    ) |>
-    dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "count") |>
-    dplyr::filter(.data$count >= min_cells) |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-    dplyr::mutate(
-      group_total = sum(.data$count),
-      proportion = .data$count / .data$group_total * 100
-    ) |>
-    dplyr::ungroup()
+  keep <- stats::complete.cases(metadata[, c(group_by, variable), drop = FALSE])
+  retained_metadata <- metadata[keep, , drop = FALSE]
+  composition_full <- .sn_base_group_count(
+    retained_metadata,
+    c(group_by, variable),
+    name = "count"
+  )
+  composition_full <- composition_full[
+    composition_full$count >= min_cells,
+    ,
+    drop = FALSE
+  ]
+  if (nrow(composition_full) > 0L) {
+    group_id <- .sn_base_group_id(composition_full, group_by)
+    composition_full$group_total <- stats::ave(
+      composition_full$count,
+      group_id,
+      FUN = sum
+    )
+    composition_full$proportion <-
+      composition_full$count / composition_full$group_total * 100
+  } else {
+    composition_full$group_total <- numeric()
+    composition_full$proportion <- numeric()
+  }
+  composition_full <- tibble::as_tibble(composition_full)
 
   if (nrow(composition_full) == 0) {
     stop("No groups remaining after filtering by `min_cells`. Consider lowering the threshold.")
@@ -2091,19 +2104,17 @@ sn_calculate_composition <- function(x,
   )
 
   if (!is.null(additional_cols)) {
-    inconsistent_cols <- additional_cols[
-      vapply(additional_cols, function(col) {
-        any(
-          metadata |>
-            dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-            dplyr::summarise(
-              is_inconsistent = length(unique(.data[[col]])) > 1,
-              .groups = "drop"
-            ) |>
-            dplyr::pull(.data$is_inconsistent)
-        )
-      }, logical(1))
-    ]
+    metadata_group <- .sn_base_group_id(
+      metadata,
+      group_by,
+      include_na = TRUE
+    )
+    metadata_indices <- split(seq_len(nrow(metadata)), metadata_group)
+    inconsistent_cols <- additional_cols[vapply(additional_cols, function(col) {
+      any(vapply(metadata_indices, function(index) {
+        length(unique(metadata[[col]][index])) > 1L
+      }, logical(1)))
+    }, logical(1))]
 
     if (length(inconsistent_cols) > 0) {
       warning(
@@ -2114,20 +2125,20 @@ sn_calculate_composition <- function(x,
       )
     }
 
-    additional_data <- metadata |>
-      dplyr::semi_join(
-        composition_full |>
-          dplyr::distinct(dplyr::across(dplyr::all_of(group_by))),
-        by = group_by
-      ) |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-      dplyr::summarise(
-        dplyr::across(dplyr::all_of(additional_cols), dplyr::first),
-        .groups = "drop"
-      )
-
-    composition <- composition |>
-      dplyr::left_join(additional_data, by = group_by)
+    first_indices <- vapply(metadata_indices, `[[`, integer(1), 1L)
+    additional_data <- metadata[first_indices, c(group_by, additional_cols), drop = FALSE]
+    rownames(additional_data) <- NULL
+    composition$.sn_order <- seq_len(nrow(composition))
+    composition <- merge(
+      as.data.frame(composition),
+      additional_data,
+      by = group_by,
+      all.x = TRUE,
+      sort = FALSE
+    )
+    composition <- composition[order(composition$.sn_order), , drop = FALSE]
+    composition$.sn_order <- NULL
+    composition <- tibble::as_tibble(composition)
   }
 
   composition
@@ -2204,8 +2215,8 @@ sn_calculate_roe <- function(x,
     metadata[[variable]] <- as.character(metadata[[variable]])
   }
 
-  group_data <- metadata |>
-    dplyr::distinct(dplyr::across(dplyr::all_of(group_by)))
+  group_data <- unique(metadata[, group_by, drop = FALSE])
+  rownames(group_data) <- NULL
 
   variable_levels <- .sn_observed_discrete_levels(metadata[[variable]])
   full_grid <- merge(
@@ -2219,34 +2230,38 @@ sn_calculate_roe <- function(x,
     full_grid[[variable]] <- factor(full_grid[[variable]], levels = levels(metadata[[variable]]))
   }
 
-  observed <- metadata |>
-    dplyr::count(dplyr::across(dplyr::all_of(c(group_by, variable))), name = "observed")
+  observed <- .sn_base_group_count(
+    metadata,
+    c(group_by, variable),
+    name = "observed"
+  )
 
-  roe_tbl <- full_grid |>
-    dplyr::left_join(observed, by = c(group_by, variable))
+  full_grid$.sn_order <- seq_len(nrow(full_grid))
+  roe_tbl <- merge(
+    full_grid,
+    observed,
+    by = c(group_by, variable),
+    all.x = TRUE,
+    sort = FALSE
+  )
+  roe_tbl <- roe_tbl[order(roe_tbl$.sn_order), , drop = FALSE]
+  roe_tbl$.sn_order <- NULL
   roe_tbl$observed[is.na(roe_tbl$observed)] <- 0
-
-  row_totals <- roe_tbl |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
-    dplyr::summarise(row_total = sum(.data$observed), .groups = "drop")
-  col_totals <- roe_tbl |>
-    dplyr::group_by(.data[[variable]]) |>
-    dplyr::summarise(col_total = sum(.data$observed), .groups = "drop")
   grand_total <- sum(roe_tbl$observed)
-
-  roe_tbl <- roe_tbl |>
-    dplyr::left_join(row_totals, by = group_by) |>
-    dplyr::left_join(col_totals, by = variable) |>
-    dplyr::mutate(
-      grand_total = grand_total,
-      expected = .data$row_total * .data$col_total / .data$grand_total,
-      roe = dplyr::if_else(
-        .data$expected + pseudocount > 0,
-        (.data$observed + pseudocount) / (.data$expected + pseudocount),
-        NA_real_
-      ),
-      log2_roe = log2(.data$roe)
-    )
+  row_id <- .sn_base_group_id(roe_tbl, group_by)
+  column_id <- factor(roe_tbl[[variable]])
+  roe_tbl$row_total <- stats::ave(roe_tbl$observed, row_id, FUN = sum)
+  roe_tbl$col_total <- stats::ave(roe_tbl$observed, column_id, FUN = sum)
+  roe_tbl$grand_total <- grand_total
+  roe_tbl$expected <- roe_tbl$row_total * roe_tbl$col_total / grand_total
+  denominator <- roe_tbl$expected + pseudocount
+  roe_tbl$roe <- ifelse(
+    denominator > 0,
+    (roe_tbl$observed + pseudocount) / denominator,
+    NA_real_
+  )
+  roe_tbl$log2_roe <- log2(roe_tbl$roe)
+  roe_tbl <- tibble::as_tibble(roe_tbl)
 
   if (return_matrix) {
     return(.sn_roe_matrix(
@@ -3952,4 +3967,44 @@ sn_assess_qc <- function(object,
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
   out
+}
+
+.sn_base_group_id <- function(data, columns, include_na = FALSE) {
+  values <- lapply(data[, columns, drop = FALSE], function(value) {
+    if (isTRUE(include_na)) {
+      if (is.factor(value)) {
+        factor(
+          value,
+          levels = c(levels(value), NA),
+          exclude = NULL,
+          ordered = is.ordered(value)
+        )
+      } else {
+        factor(value, exclude = NULL)
+      }
+    } else if (is.factor(value)) {
+      droplevels(value)
+    } else {
+      factor(value)
+    }
+  })
+  do.call(
+    interaction,
+    c(values, list(drop = TRUE, lex.order = TRUE))
+  )
+}
+
+.sn_base_group_count <- function(data, columns, name = "count") {
+  if (nrow(data) == 0L) {
+    result <- data[FALSE, columns, drop = FALSE]
+    result[[name]] <- integer()
+    return(result)
+  }
+  group_id <- .sn_base_group_id(data, columns)
+  codes <- as.integer(group_id)
+  first <- match(seq_len(nlevels(group_id)), codes)
+  result <- data[first, columns, drop = FALSE]
+  result[[name]] <- tabulate(codes, nbins = nlevels(group_id))
+  rownames(result) <- NULL
+  result
 }

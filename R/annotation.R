@@ -233,9 +233,11 @@
   )
 }
 
-.sn_annotation_celltypist <- function(object, assay = NULL, layer = "data", backend_control = list()) {
+.sn_annotation_celltypist <- function(object, assay = NULL, layer = "counts", backend_control = list()) {
   before <- colnames(object[[]])
-  defaults <- list(x = object, assay = assay %||% Seurat::DefaultAssay(object), layer = layer)
+  effective_assay <- backend_control$assay %||% assay %||% Seurat::DefaultAssay(object)
+  effective_layer <- backend_control$layer %||% layer
+  defaults <- list(x = object, assay = effective_assay, layer = effective_layer)
   annotated <- do.call(sn_run_celltypist, utils::modifyList(defaults, backend_control, keep.null = TRUE))
   added <- setdiff(colnames(annotated[[]]), before)
   candidates <- c(grep("majority_voting$", added, value = TRUE), grep("predicted_labels$", added, value = TRUE))
@@ -244,15 +246,22 @@
     stop("CellTypist annotation did not add a recognized label metadata column.", call. = FALSE)
   }
   labels <- as.character(annotated[[label_col, drop = TRUE]])
+  confidence_col <- grep("_confidence$", added, value = TRUE)
+  scores <- if (length(confidence_col)) {
+    suppressWarnings(as.numeric(annotated[[confidence_col[[1L]], drop = TRUE]]))
+  } else {
+    rep(NA_real_, ncol(annotated))
+  }
+  scores[!is.finite(scores)] <- 0
   evidence <- tibble::tibble(
-    entity = colnames(annotated), label = labels, score = 1,
+    entity = colnames(annotated), label = labels, score = scores,
     method = "celltypist", reference_coverage = NA_real_
   )
   list(
     object = annotated,
     evidence = evidence,
     raw_predictions = tibble::as_tibble(annotated[[]][, added, drop = FALSE], rownames = "cell"),
-    input = list(assay = assay, layer = layer)
+    input = list(assay = effective_assay, layer = effective_layer)
   )
 }
 
@@ -462,7 +471,8 @@
       layer = layer, backend_control = backend_control$scanvi %||% list()
     ),
     celltypist = .sn_annotation_celltypist(
-      object, assay = assay, layer = layer,
+      object, assay = assay,
+      layer = backend_control$celltypist$layer %||% "counts",
       backend_control = backend_control$celltypist %||% list()
     ),
     symphony = .sn_annotation_symphony(
@@ -522,7 +532,11 @@
 #' @param species \code{"human"} or \code{"mouse"}; inferred when possible.
 #' @param ontology Map labels to the bundled Cell Ontology snapshot.
 #' @param store_name Stored-result and metadata prefix.
-#' @param assay,layer Query expression source.
+#' @param assay,layer Query expression source for marker scoring and most
+#'   reference backends. CellTypist independently defaults to the raw/count-like
+#'   `counts` layer because its MatrixMarket/CSV loader normalizes internally;
+#'   override that backend only with `backend_control = list(celltypist =
+#'   list(layer = "your_count_layer"))`.
 #' @param marker_database Optional marker data frame with high- and
 #'   low-hierarchy labels plus species gene columns.
 #' @param consensus_reference_method Backend used when consensus receives a

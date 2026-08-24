@@ -195,14 +195,7 @@ test_that("sn_list_dependencies reports declared package metadata", {
     deps$remote[deps$package == "anndataR"][[1]],
     "scverse/anndataR"
   )
-  expect_equal(
-    deps$source[deps$package == "tidytemplate"][[1]],
-    "GitHub"
-  )
-  expect_equal(
-    deps$remote[deps$package == "tidytemplate"][[1]],
-    "tidyverse/tidytemplate"
-  )
+  expect_false("tidytemplate" %in% deps$package)
   expect_equal(
     deps$source[deps$package == "Nebulosa"][[1]],
     "Bioconductor"

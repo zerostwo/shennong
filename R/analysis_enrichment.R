@@ -45,6 +45,7 @@
 .sn_enrich_get_msigdb_terms <- function(species, collection, subcollection = NULL) {
   cache_key <- .sn_enrich_cache_key(
     species,
+    as.character(utils::packageVersion("msigdbr")),
     toupper(collection),
     toupper(subcollection %||% "")
   )
@@ -180,7 +181,14 @@
   if (is.data.frame(input)) {
     if (!is_null(mapping)) {
       value <- input[[mapping$value_col]]
-      return(if (is.numeric(value)) "gsea" else "ora")
+      if (is.numeric(value)) {
+        stop(
+          "`analysis` must be supplied when the formula RHS is numeric; ",
+          "numeric group codes and GSEA ranking statistics are ambiguous.",
+          call. = FALSE
+        )
+      }
+      return("ora")
     }
   }
 
@@ -189,24 +197,75 @@
 
 .sn_enrich_resolve_gene_vector <- function(input, gene_col = "gene") {
   if (is.character(input)) {
-    return(unique(as.character(input)))
-  }
-
-  if (is.data.frame(input)) {
+    genes <- input
+  } else if (is.data.frame(input)) {
     if (!gene_col %in% colnames(input)) {
       stop(glue("Column '{gene_col}' was not found in `x`."), call. = FALSE)
     }
-    return(unique(as.character(input[[gene_col]])))
+    genes <- input[[gene_col]]
+  } else {
+    stop("ORA input must be a character vector or a data frame with a gene column.", call. = FALSE)
   }
 
-  stop("ORA input must be a character vector or a data frame with a gene column.", call. = FALSE)
+  genes <- trimws(as.character(genes))
+  invalid <- is.na(genes) | !nzchar(genes)
+  if (any(invalid)) {
+    stop("ORA gene identifiers cannot be missing or empty.", call. = FALSE)
+  }
+  unique(genes)
+}
+
+.sn_enrich_collapse_gene_list <- function(
+    gene_list,
+    duplicate_gene_method = c("error", "max_abs", "max", "mean")) {
+  duplicate_gene_method <- match.arg(duplicate_gene_method)
+  if (!is.numeric(gene_list) || is.null(names(gene_list))) {
+    stop("GSEA input must be a named numeric vector.", call. = FALSE)
+  }
+
+  gene_ids <- trimws(as.character(names(gene_list)))
+  if (anyNA(gene_ids) || any(!nzchar(gene_ids))) {
+    stop("GSEA gene identifiers cannot be missing or empty.", call. = FALSE)
+  }
+  if (anyNA(gene_list) || any(!is.finite(gene_list))) {
+    stop("GSEA ranking statistics must all be finite and non-missing.", call. = FALSE)
+  }
+  names(gene_list) <- gene_ids
+
+  duplicated_ids <- unique(gene_ids[duplicated(gene_ids) | duplicated(gene_ids, fromLast = TRUE)])
+  if (length(duplicated_ids) > 0L) {
+    if (identical(duplicate_gene_method, "error")) {
+      stop(
+        "GSEA gene identifiers must be unique. Duplicated identifier(s): ",
+        paste(utils::head(duplicated_ids, 5L), collapse = ", "),
+        if (length(duplicated_ids) > 5L) "..." else "",
+        ". Set `duplicate_gene_method` explicitly to collapse duplicates.",
+        call. = FALSE
+      )
+    }
+    grouped <- split(seq_along(gene_list), gene_ids)
+    collapsed <- vapply(grouped, function(index) {
+      values <- gene_list[index]
+      switch(
+        duplicate_gene_method,
+        max_abs = values[[which.max(abs(values))]],
+        max = max(values),
+        mean = mean(values)
+      )
+    }, numeric(1))
+    gene_list <- stats::setNames(as.numeric(collapsed), names(collapsed))
+  }
+
+  sort(gene_list, decreasing = TRUE)
 }
 
 .sn_enrich_resolve_gene_list <- function(input,
-                                         mapping = NULL) {
+                                         mapping = NULL,
+                                         duplicate_gene_method = c("error", "max_abs", "max", "mean")) {
+  duplicate_gene_method <- match.arg(duplicate_gene_method)
   if (is.numeric(input) && !is.null(names(input))) {
     gene_list <- stats::setNames(as.numeric(input), names(input))
-    return(sort(gene_list, decreasing = TRUE))
+    return(.sn_enrich_collapse_gene_list(gene_list, duplicate_gene_method))
   }
 
   if (!is.data.frame(input)) {
@@ -234,29 +293,7 @@
 
   gene_list <- input[[score_col]]
   names(gene_list) <- as.character(input[[gene_col]])
-  gene_list <- tapply(gene_list, names(gene_list), max)
-  gene_list <- stats::setNames(as.numeric(gene_list), names(gene_list))
-  sort(gene_list, decreasing = TRUE)
-}
-
-.sn_enrich_filter_by_pvalue <- function(result, pvalue_cutoff) {
-  slot_name <- if (inherits(result, "compareClusterResult")) {
-    "compareClusterResult"
-  } else if (inherits(result, c("enrichResult", "gseaResult"))) {
-    "result"
-  } else {
-    return(result)
-  }
-
-  result_table <- methods::slot(result, slot_name)
-  p_col <- c("pvalue", "p.value")[c("pvalue", "p.value") %in% colnames(result_table)][1] %||% NA_character_
-  if (is.na(p_col)) {
-    return(result)
-  }
-
-  filtered <- result_table[!is.na(result_table[[p_col]]) & result_table[[p_col]] <= pvalue_cutoff, , drop = FALSE]
-  methods::slot(result, slot_name) <- filtered
-  result
+  .sn_enrich_collapse_gene_list(gene_list, duplicate_gene_method)
 }
 
 .sn_enrich_muffle_empty_warning <- function(expr) {
@@ -265,13 +302,7 @@
     warning = function(w) {
       message <- conditionMessage(w)
       benign_patterns <- c(
-        "No enrichment found",
-        "pathways for which P-values were not calculated properly",
-        "Invalid p-values detected",
-        "NA values detected in gene set IDs",
-        "Duplicate gene set IDs detected",
-        "input gene IDs are fail to map",
-        "qvalue::qvalue() failed, returning NA for qvalue."
+        "No enrichment found"
       )
       if (any(vapply(benign_patterns, grepl, logical(1), x = message, fixed = TRUE))) {
         invokeRestart("muffleWarning")
@@ -309,6 +340,7 @@
 
   cache_key <- .sn_enrich_cache_key(
     org_db,
+    as.character(utils::packageVersion(org_db)),
     paste(genes_sorted, collapse = "|")
   )
   if (exists(cache_key, envir = .sn_enrichment_cache_env$symbol_to_entrez, inherits = FALSE)) {
@@ -339,9 +371,13 @@
 #'   data frame, or a \code{Seurat} object when enriching a stored DE result.
 #' @param gene_clusters Optional two-sided formula describing the gene column
 #'   and the grouping/ranking column. Examples include \code{gene ~ cluster} for
-#'   grouped ORA and \code{gene ~ log2fc} for GSEA.
-#' @param analysis Optional explicit analysis mode. If omitted, Shennong
-#'   infers ORA versus GSEA from the input type or the formula RHS column type.
+#'   grouped ORA and \code{gene ~ log2fc} for one global GSEA ranking. The
+#'   clusterProfiler grouped-GSEA formula \code{gene | score ~ group} is not yet
+#'   supported and fails explicitly rather than being treated as global GSEA.
+#' @param analysis Optional explicit analysis mode. Named numeric vectors infer
+#'   GSEA and character/categorical inputs infer ORA. Supply `analysis`
+#'   explicitly for a numeric formula RHS because numeric group codes and GSEA
+#'   ranking statistics are otherwise ambiguous.
 #' @param species One of \code{"human"} or \code{"mouse"}.
 #' @param database One or more databases. Supported values include GO/KEGG
 #'   databases such as \code{"GOBP"} and MSigDB collections such as
@@ -351,8 +387,24 @@
 #' @param subcollection Optional MSigDB subcollection used when
 #'   \code{database = "MSIGDB"} or when you want to override the parsed
 #'   subcollection for a collection-level request such as \code{"C2"}.
-#' @param pvalue_cutoff Raw p-value cutoff used to filter returned enrichment
-#'   tables after the underlying enrichment call completes.
+#' @param pvalue_cutoff Cutoff passed unchanged to clusterProfiler. ORA applies
+#'   the upstream raw-p, adjusted-p, and q-value reporting rules. GSEA cutoff
+#'   behavior is defined by the validated clusterProfiler/enrichit version and
+#'   is therefore recorded in the conformance contract.
+#' @param p_adjust_method Multiple-testing adjustment method passed as
+#'   `pAdjustMethod`.
+#' @param qvalue_cutoff ORA q-value cutoff passed as `qvalueCutoff`. It is not
+#'   used by GSEA.
+#' @param universe Optional ORA background gene universe in the same symbol
+#'   namespace as `x`. For KEGG it is converted to ENTREZID together with the
+#'   query genes. Supplying a universe for GSEA is an error.
+#' @param min_gs_size,max_gs_size Minimum and maximum tested gene-set sizes.
+#' @param gsea_exponent GSEA running-score exponent. For reproducible stochastic
+#'   GSEA results with clusterProfiler 4.20, call `set.seed()` immediately before
+#'   `sn_enrich()`, as for the direct upstream call.
+#' @param duplicate_gene_method Policy for duplicate identifiers in a GSEA
+#'   ranked list. The default, `"error"`, avoids silent changes. Explicit
+#'   alternatives are `"max_abs"`, `"max"`, and `"mean"`.
 #' @param store_name Name used when storing the enrichment result on a Seurat
 #'   object. When multiple databases are requested, the database label is
 #'   appended automatically unless a vector of names is supplied.
@@ -388,6 +440,13 @@ sn_enrich <- function(
   collection = NULL,
   subcollection = NULL,
   pvalue_cutoff = 0.05,
+  p_adjust_method = "BH",
+  qvalue_cutoff = 0.2,
+  universe = NULL,
+  min_gs_size = 10,
+  max_gs_size = 500,
+  gsea_exponent = 1,
+  duplicate_gene_method = c("error", "max_abs", "max", "mean"),
   store_name = "default",
   source_de_name = NULL,
   return_object = inherits(x, "Seurat"),
@@ -404,13 +463,11 @@ sn_enrich <- function(
 
   species <- species %||% if (!is_null(object)) tryCatch(sn_get_species(object), error = function(...) NULL) else NULL
   species <- species %||% "human"
-
-  if (species == "human") {
-    check_installed(pkg = c("clusterProfiler", "org.Hs.eg.db"))
+  if (!is.character(species) || length(species) != 1L || is.na(species)) {
+    stop("`species` must be one of \"human\" or \"mouse\".", call. = FALSE)
   }
-  if (species == "mouse") {
-    check_installed(pkg = c("clusterProfiler", "org.Mm.eg.db"))
-  }
+  species <- match.arg(tolower(species), c("human", "mouse"))
+  check_installed(pkg = "clusterProfiler")
 
   databases <- .sn_enrich_normalize_database_labels(database)
   msigdb_cfgs <- stats::setNames(
@@ -419,6 +476,9 @@ sn_enrich <- function(
   )
   if (any(vapply(msigdb_cfgs, Negate(is.null), logical(1)))) {
     check_installed(pkg = "msigdbr")
+  }
+  if (any(databases %in% c("GO", "GOBP", "GOMF", "GOCC", "KEGG"))) {
+    check_installed(pkg = if (species == "human") "org.Hs.eg.db" else "org.Mm.eg.db")
   }
 
   org_db <- switch(EXPR = species,
@@ -438,29 +498,67 @@ sn_enrich <- function(
     analysis = analysis
   )
 
+  validate_probability <- function(value, name) {
+    if (!is.numeric(value) || length(value) != 1L || is.na(value) ||
+        !is.finite(value) || value < 0 || value > 1) {
+      stop("`", name, "` must be one finite number between 0 and 1.", call. = FALSE)
+    }
+    as.numeric(value)
+  }
+  pvalue_cutoff <- validate_probability(pvalue_cutoff, "pvalue_cutoff")
+  qvalue_cutoff <- validate_probability(qvalue_cutoff, "qvalue_cutoff")
+  p_adjust_method <- match.arg(p_adjust_method, stats::p.adjust.methods)
+  duplicate_gene_method <- match.arg(duplicate_gene_method)
+  if (!is.numeric(min_gs_size) || length(min_gs_size) != 1L ||
+      is.na(min_gs_size) || !is.finite(min_gs_size) || min_gs_size < 1L ||
+      min_gs_size > .Machine$integer.max || min_gs_size != as.integer(min_gs_size)) {
+    stop("`min_gs_size` must be one positive integer.", call. = FALSE)
+  }
+  if (!is.numeric(max_gs_size) || length(max_gs_size) != 1L ||
+      is.na(max_gs_size) || !is.finite(max_gs_size) ||
+      max_gs_size > .Machine$integer.max || max_gs_size != as.integer(max_gs_size) ||
+      max_gs_size < min_gs_size) {
+    stop("`max_gs_size` must be one integer greater than or equal to `min_gs_size`.", call. = FALSE)
+  }
+  min_gs_size <- as.integer(min_gs_size)
+  max_gs_size <- as.integer(max_gs_size)
+  if (!is.numeric(gsea_exponent) || length(gsea_exponent) != 1L ||
+      is.na(gsea_exponent) || !is.finite(gsea_exponent) || gsea_exponent < 0) {
+    stop("`gsea_exponent` must be one finite non-negative number.", call. = FALSE)
+  }
+  if (!is.null(universe)) {
+    if (identical(analysis, "gsea")) {
+      stop("`universe` is an ORA parameter and cannot be supplied for GSEA.", call. = FALSE)
+    }
+    if (!is.character(universe)) {
+      stop("`universe` must be NULL or a character vector of gene identifiers.", call. = FALSE)
+    }
+    universe <- .sn_enrich_resolve_gene_vector(universe)
+  }
+
   if (identical(analysis, "gsea")) {
     gene_list <- .sn_enrich_resolve_gene_list(
       input = input,
-      mapping = mapping
+      mapping = mapping,
+      duplicate_gene_method = duplicate_gene_method
     )
   } else {
     gene_list <- NULL
   }
 
-  with_enrichment_autozyme <- function(expr) {
-    .sn_with_default_autozyme(
-      .sn_with_default_autozyme(
-        expr,
-        patches = if (identical(analysis, "gsea")) "fgsea" else character(0),
-        strict = FALSE
-      ),
-      patches = "clusterprofiler",
-      strict = FALSE
-    )
-  }
-
   run_one <- function(current_database) {
     current_cfg <- msigdb_cfgs[[current_database]]
+    with_enrichment_autozyme <- function(expr) {
+      if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
+        return(.sn_with_default_autozyme(
+          expr,
+          patches = "clusterprofiler",
+          strict = TRUE,
+          operation = "go_annotation"
+        ))
+      }
+      .sn_with_autozyme_disabled(expr)
+    }
     .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
 
     if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
@@ -479,7 +577,11 @@ sn_enrich <- function(
               ont = ont,
               OrgDb = org_db,
               keyType = "SYMBOL",
-              pvalueCutoff = 1
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method
             )
           )
         )
@@ -491,8 +593,12 @@ sn_enrich <- function(
               ont = ont,
               OrgDb = org_db,
               keyType = "SYMBOL",
-              pvalueCutoff = 1,
-              qvalueCutoff = 1
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = universe,
+              qvalueCutoff = qvalue_cutoff,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size
             )
           )
         )
@@ -506,14 +612,18 @@ sn_enrich <- function(
               data = input,
               OrgDb = org_db,
               keyType = "SYMBOL",
-              pvalueCutoff = 1,
-              qvalueCutoff = 1
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = universe,
+              qvalueCutoff = qvalue_cutoff,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size
             )
           )
         )
       }
 
-      return(.sn_enrich_filter_by_pvalue(result, pvalue_cutoff))
+      return(result)
     }
 
     if (identical(current_database, "KEGG")) {
@@ -524,13 +634,20 @@ sn_enrich <- function(
         )
         kegg_gene_list <- gene_list[gid$SYMBOL]
         names(kegg_gene_list) <- gid$ENTREZID
-        kegg_gene_list <- sort(kegg_gene_list, decreasing = TRUE)
+        kegg_gene_list <- .sn_enrich_collapse_gene_list(
+          kegg_gene_list,
+          duplicate_gene_method = duplicate_gene_method
+        )
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_autozyme(
             clusterProfiler::gseKEGG(
               geneList = kegg_gene_list,
               organism = organism,
-              pvalueCutoff = 1
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method
             )
           )
         )
@@ -539,13 +656,22 @@ sn_enrich <- function(
           genes = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
           org_db = org_db
         )
+        kegg_universe <- if (is.null(universe)) {
+          NULL
+        } else {
+          .sn_enrich_symbol_to_entrez(universe, org_db = org_db)$ENTREZID
+        }
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_autozyme(
             clusterProfiler::enrichKEGG(
               gene = gid$ENTREZID,
               organism = organism,
-              pvalueCutoff = 1,
-              qvalueCutoff = 1
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = unique(kegg_universe),
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              qvalueCutoff = qvalue_cutoff
             )
           )
         )
@@ -555,13 +681,18 @@ sn_enrich <- function(
           genes = gene_ids,
           org_db = org_db
         )
-        kegg_input <- dplyr::full_join(
+        kegg_input <- dplyr::inner_join(
           x = as.data.frame(input),
           y = gid,
           by = stats::setNames("SYMBOL", mapping$gene_col)
         ) |>
           dplyr::select(-dplyr::all_of(mapping$gene_col)) |>
           dplyr::rename(!!mapping$gene_col := dplyr::all_of("ENTREZID"))
+        kegg_universe <- if (is.null(universe)) {
+          NULL
+        } else {
+          .sn_enrich_symbol_to_entrez(universe, org_db = org_db)$ENTREZID
+        }
 
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_autozyme(
@@ -569,21 +700,25 @@ sn_enrich <- function(
               geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
               data = kegg_input,
               fun = "enrichKEGG",
-              pvalueCutoff = 1,
-              qvalueCutoff = 1,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = unique(kegg_universe),
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              qvalueCutoff = qvalue_cutoff,
               organism = organism
             )
           )
         )
       }
 
-      if (!inherits(result, "gseaResult")) {
+      if (!is.null(result) && !inherits(result, "gseaResult")) {
         result <- clusterProfiler::setReadable(result,
           OrgDb = org_db,
           keyType = "ENTREZID"
         )
       }
-      return(.sn_enrich_filter_by_pvalue(result, pvalue_cutoff))
+      return(result)
     }
 
     if (!is_null(current_cfg)) {
@@ -602,9 +737,13 @@ sn_enrich <- function(
           with_enrichment_autozyme(
             clusterProfiler::GSEA(
               geneList = gene_list,
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
               TERM2GENE = term2gene,
-              TERM2NAME = term2name,
-              pvalueCutoff = 1
+              TERM2NAME = term2name
             )
           )
         )
@@ -615,8 +754,12 @@ sn_enrich <- function(
               gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
               TERM2GENE = term2gene,
               TERM2NAME = term2name,
-              pvalueCutoff = 1,
-              qvalueCutoff = 1
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = universe,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              qvalueCutoff = qvalue_cutoff
             )
           )
         )
@@ -629,20 +772,24 @@ sn_enrich <- function(
               fun = clusterProfiler::enricher,
               TERM2GENE = term2gene,
               TERM2NAME = term2name,
-              pvalueCutoff = 1,
-              qvalueCutoff = 1
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              universe = universe,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              qvalueCutoff = qvalue_cutoff
             )
           )
         )
       }
 
-      return(.sn_enrich_filter_by_pvalue(result, pvalue_cutoff))
+      return(result)
     }
 
     stop(glue("Unsupported database '{current_database}'."), call. = FALSE)
   }
 
-  with_enrichment_autozyme({
+  .sn_with_autozyme_provenance_context({
     results <- stats::setNames(lapply(databases, run_one), databases)
 
     if (!is_null(outdir)) {
@@ -672,6 +819,30 @@ sn_enrich <- function(
           source_de_name = source_de_name,
           gene_col = gene_col,
           score_col = if (identical(analysis, "gsea") && !is_null(mapping)) mapping$value_col else NULL,
+          parameters = list(
+            backend_versions = {
+              backend_packages <- c(
+                "clusterProfiler",
+                if (requireNamespace("enrichit", quietly = TRUE)) "enrichit" else character(),
+                if (!is.null(msigdb_cfgs[[current_database]])) "msigdbr" else character(),
+                if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC", "KEGG")) org_db else character()
+              )
+              stats::setNames(
+                vapply(backend_packages, function(package) {
+                  as.character(utils::packageVersion(package))
+                }, character(1)),
+                backend_packages
+              )
+            },
+            pvalue_cutoff = pvalue_cutoff,
+            p_adjust_method = p_adjust_method,
+            qvalue_cutoff = if (identical(analysis, "ora")) qvalue_cutoff else NULL,
+            universe = if (identical(analysis, "ora")) universe else NULL,
+            min_gs_size = min_gs_size,
+            max_gs_size = max_gs_size,
+            gsea_exponent = if (identical(analysis, "gsea")) gsea_exponent else NULL,
+            duplicate_gene_method = if (identical(analysis, "gsea")) duplicate_gene_method else NULL
+          ),
           return_object = TRUE
         )
       }
@@ -686,5 +857,5 @@ sn_enrich <- function(
     }
 
     results
-  })
+  }, patches = "clusterprofiler")
 }

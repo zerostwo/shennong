@@ -94,7 +94,15 @@ warnings <- character()
   local_root <- paste0(normalizePath(file.path(repo_root, "data-local"), winslash = "/", mustWork = FALSE), "/")
   .expect(!startsWith(candidate, repo) || startsWith(candidate, local_root), "Local data root is inside the repository but outside data-local/: ", root)
   tracked <- tryCatch(
-    system2("git", c("-C", repo_root, "ls-files", "--", "data-local"), stdout = TRUE, stderr = TRUE),
+    system2(
+      "git",
+      c(
+        "-c", paste0("safe.directory=", repo_root),
+        "-C", repo_root, "ls-files", "--", "data-local"
+      ),
+      stdout = TRUE,
+      stderr = TRUE
+    ),
     error = function(e) character()
   )
   .expect(length(tracked) == 0L, "Real-data files are tracked by Git: ", paste(tracked, collapse = ", "))

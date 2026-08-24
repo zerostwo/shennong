@@ -58,6 +58,31 @@ see all `--skip-*` and check-tuning options.
 - Prefer lightweight fixtures and synthetic matrices over network downloads.
 - Skip optional-package tests with `skip_if_not_installed()` when appropriate.
 
+### Backend conformance
+
+Adding a new analysis method requires more than a smoke test. Add a
+machine-readable contract under `inst/conformance/contracts/` and compare the
+Shennong entry point with a direct upstream call or an explicitly versioned
+upstream-only reference pipeline. The comparison must use the same input,
+effective parameters, seed, threads, and dependency version, and it must check
+scientific output, input immutability, conditions, and Shennong's documented
+storage side effects.
+
+Existing methods that predate this gate are frozen in
+`tests/conformance/legacy-methods.txt`. That file is a migration backlog and
+must not be extended for a new method. A new `implemented: true` registry entry
+must instead have a contract with `status = "admitted"` and the evidence
+required by `docs/codex/BackendConformance.md`.
+
+Run the current admission and micro-differential checks with:
+
+```sh
+Rscript -e 'testthat::test_local(filter = "backend-conformance", stop_on_failure = TRUE)'
+```
+
+The dedicated CI profile treats a missing pilot dependency as a failure rather
+than an allowed skip.
+
 ## Commit messages
 
 This repository uses Conventional Commits.

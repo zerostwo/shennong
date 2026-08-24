@@ -20,9 +20,15 @@ benchmark_path <- system.file(
   package = "Shennong"
 )
 if (!nzchar(benchmark_path)) {
-  benchmark_path <- file.path(
-    "inst", "benchmarks", "single-cell-autozyme-benchmark.json"
+  candidates <- c(
+    file.path("inst", "benchmarks", "single-cell-autozyme-benchmark.json"),
+    file.path("..", "inst", "benchmarks", "single-cell-autozyme-benchmark.json"),
+    file.path(
+      dirname(knitr::current_input(dir = TRUE)),
+      "..", "inst", "benchmarks", "single-cell-autozyme-benchmark.json"
+    )
   )
+  benchmark_path <- candidates[file.exists(candidates)][[1L]]
 }
 benchmark <- jsonlite::read_json(benchmark_path, simplifyVector = TRUE)
 results <- as.data.frame(benchmark$summary, stringsAsFactors = FALSE)
@@ -154,6 +160,116 @@ snapshots, and every worker reported its patch inactive after the operation.
 These numbers describe one machine, package set, and real-data fixture. Use the
 included script on the intended deployment host before making capacity claims.
 
+## Three-arm 30,000-cell workflow audit
+
+The newer `benchmark-autozyme-workflow-patches.R` runner separates three
+questions that a two-arm patch benchmark cannot distinguish:
+
+1. Does the Shennong wrapper agree with the direct upstream public API?
+2. Does enabling the patch preserve the Shennong result?
+3. Does the complete Shennong call become faster on a realistic input?
+
+The 2026-08-21 maintainer-host audit used 30,000 cells from three independent
+public PBMC captures (10x PBMC 10k v3, TENxPBMCData PBMC 33k, and 10x Fresh
+PBMC 68k donor A), with 10,000 cells sampled from each capture at seed 717.
+The derived fixture contains 20,453 common gene symbols and has SHA-256
+`20b884fb6c8f20c932ae0eb3e56484e40089386208653156b447439032945013`.
+Every arm ran in a fresh process; three repetitions used rotating arm order.
+The benchmark library contained the exact AutoZyme revision
+`8fc2e9c3a7f70302f97589aaa9b0395dcf86f9bc`.
+
+| Workflow target | Direct upstream (s) | Shennong off (s) | Shennong on (s) | Off/on | Off RSS (MiB) | On RSS (MiB) | Result |
+|:--|--:|--:|--:|--:|--:|--:|:--|
+| LISI | 6.186 | 6.251 | 0.686 | 9.11x | 3988.7 | 3988.5 | equal |
+| UCell | 57.857 | 57.678 | 1.734 | 33.26x | 4073.3 | 2575.1 | equal |
+| Seurat NormalizeData | 2.694 | 3.013 | 0.671 | 4.49x | 2267.6 | 2131.2 | within `1e-8` |
+| Assay5 merge | 0.621 | 0.627 | 0.206 | 3.04x | 2577.1 | 2343.3 | exact |
+| JoinLayers | 1.700 | 1.819 | 1.078 | 1.69x | 3566.3 | 2808.2 | exact |
+
+The scDblFinder 30,000-cell audit is run separately because each unaccelerated
+arm takes roughly 100 seconds. Its pinned-source, three-order median improved
+from 100.15 to 57.29 seconds (`1.75x`), while peak worker RSS increased from
+about 4,038 to 4,327 MiB. That patch is therefore a time-for-memory tradeoff at
+this scale.
+
+The NormalizeData row was rerun after Shennong learned to bypass temporary
+matrix snapshots when the input is already a single standard `counts` layer.
+That removed most wrapper-only preparation cost: the unaccelerated wrapper is
+now about 12% above the direct call on this host, rather than about 57% in the
+pre-fix main report.
+
+The repeated GO annotation-cache scope was only `1.04x` in a one-repetition
+1,000-cell query preparation test (28.68 versus 27.50 seconds) and should not be
+presented as a general ORA/GSEA kernel acceleration. The clusterProfiler patch
+targets annotation retrieval only. The current `sn_enrich()` GSEA backend is
+enrichit, so the separate `fgsea` patch has no call intersection and is not
+benchmarked as a Shennong enrichment acceleration.
+
+The current Coralysis patch is also not an end-to-end `sn_run_cluster()` speed
+claim. Although its target is `RunParallelDivisiveICP`, the released fast-path
+guard requires the literal metadata field `batch.label = "benchmark_batch"`,
+`build.train.set = FALSE`, empty `build.train.params`, and a fixed ICP
+configuration. Shennong passes the caller's real batch-column name and generated
+training parameters, so this workflow currently falls back to upstream even
+when the patch is active. The PBMC integration timing already shows Coralysis as
+a substantial clustering stage; widening that patch requires a new parity
+contract rather than changing Shennong's scientific defaults to fit a benchmark
+guard.
+
+These host measurements are evidence for the tested call shapes, not a claim
+that activation proves an internal fast-path hit. The report records target
+intersection and scoped activation separately and leaves `fast_path_hit`
+unknown because the current AutoZyme patch API exposes no per-call hit counter.
+Seurat 5.5.1 and UCell 2.17.0 are also explicit upstream-version-drift cases;
+their results pass this fixture but remain outside strict admission until their
+contracts are promoted for those versions.
+
+### Four gates between activation and acceleration
+
+Read the runtime evidence as four separate events:
+
+1. **Activation:** a replacement was installed in the namespace for a bounded
+   scope.
+2. **Target intersection:** the workflow actually called the replaced upstream
+   symbol.
+3. **Guard accepted:** the operation, input class, arguments, and dependency
+   versions matched the validated fast-path envelope.
+4. **Fast-path hit:** runtime evidence confirmed that the accelerated kernel,
+   rather than its fallback, executed.
+
+Failure at any later gate makes an earlier `active = TRUE` insufficient as an
+acceleration claim. JoinLayers and Coralysis are current concrete examples:
+their patches can be active and their symbols can intersect, while Shennong's
+real default call shapes fail benchmark-specific guards and fall back. There
+are also unsafe false-positive cases, not only conservative fallback cases. An
+older broad Seurat `FindIntegrationAnchors` replacement lacked a `reduction`
+guard, so an RPCA request could enter code written for a CCA-oriented path. The
+tradeSeq patch globally replaced `mgcv` behavior without an exact dependency
+guard.
+
+Shennong's defense is layered: source and upstream versions are checked in
+strict mode, Seurat activation is operation-specific, and incompatible calls
+run inside a temporary disabled scope even if a user activated a broader patch
+earlier. A patch is promoted from explicit-only only after the direct upstream,
+Shennong-off, and Shennong-on arms agree for the actual workflow call shape.
+
+## Automatic workflow boundary
+
+Benchmark coverage and automatic activation are different claims. The current
+automatic patch set is exactly `cellchat`, `clusterprofiler`, `lisi`,
+`nichenetr`, `scdblfinder`, `seurat`, `seurat_merge`, `soupx`, and `ucell`.
+Within that set, clusterProfiler covers annotation caching rather than the
+ORA/GSEA statistical kernel, and the broad Seurat patch is admitted
+automatically only for NormalizeData. Default scDblFinder, owned Assay5 merge,
+SoupX, UCell, LISI, and the guarded communication paths retain their own input
+and version envelopes.
+
+Coralysis, standalone decontX, broad Seurat targets beyond NormalizeData,
+JoinLayers, tradeSeq, and WGCNA are explicit-only. In particular, the
+JoinLayers timing above does not make `seurat_joinlayers` an automatic
+Shennong patch. `sn_check_autozyme()` reports `automatic_policy`, eligibility,
+workflow intersection, and fast-path status separately.
+
 ## Compatibility boundaries
 
 The benchmark does not widen the patches' verified scope:
@@ -176,10 +292,21 @@ Shennong::sn_check_autozyme(c(
   "seurat_joinlayers",
   "scdblfinder"
 ))[, c(
-  "patch", "installed_version", "version_match",
-  "bundled_by_shennong", "eligible", "active"
+  "patch", "automatic_policy", "installed_version", "version_match",
+  "workflow_intersection", "bundled_by_shennong", "eligible", "active",
+  "fast_path_status", "fast_path_hit"
 )]
 ```
+
+`fast_path_hit` remains `NA` when the provider cannot expose a runtime hit
+counter; activation or eligibility alone is never rewritten as a confirmed hit.
+
+The generated public-API parameter inventory plus clustering and enrichment
+method matrices are static admission plans. They ensure that selectors,
+dispatch cells and required cases are not
+silently omitted, but a matrix row is not a successful benchmark or backend
+conformance execution. Only the fresh-process direct/off/on evidence reported
+above supports the corresponding performance and parity claims.
 
 ## Reproduce the benchmark
 
@@ -201,6 +328,27 @@ system2(
 The script validates the fixture manifest before running, launches every
 condition in a new process with GNU `time`, checks exact output fingerprints,
 checks patch rollback, and writes both JSON evidence and a compact CSV summary.
+
+To reproduce the three-arm 30,000-cell audit, first prepare the governed local
+fixture and then run the workflow patch runner:
+
+```{r reproduce-workflow, eval=FALSE}
+system2(
+  file.path(R.home("bin"), "Rscript"),
+  c("scripts/real-data/prepare-autozyme-pbmc30k.R")
+)
+
+system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    "scripts/real-data/benchmark-autozyme-workflow-patches.R",
+    "--input", "data-local/autozyme-benchmark/pbmc-captures-30k.qs2",
+    "--output", "data-local/autozyme-benchmark/pbmc30k.json",
+    "--sample-by", "capture",
+    "--repetitions", "3"
+  )
+)
+```
 
 Benchmark generated at `r benchmark$generated_at_utc` on
 `r benchmark$environment$cpu`, using R `r benchmark$environment$r`, Shennong

@@ -148,6 +148,34 @@ pkgdown::build_site(
 elapsed <- as.numeric(difftime(Sys.time(), start, units = "secs"))
 message(sprintf("pkgdown build completed in %.1fs.", elapsed))
 
+site_dir <- normalizePath(
+  file.path(repo_root, "site", "dev"),
+  winslash = "/",
+  mustWork = TRUE
+)
+repository_only_pages <- file.path(
+  site_dir,
+  c(
+    "AGENTS.html",
+    "AGENTS.md",
+    "shennong_analysis_and_publication_figure_roadmap.html",
+    "shennong_analysis_and_publication_figure_roadmap.md"
+  )
+)
+repository_only_pages <- repository_only_pages[file.exists(repository_only_pages)]
+if (length(repository_only_pages)) {
+  status <- unlink(repository_only_pages, recursive = FALSE, force = FALSE)
+  if (!identical(status, 0L) || any(file.exists(repository_only_pages))) {
+    stop("Could not remove repository-only pages from the rendered site.", call. = FALSE)
+  }
+  message(
+    "Removed ", length(repository_only_pages),
+    " repository-only page(s) from the static site."
+  )
+  pkgdown::build_search(pkg = repo_root)
+  pkgdown:::build_sitemap(pkg = repo_root)
+}
+
 if (config$real) {
   manifest_helper <- file.path(
     repo_root,
@@ -160,11 +188,6 @@ if (config$real) {
   }
   sys.source(manifest_helper, envir = environment())
 
-  site_dir <- normalizePath(
-    file.path(repo_root, "site", "dev"),
-    winslash = "/",
-    mustWork = TRUE
-  )
   removed_logs <- .pkgdown_remove_generated_logs(site_dir)
   if (length(removed_logs)) {
     message(

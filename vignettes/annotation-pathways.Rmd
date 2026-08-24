@@ -106,11 +106,34 @@ surface or plasma-membrane genes, cytokines, and chemokines. When called on a
 Seurat object, the annotated table is stored as another DE result, so it can be
 discovered and retrieved with the same result helpers.
 
+The real-data website build uses the bounded local panel below so documentation
+never downloads the current MSigDB snapshot. In a research project, freeze a
+project-specific resource the same way, or materialize `msigdbr` outside the
+analysis run and record its version.
+
 ```{r annotate-marker-classes}
+feature_class_resource <- data.frame(
+  gene = c(
+    "TCF7", "LEF1", "GATA3", "TBX21", "SPI1",
+    "CD3D", "CD4", "CD8A", "MS4A1", "CD14", "FCGR3A", "IL7R", "CCR7",
+    "IFNG", "TNF", "IL32",
+    "CCL5", "CCL4", "CXCL8"
+  ),
+  feature_class = c(
+    rep("transcription_factor", 5),
+    rep("surface_membrane", 8),
+    rep("cytokine", 3),
+    rep("chemokine", 3)
+  ),
+  feature_class_source = "article-local curated immune marker panel"
+)
+
 pbmc <- sn_annotate_de_features(
   pbmc,
   de_name = "cluster_markers",
-  species = "human"
+  species = "human",
+  resource = "custom",
+  custom_resource = feature_class_resource
 )
 
 sn_list_results(pbmc)
@@ -454,9 +477,17 @@ lifecycle with real PBMC genes, and leaves the package catalog unchanged.
 
 ```{r custom-signature, eval = run_vignette}
 catalog_path <- tempfile(fileext = ".rda")
-file.copy(
-  system.file("data", "shennong_signature_catalog.rda", package = "Shennong"),
-  catalog_path
+catalog_env <- new.env(parent = emptyenv())
+utils::data(
+  "shennong_signature_catalog",
+  package = "Shennong",
+  envir = catalog_env
+)
+save(
+  list = "shennong_signature_catalog",
+  file = catalog_path,
+  envir = catalog_env,
+  compress = "xz"
 )
 
 added_catalog <- sn_add_signature(
@@ -575,14 +606,20 @@ sn_get_result(
 `sn_enrich()` can accept a gene vector, a ranked vector, a data frame, or a
 Seurat object with stored DE results. For cluster markers, the Seurat-object
 path is the most reproducible because the enrichment knows which DE result it
-came from.
+came from. Grouped ORA must name the grouping column explicitly, and the tested
+or detectable feature universe should be supplied instead of silently treating
+every database-annotated gene as observable. The upstream `pvalueCutoff`,
+multiple-testing adjustment, and q-value rules are retained.
 
 ```{r enrich-markers}
 pbmc <- sn_enrich(
   x = pbmc,
   source_de_name = "cluster_markers",
+  gene_clusters = gene ~ cluster,
+  analysis = "ora",
   species = "human",
   database = "GOBP",
+  universe = rownames(pbmc),
   store_name = "cluster_gobp",
   return_object = TRUE
 )
@@ -594,6 +631,16 @@ pathways <- sn_get_enrichment_result(
 )
 
 head(pathways)
+
+stored_pathways <- sn_get_enrichment_result(
+  pbmc,
+  enrichment_name = "cluster_gobp",
+  with_metadata = TRUE
+)
+stored_pathways$parameters[c(
+  "backend_versions", "pvalue_cutoff", "p_adjust_method",
+  "qvalue_cutoff", "universe", "min_gs_size", "max_gs_size"
+)]
 ```
 
 If you already have a real enrichment table from another stage or tool, store
@@ -715,6 +762,33 @@ the input is a Seurat object, predictions are written back to metadata. When the
 input is a file path, Shennong returns the prediction table because there is no
 object to update.
 
+Seurat counts are not converted to a dense data frame or CSV. Shennong writes a
+sparse MatrixMarket bundle (`counts.mtx`, `genes.csv`, and `cells.csv`) from the
+selected raw/count-like assay layer. The unified `sn_run_annotation(method =
+"celltypist")` adapter defaults independently to `counts` even though marker
+scoring uses `data`; a custom corrected-count layer belongs in
+`backend_control$celltypist$layer`. The default `transpose_input = TRUE` keeps the exported
+matrix in gene-by-cell orientation and passes CellTypist's `--transpose-input`
+flag. Set it to `FALSE` only when a cell-by-gene MatrixMarket export is required;
+the flag is then omitted. This keeps the handoff proportional to the number of
+nonzero counts instead of the full genes-by-cells rectangle.
+
+For an existing file path, Shennong does not rewrite the matrix and does not
+require the Seurat package. In that mode, `transpose_input` controls only the
+CellTypist CLI flag, so it must match the orientation already stored on disk.
+MatrixMarket and CSV paths must contain raw/count-like values because
+CellTypist normalizes them internally; for `.h5ad`, CellTypist instead expects
+its documented 10,000-count log-normalized `X` or `raw.X` representation.
+Normalized/scaled Seurat layers fail closed rather than returning a known
+double-normalized result.
+Workbook output (`xlsx = TRUE`) is imported from CellTypist's prediction sheet
+through the optional `rio` dependency, and one-column small-cell predictions
+remain valid even when majority voting was requested.
+When the probability matrix is available, the probability of the selected
+label is stored as a model-specific confidence column and used by unified
+annotation. Missing or non-matching confidence is treated conservatively as
+unresolved rather than as perfect confidence.
+
 The CellTypist chunk additionally requires a local model path in
 `SHENNONG_CELLTYPIST_MODEL` and an existing `celltypist` executable. The
 article never downloads a model during pkgdown rendering.
@@ -723,6 +797,9 @@ article never downloads a model during pkgdown rendering.
 pbmc <- sn_run_celltypist(
   x = pbmc,
   model = celltypist_model,
+  assay = "RNA",
+  layer = "counts",
+  transpose_input = TRUE,
   over_clustering = "seurat_clusters",
   majority_voting = TRUE,
   quiet = TRUE

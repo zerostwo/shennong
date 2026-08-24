@@ -27,6 +27,13 @@ analysis project, not as an ad hoc scratch directory.
   and, when they become project assumptions, in `memory/Decisions.md`.
 - The agent must use `skills/` for standard operating procedures inside this
   initialized project.
+- If Shennong usage tracking is enabled, place its local SQLite database below
+  ignored `runs/`, select development/production/test/benchmark mode
+  explicitly, and never commit or upload the raw SQLite activity log. Enable
+  before caching Shennong function references; the current namespace-binding
+  tracker does not intercept references saved earlier. Remote DBI delivery must
+  retain the local outbox and requires explicit versioned research consent and
+  a sanitized flush.
 
 ## The Agent Must Always Do
 
@@ -65,6 +72,12 @@ analysis project, not as an ad hoc scratch directory.
 - An MCP-capable agent can use `sn_mcp_server_config()` to discover installed
   methods, exact function help, and workflow guides through Shennong's
   read-only stdio server. Keep analysis execution in explicit project scripts.
+- Use `sn_enable_usage_tracking()` only for an explicitly requested local
+  timing/usage audit; summarize optimization targets with
+  `sn_summarize_usage()` and disable the tracker at the end of the session.
+  For managed remote research, use `sn_create_usage_store()`,
+  `sn_confirm_usage_consent()`, and `sn_flush_usage_tracking()`; do not place
+  database credentials in project files or distribute them to desktop users.
 
 ## Do / Do Not
 

@@ -1,0 +1,103 @@
+{
+  "schema_version": "shennong.dev/backend-conformance/v1",
+  "id": "preprocessing::seurat_normalize",
+  "status": "pilot",
+  "shennong": {
+    "function": "sn_normalize_data",
+    "selector": {"method": "seurat"},
+    "version": "0.3.0.9000",
+    "registry_key": null
+  },
+  "upstream": {
+    "language": "R",
+    "runtime": "r",
+    "package": "Seurat",
+    "api": ["Seurat::NormalizeData"],
+    "repository": "https://github.com/satijalab/seurat",
+    "versions": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "install_source": "CRAN or the repository dependency profile"
+  },
+  "oracle": {
+    "type": "direct_public_api",
+    "call": "Seurat::NormalizeData(object, normalization.method = 'LogNormalize', scale.factor = value, margin = 1, verbose = FALSE)",
+    "harness": "tests/testthat/test-backend-conformance-pilots.R"
+  },
+  "inputs": {
+    "classes": ["Seurat", "Assay5"],
+    "modalities": ["single-cell RNA"],
+    "assays_layers": ["RNA/counts"],
+    "storage_backends": ["dgCMatrix"],
+    "requirements": ["one in-memory sparse counts layer", "unique feature and cell names"]
+  },
+  "parameters": [
+    {"wrapper": "object", "role": "input_adapter", "upstream": "object", "scenarios": ["RNA Assay5"]},
+    {"wrapper": "method", "role": "backend_selector", "upstream": "selects Seurat::NormalizeData", "scenarios": ["seurat"]},
+    {"wrapper": "clusters", "role": "not_applicable", "upstream": "scran-only parameter", "scenarios": ["NULL"]},
+    {"wrapper": "assay", "role": "input_adapter", "upstream": "assay selected before the call", "scenarios": ["RNA"]},
+    {"wrapper": "layer", "role": "input_adapter", "upstream": "counts layer selected before the call", "scenarios": ["counts"]},
+    {"wrapper": "...", "role": "pass_through", "upstream": "normalization.method, scale.factor, margin, verbose", "scenarios": ["default scale", "non-default scale"]}
+  ],
+  "outputs": {
+    "scientific": ["RNA data layer"],
+    "wrapper": [
+      "counts layer unchanged",
+      "assay identity unchanged",
+      "feature and cell order unchanged",
+      "metadata and variable features unchanged"
+    ],
+    "waivers": ["Seurat command logs differ because Shennong records its public wrapper call."]
+  },
+  "equivalence": {
+    "class": "semantic_exact",
+    "projection": ["counts layer", "data layer", "assay", "features", "cells", "metadata", "variable features"],
+    "absolute_tolerance": 0,
+    "relative_tolerance": 0,
+    "ordering": "feature and cell order are exact",
+    "reason": "The validated wrapper branch is a transparent call to Seurat::NormalizeData plus a Shennong command record."
+  },
+  "execution": {
+    "seed": 717,
+    "rng_kind": "R session default, recorded at runtime",
+    "threads": 1,
+    "fresh_process": false,
+    "acceleration": "AutoZyme disabled and any loaded patch suspended",
+    "environment": {"AUTOZYME_DISABLED": "true", "OMP_NUM_THREADS": "1"}
+  },
+  "fixtures": [
+    {
+      "id": "synthetic-seurat-normalize-tiny-v1",
+      "tier": "tiny",
+      "source": "generated in the executable test",
+      "license": "repository test fixture",
+      "sha256": null,
+      "role": "C1 direct-call pilot",
+      "seed": 2402
+    }
+  ],
+  "conditions": {
+    "expected": ["none in the validated cases"],
+    "outside_envelope": "scran, SCTransform, BPCells, split-layer, CLR, and RC paths require separate contracts."
+  },
+  "versions": {
+    "R": "recorded at runtime",
+    "Shennong": "0.3.0.9000",
+    "upstream": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "material_dependencies": ["Matrix"]
+  },
+  "ci": {
+    "required_tiers": ["C0-static", "C1-dispatch-contract"],
+    "profile": "backend-conformance",
+    "platforms": ["ubuntu-latest"]
+  },
+  "evidence": {
+    "test_file": "tests/testthat/test-backend-conformance-pilots.R",
+    "date": "2026-08-20",
+    "verdict": "pilot",
+    "limitations": "Fixture hashing, fresh-process, BPCells, split-layer, real-data, and OOD tiers remain pending."
+  },
+  "owner": {
+    "subsystem": "preprocessing",
+    "maintainer": "Shennong maintainers",
+    "last_reviewed": "2026-08-20"
+  }
+}

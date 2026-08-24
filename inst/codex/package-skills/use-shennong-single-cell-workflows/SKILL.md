@@ -59,16 +59,25 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
-- expect eligible CellChat, NicheNetR, clusterProfiler, Coralysis, standalone
-  decontX, fgsea, LISI, Seurat, SoupX, tradeSeq, UCell, scDblFinder, and WGCNA AutoZyme
+- expect only validated owned intersections—CellChat, NicheNetR, GO cache,
+  LISI, NormalizeData, Assay5 merge, SoupX, UCell, and default scDblFinder—to
+  activate automatically. Keep Coralysis, standalone decontX, broad Seurat,
+  JoinLayers, tradeSeq, and WGCNA explicit-only until their Shennong contracts
+  are admitted. AutoZyme
   patches to activate lazily only inside compatible workflow
   calls and restore the prior state afterward; CellChat and call-safe NicheNetR
   communication scopes allow upstream version-label drift behind runtime guards;
-  clusterProfiler and fgsea use
-  independent scopes so either can remain accelerated if the other is
-  unavailable; never apply the Seurat fast patch
+  the explicit fgsea patch has no current `sn_enrich()` call intersection;
+  never apply the Seurat fast patch
   to BPCells-backed layers because it can materialize them as `dgCMatrix`, and
   do not infer that CellChat, tradeSeq, or every other backend is BPCells-native
+- enable usage tracking only when the user requests it; the full public API,
+  including plot/get/list/store, is tracked by default. Require a local outbox
+  and explicit mode; remote DBI additionally requires versioned research
+  consent and an explicit flush. Never record scientific inputs or identifiers,
+  and use `sn_summarize_usage()` to rank optimization targets. Enable before
+  saving or importing function references because the current namespace
+  replacement cannot intercept older references
 - if work is happening inside an initialized project, also respect the project
   `AGENTS.md`, `memory/`, and `docs/standards/`
 
@@ -143,8 +152,9 @@ This skill is the main entry point for package usage.
    `integration_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
    by Shennong.
-   Re-running `sn_run_cluster()` on its own output reuses matching stages by
-   default; use `rerun_from = "integration"` or `reuse = FALSE` when a stage
+   Re-running `sn_run_cluster()` on its own output reuses stages only when the
+   selected layer content and relevant metadata digests still match; use
+   `rerun_from = "integration"` or `reuse = FALSE` when a stage
 	   must be forced to recompute. Leiden clustering auto-installs `leidenbase` by
 	   default unless `auto_install = FALSE`.
 	   Use `umap_control = list(n.neighbors = ..., min.dist = ..., spread = ...)`
@@ -186,7 +196,12 @@ This skill is the main entry point for package usage.
    label transfer is requested. Use
    `sn_prepare_label_transfer_reference()` before saving a reusable reference
    for later transfer. Optional external
-   annotation with `sn_run_celltypist()`.
+   annotation with `sn_run_celltypist()`. Its Seurat adapter writes sparse
+   MatrixMarket counts plus gene/cell sidecars; do not add a dense CSV
+   conversion around it. Existing path inputs do not require Seurat, but their
+   `transpose_input` setting must match the matrix orientation on disk. Keep
+   MatrixMarket/CSV input raw or count-like; unified annotation defaults the
+   CellTypist backend to `counts` to avoid double normalization.
    Score named or bundled gene programs with `sn_score_programs()`; use UCell
    for sparse per-cell scoring, GSVA/ssGSEA with `group_by` for aggregated
    profiles, and `sn_test_programs(sample_by = ...)` for replicate-aware
@@ -217,9 +232,12 @@ This skill is the main entry point for package usage.
    `sn_get_result(object, "scissor", store_name)` and review all-cell, state,
    sample, correlation, model, and optional reliability tables before calling
    `sn_plot_scissor()`.
-   Prefer `gene_clusters` formulas such as `gene ~ cluster` for grouped ORA
-   or `gene ~ log2fc` for ranked GSEA, and use `database = c(...)` when the
-   same input should be tested against multiple databases in one call.
+   Use `gene_clusters = gene ~ cluster`, `analysis = "ora"`, and the actually
+   tested gene `universe` for grouped ORA. Use `gene ~ log2fc` together with
+   explicit `analysis = "gsea"` for ranked GSEA; set the RNG immediately before
+   stochastic GSEA and resolve duplicate gene IDs explicitly. Use
+   `database = c(...)` when the same input should be tested against multiple
+   databases in one call.
 5. Use `sn_calculate_composition()`, `sn_calculate_roe()`,
    `sn_compare_composition()`, `sn_run_milo()`, `sn_plot_composition()`, and
    `sn_deconvolve_bulk()` for
@@ -262,7 +280,7 @@ This skill is the main entry point for package usage.
    maintenance tasks.
 14. For R acceleration, inspect all strict lazy defaults with
    `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
-   "fgsea", "lisi", "nichenetr", "scdblfinder", "seurat", "soupx",
+   "lisi", "nichenetr", "scdblfinder", "seurat", "soupx",
    "tradeseq", "ucell", "wgcna"))`. Eligible patches are scoped to the
    compatible workflow call and the prior state must be restored after success
    or error. Missing or version-drifted dependencies and approximate patches
@@ -272,7 +290,19 @@ This skill is the main entry point for package usage.
    patch and temporarily suspend a manually active copy for the call. This does
    not make every backend BPCells-native; size any required sparse
    materialization or aggregation explicitly.
-15. When the correct entry point is unclear, read
+15. When runtime observability is requested, use
+   `sn_enable_usage_tracking()` / `sn_disable_usage_tracking()` or the scoped
+   helper, inspect exact calls with `sn_list_usage_runs()`, and rank methods or
+   parameter fingerprints with `sn_summarize_usage()`. Treat recorded
+   AutoZyme patches as activation-only evidence; a real fast-path claim needs
+   the three-arm direct/off/on benchmark and an output comparator.
+   For managed remote research, use `sn_create_usage_store()`,
+   `sn_confirm_usage_consent()`, and `sn_flush_usage_tracking()` with a local
+   outbox. The exact consent receipt selects sessions and gates optional remote
+   fields; never distribute raw database credentials to public desktop users.
+   Public-API and method parameter matrices are static coverage plans, not
+   evidence that every listed case executed or passed.
+16. When the correct entry point is unclear, read
    `../_shared/references/package_api_map.md` and choose the exported `sn_*`
    function that matches the task instead of falling back to raw Seurat calls.
 

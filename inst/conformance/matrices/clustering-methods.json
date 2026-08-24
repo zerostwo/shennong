@@ -1,0 +1,91 @@
+{
+  "schema_version": "shennong.parameter-matrix/v1",
+  "function": "sn_run_cluster",
+  "strategy": "selector exhaustive plus constraint-aware pairwise; never a blind Cartesian product",
+  "normalization_methods": ["seurat", "scran", "sctransform"],
+  "integration_methods": [
+    {
+      "method": "unintegrated",
+      "contract_kind": "reference_pipeline",
+      "status": "pilot",
+      "required_cases": ["no_batch", "batch", "seurat", "scran", "sctransform"]
+    },
+    {
+      "method": "harmony",
+      "contract_kind": "transparent_backend",
+      "status": "pending",
+      "required_cases": ["seurat_batch", "sctransform_batch", "theta_alternate"]
+    },
+    {
+      "method": "coralysis",
+      "contract_kind": "transparent_backend",
+      "status": "pending_autozyme_guard",
+      "required_cases": ["seurat_batch", "default_icp", "nondefault_icp"]
+    },
+    {
+      "method": "seurat_cca",
+      "contract_kind": "reference_pipeline",
+      "status": "pending",
+      "required_cases": ["seurat_batch", "split_layers", "new_reduction"]
+    },
+    {
+      "method": "seurat_rpca",
+      "contract_kind": "reference_pipeline",
+      "status": "pending_autozyme_disabled",
+      "required_cases": ["seurat_batch", "split_layers", "new_reduction"]
+    },
+    {
+      "method": "scvi",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["sparse_export", "manifest", "latent_import"]
+    },
+    {
+      "method": "scanvi",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["labels", "unlabeled_category", "latent_import"]
+    },
+    {
+      "method": "scpoli",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["condition_key", "cell_type_key", "latent_import"]
+    },
+    {
+      "method": "bbknn",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["pca_export", "graph_import", "graph_clustering"]
+    },
+    {
+      "method": "totalvi",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["rna_counts", "adt_counts", "latent_import"]
+    },
+    {
+      "method": "mmochi",
+      "contract_kind": "adapter_schema",
+      "status": "adapter_tested_backend_pending",
+      "required_cases": ["single_sample", "batch", "corrected_protein"]
+    }
+  ],
+  "pairwise_axes": [
+    ["normalization_method", "integration_method", "batch"],
+    ["assay", "layer", "storage_backend"],
+    ["hvg_group_by", "block_genes", "hvg_features"],
+    ["cluster_algorithm", "resolution", "cluster_random_seed"],
+    ["reuse", "input_mutation", "rerun_from"],
+    ["backend", "accelerator", "runtime"]
+  ],
+  "high_risk_cases": [
+    "split_layers",
+    "bpcells",
+    "preexisting_graph",
+    "checkpoint_resume",
+    "failed_run_atomicity",
+    "multi_method_grid",
+    "return_cluster"
+  ]
+}

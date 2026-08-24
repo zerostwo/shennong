@@ -13,7 +13,20 @@
 .sn_progeny_network <- function(species, top = 500) {
   check_installed("progeny", reason = "to use the PROGENy pathway model.")
   model_fun <- get("getModel", envir = asNamespace("progeny"), inherits = FALSE)
-  model_fun(organism = if (identical(species, "human")) "Human" else "Mouse", top = top)
+  model <- model_fun(organism = if (identical(species, "human")) "Human" else "Mouse", top = top)
+  model <- as.matrix(model)
+  genes <- rownames(model)
+  pathways <- colnames(model)
+  long <- do.call(rbind, lapply(pathways, function(pathway) {
+    data.frame(
+      source = pathway,
+      target = genes,
+      weight = as.numeric(model[, pathway]),
+      stringsAsFactors = FALSE
+    )
+  }))
+  long <- long[!is.na(long$weight) & nzchar(long$target), , drop = FALSE]
+  unique(long)
 }
 
 .sn_normalize_regulatory_network <- function(network, method) {

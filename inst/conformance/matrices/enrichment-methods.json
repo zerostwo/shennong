@@ -1,0 +1,67 @@
+{
+  "schema_version": "shennong.parameter-matrix/v1",
+  "function": "sn_enrich",
+  "strategy": "exhaustive dispatch inventory plus constraint-aware parameter axes; status records admission evidence, not execution success",
+  "analysis_modes": ["ora", "gsea"],
+  "database_labels": ["GO", "GOBP", "GOMF", "GOCC", "KEGG", "MSIGDB_COLLECTION"],
+  "input_modes": ["ungrouped", "grouped"],
+  "msigdb_selectors": {
+    "explicit_collection": "database=MSIGDB with collection supplied",
+    "collection_label": "database=H or C1 through C8",
+    "subcollection_label": "database=Cn:SUBCOLLECTION"
+  },
+  "status_definitions": {
+    "pilot": "A direct upstream pilot contract and executable harness exist for this dispatch family.",
+    "pending": "The wrapper dispatch exists but no admitted direct-reference case covers this cell yet.",
+    "unsupported": "The public contract rejects or does not implement this dispatch; it must not be reported as passing."
+  },
+  "cases": [
+    {"analysis": "ora", "database": "GO", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOBP", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOMF", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOCC", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "ora", "database": "KEGG", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "ora", "database": "MSIGDB_COLLECTION", "input_mode": "ungrouped", "status": "pilot", "contract_id": "enrichment::msigdb_ora"},
+    {"analysis": "ora", "database": "GO", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOBP", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOMF", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "ora", "database": "GOCC", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "ora", "database": "KEGG", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "ora", "database": "MSIGDB_COLLECTION", "input_mode": "grouped", "status": "pending"},
+    {"analysis": "gsea", "database": "GO", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "gsea", "database": "GOBP", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "gsea", "database": "GOMF", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "gsea", "database": "GOCC", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "gsea", "database": "KEGG", "input_mode": "ungrouped", "status": "pending"},
+    {"analysis": "gsea", "database": "MSIGDB_COLLECTION", "input_mode": "ungrouped", "status": "pilot", "contract_id": "enrichment::msigdb_gsea"},
+    {"analysis": "gsea", "database": "GO", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."},
+    {"analysis": "gsea", "database": "GOBP", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."},
+    {"analysis": "gsea", "database": "GOMF", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."},
+    {"analysis": "gsea", "database": "GOCC", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."},
+    {"analysis": "gsea", "database": "KEGG", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."},
+    {"analysis": "gsea", "database": "MSIGDB_COLLECTION", "input_mode": "grouped", "status": "unsupported", "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."}
+  ],
+  "parameter_axes": [
+    {"axis": "universe", "applies_to": ["ora"], "cases": ["NULL", "explicit_same-namespace_background", "empty_after_mapping"]},
+    {"axis": "cutoffs", "applies_to": ["ora", "gsea"], "cases": ["default", "boundary_zero", "permissive_one", "alternate_adjustment"]},
+    {"axis": "gene_set_size", "applies_to": ["ora", "gsea"], "cases": ["default", "minimum_boundary", "maximum_boundary", "no_sets_retained"]},
+    {"axis": "duplicate_gene_method", "applies_to": ["gsea"], "cases": ["error", "max_abs", "max", "mean"]},
+    {"axis": "seed", "applies_to": ["gsea"], "cases": ["fixed_717", "repeat_same_seed", "alternate_seed"]},
+    {"axis": "backend_version", "applies_to": ["ora", "gsea"], "cases": ["contract_pinned", "current_supported", "version_drift"]}
+  ],
+  "high_risk_cases": [
+    "GO_ontology_dispatch",
+    "symbol_to_entrez_mapping",
+    "MSigDB_collection_and_subcollection",
+    "grouped_ORA",
+    "grouped_GSEA_rejection",
+    "duplicate_rank_collapse",
+    "empty_result",
+    "seed_replay",
+    "dependency_version_drift"
+  ],
+  "pilot_contracts": [
+    "enrichment::msigdb_ora",
+    "enrichment::msigdb_gsea"
+  ]
+}

@@ -21,16 +21,22 @@ sn_call_trajectory,backend_adapter,Low-level backend call covered through the co
 sn_check_autozyme,acceleration_control,Acceleration capability inspection rather than analysis execution
 sn_check_file,io_project,File validation utility rather than analysis execution
 sn_check_pixi,runtime_admin,Runtime capability inspection rather than analysis execution
+sn_check_usage_tracking,runtime_admin,Local usage-tracking state inspection rather than analysis execution
 sn_check_version,runtime_admin,Package version utility rather than analysis execution
+sn_confirm_usage_consent,runtime_admin,Explicit local or remote research-consent construction rather than analysis execution
 sn_configure_pixi_mirror,runtime_admin,Runtime configuration rather than analysis execution
 sn_convert_bpcells,io_project,Storage conversion rather than analysis execution
+sn_create_usage_store,runtime_admin,Local outbox or managed remote usage-store construction rather than analysis execution
 sn_delete_result,result_management,Stored-result mutation rather than biological analysis
 sn_delete_signature,signature_management,Signature catalog mutation rather than analysis execution
 sn_detect_accelerator,runtime_admin,Hardware capability inspection rather than analysis execution
 sn_disable_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_disable_usage_tracking,runtime_admin,Local usage-tracking lifecycle control rather than analysis execution
 sn_enable_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_enable_usage_tracking,runtime_admin,Local usage-tracking lifecycle control rather than analysis execution
 sn_ensure_pixi,runtime_admin,Runtime installation management rather than analysis execution
 sn_export_result_bundle,result_management,Local result handoff export rather than biological analysis
+sn_flush_usage_tracking,runtime_admin,Explicit consent-gated remote outbox delivery rather than biological analysis execution
 sn_get_cell_communication_result,result_management,Compatibility result retrieval rather than analysis execution
 sn_get_codex_skill_path,runtime_admin,Installed asset discovery rather than analysis execution
 sn_get_de_result,result_management,Compatibility result retrieval rather than analysis execution
@@ -58,6 +64,7 @@ sn_list_palettes,io_project,Palette inventory rather than visualization executio
 sn_list_pixi_environments,runtime_admin,Runtime inventory rather than analysis execution
 sn_list_results,result_management,Stored-result inventory rather than biological analysis
 sn_list_signatures,signature_management,Signature catalog inventory rather than analysis execution
+sn_list_usage_runs,runtime_admin,Local usage-log query rather than biological analysis execution
 sn_make_ellmer_provider,interpretation_reporting,Provider construction rather than quantitative analysis
 sn_mcp_server,runtime_admin,Agent server lifecycle rather than analysis execution
 sn_mcp_server_config,runtime_admin,Agent server configuration rather than analysis execution
@@ -80,12 +87,15 @@ sn_store_enrichment,result_management,Compatibility result storage rather than a
 sn_store_milo,result_management,Compatibility result storage rather than analysis execution
 sn_store_regulatory_activity,result_management,Compatibility result storage rather than analysis execution
 sn_store_result,result_management,Generic result storage rather than biological analysis
+sn_summarize_usage,runtime_admin,Local usage-log summary rather than biological analysis execution
 sn_test_llm_provider,interpretation_reporting,Provider connectivity test rather than quantitative analysis
+sn_time_call,runtime_admin,Ad hoc timing utility rather than a biological workflow
 sn_update_signature,signature_management,Signature catalog mutation rather than analysis execution
 sn_upgrade_results,result_management,Stored-result governance rather than biological analysis
 sn_validate_result,result_management,Stored-result governance rather than biological analysis
 sn_validate_result_bundle,result_management,Result handoff governance rather than biological analysis
 sn_with_autozyme,acceleration_control,Acceleration lifecycle control rather than analysis execution
+sn_with_usage_tracking,runtime_admin,Local usage-tracking lifecycle control rather than analysis execution
 sn_write,io_project,Data output rather than analysis execution
 sn_write_figure_legend,interpretation_reporting,Narrative reporting rather than visualization execution
 sn_write_presentation_summary,interpretation_reporting,Narrative reporting rather than quantitative analysis

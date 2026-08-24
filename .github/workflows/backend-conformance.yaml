@@ -1,0 +1,76 @@
+name: backend-conformance
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'R/**'
+      - 'inst/conformance/**'
+      - 'inst/methods/**'
+      - 'inst/pixi/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.github/workflows/backend-conformance.yaml'
+  pull_request:
+    paths:
+      - 'R/**'
+      - 'inst/conformance/**'
+      - 'inst/methods/**'
+      - 'inst/pixi/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - '.github/workflows/backend-conformance.yaml'
+  workflow_dispatch:
+  schedule:
+    - cron: '37 6 * * 1'
+
+concurrency:
+  group: backend-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-conformance:
+    runs-on: ubuntu-latest
+    env:
+      SHENNONG_CONFORMANCE_STRICT: 'true'
+      AUTOZYME_DISABLED: 'true'
+      AUTOZYME_DISABLE: 'true'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      VECLIB_MAXIMUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: |
+            any::testthat
+            any::Seurat
+            any::SeuratObject
+            any::msigdbr
+            bioc::clusterProfiler
+            bioc::edgeR
+
+      - name: Run static admission and micro-differential contracts
+        run: |
+          testthat::test_local(
+            filter = "backend-conformance",
+            stop_on_failure = TRUE
+          )
+        shell: Rscript {0}

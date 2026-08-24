@@ -1,0 +1,313 @@
+---
+title: "Runtime observability: local outbox and managed DBI"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Runtime observability: local outbox and managed DBI}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+Shennong can record which public APIs are used, their elapsed time,
+their sanitized parameter configuration, and whether the call ran in an
+explicit development, production, test, or benchmark context. This facility is
+opt-in. Loading Shennong never creates a database, starts a tracker, connects
+to a remote destination, or sends usage data over the network.
+
+The intended feedback loop is:
+
+```text
+tracked public export
+        |
+        +--> SQLite start row (call number + sanitized parameter hash)
+        |
+        +--> unchanged scientific function
+        |
+        +--> SQLite completion (elapsed time + status + warnings)
+                         |
+                         +--> sn_list_usage_runs()
+                         +--> sn_summarize_usage()
+```
+
+## Enable tracking explicitly
+
+Choose a local SQLite file and state the execution mode. `"production"` means
+a real analytical environment only when the caller explicitly selects it;
+Shennong does not infer production from `interactive()`, CI variables, or the
+installation path.
+
+```{r enable}
+library(Shennong)
+
+usage_database <- file.path(
+  "analysis-private",
+  "observability",
+  "shennong-usage.sqlite"
+)
+
+sn_enable_usage_tracking(
+  path = usage_database,
+  mode = "development",
+  display = TRUE,
+  nested = TRUE
+)
+
+object <- sn_run_cluster(
+  object,
+  batch = "sample",
+  normalization_method = "seurat",
+  integration_method = "harmony",
+  nfeatures = 3000,
+  npcs = 30,
+  resolution = 0.6,
+  verbose = FALSE
+)
+
+sn_disable_usage_tracking()
+```
+
+With `display = TRUE`, completion prints a compact line such as:
+
+```text
+[Shennong timing] sn_run_cluster #12 (development): 38.417 s [ok]
+```
+
+The function result, visibility, warnings, errors, and R random-number stream
+are preserved. Tracking uses SQLite-generated run identifiers, so it does not
+consume the analytical RNG. Database failures warn once and fail open by
+default; use `strict = TRUE` only when a development or test run must assert
+that every audit write succeeded.
+
+For a temporary scope, use `sn_with_usage_tracking()`:
+
+```{r scoped}
+result <- sn_with_usage_tracking(
+  {
+    sn_enrich(
+      genes,
+      analysis = "ora",
+      database = "GOBP",
+      pvalue_cutoff = 0.05
+    )
+  },
+  path = usage_database,
+  mode = "development",
+  display = FALSE
+)
+```
+
+## Consent-gated remote research
+
+Managed production deployments can use a remote DBI destination without making
+scientific calls depend on the network. Every call first commits to a local
+SQLite outbox; `sn_flush_usage_tracking()` later sends only completed,
+sanitized rows. A remote connection is impossible until explicit
+`remote_research` consent is supplied.
+
+```{r remote}
+consent <- sn_confirm_usage_consent(
+  scope = "remote_research",
+  policy_id = "my-usage-study",
+  policy_version = "1.0",
+  purposes = c("usage_research", "performance_research"),
+  data_categories = c("api_name", "timing", "safe_parameters"),
+  study_id = "public-beta"
+)
+
+store <- sn_create_usage_store(
+  backend = "dbi",
+  path = "runs/shennong-usage-outbox.sqlite",
+  connect = function() {
+    # Prefer a libpq service, .pgpass, IAM token, or secret manager.
+    DBI::dbConnect(
+      RPostgres::Postgres(),
+      service = "shennong_usage_writer"
+    )
+  },
+  table_prefix = "shennong_usage",
+  allow_remote_ddl = FALSE
+)
+
+sn_enable_usage_tracking(
+  store = store,
+  consent = consent,
+  mode = "production",
+  remote_flush = "manual"
+)
+
+# Run ordinary Shennong functions, close the local session, then deliver.
+sn_disable_usage_tracking()
+sn_flush_usage_tracking(store, consent)
+
+# A reader-authorized factory can query the remote table through the same API.
+sn_summarize_usage(
+  store = store,
+  source = "remote",
+  sort_by = "total_seconds"
+)
+```
+
+`allow_remote_ddl = TRUE` is intended only for administrator-controlled table
+initialization and creates uniqueness indexes for session/run IDs. When
+`allow_remote_ddl = FALSE`, administrator migrations must provide equivalent
+unique constraints. Each flush selects only local sessions carrying the exact,
+tamper-checked consent receipt; other consent cohorts remain pending. The
+receipt's `data_categories` are field-level gates, so API-only consent omits
+method/backend, parameters, timing, package versions, errors and acceleration.
+Distributed users should not receive direct PostgreSQL
+credentials; a public large-scale study should place an authenticated HTTPS
+ingestion service in front of the research database. DBI mode is for managed
+environments. Shennong generates no participant or installation identifier;
+`study_id` is only a cohort label.
+
+## Inspect calls and optimization priorities
+
+`sn_list_usage_runs()` exposes both the workflow-wide invocation number and the
+invocation number for the same sanitized parameter fingerprint. This makes it
+possible to distinguish “the twelfth `sn_run_cluster()` call” from “the third
+call using this integration/normalization configuration.”
+
+```{r list}
+cluster_runs <- sn_list_usage_runs(
+  usage_database,
+  workflow = "sn_run_cluster",
+  mode = "development"
+)
+
+cluster_runs[, c(
+  "workflow", "method", "status", "elapsed_seconds",
+  "invocation_number", "parameter_set_invocation", "params_json"
+)]
+```
+
+Use `by_parameters = TRUE` to compare configurations and `sort_by` to choose
+the optimization question:
+
+```{r summarize}
+# Most commonly used workflows
+sn_summarize_usage(
+  usage_database,
+  mode = "production",
+  sort_by = "calls"
+)
+
+# Workflows consuming the most cumulative wall time
+sn_summarize_usage(
+  usage_database,
+  mode = "production",
+  sort_by = "total_seconds"
+)
+
+# Separate sn_run_cluster parameter fingerprints
+sn_summarize_usage(
+  usage_database,
+  workflow = "sn_run_cluster",
+  mode = "production",
+  by_parameters = TRUE,
+  sort_by = "median_seconds"
+)
+```
+
+Summaries count only top-level calls by default. Nested calls are still
+available in `sn_list_usage_runs(top_level = FALSE)`, with `parent_run_id`,
+`root_run_id`, and `depth`, but excluding them from the default summary avoids
+double-counting inclusive elapsed time.
+
+## What is instrumented
+
+The process-local registry covers 257 of the current 267 function exports,
+including analysis, plot, get/list, store, IO, validation, installation,
+project, rio-adapter, and low-level backend calls. The remaining ten exports
+are the usage-control APIs themselves and are excluded to prevent recursive
+writes. Use `functions =` to select a smaller exact set when a study does not
+need the complete API surface.
+
+The registry is installed only by `sn_enable_usage_tracking()` and the original
+function bindings are restored by `sn_disable_usage_tracking()`. Workers do not
+implicitly inherit tracking: PSOCK workers start clean, and forked children
+detect the parent PID and do not write into the parent's session.
+
+This development implementation replaces namespace bindings when tracking is
+enabled. A function reference saved before enablement, or imported into another
+package earlier, bypasses that replacement. `sn_check_usage_tracking()` reports
+`covers_preexisting_function_references = FALSE`; enable tracking at process
+startup before caching function references. A future permanent thin-wrapper
+build is required before claiming interception of pre-existing references.
+
+## Static coverage is not executed evidence
+
+`inst/conformance/public-api-parameters.json` inventories every exported
+`sn_*` function, its formals, selector values, and static runtime
+classification. The clustering matrix separately enumerates normalization and
+integration selectors, pairwise axes, and high-risk cases; the enrichment
+matrix inventories ORA/GSEA across GO, KEGG, MSigDB and grouped/ungrouped
+dispatch. Their tests detect API drift and missing classifications; they do not
+execute every listed case and do not establish wrapper-to-upstream parity. A usage row proves that the
+namespace wrapper intercepted a call, while a backend conformance pass requires
+the independently executed oracle and comparators defined in the corresponding
+machine-readable contract.
+
+## Privacy boundary
+
+The recorder uses a conservative parameter policy. Short literal method names,
+numeric controls, seeds, booleans, dimensions, and thresholds can be retained.
+Allowlisted selector variables can be resolved only to small atomic values;
+arbitrary call expressions are deliberately not evaluated.
+The following are never stored as values:
+
+- Seurat, SingleCellExperiment, matrix, data-frame, or model content;
+- genes, signatures, cells, samples, patients, subjects, or long vectors;
+- paths, URLs, endpoints, usernames, email addresses, or environment values;
+- credentials, tokens, cookies, passwords, prompts, messages, responses, or
+  other free text.
+
+Errors retain the condition class and a short redacted message. `sn_run_llm()`
+has a stricter policy: only provider, model, and a scalar temperature may be
+recorded; prompts, messages, tool payloads, and responses are excluded. The
+database contains no installation identifier and no telemetry upload endpoint.
+
+Each local session records R, Shennong, and installed material backend versions once,
+so timing comparisons can be separated when the execution environment changes.
+Keep the SQLite file under the same access controls as other local analysis
+logs, and use a local disk rather than NFS for WAL-mode concurrency.
+Remote rows omit PID and error text. Full package versions, safe parameter JSON,
+error class, and acceleration evidence are separate consent data categories.
+
+## AutoZyme interpretation
+
+When a Shennong AutoZyme scope activates during a tracked workflow, the run row
+records the patch names with evidence `"scope_activation_only"`. This is
+deliberately not a `fast_path_hit` claim: a patch can be active while its input
+guard falls back to the upstream implementation. Use the three-arm benchmark
+runner described in the AutoZyme article to establish output parity and an
+empirical speed difference for a particular fixture and package build.
+
+Automatic activation is deliberately narrower than the patch catalog. The
+current automatic set is `cellchat`, `clusterprofiler` (annotation cache only),
+`lisi`, `nichenetr`, `scdblfinder`, `seurat` (NormalizeData only),
+`seurat_merge`, `soupx`, and `ucell`. Coralysis, standalone decontX, broad
+Seurat targets, JoinLayers, tradeSeq, and WGCNA remain explicit-only until
+their Shennong call shapes and guards pass the required contracts. A benchmark
+or an eligible manual patch does not add it to the automatic set.
+
+## Time any additional expression
+
+`sn_time_call()` is a small utility for an expression outside the automatic
+workflow registry. It returns the expression value unchanged and can optionally
+join the active local usage session.
+
+```{r time-call}
+markers <- sn_time_call(
+  Seurat::FindAllMarkers(object),
+  label = "exploratory-markers",
+  display = TRUE,
+  record = TRUE
+)
+```

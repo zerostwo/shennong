@@ -1,0 +1,120 @@
+{
+  "schema_version": "shennong.dev/backend-conformance/v1",
+  "id": "bulk_de::edger",
+  "status": "pilot",
+  "shennong": {
+    "function": "sn_find_bulk_de",
+    "selector": {"method": ["edger", "auto -> edger"]},
+    "version": "0.3.0.9000",
+    "registry_key": "bulk_de::edger"
+  },
+  "upstream": {
+    "language": "R",
+    "runtime": "r",
+    "package": "edgeR",
+    "api": [
+      "edgeR::DGEList",
+      "edgeR::filterByExpr",
+      "edgeR::normLibSizes or edgeR::calcNormFactors",
+      "edgeR::estimateDisp",
+      "edgeR::glmQLFit",
+      "edgeR::glmQLFTest",
+      "edgeR::topTags"
+    ],
+    "repository": "https://git.bioconductor.org/packages/edgeR",
+    "versions": ["edgeR 4.10.1"],
+    "install_source": "Bioconductor"
+  },
+  "oracle": {
+    "type": "versioned_upstream_only_pipeline",
+    "call": "DGEList -> filterByExpr -> normLibSizes -> estimateDisp -> glmQLFit -> glmQLFTest -> topTags",
+    "harness": "tests/testthat/test-backend-conformance-pilots.R"
+  },
+  "inputs": {
+    "classes": ["matrix"],
+    "modalities": ["bulk RNA counts"],
+    "assays_layers": ["not applicable to matrix input"],
+    "storage_backends": ["base dense integer-valued matrix"],
+    "requirements": [
+      "unique named features and samples",
+      "sample-aligned metadata",
+      "full-rank fixed-effect design",
+      "observed numerator and denominator"
+    ]
+  },
+  "parameters": [
+    {"wrapper": "object", "role": "input_transform", "upstream": "round(object) passed to edgeR::DGEList(counts = ...)", "scenarios": ["integer matrix"]},
+    {"wrapper": "metadata", "role": "input_adapter", "upstream": "stats::model.matrix design source", "scenarios": ["condition", "batch plus condition"]},
+    {"wrapper": "design", "role": "input_transform", "upstream": "design matrix passed to filterByExpr, estimateDisp, and glmQLFit", "scenarios": ["~ condition", "~ batch + condition"]},
+    {"wrapper": "contrast", "role": "input_transform", "upstream": "numeric contrast passed to glmQLFTest", "scenarios": ["treated minus control"]},
+    {"wrapper": "method", "role": "backend_selector", "upstream": "selects the edgeR pipeline", "scenarios": ["edger", "auto"]},
+    {"wrapper": "assay", "role": "input_adapter", "upstream": "not used for matrix input", "scenarios": ["NULL"]},
+    {"wrapper": "store_name", "role": "wrapper_only", "upstream": "Shennong result name", "scenarios": ["default"]},
+    {"wrapper": "backend_control", "role": "parameter_map", "upstream": "robust passed to estimateDisp and glmQLFit", "scenarios": ["robust TRUE", "robust FALSE"]}
+  ],
+  "outputs": {
+    "scientific": [
+      "gene",
+      "log2_fold_change",
+      "quasi-likelihood F statistic",
+      "raw p value",
+      "FDR",
+      "logCPM"
+    ],
+    "wrapper": ["standardized column names", "method identity", "retained-feature count", "contrast vector"],
+    "waivers": ["The edgeR model object is retained by Shennong but is not byte-compared in this C1 pilot."]
+  },
+  "equivalence": {
+    "class": "standardized_numeric",
+    "projection": ["gene", "log2_fold_change", "statistic", "p_value", "adjusted_p_value", "base_mean"],
+    "absolute_tolerance": 1e-12,
+    "relative_tolerance": 1e-10,
+    "ordering": "align by gene after adjusted-p-value and p-value ordering",
+    "reason": "The oracle uses the same public edgeR QL pipeline; only deterministic Shennong column standardization is permitted."
+  },
+  "execution": {
+    "seed": 2403,
+    "rng_kind": "R session default, recorded at runtime",
+    "threads": 1,
+    "fresh_process": false,
+    "acceleration": "not applicable to this backend",
+    "environment": {"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}
+  },
+  "fixtures": [
+    {
+      "id": "synthetic-edger-tiny-v1",
+      "tier": "tiny",
+      "source": "generated in the executable test",
+      "license": "repository test fixture",
+      "sha256": null,
+      "role": "C1 direct-call pilot",
+      "seed": 2403
+    }
+  ],
+  "conditions": {
+    "expected": ["none in the validated cases"],
+    "outside_envelope": "SummarizedExperiment/list adapters, invalid designs/contrasts, non-integer input, and other DE backends require separate cases or contracts."
+  },
+  "versions": {
+    "R": "recorded at runtime",
+    "Shennong": "0.3.0.9000",
+    "upstream": ["edgeR 4.10.1"],
+    "material_dependencies": ["limma", "statmod"]
+  },
+  "ci": {
+    "required_tiers": ["C0-static", "C1-dispatch-contract"],
+    "profile": "backend-conformance",
+    "platforms": ["ubuntu-latest"]
+  },
+  "evidence": {
+    "test_file": "tests/testthat/test-backend-conformance-pilots.R",
+    "date": "2026-08-20",
+    "verdict": "pilot",
+    "limitations": "The registered method remains in the frozen legacy inventory until fixture hashing, fresh-process, real/OOD, and release evidence are accepted."
+  },
+  "owner": {
+    "subsystem": "bulk differential expression",
+    "maintainer": "Shennong maintainers",
+    "last_reviewed": "2026-08-20"
+  }
+}

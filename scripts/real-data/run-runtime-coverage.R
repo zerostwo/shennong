@@ -136,9 +136,6 @@ repo_root <- normalizePath(
     helpers = FALSE,
     quiet = TRUE
   )
-  if ("package:Shennong" %in% search()) {
-    detach("package:Shennong", unload = FALSE, character.only = TRUE)
-  }
 
   coverage_path <- file.path(repo_root, "scripts", "real-data", "coverage.csv")
   coverage <- utils::read.csv(
@@ -243,16 +240,17 @@ repo_root <- normalizePath(
   assign(call_helper_name, .record_call, envir = globalenv())
   assign(download_helper_name, .record_download, envir = globalenv())
 
-  .install_trace <- function(package, function_name, tracer_expression, kind) {
-    package_namespace <- tryCatch(
+  .install_trace <- function(package, function_name, tracer_expression, kind,
+                             where = NULL) {
+    target_environment <- where %||% tryCatch(
       asNamespace(package),
       error = function(error) NULL
     )
-    if (is.null(package_namespace) ||
-        !exists(function_name, envir = package_namespace, inherits = FALSE)) {
+    if (is.null(target_environment) ||
+        !exists(function_name, envir = target_environment, inherits = FALSE)) {
       return(list(status = "unavailable", error = "function is not installed"))
     }
-    target <- get(function_name, envir = package_namespace, inherits = FALSE)
+    target <- get(function_name, envir = target_environment, inherits = FALSE)
     if (!is.function(target)) {
       return(list(status = "unavailable", error = "namespace binding is not a function"))
     }
@@ -264,7 +262,7 @@ repo_root <- normalizePath(
         trace_function(
           what = function_name,
           tracer = tracer_expression,
-          where = package_namespace,
+          where = target_environment,
           print = FALSE
         )
         NULL
@@ -277,7 +275,7 @@ repo_root <- normalizePath(
     traced[[length(traced) + 1L]] <<- list(
       package = package,
       function_name = function_name,
-      namespace = package_namespace,
+      namespace = target_environment,
       kind = kind
     )
     list(status = "traced", error = "")
@@ -326,8 +324,29 @@ repo_root <- normalizePath(
       list(HELPER = call_helper_name, FUNCTION_NAME = function_name)
     )
     installed <- .install_trace("Shennong", function_name, tracer, "coverage")
-    trace_status[[function_name]] <- installed$status
-    trace_error[[function_name]] <- installed$error
+    attached <- if ("package:Shennong" %in% search()) {
+      .install_trace(
+        "Shennong",
+        function_name,
+        tracer,
+        "coverage_attached",
+        where = as.environment("package:Shennong")
+      )
+    } else {
+      list(status = "unavailable", error = "source package is not attached")
+    }
+    trace_status[[function_name]] <- if (
+      identical(installed$status, "traced") &&
+        identical(attached$status, "traced")
+    ) {
+      "traced"
+    } else {
+      paste(installed$status, attached$status, sep = "+")
+    }
+    trace_error[[function_name]] <- paste(
+      c(installed$error, attached$error)[nzchar(c(installed$error, attached$error))],
+      collapse = "; "
+    )
   }
 
   download_guards <- list(

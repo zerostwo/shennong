@@ -195,7 +195,10 @@
 .pkgdown_git_output <- function(repo_root, arguments, fail = TRUE) {
   output <- suppressWarnings(system2(
     "git",
-    c("-C", shQuote(repo_root), arguments),
+    c(
+      "-c", paste0("safe.directory=", shQuote(repo_root)),
+      "-C", shQuote(repo_root), arguments
+    ),
     stdout = TRUE,
     stderr = TRUE
   ))

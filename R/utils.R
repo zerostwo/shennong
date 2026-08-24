@@ -580,14 +580,39 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   original_counts <- NULL
   assay_layers <- SeuratObject::Layers(object[[assay]])
   has_exact_counts <- "counts" %in% assay_layers
-  analysis_counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
-  needs_temp_counts <- !identical(layer, "counts") || !has_exact_counts || length(.sn_match_seurat_layers(object, assay, layer)) > 1
-
-  if (has_exact_counts) {
-    original_counts <- SeuratObject::LayerData(object = object, assay = assay, layer = "counts")
-  }
+  matched_analysis_layers <- .sn_match_seurat_layers(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
+  needs_temp_counts <- !identical(layer, "counts") ||
+    !has_exact_counts ||
+    length(matched_analysis_layers) > 1L
+  original_analysis_layers <- list()
 
   if (needs_temp_counts) {
+    original_analysis_layers <- stats::setNames(
+      lapply(matched_analysis_layers, function(current_layer) {
+        SeuratObject::LayerData(
+          object = object,
+          assay = assay,
+          layer = current_layer
+        )
+      }),
+      matched_analysis_layers
+    )
+    analysis_counts <- .sn_get_seurat_layer_data(
+      object = object,
+      assay = assay,
+      layer = layer
+    )
+    if (has_exact_counts) {
+      original_counts <- SeuratObject::LayerData(
+        object = object,
+        assay = assay,
+        layer = "counts"
+      )
+    }
     SeuratObject::LayerData(object = object, assay = assay, layer = "counts") <- analysis_counts
   }
 
@@ -599,6 +624,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
       original_assay = original_assay,
       analysis_assay = assay,
       original_counts = original_counts,
+      original_analysis_layers = original_analysis_layers,
       had_exact_counts = has_exact_counts,
       needs_temp_counts = needs_temp_counts
     )
@@ -619,6 +645,14 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
         assay = context$analysis_assay,
         layer = "counts"
       ) <- NULL
+    }
+    original_analysis_layers <- context$original_analysis_layers %||% list()
+    for (current_layer in names(original_analysis_layers)) {
+      SeuratObject::LayerData(
+        object = object,
+        assay = context$analysis_assay,
+        layer = current_layer
+      ) <- original_analysis_layers[[current_layer]]
     }
   }
 

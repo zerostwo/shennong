@@ -303,7 +303,7 @@
     verbose = FALSE,
     parallel = FALSE
   )
-  fit <- .sn_with_default_autozyme(
+  fit <- .sn_with_explicit_autozyme_or_disabled(
     do.call(tradeSeq::fitGAM, utils::modifyList(defaults, backend_control, keep.null = TRUE)),
     patches = "tradeseq"
   )
@@ -480,7 +480,7 @@ sn_run_trajectory <- function(object,
     }
   }
   assay <- assay %||% Seurat::DefaultAssay(object)
-  .sn_with_default_autozyme({
+  .sn_with_explicit_autozyme_or_disabled({
   dynamics <- list(
     association = tibble::tibble(), branch = tibble::tibble(), trends = tibble::tibble(),
     convergence = tibble::tibble(), warnings = character(),

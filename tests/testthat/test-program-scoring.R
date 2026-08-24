@@ -61,6 +61,41 @@ test_that("signature data frames and feature coverage are validated", {
   )
 })
 
+test_that("exact signature features win over normalized duplicate keys", {
+  matched <- Shennong:::.sn_match_program_features(
+    signatures = list(program = c("GENE", "GENE.1", "OTHER.2")),
+    features = c("GENE", "GENE.1", "OTHER")
+  )
+
+  expect_identical(
+    matched$signatures$program,
+    c("GENE", "GENE.1", "OTHER")
+  )
+  expect_equal(matched$coverage$n_matched, 3L)
+  expect_equal(unname(matched$coverage$missing_genes), "")
+})
+
+test_that("UCell fallback is serial while the admitted patch keeps its NULL envelope", {
+  skip_if_not_installed("BiocParallel")
+  local_mocked_bindings(
+    .sn_autozyme_effective_active_patches = function() character(),
+    .package = "Shennong"
+  )
+  expect_s4_class(Shennong:::.sn_ucell_bpparam(list()), "SerialParam")
+
+  explicit <- BiocParallel::SerialParam(progressbar = FALSE)
+  expect_identical(
+    Shennong:::.sn_ucell_bpparam(list(BPPARAM = explicit)),
+    explicit
+  )
+
+  local_mocked_bindings(
+    .sn_autozyme_effective_active_patches = function() "ucell",
+    .package = "Shennong"
+  )
+  expect_null(Shennong:::.sn_ucell_bpparam(list()))
+})
+
 test_that("UCell and AUCell backends return cell-level score contracts", {
   object <- make_program_test_object()
   if (requireNamespace("UCell", quietly = TRUE)) {
