@@ -60,6 +60,7 @@ jobs:
             any::hdf5r
             any::data.table
             any::clusterProfiler
+            any::msigdbr
             github::catplot/catplot
             github::genecell/COSGR
             bioc::org.Hs.eg.db

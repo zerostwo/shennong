@@ -1315,6 +1315,10 @@ Last updated: 2026-08-23
 
 ## 2026-08-23
 
+- Coverage CI must explicitly install optional packages used by unskipped
+  executable contracts. Declaring a package in Suggests is insufficient when
+  the workflow intentionally installs only hard dependencies plus an allowlist;
+  MSigDB enrichment coverage therefore admits `msigdbr` in that allowlist.
 - Automatic installation may recover from simultaneous CRAN and GitHub version
   lookup failures by using the current working directory, but only after
   validating that its DESCRIPTION `Package` field matches the requested

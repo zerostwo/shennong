@@ -9,6 +9,15 @@ test_that("routine package checks avoid duplicate full tests", {
   expect_match(text, "cancel-in-progress: true", fixed = TRUE)
 })
 
+test_that("coverage CI installs dependencies exercised by enrichment contracts", {
+  path <- test_path("..", "..", ".github", "workflows", "test-coverage.yaml")
+  skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
+  workflow <- paste(readLines(path, warn = FALSE), collapse = "\n")
+
+  expect_match(workflow, "any::clusterProfiler", fixed = TRUE)
+  expect_match(workflow, "any::msigdbr", fixed = TRUE)
+})
+
 test_that("pkgdown CI checks builds without deployment permissions", {
   workflow_path <- test_path("..", "..", ".github", "workflows", "pkgdown.yaml")
   helper_path <- test_path("..", "..", "scripts", "build-pkgdown.R")

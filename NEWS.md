@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Fixed the coverage workflow dependency set so the executable MSigDB
+  enrichment conformance tests have `msigdbr` available on GitHub Actions.
 - Fixed `sn_install_shennong()` so an explicit local source is installed
   without remote version probes, while `channel = "auto"` falls back to the
   current Shennong source tree when both CRAN and GitHub version checks are

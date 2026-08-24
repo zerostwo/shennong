@@ -976,3 +976,15 @@ of untracked data and scripts. They were not deleted automatically; see
   the live installation from 0.3.0 to 0.3.0.9000. A subsequent real
   `sn_install_shennong(source = ".")` call returned `channel = "local"` and
   retained the installed 0.3.0.9000 version.
+
+## 2026-08-23 coverage dependency repair
+
+- GitHub Actions run 32691720060 reached the coverage tests after dependency
+  setup, then failed three enrichment conformance cases because `msigdbr` was
+  absent (`FAIL 3 | WARN 1 | SKIP 87 | PASS 3818`).
+- The dedicated backend-conformance and pkgdown jobs already installed
+  `msigdbr`; the coverage workflow now declares the same executable-test
+  dependency and has a repository-level regression assertion for it.
+- Focused enrichment-conformance and CI-workflow tests pass with
+  `FAIL 0 | WARN 0 | SKIP 0 | PASS 93`; the updated workflow also parses as
+  valid YAML.
