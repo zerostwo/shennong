@@ -739,9 +739,7 @@ sn_store_deconvolution <- function(object,
                                    artifacts = NULL,
                                    random_seed = NULL,
                                    return_object = TRUE) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.")
-  }
+  .sn_validate_seurat_object(object)
 
   stored_result <- list(
     schema_version = "1.0.0",
@@ -789,9 +787,7 @@ sn_get_deconvolution_result <- function(object,
                                         samples = NULL,
                                         cell_types = NULL,
                                         with_metadata = FALSE) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.")
-  }
+  .sn_validate_seurat_object(object)
 
   stored <- .sn_get_misc_result(
     object = object,

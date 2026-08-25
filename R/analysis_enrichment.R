@@ -860,3 +860,97 @@ sn_enrich <- function(
     results
   }, patches = "clusterprofiler")
 }
+#' Store an enrichment result on a Seurat object
+#'
+#' This helper stores enrichment output inside
+#' `object@misc$enrichment_results[[store_name]]` so interpretation and writing
+#' helpers can reuse it later.
+#'
+#' @param object A \code{Seurat} object.
+#' @param result An enrichment result object or data frame coercible with
+#'   \code{as.data.frame()}.
+#' @param store_name Name used under \code{object@misc$enrichment_results}.
+#' @param analysis One of \code{"ora"} or \code{"gsea"}.
+#' @param database Database used for enrichment, for example \code{"GOBP"}.
+#' @param species Species label used in the enrichment run.
+#' @param source_de_name Optional stored DE result name that produced the input
+#'   ranked gene list or gene set.
+#' @param gene_col Column containing gene symbols when the enrichment input came
+#'   from a data frame.
+#' @param score_col Column containing ranking scores for GSEA inputs.
+#' @param parameters Named list of effective enrichment parameters retained for
+#'   discovery and reproducibility.
+#' @param return_object If \code{TRUE}, return the updated Seurat object.
+#'
+#' @return A \code{Seurat} object or a stored-result list.
+#'
+#' @examples
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
+#'   colnames(counts) <- paste0("cell", 1:12)
+#'   obj <- sn_initialize_seurat_object(counts, species = "human")
+#'   enrich_tbl <- tibble::tibble(
+#'     ID = c("GO:0001", "GO:0002"),
+#'     Description = c("immune response", "lymphocyte activation"),
+#'     NES = c(2.1, 1.7),
+#'     p.adjust = c(0.01, 0.03)
+#'   )
+#'   obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
+#'   names(obj@misc$enrichment_results)
+#' }
+#' @export
+sn_store_enrichment <- function(object,
+                                result,
+                                store_name = "default",
+                                analysis = c("ora", "gsea"),
+                                database = "GOBP",
+                                species = NULL,
+                                source_de_name = NULL,
+                                gene_col = "gene",
+                                score_col = NULL,
+                                parameters = list(),
+                                return_object = TRUE) {
+  .sn_validate_seurat_object(object)
+
+  analysis <- match.arg(analysis)
+  if (!is.list(parameters) ||
+      (length(parameters) > 0L &&
+        (is.null(names(parameters)) || any(!nzchar(names(parameters)))))) {
+    stop("`parameters` must be a named list.", call. = FALSE)
+  }
+  stored_result <- list(
+    schema_version = "1.0.0",
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
+    table = .sn_as_enrichment_table(result),
+    analysis = analysis,
+    database = database,
+    species = species,
+    source_de_name = source_de_name,
+    gene_col = gene_col,
+    score_col = score_col,
+    parameters = parameters,
+    provenance = .sn_contextual_analysis_provenance()
+  )
+
+  object <- .sn_store_misc_result(
+    object = object,
+    collection = "enrichment_results",
+    store_name = store_name,
+    result = stored_result
+  )
+
+  if (return_object) {
+    return(.sn_log_seurat_command(object = object, name = "sn_store_enrichment"))
+  }
+
+  .sn_get_misc_result(
+    object = object,
+    collection = "enrichment_results",
+    store_name = store_name
+  )
+}

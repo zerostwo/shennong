@@ -545,9 +545,7 @@ sn_write <- function(x,
 }
 
 .sn_layer_backend_specs <- function(object, assays = NULL, layers = "counts") {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.", call. = FALSE)
-  }
+  .sn_validate_seurat_object(object)
 
   assays <- assays %||% names(object@assays)
   if (!is.character(assays) || length(assays) == 0L || anyNA(assays) || any(!nzchar(assays))) {

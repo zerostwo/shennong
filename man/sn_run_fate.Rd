@@ -6,7 +6,7 @@
 \usage{
 sn_run_fate(
   object,
-  method = "cellrank",
+  method = c("cellrank"),
   velocity_name = "velocity",
   reduction = NULL,
   dims = 1:2,

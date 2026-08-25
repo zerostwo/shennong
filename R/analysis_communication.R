@@ -1,10 +1,3 @@
-.sn_validate_seurat_object <- function(object) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.", call. = FALSE)
-  }
-  invisible(TRUE)
-}
-
 .sn_expression_matrix <- function(object,
                                   assay = NULL,
                                   layer = "data",
@@ -801,3 +794,66 @@ sn_get_cell_communication_result <- function(object,
   }
   table
 }
+#' @rdname sn_run_scarches
+#' @export
+sn_run_cellphonedb <- function(object,
+                               assay = NULL,
+                               layer = "counts",
+                               group_by = NULL,
+                               output_dir = NULL,
+                               runtime_dir = NULL,
+                               result_name = "cellphonedb",
+                               return_object = TRUE,
+                               method_control = list(),
+                               ...) {
+  if (is.null(group_by) || !nzchar(group_by)) {
+    stop("`group_by` is required for `sn_run_cellphonedb()`.", call. = FALSE)
+  }
+  .sn_run_python_object_method(
+    object = object,
+    environment = "cellphonedb",
+    script_name = "cellphonedb_run.py",
+    method = "cellphonedb",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = "cellphonedb_",
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(groupby = group_by), method_control),
+    ...
+  )
+}
+#' @rdname sn_run_scarches
+#' @export
+sn_run_cellphonedb <- function(object,
+                               assay = NULL,
+                               layer = "counts",
+                               group_by = NULL,
+                               output_dir = NULL,
+                               runtime_dir = NULL,
+                               result_name = "cellphonedb",
+                               return_object = TRUE,
+                               method_control = list(),
+                               ...) {
+  if (is.null(group_by) || !nzchar(group_by)) {
+    stop("`group_by` is required for `sn_run_cellphonedb()`.", call. = FALSE)
+  }
+  .sn_run_python_object_method(
+    object = object,
+    environment = "cellphonedb",
+    script_name = "cellphonedb_run.py",
+    method = "cellphonedb",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = "cellphonedb_",
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(groupby = group_by), method_control),
+    ...
+  )
+}
+

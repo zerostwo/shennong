@@ -28,6 +28,7 @@ sn_run_milo(
   return_object = FALSE,
   return_intermediate = FALSE,
   verbose = TRUE,
+  seed = NULL,
   object = NULL
 )
 }
@@ -93,6 +94,8 @@ supplied, return the updated Seurat object.}
 DA table, design data, and milo object.}
 
 \item{verbose}{Logical; if \code{TRUE}, emit progress logs.}
+
+\item{seed}{Optional random seed recorded in the stored result provenance.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }

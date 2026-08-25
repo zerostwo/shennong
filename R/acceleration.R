@@ -334,3 +334,57 @@ sn_with_acceleration <- function(expr, name = NULL) {
     suppressed_patches = suppressed
   )
 }
+#' Detect local accelerator support for pixi-managed Python methods
+#'
+#' This helper performs lightweight command-line checks for GPUs. CUDA/NVIDIA is
+#' currently the only accelerator profile Shennong uses to select a pixi GPU
+#' environment automatically; other detected accelerators are reported for the
+#' user's information and fall back to CPU unless explicitly handled later.
+#'
+#' @param quiet Logical; suppress status messages.
+#'
+#' @return A named list with \code{has_gpu}, \code{backend}, \code{devices},
+#'   and detected CUDA version when available.
+#'
+#' @examples
+#' accel <- sn_detect_accelerator(quiet = TRUE)
+#' accel$backend
+#'
+#' @export
+sn_detect_accelerator <- function(quiet = FALSE) {
+  nvidia <- .sn_detect_nvidia_gpu()
+  if (isTRUE(nvidia$available)) {
+    result <- list(
+      has_gpu = TRUE,
+      backend = "cuda",
+      devices = nvidia$devices,
+      cuda_version = nvidia$cuda_version,
+      raw = nvidia$raw
+    )
+  } else if (.sn_command_available("rocminfo") || .sn_command_available("rocm-smi")) {
+    result <- list(
+      has_gpu = TRUE,
+      backend = "rocm",
+      devices = character(0),
+      cuda_version = NA_character_,
+      raw = character(0)
+    )
+  } else {
+    result <- list(
+      has_gpu = FALSE,
+      backend = "cpu",
+      devices = character(0),
+      cuda_version = NA_character_,
+      raw = character(0)
+    )
+  }
+
+  if (!quiet) {
+    .sn_log_info(
+      "Accelerator detection: backend = {result$backend}; ",
+      "has_gpu = {result$has_gpu}; cuda = {result$cuda_version %||% NA_character_}."
+    )
+  }
+
+  invisible(result)
+}

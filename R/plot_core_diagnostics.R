@@ -57,7 +57,7 @@ sn_plot_qc_thresholds <- function(x, features = c("nFeature_RNA", "nCount_RNA", 
 #' @return A doublet embedding plot.
 #' @export
 sn_plot_doublets <- function(object, class_col = NULL, score_col = NULL, reduction = NULL) {
-  if (!inherits(object, "Seurat")) stop("`object` must be a Seurat object.", call. = FALSE)
+  .sn_validate_seurat_object(object)
   metadata <- object[[]]
   class_hits <- intersect(c("scDblFinder.class", "doublet_class", "doublet"), names(metadata))
   score_hits <- intersect(c("scDblFinder.score", "doublet_score"), names(metadata))
@@ -111,7 +111,7 @@ sn_plot_ambient_correction <- function(before, after = NULL, assay = NULL,
 #' @return A Seurat variable-feature plot with figure metadata.
 #' @export
 sn_plot_hvg <- function(object, assay = NULL, label_n = 10L) {
-  if (!inherits(object, "Seurat")) stop("`object` must be a Seurat object.", call. = FALSE)
+  .sn_validate_seurat_object(object)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
   plot <- Seurat::VariableFeaturePlot(object, assay = assay)
   features <- utils::head(Seurat::VariableFeatures(object[[assay]]), as.integer(label_n))
@@ -207,7 +207,7 @@ sn_plot_integration <- function(x, aggregate = FALSE, object = NULL) {
 sn_plot_reference_projection <- function(object, store_name = "annotation", reduction = NULL,
                                          color_by = c("prediction", "prediction_score")) {
   color_by <- match.arg(color_by)
-  if (!inherits(object, "Seurat")) stop("`object` must be a Seurat object.", call. = FALSE)
+  .sn_validate_seurat_object(object)
   result <- sn_get_result(object, "annotation", store_name)
   cells <- result$tables$cells
   if (!all(c("cell", color_by) %in% names(cells))) stop("Annotation cell table lacks projection labels.", call. = FALSE)

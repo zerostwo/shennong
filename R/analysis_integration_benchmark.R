@@ -295,7 +295,7 @@ sn_compare_integrations <- function(object,
                                     seed = 717L,
                                     verbose = TRUE) {
   check_installed(c("Seurat", "Matrix", "jsonlite"))
-  if (!inherits(object, "Seurat")) stop("`object` must be a Seurat object.", call. = FALSE)
+  .sn_validate_seurat_object(object)
   if (!is.list(backend_control)) stop("`backend_control` must be a list.", call. = FALSE)
   accelerator <- match.arg(accelerator)
   manifest <- .sn_scib_comparison_manifest(object)

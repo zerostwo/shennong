@@ -1962,9 +1962,7 @@ sn_plot_heatmap <- function(object,
                             panel_heights = NULL,
                             ...) {
   check_installed("Seurat")
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.", call. = FALSE)
-  }
+  .sn_validate_seurat_object(object)
 
   mode <- match.arg(mode)
   average_fun <- match.arg(average_fun)

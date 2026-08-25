@@ -429,10 +429,7 @@ sn_validate_result <- function(result, error = TRUE) {
 }
 
 .sn_validate_result_object <- function(object) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.", call. = FALSE)
-  }
-  invisible(TRUE)
+  .sn_validate_seurat_object(object)
 }
 
 .sn_prepare_result_for_collection <- function(result, type, name) {
@@ -934,4 +931,206 @@ sn_delete_artifact <- function(object, artifact_type, name = NULL) {
   }
   methods::slot(object, "misc") <- misc_data
   object
+}
+#' List stored Shennong analysis and interpretation results on a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param type Optional analysis type used to filter the result inventory.
+#'
+#' @return A tibble describing registered Shennong stored-result collections,
+#'   including DE, enrichment, interpretation, deconvolution, Milo,
+#'   communication, regulatory activity, and QC assessment entries when present.
+#'
+#' @examples
+#' if (requireNamespace("Seurat", quietly = TRUE)) {
+#'   counts <- matrix(rpois(10 * 12, lambda = 1), nrow = 10, ncol = 12)
+#'   rownames(counts) <- c(
+#'     "CD3D", "CD3E", "TRAC", "LTB", "MS4A1",
+#'     "CD79A", "HLA-DRA", "LYZ", "ACTB", "MALAT1"
+#'   )
+#'   colnames(counts) <- paste0("cell", 1:12)
+#'   obj <- sn_initialize_seurat_object(counts, species = "human")
+#'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
+#'   obj <- sn_find_de(
+#'     obj,
+#'     analysis = "markers",
+#'     group_by = NULL,
+#'     layer = "data",
+#'     min_pct = 0,
+#'     logfc_threshold = 0,
+#'     return_object = TRUE,
+#'     verbose = FALSE
+#'   )
+#'   sn_list_results(obj)
+#' }
+#' @param include_artifacts Include registered workflow artifacts that do not
+#'   implement the unified analysis-result contract.
+#' @export
+sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
+  .sn_validate_seurat_object(object)
+
+  registry <- .sn_misc_result_registry()
+  listable_collections <- registry$collection[registry$listable]
+
+  result <- lapply(listable_collections, function(collection) {
+    .sn_compact_collection_summary(object, collection)
+  }) |>
+    dplyr::bind_rows(.sn_generic_result_summary(object))
+  if (ncol(result) == 0L) {
+    result <- tibble::tibble(
+      collection = character(), type = character(), name = character(),
+      analysis = character(), method = character(), created_at = character(),
+      n_rows = integer(), source = character()
+    )
+  }
+  if (isTRUE(include_artifacts)) {
+    artifact_entries <- .sn_stored_analysis_result_entries(
+      object,
+      include_artifacts = TRUE
+    )
+    artifact_entries <- Filter(
+      function(entry) identical(entry$contract_scope, "artifact"),
+      artifact_entries
+    )
+    artifact_summary <- dplyr::bind_rows(lapply(artifact_entries, function(entry) {
+      artifact <- entry$result
+      artifact_field <- function(name) {
+        if (is.list(artifact)) artifact[[name]] else NULL
+      }
+      tibble::tibble(
+        collection = entry$collection,
+        type = entry$type,
+        name = entry$name,
+        analysis = as.character(artifact_field("analysis") %||% NA_character_)[[1]],
+        method = as.character(artifact_field("method") %||% NA_character_)[[1]],
+        created_at = as.character(artifact_field("created_at") %||% NA_character_)[[1]],
+        n_rows = if (is.list(artifact)) .sn_result_n_rows(artifact) else 0L,
+        source = as.character(artifact_field("source_de_name") %||% NA_character_)[[1]]
+      )
+    }))
+    result <- dplyr::bind_rows(result, artifact_summary)
+  }
+  if (!is_null(type)) {
+    requested_types <- tolower(as.character(type))
+    result <- dplyr::filter(result, .data$type %in% .env$requested_types)
+  }
+  result |>
+    dplyr::arrange(.data$collection, .data$name)
+}
+
+#' Retrieve a stored DE result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param de_name Name of the stored DE result.
+#' @param top_n Optional number of rows to keep. When supplied together with a
+#'   ranking column, results are reduced to the top rows overall or per group.
+#' @param direction One of \code{"all"}, \code{"up"}, or \code{"down"}.
+#' @param groups Optional subset of group labels to keep.
+#' @param with_metadata If \code{TRUE}, return the full stored result list
+#'   instead of just the result table.
+#'
+#' @return A tibble or stored-result list.
+#'
+#' @examples
+#' \dontrun{
+#' markers <- sn_get_de_result(seurat_obj, de_name = "cluster_markers", top_n = 5)
+#' }
+#' @export
+sn_get_de_result <- function(object,
+                             de_name = "default",
+                             top_n = NULL,
+                             direction = c("all", "up", "down"),
+                             groups = NULL,
+                             with_metadata = FALSE) {
+  .sn_validate_seurat_object(object)
+
+  stored <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
+  if (isTRUE(with_metadata)) {
+    return(stored)
+  }
+
+  .sn_subset_ranked_table(
+    table = stored$table,
+    rank_col = stored$rank_col,
+    group_col = stored$group_col,
+    top_n = top_n,
+    direction = direction,
+    groups = groups
+  )
+}
+
+#' Retrieve a stored enrichment result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param enrichment_name Name of the stored enrichment result.
+#' @param top_n Optional number of top terms to keep.
+#' @param groups Optional subset of cluster/group labels when the stored table
+#'   includes a \code{Cluster} column.
+#' @param with_metadata If \code{TRUE}, return the full stored result list
+#'   instead of just the term table.
+#'
+#' @return A tibble or stored-result list.
+#'
+#' @examples
+#' \dontrun{
+#' terms <- sn_get_enrichment_result(seurat_obj, enrichment_name = "cluster_gsea", top_n = 10)
+#' }
+#' @export
+sn_get_enrichment_result <- function(object,
+                                     enrichment_name = "default",
+                                     top_n = NULL,
+                                     groups = NULL,
+                                     with_metadata = FALSE) {
+  .sn_validate_seurat_object(object)
+
+  stored <- .sn_get_misc_result(object = object, collection = "enrichment_results", store_name = enrichment_name)
+  if (isTRUE(with_metadata)) {
+    return(stored)
+  }
+
+  table <- tibble::as_tibble(stored$table)
+  group_col <- c("Cluster", "cluster", ".sign")[
+    c("Cluster", "cluster", ".sign") %in% colnames(table)
+  ][1] %||% NULL
+  rank_col <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")[
+    c("NES", "Count", "GeneRatio", "p.adjust", "pvalue") %in% colnames(table)
+  ][1] %||% NULL
+
+  if (!is_null(groups) && !is_null(group_col)) {
+    table <- dplyr::filter(table, .data[[group_col]] %in% groups)
+  }
+
+  if (is_null(top_n) || is_null(rank_col)) {
+    return(table)
+  }
+
+  if (rank_col %in% c("p.adjust", "pvalue")) {
+    table <- table[order(table[[rank_col]], decreasing = FALSE), , drop = FALSE]
+  } else {
+    table <- table[order(abs(table[[rank_col]]), decreasing = TRUE), , drop = FALSE]
+  }
+
+  utils::head(table, top_n)
+}
+
+#' Retrieve a stored interpretation result from a Seurat object
+#'
+#' @param object A \code{Seurat} object.
+#' @param interpretation_name Name of the stored interpretation result.
+#'
+#' @return The stored interpretation-result list.
+#'
+#' @examples
+#' \dontrun{
+#' interpretation <- sn_get_interpretation_result(seurat_obj, "annotation_note")
+#' }
+#' @export
+sn_get_interpretation_result <- function(object, interpretation_name = "default") {
+  .sn_validate_seurat_object(object)
+
+  .sn_get_misc_result(
+    object = object,
+    collection = "interpretation_results",
+    store_name = interpretation_name
+  )
 }

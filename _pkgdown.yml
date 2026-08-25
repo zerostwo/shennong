@@ -128,6 +128,7 @@ reference:
       - sn_audit_results
       - sn_upgrade_results
       - sn_delete_result
+      - sn_delete_artifact
       - sn_validate_result
       - sn_build_result_bundle
       - sn_validate_result_bundle

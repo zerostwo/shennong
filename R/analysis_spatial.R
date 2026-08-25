@@ -539,3 +539,170 @@ sn_run_spatial <- function(object,
   if (!identical(method, "auto") && task %in% c("svg", "domain", "neighborhood", "integration")) args$method <- method
   do.call(dispatch, c(list(object = object), args))
 }
+#' @rdname sn_run_scarches
+#' @export
+sn_run_cell2location <- function(object,
+                                 assay = NULL,
+                                 layer = "counts",
+                                 reference_signatures = NULL,
+                                 spatial_cols = NULL,
+                                 output_dir = NULL,
+                                 runtime_dir = NULL,
+                                 metadata_prefix = "cell2location_",
+                                 result_name = "cell2location",
+                                 return_object = TRUE,
+                                 method_control = list(),
+                                 ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "cell2location",
+    script_name = "cell2location_run.py",
+    method = "cell2location",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(reference_signatures = reference_signatures), method_control),
+    ...
+  )
+}
+
+#' @rdname sn_run_scarches
+#' @export
+sn_run_tangram <- function(object,
+                           reference_object = NULL,
+                           assay = NULL,
+                           layer = NULL,
+                           reference_assay = NULL,
+                           reference_layer = NULL,
+                           spatial_cols = NULL,
+                           cell_type_by = NULL,
+                           output_dir = NULL,
+                           runtime_dir = NULL,
+                           metadata_prefix = "tangram_",
+                           result_name = "tangram",
+                           return_object = TRUE,
+                           method_control = list(),
+                           ...) {
+  if (is.null(reference_object)) {
+    stop("`reference_object` is required for `sn_run_tangram()`.", call. = FALSE)
+  }
+  .sn_run_python_object_method(
+    object = object,
+    reference_object = reference_object,
+    environment = "tangram",
+    script_name = "tangram_run.py",
+    method = "tangram",
+    assay = assay,
+    layer = layer,
+    reference_assay = reference_assay,
+    reference_layer = reference_layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(cell_type_key = cell_type_by), method_control),
+    ...
+  )
+}
+
+#' @rdname sn_run_scarches
+#' @export
+sn_run_squidpy <- function(object,
+                           assay = NULL,
+                           layer = NULL,
+                           spatial_cols = NULL,
+                           cluster_by = NULL,
+                           output_dir = NULL,
+                           runtime_dir = NULL,
+                           metadata_prefix = "squidpy_",
+                           result_name = "squidpy",
+                           return_object = TRUE,
+                           method_control = list(),
+                           ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "squidpy",
+    script_name = "squidpy_run.py",
+    method = "squidpy",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(cluster_key = cluster_by), method_control),
+    ...
+  )
+}
+
+#' @rdname sn_run_scarches
+#' @export
+sn_run_spatialdata <- function(object,
+                               assay = NULL,
+                               layer = NULL,
+                               spatial_cols = NULL,
+                               output_dir = NULL,
+                               runtime_dir = NULL,
+                               metadata_prefix = "spatialdata_",
+                               result_name = "spatialdata",
+                               return_object = TRUE,
+                               method_control = list(),
+                               ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "spatialdata",
+    script_name = "spatialdata_run.py",
+    method = "spatialdata",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = method_control,
+    ...
+  )
+}
+
+#' @rdname sn_run_scarches
+#' @export
+sn_run_stlearn <- function(object,
+                           assay = NULL,
+                           layer = NULL,
+                           spatial_cols = NULL,
+                           output_dir = NULL,
+                           runtime_dir = NULL,
+                           metadata_prefix = "stlearn_",
+                           result_name = "stlearn",
+                           return_object = TRUE,
+                           method_control = list(),
+                           ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "stlearn",
+    script_name = "stlearn_run.py",
+    method = "stlearn",
+    assay = assay,
+    layer = layer,
+    spatial_cols = spatial_cols,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = method_control,
+    ...
+  )
+}
+

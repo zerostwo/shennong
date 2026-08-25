@@ -2917,9 +2917,7 @@ sn_store_milo <- function(object,
                           annotation_by = NULL,
                           random_seed = NULL,
                           return_object = TRUE) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.")
-  }
+  .sn_validate_seurat_object(object)
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
 
@@ -2972,9 +2970,7 @@ sn_get_milo_result <- function(object,
                                annotation = NULL,
                                spatial_fdr = NULL,
                                with_metadata = FALSE) {
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.")
-  }
+  .sn_validate_seurat_object(object)
 
   stored <- .sn_get_misc_result(
     object = object,
@@ -3275,9 +3271,7 @@ sn_assess_qc <- function(object,
                          return_object = FALSE,
                          verbose = TRUE) {
   check_installed("SeuratObject")
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object.", call. = FALSE)
-  }
+  .sn_validate_seurat_object(object)
   if (!is_null(reference) && !inherits(reference, "Seurat")) {
     stop("`reference` must be NULL or a Seurat object.", call. = FALSE)
   }

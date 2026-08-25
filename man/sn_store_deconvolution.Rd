@@ -12,6 +12,7 @@ sn_store_deconvolution(
   bulk_samples = NULL,
   reference_label = NULL,
   artifacts = NULL,
+  random_seed = NULL,
   return_object = TRUE
 )
 }
@@ -29,6 +30,8 @@ sn_store_deconvolution(
 \item{reference_label}{Metadata column or label_by set used as the reference.}
 
 \item{artifacts}{Optional backend-specific artifacts or file paths.}
+
+\item{random_seed}{Optional random seed recorded in the result provenance.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
 }

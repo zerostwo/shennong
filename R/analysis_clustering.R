@@ -5550,1513 +5550,277 @@ sn_run_cluster <- function(object,
   }
 }
 
-.sn_find_transfer_anchors_backend <- function(...) {
-  Seurat::FindTransferAnchors(...)
-}
-
-.sn_transfer_data_backend <- function(...) {
-  Seurat::TransferData(...)
-}
-
-.sn_prepare_label_transfer_name <- function(prefix, cells) {
-  paste0(prefix, "_", .sn_metadata_suffix(cells))
-}
-
-.sn_transfer_labels_scanvi <- function(object,
-                                       reference,
-                                       label_by,
-                                       prediction_prefix,
-                                       assay = NULL,
-                                       batch_by = NULL,
-                                       features = NULL,
-                                       transfer_control = list(),
-                                       return_anchors = FALSE,
-                                       verbose = TRUE,
-                                       method_name = "scanvi") {
-  if (!inherits(reference, "Seurat")) {
-    stop("`reference` must be a Seurat object for scANVI/scArches label_by transfer.", call. = FALSE)
-  }
-  if (!label_by %in% colnames(reference[[]])) {
-    stop(glue("`label_by` column '{label_by}' was not found in `reference` metadata."), call. = FALSE)
-  }
-  if (!is.list(transfer_control)) {
-    stop("`transfer_control` must be a named list.", call. = FALSE)
-  }
-
-  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
-  reference_assay <- transfer_control$reference_assay %||% assay
-  query_assay <- transfer_control$query_assay %||% assay
-  if (!reference_assay %in% names(reference@assays)) {
-    stop(glue("Reference assay '{reference_assay}' was not found."), call. = FALSE)
-  }
-  if (!query_assay %in% names(object@assays)) {
-    stop(glue("Query assay '{query_assay}' was not found."), call. = FALSE)
-  }
-
-  reference_prefix <- transfer_control$reference_prefix %||% "reference"
-  query_prefix <- transfer_control$query_prefix %||% "query"
-  reference_cells <- .sn_prepare_label_transfer_name(reference_prefix, colnames(reference))
-  query_cells <- .sn_prepare_label_transfer_name(query_prefix, colnames(object))
-
-  reference <- Seurat::RenameCells(reference, new.names = reference_cells)
-  object_for_transfer <- Seurat::RenameCells(object, new.names = query_cells)
-  reference$.sn_transfer_role <- "reference"
-  object_for_transfer$.sn_transfer_role <- "query"
-  transfer_label_by <- transfer_control$label_by %||% transfer_control$label_by %||% ".sn_transfer_label"
-  unlabeled_category <- transfer_control$unlabeled_category %||% "Unknown"
-  reference[[transfer_label_by]] <- as.character(reference[[label_by, drop = TRUE]])
-  object_for_transfer[[transfer_label_by]] <- unlabeled_category
-
-  batch_by <- batch_by %||% transfer_control$batch_by %||% ".sn_transfer_batch"
-  if (!batch_by %in% colnames(reference[[]])) {
-    reference[[batch_by]] <- "reference"
-  }
-  if (!batch_by %in% colnames(object_for_transfer[[]])) {
-    object_for_transfer[[batch_by]] <- "query"
-  }
-
-  common_features <- intersect(rownames(reference[[reference_assay]]), rownames(object_for_transfer[[query_assay]]))
-  feature_set <- features %||% common_features
-  feature_set <- intersect(feature_set, common_features)
-  if (length(feature_set) < 2L) {
-    stop("scANVI/scArches label_by transfer requires at least two shared features.", call. = FALSE)
-  }
-
-  old_reference_assay <- SeuratObject::DefaultAssay(reference)
-  old_query_assay <- SeuratObject::DefaultAssay(object_for_transfer)
-  on.exit(SeuratObject::DefaultAssay(reference) <- old_reference_assay, add = TRUE)
-  on.exit(SeuratObject::DefaultAssay(object_for_transfer) <- old_query_assay, add = TRUE)
-  SeuratObject::DefaultAssay(reference) <- reference_assay
-  SeuratObject::DefaultAssay(object_for_transfer) <- query_assay
-  combined <- .sn_with_default_acceleration(
-    merge(reference, y = object_for_transfer, merge.data = FALSE),
-    patches = "seurat_merge",
-    strict = TRUE,
-    operation = "merge"
-  )
-  combined_assay <- SeuratObject::DefaultAssay(combined)
-
-  integration_control <- transfer_control
-  integration_control$label_by <- transfer_label_by
-  integration_control$label_by <- transfer_label_by
-  integration_control$unlabeled_category <- unlabeled_category
-  integration_control$reduction <- integration_control$reduction %||% method_name
-
-  fit <- .sn_run_scvi_integration(
-    object = combined,
-    method = "scanvi",
-    batch = batch_by,
-    features = feature_set,
-    assay = combined_assay,
-    integration_control = integration_control,
-    verbose = verbose
-  )
-  combined <- fit$object
-  prediction_col <- transfer_control$prediction_col %||% "scanvi_prediction"
-  if (!prediction_col %in% colnames(combined[[]])) {
-    stop("scANVI/scArches backend did not return a prediction column.", call. = FALSE)
-  }
-
-  query_predictions <- combined[[prediction_col, drop = TRUE]][query_cells]
-  metadata <- data.frame(row.names = colnames(object))
-  metadata[[paste0(prediction_prefix, "_label")]] <- as.character(query_predictions)
-  object <- Seurat::AddMetaData(object = object, metadata = metadata)
-  object@misc$label_transfer[[prediction_prefix]] <- list(
-    method = method_name,
-    label_by = label_by,
-    label_col = label_by,
-    batch_by = batch_by,
-    transfer_label_by = transfer_label_by,
-    unlabeled_category = unlabeled_category,
-    prediction_columns = colnames(metadata),
-    run_dir = combined@misc$integration$run_dir %||% NULL,
-    output_h5ad = combined@misc$integration$output_h5ad %||% NULL,
-    transfer_control = transfer_control
-  )
-  object <- .sn_store_label_transfer_result(
+#' Run a Python analysis command through a managed Shennong pixi environment
+#'
+#' These are analysis-oriented wrappers around \code{sn_call_pixi_environment()}.
+#' They prepare the corresponding package-bundled environment and run the
+#' requested command. When \code{object} is supplied, method wrappers use a
+#' Seurat object-level contract: export the object, run the packaged pixi
+#' runner script, and import method outputs back into the object when the
+#' backend produces cell-level metadata or embeddings.
+#'
+#' @param object Seurat object. Shennong writes the object to a Python
+#'   interchange directory, runs the corresponding pixi script, and imports
+#'   supported results.
+#' @param reference_object Optional reference Seurat object for tools that map
+#'   a query/spatial object against a single-cell reference, such as Tangram.
+#' @param reference_assay,reference_layer Assay and layer used when exporting
+#'   \code{reference_object}.
+#' @param reference_signatures Optional file path or data frame of reference
+#'   cell-state signatures for cell2location.
+#' @param group_by Metadata column used by CellPhoneDB cell groups.
+#' @param batch_by,label_by Metadata columns used by scArches/scPoli-style
+#'   object workflows.
+#' @param spatial_cols Two metadata columns containing spatial coordinates for
+#'   spatial tools.
+#' @param cell_type_by Reference metadata column containing cell-type labels
+#'   for Tangram projection.
+#' @param cluster_by Metadata column used by Squidpy neighborhood enrichment.
+#' @param method_control Optional named list of backend-specific settings passed
+#'   to the Python runner config.
+#' @param assay Assay used for object-level infercnvpy input.
+#' @param layer Assay layer used for object-level Python input. scPoli defaults
+#'   to \code{"counts"}; infercnvpy and the other generic object wrappers
+#'   default to \code{"data"} when present and otherwise \code{"counts"}.
+#' @param species Species used to match bundled gene positions when
+#'   \code{gene_order} and \code{gtf_file} are not supplied.
+#' @param reference_by Metadata column containing normal/tumor annotations.
+#' @param reference_cat One or more values in \code{reference_by} denoting
+#'   normal reference cells.
+#' @param gene_order Optional data frame with gene positions. It must contain a
+#'   gene identifier column such as \code{feature}, \code{gene},
+#'   \code{gene_name}, or \code{gene_id}, plus chromosome/start/end columns.
+#' @param gtf_file Optional GTF file used by infercnvpy to annotate genomic
+#'   positions instead of Shennong's bundled GENCODE table.
+#' @param gtf_gene_id GTF attribute used by infercnvpy for matching.
+#' @param adata_gene_id Optional AnnData var column used for matching a GTF.
+#' @param output_dir Optional run directory. Defaults to
+#'   \code{~/.shennong/runs/infercnvpy_*}.
+#' @param runtime_dir Optional Shennong runtime directory.
+#' @param key_added infercnvpy key used for the CNV representation.
+#' @param window_size,step,dynamic_threshold,exclude_chromosomes,chunksize,n_jobs,calculate_gene_values,lfc_clip
+#'   Parameters forwarded to \code{infercnvpy.tl.infercnv()}.
+#' @param run_pca,run_neighbors,run_leiden,run_umap,score Logical flags for
+#'   downstream infercnvpy analysis steps.
+#' @param leiden_resolution Resolution passed to infercnvpy Leiden clustering.
+#' @param cnv_score_group_by Optional grouping column for infercnvpy CNV scores.
+#' @param metadata_prefix Prefix added to imported infercnvpy metadata columns.
+#' @param result_name Name used under \code{object@misc$infercnvpy}.
+#' @param return_object Whether to return the updated object. If \code{FALSE},
+#'   return a run manifest list.
+#' @param ... Additional arguments passed to \code{sn_call_pixi_environment()}.
+#'
+#' @return A Seurat object or a run manifest.
+#'
+#' @examples
+#' \dontrun{
+#' object <- sn_run_infercnvpy(
+#'   object = object,
+#'   reference_by = "cell_type",
+#'   reference_cat = c("T cell", "Myeloid")
+#' )
+#' spatial <- sn_run_tangram(
+#'   object = spatial,
+#'   reference_object = reference,
+#'   cell_type_by = "cell_type",
+#'   spatial_cols = c("x", "y")
+#' )
+#' }
+#'
+#' @export
+sn_run_scarches <- function(object,
+                            assay = NULL,
+                            layer = NULL,
+                            batch_by = NULL,
+                            label_by = NULL,
+                            output_dir = NULL,
+                            runtime_dir = NULL,
+                            metadata_prefix = "scarches_",
+                            result_name = "scarches",
+                            return_object = TRUE,
+                            method_control = list(),
+                            ...) {
+  .sn_run_python_object_method(
     object = object,
-    prediction_prefix = prediction_prefix,
-    method = method_name,
-    label_by = label_by,
-    prediction_columns = colnames(metadata)
-  )
-
-  if (isTRUE(return_anchors)) {
-    return(list(query = object, combined = combined, prediction_col = prediction_col))
-  }
-  object
-}
-
-.sn_coralysis_reference_mapping_backend <- function(...) {
-  Coralysis::ReferenceMapping(...)
-}
-
-.sn_metadata_suffix <- function(x) {
-  x <- gsub("[^A-Za-z0-9]+", "_", as.character(x))
-  x <- gsub("^_+|_+$", "", x)
-  x[!nzchar(x)] <- "value"
-  x
-}
-
-.sn_store_label_transfer_result <- function(object,
-                                            prediction_prefix,
-                                            method,
-                                            label_by,
-                                            prediction_columns) {
-  metadata <- object[[]]
-  prediction_columns <- intersect(as.character(prediction_columns), colnames(metadata))
-  label_column <- paste0(prediction_prefix, "_label")
-  if (!label_column %in% prediction_columns) {
-    stop(
-      "Label-transfer output is missing expected metadata column `",
-      label_column, "`.",
-      call. = FALSE
-    )
-  }
-  primary <- tibble::tibble(
-    cell = rownames(metadata),
-    prediction = as.character(metadata[[label_column]])
-  )
-  score_column <- paste0(prediction_prefix, "_score")
-  if (score_column %in% prediction_columns) {
-    primary$prediction_score <- as.numeric(metadata[[score_column]])
-  }
-  extra_columns <- setdiff(prediction_columns, c(label_column, score_column))
-  for (column in extra_columns) {
-    primary[[column]] <- metadata[[column]]
-  }
-  result <- .sn_new_analysis_result(
-    analysis_type = "annotation",
-    name = prediction_prefix,
-    method = method,
-    backend = switch(
-      method,
-      seurat = "Seurat::TransferData",
-      coralysis = "Coralysis::ReferenceMapping",
-      scanvi = "scvi-tools scANVI",
-      scarches = "scvi-tools scArches",
-      method
-    ),
-    input = list(cells = nrow(primary), label_by = label_by),
-    parameters = list(
-      prediction_prefix = prediction_prefix,
-      prediction_columns = prediction_columns
-    ),
-    tables = list(primary = primary),
-    diagnostics = list(
-      labeled_cells = sum(!is.na(primary$prediction) & nzchar(primary$prediction)),
-      missing_predictions = sum(is.na(primary$prediction) | !nzchar(primary$prediction)),
-      label_levels = sort(unique(stats::na.omit(primary$prediction)))
-    )
-  )
-  sn_store_result(object, "annotation", prediction_prefix, result)
-}
-
-.sn_get_seurat_logcounts_sce <- function(object,
-                                         assay = NULL,
-                                         layer = "data",
-                                         verbose = TRUE) {
-  check_installed(c("SingleCellExperiment", "SummarizedExperiment"))
-
-  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
-  if (identical(layer, "data") && !"data" %in% SeuratObject::Layers(object = object[[assay]])) {
-    if (verbose) .sn_log_info("Normalizing query object before Coralysis reference mapping.")
-    object <- .sn_with_default_seurat_acceleration(
-      Seurat::NormalizeData(object = object, assay = assay, verbose = verbose),
-      object = object,
-      assay = assay
-    )
-  }
-
-  expr <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)
-  SingleCellExperiment::SingleCellExperiment(
-    assays = list(logcounts = expr),
-    colData = object[[]]
-  )
-}
-
-.sn_sync_coralysis_reference_label <- function(ref_sce,
-                                              reference = NULL,
-                                              label_col = NULL) {
-  if (
-    inherits(reference, "Seurat") &&
-      is.character(label_col) &&
-      length(label_col) == 1L &&
-      label_col %in% colnames(reference[[]])
-  ) {
-    labels <- reference[[label_col, drop = TRUE]]
-    names(labels) <- colnames(reference)
-    SummarizedExperiment::colData(ref_sce)[[label_col]] <- labels[colnames(ref_sce)]
-  }
-  ref_sce
-}
-
-.sn_get_coralysis_reference_sce <- function(reference,
-                                           reference_assay = NULL,
-                                           reference_layer = "data",
-                                           verbose = TRUE,
-                                           label_col = NULL) {
-  if (inherits(reference, "SingleCellExperiment")) {
-    return(reference)
-  }
-  if (!inherits(reference, "Seurat")) {
-    stop("`reference` must be a Seurat or SingleCellExperiment object for Coralysis label_by transfer.", call. = FALSE)
-  }
-  if (inherits(reference@misc$coralysis, "SingleCellExperiment")) {
-    return(.sn_sync_coralysis_reference_label(
-      ref_sce = reference@misc$coralysis,
-      reference = reference,
-      label_col = label_col
-    ))
-  }
-  stop(
-    "Coralysis label_by transfer requires a native Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
-    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\")` first, ",
-    "or avoid `integration_control = list(store_sce = FALSE)` if the object should be used as a reference.",
-    call. = FALSE
-  )
-}
-
-.sn_minimize_coralysis_pca_model <- function(pca_model) {
-  if (!is.list(pca_model)) {
-    return(pca_model)
-  }
-  keep <- intersect(c("x", "center", "scale", "rotation"), names(pca_model))
-  pca_model[keep]
-}
-
-.sn_prepare_coralysis_label_transfer_reference <- function(object,
-                                                          label_by,
-                                                          metadata_columns = NULL,
-                                                          keep_umap_model = FALSE,
-                                                          verbose = TRUE) {
-  check_installed(c("SingleCellExperiment", "SummarizedExperiment", "S4Vectors"))
-
-  ref_sce <- .sn_get_coralysis_reference_sce(
-    reference = object,
-    verbose = verbose,
-    label_col = label_by
-  )
-  coldata <- SummarizedExperiment::colData(ref_sce)
-  if (!label_by %in% colnames(coldata)) {
-    stop(glue("`label_by` column '{label_by}' was not found in the Coralysis reference colData."), call. = FALSE)
-  }
-
-  coralysis <- S4Vectors::metadata(ref_sce)$coralysis
-  required <- c("models", "pca.model", "pca.params")
-  missing_required <- required[vapply(coralysis[required], is.null, logical(1))]
-  if (length(missing_required) > 0L) {
-    stop(
-      "The Coralysis reference is missing required field(s): ",
-      paste(missing_required, collapse = ", "),
-      call. = FALSE
-    )
-  }
-  if (is.null(coralysis$pca.params$select.icp.tables)) {
-    stop("The Coralysis reference is missing `pca.params$select.icp.tables`.", call. = FALSE)
-  }
-
-  keep_cols <- unique(c(label_by, metadata_columns))
-  keep_cols <- intersect(keep_cols, colnames(coldata))
-  coldata <- coldata[, keep_cols, drop = FALSE]
-
-  reference <- SingleCellExperiment::SingleCellExperiment(
-    assays = list(),
-    rowData = S4Vectors::DataFrame(row.names = rownames(ref_sce)),
-    colData = coldata
-  )
-  reference_metadata <- S4Vectors::metadata(reference)
-  reference_metadata$coralysis <- list(
-    models = coralysis$models,
-    pca.model = .sn_minimize_coralysis_pca_model(coralysis$pca.model),
-    pca.params = list(select.icp.tables = coralysis$pca.params$select.icp.tables)
-  )
-  if (isTRUE(keep_umap_model) && !is.null(coralysis$umap.model)) {
-    reference_metadata$coralysis$umap.model <- coralysis$umap.model
-  }
-  reference_metadata$shennong_reference <- list(
-    method = "coralysis",
-    label_by = label_by,
-    n_features = nrow(reference),
-    n_cells = ncol(reference),
-    assays_dropped = TRUE,
-    reduced_dims_dropped = TRUE,
-    joint_probability_dropped = TRUE
-  )
-  S4Vectors::metadata(reference) <- reference_metadata
-  reference
-}
-
-.sn_prepare_seurat_label_transfer_reference <- function(object,
-                                                        label_by,
-                                                        method,
-                                                        assay = NULL,
-                                                        layers = NULL,
-                                                        features = NULL,
-                                                        reduction = NULL,
-                                                        metadata_columns = NULL) {
-  check_installed("Seurat")
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat object for this label-transfer method.", call. = FALSE)
-  }
-  if (!label_by %in% colnames(object[[]])) {
-    stop(glue("`label_by` column '{label_by}' was not found in `object` metadata."), call. = FALSE)
-  }
-
-  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
-  if (!assay %in% names(object@assays)) {
-    stop(glue("Assay '{assay}' was not found."), call. = FALSE)
-  }
-
-  available_layers <- SeuratObject::Layers(object = object[[assay]])
-  if (is.null(layers)) {
-    layers <- switch(
-      method,
-      seurat = intersect(c("counts", "data"), available_layers),
-      scanvi = intersect("counts", available_layers),
-      scarches = intersect("counts", available_layers)
-    )
-    if (length(layers) == 0L) {
-      layers <- available_layers[1]
-    }
-  } else if (identical(layers, "all")) {
-    layers <- available_layers
-  }
-  missing_layers <- setdiff(layers, available_layers)
-  if (length(missing_layers) > 0L) {
-    stop(
-      "Layer(s) not found in assay '", assay, "': ",
-      paste(missing_layers, collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  if (is.null(reduction) && identical(method, "seurat") && "pca" %in% names(object@reductions)) {
-    reduction <- "pca"
-  }
-  dimreducs <- reduction %||% character(0)
-
-  old_assay <- SeuratObject::DefaultAssay(object = object)
-  on.exit(SeuratObject::DefaultAssay(object = object) <- old_assay, add = TRUE)
-  SeuratObject::DefaultAssay(object = object) <- assay
-  reference <- Seurat::DietSeurat(
-    object = object,
-    assays = assay,
-    layers = layers,
-    features = features,
-    dimreducs = dimreducs,
-    graphs = character(0),
-    misc = FALSE
-  )
-
-  keep_cols <- unique(c(label_by, metadata_columns))
-  keep_cols <- intersect(keep_cols, colnames(reference[[]]))
-  reference@meta.data <- reference@meta.data[, keep_cols, drop = FALSE]
-  reference@misc$label_transfer_reference <- list(
-    method = method,
-    label_by = label_by,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scarches",
     assay = assay,
-    layers = layers,
-    features = features,
-    reduction = reduction
-  )
-  reference
-}
-
-.sn_write_label_transfer_reference <- function(reference,
-                                               path = NULL,
-                                               overwrite = FALSE,
-                                               ...) {
-  if (is.null(path)) {
-    return(reference)
-  }
-  if (file.exists(path) && !isTRUE(overwrite)) {
-    stop("`path` already exists. Set `overwrite = TRUE` to replace it: ", path, call. = FALSE)
-  }
-  sn_write(reference, path = path, ...)
-  reference
-}
-
-#' Prepare a compact label-transfer reference
-#'
-#' \code{sn_prepare_label_transfer_reference()} converts a full analysis object
-#' into a smaller reference object for \code{\link{sn_transfer_labels}}. For
-#' native Coralysis, it returns a minimal \code{SingleCellExperiment} containing
-#' the trained Coralysis models, PCA model, feature names, and selected
-#' reference labels, while dropping the large reference assays, reduced
-#' dimensions, and stored joint probabilities. For Seurat, scANVI, and scArches
-#' workflows, it returns a slim Seurat object with only the selected assay
-#' layers, labels, optional features, and optional reduction.
-#'
-#' @param object A Seurat object. For \code{method = "coralysis"}, an existing
-#'   Coralysis-trained \code{SingleCellExperiment} is also accepted.
-#' @param label_by Metadata column containing reference labels.
-#' @param method Label-transfer backend the reference should support.
-#' @param assay Assay to keep for Seurat/scANVI/scArches references.
-#' @param layers Layers to keep for Seurat/scANVI/scArches references. Defaults
-#'   to \code{counts} and \code{data} for Seurat transfer, and \code{counts} for
-#'   scANVI/scArches. Use \code{"all"} to retain all layers in \code{assay}.
-#' @param features Optional features to keep for Seurat/scANVI/scArches
-#'   references.
-#' @param reduction Optional dimensional reduction to keep. Defaults to
-#'   \code{"pca"} for Seurat references when available.
-#' @param metadata_columns Additional metadata columns to keep alongside
-#'   \code{label_by}.
-#' @param keep_umap_model For Coralysis references, keep the UMAP projection
-#'   model if present. This is only needed when using
-#'   \code{transfer_control = list(project.umap = TRUE)}.
-#' @param path Optional output path. Use \code{.qs2} for serialized reference
-#'   objects.
-#' @param overwrite Logical; overwrite an existing \code{path}.
-#' @param verbose Whether to print progress messages.
-#' @param ... Additional arguments passed to \code{\link{sn_write}} when
-#'   \code{path} is supplied.
-#'
-#' @return A compact Seurat or SingleCellExperiment reference object.
-#'
-#' @examples
-#' \dontrun{
-#' coral_ref <- sn_prepare_label_transfer_reference(
-#'   reference,
-#'   label_by = "cell_type",
-#'   method = "coralysis",
-#'   path = "data/processed/pbmc_coralysis_reference.qs2",
-#'   overwrite = TRUE
-#' )
-#'
-#' query <- sn_transfer_labels(
-#'   query,
-#'   reference = coral_ref,
-#'   label_by = "cell_type",
-#'   method = "coralysis"
-#' )
-#' }
-#' @export
-sn_prepare_label_transfer_reference <- function(object,
-                                                label_by,
-                                                method = c("coralysis", "seurat", "scanvi", "scarches"),
-                                                assay = NULL,
-                                                layers = NULL,
-                                                features = NULL,
-                                                reduction = NULL,
-                                                metadata_columns = NULL,
-                                                keep_umap_model = FALSE,
-                                                path = NULL,
-                                                overwrite = FALSE,
-                                                verbose = TRUE,
-                                                ...) {
-  method <- match.arg(method)
-  if (!is.character(label_by) || length(label_by) != 1L || !nzchar(label_by)) {
-    stop("`label_by` must be a non-empty metadata column name.", call. = FALSE)
-  }
-
-  reference <- if (identical(method, "coralysis")) {
-    .sn_prepare_coralysis_label_transfer_reference(
-      object = object,
-      label_by = label_by,
-      metadata_columns = metadata_columns,
-      keep_umap_model = keep_umap_model,
-      verbose = verbose
-    )
-  } else {
-    .sn_prepare_seurat_label_transfer_reference(
-      object = object,
-      label_by = label_by,
-      method = method,
-      assay = assay,
-      layers = layers,
-      features = features,
-      reduction = reduction,
-      metadata_columns = metadata_columns
-    )
-  }
-
-  .sn_write_label_transfer_reference(
-    reference = reference,
-    path = path,
-    overwrite = overwrite,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )
 }
 
-.sn_transfer_labels_coralysis <- function(object,
-                                          reference,
-                                          label_col,
-                                          prediction_prefix,
-                                          reference_assay = NULL,
-                                          query_assay = NULL,
-                                          reference_layer = "data",
-                                          query_layer = "data",
-                                          transfer_control = list(),
-                                          return_anchors = FALSE,
-                                          verbose = TRUE) {
-  check_installed("Coralysis")
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat query object for Coralysis label_by transfer.", call. = FALSE)
-  }
-  if (!is.list(transfer_control)) {
-    stop("`transfer_control` must be a named list.", call. = FALSE)
-  }
-
-  ref_sce <- .sn_get_coralysis_reference_sce(
-    reference = reference,
-    reference_assay = reference_assay,
-    reference_layer = reference_layer,
-    verbose = verbose,
-    label_col = label_col
-  )
-  if (!label_col %in% colnames(SummarizedExperiment::colData(ref_sce))) {
-    stop(glue("`label_col` column '{label_col}' was not found in Coralysis reference colData."), call. = FALSE)
-  }
-  query_sce <- .sn_get_seurat_logcounts_sce(
-    object = object,
-    assay = query_assay,
-    layer = query_layer,
-    verbose = verbose
-  )
-  query_sce <- Coralysis::PrepareData(object = query_sce)
-
-  args <- .sn_merge_control_args(
-    defaults = list(
-      ref = ref_sce,
-      query = query_sce,
-      ref.label = label_col
-    ),
-    control = transfer_control
-  )
-  mapped <- do.call(.sn_coralysis_reference_mapping_backend, args)
-  mapped_coldata <- as.data.frame(SummarizedExperiment::colData(mapped))
-  mapped_coldata <- mapped_coldata[colnames(object), , drop = FALSE]
-
-  label_source <- if ("pruned_coral_labels" %in% colnames(mapped_coldata)) {
-    "pruned_coral_labels"
-  } else {
-    "coral_labels"
-  }
-  if (!label_source %in% colnames(mapped_coldata)) {
-    stop("Coralysis::ReferenceMapping() did not return `coral_labels`.", call. = FALSE)
-  }
-
-  metadata <- data.frame(row.names = colnames(object))
-  metadata[[paste0(prediction_prefix, "_label")]] <- mapped_coldata[[label_source]]
-  if ("coral_probability" %in% colnames(mapped_coldata)) {
-    metadata[[paste0(prediction_prefix, "_score")]] <- mapped_coldata$coral_probability
-  }
-  if ("coral_labels" %in% colnames(mapped_coldata)) {
-    metadata[[paste0(prediction_prefix, "_raw_label")]] <- mapped_coldata$coral_labels
-  }
-
-  object <- Seurat::AddMetaData(object, metadata = metadata)
-  object@misc$label_transfer[[prediction_prefix]] <- list(
-    method = "coralysis",
-    label_col = label_col,
-    prediction_columns = colnames(metadata),
-    transfer_control = transfer_control
-  )
-  object <- .sn_store_label_transfer_result(
-    object = object,
-    prediction_prefix = prediction_prefix,
-    method = "coralysis",
-    label_by = label_col,
-    prediction_columns = colnames(metadata)
-  )
-
-  if (isTRUE(return_anchors)) {
-    return(list(query = object, mapping = mapped))
-  }
-  object
-}
-
-#' Transfer labels from a Seurat reference to a query object
-#'
-#' \code{sn_transfer_labels()} is a Shennong wrapper for reference mapping. It
-#' keeps the common path compact: transfer one metadata label, add the predicted
-#' label and confidence score back to the query, store cell-level predictions
-#' as a canonical \code{annotation} result, and retain a compact compatibility
-#' record in \code{query@misc$label_transfer}. The default \code{method =
-#' "seurat"} wraps Seurat's \code{FindTransferAnchors()} and
-#' \code{TransferData()} workflow. \code{method = "coralysis"} projects the
-#' query onto a native Coralysis-trained reference with
-#' \code{Coralysis::ReferenceMapping()}. \code{method = "scanvi"} and
-#' \code{method = "scarches"} use the managed scVI-family pixi backend to train
-#' a semi-supervised scANVI model with reference labels and query cells marked
-#' as unlabeled, then import the predicted query labels.
-#'
-#' @param object A Seurat query object to annotate. This argument comes first
-#'   so the function can be used in pipes.
-#' @param reference A labeled Seurat reference object.
-#' @param label_by Metadata column in \code{reference} to transfer.
-#' @param method Label-transfer backend. \code{"seurat"} uses Seurat anchors;
-#'   \code{"coralysis"} uses native \code{Coralysis::ReferenceMapping()} and
-#'   requires a trained Coralysis reference stored under
-#'   \code{reference@misc$coralysis}; \code{"scanvi"} and \code{"scarches"} use
-#'   the scVI-family pixi backend.
-#' @param prediction_prefix Prefix for metadata columns added to
-#'   \code{query}. Defaults to \code{paste0(label_by, "_transfer")}.
-#' @param normalization_method Normalization method passed to
-#'   \code{Seurat::FindTransferAnchors()}.
-#' @param reference_assay,query_assay Assays passed to
-#'   \code{Seurat::FindTransferAnchors()} and \code{Seurat::TransferData()}.
-#'   For \code{method = "coralysis"}, \code{query_assay} controls the assay
-#'   converted to query \code{logcounts}; the reference assay is ignored when a
-#'   stored Coralysis reference is available.
-#' @param reference_layer,query_layer Layers used as log-normalized expression
-#'   for \code{method = "coralysis"}. The query defaults to the Seurat
-#'   \code{"data"} layer and is normalized first if that layer is absent.
-#' @param reduction Dimensional reduction strategy passed to
-#'   \code{Seurat::FindTransferAnchors()}.
-#' @param reference_reduction Optional reference reduction passed to
-#'   \code{Seurat::FindTransferAnchors()}.
-#' @param features Optional features used to find transfer anchors.
-#' @param dims Dimensions used for anchor scoring and label_by transfer.
-#' @param npcs Number of PCs used by \code{Seurat::FindTransferAnchors()}.
-#' @param k_anchor,k_filter,k_score,k_weight Seurat anchor/weighting
-#'   parameters.
-#' @param store_prediction_scores If \code{TRUE}, also store per-label
-#'   prediction scores as query metadata columns.
-#' @param return_anchors If \code{TRUE}, return a list containing the annotated
-#'   query and backend artifacts. For Coralysis, the artifact is the mapped
-#'   SingleCellExperiment.
-#' @param transfer_control Optional backend-specific list. For
-#'   \code{method = "coralysis"}, values are forwarded to
-#'   \code{Coralysis::ReferenceMapping()}. For \code{method = "scanvi"} or
-#'   \code{"scarches"}, common values include \code{batch_by},
-#'   \code{runtime_dir}, \code{pixi_project}, \code{max_epochs},
-#'   \code{scanvi_max_epochs}, \code{accelerator}, \code{mirror}, and
-#'   \code{install_pixi}.
-#' @param verbose Whether to print Seurat progress messages.
-#' @param ... Additional arguments passed to \code{Seurat::FindTransferAnchors()}.
-#'
-#' @return A Seurat query object with transferred labels, or a list when
-#'   \code{return_anchors = TRUE}.
-#'
-#' @examples
-#' \dontrun{
-#' query <- sn_transfer_labels(
-#'   object = query,
-#'   reference = reference,
-#'   label_by = "cell_type",
-#'   dims = 1:30
-#' )
-#' }
+#' @rdname sn_run_scarches
 #' @export
-sn_transfer_labels <- function(object = NULL,
-                               reference,
-                               label_by = NULL,
-                               method = c("seurat", "coralysis", "scanvi", "scarches"),
-                               prediction_prefix = NULL,
-                               normalization_method = "LogNormalize",
-                               reference_assay = NULL,
-                               query_assay = NULL,
-                               reference_layer = "data",
-                               query_layer = "data",
-                               reduction = "pcaproject",
-                               reference_reduction = NULL,
-                               features = NULL,
-                               dims = 1:30,
-                               npcs = 30,
-                               k_anchor = 5,
-                               k_filter = NA,
-                               k_score = 30,
-                               k_weight = 50,
-                               store_prediction_scores = FALSE,
-                               return_anchors = FALSE,
-                               transfer_control = list(),
-                               verbose = TRUE,
-                               ...) {
-  check_installed("Seurat")
-  method <- match.arg(method)
-  if (is.null(object)) {
-    stop("`object` must be supplied as the query Seurat object.", call. = FALSE)
-  }
-
-  if (!inherits(reference, "Seurat") && !(identical(method, "coralysis") && inherits(reference, "SingleCellExperiment"))) {
-    stop("`reference` must be a Seurat object.", call. = FALSE)
-  }
-  if (!inherits(object, "Seurat")) {
-    stop("`object` must be a Seurat query object.", call. = FALSE)
-  }
-  if (!is.character(label_by) || length(label_by) != 1L || !nzchar(label_by)) {
-    stop("`label_by` must be a non-empty metadata column name.", call. = FALSE)
-  }
-  if (method == "coralysis") {
-    prediction_prefix <- prediction_prefix %||% paste0(label_by, "_coralysis")
-    return(.sn_transfer_labels_coralysis(
-      object = object,
-      reference = reference,
-      label_col = label_by,
-      prediction_prefix = prediction_prefix,
-      reference_assay = reference_assay,
-      query_assay = query_assay,
-      reference_layer = reference_layer,
-      query_layer = query_layer,
-      transfer_control = transfer_control,
-      return_anchors = return_anchors,
-      verbose = verbose
-    ))
-  }
-  if (method %in% c("scanvi", "scarches")) {
-    prediction_prefix <- prediction_prefix %||% paste0(label_by, "_", method)
-    return(.sn_transfer_labels_scanvi(
-      object = object,
-      reference = reference,
-      label_by = label_by,
-      prediction_prefix = prediction_prefix,
-      assay = query_assay %||% reference_assay,
-      batch_by = transfer_control$batch_by %||% NULL,
-      features = features,
-      transfer_control = transfer_control,
-      return_anchors = return_anchors,
-      verbose = verbose,
-      method_name = method
-    ))
-  }
-
-  if (!label_by %in% colnames(reference[[]])) {
-    stop(glue("`label_by` column '{label_by}' was not found in `reference` metadata."), call. = FALSE)
-  }
-
-  ref_labels <- reference[[label_by, drop = TRUE]]
-  names(ref_labels) <- colnames(reference)
-  prediction_prefix <- prediction_prefix %||% paste0(label_by, "_transfer")
-
-  anchors <- .sn_find_transfer_anchors_backend(
-    reference = reference,
-    query = object,
-    normalization.method = normalization_method,
-    reference.assay = reference_assay,
-    query.assay = query_assay,
-    reduction = reduction,
-    reference.reduction = reference_reduction,
-    features = features,
-    npcs = npcs,
-    dims = dims,
-    k.anchor = k_anchor,
-    k.filter = k_filter,
-    k.score = k_score,
-    verbose = verbose,
+sn_run_scpoli <- function(object,
+                          assay = NULL,
+                          layer = NULL,
+                          batch_by = NULL,
+                          label_by = NULL,
+                          output_dir = NULL,
+                          runtime_dir = NULL,
+                          metadata_prefix = "scpoli_",
+                          result_name = "scpoli",
+                          return_object = TRUE,
+                          method_control = list(),
+                          ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scpoli",
+    assay = assay,
+    layer = layer %||% "counts",
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )
-
-  predictions <- .sn_transfer_data_backend(
-    anchorset = anchors,
-    refdata = ref_labels,
-    weight.reduction = reduction,
-    dims = dims,
-    k.weight = k_weight,
-    verbose = verbose
-  )
-  predictions <- as.data.frame(predictions)
-  if (!all(colnames(object) %in% rownames(predictions)) && nrow(predictions) == ncol(object)) {
-    rownames(predictions) <- colnames(object)
-  }
-  predictions <- predictions[colnames(object), , drop = FALSE]
-  if (!"predicted.id" %in% colnames(predictions)) {
-    stop("Seurat::TransferData() did not return a `predicted.id` column.", call. = FALSE)
-  }
-
-  metadata <- data.frame(row.names = colnames(object))
-  metadata[[paste0(prediction_prefix, "_label")]] <- predictions$predicted.id
-  if ("prediction.score.max" %in% colnames(predictions)) {
-    metadata[[paste0(prediction_prefix, "_score")]] <- predictions$prediction.score.max
-  }
-  if (isTRUE(store_prediction_scores)) {
-    score_cols <- grep("^prediction\\.score\\.", colnames(predictions), value = TRUE)
-    score_cols <- setdiff(score_cols, "prediction.score.max")
-    for (score_col in score_cols) {
-      suffix <- sub("^prediction\\.score\\.", "", score_col)
-      metadata[[paste0(prediction_prefix, "_score_", .sn_metadata_suffix(suffix))]] <- predictions[[score_col]]
-    }
-  }
-
-  object <- Seurat::AddMetaData(object, metadata = metadata)
-  object@misc$label_transfer[[prediction_prefix]] <- list(
-    label_by = label_by,
-    label_col = label_by,
-    normalization_method = normalization_method,
-    reduction = reduction,
-    dims = dims,
-    features = features,
-    prediction_columns = colnames(metadata)
-  )
-  object <- .sn_store_label_transfer_result(
-    object = object,
-    prediction_prefix = prediction_prefix,
-    method = "seurat",
-    label_by = label_by,
-    prediction_columns = colnames(metadata)
-  )
-
-  if (isTRUE(return_anchors)) {
-    return(list(query = object, anchors = anchors, predictions = predictions))
-  }
-  object
 }
-
-.sn_run_scdesign3_backend <- function(...) {
-  scDesign3::scdesign3(...)
-}
-
-.sn_seurat_to_sce_for_scdesign3 <- function(object,
-                                            assay = "RNA",
-                                            layer = "counts") {
-  counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
-  SingleCellExperiment::SingleCellExperiment(
-    list(counts = .sn_as_sparse_matrix(counts)),
-    colData = object[[]]
-  )
-}
-
-.sn_validate_scdesign3_columns <- function(sce,
-                                           celltype = NULL,
-                                           pseudotime = NULL,
-                                           spatial = NULL,
-                                           other_covariates = NULL) {
-  available <- colnames(SummarizedExperiment::colData(sce))
-  requested <- unique(c(celltype, pseudotime, spatial, other_covariates))
-  requested <- requested[!is.na(requested) & nzchar(requested)]
-  missing <- setdiff(requested, available)
-  if (length(missing) > 0L) {
-    stop(glue("Missing scDesign3 covariate column(s): {paste(missing, collapse = ', ')}."), call. = FALSE)
-  }
-  invisible(TRUE)
-}
-
-.sn_default_scdesign3_formula <- function(celltype = NULL,
-                                          pseudotime = NULL,
-                                          spatial = NULL,
-                                          other_covariates = NULL,
-                                          k = 10) {
-  if (!is.null(pseudotime) && length(pseudotime) > 0L) {
-    return(glue("s({pseudotime[[1]]}, bs = 'cr', k = {k})"))
-  }
-  if (!is.null(spatial) && length(spatial) == 2L) {
-    return(glue("s({spatial[[1]]}, {spatial[[2]]}, bs = 'gp', k = {k})"))
-  }
-  terms <- unique(c(celltype, other_covariates))
-  terms <- terms[!is.na(terms) & nzchar(terms)]
-  if (length(terms) == 0L) {
-    return("1")
-  }
-  paste(terms, collapse = " + ")
-}
-
-.sn_default_scdesign3_corr_formula <- function(celltype = NULL,
-                                               pseudotime = NULL,
-                                               spatial = NULL,
-                                               other_covariates = NULL) {
-  terms <- unique(c(pseudotime, spatial, celltype, other_covariates))
-  terms <- terms[!is.na(terms) & nzchar(terms)]
-  if (length(terms) == 0L) {
-    return("1")
-  }
-  paste(terms, collapse = " + ")
-}
-
-.sn_extract_scdesign3_counts <- function(result, expected_genes = NULL) {
-  if (!is.list(result) || !"new_count" %in% names(result)) {
-    stop("scDesign3 did not return a `new_count` result.", call. = FALSE)
-  }
-  counts <- result$new_count
-  if (is.list(counts)) {
-    counts <- counts[[1]]
-  }
-  counts <- .sn_as_sparse_matrix(counts)
-  if (is.null(rownames(counts)) && !is.null(expected_genes) && length(expected_genes) == nrow(counts)) {
-    rownames(counts) <- expected_genes
-  }
-  if (is.null(colnames(counts))) {
-    colnames(counts) <- paste0("sim_cell_", seq_len(ncol(counts)))
-  }
-  counts
-}
-
-#' Simulate single-cell counts with scDesign3
+#' Run a Python analysis command through a managed Shennong pixi environment
 #'
-#' \code{sn_simulate()} provides a method-based simulation entry point.
-#' Currently \code{method = "scdesign3"} delegates to
-#' \code{sn_simulate_scdesign3()}.
+#' These are analysis-oriented wrappers around \code{sn_call_pixi_environment()}.
+#' They prepare the corresponding package-bundled environment and run the
+#' requested command. When \code{object} is supplied, method wrappers use a
+#' Seurat object-level contract: export the object, run the packaged pixi
+#' runner script, and import method outputs back into the object when the
+#' backend produces cell-level metadata or embeddings.
 #'
-#' @param object A Seurat or SingleCellExperiment object.
-#' @param method Simulation backend. Currently supports \code{"scdesign3"}.
-#' @param ... Additional arguments passed to the selected backend.
+#' @param object Seurat object. Shennong writes the object to a Python
+#'   interchange directory, runs the corresponding pixi script, and imports
+#'   supported results.
+#' @param reference_object Optional reference Seurat object for tools that map
+#'   a query/spatial object against a single-cell reference, such as Tangram.
+#' @param reference_assay,reference_layer Assay and layer used when exporting
+#'   \code{reference_object}.
+#' @param reference_signatures Optional file path or data frame of reference
+#'   cell-state signatures for cell2location.
+#' @param group_by Metadata column used by CellPhoneDB cell groups.
+#' @param batch_by,label_by Metadata columns used by scArches/scPoli-style
+#'   object workflows.
+#' @param spatial_cols Two metadata columns containing spatial coordinates for
+#'   spatial tools.
+#' @param cell_type_by Reference metadata column containing cell-type labels
+#'   for Tangram projection.
+#' @param cluster_by Metadata column used by Squidpy neighborhood enrichment.
+#' @param method_control Optional named list of backend-specific settings passed
+#'   to the Python runner config.
+#' @param assay Assay used for object-level infercnvpy input.
+#' @param layer Assay layer used for object-level Python input. scPoli defaults
+#'   to \code{"counts"}; infercnvpy and the other generic object wrappers
+#'   default to \code{"data"} when present and otherwise \code{"counts"}.
+#' @param species Species used to match bundled gene positions when
+#'   \code{gene_order} and \code{gtf_file} are not supplied.
+#' @param reference_by Metadata column containing normal/tumor annotations.
+#' @param reference_cat One or more values in \code{reference_by} denoting
+#'   normal reference cells.
+#' @param gene_order Optional data frame with gene positions. It must contain a
+#'   gene identifier column such as \code{feature}, \code{gene},
+#'   \code{gene_name}, or \code{gene_id}, plus chromosome/start/end columns.
+#' @param gtf_file Optional GTF file used by infercnvpy to annotate genomic
+#'   positions instead of Shennong's bundled GENCODE table.
+#' @param gtf_gene_id GTF attribute used by infercnvpy for matching.
+#' @param adata_gene_id Optional AnnData var column used for matching a GTF.
+#' @param output_dir Optional run directory. Defaults to
+#'   \code{~/.shennong/runs/infercnvpy_*}.
+#' @param runtime_dir Optional Shennong runtime directory.
+#' @param key_added infercnvpy key used for the CNV representation.
+#' @param window_size,step,dynamic_threshold,exclude_chromosomes,chunksize,n_jobs,calculate_gene_values,lfc_clip
+#'   Parameters forwarded to \code{infercnvpy.tl.infercnv()}.
+#' @param run_pca,run_neighbors,run_leiden,run_umap,score Logical flags for
+#'   downstream infercnvpy analysis steps.
+#' @param leiden_resolution Resolution passed to infercnvpy Leiden clustering.
+#' @param cnv_score_group_by Optional grouping column for infercnvpy CNV scores.
+#' @param metadata_prefix Prefix added to imported infercnvpy metadata columns.
+#' @param result_name Name used under \code{object@misc$infercnvpy}.
+#' @param return_object Whether to return the updated object. If \code{FALSE},
+#'   return a run manifest list.
+#' @param ... Additional arguments passed to \code{sn_call_pixi_environment()}.
 #'
-#' @return Simulated data in the backend's requested format.
+#' @return A Seurat object or a run manifest.
 #'
 #' @examples
 #' \dontrun{
-#' sim <- sn_simulate(seurat_obj, method = "scdesign3", celltype = "cell_type")
-#' }
-#' @export
-sn_simulate <- function(object,
-                        method = c("scdesign3"),
-                        ...) {
-  method <- match.arg(method)
-  switch(
-    method,
-    scdesign3 = sn_simulate_scdesign3(object = object, ...)
-  )
-}
-
-#' Simulate single-cell counts with scDesign3
-#'
-#' \code{sn_simulate_scdesign3()} prepares a Seurat or SingleCellExperiment
-#' object for \code{scDesign3::scdesign3()}, chooses simple default formulas
-#' from the supplied covariates, and returns simulated counts as a Seurat
-#' object, SingleCellExperiment, sparse count matrix, or raw scDesign3 result.
-#' Prefer \code{sn_simulate(method = "scdesign3")} for new code.
-#'
-#' @param object A Seurat or SingleCellExperiment object.
-#' @param celltype Column in \code{colData(object)} or Seurat metadata used as
-#'   the cell-type covariate. If \code{NULL}, \code{"seurat_clusters"} is used
-#'   when available.
-#' @param pseudotime Optional pseudotime covariate column name.
-#' @param spatial Optional length-two vector naming spatial coordinate columns.
-#' @param other_covariates Optional additional covariate columns.
-#' @param ncell Number of cells to simulate. Defaults to the input cell count.
-#' @param mu_formula,sigma_formula,corr_formula scDesign3 model formulas. When
-#'   \code{mu_formula} or \code{corr_formula} is \code{NULL}, Shennong builds a
-#'   simple default from \code{pseudotime}, \code{spatial}, \code{celltype}, and
-#'   \code{other_covariates}.
-#' @param family_use Marginal distribution passed to scDesign3.
-#' @param n_cores Number of cores passed to scDesign3.
-#' @param assay,layer Assay/layer used when \code{object} is a Seurat object.
-#' @param assay_use Assay name used when \code{object} is already a
-#'   SingleCellExperiment. Defaults to \code{"counts"}.
-#' @param return One of \code{"seurat"}, \code{"sce"}, \code{"counts"}, or
-#'   \code{"result"}.
-#' @param project Project name for returned Seurat objects.
-#' @param combine_original If \code{TRUE}, return a merged Seurat object
-#'   containing original and simulated cells with a \code{simulation_source}
-#'   metadata column. Only applies when \code{return = "seurat"} and
-#'   \code{object} is a Seurat object.
-#' @param seed Optional random seed.
-#' @param ... Additional arguments passed to \code{scDesign3::scdesign3()}.
-#'
-#' @return Simulated data in the requested format.
-#'
-#' @examples
-#' \dontrun{
-#' sim <- sn_simulate_scdesign3(
-#'   object = seurat_obj,
-#'   celltype = "cell_type",
-#'   ncell = 1000,
-#'   n_cores = 4
+#' object <- sn_run_infercnvpy(
+#'   object = object,
+#'   reference_by = "cell_type",
+#'   reference_cat = c("T cell", "Myeloid")
+#' )
+#' spatial <- sn_run_tangram(
+#'   object = spatial,
+#'   reference_object = reference,
+#'   cell_type_by = "cell_type",
+#'   spatial_cols = c("x", "y")
 #' )
 #' }
+#'
 #' @export
-sn_simulate_scdesign3 <- function(object,
-                                  celltype = NULL,
-                                  pseudotime = NULL,
-                                  spatial = NULL,
-                                  other_covariates = NULL,
-                                  ncell = NULL,
-                                  mu_formula = NULL,
-                                  sigma_formula = "1",
-                                  corr_formula = NULL,
-                                  family_use = "nb",
-                                  n_cores = 2,
-                                  assay = "RNA",
-                                  layer = "counts",
-                                  assay_use = "counts",
-                                  return = c("seurat", "sce", "counts", "result"),
-                                  project = "scdesign3",
-                                  combine_original = FALSE,
-                                  seed = 717,
-                                  ...) {
-  check_installed("scDesign3", reason = "to simulate single-cell data with scDesign3.")
-  check_installed(c("SingleCellExperiment", "SummarizedExperiment"))
-
-  return <- match.arg(return)
-  if (inherits(object, "Seurat")) {
-    sce <- .sn_seurat_to_sce_for_scdesign3(object = object, assay = assay, layer = layer)
-  } else if (inherits(object, "SingleCellExperiment")) {
-    sce <- object
-  } else {
-    stop("`object` must be a Seurat or SingleCellExperiment object.", call. = FALSE)
-  }
-
-  coldata <- SummarizedExperiment::colData(sce)
-  if (is.null(celltype) && "seurat_clusters" %in% colnames(coldata)) {
-    celltype <- "seurat_clusters"
-  }
-  .sn_validate_scdesign3_columns(
-    sce = sce,
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates
-  )
-
-  ncell <- ncell %||% ncol(sce)
-  formula_k <- max(3L, min(10L, floor(ncell / 5)))
-  mu_formula <- mu_formula %||% .sn_default_scdesign3_formula(
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates,
-    k = formula_k
-  )
-  corr_formula <- corr_formula %||% .sn_default_scdesign3_corr_formula(
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates
-  )
-
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  result <- .sn_run_scdesign3_backend(
-    sce = sce,
-    assay_use = assay_use,
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates,
-    ncell = ncell,
-    mu_formula = mu_formula,
-    sigma_formula = sigma_formula,
-    family_use = family_use,
-    n_cores = n_cores,
-    corr_formula = corr_formula,
+sn_run_scarches <- function(object,
+                            assay = NULL,
+                            layer = NULL,
+                            batch_by = NULL,
+                            label_by = NULL,
+                            output_dir = NULL,
+                            runtime_dir = NULL,
+                            metadata_prefix = "scarches_",
+                            result_name = "scarches",
+                            return_object = TRUE,
+                            method_control = list(),
+                            ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scarches",
+    assay = assay,
+    layer = layer,
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )
-  result$shennong <- list(
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates,
-    mu_formula = mu_formula,
-    sigma_formula = sigma_formula,
-    corr_formula = corr_formula,
-    family_use = family_use,
-    ncell = ncell
-  )
-
-  if (return == "result") {
-    return(result)
-  }
-
-  sim_counts <- .sn_extract_scdesign3_counts(
-    result = result,
-    expected_genes = rownames(sce)
-  )
-  sim_meta <- result$new_covariate
-  if (is.null(sim_meta)) {
-    sim_meta <- data.frame(row.names = colnames(sim_counts))
-  } else {
-    sim_meta <- as.data.frame(sim_meta)
-    if (nrow(sim_meta) == ncol(sim_counts)) {
-      rownames(sim_meta) <- colnames(sim_counts)
-    }
-  }
-
-  if (return == "counts") {
-    return(sim_counts)
-  }
-  if (return == "sce") {
-    return(SingleCellExperiment::SingleCellExperiment(
-      list(counts = sim_counts),
-      colData = sim_meta
-    ))
-  }
-
-  check_installed("Seurat")
-  sim_object <- Seurat::CreateSeuratObject(
-    counts = sim_counts,
-    meta.data = sim_meta,
-    project = project
-  )
-  sim_object@misc$scdesign3 <- result$shennong
-  if (isTRUE(combine_original) && inherits(object, "Seurat")) {
-    original <- object
-    original$simulation_source <- "original"
-    sim_object$simulation_source <- "simulated"
-    combined <- .sn_with_default_acceleration(
-      merge(
-        x = original,
-        y = sim_object,
-        add.cell.ids = c("original", "simulated"),
-        project = project
-      ),
-      patches = "seurat_merge",
-      strict = TRUE,
-      operation = "merge"
-    )
-    combined@misc$scdesign3 <- result$shennong
-    return(combined)
-  }
-  sim_object
 }
 
-
-.sn_write_celltypist_sparse_input <- function(counts,
-                                               outdir,
-                                               transpose_input = TRUE,
-                                               gene_file = NULL,
-                                               cell_file = NULL) {
-  counts <- .sn_as_sparse_matrix(counts)
-  if (!inherits(counts, "Matrix")) {
-    stop("CellTypist export requires a matrix-like counts layer.", call. = FALSE)
-  }
-  if (is.null(rownames(counts)) || is.null(colnames(counts))) {
-    stop("CellTypist export requires feature and cell names.", call. = FALSE)
-  }
-
-  # CellTypist consumes a cell-by-gene Matrix Market file unless its
-  # --transpose-input flag is supplied. Preserve the established flag while
-  # keeping the in-memory representation sparse in either orientation.
-  export_counts <- if (isTRUE(transpose_input)) counts else Matrix::t(counts)
-  input_data <- file.path(outdir, "counts.mtx")
-  Matrix::writeMM(obj = export_counts, file = input_data)
-
-  if (is.null(gene_file)) {
-    gene_file <- file.path(outdir, "genes.csv")
-    utils::write.table(
-      data.frame(feature = rownames(counts), check.names = FALSE),
-      file = gene_file,
-      sep = ",",
-      row.names = FALSE,
-      col.names = FALSE,
-      quote = TRUE
-    )
-  }
-  if (is.null(cell_file)) {
-    cell_file <- file.path(outdir, "cells.csv")
-    utils::write.table(
-      data.frame(cell = colnames(counts), check.names = FALSE),
-      file = cell_file,
-      sep = ",",
-      row.names = FALSE,
-      col.names = FALSE,
-      quote = TRUE
-    )
-  }
-
-  list(
-    input_data = input_data,
-    gene_file = gene_file,
-    cell_file = cell_file
-  )
-}
-
-
-#' Run CellTypist for automated cell type annotation
-#'
-#' @param x A Seurat object or a path to a count matrix / AnnData file that CellTypist can consume.
-#' @param celltypist Path to the `celltypist` binary. When `NULL`, use
-#'   `getOption("shennong.celltypist_path")` and otherwise search `PATH` with
-#'   `Sys.which("celltypist")`.
-#' @param model Model used for predictions. Defaults to "Immune_All_Low.pkl".
-#' @param outdir Directory to store the output files. If NULL, use a temporary directory.
-#' @param prefix Prefix for the output files. By default, use the model name plus a dot.
-#' @param mode Choose the cell type with the largest score/probability (`"best_match"`) or enable multi-label classification (`"prob_match"`).
-#' @param p_thres Probability threshold for the multi-label classification. Ignored if `mode = "best_match"`.
-#' @param majority_voting Logical. Whether to refine labels using majority voting after over-clustering.
-#' @param over_clustering Input file or a string key specifying an existing metadata column in the AnnData object, or "auto".
-#' @param min_prop For the dominant cell type within a subcluster, the minimum proportion of cells required to name the subcluster by this cell type.
-#' @param transpose_input Logical. For Seurat input, `TRUE` exports counts in
-#'   gene-by-cell orientation and `FALSE` exports a sparse cell-by-gene
-#'   transpose. For an existing path, the input file is not rewritten. In both
-#'   cases, `TRUE` adds CellTypist's `--transpose-input` flag and `FALSE` does
-#'   not, so path inputs must set this to match their stored orientation.
-#' @param gene_file If the provided input is in the `mtx` format, path to the
-#'   file storing gene information. For Seurat input, a sidecar is generated
-#'   from the feature names when this is `NULL`.
-#' @param cell_file If the provided input is in the `mtx` format, path to the
-#'   file storing cell information. For Seurat input, a sidecar is generated
-#'   from the cell names when this is `NULL`.
-#' @param assay Assay used when exporting Seurat counts to CellTypist. Defaults to \code{"RNA"}.
-#' @param layer Raw or count-like layer used as the input matrix for Seurat
-#'   objects. Defaults to \code{"counts"}. MatrixMarket/CSV input is normalized
-#'   by CellTypist, so passing a log-normalized `data` layer would normalize it
-#'   twice and is rejected; negative values are also rejected.
-#' @param xlsx Logical. If `TRUE`, ask CellTypist for its combined
-#'   `annotation_result.xlsx` workbook and import the first (prediction) sheet
-#'   through the optional `rio` dependency. Defaults to `FALSE`.
-#' @param plot_results Logical. If `TRUE`, plot the prediction results. Defaults to `FALSE`.
-#' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
-#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
-#'
-#' @return When \code{x} is a Seurat object, a Seurat object with prediction
-#'   columns added to metadata. When \code{x} is a path, the CellTypist
-#'   prediction table is returned.
-#'
-#' @examples
-#' \dontrun{
-#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
-#' pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
-#' pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl")
-#' head(colnames(pbmc[[]]))
-#' }
+#' @rdname sn_run_scarches
 #' @export
-sn_run_celltypist <- function(x,
-                              celltypist = NULL,
-                              model = "Immune_All_Low.pkl",
-                              outdir = NULL,
-                              prefix = NULL,
-                              mode = c("best_match", "prob_match"),
-                              p_thres = 0.5,
-                              majority_voting = TRUE,
-                              over_clustering = "auto",
-                              min_prop = 0,
-                              transpose_input = TRUE,
-                              gene_file = NULL,
-                              cell_file = NULL,
-                              assay = "RNA",
-                              layer = "counts",
-                              xlsx = FALSE,
-                              plot_results = FALSE,
-                              quiet = FALSE,
-                              object = NULL) {
-  x <- .sn_resolve_object_alias(x, object, missing(x))
-  check_installed(c("logger", "glue"),
-    reason = "to run CellTypist analysis."
+sn_run_scpoli <- function(object,
+                          assay = NULL,
+                          layer = NULL,
+                          batch_by = NULL,
+                          label_by = NULL,
+                          output_dir = NULL,
+                          runtime_dir = NULL,
+                          metadata_prefix = "scpoli_",
+                          result_name = "scpoli",
+                          return_object = TRUE,
+                          method_control = list(),
+                          ...) {
+  .sn_run_python_object_method(
+    object = object,
+    environment = "scarches",
+    script_name = "scarches_run.py",
+    method = "scpoli",
+    assay = assay,
+    layer = layer %||% "counts",
+    output_dir = output_dir,
+    runtime_dir = runtime_dir,
+    metadata_prefix = metadata_prefix,
+    result_name = result_name,
+    return_object = return_object,
+    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
+    ...
   )
-  x_is_seurat <- inherits(x, "Seurat")
-  if (x_is_seurat) {
-    check_installed("Seurat", reason = "to annotate a Seurat object with CellTypist.")
-  }
-
-  mode <- match.arg(mode)
-  celltypist <- celltypist %||% getOption("shennong.celltypist_path", Sys.which("celltypist"))
-  sn_check_file(celltypist)
-  if (isTRUE(xlsx)) {
-    check_installed("rio", reason = "to import CellTypist's Excel result workbook.")
-  }
-
-  .sn_log_info("Starting CellTypist analysis with model = {model}.")
-  tictoc::tic("Total CellTypist runtime")
-
-  temporary_outdir <- is_null(outdir)
-  if (temporary_outdir) {
-    outdir <- tempfile("celltypist_")
-    dir.create(outdir, recursive = TRUE)
-    .sn_log_info("Using a temporary output directory: {outdir}.")
-  } else {
-    outdir <- sn_set_path(outdir)
-    .sn_log_info("Using the user-specified output directory: {outdir}.")
-  }
-
-  on.exit(
-    {
-      if (temporary_outdir && dir.exists(outdir)) {
-        unlink(outdir, recursive = TRUE)
-        log_debug("Cleaned temporary directory: {outdir}")
-      }
-    },
-    add = TRUE
-  )
-
-  if (x_is_seurat) {
-    .sn_log_info("Converting the Seurat object to sparse CellTypist input format.")
-
-    counts <- tryCatch(
-      .sn_get_seurat_layer_data(object = x, assay = assay, layer = layer),
-      error = function(e) {
-        .sn_log_error("Failed to extract the counts layer: {e$message}.")
-        stop("Counts layer extraction failed")
-      }
-    )
-    counts <- .sn_as_sparse_matrix(counts)
-    nonzero_values <- if ("x" %in% methods::slotNames(counts)) {
-      methods::slot(counts, "x")
-    } else {
-      numeric()
-    }
-    if (any(!is.finite(nonzero_values)) || any(nonzero_values < 0)) {
-      stop(
-        "CellTypist MatrixMarket input must contain finite, non-negative count-like values.",
-        call. = FALSE
-      )
-    }
-    if (tolower(layer) %in% c("data", "scale.data", "scaled.data")) {
-      stop(
-        "CellTypist treats MatrixMarket input as raw counts and normalizes it internally; ",
-        "use a raw/count-like layer instead of `", layer, "`.",
-        call. = FALSE
-      )
-    }
-
-    exported_input <- .sn_write_celltypist_sparse_input(
-      counts = counts,
-      outdir = outdir,
-      transpose_input = transpose_input,
-      gene_file = gene_file,
-      cell_file = cell_file
-    )
-    input_data <- exported_input$input_data
-    gene_file <- exported_input$gene_file
-    cell_file <- exported_input$cell_file
-    log_debug("Count matrix written to {input_data} ({file.size(input_data)} bytes)")
-  } else {
-    input_data <- x
-    .sn_log_info("Using the precomputed input matrix: {input_data}.")
-  }
-
-  over_clustering_path <- NULL
-
-  if (!is_null(over_clustering) && !identical(over_clustering, "auto")) {
-    if (isTRUE(x_is_seurat)) {
-      if (over_clustering %in% colnames(x@meta.data)) {
-        .sn_log_info("Using the existing clustering column: {over_clustering}.")
-        over_clustering_path <- file.path(outdir, "over_clustering.txt")
-        writeLines(
-          as.character(x[[over_clustering, drop = TRUE]]),
-          over_clustering_path
-        )
-      } else if (file.exists(over_clustering)) {
-        over_clustering_path <- over_clustering
-      } else {
-        stop(
-          "`over_clustering` must be a metadata column or existing file when `x` is a Seurat object.",
-          call. = FALSE
-        )
-      }
-    } else {
-      over_clustering_path <- over_clustering
-    }
-  } else if (identical(over_clustering, "auto") && isTRUE(majority_voting)) {
-    .sn_log_info("Using CellTypist's automatic over-clustering for majority voting.")
-  }
-
-  model_name <- tools::file_path_sans_ext(basename(model))
-  prefix <- prefix %||% glue("{model_name}.")
-  prediction_path <- if (isTRUE(xlsx)) {
-    file.path(outdir, glue("{prefix}annotation_result.xlsx"))
-  } else {
-    file.path(outdir, glue("{prefix}predicted_labels.csv"))
-  }
-
-  cmd_args <- c(
-    "--indata", shQuote(input_data),
-    "--model", shQuote(model),
-    "--mode", mode,
-    "--outdir", shQuote(outdir),
-    "--prefix", shQuote(prefix)
-  )
-
-  add_arg <- function(args, flag, value, condition = TRUE) {
-    if (condition && !is_null(value)) c(args, flag, shQuote(value)) else args
-  }
-
-  cmd_args <- add_arg(cmd_args, "--gene-file", gene_file, !is_null(gene_file))
-  cmd_args <- add_arg(cmd_args, "--cell-file", cell_file, !is_null(cell_file))
-  cmd_args <- add_arg(cmd_args, "--p-thres", p_thres, mode == "prob_match")
-  cmd_args <- add_arg(cmd_args, "--over-clustering", over_clustering_path, !is_null(over_clustering_path))
-  cmd_args <- add_arg(cmd_args, "--min-prop", min_prop, majority_voting)
-
-  if (transpose_input) cmd_args <- c(cmd_args, "--transpose-input")
-  if (xlsx) cmd_args <- c(cmd_args, "--xlsx")
-  if (plot_results) cmd_args <- c(cmd_args, "--plot-results")
-  if (quiet) cmd_args <- c(cmd_args, "--quiet")
-  if (majority_voting) cmd_args <- c(cmd_args, "--majority-voting")
-  .sn_log_info("Executing CellTypist with command:\n{celltypist} {paste(cmd_args, collapse = ' ')}")
-
-  exit_code <- system2(
-    command = celltypist,
-    args = cmd_args,
-    stdout = if (quiet) FALSE else "",
-    stderr = if (quiet) FALSE else ""
-  )
-
-  if (exit_code != 0) {
-    .sn_log_error("CellTypist failed with exit code {exit_code}.")
-    stop("CellTypist execution failed. Check logs for details.")
-  }
-  log_debug("CellTypist output written to {outdir}")
-
-  if (!file.exists(prediction_path)) {
-    .sn_log_error("Prediction output is missing: {prediction_path}.")
-    stop("CellTypist did not generate expected output files")
-  }
-
-  predicted_labels <- if (isTRUE(xlsx)) {
-    sn_read(
-      prediction_path,
-      format = "xlsx",
-      which = 1,
-      row_names = 1
-    )
-  } else {
-    utils::read.csv(prediction_path, row.names = 1, check.names = FALSE)
-  }
-  predicted_labels <- as.data.frame(predicted_labels, check.names = FALSE)
-  normalized_columns <- tolower(gsub("[^A-Za-z0-9]+", "_", colnames(predicted_labels)))
-  normalized_columns <- gsub("^_+|_+$", "", normalized_columns)
-  if (!"predicted_labels" %in% normalized_columns) {
-    stop(
-      "CellTypist prediction output does not contain a `predicted_labels` column.",
-      call. = FALSE
-    )
-  }
-
-  probability_matrix <- if (isTRUE(xlsx)) {
-    tryCatch(
-      sn_read(
-        prediction_path,
-        format = "xlsx",
-        which = 3,
-        row_names = 1
-      ),
-      error = function(e) NULL
-    )
-  } else {
-    probability_path <- file.path(outdir, glue("{prefix}probability_matrix.csv"))
-    if (file.exists(probability_path)) {
-      utils::read.csv(probability_path, row.names = 1, check.names = FALSE)
-    } else {
-      NULL
-    }
-  }
-  if (!is_null(probability_matrix)) {
-    probability_matrix <- as.data.frame(probability_matrix, check.names = FALSE)
-    label_column <- match("majority_voting", normalized_columns)
-    if (is.na(label_column)) label_column <- match("predicted_labels", normalized_columns)
-    selected_labels <- as.character(predicted_labels[[label_column]])
-    probability_columns <- tolower(gsub(
-      "[^A-Za-z0-9]+", "_", colnames(probability_matrix)
-    ))
-    probability_columns <- gsub("^_+|_+$", "", probability_columns)
-    probability_rows <- match(rownames(predicted_labels), rownames(probability_matrix))
-    confidence <- vapply(seq_along(selected_labels), function(index) {
-      row_index <- probability_rows[[index]]
-      if (is.na(row_index)) return(NA_real_)
-      label_parts <- trimws(unlist(strsplit(selected_labels[[index]], "[|,]")))
-      label_parts <- tolower(gsub("[^A-Za-z0-9]+", "_", label_parts))
-      label_parts <- gsub("^_+|_+$", "", label_parts)
-      column_indices <- match(label_parts, probability_columns)
-      column_indices <- column_indices[!is.na(column_indices)]
-      if (!length(column_indices)) return(NA_real_)
-      values <- suppressWarnings(as.numeric(unlist(
-        probability_matrix[row_index, column_indices, drop = FALSE],
-        use.names = FALSE
-      )))
-      values <- values[is.finite(values)]
-      if (length(values)) max(values) else NA_real_
-    }, numeric(1))
-    predicted_labels$confidence <- confidence
-    normalized_columns <- c(normalized_columns, "confidence")
-  }
-
-  model_key <- gsub("\\.pkl$", "", model_name)
-  colnames(predicted_labels) <- make.unique(
-    paste0(model_key, "_", normalized_columns),
-    sep = "_"
-  )
-
-  if (!isTRUE(x_is_seurat)) {
-    tictoc::toc()
-    .sn_log_info("CellTypist analysis completed successfully.")
-    return(tibble::as_tibble(predicted_labels, rownames = "cell"))
-  }
-
-  .sn_log_info("Adding {ncol(predicted_labels)} metadata columns to the Seurat object.")
-  x <- SeuratObject::AddMetaData(x, metadata = predicted_labels)
-
-  tictoc::toc()
-  .sn_log_info("CellTypist analysis completed successfully.")
-
-  .sn_log_seurat_command(object = x, assay = assay, name = "sn_run_celltypist")
 }

@@ -34,6 +34,21 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   hook, and the autozyme benchmark artifact/article) was removed; managed pixi
   environments run plain upstream Python.
 
+### Changed
+
+- Reorganized modules without behavior change (AUDIT-08/09): the Python-backed
+  runners moved from `package_tools.R` to their owning domains
+  (`sn_run_scarches`/`sn_run_scpoli` to clustering, `sn_run_infercnvpy` to CNV,
+  `sn_run_cellphonedb` to communication, `sn_run_cell2location`/`tangram`/
+  `squidpy`/`spatialdata`/`stlearn` to spatial), `sn_store_enrichment()` and the
+  stored-result retrieval family moved next to the unified result contract, the
+  shared `.sn_get_misc_result`/`.sn_validate_seurat_object` helpers moved to
+  `utils.R`, `sn_simulate*` moved to a new `simulation.R`, and
+  `sn_detect_accelerator()` moved to `acceleration.R`. `analysis_clustering.R`
+  shrank from ~7,000 lines by extracting label transfer
+  (`analysis_label_transfer.R`), simulation, and CellTypist modules. Twenty-two
+  inline Seurat guards now route through the shared validator.
+
 ### Added
 
 - The method registry is now load-bearing (AUDIT-06): a two-directional

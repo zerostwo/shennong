@@ -14,6 +14,7 @@ sn_store_milo(
   reduction = "pca",
   dims = NULL,
   annotation_by = NULL,
+  random_seed = NULL,
   return_object = TRUE
 )
 }
@@ -35,6 +36,8 @@ sn_store_milo(
 \item{dims}{Optional embedding dimension names or indices used for milo.}
 
 \item{annotation_by}{Optional neighborhood annotation column.}
+
+\item{random_seed}{Optional random seed recorded in the result provenance.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
 }

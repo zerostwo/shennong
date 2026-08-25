@@ -6,7 +6,7 @@
 \usage{
 sn_run_velocity(
   object,
-  method = "scvelo",
+  method = c("scvelo", "regvelo"),
   spliced_assay = NULL,
   spliced_layer = "spliced",
   unspliced_assay = NULL,

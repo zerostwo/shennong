@@ -12,6 +12,7 @@ sn_store_regulatory_activity(
   group_by = NULL,
   species = NULL,
   network = NULL,
+  random_seed = NULL,
   return_object = TRUE
 )
 }
@@ -30,6 +31,8 @@ sn_store_regulatory_activity(
 \item{species}{Optional species label.}
 
 \item{network}{Optional regulatory network used for inference.}
+
+\item{random_seed}{Optional random seed recorded in the result provenance.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
 }
