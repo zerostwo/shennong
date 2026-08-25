@@ -4,7 +4,7 @@
 \alias{sn_plot_spatial_communication}
 \title{Plot spatially constrained communication}
 \usage{
-sn_plot_spatial_communication(x, name = NULL, n = 50L)
+sn_plot_spatial_communication(x, name = NULL, n = 50L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-communication result.}
@@ -12,6 +12,8 @@ sn_plot_spatial_communication(x, name = NULL, n = 50L)
 \item{name}{Stored result name.}
 
 \item{n}{Maximum interactions.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

@@ -50,9 +50,11 @@
 #'
 #' @param x A bulk-QC result.
 #' @param metric Sample metric to plot.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_bulk_qc <- function(x, metric = c("library_size", "detected_features", "mean_correlation")) {
+sn_plot_bulk_qc <- function(x, metric = c("library_size", "detected_features", "mean_correlation"), object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   metric <- match.arg(metric)
   result <- .sn_resolve_bulk_result(x, "bulk_qc")
   data <- result$tables$samples
@@ -70,9 +72,11 @@ sn_plot_bulk_qc <- function(x, metric = c("library_size", "detected_features", "
 #' @param metadata Optional sample metadata used for color labels.
 #' @param color_by Optional metadata column.
 #' @param pc_x,pc_y Principal components to display.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_bulk_pca <- function(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L) {
+sn_plot_bulk_pca <- function(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_qc")
   pca <- as.data.frame(result$embeddings$pca, check.names = FALSE)
   pca$sample <- rownames(pca)
@@ -95,9 +99,11 @@ sn_plot_bulk_pca <- function(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_
 #' Plot bulk sample correlation
 #'
 #' @param x A bulk-QC result.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` correlation heatmap.
 #' @export
-sn_plot_sample_correlation <- function(x) {
+sn_plot_sample_correlation <- function(x, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_qc")
   correlation <- as.matrix(result$tables$correlation)
   data <- as.data.frame(as.table(correlation), stringsAsFactors = FALSE)
@@ -116,9 +122,11 @@ sn_plot_sample_correlation <- function(x) {
 #' @param adjusted_p_value Adjusted p-value threshold.
 #' @param log2_fold_change Absolute fold-change threshold.
 #' @param labels Number of top genes to label when ggrepel is installed.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A volcano `ggplot` object.
 #' @export
-sn_plot_bulk_de <- function(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L) {
+sn_plot_bulk_de <- function(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_de")
   data <- result$tables$differential_expression
   data$significance <- "Not significant"
@@ -143,9 +151,11 @@ sn_plot_bulk_de <- function(x, adjusted_p_value = 0.05, log2_fold_change = 1, la
 #'
 #' @param x A bulk-network result.
 #' @param type Module sizes or module-trait association heatmap.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_wgcna <- function(x, type = c("traits", "modules")) {
+sn_plot_wgcna <- function(x, type = c("traits", "modules"), object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_bulk_result(x, "bulk_network")
   if (identical(type, "modules")) {
@@ -171,6 +181,7 @@ sn_plot_wgcna <- function(x, type = c("traits", "modules")) {
 #'   table, scaled Schoenfeld residual diagnostics, proportional-hazards test
 #'   p-values, or cumulative hazard.
 #' @param feature Optional feature subset for the selected view.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A survival `ggplot` object.
 #' @export
 sn_plot_survival <- function(x, adjusted_p_value = NULL,
@@ -178,7 +189,8 @@ sn_plot_survival <- function(x, adjusted_p_value = NULL,
                                "forest", "km", "risk_table", "ph", "ph_test",
                                "cumulative_hazard"
                              ),
-                             feature = NULL) {
+                             feature = NULL, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_survival")
   view <- match.arg(view)
   associations <- result$tables$survival

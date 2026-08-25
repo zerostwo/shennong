@@ -27,7 +27,8 @@ sn_run_milo(
   store_name = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  object = NULL
 )
 }
 \arguments{
@@ -92,6 +93,8 @@ supplied, return the updated Seurat object.}
 DA table, design data, and milo object.}
 
 \item{verbose}{Logical; if \code{TRUE}, emit progress logs.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 By default, a data frame of neighborhood-level DA statistics. When

@@ -4,7 +4,7 @@
 \alias{sn_plot_spatial_svg}
 \title{Plot spatial-feature statistics}
 \usage{
-sn_plot_spatial_svg(x, name = NULL, n = 30L)
+sn_plot_spatial_svg(x, name = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-feature result.}
@@ -12,6 +12,8 @@ sn_plot_spatial_svg(x, name = NULL, n = 30L)
 \item{name}{Stored result name.}
 
 \item{n}{Number of features.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

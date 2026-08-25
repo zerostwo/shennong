@@ -18,6 +18,7 @@
 #'   sample-level pathway summary.
 #' @param pathways Optional pathways to retain.
 #' @param n Maximum pathways shown.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_metabolism(object, "metabolism", type = "differential")}
@@ -26,7 +27,9 @@ sn_plot_metabolism <- function(x,
                                name = NULL,
                                type = c("activity", "heatmap", "differential", "sample"),
                                pathways = NULL,
-                               n = 30L) {
+                               n = 30L,
+                               object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_metabolism_result(x, name)
   scores <- tibble::as_tibble(result$tables$primary)

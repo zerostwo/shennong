@@ -73,9 +73,11 @@ sn_plot_spatial_feature <- function(object,
 #' @param x A Seurat object or spatial-domain result.
 #' @param name Stored result name.
 #' @param point_size Point size.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5) {
+sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_spatial_result(x, "spatial_domains", name)
   data <- dplyr::left_join(result$tables$coordinates, result$tables$domains, by = "cell")
   ggplot2::ggplot(data, ggplot2::aes(x = .data$spatial_x, y = .data$spatial_y, color = .data$domain)) +
@@ -88,9 +90,11 @@ sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5) {
 #' @param x A Seurat object or spatial-feature result.
 #' @param name Stored result name.
 #' @param n Number of features.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_svg <- function(x, name = NULL, n = 30L) {
+sn_plot_spatial_svg <- function(x, name = NULL, n = 30L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_spatial_result(x, "spatial_features", name)
   data <- utils::head(result$tables$features[order(result$tables$features$rank), , drop = FALSE], as.integer(n))
   data$feature <- stats::reorder(data$feature, data$score)
@@ -104,9 +108,11 @@ sn_plot_spatial_svg <- function(x, name = NULL, n = 30L) {
 #' @param x A Seurat object or spatial-neighborhood result.
 #' @param name Stored result name.
 #' @param type Enrichment or co-occurrence.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", "cooccurrence")) {
+sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", "cooccurrence"), object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_spatial_result(x, "spatial_neighborhood", name)
   if (identical(type, "enrichment")) {
@@ -128,9 +134,11 @@ sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", 
 #' @param x A Seurat object or spatial-communication result.
 #' @param name Stored result name.
 #' @param n Maximum interactions.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_communication <- function(x, name = NULL, n = 50L) {
+sn_plot_spatial_communication <- function(x, name = NULL, n = 50L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_spatial_result(x, "spatial_communication", name)
   data <- result$tables$primary
   score_column <- .sn_spatial_column(c("consensus_score", "score", "magnitude", "effect"), names(data))

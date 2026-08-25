@@ -116,6 +116,10 @@
 #' @param store_name Stored result name.
 #' @param backend_control Method controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or result.
+#' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
+#'   \code{backend_control$seed} > task default; stamped into provenance.
+#' @param verbose Top-level progress switch forwarded through
+#'   \code{backend_control$verbose} when explicitly supplied.
 #' @return A Seurat object or unified spatial-feature result.
 #' @export
 sn_find_spatial_features <- function(object,
@@ -126,9 +130,15 @@ sn_find_spatial_features <- function(object,
                                      features = NULL,
                                      store_name = "spatial_features",
                                      backend_control = list(),
-                                     return_object = TRUE) {
+                                     return_object = TRUE,
+                                     seed = NULL,
+                                     verbose = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
+  backend_control$seed <- seed %||% backend_control$seed
+  if (!missing(verbose)) {
+    backend_control$verbose <- isTRUE(verbose)
+  }
   coordinates <- .sn_spatial_coordinates(object, spatial_cols)
   expression <- .sn_spatial_expression(object, assay, layer, features, backend_control$max_features %||% 2000L)
   output <- if (is.function(backend_control$runner)) {
@@ -221,6 +231,10 @@ sn_find_spatial_features <- function(object,
 #' @param store_name Stored result name.
 #' @param backend_control Backend controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or result.
+#' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
+#'   \code{backend_control$seed} > task default; stamped into provenance.
+#' @param verbose Top-level progress switch forwarded through
+#'   \code{backend_control$verbose} when explicitly supplied.
 #' @return A Seurat object or spatial-domain result.
 #' @export
 sn_find_spatial_domains <- function(object,
@@ -230,9 +244,15 @@ sn_find_spatial_domains <- function(object,
                                     layer = "counts",
                                     store_name = "spatial_domains",
                                     backend_control = list(),
-                                    return_object = TRUE) {
+                                    return_object = TRUE,
+                                    seed = NULL,
+                                    verbose = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
+  backend_control$seed <- seed %||% backend_control$seed
+  if (!missing(verbose)) {
+    backend_control$verbose <- isTRUE(verbose)
+  }
   coordinates <- .sn_spatial_coordinates(object, spatial_cols)
   output <- if (is.function(backend_control$runner)) {
     backend_control$runner(object = object, method = method, coordinates = coordinates$table, assay = assay, layer = layer, backend_control = backend_control)

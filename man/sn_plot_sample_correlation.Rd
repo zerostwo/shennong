@@ -4,10 +4,12 @@
 \alias{sn_plot_sample_correlation}
 \title{Plot bulk sample correlation}
 \usage{
-sn_plot_sample_correlation(x)
+sn_plot_sample_correlation(x, object = NULL)
 }
 \arguments{
 \item{x}{A bulk-QC result.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} correlation heatmap.

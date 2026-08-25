@@ -9,7 +9,8 @@ sn_plot_metabolism(
   name = NULL,
   type = c("activity", "heatmap", "differential", "sample"),
   pathways = NULL,
-  n = 30L
+  n = 30L,
+  object = NULL
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ sample-level pathway summary.}
 \item{pathways}{Optional pathways to retain.}
 
 \item{n}{Maximum pathways shown.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

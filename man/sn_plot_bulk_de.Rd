@@ -4,7 +4,13 @@
 \alias{sn_plot_bulk_de}
 \title{Plot bulk differential expression}
 \usage{
-sn_plot_bulk_de(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L)
+sn_plot_bulk_de(
+  x,
+  adjusted_p_value = 0.05,
+  log2_fold_change = 1,
+  labels = 10L,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A bulk-DE result.}
@@ -14,6 +20,8 @@ sn_plot_bulk_de(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L)
 \item{log2_fold_change}{Absolute fold-change threshold.}
 
 \item{labels}{Number of top genes to label when ggrepel is installed.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A volcano \code{ggplot} object.

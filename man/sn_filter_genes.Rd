@@ -13,7 +13,8 @@ sn_filter_genes(
   layer = "counts",
   species = NULL,
   gene_class = NULL,
-  gene_type = NULL
+  gene_type = NULL,
+  object = NULL
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ Required only when it cannot be inferred from the object.}
 
 \item{gene_type}{Optional character vector of exact GENCODE \code{gene_type}
 values to retain.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A filtered Seurat object if \code{filter = TRUE}, otherwise the

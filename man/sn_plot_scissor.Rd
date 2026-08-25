@@ -8,7 +8,8 @@ sn_plot_scissor(
   x,
   name = "scissor",
   type = c("states", "cells", "samples", "correlations", "reliability"),
-  n = 5000L
+  n = 5000L,
+  object = NULL
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ sn_plot_scissor(
 cell-level correlation summaries, or optional reliability output.}
 
 \item{n}{Maximum states or cells shown.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A ggplot object.

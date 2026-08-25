@@ -4,7 +4,7 @@
 \alias{sn_plot_fate}
 \title{Plot CellRank fate probabilities}
 \usage{
-sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7)
+sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or fate result.}
@@ -14,6 +14,8 @@ sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7)
 \item{states}{Optional terminal states to retain.}
 
 \item{point_size}{Point size.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A faceted \code{ggplot} object.

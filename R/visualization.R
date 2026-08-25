@@ -2237,6 +2237,7 @@ sn_plot_heatmap <- function(object,
 #'   \code{catplot::theme_cat()} when available.
 #' @param title Optional plot title.
 #' @param x_label,y_label Optional axis labels.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A ggplot2 object.
 #'
@@ -2275,7 +2276,9 @@ sn_plot_dot <- function(x,
                         panel_heights = NULL,
                         title = NULL,
                         x_label = NULL,
-                        y_label = NULL) {
+                         y_label = NULL,
+                         object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   zscore_legend_labels <- match.arg(zscore_legend_labels)
   feature_info <- .sn_resolve_dotplot_features(
     object = x,

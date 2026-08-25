@@ -24,7 +24,8 @@ sn_enrich(
   source_de_name = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
-  outdir = NULL
+  outdir = NULL,
+  object = NULL
 )
 }
 \arguments{
@@ -95,6 +96,8 @@ results.}
 
 \item{outdir}{Optional output directory. If supplied, each enrichment result
 is saved as an \code{.rds} file.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A single \code{clusterProfiler} result, a named list of results when

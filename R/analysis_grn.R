@@ -146,7 +146,8 @@
 #' @param method GRN backend. GENIE3 runs in R. SCENIC, pySCENIC, and GRNBoost2
 #'   accept explicit runner/result adapters so their external motif databases and
 #'   runtimes remain visible.
-#' @param name Stored result name.
+#' @param name Stored result name. Deprecated alias; prefer \code{store_name}.
+#' @param store_name Preferred stored-result name. Overrides \code{name} when supplied.
 #' @param assay,layer Expression assay and layer.
 #' @param regulators Optional regulator genes. Strongly recommended for GENIE3.
 #' @param group_by Optional metadata column used to quantify regulon specificity.
@@ -170,9 +171,13 @@ sn_run_grn <- function(object,
                        regulators = NULL,
                        group_by = NULL,
                        backend_control = list(),
-                       return_object = TRUE) {
+                       return_object = TRUE,
+                       store_name = NULL) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
+  if (!is.null(store_name)) {
+    name <- store_name
+  }
   name <- name %||% paste0("grn_", method)
   if (is.function(backend_control$runner)) {
     output <- backend_control$runner(

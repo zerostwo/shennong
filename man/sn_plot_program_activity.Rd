@@ -4,7 +4,13 @@
 \alias{sn_plot_program_activity}
 \title{Plot program activity distributions}
 \usage{
-sn_plot_program_activity(x, name, programs = NULL, group_by = NULL)
+sn_plot_program_activity(
+  x,
+  name,
+  programs = NULL,
+  group_by = NULL,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or program-scoring result.}
@@ -14,6 +20,8 @@ sn_plot_program_activity(x, name, programs = NULL, group_by = NULL)
 \item{programs}{Optional programs to keep.}
 
 \item{group_by}{Optional Seurat metadata column used on the x-axis.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

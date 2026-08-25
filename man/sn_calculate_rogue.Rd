@@ -16,7 +16,8 @@ sn_calculate_rogue(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10
+  min_genes = 10,
+  object = NULL
 )
 }
 \arguments{
@@ -48,6 +49,8 @@ during subsampling. Defaults to \code{sample} when supplied, otherwise
 
 \item{min_genes}{Minimum detected genes retained by the upstream
 \code{ROGUE::matr.filter()} step.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 When neither \code{cluster_by} nor \code{sample_by} is supplied, returns a

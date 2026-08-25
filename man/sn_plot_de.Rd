@@ -9,17 +9,25 @@ sn_plot_de(
   type = c("volcano", "ma", "effect", "heatmap"),
   adjusted_p_value = 0.05,
   log2_fold_change = 1,
-  n = 40L
+  n = 40L,
+  object = NULL,
+  de_name = "default"
 )
 }
 \arguments{
-\item{result}{A Shennong result or differential-expression table.}
+\item{result}{A Shennong result, differential-expression table, or
+\code{clusterProfiler} result.}
 
 \item{type}{Volcano, MA, ranked effect, or comparison heatmap.}
 
 \item{adjusted_p_value, log2_fold_change}{Significance thresholds.}
 
 \item{n}{Maximum effects displayed for effect/heatmap views.}
+
+\item{object}{Optional Seurat object holding a stored DE result; supply
+either \code{result} or \code{object}, not both.}
+
+\item{de_name}{Stored DE result name used when \code{object} is supplied.}
 }
 \value{
 A result-aware \code{ggplot} with an attached figure specification.

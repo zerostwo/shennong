@@ -13,7 +13,8 @@ sn_run_grn(
   regulators = NULL,
   group_by = NULL,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  store_name = NULL
 )
 }
 \arguments{
@@ -23,7 +24,7 @@ sn_run_grn(
 accept explicit runner/result adapters so their external motif databases and
 runtimes remain visible.}
 
-\item{name}{Stored result name.}
+\item{name}{Stored result name. Deprecated alias; prefer \code{store_name}.}
 
 \item{assay, layer}{Expression assay and layer.}
 
@@ -34,6 +35,8 @@ runtimes remain visible.}
 \item{backend_control}{Backend controls or an external \code{runner}/\code{result}.}
 
 \item{return_object}{Return the modified object or unified result.}
+
+\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
 }
 \value{
 A Seurat object or unified GRN result with edge, regulon, activity,

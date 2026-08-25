@@ -10,7 +10,8 @@ sn_calculate_roe(
   variable,
   pseudocount = 0,
   return_matrix = FALSE,
-  matrix_value = c("roe", "log2_roe", "observed", "expected")
+  matrix_value = c("roe", "log2_roe", "observed", "expected"),
+  object = NULL
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ before computing the ratio. Defaults to \code{0}.}
 \item{matrix_value}{Value to place in the matrix when
 \code{return_matrix = TRUE}. One of \code{"roe"}, \code{"log2_roe"},
 \code{"observed"}, or \code{"expected"}.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with \code{observed}, \code{expected}, totals,

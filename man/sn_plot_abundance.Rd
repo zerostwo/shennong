@@ -4,7 +4,13 @@
 \alias{sn_plot_abundance}
 \title{Plot differential-abundance effects}
 \usage{
-sn_plot_abundance(x, name = NULL, n = 30L, adjusted_p_value = NULL)
+sn_plot_abundance(
+  x,
+  name = NULL,
+  n = 30L,
+  adjusted_p_value = NULL,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or differential-abundance result.}
@@ -14,6 +20,8 @@ sn_plot_abundance(x, name = NULL, n = 30L, adjusted_p_value = NULL)
 \item{n}{Maximum number of rows to display.}
 
 \item{adjusted_p_value}{Optional adjusted-p-value cutoff.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

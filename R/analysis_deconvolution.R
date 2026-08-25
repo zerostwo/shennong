@@ -56,6 +56,7 @@
 #' @param update_gibbs Whether BayesPrism should run the final Gibbs update.
 #' @param return_object If \code{TRUE} and \code{x} is a \code{Seurat} object,
 #'   return the updated object when a result table is available.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A stored-result list, an export-bundle list, or an updated
 #'   \code{Seurat} object depending on the selected backend and
@@ -118,7 +119,9 @@ sn_deconvolve_bulk <- function(x,
                                opt_control = list(),
                                n_cores = 1,
                                update_gibbs = TRUE,
-                               return_object = TRUE) {
+                               return_object = TRUE,
+                               object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   method <- match.arg(method)
   bulk_gene_axis <- match.arg(bulk_gene_axis)
   cibersortx_container <- match.arg(cibersortx_container)

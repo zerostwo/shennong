@@ -213,6 +213,7 @@
 #' @param min_genes Minimum matched features required per signature.
 #' @param backend_control Named backend-specific control list.
 #' @param return_object Return the updated object or the unified result.
+#' @param store_name Preferred stored-result name. Overrides \code{name} when supplied.
 #'
 #' @return A Seurat object or unified program-scoring result.
 #'
@@ -238,9 +239,13 @@ sn_score_programs <- function(object,
                               species = NULL,
                               min_genes = 1L,
                               backend_control = list(),
-                              return_object = TRUE) {
+                              return_object = TRUE,
+                              store_name = NULL) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
+  if (!is.null(store_name)) {
+    name <- store_name
+  }
   name <- name %||% paste0("programs_", method)
   species <- species %||% tryCatch(sn_get_species(object), error = function(e) NULL)
   signatures <- .sn_normalize_program_signatures(signatures, species = species)

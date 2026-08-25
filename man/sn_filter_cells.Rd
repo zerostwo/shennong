@@ -11,7 +11,8 @@ sn_filter_cells(
   method = "mad",
   n = 5,
   plot = TRUE,
-  filter = TRUE
+  filter = TRUE,
+  object = NULL
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ sn_filter_cells(
 \item{plot}{Logical indicating whether to generate QC diagnostic plots}
 
 \item{filter}{Logical indicating whether to filter out flagged cells}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 Seurat object with QC flags in metadata. If filter=TRUE, returns subsetted object.

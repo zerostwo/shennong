@@ -14,7 +14,8 @@ sn_calculate_pcr_batch(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ the metric.}
 during subsampling. Defaults to \code{batch_by}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A one-row data frame containing the weighted batch_by variance explained

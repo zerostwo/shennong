@@ -34,6 +34,7 @@
 #' @param type Plot state ranking, cell coefficients, sample contributions,
 #'   cell-level correlation summaries, or optional reliability output.
 #' @param n Maximum states or cells shown.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A ggplot object.
 #' @examples
 #' \dontrun{
@@ -44,7 +45,9 @@
 sn_plot_scissor <- function(x,
                             name = "scissor",
                             type = c("states", "cells", "samples", "correlations", "reliability"),
-                            n = 5000L) {
+                            n = 5000L,
+                            object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_scissor_plot_result(x, name = name)
 

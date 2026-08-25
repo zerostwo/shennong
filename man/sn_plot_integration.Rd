@@ -4,12 +4,14 @@
 \alias{sn_plot_integration}
 \title{Plot integration assessment metrics}
 \usage{
-sn_plot_integration(x, aggregate = FALSE)
+sn_plot_integration(x, aggregate = FALSE, object = NULL)
 }
 \arguments{
 \item{x}{Result from \code{sn_assess_integration()} or its summary table.}
 
 \item{aggregate}{Include aggregate rows.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 An integration score plot.

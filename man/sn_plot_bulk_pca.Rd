@@ -4,7 +4,14 @@
 \alias{sn_plot_bulk_pca}
 \title{Plot bulk sample PCA}
 \usage{
-sn_plot_bulk_pca(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L)
+sn_plot_bulk_pca(
+  x,
+  metadata = NULL,
+  color_by = NULL,
+  pc_x = 1L,
+  pc_y = 2L,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A bulk-QC result.}
@@ -14,6 +21,8 @@ sn_plot_bulk_pca(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L)
 \item{color_by}{Optional metadata column.}
 
 \item{pc_x, pc_y}{Principal components to display.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

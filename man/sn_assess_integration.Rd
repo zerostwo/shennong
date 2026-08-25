@@ -23,7 +23,8 @@ sn_assess_integration(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 )
 }
 \arguments{
@@ -77,6 +78,8 @@ used to flag difficult groups.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A list with four top-level elements:

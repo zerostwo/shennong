@@ -4,7 +4,13 @@
 \alias{sn_plot_pseudotime}
 \title{Plot pseudotime on the trajectory embedding}
 \usage{
-sn_plot_pseudotime(x, name = NULL, lineage = NULL, point_size = 0.7)
+sn_plot_pseudotime(
+  x,
+  name = NULL,
+  lineage = NULL,
+  point_size = 0.7,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
@@ -14,6 +20,8 @@ sn_plot_pseudotime(x, name = NULL, lineage = NULL, point_size = 0.7)
 \item{lineage}{Optional lineage. Defaults to primary pseudotime.}
 
 \item{point_size}{Point size.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

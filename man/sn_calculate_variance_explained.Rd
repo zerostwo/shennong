@@ -14,7 +14,8 @@ sn_calculate_variance_explained(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  return_dim_data = FALSE
+  return_dim_data = FALSE,
+  object = NULL
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ during subsampling.}
 
 \item{return_dim_data}{Logical; if \code{TRUE}, return a list containing the
 summary table and per-dimension results.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame ranked by \code{variance_explained}. When

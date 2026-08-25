@@ -8,7 +8,8 @@ sn_plot_cnv(
   x,
   name = NULL,
   type = c("heatmap", "umap", "score", "sample", "association"),
-  n = 100L
+  n = 100L,
+  object = NULL
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ sn_plot_cnv(
 sample summary, or CNV-expression association.}
 
 \item{n}{Maximum cells or features shown.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

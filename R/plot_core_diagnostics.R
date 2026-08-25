@@ -2,9 +2,11 @@
 #'
 #' @param x A result from `sn_assess_qc()` or its `by_sample` table.
 #' @param metric Metric shown on the y-axis.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object with figure metadata.
 #' @export
-sn_plot_qc <- function(x, metric = c("qc_score", "n_cells", "retention_fraction")) {
+sn_plot_qc <- function(x, metric = c("qc_score", "n_cells", "retention_fraction"), object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   metric <- match.arg(metric)
   data <- if (is.data.frame(x)) x else x$by_sample %||% x$tables$by_sample
   if (!is.data.frame(data) || !all(c("sample", metric) %in% names(data))) stop("QC input lacks `sample` and the requested metric.", call. = FALSE)
@@ -22,10 +24,13 @@ sn_plot_qc <- function(x, metric = c("qc_score", "n_cells", "retention_fraction"
 #' @param thresholds Named list with one/two numeric lower/upper thresholds.
 #' @param sample_by Optional sample column used for color.
 #' @param max_cells Maximum plotted cells.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A faceted QC distribution plot.
 #' @export
 sn_plot_qc_thresholds <- function(x, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
-                                  thresholds = list(), sample_by = NULL, max_cells = 20000L) {
+                                  thresholds = list(), sample_by = NULL, max_cells = 20000L,
+                                  object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   metadata <- if (inherits(x, "Seurat")) x[[]] else as.data.frame(x)
   missing <- setdiff(c(features, sample_by), names(metadata))
   if (length(missing) > 0L) stop("QC metadata column(s) missing: ", paste(missing, collapse = ", "), ".", call. = FALSE)
@@ -157,9 +162,11 @@ sn_plot_cluster_tree <- function(object, resolution_cols = NULL) {
 #'
 #' @param x Result from `sn_sweep_cluster_resolution()` or its summary table.
 #' @param metrics Numeric metric columns to display.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A resolution-quality plot.
 #' @export
-sn_plot_resolution_sweep <- function(x, metrics = NULL) {
+sn_plot_resolution_sweep <- function(x, metrics = NULL, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   data <- if (is.data.frame(x)) x else x$summary
   if (!is.data.frame(data) || !"resolution" %in% names(data)) stop("Resolution sweep input requires a summary table.", call. = FALSE)
   metrics <- metrics %||% intersect(c("composite_score", "mean_silhouette", "graph_connectivity", "cluster_purity", "ari", "nmi", "mean_rogue"), names(data))
@@ -175,9 +182,11 @@ sn_plot_resolution_sweep <- function(x, metrics = NULL) {
 #'
 #' @param x Result from `sn_assess_integration()` or its summary table.
 #' @param aggregate Include aggregate rows.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return An integration score plot.
 #' @export
-sn_plot_integration <- function(x, aggregate = FALSE) {
+sn_plot_integration <- function(x, aggregate = FALSE, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   data <- if (is.data.frame(x)) x else x$summary
   if (!is.data.frame(data) || !all(c("metric", "scaled_score") %in% names(data))) stop("Integration input lacks standardized metric scores.", call. = FALSE)
   if (!isTRUE(aggregate) && "category" %in% names(data)) data <- data[!grepl("aggregate", data$metric, ignore.case = TRUE), , drop = FALSE]

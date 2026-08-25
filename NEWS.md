@@ -36,6 +36,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Unified the analysis interface behind `object=` aliases (AUDIT-04): every
+  x-first exported analysis function now also accepts the Seurat object or
+  stored result as `object=`, covering all `sn_calculate_*` metrics,
+  `sn_assess_integration()`, `sn_run_milo()`, `sn_enrich()`,
+  `sn_deconvolve_bulk()`, `sn_run_celltypist()`, `sn_filter_genes()`,
+  `sn_filter_cells()`, and the result-aware `sn_plot_*` family. Supplying
+  both `x`/first argument and `object=` fails fast. `sn_run_grn()`,
+  `sn_score_programs()`, and `sn_discover_programs()` accept the standard
+  `store_name=` storage argument alongside their legacy `name=` formals
+  (which keep working).
+- Added top-level `seed=` and `verbose=` controls to workflow entry points
+  that previously buried them in control bags (AUDIT-05):
+  `sn_run_cluster()`, `sn_run_trajectory()`, `sn_run_velocity()`,
+  `sn_run_fate()`, `sn_find_spatial_features()`, and
+  `sn_find_spatial_domains()`. Precedence is `seed > control$seed > task
+  default`, and the resolved seed is stamped into stored-result provenance.
+- `sn_plot_de()` and `sn_plot_enrichment()` now follow the object-or-result
+  pattern: pass a Seurat object plus `de_name=`/`enrichment_name=` to plot a
+  stored DE or enrichment result directly (AUDIT-07).
+
 - Added `method = "scrublet"` to `sn_find_doublets()`: Scrublet doublet
   detection through scanpy's native `sc.pp.scrublet()` wrapper, managed by a new
   `scrublet` pixi environment

@@ -786,6 +786,7 @@ sn_standardize_gene_symbols <- function(
 #'   \code{"coding"} or \code{"noncoding"}.
 #' @param gene_type Optional character vector of exact GENCODE \code{gene_type}
 #'   values to retain.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A filtered Seurat object if \code{filter = TRUE}, otherwise the
 #'   original object.
@@ -827,7 +828,9 @@ sn_filter_genes <- function(x,
                             layer = "counts",
                             species = NULL,
                             gene_class = NULL,
-                            gene_type = NULL) {
+                            gene_type = NULL,
+                            object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (!inherits(x, "Seurat")) {
     stop("The input object x is not a Seurat object.")
   }
@@ -926,6 +929,7 @@ sn_filter_genes <- function(x,
 #' @param n Numeric threshold(s) for MAD multiplier. Can be single value or vector matching features.
 #' @param plot Logical indicating whether to generate QC diagnostic plots
 #' @param filter Logical indicating whether to filter out flagged cells
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return Seurat object with QC flags in metadata. If filter=TRUE, returns subsetted object.
 #'
@@ -949,8 +953,10 @@ sn_filter_cells <- function(
   method = "mad",
   n = 5,
   plot = TRUE,
-  filter = TRUE
+  filter = TRUE,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (!inherits(x, "Seurat")) stop("Input must be a Seurat object")
   features <- unique(as.character(features))
   if (length(features) == 0) {

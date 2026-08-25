@@ -4,7 +4,13 @@
 \alias{sn_plot_lineage_probability}
 \title{Plot lineage assignment probability}
 \usage{
-sn_plot_lineage_probability(x, name = NULL, lineage, point_size = 0.7)
+sn_plot_lineage_probability(
+  x,
+  name = NULL,
+  lineage,
+  point_size = 0.7,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
@@ -14,6 +20,8 @@ sn_plot_lineage_probability(x, name = NULL, lineage, point_size = 0.7)
 \item{lineage}{Lineage to display.}
 
 \item{point_size}{Point size.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

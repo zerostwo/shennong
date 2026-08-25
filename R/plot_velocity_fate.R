@@ -17,9 +17,11 @@
 #' @param color_by Cell-table field used to color points.
 #' @param arrow_scale Multiplicative arrow-length scale.
 #' @param point_size Point size.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_velocity <- function(x, name = NULL, color_by = "pseudotime", arrow_scale = 1, point_size = 0.6) {
+sn_plot_velocity <- function(x, name = NULL, color_by = "pseudotime", arrow_scale = 1, point_size = 0.6, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_dynamics_result(x, "velocity", name)
   data <- tibble::as_tibble(result$tables$cells)
   if (!color_by %in% names(data)) stop("`color_by` was not found in velocity cells.", call. = FALSE)
@@ -42,9 +44,11 @@ sn_plot_velocity <- function(x, name = NULL, color_by = "pseudotime", arrow_scal
 #' @param name Stored result name.
 #' @param states Optional terminal states to retain.
 #' @param point_size Point size.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A faceted `ggplot` object.
 #' @export
-sn_plot_fate <- function(x, name = NULL, states = NULL, point_size = 0.7) {
+sn_plot_fate <- function(x, name = NULL, states = NULL, point_size = 0.7, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_dynamics_result(x, "fate", name)
   probabilities <- tibble::as_tibble(result$tables$probabilities)
   if (!is_null(states)) probabilities <- probabilities[probabilities$state %in% states, , drop = FALSE]

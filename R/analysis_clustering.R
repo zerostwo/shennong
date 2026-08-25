@@ -3223,6 +3223,11 @@ sn_detect_rare_cells <- function(object,
 #'   to \code{Seurat::FindClusters()}.
 #' @param cluster_random_seed Random seed passed to
 #'   \code{Seurat::FindClusters()}.
+#' @param seed Top-level reproducibility seed overriding
+#'   \code{cluster_random_seed} (and any existing \code{integration_control$seed})
+#'   when supplied. Precedence: \code{seed} > \code{cluster_random_seed} > default.
+#' @param verbose Top-level progress logging switch forwarded to the clustering
+#'   implementation; a \code{verbose} tail argument keeps precedence over it.
 #' @param cluster_group_singletons Whether \code{Seurat::FindClusters()}
 #'   should group singletons into the nearest cluster.
 #' @param leiden_method Leiden implementation passed to
@@ -3395,6 +3400,8 @@ sn_run_cluster <- function(object,
                            cluster_group_singletons = TRUE,
                            leiden_method = c("leidenbase", "igraph"),
                            leiden_objective_function = c("modularity", "CPM"),
+                           seed = NULL,
+                           verbose = TRUE,
                            ...) {
   integration_method_supplied <- !missing(integration_method)
   normalization_method_supplied <- !missing(normalization_method)
@@ -3403,6 +3410,15 @@ sn_run_cluster <- function(object,
   cluster_algorithm_supplied <- !missing(cluster_algorithm)
   tail <- .sn_resolve_cluster_tail_args(list(...))
   block_genes_supplied <- "block_genes" %in% tail$supplied
+  if (!is.null(seed)) {
+    cluster_random_seed <- seed
+    if (!is.null(integration_control$seed)) {
+      integration_control$seed <- seed
+    }
+  }
+  if (!"verbose" %in% tail$supplied) {
+    tail$values$verbose <- verbose
+  }
 
   cluster_args <- c(
     list(
@@ -6761,6 +6777,7 @@ sn_simulate_scdesign3 <- function(object,
 #'   through the optional `rio` dependency. Defaults to `FALSE`.
 #' @param plot_results Logical. If `TRUE`, plot the prediction results. Defaults to `FALSE`.
 #' @param quiet Logical. If `TRUE`, hide the banner and config info from `celltypist`. Defaults to `FALSE`.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return When \code{x} is a Seurat object, a Seurat object with prediction
 #'   columns added to metadata. When \code{x} is a path, the CellTypist
@@ -6791,7 +6808,9 @@ sn_run_celltypist <- function(x,
                               layer = "counts",
                               xlsx = FALSE,
                               plot_results = FALSE,
-                              quiet = FALSE) {
+                              quiet = FALSE,
+                              object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   check_installed(c("logger", "glue"),
     reason = "to run CellTypist analysis."
   )

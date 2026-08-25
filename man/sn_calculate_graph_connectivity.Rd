@@ -16,7 +16,8 @@ sn_calculate_graph_connectivity(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ during subsampling. Defaults to \code{label_by}.}
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
 
 \item{n_trees}{Number of Annoy trees when \code{neighbor_method = "annoy"}.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with one row per group and a

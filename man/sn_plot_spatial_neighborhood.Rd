@@ -7,7 +7,8 @@
 sn_plot_spatial_neighborhood(
   x,
   name = NULL,
-  type = c("enrichment", "cooccurrence")
+  type = c("enrichment", "cooccurrence"),
+  object = NULL
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ sn_plot_spatial_neighborhood(
 \item{name}{Stored result name.}
 
 \item{type}{Enrichment or co-occurrence.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

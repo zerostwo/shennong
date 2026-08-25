@@ -9,7 +9,8 @@ sn_plot_dynamic_heatmap(
   name = NULL,
   features = NULL,
   lineage = NULL,
-  scale_rows = TRUE
+  scale_rows = TRUE,
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_dynamic_heatmap(
 \item{lineage}{Optional lineage number or label.}
 
 \item{scale_rows}{Standardize each feature within lineage.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} heatmap.

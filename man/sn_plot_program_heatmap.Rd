@@ -9,7 +9,8 @@ sn_plot_program_heatmap(
   name,
   programs = NULL,
   group_by = NULL,
-  scale_rows = TRUE
+  scale_rows = TRUE,
+  object = NULL
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ sn_plot_program_heatmap(
 scores before plotting.}
 
 \item{scale_rows}{Standardize each program across displayed groups.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} heatmap.

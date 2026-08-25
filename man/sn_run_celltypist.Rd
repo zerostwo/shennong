@@ -22,7 +22,8 @@ sn_run_celltypist(
   layer = "counts",
   xlsx = FALSE,
   plot_results = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  object = NULL
 )
 }
 \arguments{
@@ -76,6 +77,8 @@ through the optional \code{rio} dependency. Defaults to \code{FALSE}.}
 \item{plot_results}{Logical. If \code{TRUE}, plot the prediction results. Defaults to \code{FALSE}.}
 
 \item{quiet}{Logical. If \code{TRUE}, hide the banner and config info from \code{celltypist}. Defaults to \code{FALSE}.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 When \code{x} is a Seurat object, a Seurat object with prediction

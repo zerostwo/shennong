@@ -4,7 +4,7 @@
 \alias{sn_plot_communication_comparison}
 \title{Plot sample-aware differential communication effects}
 \usage{
-sn_plot_communication_comparison(x, name = NULL, n = 30L)
+sn_plot_communication_comparison(x, name = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or unified communication result.}
@@ -12,6 +12,8 @@ sn_plot_communication_comparison(x, name = NULL, n = 30L)
 \item{name}{Stored result name when \code{x} is a Seurat object.}
 
 \item{n}{Maximum number of effects.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

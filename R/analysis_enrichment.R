@@ -416,6 +416,7 @@
 #' @param prefix Optional filename prefix when writing results.
 #' @param outdir Optional output directory. If supplied, each enrichment result
 #'   is saved as an `.rds` file.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A single `clusterProfiler` result, a named list of results when
 #'   multiple databases are requested, or a \code{Seurat} object when
@@ -451,8 +452,10 @@ sn_enrich <- function(
   source_de_name = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
-  outdir = NULL
+  outdir = NULL,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   resolved <- .sn_enrich_resolve_input(
     x = x,
     source_de_name = source_de_name

@@ -9,7 +9,8 @@ sn_plot_qc_thresholds(
   features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
   thresholds = list(),
   sample_by = NULL,
-  max_cells = 20000L
+  max_cells = 20000L,
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_qc_thresholds(
 \item{sample_by}{Optional sample column used for color.}
 
 \item{max_cells}{Maximum plotted cells.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A faceted QC distribution plot.

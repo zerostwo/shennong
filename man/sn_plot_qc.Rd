@@ -4,12 +4,18 @@
 \alias{sn_plot_qc}
 \title{Plot QC assessment summaries}
 \usage{
-sn_plot_qc(x, metric = c("qc_score", "n_cells", "retention_fraction"))
+sn_plot_qc(
+  x,
+  metric = c("qc_score", "n_cells", "retention_fraction"),
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A result from \code{sn_assess_qc()} or its \code{by_sample} table.}
 
 \item{metric}{Metric shown on the y-axis.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object with figure metadata.

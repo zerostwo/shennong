@@ -16,7 +16,7 @@
 #' @param stratify_by Optional metadata column used to preserve representation
 #'   during subsampling. Defaults to the first requested \code{label}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with one row per retained cell. The first column is
 #'   \code{cell_id}; each requested label_by contributes one LISI score column.
 #'
@@ -48,8 +48,10 @@ sn_calculate_lisi <- function(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   check_installed_github(pkg = "lisi", repo = "immunogenomics/lisi")
   label_by <- label_by %||% "sample"
   stratify_by <- stratify_by %||% label_by[[1]]
@@ -95,7 +97,7 @@ sn_calculate_lisi <- function(
 #' @param stratify_by Optional metadata column used to preserve representation
 #'   during subsampling. Defaults to \code{label_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with per-cell silhouette widths.
 #'
 #' @importFrom cluster silhouette
@@ -126,8 +128,10 @@ sn_calculate_silhouette <- function(
   cells = NULL,
   max_cells = 3000,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -177,7 +181,7 @@ sn_calculate_silhouette <- function(
 #'   during subsampling. Defaults to \code{label_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #' @param n_trees Number of Annoy trees when \code{neighbor_method = "annoy"}.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with one row per group and a
 #'   \code{connectivity_score} column in \code{[0, 1]}.
 #'
@@ -211,8 +215,10 @@ sn_calculate_graph_connectivity <- function(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -270,7 +276,7 @@ sn_calculate_graph_connectivity <- function(
 #' @param stratify_by Optional metadata column used to preserve representation
 #'   during subsampling. Defaults to \code{batch_by}.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A one-row data frame containing the weighted batch_by variance explained
 #'   by the selected reduction and, when available, the baseline comparison.
 #'
@@ -302,8 +308,10 @@ sn_calculate_pcr_batch <- function(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(batch_by)) {
     stop("`batch_by` must be supplied.", call. = FALSE)
   }
@@ -395,7 +403,7 @@ sn_calculate_pcr_batch <- function(
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #' @param return_dim_data Logical; if \code{TRUE}, return a list containing the
 #'   summary table and per-dimension results.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame ranked by \code{variance_explained}. When
 #'   \code{return_dim_data = TRUE}, a list with \code{summary} and
 #'   \code{dim_data} is returned.
@@ -422,8 +430,10 @@ sn_calculate_variance_explained <- function(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  return_dim_data = FALSE
+  return_dim_data = FALSE,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   stopifnot(is.character(variables), length(variables) >= 1L)
   stopifnot(is.logical(return_dim_data), length(return_dim_data) == 1L)
   method <- match.arg(method)
@@ -612,7 +622,7 @@ sn_calculate_variance_explained <- function(
 #' @param x A Seurat object or data frame containing the required columns.
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing reference labels.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A one-row data frame with ARI and NMI.
 #'
 #' @examples
@@ -623,7 +633,11 @@ sn_calculate_variance_explained <- function(
 #' sn_calculate_clustering_agreement(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = NULL) {
+sn_calculate_clustering_agreement <- function(x,
+                                              cluster_by = NULL,
+                                              label_by = NULL,
+                                              object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -677,7 +691,7 @@ sn_calculate_clustering_agreement <- function(x, cluster_by = NULL, label_by = N
 #'   labels.
 #' @param isolated_n Absolute cell-count threshold used to flag isolated labels.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with one row per label_by and columns describing label
 #'   abundance, silhouette separation, and whether the label_by is considered
 #'   isolated. The attributes \code{overall_score} and \code{isolated_labels}
@@ -711,8 +725,10 @@ sn_calculate_isolated_label_score <- function(
   stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717
+  seed = 717,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(label_by)) {
     stop("`label_by` must be supplied.", call. = FALSE)
   }
@@ -782,7 +798,7 @@ sn_calculate_isolated_label_score <- function(
 #' @param x A Seurat object or data frame containing the required columns.
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing reference labels.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with one row per cluster_by and purity diagnostics in
 #'   \code{[0, 1]}.
 #'
@@ -794,7 +810,11 @@ sn_calculate_isolated_label_score <- function(
 #' sn_calculate_cluster_purity(meta, cluster_by = "cluster", label_by = "label")
 #'
 #' @export
-sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL) {
+sn_calculate_cluster_purity <- function(x,
+                                        cluster_by = NULL,
+                                        label_by = NULL,
+                                        object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -841,7 +861,7 @@ sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL) {
 #' @param cluster_by Metadata/data-frame column containing cluster_by labels.
 #' @param label_by Metadata/data-frame column containing the label_by to evaluate
 #'   within each cluster.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with one row per cluster, including raw entropy and a
 #'   normalized entropy score in \code{[0, 1]}.
 #'
@@ -853,7 +873,11 @@ sn_calculate_cluster_purity <- function(x, cluster_by = NULL, label_by = NULL) {
 #' sn_calculate_cluster_entropy(meta, cluster_by = "cluster", label_by = "batch")
 #'
 #' @export
-sn_calculate_cluster_entropy <- function(x, cluster_by = NULL, label_by = NULL) {
+sn_calculate_cluster_entropy <- function(x,
+                                         cluster_by = NULL,
+                                         label_by = NULL,
+                                         object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   if (is.null(cluster_by) || is.null(label_by)) {
     stop("`cluster_by` and `label_by` must be supplied.", call. = FALSE)
   }
@@ -1106,6 +1130,7 @@ sn_identify_challenging_groups <- function(
 #'   used to flag difficult groups.
 #' @param seed Random seed used when \code{max_cells} triggers subsampling.
 #' @param n_trees Number of Annoy trees when \code{neighbor_method = "annoy"}.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A list with four top-level elements:
 #'   \itemize{
@@ -1155,8 +1180,10 @@ sn_assess_integration <- function(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   cluster_by <- cluster_by %||% "seurat_clusters"
   if (is.null(batch_by)) {
     stop("`batch_by` must be supplied.", call. = FALSE)
@@ -1583,7 +1610,7 @@ sn_assess_integration <- function(
 #'   \code{ROGUE::matr.filter()} step.
 #' @param min_genes Minimum detected genes retained by the upstream
 #'   \code{ROGUE::matr.filter()} step.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return When neither \code{cluster_by} nor \code{sample_by} is supplied, returns a
 #'   single numeric ROGUE score for the selected matrix. When
 #'   \code{cluster_by} is supplied, returns a data frame with per-cluster ROGUE
@@ -1610,8 +1637,10 @@ sn_calculate_rogue <- function(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10
+  min_genes = 10,
+  object = NULL
 ) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   check_installed_github(pkg = "ROGUE", repo = "PaulingLiu/ROGUE")
   if (!inherits(x, "Seurat")) {
     stop("Input x must be a Seurat object.")
@@ -1984,7 +2013,7 @@ sn_sweep_cluster_resolution <- function(
 #' @param sort_value Optional level of \code{variable} used for sorting when
 #'   \code{sort_by} is supplied. Defaults to the first observed level.
 #' @param sort_desc Logical; if \code{TRUE}, sort in descending order.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with per-group proportions.
 #'
 #' @importFrom dplyr count filter pull mutate rename left_join distinct across all_of group_by summarise first select n
@@ -2016,7 +2045,9 @@ sn_calculate_composition <- function(x,
                                      additional_cols = NULL,
                                      sort_by = NULL,
                                      sort_value = NULL,
-                                     sort_desc = FALSE) {
+                                     sort_desc = FALSE,
+                                     object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   stopifnot(is.character(group_by), length(group_by) >= 1)
   stopifnot(is.character(variable), length(variable) == 1)
   stopifnot(is.numeric(min_cells), length(min_cells) == 1, min_cells >= 0)
@@ -2162,7 +2193,7 @@ sn_calculate_composition <- function(x,
 #' @param matrix_value Value to place in the matrix when
 #'   \code{return_matrix = TRUE}. One of \code{"roe"}, \code{"log2_roe"},
 #'   \code{"observed"}, or \code{"expected"}.
-#'
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A data frame with \code{observed}, \code{expected}, totals,
 #'   \code{roe}, and \code{log2_roe} columns. When \code{return_matrix = TRUE},
 #'   a numeric matrix is returned.
@@ -2188,7 +2219,9 @@ sn_calculate_roe <- function(x,
                              variable,
                              pseudocount = 0,
                              return_matrix = FALSE,
-                             matrix_value = c("roe", "log2_roe", "observed", "expected")) {
+                             matrix_value = c("roe", "log2_roe", "observed", "expected"),
+                             object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   stopifnot(is.character(group_by), length(group_by) >= 1L)
   stopifnot(is.character(variable), length(variable) == 1L)
   stopifnot(is.numeric(pseudocount), length(pseudocount) == 1L, pseudocount >= 0)
@@ -2639,6 +2672,7 @@ sn_compare_composition <- function(x,
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return By default, a data frame of neighborhood-level DA statistics. When
 #'   \code{store_name} is supplied, return the unified stored-result list, or
 #'   the updated Seurat object when \code{return_object = TRUE}. When
@@ -2679,7 +2713,9 @@ sn_run_milo <- function(x,
                         store_name = NULL,
                         return_object = FALSE,
                         return_intermediate = FALSE,
-                        verbose = TRUE) {
+                        verbose = TRUE,
+                        object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)

@@ -12,7 +12,9 @@ sn_run_fate(
   dims = 1:2,
   store_name = "fate",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -29,6 +31,12 @@ sn_run_fate(
 \item{backend_control}{CellRank/pixi controls or an explicit \code{runner}/\code{result}.}
 
 \item{return_object}{Return the modified object or unified fate result.}
+
+\item{seed}{Top-level reproducibility seed. Precedence: \code{seed} >
+\code{backend_control$seed} > task default.}
+
+\item{verbose}{Top-level progress switch forwarded through
+\code{backend_control$verbose} when explicitly supplied.}
 }
 \value{
 A Seurat object or fate result.

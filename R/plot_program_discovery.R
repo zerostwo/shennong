@@ -17,13 +17,16 @@
 #' @param type Gene weights, per-cell activity, or run stability.
 #' @param programs Optional programs to retain.
 #' @param n Maximum genes per program.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
 sn_plot_discovered_programs <- function(x,
                                         name = NULL,
                                         type = c("weights", "activity", "stability"),
                                         programs = NULL,
-                                        n = 20L) {
+                                        n = 20L,
+                                        object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_program_discovery(x, name)
   if (identical(type, "weights")) {

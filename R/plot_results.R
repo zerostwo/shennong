@@ -23,6 +23,23 @@
   NULL
 }
 
+.sn_resolve_stored_plot_result <- function(result, object, result_missing, kind, store_name) {
+  if (is.null(object)) {
+    return(result)
+  }
+  if (!result_missing) {
+    stop("Supply only one of `result` and `object`.", call. = FALSE)
+  }
+  if (!inherits(object, "Seurat")) {
+    stop("`object` must be a Seurat object.", call. = FALSE)
+  }
+  if (identical(kind, "de")) {
+    sn_get_de_result(object, de_name = store_name, with_metadata = TRUE)
+  } else {
+    sn_get_enrichment_result(object, enrichment_name = store_name, with_metadata = TRUE)
+  }
+}
+
 .sn_standardize_plot_de <- function(result) {
   table <- .sn_result_plot_table(result)
   gene <- .sn_result_column(table, c("gene", "feature", "symbol"), required = FALSE)
@@ -40,15 +57,21 @@
 
 #' Plot a differential-expression result
 #'
-#' @param result A Shennong result or differential-expression table.
+#' @param result A Shennong result, differential-expression table, or
+#'   \code{clusterProfiler} result.
 #' @param type Volcano, MA, ranked effect, or comparison heatmap.
 #' @param adjusted_p_value,log2_fold_change Significance thresholds.
 #' @param n Maximum effects displayed for effect/heatmap views.
+#' @param object Optional Seurat object holding a stored DE result; supply
+#'   either \code{result} or \code{object}, not both.
+#' @param de_name Stored DE result name used when \code{object} is supplied.
 #' @return A result-aware `ggplot` with an attached figure specification.
 #' @export
 sn_plot_de <- function(result, type = c("volcano", "ma", "effect", "heatmap"),
-                       adjusted_p_value = 0.05, log2_fold_change = 1, n = 40L) {
+                       adjusted_p_value = 0.05, log2_fold_change = 1, n = 40L,
+                       object = NULL, de_name = "default") {
   type <- match.arg(type)
+  result <- .sn_resolve_stored_plot_result(result, object, missing(result), "de", de_name)
   data <- .sn_standardize_plot_de(result)
   data$significant <- is.finite(data$adjusted_p_value) & data$adjusted_p_value <= adjusted_p_value & abs(data$effect) >= log2_fold_change
   if (identical(type, "volcano")) {
@@ -132,11 +155,17 @@ sn_plot_de <- function(result, type = c("volcano", "ma", "effect", "heatmap"),
 #' @param type Dot, bar, ridge, network, or enrichment-map view.
 #' @param n Maximum pathways.
 #' @param minimum_overlap Minimum Jaccard overlap for network edges.
+#' @param object Optional Seurat object holding a stored enrichment result;
+#'   supply either \code{result} or \code{object}, not both.
+#' @param enrichment_name Stored enrichment result name used when \code{object}
+#'   is supplied.
 #' @return A result-aware `ggplot` with source data and figure specification.
 #' @export
 sn_plot_enrichment <- function(result, type = c("dot", "bar", "ridge", "network", "emap"),
-                               n = 20L, minimum_overlap = 0.1) {
+                               n = 20L, minimum_overlap = 0.1,
+                               object = NULL, enrichment_name = "default") {
   type <- match.arg(type)
+  result <- .sn_resolve_stored_plot_result(result, object, missing(result), "enrichment", enrichment_name)
   data <- .sn_standardize_enrichment(result)
   data <- utils::head(data[order(data$adjusted_p_value, -abs(data$score)), , drop = FALSE], as.integer(n))
   data$term <- factor(data$term, levels = rev(data$term))

@@ -4,7 +4,7 @@
 \alias{sn_plot_spatial_domain}
 \title{Plot spatial-domain assignments}
 \usage{
-sn_plot_spatial_domain(x, name = NULL, point_size = 1.5)
+sn_plot_spatial_domain(x, name = NULL, point_size = 1.5, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-domain result.}
@@ -12,6 +12,8 @@ sn_plot_spatial_domain(x, name = NULL, point_size = 1.5)
 \item{name}{Stored result name.}
 
 \item{point_size}{Point size.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

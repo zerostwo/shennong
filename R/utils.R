@@ -1,3 +1,13 @@
+.sn_resolve_object_alias <- function(x, object, x_missing) {
+  if (is.null(object)) {
+    return(x)
+  }
+  if (!x_missing) {
+    stop("Supply only one of 'x' and 'object'.", call. = FALSE)
+  }
+  object
+}
+
 #' Check if files exist
 #'
 #' This function takes a vector of file paths as input and checks if each file exists.

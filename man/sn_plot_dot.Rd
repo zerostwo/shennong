@@ -32,7 +32,8 @@ sn_plot_dot(
   panel_heights = NULL,
   title = NULL,
   x_label = NULL,
-  y_label = NULL
+  y_label = NULL,
+  object = NULL
 )
 }
 \arguments{
@@ -103,6 +104,8 @@ panel dimension automatically.}
 \item{title}{Optional plot title.}
 
 \item{x_label, y_label}{Optional axis labels.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A ggplot2 object.

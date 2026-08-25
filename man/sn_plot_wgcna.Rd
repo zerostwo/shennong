@@ -4,12 +4,14 @@
 \alias{sn_plot_wgcna}
 \title{Plot WGCNA modules or trait associations}
 \usage{
-sn_plot_wgcna(x, type = c("traits", "modules"))
+sn_plot_wgcna(x, type = c("traits", "modules"), object = NULL)
 }
 \arguments{
 \item{x}{A bulk-network result.}
 
 \item{type}{Module sizes or module-trait association heatmap.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

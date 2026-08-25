@@ -17,6 +17,7 @@
 #' @param type Network edges, regulon activity, or group specificity.
 #' @param regulons Optional regulators/regulons to retain.
 #' @param n Maximum network edges.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_regulon(object, "grn_genie3", type = "specificity")}
@@ -25,7 +26,9 @@ sn_plot_regulon <- function(x,
                             name = NULL,
                             type = c("network", "activity", "specificity"),
                             regulons = NULL,
-                            n = 50L) {
+                            n = 50L,
+                            object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_grn_result(x, name)
   if (identical(type, "network")) {

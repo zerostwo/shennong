@@ -4,7 +4,7 @@
 \alias{sn_plot_gene_trend}
 \title{Plot fitted expression trends for selected genes}
 \usage{
-sn_plot_gene_trend(x, name = NULL, features)
+sn_plot_gene_trend(x, name = NULL, features, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
@@ -12,6 +12,8 @@ sn_plot_gene_trend(x, name = NULL, features)
 \item{name}{Stored trajectory name.}
 
 \item{features}{Features to plot.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

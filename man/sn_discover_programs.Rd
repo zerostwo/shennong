@@ -14,7 +14,8 @@ sn_discover_programs(
   layer = "data",
   features = NULL,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  store_name = NULL
 )
 }
 \arguments{
@@ -27,7 +28,7 @@ and Hotspot use explicit runner/result adapters.}
 
 \item{group_by}{Optional metadata column for independent within-group discovery.}
 
-\item{name}{Stored result name.}
+\item{name}{Stored result name. Deprecated alias; prefer \code{store_name}.}
 
 \item{assay, layer}{Expression assay and non-negative layer.}
 
@@ -37,6 +38,8 @@ and Hotspot use explicit runner/result adapters.}
 \code{n_features}, \code{top_genes}) or an external \code{runner}/\code{result}.}
 
 \item{return_object}{Return the modified object or unified result.}
+
+\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
 }
 \value{
 A Seurat object or unified program-discovery result.

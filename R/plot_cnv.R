@@ -17,6 +17,7 @@
 #' @param type Plot type: chromosome heatmap, CNV UMAP, score distribution,
 #'   sample summary, or CNV-expression association.
 #' @param n Maximum cells or features shown.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_cnv(object, "cnv", type = "heatmap")}
@@ -24,7 +25,9 @@
 sn_plot_cnv <- function(x,
                         name = NULL,
                         type = c("heatmap", "umap", "score", "sample", "association"),
-                        n = 100L) {
+                        n = 100L,
+                        object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_cnv_result(x, name)
   primary <- tibble::as_tibble(result$tables$primary)

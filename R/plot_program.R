@@ -13,6 +13,7 @@
 #' @param name Stored result name.
 #' @param programs Optional programs to keep.
 #' @param group_by Optional Seurat metadata column used on the x-axis.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -20,7 +21,8 @@
 #' \dontrun{sn_plot_program_activity(object, "immune_programs", group_by = "cell_type")}
 #'
 #' @export
-sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL) {
+sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_program_result(x, name)
   table <- result$tables$scores
   if (!is_null(programs)) table <- table[table$program %in% programs, , drop = FALSE]
@@ -50,6 +52,7 @@ sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL) 
 #' @param group_by Optional Seurat metadata column used to aggregate cell-level
 #'   scores before plotting.
 #' @param scale_rows Standardize each program across displayed groups.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #'
 #' @return A \code{ggplot} heatmap.
 #'
@@ -57,7 +60,8 @@ sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL) 
 #' \dontrun{sn_plot_program_heatmap(object, "immune_programs", group_by = "cell_type")}
 #'
 #' @export
-sn_plot_program_heatmap <- function(x, name, programs = NULL, group_by = NULL, scale_rows = TRUE) {
+sn_plot_program_heatmap <- function(x, name, programs = NULL, group_by = NULL, scale_rows = TRUE, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_program_result(x, name)
   table <- result$tables$scores
   if (!is_null(programs)) table <- table[table$program %in% programs, , drop = FALSE]

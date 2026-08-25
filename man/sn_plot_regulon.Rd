@@ -9,7 +9,8 @@ sn_plot_regulon(
   name = NULL,
   type = c("network", "activity", "specificity"),
   regulons = NULL,
-  n = 50L
+  n = 50L,
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_regulon(
 \item{regulons}{Optional regulators/regulons to retain.}
 
 \item{n}{Maximum network edges.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

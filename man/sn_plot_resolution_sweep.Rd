@@ -4,12 +4,14 @@
 \alias{sn_plot_resolution_sweep}
 \title{Plot a clustering resolution sweep}
 \usage{
-sn_plot_resolution_sweep(x, metrics = NULL)
+sn_plot_resolution_sweep(x, metrics = NULL, object = NULL)
 }
 \arguments{
 \item{x}{Result from \code{sn_sweep_cluster_resolution()} or its summary table.}
 
 \item{metrics}{Numeric metric columns to display.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A resolution-quality plot.

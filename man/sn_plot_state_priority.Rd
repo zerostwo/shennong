@@ -4,7 +4,7 @@
 \alias{sn_plot_state_priority}
 \title{Plot cell-state priority scores}
 \usage{
-sn_plot_state_priority(x, name = NULL, n = 30L)
+sn_plot_state_priority(x, name = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or state-priority result.}
@@ -12,6 +12,8 @@ sn_plot_state_priority(x, name = NULL, n = 30L)
 \item{name}{Stored result name when \code{x} is a Seurat object.}
 
 \item{n}{Maximum states to show.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

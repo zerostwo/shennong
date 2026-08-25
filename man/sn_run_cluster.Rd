@@ -23,6 +23,8 @@ sn_run_cluster(
   cluster_group_singletons = TRUE,
   leiden_method = c("leidenbase", "igraph"),
   leiden_objective_function = c("modularity", "CPM"),
+  seed = NULL,
+  verbose = TRUE,
   ...
 )
 }
@@ -157,6 +159,13 @@ should group singletons into the nearest cluster.}
 
 \item{leiden_objective_function}{Leiden objective function passed to
 \code{Seurat::FindClusters()}.}
+
+\item{seed}{Top-level reproducibility seed overriding
+\code{cluster_random_seed} (and any existing \code{integration_control$seed})
+when supplied. Precedence: \code{seed} > \code{cluster_random_seed} > default.}
+
+\item{verbose}{Top-level progress logging switch forwarded to the clustering
+implementation; a \code{verbose} tail argument keeps precedence over it.}
 
 \item{...}{Additional clustering controls. Supported names include
 \code{cluster_control}, an optional named list of additional

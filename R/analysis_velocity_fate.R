@@ -234,6 +234,11 @@
 #'   \code{log1p_transform = TRUE} prepares the expression matrix for Scanpy's
 #'   Seurat-flavor HVG calculation.
 #' @param return_object Return the modified object or unified velocity result.
+#' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
+#'   \code{backend_control$seed} > task default; the resolved value is stamped
+#'   into result provenance.
+#' @param verbose Top-level progress switch forwarded through
+#'   \code{backend_control$verbose} when explicitly supplied.
 #' @return A Seurat object or velocity result.
 #' @references RegVelo documentation: \url{https://regvelo.readthedocs.io/}.
 #'   Wang et al. (2026), Cell, \doi{10.1016/j.cell.2026.04.022}.
@@ -253,9 +258,15 @@ sn_run_velocity <- function(object,
                             dims = 1:2,
                             store_name = "velocity",
                             backend_control = list(),
-                            return_object = TRUE) {
+                            return_object = TRUE,
+                            seed = NULL,
+                            verbose = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method, c("scvelo", "regvelo"))
+  backend_control$seed <- seed %||% backend_control$seed
+  if (!missing(verbose)) {
+    backend_control$verbose <- isTRUE(verbose)
+  }
   spliced_assay <- spliced_assay %||% SeuratObject::DefaultAssay(object)
   unspliced_assay <- unspliced_assay %||% spliced_assay
   embedding <- .sn_velocity_embedding(object, reduction, dims)
@@ -385,6 +396,10 @@ sn_run_velocity <- function(object,
 #' @param store_name Stored fate result name.
 #' @param backend_control CellRank/pixi controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or unified fate result.
+#' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
+#'   \code{backend_control$seed} > task default.
+#' @param verbose Top-level progress switch forwarded through
+#'   \code{backend_control$verbose} when explicitly supplied.
 #' @return A Seurat object or fate result.
 #' @examples
 #' \dontrun{
@@ -399,9 +414,15 @@ sn_run_fate <- function(object,
                         dims = 1:2,
                         store_name = "fate",
                         backend_control = list(),
-                        return_object = TRUE) {
+                        return_object = TRUE,
+                        seed = NULL,
+                        verbose = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method, "cellrank")
+  backend_control$seed <- seed %||% backend_control$seed
+  if (!missing(verbose)) {
+    backend_control$verbose <- isTRUE(verbose)
+  }
   embedding <- .sn_velocity_embedding(object, reduction, dims)
   velocity <- tryCatch(sn_get_result(object, "velocity", velocity_name), error = function(e) NULL)
   output <- if (is.function(backend_control$runner)) {

@@ -8,7 +8,9 @@ sn_plot_enrichment(
   result,
   type = c("dot", "bar", "ridge", "network", "emap"),
   n = 20L,
-  minimum_overlap = 0.1
+  minimum_overlap = 0.1,
+  object = NULL,
+  enrichment_name = "default"
 )
 }
 \arguments{
@@ -19,6 +21,12 @@ sn_plot_enrichment(
 \item{n}{Maximum pathways.}
 
 \item{minimum_overlap}{Minimum Jaccard overlap for network edges.}
+
+\item{object}{Optional Seurat object holding a stored enrichment result;
+supply either \code{result} or \code{object}, not both.}
+
+\item{enrichment_name}{Stored enrichment result name used when \code{object}
+is supplied.}
 }
 \value{
 A result-aware \code{ggplot} with source data and figure specification.

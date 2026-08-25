@@ -8,7 +8,8 @@ sn_plot_branch_comparison(
   x,
   name = NULL,
   test = c("pattern", "differential_end"),
-  n = 20L
+  n = 20L,
+  object = NULL
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ sn_plot_branch_comparison(
 \item{test}{Branch test to display.}
 
 \item{n}{Maximum number of features.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

@@ -9,7 +9,8 @@ sn_plot_velocity(
   name = NULL,
   color_by = "pseudotime",
   arrow_scale = 1,
-  point_size = 0.6
+  point_size = 0.6,
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_velocity(
 \item{arrow_scale}{Multiplicative arrow-length scale.}
 
 \item{point_size}{Point size.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

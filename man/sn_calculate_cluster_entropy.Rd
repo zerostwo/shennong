@@ -4,7 +4,12 @@
 \alias{sn_calculate_cluster_entropy}
 \title{Calculate cluster_by entropy for a categorical label}
 \usage{
-sn_calculate_cluster_entropy(x, cluster_by = NULL, label_by = NULL)
+sn_calculate_cluster_entropy(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or data frame containing the required columns.}
@@ -13,6 +18,8 @@ sn_calculate_cluster_entropy(x, cluster_by = NULL, label_by = NULL)
 
 \item{label_by}{Metadata/data-frame column containing the label_by to evaluate
 within each cluster.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with one row per cluster, including raw entropy and a

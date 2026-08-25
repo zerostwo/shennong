@@ -12,7 +12,8 @@ sn_calculate_lisi(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ LISI. When \code{NULL}, use all selected cells.}
 during subsampling. Defaults to the first requested \code{label}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with one row per retained cell. The first column is

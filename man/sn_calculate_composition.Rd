@@ -13,7 +13,8 @@ sn_calculate_composition(
   additional_cols = NULL,
   sort_by = NULL,
   sort_value = NULL,
-  sort_desc = FALSE
+  sort_desc = FALSE,
+  object = NULL
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ Sorting is only applied when \code{group_by} has length 1.}
 \code{sort_by} is supplied. Defaults to the first observed level.}
 
 \item{sort_desc}{Logical; if \code{TRUE}, sort in descending order.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with per-group proportions.

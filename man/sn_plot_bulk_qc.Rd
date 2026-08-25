@@ -6,13 +6,16 @@
 \usage{
 sn_plot_bulk_qc(
   x,
-  metric = c("library_size", "detected_features", "mean_correlation")
+  metric = c("library_size", "detected_features", "mean_correlation"),
+  object = NULL
 )
 }
 \arguments{
 \item{x}{A bulk-QC result.}
 
 \item{metric}{Sample metric to plot.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

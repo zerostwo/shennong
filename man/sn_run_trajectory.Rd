@@ -23,7 +23,9 @@ sn_run_trajectory(
   trend_features = NULL,
   trend_points = 100L,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -69,6 +71,13 @@ and \code{tradeSeq} argument lists for direct backends. Palantir accepts
 Monocle 3 for externally managed execution.}
 
 \item{return_object}{Return the updated object instead of the result.}
+
+\item{seed}{Top-level reproducibility seed. Precedence:
+\code{seed} > \code{backend_control$seed} > task default, and the resolved
+value is stamped into result provenance.}
+
+\item{verbose}{Top-level progress switch forwarded to backends through
+\code{backend_control$verbose} when explicitly supplied.}
 }
 \value{
 A Seurat object or a unified trajectory result.

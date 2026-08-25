@@ -8,7 +8,8 @@ sn_plot_survival(
   x,
   adjusted_p_value = NULL,
   view = c("forest", "km", "risk_table", "ph", "ph_test", "cumulative_hazard"),
-  feature = NULL
+  feature = NULL,
+  object = NULL
 )
 }
 \arguments{
@@ -21,6 +22,8 @@ table, scaled Schoenfeld residual diagnostics, proportional-hazards test
 p-values, or cumulative hazard.}
 
 \item{feature}{Optional feature subset for the selected view.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A survival \code{ggplot} object.

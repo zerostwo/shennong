@@ -15,7 +15,9 @@ sn_run_velocity(
   dims = 1:2,
   store_name = "velocity",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -40,6 +42,13 @@ non-integer source splicing estimates are normalized before HVG selection;
 Seurat-flavor HVG calculation.}
 
 \item{return_object}{Return the modified object or unified velocity result.}
+
+\item{seed}{Top-level reproducibility seed. Precedence: \code{seed} >
+\code{backend_control$seed} > task default; the resolved value is stamped
+into result provenance.}
+
+\item{verbose}{Top-level progress switch forwarded through
+\code{backend_control$verbose} when explicitly supplied.}
 }
 \value{
 A Seurat object or velocity result.

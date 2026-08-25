@@ -12,7 +12,9 @@ sn_find_spatial_domains(
   layer = "counts",
   store_name = "spatial_domains",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -29,6 +31,12 @@ sn_find_spatial_domains(
 \item{backend_control}{Backend controls or an explicit \code{runner}/\code{result}.}
 
 \item{return_object}{Return the modified object or result.}
+
+\item{seed}{Top-level reproducibility seed. Precedence: \code{seed} >
+\code{backend_control$seed} > task default; stamped into provenance.}
+
+\item{verbose}{Top-level progress switch forwarded through
+\code{backend_control$verbose} when explicitly supplied.}
 }
 \value{
 A Seurat object or spatial-domain result.

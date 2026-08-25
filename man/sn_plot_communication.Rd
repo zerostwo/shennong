@@ -9,7 +9,8 @@ sn_plot_communication(
   name = NULL,
   type = c("bubble", "heatmap", "network", "chord", "river"),
   n = 50L,
-  table = "primary"
+  table = "primary",
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_communication(
 \item{n}{Maximum number of top-ranked interactions to display.}
 
 \item{table}{Stored table to plot.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.

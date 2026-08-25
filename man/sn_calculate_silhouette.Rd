@@ -12,7 +12,8 @@ sn_calculate_silhouette(
   cells = NULL,
   max_cells = 3000,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ distance matrix.}
 during subsampling. Defaults to \code{label_by}.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with per-cell silhouette widths.

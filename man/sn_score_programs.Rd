@@ -15,7 +15,8 @@ sn_score_programs(
   species = NULL,
   min_genes = 1L,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  store_name = NULL
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ GSVA/ssGSEA or other group-level scoring.}
 \item{backend_control}{Named backend-specific control list.}
 
 \item{return_object}{Return the updated object or the unified result.}
+
+\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
 }
 \value{
 A Seurat object or unified program-scoring result.

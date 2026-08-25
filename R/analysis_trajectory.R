@@ -388,6 +388,11 @@
 #'   `runner` or `result`; the same explicit adapter boundary can override
 #'   Monocle 3 for externally managed execution.
 #' @param return_object Return the updated object instead of the result.
+#' @param seed Top-level reproducibility seed. Precedence:
+#'   \code{seed} > \code{backend_control$seed} > task default, and the resolved
+#'   value is stamped into result provenance.
+#' @param verbose Top-level progress switch forwarded to backends through
+#'   \code{backend_control$verbose} when explicitly supplied.
 #'
 #' @return A Seurat object or a unified trajectory result.
 #'
@@ -420,9 +425,15 @@ sn_run_trajectory <- function(object,
                               trend_features = NULL,
                               trend_points = 100L,
                               backend_control = list(),
-                              return_object = TRUE) {
+                              return_object = TRUE,
+                              seed = NULL,
+                              verbose = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
+  backend_control$seed <- seed %||% backend_control$seed
+  if (!missing(verbose)) {
+    backend_control$verbose <- isTRUE(verbose)
+  }
   embedding <- .sn_trajectory_embedding(object, reduction = reduction, dims = dims)
   clusters <- .sn_trajectory_clusters(object, cluster_by = cluster_by)
   requested <- .sn_validate_requested_lineages(lineages, clusters$values)

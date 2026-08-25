@@ -36,7 +36,8 @@ sn_deconvolve_bulk(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
-  return_object = TRUE
+  return_object = TRUE,
+  object = NULL
 )
 }
 \arguments{
@@ -118,6 +119,8 @@ signature matrix.}
 
 \item{return_object}{If \code{TRUE} and \code{x} is a \code{Seurat} object,
 return the updated object when a result table is available.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A stored-result list, an export-bundle list, or an updated

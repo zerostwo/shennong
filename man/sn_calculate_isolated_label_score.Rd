@@ -14,7 +14,8 @@ sn_calculate_isolated_label_score(
   stratify_by = NULL,
   isolated_fraction = 0.05,
   isolated_n = 100,
-  seed = 717
+  seed = 717,
+  object = NULL
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ labels.}
 \item{isolated_n}{Absolute cell-count threshold used to flag isolated labels.}
 
 \item{seed}{Random seed used when \code{max_cells} triggers subsampling.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A data frame with one row per label_by and columns describing label

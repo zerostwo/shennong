@@ -75,6 +75,7 @@
 #' @param type Plot type: bubble, heatmap, network, chord, or river.
 #' @param n Maximum number of top-ranked interactions to display.
 #' @param table Stored table to plot.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_communication(object, "communication", type = "bubble")}
@@ -83,7 +84,9 @@ sn_plot_communication <- function(x,
                                   name = NULL,
                                   type = c("bubble", "heatmap", "network", "chord", "river"),
                                   n = 50L,
-                                  table = "primary") {
+                                  table = "primary",
+                                  object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_communication_result(x, name)
   data <- .sn_communication_plot_table(result, table = table, n = n)
@@ -126,9 +129,11 @@ sn_plot_communication <- function(x,
 #' @param x A Seurat object or unified communication result.
 #' @param name Stored result name when `x` is a Seurat object.
 #' @param n Maximum number of ligand-target links.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_ligand_target <- function(x, name = NULL, n = 50L) {
+sn_plot_ligand_target <- function(x, name = NULL, n = 50L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_communication_result(x, name)
   data <- tibble::as_tibble(result$tables$ligand_targets)
   target_column <- .sn_communication_column(data, c("target_gene", "target", "gene"))
@@ -151,9 +156,11 @@ sn_plot_ligand_target <- function(x, name = NULL, n = 50L) {
 #' @param x A Seurat object or unified communication result.
 #' @param name Stored result name when `x` is a Seurat object.
 #' @param n Maximum number of effects.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_communication_comparison <- function(x, name = NULL, n = 30L) {
+sn_plot_communication_comparison <- function(x, name = NULL, n = 30L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_communication_result(x, name)
   data <- tibble::as_tibble(result$tables$condition_comparison)
   if (!all(c("source", "target", "ligand", "receptor", "estimate") %in% names(data))) {

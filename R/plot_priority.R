@@ -3,11 +3,13 @@
 #' @param x A Seurat object or state-priority result.
 #' @param name Stored result name when `x` is a Seurat object.
 #' @param n Maximum states to show.
+#' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_state_priority(object, "priority")}
 #' @export
-sn_plot_state_priority <- function(x, name = NULL, n = 30L) {
+sn_plot_state_priority <- function(x, name = NULL, n = 30L, object = NULL) {
+  x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- if (inherits(x, "Seurat")) {
     if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
     sn_get_result(x, "state_priority", name)

@@ -9,7 +9,8 @@ sn_plot_discovered_programs(
   name = NULL,
   type = c("weights", "activity", "stability"),
   programs = NULL,
-  n = 20L
+  n = 20L,
+  object = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ sn_plot_discovered_programs(
 \item{programs}{Optional programs to retain.}
 
 \item{n}{Maximum genes per program.}
+
+\item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
 A \code{ggplot} object.
