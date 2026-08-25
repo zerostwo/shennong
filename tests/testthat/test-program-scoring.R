@@ -78,7 +78,7 @@ test_that("exact signature features win over normalized duplicate keys", {
 test_that("UCell fallback is serial while the admitted patch keeps its NULL envelope", {
   skip_if_not_installed("BiocParallel")
   local_mocked_bindings(
-    .sn_autozyme_effective_active_patches = function() character(),
+    .sn_acceleration_effective_active_patches = function() character(),
     .package = "Shennong"
   )
   expect_s4_class(Shennong:::.sn_ucell_bpparam(list()), "SerialParam")
@@ -90,7 +90,7 @@ test_that("UCell fallback is serial while the admitted patch keeps its NULL enve
   )
 
   local_mocked_bindings(
-    .sn_autozyme_effective_active_patches = function() "ucell",
+    .sn_acceleration_effective_active_patches = function() "ucell",
     .package = "Shennong"
   )
   expect_null(Shennong:::.sn_ucell_bpparam(list()))
@@ -120,6 +120,50 @@ test_that("UCell and AUCell backends return cell-level score contracts", {
     expect_equal(nrow(aucell$tables$scores), 2 * ncol(object))
     expect_true(all(is.finite(aucell$tables$scores$score)))
   }
+})
+
+test_that("AUCell scoring matches a direct upstream call", {
+  skip_if_not_installed("AUCell")
+  object <- make_program_test_object()
+  matrix <- SeuratObject::LayerData(object, assay = "RNA", layer = "data")
+  matched <- Shennong:::.sn_match_program_features(
+    program_test_signatures(),
+    rownames(matrix)
+  )
+  control <- list(auc = list(aucMaxRank = 4L))
+
+  set.seed(19)
+  observed <- Shennong:::.sn_score_programs_aucell(
+    matrix,
+    matched$signatures,
+    control
+  )
+  set.seed(19)
+  rankings <- do.call(
+    AUCell::AUCell_buildRankings,
+    utils::modifyList(
+      list(exprMat = matrix, plotStats = FALSE, verbose = FALSE),
+      control$rankings %||% list(),
+      keep.null = TRUE
+    )
+  )
+  expected <- AUCell::getAUC(do.call(
+    AUCell::AUCell_calcAUC,
+    utils::modifyList(
+      list(
+        geneSets = matched$signatures,
+        rankings = rankings,
+        aucMaxRank = 4L,
+        verbose = FALSE
+      ),
+      control$auc,
+      keep.null = TRUE
+    )
+  ))
+
+  expect_equal(as.matrix(observed), as.matrix(expected), tolerance = 1e-12)
+  expect_identical(rownames(observed), names(matched$signatures))
+  expect_identical(colnames(observed), colnames(object))
 })
 
 test_that("GSVA and ssGSEA score aggregated sample expression", {

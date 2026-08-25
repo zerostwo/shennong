@@ -150,12 +150,12 @@ test_that("sn_enrich retains parameters without false MSigDB patch usage", {
 
   local_mocked_bindings(
     .sn_enrich_get_msigdb_terms = function(...) terms,
-    .sn_with_default_autozyme = function(expr, patches, ...) {
-      Shennong:::.sn_record_autozyme_usage(patches)
+    .sn_with_default_acceleration = function(expr, patches, ...) {
+      Shennong:::.sn_record_acceleration_usage(patches)
       force(expr)
     },
-    .sn_autozyme_provenance = function() {
-      context <- getOption("shennong.autozyme.provenance_context")
+    .sn_acceleration_provenance = function() {
+      context <- getOption("shennong.acceleration.provenance_context")
       used <- if (is.environment(context)) context$used_patches else character()
       if (length(used) == 0L) list() else list(active_patches = used)
     },

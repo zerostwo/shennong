@@ -33,77 +33,32 @@ user request to the right Shennong function family quickly.
    upload, or promote artifacts; the trusted external receiver must verify
    digests and complete those actions.
 
-## Recipe: Use AutoZyme acceleration
+## Recipe: Use ShennongOpt acceleration
 
-1. The lazy automatic set is exactly CellChat, the clusterProfiler annotation
-   cache, LISI, NicheNetR, all-default scDblFinder, Seurat NormalizeData,
-   SeuratObject Assay5 merge, SoupX, and UCell. Inspect the automatic set with
-   `sn_check_autozyme()`. Inspect the wider manual catalog with
-   `sn_check_autozyme(c("cellchat", "clusterprofiler", "coralysis",
-   "decontx_standalone", "lisi", "nichenetr", "scdblfinder", "seurat",
-   "seurat_merge", "seurat_joinlayers", "soupx", "tradeseq", "ucell",
-   "wgcna"))` to report the pinned build, installed
-   upstream dependencies, exact version matches, automatic/explicit policy,
-   and active state. Coralysis, standalone decontX, broad Seurat targets,
-   JoinLayers, tradeSeq, and WGCNA are explicit-only.
-2. Eligible defaults are active only inside the compatible Shennong workflow
-   call. A successful automatic scope emits an INFO log naming the enabled
-   patches; treat this as activation evidence, not proof that every guarded
-   internal fast path accepted the input. Verify that success and error both
-   restore the pre-call patch state.
-3. Missing packages and approximate patches are skipped safely. Automatic
-   Seurat, CellChat, NicheNetR, and enrichment workflow scopes deliberately
-   allow version-label drift. The clusterProfiler 4.20 `sn_enrich()` path uses
-   enrichit rather than fgsea, so it activates only the bundled clusterProfiler
-   GSON-cache patch; an installed fgsea patch is not evidence for this workflow.
-   The statistical core remains upstream. Seurat relies on runtime structure
-   guards and captured-upstream fallback; scDblFinder relies
-   on exact target-function fingerprints. Manual activation remains strict by
-   default. Treat `strict = FALSE` or `allow_approximate = TRUE` in explicit
-   management calls as a reproducibility decision, not a generic speed switch.
-   `strict = FALSE` relaxes only an upstream version label; it never accepts an
-   unverified AutoZyme source revision.
-4. Set `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, or
-   `AUTOZYME_DISABLE=true` to block automatic scopes. These settings do not
-   deactivate a manually active patch, and explicit `sn_enable_autozyme()` and
-   `sn_with_autozyme({...})` calls ignore them.
-5. BPCells-backed Seurat layers bypass the older broad Seurat patch because it
-   can coerce non-`dgCMatrix` input into memory. The narrow
-   `seurat_joinlayers` patch remains eligible for explicit use on its validated
-   public BPCells counts path, but it is not automatic; unsupported call shapes
-   retain captured upstream behavior.
-   Do not infer whole-package BPCells compatibility from this guard: CellChat,
-   tradeSeq, and other backends may still require controlled sparse
-   materialization or an aggregated input sized to available RAM.
-6. Automatic NicheNetR use requires `single = TRUE` and a dense numeric
-   ligand-target matrix. Confirm active-patch details in result provenance.
-7. Confirm that the caller's `future.globals.maxSize` option is unchanged after
-   the workflow; Shennong restores AutoZyme's load-time mutation before analysis.
-8. `sn_remove_ambient_contamination()` calls standalone `decontX::decontX()`
-   for RNA. With `method = "auto"`, one ADT/protein/CITE assay routes to
-   `decontX::decontPro()`; provide `assay =` and `cluster =` for a reproducible
-   CITE-seq call. The explicit-only `decontx_standalone` hook is scoped only
-   around `decontX::decontX()` and can be used only when the installed fork
-   registers it.
-   For `method = "soupx"`, the `soupx` patch is scoped only around
-   `adjustCounts()`, followed by SoupX's original stochastic integer rounding.
-9. `sn_find_doublets()` defaults to scDblFinder's native automatic clustering
-   and scopes the pinned fork's `scdblfinder` patch only for the validated
-   default call on exact `dgCMatrix` inputs of
-   at most 33,000 cells. Grouped/BPCells calls and non-default arguments remain
-   upstream paths. Treat the installed scope and finalized benchmark table as
-   the boundary for speed and memory claims. Select
-   `cluster_backend = "shennong"` only when Shennong clustering is intentional.
-10. For direct Seurat calls, explicitly activate
-    `c("seurat_merge", "seurat_joinlayers")`, run `merge()` and an explicit
-    `JoinLayers(..., layers = "counts", new = "counts")`, then disable them.
-    Shennong fingerprints and registers these bundled one-method patches even
-    when official AutoZyme does not yet contain them.
-11. Consult the installed `autozyme-benchmarks` article and
-    `inst/benchmarks/single-cell-autozyme-benchmark.json` before making
-    performance claims. The formal real-data snapshot reports operation time
-    and whole-worker peak RSS separately and intentionally retains the observed
-    `merge()` peak-memory regression.
+1. Hot paths are accelerated by the companion R package **ShennongOpt**.
+   Registered patches cover Seurat `RunPCA`/`ScaleData`, scran, decontX,
+   scDblFinder, Coralysis, UCell, LISI, and Rogue. Inspect availability and
+   state with `sn_check_acceleration()`; list installable patch names with
+   `ShennongOpt::sn_list_accelerations(installed = TRUE)`.
+2. Workflow scopes activate only the patches named for that call and restore
+   the pre-call state afterwards. Unsupported inputs fall back to captured
+   upstream code, so outputs remain bit-exact by construction.
+3. Set `options(shennong.acceleration = FALSE)` or
+   `SHENNONG_ACCELERATION_DISABLED=true` to block automatic scopes. Neither
+   setting deactivates a manually active patch, and explicit
+   `sn_with_acceleration({...}, name = ...)` ignores them. Manage manual
+   activation with `sn_enable_acceleration(name)` /
+   `sn_disable_acceleration(name)`.
+4. Cap accelerated parallel sections with `shennong.opt.threads` (or the
+   `SHENNONG_OPT_THREADS` environment variable).
+5. Paths without a ShennongOpt counterpart (CellChat, NicheNetR, SoupX,
+   clusterProfiler caches, tradeSeq, WGCNA, Seurat merge/JoinLayers) currently
+   execute plain upstream code. Provenance records requested-but-unavailable
+   patches as suppressed; do not claim acceleration for those paths until a
+   matching patch ships.
+6. Before making performance claims, compare tracked runs with acceleration
+   enabled versus `SHENNONG_ACCELERATION_DISABLED=true`, and verify output
+   parity through the relevant backend-conformance contract.
 
 ## Recipe: Measure real workflow use and runtime
 
@@ -123,7 +78,7 @@ user request to the right Shennong function family quickly.
    targets. Set `by_parameters = TRUE` when different method/settings must not
    be pooled.
 6. Use `sn_list_usage_runs()` to inspect exact call ordinals and sanitized
-   `params_json`. Never treat activation-only AutoZyme evidence as proof of a
+   `params_json`. Never treat activation-only acceleration evidence as proof of a
    guarded fast-path hit; use the three-arm benchmark for that question.
 7. Use `functions =` to reduce the complete public-API surface for a focused
    study. Enable at process startup: references saved before enablement are a
@@ -153,7 +108,11 @@ user request to the right Shennong function family quickly.
    Seurat counts layer remains on disk. For doublet detection on that object,
    call `sn_find_doublets(group_by = "sample", ncores = 1)` so only one sample
    count matrix is materialized at a time. Increase `ncores` only when memory
-   can hold the corresponding number of sample chunks.
+   can hold the corresponding number of sample chunks. Prefer the default
+   scDblFinder backend for BPCells inputs; `method = "scrublet"` requires
+   preparing its pixi environment once
+   (`sn_prepare_pixi_environment("scrublet", install_environment = TRUE)`)
+   and materializes the retained cells in one pass.
 5. Infer or verify species with `sn_get_species()`.
 6. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
@@ -217,13 +176,10 @@ user request to the right Shennong function family quickly.
    scANVI, and scPoli export that layer, while BBKNN derives its PCA from it.
    Python expression matrices remain sparse; only bounded neural-network
    minibatches and low-dimensional embeddings may be dense.
-   Where the pinned fork has a matching Python patch, the runner activates it
-   before the hot call and records the actual requested/active/inactive set in
-   the backend manifest. This currently covers BBKNN UMAP, scArches Scanpy
-   preprocessing, and dynamical scVelo in the integration/trajectory families;
-   it does not imply that scVI, scANVI, scPoli training, or scIB metrics are
-   AutoZyme-accelerated. Set `AUTOZYME_DISABLED=true` to force the original
-   Python implementations.
+   These environments execute plain upstream Python implementations; no Python
+   acceleration layer is bundled. R-side hot paths are accelerated separately by
+   ShennongOpt; set `SHENNONG_ACCELERATION_DISABLED=true` to force original R
+   implementations when comparing timings.
    For BPCells-backed Coralysis runs, the complete normalized layer stays on
    disk and only the selected integration features are materialized as a sparse
    `dgCMatrix` for `Coralysis::PrepareData()`. The default is one Coralysis
@@ -434,9 +390,14 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Build annotation evidence
 
-1. Use `sn_run_annotation(method = "consensus")` for marker-only annotation,
-   or supply `reference`, `reference_label_by`, and a reference backend when a
-   biologically matched atlas is available.
+1. Supply `reference` and `reference_label_by` from a biologically matched
+   atlas; the default backend is SingleR. Use `method = "popv"` when a
+   multi-algorithm majority-vote over that reference is wanted; prepare its
+   runtime once with
+   `sn_prepare_pixi_environment("popv", install_environment = TRUE)` and pass
+   `backend_control = list(popv = list(methods = ..., hvg = ...))` to tune the
+   upstream algorithm set (default: all current PopV algorithms except OnClass).
+   Reference methods must not be used with badly mismatched tissue/species.
 2. Discover and retrieve the result with
    `sn_list_results(object, type = "annotation")` and
    `sn_get_result(object, "annotation", store_name)`.

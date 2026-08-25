@@ -2,13 +2,12 @@
 % Please edit documentation in R/annotation.R
 \name{sn_run_annotation}
 \alias{sn_run_annotation}
-\title{Run traceable cell-type annotation}
+\title{Run reference-based cell-type annotation}
 \usage{
 sn_run_annotation(
   object,
   group_by = "seurat_clusters",
-  method = c("consensus", "singleR", "celltypist", "seurat", "symphony", "scmap",
-    "scanvi"),
+  method = c("singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi", "popv"),
   reference = NULL,
   reference_label_by = NULL,
   tissue = NULL,
@@ -18,22 +17,21 @@ sn_run_annotation(
   store_name = "annotation",
   assay = NULL,
   layer = "data",
-  marker_database = NULL,
-  consensus_reference_method = "singleR",
   backend_control = list(),
-  low_confidence_threshold = 0.55,
-  margin_threshold = 0.1,
   return_object = TRUE
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{group_by}{Metadata column used for cluster-level annotation.}
+\item{group_by}{Metadata column used for the cluster-level summary.}
 
-\item{method}{Annotation method.}
+\item{method}{Annotation method. One of \code{"singleR"} (default),
+\code{"celltypist"}, \code{"seurat"}, \code{"symphony"},
+\code{"scmap"}, \code{"scanvi"}, or \code{"popv"}.}
 
-\item{reference}{Optional annotated reference object.}
+\item{reference}{Annotated reference object required by all methods except
+CellTypist, which uses a pre-trained model instead.}
 
 \item{reference_label_by}{Reference label metadata/colData column.}
 
@@ -45,20 +43,13 @@ sn_run_annotation(
 
 \item{store_name}{Stored-result and metadata prefix.}
 
-\item{assay, layer}{Query expression source for marker scoring and most
-reference backends. CellTypist independently defaults to the raw/count-like
-\code{counts} layer because its MatrixMarket/CSV loader normalizes internally;
-override that backend only with \code{backend_control = list(celltypist = list(layer = "your_count_layer"))}.}
-
-\item{marker_database}{Optional marker data frame with high- and
-low-hierarchy labels plus species gene columns.}
-
-\item{consensus_reference_method}{Backend used when consensus receives a
-reference.}
+\item{assay, layer}{Query expression source. Most backends read a
+log-normalized \code{data} layer; CellTypist and PopV independently default to
+raw \code{counts} because they normalize internally. Override those backends
+only via \code{backend_control = list(celltypist = list(layer = ...))} or
+\code{backend_control = list(popv = list(layer = ...))}.}
 
 \item{backend_control}{Named backend-specific control lists.}
-
-\item{low_confidence_threshold, margin_threshold}{Confidence thresholds.}
 
 \item{return_object}{If \code{TRUE}, return the annotated object; otherwise
 return the stored result.}
@@ -67,18 +58,20 @@ return the stored result.}
 An annotated Seurat object or a unified annotation result.
 }
 \description{
-Provides a stable annotation entry point for marker-only consensus,
-SingleR, CellTypist, Seurat label transfer, and scANVI label transfer.
-Consensus mode always evaluates canonical marker evidence and optionally
-combines it with a reference backend. Computational labels and raw backend
-predictions are retained; no LLM is allowed to overwrite them.
+Stable annotation entry point for SingleR, CellTypist, Seurat label
+transfer, Symphony mapping, scmap projection, scANVI transfer, and PopV
+consensus voting. Computational labels and raw backend predictions are
+retained; no LLM is allowed to overwrite them. Cluster summaries report the
+modal predicted label per \code{group_by} group.
 }
 \examples{
 \dontrun{
 object <- sn_run_annotation(
   object,
   group_by = "seurat_clusters",
-  method = "consensus",
+  method = "singleR",
+  reference = reference,
+  reference_label_by = "cell_type",
   species = "human"
 )
 sn_get_result(object, "annotation", "annotation")

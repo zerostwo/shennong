@@ -71,6 +71,10 @@ Seurat returns, \code{nCount_<assay>_corrected} and
 decontX-based Seurat returns, the \code{decontX_contamination} and
 \code{decontX_clusters} columns are added. decontPro-based returns also
 include the inferred cell type and ambient/background fraction columns.
+The resolved method, assay, clustering backend, input-source summary,
+method-specific \code{...} arguments, and backend version are recorded in
+\code{object@commands$sn_remove_ambient_contamination@params} so automatic
+and wrapper-controlled choices remain inspectable.
 }
 \description{
 This function provides a unified interface for ambient RNA or CITE-seq
@@ -81,9 +85,9 @@ Seurat object was initialized from a detected 10x \code{outs} directory, stored
 raw matrix metadata is reused automatically if \code{raw = NULL}.
 The \code{auto} method routes a Seurat object with one CITE-seq-like ADT, protein,
 or CITE assay to \code{decontX::decontPro()}; otherwise it uses
-\code{decontX::decontX()}. Set \code{options(shennong.autozyme = FALSE)} or
-\code{AUTOZYME_DISABLED=true} to prevent automatic AutoZyme activation; a
-manually active patch remains active until \code{\link[=sn_disable_autozyme]{sn_disable_autozyme()}} is called.
+\code{decontX::decontX()}. Set \code{options(shennong.acceleration = FALSE)} or
+\code{SHENNONG_ACCELERATION_DISABLED=true} to prevent automatic acceleration; a
+manually active patch remains active until \code{\link[=sn_disable_acceleration]{sn_disable_acceleration()}} is called.
 }
 \examples{
 \dontrun{

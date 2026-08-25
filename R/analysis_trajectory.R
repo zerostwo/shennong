@@ -303,7 +303,7 @@
     verbose = FALSE,
     parallel = FALSE
   )
-  fit <- .sn_with_explicit_autozyme_or_disabled(
+  fit <- .sn_with_explicit_acceleration_or_disabled(
     do.call(tradeSeq::fitGAM, utils::modifyList(defaults, backend_control, keep.null = TRUE)),
     patches = "tradeseq"
   )
@@ -435,11 +435,11 @@ sn_run_trajectory <- function(object,
     stop("Trajectory endpoint cluster(s) were not found: ", paste(invalid_endpoints, collapse = ", "), ".", call. = FALSE)
   }
 
-  trajectory_autozyme_patches <- c(
+  trajectory_acceleration_patches <- c(
     if (identical(method, "slingshot")) "slingshot",
     if (isTRUE(test_dynamic)) "tradeseq"
   )
-  .sn_with_autozyme_provenance_context({
+  .sn_with_acceleration_provenance_context({
   output <- if (identical(method, "slingshot")) {
     .sn_trajectory_slingshot(
       embedding = embedding$matrix,
@@ -480,7 +480,7 @@ sn_run_trajectory <- function(object,
     }
   }
   assay <- assay %||% Seurat::DefaultAssay(object)
-  .sn_with_explicit_autozyme_or_disabled({
+  .sn_with_explicit_acceleration_or_disabled({
   dynamics <- list(
     association = tibble::tibble(), branch = tibble::tibble(), trends = tibble::tibble(),
     convergence = tibble::tibble(), warnings = character(),
@@ -560,5 +560,5 @@ sn_run_trajectory <- function(object,
   object <- .sn_log_seurat_command(object = object, assay = assay, name = "sn_run_trajectory")
   if (isTRUE(return_object)) object else sn_get_result(object, "trajectory", store_name)
   }, patches = if (isTRUE(test_dynamic)) "tradeseq" else character(0))
-  }, patches = trajectory_autozyme_patches)
+  }, patches = trajectory_acceleration_patches)
 }

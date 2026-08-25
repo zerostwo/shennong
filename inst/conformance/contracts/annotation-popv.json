@@ -1,0 +1,430 @@
+{
+  "schema_version": "shennong.dev/backend-conformance/v1",
+  "id": "annotation::popv",
+  "status": "admitted",
+  "shennong": {
+    "function": "sn_run_annotation",
+    "selector": {
+      "method": "popv"
+    },
+    "version": "0.3.0.9000",
+    "registry_key": "annotation::popv"
+  },
+  "upstream": {
+    "language": "python",
+    "runtime": "pixi environment `popv` (conda-forge + PyPI)",
+    "package": "popv",
+    "api": [
+      "popv.preprocessing.Process_Query",
+      "popv.annotation.annotate_data"
+    ],
+    "repository": "https://github.com/YosefLab/popV",
+    "versions": [
+      "popv 0.6.1",
+      "scvi-tools 1.4.2"
+    ],
+    "install_source": "PyPI wheel pinned in inst/pixi/popv/pixi.toml"
+  },
+  "oracle": {
+    "type": "direct_public_api",
+    "call": "popv.preprocessing.Process_Query(query, ref, ref_labels_key=..., prediction_mode='retrain', cl_obo_folder=False); popv.annotation.annotate_data(processed.adata, methods=[...], save_path=...)",
+    "harness": "tests/conformance/oracles/popv_oracle.py"
+  },
+  "inputs": {
+    "classes": [
+      "Seurat query",
+      "Seurat reference"
+    ],
+    "modalities": [
+      "single-cell RNA-seq"
+    ],
+    "assays_layers": [
+      "query counts layer (default 'counts')",
+      "reference counts layer (default 'counts')"
+    ],
+    "storage_backends": [
+      "in-memory sparse/dense matrices exported to MatrixMarket"
+    ],
+    "requirements": [
+      "raw non-negative integer-like counts in the selected layers",
+      "reference label column named by reference_label_by",
+      "at least two shared query/reference features",
+      "PopV additionally drops cells with fewer than 30 total counts and batches smaller than 11 cells"
+    ]
+  },
+  "parameters": [
+    {
+      "wrapper": "object",
+      "role": "input_adapter",
+      "upstream": "query_adata",
+      "scenarios": [
+        "integration fixture query"
+      ],
+      "wrapper_default": "required",
+      "upstream_default": "required",
+      "omission_semantics": "not omittable",
+      "mapping": "Seurat counts layer exported as MatrixMarket plus obs/var CSV, transposed to genes x cells on read",
+      "supported": {
+        "type": "Seurat"
+      },
+      "interactions": [
+        "layer",
+        "assay"
+      ],
+      "outside_envelope": "error"
+    },
+    {
+      "wrapper": "group_by",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        "cell_type"
+      ],
+      "wrapper_default": "seurat_clusters",
+      "upstream_default": null,
+      "omission_semantics": "default applies",
+      "mapping": "used only for cluster-level evidence aggregation; PopV is cell level",
+      "supported": {
+        "type": "metadata column"
+      },
+      "interactions": [],
+      "outside_envelope": "error when column missing"
+    },
+    {
+      "wrapper": "method",
+      "role": "backend_selector",
+      "upstream": null,
+      "scenarios": [
+        "popv"
+      ],
+      "wrapper_default": "consensus",
+      "upstream_default": null,
+      "omission_semantics": "must be explicit for this subject",
+      "mapping": "selects .sn_annotation_popv adapter",
+      "supported": {
+        "type": "string",
+        "values": [
+          "popv"
+        ]
+      },
+      "interactions": [
+        "backend_control"
+      ],
+      "outside_envelope": "other methods belong to separate subjects"
+    },
+    {
+      "wrapper": "reference",
+      "role": "input_adapter",
+      "upstream": "ref_adata",
+      "scenarios": [
+        "integration fixture reference"
+      ],
+      "wrapper_default": null,
+      "upstream_default": "required",
+      "omission_semantics": "error when NULL for this method",
+      "mapping": "Seurat reference counts layer exported like the query",
+      "supported": {
+        "type": "Seurat"
+      },
+      "interactions": [
+        "reference_label_by"
+      ],
+      "outside_envelope": "error"
+    },
+    {
+      "wrapper": "reference_label_by",
+      "role": "input_adapter",
+      "upstream": "ref_labels_key",
+      "scenarios": [
+        "cell_type"
+      ],
+      "wrapper_default": null,
+      "upstream_default": "required",
+      "omission_semantics": "error when NULL",
+      "mapping": "identity; column is cast to string upstream",
+      "supported": {
+        "type": "metadata column"
+      },
+      "interactions": [
+        "reference"
+      ],
+      "outside_envelope": "error when column missing"
+    },
+    {
+      "wrapper": "tissue",
+      "role": "not_applicable",
+      "upstream": null,
+      "scenarios": [
+        "recorded in provenance only"
+      ],
+      "wrapper_default": null,
+      "upstream_default": null,
+      "omission_semantics": "no effect on analysis",
+      "mapping": "provenance metadata only",
+      "supported": {
+        "type": "string or NULL"
+      },
+      "interactions": [],
+      "outside_envelope": "ignored"
+    },
+    {
+      "wrapper": "disease",
+      "role": "not_applicable",
+      "upstream": null,
+      "scenarios": [
+        "recorded in provenance only"
+      ],
+      "wrapper_default": null,
+      "upstream_default": null,
+      "omission_semantics": "no effect on analysis",
+      "mapping": "provenance metadata only",
+      "supported": {
+        "type": "string or NULL"
+      },
+      "interactions": [],
+      "outside_envelope": "ignored"
+    },
+    {
+      "wrapper": "species",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        "human"
+      ],
+      "wrapper_default": null,
+      "upstream_default": null,
+      "omission_semantics": "inferred via sn_get_species",
+      "mapping": "drives bundled marker scoring only; PopV receives no species argument",
+      "supported": {
+        "type": "string"
+      },
+      "interactions": [
+        "marker_database"
+      ],
+      "outside_envelope": "marker scoring error surfaces unchanged"
+    },
+    {
+      "wrapper": "ontology",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        false
+      ],
+      "wrapper_default": true,
+      "upstream_default": null,
+      "omission_semantics": "default true maps labels to the bundled ontology snapshot after prediction",
+      "mapping": "post-prediction label mapping only; PopV runs with cl_obo_folder=false so OnClass stays disabled regardless",
+      "supported": {
+        "type": "logical"
+      },
+      "interactions": [],
+      "outside_envelope": "ignored upstream"
+    },
+    {
+      "wrapper": "store_name",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        "popv_c2"
+      ],
+      "wrapper_default": "annotation",
+      "upstream_default": null,
+      "omission_semantics": "default applies",
+      "mapping": "stored-result key and metadata prefix",
+      "supported": {
+        "type": "non-empty string"
+      },
+      "interactions": [],
+      "outside_envelope": "sanitized"
+    },
+    {
+      "wrapper": "assay",
+      "role": "parameter_map",
+      "upstream": "query_adata.X source layer",
+      "scenarios": [
+        "default"
+      ],
+      "wrapper_default": null,
+      "upstream_default": null,
+      "omission_semantics": "falls back to DefaultAssay(query)",
+      "mapping": "selects the Seurat assay whose layer is exported",
+      "supported": {
+        "type": "assay name or NULL"
+      },
+      "interactions": [
+        "layer"
+      ],
+      "outside_envelope": "error when assay missing"
+    },
+    {
+      "wrapper": "layer",
+      "role": "parameter_map",
+      "upstream": "raw counts requirement of Process_Query",
+      "scenarios": [
+        "counts"
+      ],
+      "wrapper_default": "counts",
+      "upstream_default": "raw counts required",
+      "omission_semantics": "explicit default",
+      "mapping": "exported matrix must be non-negative; normalized layers fail the upstream non-negativity check",
+      "supported": {
+        "type": "count-like layer name"
+      },
+      "interactions": [
+        "assay"
+      ],
+      "outside_envelope": "upstream ValueError"
+    },
+    {
+      "wrapper": "backend_control",
+      "role": "wrapper_control",
+      "upstream": "Process_Query kwargs",
+      "scenarios": [
+        "methods list",
+        "n_samples_per_label",
+        "hvg",
+        "output_dir",
+        "seed",
+        "prediction_mode",
+        "unknown_celltype_label",
+        "cl_obo_folder",
+        "min_shared_genes",
+        "query_batch_key",
+        "ref_batch_key",
+        "quiet"
+      ],
+      "wrapper_default": "list()",
+      "upstream_default": "retrain mode, all current algorithms minus ONCLASS when ontology disabled, n_samples_per_label=300, hvg=None (all shared genes)",
+      "omission_semantics": "defaults recorded here",
+      "mapping": "popv sub-list entries forwarded to Process_Query/annotate_data: methods -> methods, hvg -> hvg (NULL/False means all shared features), n_samples_per_label -> n_samples_per_label, unknown_celltype_label -> unknown_celltype_label, prediction_mode -> prediction_mode, cl_obo_folder -> cl_obo_folder, query_batch_key/ref_batch_key -> matching kwargs, seed -> python/numpy/torch/scvi seeds, output_dir/quiet/min_shared_genes are wrapper-only",
+      "supported": {
+        "type": "named list"
+      },
+      "interactions": [
+        "method=popv"
+      ],
+      "outside_envelope": "unsupported names are ignored by upstream; wrapper-only names validated at use time"
+    },
+    {
+      "wrapper": "return_object",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        false
+      ],
+      "wrapper_default": true,
+      "upstream_default": null,
+      "omission_semantics": "default returns the annotated object",
+      "mapping": "chooses Seurat object versus stored-result list return",
+      "supported": {
+        "type": "logical"
+      },
+      "interactions": [],
+      "outside_envelope": "coerced"
+    }
+  ],
+  "outputs": {
+    "scientific": [
+      "per-query-cell popv_prediction (majority-vote consensus label)",
+      "per-query-cell popv_majority_vote_score (number of algorithms agreeing)",
+      "per-algorithm prediction columns retained in tables$backend_predictions raw payload"
+    ],
+    "wrapper": [
+      "metadata columns sn_annotation_popv_label and sn_annotation_popv_score (agreement normalized by number of run algorithms)",
+      "unified stored result under misc results with schema_version 1.0.0",
+      "evidence table with entity/label/score/method/reference_coverage",
+      "dropped-cell accounting (cells removed by the upstream min-counts filter receive NA labels)",
+      "manifest.json captured under models$manifest"
+    ],
+    "waivers": [
+      "PopV UMAP outputs are not imported because Shennong computes its own embeddings",
+      "OnClass ontology aggregation is out of scope while cl_obo_folder=false; ontology-aware voting requires a future contract revision with committed ontology assets"
+    ]
+  },
+  "equivalence": {
+    "class": "exact",
+    "projection": [
+      "cell id",
+      "popv_prediction",
+      "popv_majority_vote_score"
+    ],
+    "absolute_tolerance": 0,
+    "relative_tolerance": 0,
+    "ordering": "labels joined on cell barcode; candidate cells dropped upstream are excluded from comparison and reported",
+    "reason": "Candidate and oracle invoke identical upstream calls with identical seeds, inputs, and reduced-method list; labels and agreement counts are deterministic given the matched seed."
+  },
+  "execution": {
+    "seed": 717,
+    "rng_kind": "python random/numpy/torch.manual_seed/scvi.settings.seed set from backend_control$popv$seed",
+    "threads": "single-threaded defaults; no BLAS override applied",
+    "fresh_process": true,
+    "acceleration": "ShennongOpt acceleration disabled (SHENNONG_ACCELERATION_DISABLED=true) for conformance runs",
+    "environment": {
+      "SHENNONG_ACCELERATION_DISABLED": "true",
+      "PIXI_HOME": "/home/duansq/.sn_pixi_runtime/pixi/home"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "popv-pbmc3k-tiny-v1",
+      "tier": "tiny",
+      "source": "pbmc3k ground-truth object /mnt/resources/pbmc/pbmc3k/analysis/pbmc3k.rds, stratified sample generated by scripts/make-popv-fixtures.R (seed 2401)",
+      "license": "10x Genomics PBMC 3k demo data, research use",
+      "sha256": "2c651fb2b53ace1c2dcd9bfa6ab98954a5ee7e2c3b1a72777964ce55603a9f62",
+      "role": "C1 dispatch and structure checks",
+      "seed": 2401
+    },
+    {
+      "id": "popv-pbmc3k-integration-v1",
+      "tier": "integration",
+      "source": "pbmc3k ground-truth object /mnt/resources/pbmc/pbmc3k/analysis/pbmc3k.rds, stratified disjoint sample generated by scripts/make-popv-fixtures.R (seed 717)",
+      "license": "10x Genomics PBMC 3k demo data, research use",
+      "sha256": "d1d373d2f7262e16bb26c62b28b6bd2d9706930780b17b0e92dabf045658dc2c",
+      "role": "C2 oracle/candidate parity on real data",
+      "seed": 717
+    }
+  ],
+  "conditions": {
+    "expected": [
+      "upstream warning when reference batches are smaller than 11 cells (BBKNN removal)",
+      "cells below the 30-count threshold are annotated NA and counted as dropped_cells"
+    ],
+    "outside_envelope": "missing pixi environment fails with an installation hint; missing reference or label column errors before analysis"
+  },
+  "versions": {
+    "R": "4.6.1",
+    "Shennong": "0.3.0.9000",
+    "upstream": [
+      "popv 0.6.1",
+      "scvi-tools 1.4.2"
+    ],
+    "material_dependencies": [
+      "Seurat",
+      "SeuratObject",
+      "Matrix",
+      "pixi"
+    ]
+  },
+  "ci": {
+    "required_tiers": [
+      "C0-static",
+      "C1-dispatch-contract",
+      "C2-direct-parity"
+    ],
+    "profile": "backend-conformance",
+    "platforms": [
+      "ubuntu-latest"
+    ]
+  },
+  "evidence": {
+    "test_file": "tests/testthat/test-backend-conformance-annotation-popv.R",
+    "date": "2026-08-24",
+    "verdict": "pass",
+    "limitations": "Reduced-method C2 subset (Support_Vector, XGboost, CELLTYPIST); scVI-backed algorithms and full-default algorithm set are exercised by the scheduled C3 tier. GPU acceleration is not part of this subject."
+  },
+  "owner": {
+    "subsystem": "annotation",
+    "maintainer": "Shennong maintainers",
+    "last_reviewed": "2026-08-24"
+  }
+}

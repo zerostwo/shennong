@@ -1,7 +1,5 @@
 function,category,bundle,level,backend,notes,article
 sn_annotate_de_features,analysis,kotliarov_pbmc,core,Shennong,Real PBMC differential features,vignettes/annotation-pathways.Rmd
-sn_annotation_confidence,analysis,kotliarov_pbmc,core,Shennong,Real author metadata as reference,vignettes/annotation-pathways.Rmd
-sn_annotation_consensus,analysis,kotliarov_pbmc,core,Shennong,Real PBMC consensus labels,vignettes/annotation-pathways.Rmd
 sn_assess_bulk_qc,analysis,kotliarov_pbmc,core,Shennong,Real biological-sample pseudobulk QC,vignettes/bulk-transcriptomics.Rmd
 sn_assess_integration,analysis,kotliarov_pbmc,core,Shennong,Two real acquisition batches,vignettes/metrics-diagnostics.Rmd
 sn_assess_qc,analysis,kotliarov_pbmc,core,Shennong,Real RNA UMI quality fields,vignettes/analysis-results-and-methods.Rmd
@@ -40,7 +38,7 @@ sn_review_annotation,analysis,kotliarov_pbmc,core,Shennong,Real author PBMC labe
 sn_run_annotation,analysis,kotliarov_pbmc,core,Seurat,Real PBMC marker annotation,vignettes/annotation-pathways.Rmd
 sn_run_bulk,analysis,kotliarov_pbmc,core,edgeR,Real biological-sample pseudobulk counts,vignettes/bulk-transcriptomics.Rmd
 sn_run_cell2location,analysis,visium_lymph_node,extended,cell2location,External Python backend,vignettes/spatial-workflows.Rmd
-sn_run_cell_communication,analysis,kotliarov_pbmc,extended,CellChat,Optional R backend on PBMC,vignettes/analysis-results-and-methods.Rmd
+sn_run_cell_communication,analysis,kotliarov_pbmc,extended,CellChat,Optional R backend on PBMC,vignettes/communication-consensus.Rmd
 sn_run_cellphonedb,analysis,kotliarov_pbmc,extended,CellPhoneDB,External Python backend,vignettes/communication-consensus.Rmd
 sn_run_celltypist,analysis,kotliarov_pbmc,extended,CellTypist,External Python backend,vignettes/annotation-pathways.Rmd
 sn_run_clinical_association,analysis,melanoma_bridge,core,survival,Real TCGA clinical endpoint,vignettes/bulk-transcriptomics.Rmd
@@ -94,7 +92,6 @@ sn_plot_abundance,visualization,kotliarov_pbmc,core,ggplot2,Real response abunda
 sn_plot_ambient_correction,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended ambient-correction result,vignettes/preprocessing-qc.Rmd
 sn_plot_annotation_confidence,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC confidence result,vignettes/annotation-pathways.Rmd
 sn_plot_annotation_confusion,visualization,kotliarov_pbmc,core,ggplot2,Disjoint real-reference mapping consistency with recorded provenance,vignettes/annotation-pathways.Rmd
-sn_plot_annotation_markers,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC marker genes,vignettes/annotation-pathways.Rmd
 sn_plot_barplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
 sn_plot_boxplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
 sn_plot_branch_comparison,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real lineage branches,vignettes/trajectory-dynamics.Rmd

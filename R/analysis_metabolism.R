@@ -310,30 +310,3 @@ sn_run_metabolism <- function(object,
   names(out) <- vapply(sets, GSEABase::setName, character(1))
   out[lengths(out) > 0L]
 }
-
-.sn_score_programs_aucell <- function(matrix, signatures, control = list()) {
-  check_installed("AUCell", reason = "to run AUCell gene-set scoring.")
-  check_installed("GSEABase", reason = "to build AUCell gene sets.")
-  keep <- vapply(signatures, function(genes) any(genes %in% rownames(matrix)), logical(1))
-  signatures <- signatures[keep]
-  if (!length(signatures)) {
-    stop("No metabolism gene sets matched the object features.", call. = FALSE)
-  }
-  gene_sets <- GSEABase::GeneSetCollection(mapply(
-    function(name, genes) {
-      GSEABase::GeneSet(unique(intersect(genes, rownames(matrix))), setName = name)
-    },
-    names(signatures),
-    signatures,
-    USE.NAMES = FALSE
-  ))
-  rankings <- AUCell::AUCell_buildRankings(
-    as.matrix(matrix),
-    nCores = as.integer(control$ncores %||% 1L),
-    plotStats = FALSE
-  )
-  auc <- AUCell::AUCell_calcAUC(gene_sets, rankings)
-  scores <- t(as.matrix(AUCell::getAUC(auc)))
-  rownames(scores) <- names(signatures)
-  scores
-}

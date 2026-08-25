@@ -496,7 +496,11 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   eval(as.call(c(list(fun_call), call_args)), envir = eval_env)
 }
 
-.sn_log_seurat_command <- function(object, assay = NULL, name = NULL) {
+.sn_log_seurat_command <- function(object,
+                                   assay = NULL,
+                                   name = NULL,
+                                   call_string = NULL,
+                                   params = NULL) {
   cmd <- get("LogSeuratCommand", envir = asNamespace("SeuratObject"))(
     object = object,
     return.command = TRUE
@@ -504,6 +508,15 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   command_name <- name %||% slot(cmd, "name")
   slot(cmd, "assay.used") <- assay %||% SeuratObject::DefaultAssay(object)
   slot(cmd, "name") <- command_name
+  if (!is_null(call_string)) {
+    slot(cmd, "call.string") <- paste(deparse(call_string, width.cutoff = 500L), collapse = " ")
+  }
+  if (!is_null(params)) {
+    if (!is.list(params) || is.null(names(params)) || any(!nzchar(names(params)))) {
+      stop("`params` must be a fully named list.", call. = FALSE)
+    }
+    slot(cmd, "params") <- params
+  }
   object[[command_name]] <- cmd
   object
 }

@@ -8,9 +8,6 @@ import json
 from pathlib import Path
 import sys
 
-_SHENNONG_PIXI_SHARED = Path(__file__).resolve().parents[2] / "_shared"
-sys.path.insert(0, str(_SHENNONG_PIXI_SHARED))
-from shennong_autozyme import activate_autozyme
 
 import anndata as ad
 import pandas as pd
@@ -33,8 +30,6 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     config = _read_json(Path(args.config))
-
-    autozyme_status = activate_autozyme(["scanpy"])
     import scanpy as sc
     import stlearn  # noqa: F401
 
@@ -60,7 +55,6 @@ def main() -> None:
             {
                 "method": "stlearn",
                 "output_h5ad": str(output_dir / "stlearn.h5ad"),
-                "autozyme": autozyme_status,
             },
             handle,
             indent=2,

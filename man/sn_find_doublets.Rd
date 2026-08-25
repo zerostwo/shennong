@@ -2,10 +2,11 @@
 % Please edit documentation in R/preprocessing.R
 \name{sn_find_doublets}
 \alias{sn_find_doublets}
-\title{Find doublets using scDblFinder}
+\title{Find doublets with scDblFinder or Scrublet}
 \usage{
 sn_find_doublets(
   object,
+  method = c("scdblfinder", "scrublet"),
   clusters = NULL,
   cluster_backend = c("native", "shennong"),
   group_by = NULL,
@@ -13,66 +14,89 @@ sn_find_doublets(
   ncores = 1,
   assay = "RNA",
   layer = "counts",
-  min_features = 200
+  min_features = 200,
+  backend_control = list()
 )
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
+\item{method}{Doublet-detection backend (see description).}
+
 \item{clusters}{Optional cluster assignments. A metadata column name or one
 value per cell. Explicit assignments take precedence over
-\code{cluster_backend}.}
+\code{cluster_backend}. scDblFinder-specific; ignored by scrublet.}
 
 \item{cluster_backend}{Clustering implementation used when \code{clusters}
 is \code{NULL}. \code{"native"} (the default) lets scDblFinder perform its
 own automatic clustering. \code{"shennong"} first obtains assignments from
-\code{sn_run_cluster()} using the selected assay and layer.}
+\code{sn_run_cluster()} using the selected assay and layer.
+scDblFinder-specific; ignored by scrublet.}
 
-\item{group_by}{An optional metadata column used as the donor or sample grouping.}
+\item{group_by}{An optional metadata column used as the donor or sample grouping.
+scDblFinder-specific; ignored by scrublet.}
 
-\item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.}
+\item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
+scDblFinder-specific; ignored by scrublet.}
 
 \item{ncores}{Number of sample groups to process concurrently. For a BPCells
 backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
 time and gives the lowest peak memory use. Higher values can hold up to
-\code{ncores} sample matrices in memory concurrently.}
+\code{ncores} sample matrices in memory concurrently.
+scDblFinder-specific; ignored by scrublet.}
 
 \item{assay}{Assay used for doublet detection. Defaults to \code{"RNA"}.}
 
-\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.}
+\item{layer}{Layer used as the input count matrix. Defaults to \code{"counts"}.
+Scrublet requires raw counts: a non-\code{"counts"} layer stops with an
+error instead of silently scoring normalized values.}
 
 \item{min_features}{Minimum number of detected features required for a cell
-to be passed to \code{scDblFinder()}. Defaults to \code{200}. Cells below
-this threshold are skipped and retain \code{NA} in the output columns.}
+to enter doublet detection. Defaults to \code{200}. Cells below this
+threshold are skipped and retain \code{NA} in the output columns.}
+
+\item{backend_control}{Optional named list of backend-specific settings. For
+scrublet: \code{seed}, \code{n_prin_comps}, \code{expected_doublet_rate},
+\code{synthetic_doublet_umi_subsampling}, \code{min_counts}, \code{min_cells},
+\code{min_gene_variability_pctl}, \code{threshold_min}, \code{threshold_max},
+\code{output_dir}, and \code{quiet}. Ignored by scDblFinder.}
 }
 \value{
 The input Seurat object with two new columns in \code{meta.data}:
-\code{scDblFinder.class} and \code{scDblFinder.score} when
-\code{layer = "counts"}, or \code{scDblFinder.class_corrected} and
-\code{scDblFinder.score_corrected} for non-default corrected layers. Cells
-whose selected layer sums to zero or whose detected-feature count is below
-\code{min_features} are skipped and retain \code{NA} in the corresponding
-output columns. Because \code{scDblFinder()} requires an in-memory sparse
-matrix, BPCells-backed inputs must supply \code{group_by}; Shennong then
-materializes each sample independently instead of the complete matrix.
+\code{scDblFinder.class} and \code{scDblFinder.score} for
+\code{method = "scdblfinder"} (with a \verb{_corrected} suffix on non-default
+corrected layers), or \code{scrublet.class} and \code{scrublet.score} for
+\code{method = "scrublet"}. Cells whose selected layer sums to zero or
+whose detected-feature count is below \code{min_features} are skipped and
+retain \code{NA} in the corresponding output columns. Because
+\code{scDblFinder()} requires an in-memory sparse matrix, BPCells-backed
+inputs must supply \code{group_by}; Shennong then materializes each sample
+independently instead of the complete matrix. Scrublet materializes the
+retained cells once and scores them through scanpy's native
+\code{sc.pp.scrublet()} wrapper.
 }
 \description{
-This function identifies potential doublets in a Seurat object by converting
-it to a SingleCellExperiment and using the \code{scDblFinder} package.
-For the validated scDblFinder default workflow on an in-memory
-\code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
-scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
-the captured upstream implementation. Compatibility is determined from the
-targeted function fingerprints rather than the package version label.
+This function identifies potential doublets in a Seurat object. The default
+\code{method = "scdblfinder"} converts the object to a SingleCellExperiment and
+runs the \code{scDblFinder} package; for the validated scDblFinder default
+workflow on an in-memory \code{dgCMatrix} with at most 33,000 cells,
+Shennong lazily registers and uses its guarded ShennongOpt fast path when
+available, falling back to the captured upstream implementation otherwise
+(compatibility comes from the targeted function fingerprints rather than the
+package version label). \code{method = "scrublet"} runs Scrublet through scanpy's
+native wrapper inside the managed \code{scrublet} pixi environment and always
+consumes raw counts.
 }
 \examples{
 \dontrun{
+seurat_obj <- sn_find_doublets(seurat_obj, ncores = 4)
+
+# Scrublet through the managed pixi environment:
+sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
 seurat_obj <- sn_find_doublets(
   seurat_obj,
-  clusters = NULL,
-  group_by = NULL,
-  dbr_sd = NULL,
-  ncores = 4
+  method = "scrublet",
+  backend_control = list(seed = 717)
 )
 }
 }

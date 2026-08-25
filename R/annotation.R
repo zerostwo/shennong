@@ -1,28 +1,19 @@
-.sn_annotation_marker_database <- function(marker_database = NULL, species = "human") {
-  if (is_null(marker_database)) {
-    utils::data("marker_genes", package = "Shennong", envir = environment())
-    marker_database <- get("marker_genes", envir = environment())
+.sn_annotation_label_hierarchy <- function(labels) {
+  utils::data("marker_genes", package = "Shennong", envir = environment())
+  marker_database <- get("marker_genes", envir = environment())
+  required <- c("high_hierarchy_cell_type", "low_hierarchy_cell_type")
+  if (!all(required %in% colnames(marker_database))) {
+    return(setNames(as.character(labels), as.character(labels)))
   }
-  if (!is.data.frame(marker_database)) {
-    stop("`marker_database` must be a data frame.", call. = FALSE)
-  }
-  required <- c("high_hierarchy_cell_type", "low_hierarchy_cell_type", species)
-  missing <- setdiff(required, colnames(marker_database))
-  if (length(missing) > 0L) {
-    stop("`marker_database` is missing column(s): ", paste(missing, collapse = ", "), call. = FALSE)
-  }
-  out <- tibble::tibble(
-    parent_label = as.character(marker_database$high_hierarchy_cell_type),
-    label = as.character(marker_database$low_hierarchy_cell_type),
-    gene = as.character(marker_database[[species]]),
-    direction = if ("direction" %in% colnames(marker_database)) {
-      tolower(as.character(marker_database$direction))
-    } else {
-      "positive"
-    }
+  hierarchy <- unique(marker_database[required])
+  parent <- setNames(
+    as.character(hierarchy$high_hierarchy_cell_type),
+    as.character(hierarchy$low_hierarchy_cell_type)
   )
-  out$direction[!out$direction %in% c("positive", "negative")] <- "positive"
-  unique(out[!is.na(out$gene) & nzchar(out$gene) & !is.na(out$label) & nzchar(out$label), ])
+  labels <- as.character(labels)
+  level_1 <- unname(parent[labels])
+  level_1[is.na(level_1) | !nzchar(level_1)] <- labels[is.na(level_1) | !nzchar(level_1)]
+  setNames(level_1, labels)
 }
 
 .sn_annotation_expression <- function(object, assay = NULL, layer = "data") {
@@ -39,67 +30,6 @@
     matrix = .sn_get_seurat_layer_data(object, assay = assay, layer = layer),
     assay = assay,
     layer = layer
-  )
-}
-
-.sn_annotation_marker_scores <- function(object,
-                                         group_by,
-                                         marker_database = NULL,
-                                         species = NULL,
-                                         assay = NULL,
-                                         layer = "data") {
-  species <- sn_get_species(object, species = species)
-  markers <- .sn_annotation_marker_database(marker_database, species = species)
-  expression <- .sn_annotation_expression(object, assay = assay, layer = layer)
-  matrix <- expression$matrix
-  groups <- as.character(object[[group_by, drop = TRUE]])
-  names(groups) <- colnames(object)
-  if (anyNA(groups) || any(!nzchar(groups))) {
-    stop("`group_by` contains missing or empty values.", call. = FALSE)
-  }
-
-  feature_lookup <- stats::setNames(rownames(matrix), toupper(sub("\\.[0-9]+$", "", rownames(matrix))))
-  markers$feature <- unname(feature_lookup[toupper(sub("\\.[0-9]+$", "", markers$gene))])
-  marker_labels <- split(markers, markers$label)
-  group_levels <- unique(groups)
-  rows <- list()
-  counter <- 0L
-  for (group in group_levels) {
-    cells <- names(groups)[groups == group]
-    averages <- Matrix::rowMeans(matrix[, cells, drop = FALSE])
-    for (label in names(marker_labels)) {
-      current <- marker_labels[[label]]
-      positive <- current[current$direction == "positive", , drop = FALSE]
-      negative <- current[current$direction == "negative", , drop = FALSE]
-      positive_features <- unique(stats::na.omit(positive$feature))
-      negative_features <- unique(stats::na.omit(negative$feature))
-      positive_values <- averages[positive_features]
-      negative_values <- averages[negative_features]
-      positive_score <- if (length(positive_values) == 0L) 0 else mean(positive_values)
-      negative_score <- if (length(negative_values) == 0L) 0 else mean(negative_values)
-      score <- positive_score - negative_score
-      supporting <- names(sort(positive_values, decreasing = TRUE))[seq_len(min(5L, length(positive_values)))]
-      conflicting <- names(sort(negative_values, decreasing = TRUE))[negative_values[order(negative_values, decreasing = TRUE)] > 0]
-      conflicting <- utils::head(conflicting, 5L)
-      counter <- counter + 1L
-      rows[[counter]] <- tibble::tibble(
-        entity = group,
-        label = label,
-        parent_label = current$parent_label[[1]],
-        score = score,
-        method = "markers",
-        supporting_markers = paste(supporting, collapse = ";"),
-        conflicting_markers = paste(conflicting, collapse = ";"),
-        reference_coverage = if (nrow(positive) == 0L) 0 else length(positive_features) / nrow(positive)
-      )
-    }
-  }
-  list(
-    evidence = dplyr::bind_rows(rows),
-    assay = expression$assay,
-    layer = expression$layer,
-    species = species,
-    marker_database = markers
   )
 }
 
@@ -157,15 +87,17 @@
   scores <- as.matrix(prediction$scores)
   if (is.null(rownames(scores))) rownames(scores) <- colnames(object)
   scores <- scores[colnames(object), , drop = FALSE]
-  evidence <- dplyr::bind_rows(lapply(seq_len(ncol(scores)), function(index) {
-    tibble::tibble(
-      entity = rownames(scores),
-      label = colnames(scores)[[index]],
-      score = scores[, index],
-      method = "singleR",
-      reference_coverage = length(common) / length(unique(c(rownames(query$matrix), rownames(ref$matrix))))
-    )
-  }))
+  best_scores <- apply(scores, 1, function(row) {
+    finite <- row[is.finite(row)]
+    if (length(finite)) max(finite) else NA_real_
+  })
+  evidence <- tibble::tibble(
+    entity = colnames(object),
+    label = labels,
+    score = unname(best_scores),
+    method = "singleR",
+    reference_coverage = length(common) / length(unique(c(rownames(query$matrix), rownames(ref$matrix))))
+  )
   delta_next <- as.numeric(prediction$delta.next %||% rep(NA_real_, ncol(object)))
   list(
     object = object,
@@ -353,8 +285,15 @@
   )
 }
 
-.sn_annotation_scmap_sce <- function(matrix, labels = NULL, label_column = "cell_type") {
-  check_installed(c("SingleCellExperiment", "SummarizedExperiment", "S4Vectors"), reason = "to prepare scmap inputs.")
+.sn_matrix_slice <- function(x, axis) {
+  if (is.matrix(x) || is.array(x)) {
+    if (axis == 2) x[, 1] else x[1, ]
+  } else {
+    x
+  }
+}
+
+.sn_annotation_scmap_sce <- function(matrix, labels = NULL, label_column = "cell_type") {  check_installed(c("SingleCellExperiment", "SummarizedExperiment", "S4Vectors"), reason = "to prepare scmap inputs.")
   col_data <- if (is_null(labels)) {
     S4Vectors::DataFrame(row.names = colnames(matrix))
   } else {
@@ -416,20 +355,42 @@
     threshold = backend_control$threshold %||% 0.7
   )
 
-  if (is.list(projected) && !is.null(projected$scmap_cluster_labs)) {
+  labels <- rep(NA_character_, ncol(object))
+  scores <- rep(NA_real_, ncol(object))
+  if (is.list(projected) && !is_null(projected$scmap_cluster_labs)) {
     labels_matrix <- projected$scmap_cluster_labs
     scores_matrix <- projected$scmap_cluster_siml %||% matrix(NA_real_, nrow = nrow(labels_matrix), ncol = ncol(labels_matrix))
-    labels <- as.character(labels_matrix[1, ])
-    scores <- as.numeric(scores_matrix[1, ])
+    # Current scmap returns a cells x references matrix while older builds
+    # returned references x cells; pick the axis that matches the query cells.
+    cells_axis <- if (length(dim(labels_matrix)) == 2L && nrow(labels_matrix) == ncol(object)) 2L else 1L
+    extracted_labels <- as.character(.sn_matrix_slice(labels_matrix, cells_axis))
+    extracted_scores <- as.numeric(.sn_matrix_slice(scores_matrix, cells_axis))
+    if (length(extracted_labels) == ncol(object)) {
+      labels <- extracted_labels
+      if (length(extracted_scores) == ncol(object)) scores <- extracted_scores
+    } else {
+      cli::cli_warn("scmap did not return one label per query cell; labels are set to NA.")
+    }
   } else if (inherits(projected, "SingleCellExperiment")) {
     projected_metadata <- as.data.frame(SummarizedExperiment::colData(projected))
     label_col <- grep("scmap.*lab", colnames(projected_metadata), value = TRUE)[1] %||% "scmap_labels"
     score_col <- grep("scmap.*(sim|prob|score)", colnames(projected_metadata), value = TRUE)[1] %||% NULL
-    labels <- as.character(projected_metadata[[label_col]])
-    scores <- if (is_null(score_col)) rep(NA_real_, length(labels)) else as.numeric(projected_metadata[[score_col]])
+    extracted_labels <- as.character(projected_metadata[[label_col]])
+    if (length(extracted_labels) == ncol(object)) {
+      labels <- extracted_labels
+      extracted_scores <- if (is_null(score_col)) rep(NA_real_, length(labels)) else as.numeric(projected_metadata[[score_col]])
+      if (length(extracted_scores) == ncol(object)) scores <- extracted_scores
+    } else {
+      cli::cli_warn("scmap did not return one label per query cell; labels are set to NA.")
+    }
   } else {
-    stop("scmap returned an unsupported projection result.", call. = FALSE)
+    cli::cli_warn("scmap returned an unsupported projection result; labels are set to NA.")
   }
+  # scmap reports rejected / unavailable assignments as NA; surface them as an
+  # explicit low-confidence label so downstream consensus stays computable.
+  unassigned <- is.na(labels)
+  labels[unassigned] <- "unassigned"
+  scores[unassigned] <- 0
   names(labels) <- colnames(object)
   metadata <- data.frame(row.names = colnames(object))
   metadata$sn_annotation_scmap_label <- labels
@@ -444,6 +405,117 @@
     ),
     raw_predictions = tibble::tibble(cell = colnames(object), prediction = unname(labels), prediction_score = scores),
     input = list(assay = query$assay, layer = query$layer, shared_features = length(common), reference_cells = ncol(reference_input$matrix))
+  )
+}
+
+.sn_annotation_popv <- function(object,
+                                reference,
+                                reference_label_by,
+                                assay = NULL,
+                                layer = "counts",
+                                backend_control = list()) {
+  if (is_null(reference) || is_null(reference_label_by)) {
+    stop("`reference` and `reference_label_by` are required for PopV annotation.", call. = FALSE)
+  }
+  effective_assay <- backend_control$assay %||% assay %||% Seurat::DefaultAssay(object)
+  # PopV normalizes internally and rejects non-count matrices, so it always
+  # exports raw counts regardless of the wrapper-level `layer` default.
+  effective_layer <- backend_control$layer %||% "counts"
+  reference_assay <- backend_control$reference_assay %||% Seurat::DefaultAssay(reference)
+  reference_layer <- backend_control$reference_layer %||% "counts"
+  seed <- as.integer(backend_control$seed %||% 0L)
+
+  run_dir <- backend_control$output_dir %||% file.path(tempdir(), paste0("sn_popv_", format(Sys.time(), "%Y%m%d_%H%M%S")))
+  input_dir <- file.path(run_dir, "input")
+  result_dir <- file.path(run_dir, "output")
+  dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(result_dir, recursive = TRUE, showWarnings = FALSE)
+
+  query_input <- .sn_write_python_object_input(
+    object = object,
+    input_dir = file.path(input_dir, "query"),
+    assay = effective_assay,
+    layer = effective_layer
+  )
+  reference_input <- .sn_write_python_object_input(
+    object = reference,
+    input_dir = file.path(input_dir, "reference"),
+    assay = reference_assay,
+    layer = reference_layer
+  )
+  shared_features <- length(intersect(query_input$features, reference_input$features))
+  union_features <- length(unique(c(query_input$features, reference_input$features)))
+
+  config <- list(
+    method = "popv",
+    label_key = reference_label_by,
+    query_batch_key = backend_control$query_batch_key %||% NULL,
+    ref_batch_key = backend_control$ref_batch_key %||% NULL,
+    prediction_mode = backend_control$prediction_mode %||% "retrain",
+    unknown_celltype_label = backend_control$unknown_celltype_label %||% "unknown",
+    n_samples_per_label = backend_control$n_samples_per_label %||% 300,
+    hvg = backend_control$hvg,
+    methods = backend_control$methods %||% NULL,
+    cl_obo_folder = backend_control$cl_obo_folder %||% FALSE,
+    min_shared_genes = backend_control$min_shared_genes %||% 2L,
+    seed = seed
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "popv_config.json"))
+  script <- .sn_pixi_script_path(environment = "popv", script_name = "popv_run.py")
+  .sn_execute_python_object_pixi(
+    environment = "popv",
+    script = script,
+    input_dir = input_dir,
+    output_dir = result_dir,
+    config_path = config_path,
+    quiet = isTRUE(backend_control$quiet)
+  )
+
+  predictions <- utils::read.csv(
+    file.path(result_dir, "predictions.csv"),
+    row.names = 1,
+    check.names = FALSE
+  )
+  missing_cells <- setdiff(colnames(object), rownames(predictions))
+  aligned <- predictions[colnames(object), , drop = FALSE]
+  labels <- as.character(aligned[["popv_prediction"]])
+  scores <- suppressWarnings(as.numeric(aligned[["popv_majority_vote_score"]]))
+  n_algorithms <- max(c(1L, as.integer(scores)), na.rm = TRUE)
+  n_methods_run <- length(setdiff(colnames(predictions), c("popv_prediction", "popv_prediction_score", "popv_majority_vote_prediction", "popv_majority_vote_score", "popv_parent")))
+  normalized_scores <- scores / pmax(1, n_methods_run)
+
+  metadata <- data.frame(row.names = colnames(object))
+  metadata$sn_annotation_popv_label <- labels
+  metadata$sn_annotation_popv_score <- normalized_scores
+  object <- SeuratObject::AddMetaData(object, metadata = metadata)
+
+  evidence <- tibble::tibble(
+    entity = colnames(object),
+    label = ifelse(is.na(labels), "unassigned", labels),
+    score = ifelse(is.na(normalized_scores), 0, normalized_scores),
+    method = "popv",
+    reference_coverage = if (union_features == 0) NA_real_ else shared_features / union_features
+  )
+  list(
+    object = object,
+    evidence = evidence,
+    raw_predictions = tibble::tibble(
+      cell = colnames(object),
+      prediction = labels,
+      prediction_score = normalized_scores,
+      agreement = scores
+    ),
+    models = list(manifest = tryCatch(
+      jsonlite::fromJSON(file.path(result_dir, "manifest.json"), simplifyVector = TRUE),
+      error = function(e) list()
+    )),
+    input = list(
+      assay = effective_assay,
+      layer = effective_layer,
+      prediction_mode = config$prediction_mode,
+      dropped_cells = length(missing_cells),
+      shared_features = shared_features
+    )
   )
 }
 
@@ -483,66 +555,104 @@
       object, reference, reference_label_by, assay = assay, layer = layer,
       backend_control = backend_control$scmap %||% list()
     ),
+    popv = .sn_annotation_popv(
+      object, reference, reference_label_by, assay = assay, layer = layer,
+      backend_control = backend_control$popv %||% list()
+    ),
     stop("Annotation backend '", method, "' is not implemented.", call. = FALSE)
   )
 }
 
-.sn_annotation_cluster_evidence <- function(cell_evidence, clusters) {
-  cells <- names(clusters)
-  current <- cell_evidence[cell_evidence$entity %in% cells, , drop = FALSE]
-  current$cluster <- unname(clusters[current$entity])
-  cluster_sizes <- table(clusters)
-  groups <- split(seq_len(nrow(current)), paste(current$cluster, current$label, current$method, sep = "\r"))
-  dplyr::bind_rows(lapply(groups, function(indices) {
-    rows <- current[indices, , drop = FALSE]
-    cluster <- rows$cluster[[1]]
+.sn_annotation_cell_table <- function(cell_evidence, cells) {
+  if (!is.data.frame(cell_evidence) ||
+      !all(c("entity", "label", "score", "method") %in% colnames(cell_evidence))) {
+    stop("The annotation backend returned an invalid per-cell evidence table.", call. = FALSE)
+  }
+  evidence <- tibble::tibble(cell = as.character(cell_evidence$entity)) |>
+    dplyr::mutate(
+      prediction = as.character(cell_evidence$label),
+      prediction_score = suppressWarnings(as.numeric(cell_evidence$score)),
+      method = as.character(cell_evidence$method),
+      reference_coverage = if ("reference_coverage" %in% colnames(cell_evidence)) {
+        suppressWarnings(as.numeric(cell_evidence$reference_coverage))
+      } else {
+        NA_real_
+      }
+    )
+  duplicated <- duplicated(evidence[["cell"]]) | duplicated(rev(evidence[["cell"]]))
+  if (any(duplicated)) {
+    stop("The annotation backend returned more than one prediction for a cell.", call. = FALSE)
+  }
+  missing <- setdiff(cells, evidence[["cell"]])
+  if (length(missing) > 0L) {
+    filler <- tibble::tibble(
+      cell = missing,
+      prediction = NA_character_,
+      prediction_score = NA_real_,
+      method = unique(evidence[["method"]])[[1]] %||% NA_character_,
+      reference_coverage = NA_real_
+    )
+    evidence <- dplyr::bind_rows(evidence, filler)
+  }
+  evidence[match(cells, evidence[["cell"]]), , drop = FALSE]
+}
+
+.sn_annotation_cluster_table <- function(cells_table, clusters) {
+  table <- dplyr::mutate(
+    cells_table,
+    cluster = unname(clusters[cell]),
+    .after = "cell"
+  )
+  groups <- split(table, table$cluster)
+  dplyr::bind_rows(lapply(groups, function(rows) {
+    counts <- table(rows$prediction, useNA = "ifany")
+    modal <- names(counts)[which.max(counts)][[1]]
+    members <- !is.na(rows$prediction) & rows$prediction == modal
+    scores <- rows$prediction_score[members]
+    agreement <- sum(members) / max(1L, nrow(rows))
     tibble::tibble(
-      entity = cluster,
-      label = rows$label[[1]],
-      score = sum(rows$score, na.rm = TRUE) / as.numeric(cluster_sizes[[cluster]]),
+      cluster = rows$cluster[[1]],
+      prediction = if (is.na(modal)) NA_character_ else modal,
+      prediction_score = if (length(scores)) mean(scores, na.rm = TRUE) else NA_real_,
+      agreement_share = agreement,
+      low_confidence = is.na(modal) || agreement < 0.5,
       method = rows$method[[1]],
-      reference_coverage = if (all(is.na(rows$reference_coverage))) NA_real_ else max(rows$reference_coverage, na.rm = TRUE)
+      reference_coverage = if (all(is.na(rows$reference_coverage))) {
+        NA_real_
+      } else {
+        max(rows$reference_coverage, na.rm = TRUE)
+      },
+      n_cells = nrow(rows)
     )
   }))
 }
 
-.sn_annotation_attach_hierarchy <- function(table, marker_evidence) {
-  hierarchy <- unique(marker_evidence[c("label", "parent_label")])
-  parent <- stats::setNames(hierarchy$parent_label, hierarchy$label)
-  missing_level <- is.na(table$level_1) | !nzchar(table$level_1)
-  table$level_1[missing_level] <- unname(parent[table$prediction[missing_level]])
-  table$level_1[is.na(table$level_1) | !nzchar(table$level_1)] <- table$prediction[is.na(table$level_1) | !nzchar(table$level_1)]
-  table
-}
-
-#' Run traceable cell-type annotation
+#' Run reference-based cell-type annotation
 #'
-#' Provides a stable annotation entry point for marker-only consensus,
-#' SingleR, CellTypist, Seurat label transfer, and scANVI label transfer.
-#' Consensus mode always evaluates canonical marker evidence and optionally
-#' combines it with a reference backend. Computational labels and raw backend
-#' predictions are retained; no LLM is allowed to overwrite them.
+#' Stable annotation entry point for SingleR, CellTypist, Seurat label
+#' transfer, Symphony mapping, scmap projection, scANVI transfer, and PopV
+#' consensus voting. Computational labels and raw backend predictions are
+#' retained; no LLM is allowed to overwrite them. Cluster summaries report the
+#' modal predicted label per \code{group_by} group.
 #'
 #' @param object A \code{Seurat} object.
-#' @param group_by Metadata column used for cluster-level annotation.
-#' @param method Annotation method.
-#' @param reference Optional annotated reference object.
+#' @param group_by Metadata column used for the cluster-level summary.
+#' @param method Annotation method. One of \code{"singleR"} (default),
+#'   \code{"celltypist"}, \code{"seurat"}, \code{"symphony"},
+#'   \code{"scmap"}, \code{"scanvi"}, or \code{"popv"}.
+#' @param reference Annotated reference object required by all methods except
+#'   CellTypist, which uses a pre-trained model instead.
 #' @param reference_label_by Reference label metadata/colData column.
 #' @param tissue,disease Optional biological context recorded in provenance.
 #' @param species \code{"human"} or \code{"mouse"}; inferred when possible.
 #' @param ontology Map labels to the bundled Cell Ontology snapshot.
 #' @param store_name Stored-result and metadata prefix.
-#' @param assay,layer Query expression source for marker scoring and most
-#'   reference backends. CellTypist independently defaults to the raw/count-like
-#'   `counts` layer because its MatrixMarket/CSV loader normalizes internally;
-#'   override that backend only with `backend_control = list(celltypist =
-#'   list(layer = "your_count_layer"))`.
-#' @param marker_database Optional marker data frame with high- and
-#'   low-hierarchy labels plus species gene columns.
-#' @param consensus_reference_method Backend used when consensus receives a
-#'   reference.
+#' @param assay,layer Query expression source. Most backends read a
+#'   log-normalized `data` layer; CellTypist and PopV independently default to
+#'   raw `counts` because they normalize internally. Override those backends
+#'   only via `backend_control = list(celltypist = list(layer = ...))` or
+#'   `backend_control = list(popv = list(layer = ...))`.
 #' @param backend_control Named backend-specific control lists.
-#' @param low_confidence_threshold,margin_threshold Confidence thresholds.
 #' @param return_object If \code{TRUE}, return the annotated object; otherwise
 #'   return the stored result.
 #'
@@ -553,7 +663,9 @@
 #' object <- sn_run_annotation(
 #'   object,
 #'   group_by = "seurat_clusters",
-#'   method = "consensus",
+#'   method = "singleR",
+#'   reference = reference,
+#'   reference_label_by = "cell_type",
 #'   species = "human"
 #' )
 #' sn_get_result(object, "annotation", "annotation")
@@ -562,7 +674,7 @@
 #' @export
 sn_run_annotation <- function(object,
                               group_by = "seurat_clusters",
-                              method = c("consensus", "singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi"),
+                              method = c("singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi", "popv"),
                               reference = NULL,
                               reference_label_by = NULL,
                               tissue = NULL,
@@ -572,11 +684,7 @@ sn_run_annotation <- function(object,
                               store_name = "annotation",
                               assay = NULL,
                               layer = "data",
-                              marker_database = NULL,
-                              consensus_reference_method = "singleR",
                               backend_control = list(),
-                              low_confidence_threshold = 0.55,
-                              margin_threshold = 0.1,
                               return_object = TRUE) {
   .sn_validate_result_object(object)
   method <- match.arg(method)
@@ -588,128 +696,99 @@ sn_run_annotation <- function(object,
   }
   clusters <- as.character(object[[group_by, drop = TRUE]])
   names(clusters) <- colnames(object)
-  marker <- .sn_annotation_marker_scores(
-    object, group_by = group_by, marker_database = marker_database,
-    species = species, assay = assay, layer = layer
+  if (anyNA(clusters) || any(!nzchar(clusters))) {
+    stop("`group_by` contains missing or empty values.", call. = FALSE)
+  }
+
+  backend <- .sn_annotation_backend(
+    object,
+    method = method,
+    reference = reference,
+    reference_label_by = reference_label_by,
+    assay = assay,
+    layer = layer,
+    backend_control = backend_control
   )
+  object <- backend$object
 
-  backend <- NULL
-  backend_method <- method
-  if (method == "consensus" && !is_null(reference)) {
-    backend_method <- match.arg(consensus_reference_method, c("singleR", "seurat", "symphony", "scmap", "scanvi"))
-  }
-  if (method != "consensus" || !is_null(reference)) {
-    backend <- .sn_annotation_backend(
-      object,
-      method = backend_method,
-      reference = reference,
-      reference_label_by = reference_label_by,
-      assay = assay,
-      layer = layer,
-      backend_control = backend_control
-    )
-    object <- backend$object
-  }
-
-  cluster_evidence <- marker$evidence
-  cell_evidence <- tibble::tibble()
-  if (!is_null(backend)) {
-    cell_evidence <- backend$evidence
-    reference_cluster <- .sn_annotation_cluster_evidence(cell_evidence, clusters)
-    if (method == "consensus") {
-      cluster_evidence <- dplyr::bind_rows(cluster_evidence, reference_cluster)
-    } else {
-      cluster_evidence <- reference_cluster
-    }
-  }
-  cluster_predictions <- sn_annotation_consensus(
-    cluster_evidence,
-    ontology = ontology,
-    low_confidence_threshold = low_confidence_threshold,
-    margin_threshold = margin_threshold
-  ) |>
-    .sn_annotation_attach_hierarchy(marker$evidence)
-  colnames(cluster_predictions)[colnames(cluster_predictions) == "entity"] <- "cluster"
-
-  if (nrow(cell_evidence) > 0L) {
-    cell_predictions <- sn_annotation_consensus(
-      cell_evidence,
-      ontology = ontology,
-      low_confidence_threshold = low_confidence_threshold,
-      margin_threshold = margin_threshold
-    ) |>
-      .sn_annotation_attach_hierarchy(marker$evidence)
-    colnames(cell_predictions)[colnames(cell_predictions) == "entity"] <- "cell"
-    cell_predictions$cluster <- unname(clusters[cell_predictions$cell])
+  cells_table <- .sn_annotation_cell_table(backend$evidence, colnames(object))
+  level_1 <- .sn_annotation_label_hierarchy(cells_table$prediction)
+  cells_table$level_1 <- unname(level_1[cells_table$prediction])
+  cells_table$level_2 <- cells_table$prediction
+  cells_table$level_3 <- cells_table$prediction
+  if (isTRUE(ontology)) {
+    mapped <- sn_map_cell_ontology(cells_table$prediction)
+    cells_table$ontology_id <- mapped$ontology_id
+    cells_table$ontology_label <- mapped$ontology_label
   } else {
-    indices <- match(clusters, cluster_predictions$cluster)
-    cell_predictions <- cluster_predictions[indices, , drop = FALSE]
-    cell_predictions$cell <- names(clusters)
-    cell_predictions <- cell_predictions[c("cell", setdiff(colnames(cell_predictions), "cell"))]
+    cells_table$ontology_id <- NA_character_
+    cells_table$ontology_label <- NA_character_
   }
+  cells_table$low_confidence <- !is.finite(cells_table$prediction_score) |
+    cells_table$prediction %in% c("unassigned", "unknown")
 
-  metadata <- data.frame(row.names = colnames(object))
-  cell_indices <- match(colnames(object), cell_predictions$cell)
+  clusters_table <- .sn_annotation_cluster_table(cells_table, clusters)
+
   safe_store_name <- gsub("[^[:alnum:]_]+", "_", store_name)
-  metadata[[paste0(safe_store_name, "_label")]] <- cell_predictions$prediction[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_1")]] <- cell_predictions$level_1[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_2")]] <- cell_predictions$level_2[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_3")]] <- cell_predictions$level_3[cell_indices]
-  metadata[[paste0(safe_store_name, "_score")]] <- cell_predictions$prediction_score[cell_indices]
-  metadata[[paste0(safe_store_name, "_margin")]] <- cell_predictions$margin[cell_indices]
-  metadata[[paste0(safe_store_name, "_low_confidence")]] <- cell_predictions$low_confidence[cell_indices]
-  metadata[[paste0(safe_store_name, "_ontology_id")]] <- cell_predictions$ontology_id[cell_indices]
+  cell_indices <- match(colnames(object), cells_table$cell)
+  metadata <- data.frame(row.names = colnames(object))
+  metadata[[paste0(safe_store_name, "_label")]] <- cells_table$prediction[cell_indices]
+  metadata[[paste0(safe_store_name, "_level_1")]] <- cells_table$level_1[cell_indices]
+  metadata[[paste0(safe_store_name, "_level_2")]] <- cells_table$level_2[cell_indices]
+  metadata[[paste0(safe_store_name, "_level_3")]] <- cells_table$level_3[cell_indices]
+  metadata[[paste0(safe_store_name, "_score")]] <- cells_table$prediction_score[cell_indices]
+  metadata[[paste0(safe_store_name, "_low_confidence")]] <- cells_table$low_confidence[cell_indices]
+  metadata[[paste0(safe_store_name, "_ontology_id")]] <- cells_table$ontology_id[cell_indices]
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
 
   result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "annotation",
     name = store_name,
     method = method,
-    backend = if (method == "consensus") paste(unique(cluster_evidence$method), collapse = "+") else backend_method,
+    backend = method,
     input = c(
       list(
-        assay = marker$assay,
-        layer = marker$layer,
+        assay = backend$input$assay %||% assay,
+        layer = backend$input$layer %||% layer,
         cells = ncol(object),
         features = nrow(object),
         group_by = group_by,
-        species = marker$species,
+        species = sn_get_species(object, species = species),
         tissue = tissue,
         disease = disease,
         reference_label_by = reference_label_by
       ),
-      backend$input %||% list()
+      backend$input[names(backend$input) %in% c("shared_features", "reference_cells", "prediction_mode", "dropped_cells")]
     ),
     parameters = list(
-      ontology = ontology,
-      low_confidence_threshold = low_confidence_threshold,
-      margin_threshold = margin_threshold,
-      consensus_reference_method = if (method == "consensus" && !is_null(reference)) backend_method else NULL
+      ontology = ontology
     ),
     tables = list(
-      primary = tibble::as_tibble(cell_predictions),
-      cells = tibble::as_tibble(cell_predictions),
-      clusters = tibble::as_tibble(cluster_predictions),
-      evidence = tibble::as_tibble(cluster_evidence),
-      backend_evidence = tibble::as_tibble(cell_evidence),
-      backend_predictions = backend$raw_predictions %||% tibble::tibble(),
-      marker_database = marker$marker_database
+      primary = tibble::as_tibble(cells_table),
+      cells = tibble::as_tibble(cells_table),
+      clusters = tibble::as_tibble(clusters_table),
+      evidence = tibble::as_tibble(cells_table),
+      backend_predictions = tibble::as_tibble(backend$raw_predictions %||% tibble::tibble())
     ),
     embeddings = backend$embeddings %||% list(),
     graphs = list(),
     models = backend$models %||% list(),
     diagnostics = list(
-      low_confidence_cells = sum(cell_predictions$low_confidence, na.rm = TRUE),
-      low_confidence_clusters = sum(cluster_predictions$low_confidence, na.rm = TRUE),
-      unmapped_ontology_labels = unique(cluster_predictions$prediction[is.na(cluster_predictions$ontology_id)])
+      low_confidence_cells = sum(cells_table$low_confidence, na.rm = TRUE),
+      low_confidence_clusters = sum(clusters_table$low_confidence, na.rm = TRUE),
+      unmapped_ontology_labels = unique(cells_table$prediction[is.na(cells_table$ontology_id)])
     ),
     warnings = character(),
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
   object <- sn_store_result(object, "annotation", store_name, result)
-  object <- .sn_log_seurat_command(object = object, assay = marker$assay, name = "sn_run_annotation")
+  object <- .sn_log_seurat_command(
+    object = object,
+    assay = backend$input$assay %||% assay,
+    name = "sn_run_annotation"
+  )
   if (isTRUE(return_object)) object else sn_get_result(object, "annotation", store_name)
 }
 

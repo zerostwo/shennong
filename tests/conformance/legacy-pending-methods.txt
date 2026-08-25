@@ -1,7 +1,6 @@
 # Current unadmitted subset of the frozen baseline in legacy-methods.txt.
 # Remove a key when it gains an admitted contract; never add a post-gate key.
 annotation::celltypist
-annotation::consensus
 annotation::scanvi
 annotation::scmap
 annotation::seurat

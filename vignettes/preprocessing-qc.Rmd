@@ -263,16 +263,29 @@ pbmc_doublets <- sn_run_cluster(
 sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
+Scrublet runs through scanpy's native `sc.pp.scrublet()` wrapper inside a
+managed pixi environment. Prepare it once, then select the backend; raw counts
+are required and scDblFinder-specific arguments (`clusters`,
+`cluster_backend`, `group_by`, `dbr_sd`, `ncores`) are ignored:
+
+```{r scrublet-doublets, eval = FALSE}
+sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
+pbmc_scrublet <- sn_find_doublets(
+  pbmc_norm,
+  method = "scrublet",
+  min_features = 200,
+  backend_control = list(seed = 717)
+)
+table(pbmc_scrublet$scrublet.class)
+```
+
 The ungrouped default call above uses scDblFinder's native automatic clustering
-and can use the pinned fork's exact AutoZyme `scdblfinder` patch. Set
+and can use the ShennongOpt `scdblfinder` patch. Set
 `cluster_backend = "shennong"` only when `sn_run_cluster()` assignments are an
-intentional analytical choice. The patch is admitted only for an in-memory
-`dgCMatrix` with 1--33,000 cells, default analytical parameters, positive finite
-library sizes, and the exact validated upstream function fingerprints. It is
-activated only for the call and then restored; unsupported inputs, parameters,
-or source drift use upstream scDblFinder. A different package version with
-identical targeted functions remains eligible.
-Set `options(shennong.autozyme = FALSE)` to disable automatic acceleration.
+intentional analytical choice. The patch applies guarded fast paths to supported
+in-memory sparse inputs and falls back to upstream scDblFinder for anything
+outside its contract. It is activated only for the call and then restored.
+Set `options(shennong.acceleration = FALSE)` to disable automatic acceleration.
 
 For a BPCells-backed object, provide a donor or capture column through
 `group_by`. `scDblFinder` requires an in-memory sparse matrix internally, so
@@ -298,15 +311,10 @@ For ambient RNA, materialize a matching raw-count resource with
 uses the filtered object directly and writes corrected counts to a new layer,
 so the original counts remain inspectable.
 
-When `method = "soupx"`, Shennong lazily activates the pinned fork's
-exact-scoped AutoZyme `soupx` patch for the `adjustCounts()` step when AutoZyme
-0.3.1 and SoupX 1.6.2 match the validated contract. The patch is restored
-immediately after the call, and Shennong applies SoupX's original stochastic
-integer rounding so the corrected count layer keeps its existing integer
-contract. Set
-`options(shennong.autozyme = FALSE)` to prevent automatic activation. If the
-patch was enabled manually, call `sn_disable_autozyme("soupx")` to return to
-the upstream SoupX path.
+When `method = "soupx"`, SoupX runs its plain upstream implementation; there is
+no acceleration patch for this path yet, and Shennong applies SoupX's original
+stochastic integer rounding so the corrected count layer keeps its existing
+integer contract.
 
 ```{r ambient-soupx, eval = FALSE}
 pbmc_soupx <- sn_remove_ambient_contamination(
@@ -328,6 +336,14 @@ pbmc_decont <- sn_remove_ambient_contamination(
 )
 
 SeuratObject::Layers(pbmc_decont[["RNA"]])
+ambient_command <- pbmc_decont@commands$sn_remove_ambient_contamination
+ambient_command@call.string
+ambient_command@params[c(
+  "method", "assay", "cluster_backend", "effective_backend_args",
+  "cluster_control"
+)]
+ambient_command@params$requested
+ambient_command@params$input
 sn_plot_ambient_correction(
   pbmc_decont,
   assay = "RNA",
@@ -337,9 +353,13 @@ sn_plot_ambient_correction(
 ```
 
 `method = "auto"` uses direct `decontX::decontX()` for RNA-only objects and
-routes a single ADT/protein/CITE assay to `decontX::decontPro()`. The
-`decontx_standalone` AutoZyme hook is scoped only around the direct RNA call
-when the installed fork registers it. `cluster_backend = "native"` is the
+routes a single ADT/protein/CITE assay to `decontX::decontPro()`. The direct
+RNA path can use the ShennongOpt `decontx` patch when installed.
+The Seurat command entry shown above records both the requested values and the
+resolved automatic choices, along with method-specific arguments and compact
+input/backend provenance. It intentionally summarizes matrix inputs instead of
+embedding another full count matrix in the Seurat object.
+`cluster_backend = "native"` is the
 decontX default and avoids an extra Shennong/Seurat clustering workflow. For
 decontPro, supply `cluster` or use the default `"shennong"` backend because
 decontPro requires cell types. SoupX has no native clustering backend and

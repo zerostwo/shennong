@@ -280,22 +280,14 @@ logs, and use a local disk rather than NFS for WAL-mode concurrency.
 Remote rows omit PID and error text. Full package versions, safe parameter JSON,
 error class, and acceleration evidence are separate consent data categories.
 
-## AutoZyme interpretation
+## Acceleration interpretation
 
-When a Shennong AutoZyme scope activates during a tracked workflow, the run row
-records the patch names with evidence `"scope_activation_only"`. This is
-deliberately not a `fast_path_hit` claim: a patch can be active while its input
-guard falls back to the upstream implementation. Use the three-arm benchmark
-runner described in the AutoZyme article to establish output parity and an
-empirical speed difference for a particular fixture and package build.
+When a ShennongOpt scope activates during a tracked workflow, the run row
+records the patches it used and any requested-but-unavailable patches in the
+acceleration columns. Use these columns when comparing timings against the
+plain upstream path described in [Runtime observability] to establish output
+parity and attribute speedups to specific patches.
 
-Automatic activation is deliberately narrower than the patch catalog. The
-current automatic set is `cellchat`, `clusterprofiler` (annotation cache only),
-`lisi`, `nichenetr`, `scdblfinder`, `seurat` (NormalizeData only),
-`seurat_merge`, `soupx`, and `ucell`. Coralysis, standalone decontX, broad
-Seurat targets, JoinLayers, tradeSeq, and WGCNA remain explicit-only until
-their Shennong call shapes and guards pass the required contracts. A benchmark
-or an eligible manual patch does not add it to the automatic set.
 
 ## Time any additional expression
 

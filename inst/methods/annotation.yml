@@ -1,17 +1,7 @@
 [
   {
-    "name": "consensus", "task": "annotation", "runtime": "r", "package": "Shennong",
-    "implemented": true, "default": true,
-    "description": "Consensus annotation from reference predictions, marker evidence, conflicts, and ontology mapping.",
-    "input_requirements": ["Seurat object", "cluster or cell metadata", "normalized expression"],
-    "outputs": ["cell predictions", "cluster predictions", "confidence", "evidence", "ontology identifiers"],
-    "supports": {"cluster_level": true, "cell_level": true, "reference_optional": true},
-    "cpu_gpu": "CPU", "install": "No extra runtime; install optional component backends as needed.",
-    "citation": "Shennong consensus workflow"
-  },
-  {
     "name": "singleR", "task": "annotation", "runtime": "r", "package": "SingleR",
-    "implemented": true, "default": false,
+    "implemented": true, "default": true,
     "description": "Reference-based annotation with SingleR and retained per-label scores.",
     "input_requirements": ["query expression", "annotated reference"],
     "outputs": ["labels", "scores", "pruned labels", "reference coverage"],
@@ -68,5 +58,15 @@
     "supports": {"cell_level": true, "gpu": true},
     "cpu_gpu": "CPU or CUDA GPU", "install": "sn_prepare_pixi_environment('scvi', install_environment = TRUE)",
     "citation": "Xu et al. Molecular Systems Biology 2021"
+  },
+  {
+    "name": "popv", "task": "annotation", "runtime": "pixi", "package": "Shennong", "environment": "popv",
+    "implemented": true, "default": false,
+    "description": "Multi-algorithm consensus annotation (PopV majority vote) through Shennong's pixi popv environment.",
+    "input_requirements": ["query raw counts", "annotated reference raw counts", "reference label column"],
+    "outputs": ["consensus labels", "per-algorithm predictions", "agreement scores"],
+    "supports": {"cell_level": true, "cluster_level": true, "gpu": false},
+    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('popv', install_environment = TRUE)",
+    "citation": "Heidari et al. Consensus prediction of cell type labels in single-cell transcriptomic data with popV, Nature Communications 2024"
   }
 ]

@@ -75,7 +75,7 @@
     return(control$BPPARAM)
   }
   active <- tryCatch(
-    .sn_autozyme_effective_active_patches(),
+    .sn_acceleration_effective_active_patches(),
     error = function(error) character()
   )
   if ("ucell" %in% active) {
@@ -98,7 +98,7 @@
   )
   control <- control %||% list()
   control <- control[setdiff(names(control), c("obj", "features", "matrix"))]
-  scored <- .sn_with_default_autozyme(
+  scored <- .sn_with_default_acceleration(
     {
       defaults <- list(
         obj = object,

@@ -92,6 +92,7 @@ object <- sn_store_result(
 
 sn_list_results(object)
 sn_list_results(object, type = "qc_assessment")
+sn_list_results(object, include_artifacts = TRUE)
 
 qc_copy <- sn_get_result(
   object,
@@ -192,95 +193,48 @@ Table-returning helpers such as `sn_get_de_result()` remain compatibility
 views over the same canonical primary table. Use `sn_get_result()` when the
 full envelope, diagnostics, or provenance is required.
 
-## Use validated AutoZyme acceleration
+## Use optional ShennongOpt acceleration
 
-Shennong never patches another package during loading. When an integrated
-workflow first needs one of the lazy defaults—CellChat, NicheNetR,
-clusterProfiler, Seurat, the narrow SeuratObject merge/JoinLayers paths,
-tradeSeq, or WGCNA—it checks that relevant patch.
-Each patch requires the pinned AutoZyme build plus an installed upstream
-package. Seurat, CellChat, and call-safe NicheNetR workflow scopes currently
-allow upstream version-label drift behind runtime/input guards; strict reports
-and explicit management calls remain available. Eligible patches are activated
-only inside the compatible Shennong workflow call, and the pre-call state is
-restored after success or error. After activation succeeds, Shennong emits an INFO log such as
-`[AutoZyme] Acceleration enabled for this call (patches: cellchat).` This confirms
-that the named patch is enabled for the scope; a guarded internal fast path can
-still fall back to upstream code when the current input is unsupported. Missing
-or drifted dependencies are skipped safely.
-Approximate patches are never part of the automatic set. AutoZyme's load-time
-change to `future.globals.maxSize` is restored before the analytical expression
-runs.
-The clusterProfiler 4.20 GSEA path used by `sn_enrich()` executes enrichit, not
-the fgsea namespace. It therefore scopes only the clusterProfiler GSON-cache
-patch; the separately available fgsea patch is not evidence that this workflow
-used an accelerated statistical kernel.
+Shennong never patches another package during loading. Selected hot paths are
+accelerated by the companion R package **ShennongOpt**, which registers guarded
+fast replacements (Seurat `RunPCA`/`ScaleData`, scran, decontX, scDblFinder,
+Coralysis, UCell, LISI, and Rogue) and rebinds them only while a compatible
+Shennong workflow call runs. Unsupported inputs fall back to the captured
+upstream implementation, so results stay bit-exact by construction.
 
-```{r autozyme-check}
-autozyme_defaults <- c(
-  "cellchat", "nichenetr", "clusterprofiler",
-  "seurat", "seurat_merge", "seurat_joinlayers", "tradeseq", "wgcna"
-)
-sn_check_autozyme(autozyme_defaults)
+```{r acceleration-check}
+sn_check_acceleration()
 ```
 
-```{r autozyme-default, eval = FALSE}
-communication <- sn_run_cell_communication(
-  object,
-  method = "cellchat",
-  group_by = "cell_type"
-)
+Automatic workflow scopes can be disabled per session:
 
+```{r acceleration-default, eval = FALSE}
 # Prevent automatic workflow scopes in this R session.
-options(shennong.autozyme = FALSE)
+options(shennong.acceleration = FALSE)
 
 # Explicit helpers intentionally ignore the automatic opt-out.
-communication <- sn_with_autozyme({
-  sn_run_cell_communication(
-    object,
-    method = "cellchat",
-    group_by = "cell_type"
-  )
-}, patches = "cellchat")
-
-# Keep both narrow SeuratObject methods active for direct Seurat calls.
-sn_enable_autozyme(c("seurat_merge", "seurat_joinlayers"))
-merged <- merge(object_a, object_b)
-merged[["RNA"]] <- SeuratObject::JoinLayers(
-  merged[["RNA"]], layers = "counts", new = "counts"
+out <- sn_with_acceleration(
+  sn_run_cluster(object, resolution = 0.8),
+  name = "seurat"
 )
-sn_disable_autozyme(c("seurat_joinlayers", "seurat_merge"))
+
+# Keep a patch active for direct upstream calls until it is disabled again.
+sn_enable_acceleration("seurat")
+sn_disable_acceleration("seurat")
 ```
 
-`options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
-`AUTOZYME_DISABLE=true` block automatic scopes; none deactivates a patch that
-the user activated manually, and explicit helpers ignore these controls. For
-memory safety, BPCells-backed Seurat layers bypass the older broad Seurat patch
-because it can coerce them to an in-memory `dgCMatrix`. The narrow
-`seurat_joinlayers` patch remains eligible for public BPCells `IterableMatrix`
-count layers; unsupported calls fall back to upstream. NicheNetR automatic use remains limited to `single = TRUE`
-and a dense numeric ligand-target matrix. Relaxing `strict` or setting
-`allow_approximate = TRUE` remains an explicit manual reproducibility decision.
-Shennong does not install AutoZyme, upstream packages, or a Python environment.
-Result-producing scopes add the patches active for the compatible call to
-provenance before restoring the automatic scope. The BPCells bypass applies to
-Seurat patch calls;
-it does not make every downstream backend BPCells-native. CellChat and tradeSeq,
-for example, may still need a controlled sparse materialization or an aggregated
-input that fits memory.
+`options(shennong.acceleration = FALSE)` or `SHENNONG_ACCELERATION_DISABLED=true`
+block automatic scopes; neither deactivates a patch that was activated manually.
+Set `shennong.opt.threads` (or `SHENNONG_OPT_THREADS`) to cap the thread budget
+used by accelerated parallel sections. Accelerated paths never change scientific
+output; conformance contracts compare candidate calls against direct upstream
+oracles with acceleration disabled.
 
-That installation statement applies to the optional R package integration.
-Shennong's managed pixi templates for BBKNN, scArches, stLearn, trajectory,
-cell2location, and CellPhoneDB separately pin the Python package from the same
-`zerostwo/autozyme` revision. Each runner requests only a patch that intersects
-the code it executes. Patchable upstreams are pinned to the versions AutoZyme
-validated and checked again at runtime; cell2location is limited to CPU
-full-batch training. The runner falls back to the original Python implementation
-when the patch is missing, disabled, incompatible, or outside its safe scope, and
-writes requested/active/inactive evidence to its backend `manifest.json`.
-`AUTOZYME_DISABLED=true` (or the legacy `AUTOZYME_DISABLE=true`) disables both
-automatic R scopes and these managed Python activations. No AutoZyme claim is
-made for Shennong Python paths without a matching patch.
+Hot paths without a ShennongOpt counterpart (for example CellChat, NicheNetR,
+SoupX, clusterProfiler caches, tradeSeq, WGCNA, and Seurat merge/JoinLayers)
+currently execute their plain upstream implementations. They will gain
+accelerations as new ShennongOpt patches become available; provenance records
+which patches each run used and which were requested but unavailable.
 
 ## Give agents a read-only discovery surface
 

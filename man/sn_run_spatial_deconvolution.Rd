@@ -10,5 +10,6 @@ sn_run_spatial_deconvolution(...)
 \item{...}{Additional arguments passed to \code{sn_call_pixi_environment()}.}
 }
 \description{
-Run spatial deconvolution through cell2location
+\code{sn_run_spatial_deconvolution()} is a deprecated compatibility alias. Use
+\code{\link[=sn_run_cell2location]{sn_run_cell2location()}} directly.
 }

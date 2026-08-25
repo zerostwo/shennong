@@ -62,7 +62,7 @@
   existing[["timestamp"]] <- existing[["timestamp"]] %||% result[["created_at"]] %||%
     format(Sys.time(), tz = "UTC", usetz = TRUE)
   acceleration <- if (isTRUE(capture_acceleration)) {
-    tryCatch(.sn_autozyme_provenance(), error = function(e) list())
+    tryCatch(.sn_acceleration_provenance(), error = function(e) list())
   } else {
     list()
   }
@@ -78,7 +78,7 @@
     result = result,
     random_seed = random_seed,
     capture_acceleration = is.environment(
-      getOption("shennong.autozyme.provenance_context")
+      getOption("shennong.acceleration.provenance_context")
     )
   )
 }
@@ -490,6 +490,15 @@ sn_store_result <- function(object, type, name, result) {
     stop("`name` must be a non-empty character scalar.", call. = FALSE)
   }
   type <- tolower(type)
+  artifact_types <- .sn_misc_result_registry() |>
+    dplyr::filter(.data$contract_scope == "artifact") |>
+    dplyr::pull(.data$type)
+  if (grepl("_artifact$", type) || type %in% artifact_types) {
+    stop(
+      "`type` is reserved for a registered workflow artifact and cannot be stored as a unified analysis result.",
+      call. = FALSE
+    )
+  }
   prepared <- .sn_prepare_result_for_collection(result, type = type, name = name)
   collection <- .sn_result_collection(type)
   if (!is_null(collection)) {
@@ -832,14 +841,25 @@ sn_delete_result <- function(object, type, name) {
       stop("No stored result named '", name, "' was found for analysis type '", type, "'.", call. = FALSE)
     }
     entries[[name]] <- NULL
-    misc_data[[collection]] <- entries
+    if (length(entries) == 0L) {
+      misc_data[[collection]] <- NULL
+    } else {
+      misc_data[[collection]] <- entries
+    }
   } else {
     entries <- misc_data[["analysis_results"]][[type]] %||% list()
     if (!name %in% names(entries)) {
       stop("No stored result named '", name, "' was found for analysis type '", type, "'.", call. = FALSE)
     }
     entries[[name]] <- NULL
-    misc_data[["analysis_results"]][[type]] <- entries
+    if (length(entries) == 0L) {
+      misc_data[["analysis_results"]][[type]] <- NULL
+    } else {
+      misc_data[["analysis_results"]][[type]] <- entries
+    }
+    if (length(misc_data[["analysis_results"]]) == 0L) {
+      misc_data[["analysis_results"]] <- NULL
+    }
   }
   methods::slot(object, "misc") <- misc_data
   object

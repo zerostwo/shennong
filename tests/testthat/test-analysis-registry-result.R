@@ -122,6 +122,44 @@ test_that("generic results round-trip, list, filter, and delete", {
 
   object <- sn_delete_result(object, "trajectory", "cd8")
   expect_error(sn_get_result(object, "trajectory", "cd8"), "No stored result")
+  expect_null(object@misc$analysis_results)
+})
+
+test_that("generic storage rejects artifact-reserved namespaces", {
+  object <- make_analysis_result_test_object()
+  result <- list(
+    method = "synthetic", backend = "synthetic", input = list(),
+    parameters = list(), tables = list(primary = tibble::tibble(value = 1)),
+    embeddings = list(), graphs = list(), models = list(), diagnostics = list(),
+    warnings = character(), provenance = list(random_seed = NA_integer_)
+  )
+
+  expect_error(
+    sn_store_result(object, "coralysis_artifact", "bad", result),
+    "reserved for a registered workflow artifact"
+  )
+  expect_error(
+    sn_store_result(object, "input_source", "bad", result),
+    "reserved for a registered workflow artifact"
+  )
+})
+
+test_that("result discovery optionally includes registered artifacts", {
+  object <- make_analysis_result_test_object()
+  object@misc$input_source <- list(path = "/data/example", format = "10x")
+  object@misc$integration_comparison <- list(
+    method = "grid",
+    grid = tibble::tibble(method = c("harmony", "unintegrated"))
+  )
+
+  regular <- sn_list_results(object)
+  with_artifacts <- sn_list_results(object, include_artifacts = TRUE)
+
+  expect_false(any(regular$collection %in% c("input_source", "integration_comparison")))
+  expect_true(all(c("input_source", "integration_comparison") %in% with_artifacts$collection))
+  comparison <- with_artifacts[with_artifacts$collection == "integration_comparison", , drop = FALSE]
+  expect_identical(comparison$type, "integration_comparison_artifact")
+  expect_identical(comparison$method, "grid")
 })
 
 test_that("legacy stored results are upgraded to the unified contract", {
@@ -269,11 +307,6 @@ test_that("legacy storage helpers return the unified envelope additively", {
 
 test_that("enrichment storage attributes acceleration only inside a workflow scope", {
   object <- make_analysis_result_test_object()
-  testthat::local_mocked_bindings(
-    .sn_autozyme_provenance = function() list(active_patches = "fgsea"),
-    .package = "Shennong"
-  )
-
   direct <- sn_store_enrichment(
     object,
     tibble::tibble(feature = "gene1", score = 1),
@@ -281,7 +314,7 @@ test_that("enrichment storage attributes acceleration only inside a workflow sco
   )
   expect_null(direct$provenance$acceleration)
 
-  stored <- Shennong:::.sn_with_autozyme_provenance_context(
+  stored <- Shennong:::.sn_with_acceleration_provenance_context(
     sn_store_enrichment(
       object,
       tibble::tibble(feature = "gene1", score = 1),
@@ -291,7 +324,7 @@ test_that("enrichment storage attributes acceleration only inside a workflow sco
   )
 
   expect_identical(
-    stored$provenance$acceleration$active_patches,
+    stored$provenance$acceleration$suppressed_patches,
     "fgsea"
   )
 })

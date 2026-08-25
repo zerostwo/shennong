@@ -190,6 +190,7 @@ test_that("WGCNA adapters standardize modules and trait associations", {
     MEbrown = scale(rev(seq_len(12)))[, 1],
     row.names = colnames(fixture$counts)
   )
+  attached_before <- "package:WGCNA" %in% search()
   result <- sn_run_wgcna(
     fixture$counts, fixture$metadata, traits = c("age", "condition"), power = 6,
     min_module_size = 5,
@@ -199,6 +200,7 @@ test_that("WGCNA adapters standardize modules and trait associations", {
   expect_equal(nrow(result$tables$modules), 40L)
   expect_gt(nrow(result$tables$trait_associations), 0L)
   expect_equal(result$parameters$power, 6)
+  expect_identical("package:WGCNA" %in% search(), attached_before)
 })
 
 test_that("WGCNA constructs a real network on variable expression", {

@@ -1,6 +1,54 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
+
+The ShennongOpt bridge now targets the companion repository's standardized
+`sn_*` exports from commit `2e8669c`, with runtime fallback for an older
+installed `sno_*` build during migration. Ambient correction command logging
+no longer captures the internal logger call: it records the public call and a
+schema-versioned parameter payload containing requested/resolved method,
+assay, clustering backend, wrapper controls, backend `...`, compact input
+provenance, and backend identity without duplicating raw count matrices.
+
+`sn_find_doublets()` gained `method = "scrublet"`: scanpy-native Scrublet in a
+new `scrublet` pixi environment (scanpy >= 1.10 plus scikit-image for automatic
+thresholding), raw counts only, with a pilot conformance contract recording
+exact oracle parity on committed pbmc3k fixtures. The subject stays pilot until
+doublet detection enters the inst/methods registry.
+
+The homegrown consensus annotation method was removed. `sn_run_annotation()` is
+reference-only now (default `singleR`), the consensus/confidence exports and
+marker-scoring path are deleted, cluster summaries are modal-label aggregates,
+and hierarchy/ontology mapping is retained. AutoZyme was replaced by
+ShennongOpt as the acceleration engine: new public controls
+(`sn_check_acceleration()`, `sn_enable/disable_acceleration()`,
+`sn_with_acceleration()`), option `shennong.acceleration`, env
+`SHENNONG_ACCELERATION_DISABLED`; uncovered hot paths run plain upstream, and
+the vendored Python autozyme integration plus its benchmark artifacts were
+removed.
+
+
+
+The `annotation::popv` backend is now implemented and admitted under the v1
+backend-conformance contract. `sn_run_annotation(method = "popv")` drives
+YosefLab PopV 0.6.1 through a new `popv` pixi environment (conda-forge python
+3.11 + pytorch-cpu, PyPI popv with scikit-learn <1.8 and numpy <2 pins to satisfy
+upstream tensorflow <2.18). The wrapper exports raw counts for a query and an
+annotated Seurat reference, runs retrain-mode Process_Query plus annotate_data,
+and stores per-cell consensus labels with agreement-normalized scores in the
+unified annotation result. An admitted contract records an exact-match C2 parity
+against a direct-upstream oracle (`tests/conformance/oracles/popv_oracle.py`) on
+a committed stratified pbmc3k integration fixture (180 query / 60 reference
+cells) with a reduced deterministic algorithm subset; scVI-backed algorithms and
+the full default algorithm set remain assigned to scheduled C3 evidence.
+Committed fixtures live under `tests/conformance/fixtures/` with recorded
+SHA-256 hashes.
+
+The same change set fixes `sn_run_annotation(method = "scmap")` against current
+scmap releases, whose `scmapCluster()` returns a cells-by-references label
+matrix while the adapter assumed the transposed layout. The adapter now selects
+the axis matching the query cells and degrades rejected assignments to an
+explicit `"unassigned"` low-confidence label rather than crashing consensus.
 
 The strict backend-conformance workflow now installs the exact edgeR 4.10.3
 version recorded in the executable contract. The first remote run exposed that
@@ -988,3 +1036,42 @@ of untracked data and scripts. They were not deleted automatically; see
 - Focused enrichment-conformance and CI-workflow tests pass with
   `FAIL 0 | WARN 0 | SKIP 0 | PASS 93`; the updated workflow also parses as
   valid YAML.
+
+## 2026-08-24 ShennongOpt API and ambient command provenance
+
+- Shennong now calls the companion `shennong-opt` current `sn_*` management
+  API and retains a runtime fallback for an already-installed legacy `sno_*`
+  build. The bridge passed 24 focused assertions against both the legacy user
+  library and an isolated install of sibling commit `2e8669c`.
+- `sn_remove_ambient_contamination()` writes the public call and a versioned,
+  compact reproducibility payload to its `SeuratCommand`: requested/resolved
+  choices, effective backend and automatic-clustering controls, input-source
+  summaries, exact supplied cluster values, and backend identity are retained;
+  raw matrices are not duplicated.
+- The full local suite passed with `FAIL 0 | WARN 8 | SKIP 1 | PASS 4210`.
+  Source build succeeded and `_R_CHECK_FORCE_SUGGESTS_=false R CMD check
+  --no-manual` completed with two pre-existing NOTEs (`.codegraph` and
+  annotation global bindings). The complete pkgdown site rebuilt after removing
+  two stale annotation topics from the existing `_pkgdown.yml` change.
+
+## 2026-08-24 comprehensive-audit repair milestone
+
+- AUDIT-01 to AUDIT-03 are implemented: the duplicate AUCell helper was
+  removed, both spatial compatibility aliases now warn and forward, and WGCNA
+  no longer mutates the search path. The local WGCNA wrapper explicitly binds
+  the package's extended `cor()` implementation, which is required by the
+  installed WGCNA version's `blockwiseModules()` internals.
+- AUDIT-12 is partially closed for discovery and namespace safety:
+  `integration_comparison` is registered as an artifact,
+  `sn_list_results(include_artifacts = TRUE)` exposes registered artifacts,
+  generic storage rejects artifact-reserved types, and deletion prunes empty
+  containers. Writer-level seed/provenance normalization and an explicit
+  artifact deletion API remain separate follow-up work.
+- AUDIT-11's missing `sn_call_trajectory()` pkgdown entry is fixed. Tier-1
+  export coverage remains follow-up work.
+- Validation completed against the final tree: the four focused domains passed
+  298 expectations, the regenerated public-API parameter inventory passed 675
+  expectations, the quick pre-push source-build/structural-check path completed
+  with 0 errors and 0 warnings (1 existing annotation-globals NOTE), pkgdown was
+  rebuilt locally, and the full suite finished with 4,226 passes, 8 expected
+  optional-backend warnings, 1 missing-local-fixture skip, and 0 failures.

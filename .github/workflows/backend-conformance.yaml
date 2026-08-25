@@ -41,8 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SHENNONG_CONFORMANCE_STRICT: 'true'
-      AUTOZYME_DISABLED: 'true'
-      AUTOZYME_DISABLE: 'true'
+      SHENNONG_ACCELERATION_DISABLED: 'true'
       OMP_NUM_THREADS: '1'
       OPENBLAS_NUM_THREADS: '1'
       MKL_NUM_THREADS: '1'

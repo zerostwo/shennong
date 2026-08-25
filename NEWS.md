@@ -5,8 +5,89 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+### Breaking changes
+
+- Removed `method = "consensus"` and Shennong's homegrown consensus algorithm
+  from `sn_run_annotation()`. The entry point is now purely reference-based:
+  the default method is `singleR`, and `celltypist`, `seurat`, `symphony`,
+  `scmap`, `scanvi`, and `popv` remain available. The exported helpers
+  `sn_annotation_consensus()` and `sn_annotation_confidence()`, the bundled
+  marker-scoring path, margin calibration, second-best labels, and
+  supporting/conflicting marker fields are gone; `sn_plot_annotation_markers()`
+  is removed because marker evidence no longer exists. Wrapper parameters
+  `marker_database`, `consensus_reference_method`, `low_confidence_threshold`,
+  and `margin_threshold` are dropped. Cluster summaries now report the modal
+  predicted label per group with an `agreement_share`; cells without a finite
+  backend score or with rejected labels (`unassigned`/`unknown`) are flagged
+  `low_confidence`. Hierarchy levels and Cell Ontology mapping are retained.
+- Replaced AutoZyme acceleration with the companion **ShennongOpt** package.
+  Public controls are now `sn_check_acceleration()`, `sn_enable_acceleration()`,
+  `sn_disable_acceleration()`, and `sn_with_acceleration()`; automatic scopes
+  are disabled via `options(shennong.acceleration = FALSE)` or
+  `SHENNONG_ACCELERATION_DISABLED=true`, and thread budgets via
+  `shennong.opt.threads` / `SHENNONG_OPT_THREADS`. Covered patch families are
+  Seurat RunPCA/ScaleData, scran, decontX, scDblFinder, Coralysis, UCell, LISI,
+  and Rogue. Hot paths without a ShennongOpt counterpart (CellChat, NicheNetR,
+  SoupX, clusterProfiler caches, tradeSeq, WGCNA, Seurat merge/JoinLayers) now
+  execute plain upstream code until new patches land. The vendored Python
+  autozyme integration (pixi dependencies, runner hooks, `_shared` startup
+  hook, and the autozyme benchmark artifact/article) was removed; managed pixi
+  environments run plain upstream Python.
+
+### Added
+
+- Added `method = "scrublet"` to `sn_find_doublets()`: Scrublet doublet
+  detection through scanpy's native `sc.pp.scrublet()` wrapper, managed by a new
+  `scrublet` pixi environment
+  (`sn_prepare_pixi_environment("scrublet", install_environment = TRUE)`).
+  The backend requires raw counts (non-count layers fail fast), ignores
+  scDblFinder-specific arguments with a warning, writes `scrublet.class` and
+  `scrublet.score` metadata columns, and is covered by a pilot
+  backend-conformance contract (`doublets::scrublet`) whose C2 evidence shows
+  exact score/call parity against a direct scanpy oracle on a committed pbmc3k
+  fixture.
+
+- Added `method = "popv"` to `sn_run_annotation()`: multi-algorithm majority-vote
+  consensus annotation through the YosefLab PopV Python package, managed by a
+  new `popv` pixi environment
+  (`sn_prepare_pixi_environment("popv", install_environment = TRUE)`).
+  The backend requires raw counts for the query and an annotated reference,
+  exposes upstream knobs (`methods`, `hvg`, `n_samples_per_label`,
+  `prediction_mode`, batch keys, seed) through
+  `backend_control = list(popv = ...)`, stores per-cell consensus labels plus
+  agreement-normalized scores, and is covered by an admitted backend-conformance
+  contract (`annotation::popv`) with a direct-upstream oracle, committed pbmc3k
+  fixtures, and C1/C2 evidence.
+
 ### Fixed
 
+- Resolved the 2026-08-24 comprehensive-audit P0 findings: AUCell program and
+  metabolism scoring now share one control-aware implementation with a direct
+  upstream differential test; legacy spatial deconvolution/mapping aliases
+  emit deprecation warnings in favor of `sn_run_cell2location()` and
+  `sn_run_tangram()`; and WGCNA execution uses an explicit local namespace
+  wrapper instead of attaching and detaching the package (AUDIT-01 to
+  AUDIT-03).
+- Hardened stored-result discovery and mutation: registered workflow artifacts,
+  including integration-comparison state, can be discovered with
+  `sn_list_results(include_artifacts = TRUE)`; artifact-reserved type names are
+  rejected by `sn_store_result()`; and deleting the final generic result now
+  removes empty containers (AUDIT-12). The pkgdown index now includes
+  `sn_call_trajectory()` (AUDIT-11).
+- Updated the ShennongOpt bridge for the companion package's standardized
+  `sn_*` management API, while retaining runtime compatibility with an older
+  installed build during migration. `sn_remove_ambient_contamination()` now
+  stores its public call plus a schema-versioned parameter record in
+  `object@commands`: requested and resolved method/assay/clustering choices,
+  wrapper defaults, supplied and effective method-specific arguments, compact input-source provenance,
+  backend function, and backend package version are available without copying
+  a raw count matrix into the command log.
+- Fixed `sn_run_annotation(method = "scmap")` with current scmap releases: the
+  adapter now detects whether `scmapCluster()` returned a cells-by-references
+  or references-by-cells label matrix, degrades rejected assignments to an
+  explicit low-confidence `"unassigned"` label with zero score instead of
+  crashing downstream consensus, and warns when upstream returns no usable
+  labels.
 - Fixed the coverage workflow dependency set so the executable MSigDB
   enrichment conformance tests have `msigdbr` available on GitHub Actions.
 - Fixed `sn_install_shennong()` so an explicit local source is installed

@@ -13,7 +13,6 @@ numpy = "*"
 
 [pypi-dependencies]
 scarches = "*"
-autozyme = { git = "https://github.com/zerostwo/autozyme.git", rev = "8fc2e9c3a7f70302f97589aaa9b0395dcf86f9bc", subdirectory = "autozyme_py" }
 
 [feature.cpu.dependencies]
 pytorch-cpu = "*"

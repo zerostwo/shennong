@@ -747,7 +747,7 @@ test_that("cluster fingerprints include analysis values and relevant metadata", 
 
 test_that("log-normalized clustering records the blocked HVG projection", {
   skip_if_not_installed("Seurat")
-  withr::local_options(list(shennong.autozyme = FALSE))
+  withr::local_options(list(shennong.acceleration = FALSE))
 
   object <- make_test_object(seed = 116, prefix = "blocked-projection")
   hvg_reference <- Seurat::NormalizeData(object, verbose = FALSE)
@@ -3366,7 +3366,7 @@ test_that("decontPro matrix results are normalized into Shennong metadata", {
   ) %in% colnames(out$metadata)))
 })
 
-test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
+test_that("SoupX correction preserves integer rounding", {
   skip_if_not_installed("SoupX")
 
   data_env <- new.env(parent = emptyenv())
@@ -3388,7 +3388,7 @@ test_that("SoupX correction scopes AutoZyme and preserves integer rounding", {
   actual <- suppressWarnings(
     with_mocked_bindings(
       Shennong:::.sn_adjust_soupx_counts(sc),
-      .sn_with_default_autozyme = function(expr, patches) {
+      .sn_with_default_acceleration = function(expr, patches) {
         selected_patch <<- patches
         force(expr)
       },
@@ -3571,6 +3571,51 @@ test_that("sn_remove_ambient_contamination defaults to decontX and writes a new 
   corrected <- SeuratObject::LayerData(updated, layer = "decontaminated_counts")
   expect_equal(dim(corrected), dim(SeuratObject::LayerData(object, layer = "counts")))
   expect_true(all(corrected == round(corrected)))
+})
+
+test_that("sn_remove_ambient_contamination records resolved reproducibility parameters", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_test_object(seed = 51, prefix = "ambient-command", n_genes = 40, n_cells = 6)
+  cluster <- rep(c("a", "b"), each = 3)
+  updated <- with_mocked_bindings(
+    sn_remove_ambient_contamination(
+      x = object,
+      method = "auto",
+      cluster = cluster,
+      remove_zero_count_cells = TRUE,
+      layer = "ambient_corrected",
+      verbose = FALSE,
+      estimateDelta = FALSE,
+      maxIter = 7
+    ),
+    .sn_remove_ambient_decontx = function(x_info, ...) {
+      list(counts = x_info$counts, metadata = NULL)
+    },
+    .package = "Shennong"
+  )
+
+  command <- updated@commands$sn_remove_ambient_contamination
+  params <- methods::slot(command, "params")
+  expect_match(methods::slot(command, "call.string"), "sn_remove_ambient_contamination")
+  expect_identical(methods::slot(command, "assay.used"), "RNA")
+  expect_identical(params$schema_version, "1.0.0")
+  expect_identical(params$requested$method, "auto")
+  expect_identical(params$method, "decontx")
+  expect_identical(params$assay, "RNA")
+  expect_identical(params$cluster_backend, "provided")
+  expect_identical(params$remove_zero_count_cells, TRUE)
+  expect_identical(params$layer, "ambient_corrected")
+  expect_identical(params$backend_args, list(estimateDelta = FALSE, maxIter = 7))
+  expect_identical(
+    params$effective_backend_args,
+    list(verbose = FALSE, estimateDelta = FALSE, maxIter = 7)
+  )
+  expect_identical(params$cluster_control, list())
+  expect_identical(params$input$x, list(type = "Seurat", assay = "RNA"))
+  expect_identical(params$input$raw, list(type = "none"))
+  expect_identical(params$input$cluster, list(type = "vector", value = cluster))
+  expect_identical(params$backend$backend_function, "decontX::decontX")
 })
 
 test_that("sn_remove_ambient_contamination marks zero-count corrected cells in metadata", {
@@ -3822,6 +3867,77 @@ test_that("sn_find_doublets skips zero-count cells in corrected layers", {
     levels(updated$scDblFinder.class_corrected),
     c("singlet", "doublet", "unresolved")
   )
+})
+
+test_that("scrublet method rejects non-count layers and warns on scDblFinder-only args", {
+  skip_if_not_installed("Seurat")
+  object <- make_test_object(seed = 31, prefix = "scrublet-guard", n_genes = 60, n_cells = 12)
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+
+  expect_error(
+    sn_find_doublets(object, method = "scrublet", layer = "data", min_features = 1),
+    "scores raw counts only"
+  )
+  expect_warning(
+    sn_find_doublets(
+      object,
+      method = "scrublet",
+      layer = "counts",
+      min_features = 1,
+      dbr_sd = 0.01
+    ),
+    "scDblFinder-specific"
+  )
+})
+
+test_that("scrublet results map onto retained and skipped cells", {
+  skip_if_not_installed("Seurat")
+  object <- make_test_object(seed = 32, prefix = "scrublet-map", n_genes = 80, n_cells = 6)
+  counts <- SeuratObject::LayerData(object, layer = "counts")
+  counts[, 1] <- 0
+  SeuratObject::LayerData(object, layer = "counts") <- counts
+
+  local_mocked_bindings(
+    .sn_find_doublets_scrublet = function(object, keep_cells, assay, control = list()) {
+      list(
+        class = rep(c("singlet", "doublet"), length.out = length(keep_cells)),
+        score = seq_along(keep_cells) / length(keep_cells),
+        manifest = list(method = "scrublet")
+      )
+    },
+    .package = "Shennong"
+  )
+
+  updated <- sn_find_doublets(
+    object,
+    method = "scrublet",
+    min_features = 1
+  )
+  expect_true(all(c("scrublet.class", "scrublet.score") %in% colnames(updated[[]])))
+  expect_identical(as.character(updated$scrublet.class[[1]]), "unresolved")
+  expect_true(is.na(updated$scrublet.score[[1]]))
+  expect_setequal(
+    as.character(updated$scrublet.class[-1]),
+    c("singlet", "doublet")
+  )
+})
+
+test_that("sn_find_doublets runs the scrublet pixi backend when installed", {
+  skip_if_not_installed("Seurat")
+  skip_if_not(.conformance_scrublet_env_installed(), "scrublet pixi environment is not installed")
+
+  object <- make_test_object(seed = 33, prefix = "scrublet-live", n_genes = 300, n_cells = 120)
+  updated <- sn_find_doublets(
+    object,
+    method = "scrublet",
+    min_features = 1,
+    backend_control = list(seed = 717L, quiet = TRUE)
+  )
+  expect_setequal(
+    unique(as.character(updated$scrublet.class)),
+    c("singlet", "doublet")
+  )
+  expect_true(all(is.finite(updated$scrublet.score)))
 })
 
 test_that("sn_find_doublets skips low-feature cells before running scDblFinder", {

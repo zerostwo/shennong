@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 253,
+  "function_count": 250,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -155,90 +155,6 @@
           "default": "inherits(x, \"Seurat\")",
           "selector_values": null,
           "minimum_cases": 1
-        }
-      ]
-    },
-    {
-      "function_name": "sn_annotation_confidence",
-      "runtime_classified": true,
-      "formal_digest": "5b02254a0c89d2e14f982cf6956265310ce53864ae063a96199755c21ffa5d3a",
-      "parameters": [
-        {
-          "name": "evidence",
-          "class": "required",
-          "default": "<required>",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "weights",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "low_confidence_threshold",
-          "class": "numeric",
-          "default": "0.55",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "margin_threshold",
-          "class": "numeric",
-          "default": "0.1",
-          "selector_values": null,
-          "minimum_cases": 4
-        }
-      ]
-    },
-    {
-      "function_name": "sn_annotation_consensus",
-      "runtime_classified": true,
-      "formal_digest": "2d8d049fdfa8c64bd786e4429aba97d40cc4c8b305a63f06323be5ddcf35aabb",
-      "parameters": [
-        {
-          "name": "evidence",
-          "class": "required",
-          "default": "<required>",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "weights",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "ontology",
-          "class": "boolean",
-          "default": "TRUE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "ontology_mapping",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "low_confidence_threshold",
-          "class": "numeric",
-          "default": "0.55",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "margin_threshold",
-          "class": "numeric",
-          "default": "0.1",
-          "selector_values": null,
-          "minimum_cases": 4
         }
       ]
     },
@@ -1867,32 +1783,10 @@
       ]
     },
     {
-      "function_name": "sn_check_autozyme",
+      "function_name": "sn_check_acceleration",
       "runtime_classified": true,
-      "formal_digest": "7a2811bf4c790a4e5b3fe26f5dfb80b266b8d6e777744716100fc8db75ec3e02",
-      "parameters": [
-        {
-          "name": "patches",
-          "class": "expression",
-          "default": ".sn_autozyme_default_patches",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "strict",
-          "class": "boolean",
-          "default": "TRUE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "allow_approximate",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        }
-      ]
+      "formal_digest": "01234566814cd2a2b3cd7c19c907964b4a4f018a19ec224788d9edb74d7376df",
+      "parameters": []
     },
     {
       "function_name": "sn_check_file",
@@ -2867,16 +2761,16 @@
       ]
     },
     {
-      "function_name": "sn_disable_autozyme",
+      "function_name": "sn_disable_acceleration",
       "runtime_classified": true,
-      "formal_digest": "f0010f0be355fafec8f7b3e1b22507bc5fccd024a311d1591f7e15047080f8c5",
+      "formal_digest": "2c0ce42b9dc23b831a4423501fbe628c0d471359b7c7aa06b47bec5008328bc5",
       "parameters": [
         {
-          "name": "patches",
-          "class": "expression",
-          "default": ".sn_autozyme_default_patches",
+          "name": "name",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         }
       ]
     },
@@ -2964,30 +2858,16 @@
       ]
     },
     {
-      "function_name": "sn_enable_autozyme",
+      "function_name": "sn_enable_acceleration",
       "runtime_classified": true,
-      "formal_digest": "3452479e69b28ccbc903a4f1aa970188f1c220eae2fd9db824404894c5d9cc27",
+      "formal_digest": "2c0ce42b9dc23b831a4423501fbe628c0d471359b7c7aa06b47bec5008328bc5",
       "parameters": [
         {
-          "name": "patches",
-          "class": "selector",
-          "default": "c(\"cellchat\", \"nichenetr\")",
-          "selector_values": ["cellchat", "nichenetr"],
-          "minimum_cases": 2
-        },
-        {
-          "name": "strict",
-          "class": "boolean",
-          "default": "TRUE",
+          "name": "name",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "allow_approximate",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
+          "minimum_cases": 3
         }
       ]
     },
@@ -3876,13 +3756,20 @@
     {
       "function_name": "sn_find_doublets",
       "runtime_classified": true,
-      "formal_digest": "2b9c15761c52293247a8d618b3c9ab40ba767f009c4b285e00757008bc43ace5",
+      "formal_digest": "a8137dcecff4910d21d3fde4d5d9b2715f513c85d669cbabd138ed5af90449dc",
       "parameters": [
         {
           "name": "object",
           "class": "required",
           "default": "<required>",
           "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "method",
+          "class": "selector",
+          "default": "c(\"scdblfinder\", \"scrublet\")",
+          "selector_values": ["scdblfinder", "scrublet"],
           "minimum_cases": 2
         },
         {
@@ -3940,6 +3827,13 @@
           "default": "200",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "backend_control",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -5519,7 +5413,7 @@
     {
       "function_name": "sn_list_results",
       "runtime_classified": true,
-      "formal_digest": "64c11e8649840c3c924ea2aaa8e2db28bb0ded02633cb656dcd738fe4cefcb47",
+      "formal_digest": "cd3d91e69545ec5b95dabdb7853727574f22fc81bbd4a3a83d73441db3502377",
       "parameters": [
         {
           "name": "object",
@@ -5534,6 +5428,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "include_artifacts",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
         }
       ]
     },
@@ -6009,34 +5910,6 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
-        }
-      ]
-    },
-    {
-      "function_name": "sn_plot_annotation_markers",
-      "runtime_classified": true,
-      "formal_digest": "e25a2e387208f71e533b86513a80851d344d7ef1ab23d1ac04c7edebb3e5c0a7",
-      "parameters": [
-        {
-          "name": "x",
-          "class": "required",
-          "default": "<required>",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "store_name",
-          "class": "character",
-          "default": "\"annotation\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "top_n",
-          "class": "numeric",
-          "default": "5",
-          "selector_values": null,
-          "minimum_cases": 4
         }
       ]
     },
@@ -9865,7 +9738,7 @@
     {
       "function_name": "sn_run_annotation",
       "runtime_classified": true,
-      "formal_digest": "9ff09c11f1343bb54f952b6a2be028ebe50ee85993e2db02fe6b2230eef59c7d",
+      "formal_digest": "11be7c74944aa427962322b99e7f167331960d0a6fbf0ddbee29cf4590b370aa",
       "parameters": [
         {
           "name": "object",
@@ -9884,8 +9757,8 @@
         {
           "name": "method",
           "class": "selector",
-          "default": "c(\"consensus\", \"singleR\", \"celltypist\", \"seurat\", \"symphony\", \"scmap\", \"scanvi\")",
-          "selector_values": ["consensus", "singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi"],
+          "default": "c(\"singleR\", \"celltypist\", \"seurat\", \"symphony\", \"scmap\", \"scanvi\", \"popv\")",
+          "selector_values": ["singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi", "popv"],
           "minimum_cases": 7
         },
         {
@@ -9952,39 +9825,11 @@
           "minimum_cases": 1
         },
         {
-          "name": "marker_database",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "consensus_reference_method",
-          "class": "character",
-          "default": "\"singleR\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
           "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
           "minimum_cases": 1
-        },
-        {
-          "name": "low_confidence_threshold",
-          "class": "numeric",
-          "default": "0.55",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "margin_threshold",
-          "class": "numeric",
-          "default": "0.1",
-          "selector_values": null,
-          "minimum_cases": 4
         },
         {
           "name": "return_object",
@@ -14714,9 +14559,9 @@
       ]
     },
     {
-      "function_name": "sn_with_autozyme",
+      "function_name": "sn_with_acceleration",
       "runtime_classified": true,
-      "formal_digest": "08203cdb18d770bee646be67da1932063422bd275a850bb154c95210ab62e021",
+      "formal_digest": "c65956b41ac7b1eb7e1fc61fb5dc7d29d14f63306205cd68289cbbbc6bbe88ec",
       "parameters": [
         {
           "name": "expr",
@@ -14726,25 +14571,11 @@
           "minimum_cases": 2
         },
         {
-          "name": "patches",
-          "class": "selector",
-          "default": "c(\"cellchat\", \"nichenetr\")",
-          "selector_values": ["cellchat", "nichenetr"],
-          "minimum_cases": 2
-        },
-        {
-          "name": "strict",
-          "class": "boolean",
-          "default": "TRUE",
+          "name": "name",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "allow_approximate",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
+          "minimum_cases": 3
         }
       ]
     },

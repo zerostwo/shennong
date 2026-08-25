@@ -250,7 +250,7 @@ test_that("consent receipts are stable and reject post-confirmation expansion", 
   )
 })
 
-test_that("usage records nested parentage and AutoZyme activation honestly", {
+test_that("usage records nested parentage and acceleration activation honestly", {
   skip_if_not_installed("DBI")
   skip_if_not_installed("RSQLite")
   on.exit(Shennong::sn_disable_usage_tracking(), add = TRUE)
@@ -273,7 +273,7 @@ test_that("usage records nested parentage and AutoZyme activation honestly", {
     quote(child_workflow(method = "two")),
     category = "test"
   )
-  Shennong:::.sn_usage_record_autozyme("lisi")
+  Shennong:::.sn_usage_record_acceleration("lisi")
   Shennong:::.sn_usage_count_warning(parent)
   Shennong:::.sn_usage_count_warning(child)
   expect_equal(parent$warning_count, 0L)

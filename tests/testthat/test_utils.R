@@ -264,6 +264,20 @@ test_that("Seurat command logging stores named command objects on the Seurat obj
   expect_equal(methods::slot(logged@commands$test_command, "name"), "test_command")
   expect_equal(methods::slot(logged@commands$test_command, "assay.used"), "RNA")
   expect_identical(dim(logged), dim(object))
+
+  explicit <- Shennong:::.sn_log_seurat_command(
+    object = object,
+    assay = "RNA",
+    name = "explicit_command",
+    call_string = quote(sn_example(object, method = "resolved")),
+    params = list(method = "resolved", hidden_default = 717L)
+  )
+  command <- explicit@commands$explicit_command
+  expect_identical(methods::slot(command, "call.string"), "sn_example(object, method = \"resolved\")")
+  expect_identical(
+    methods::slot(command, "params"),
+    list(method = "resolved", hidden_default = 717L)
+  )
 })
 
 test_that("Seurat layer helpers validate assays and combine split layers safely", {

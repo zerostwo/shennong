@@ -1,6 +1,48 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
+
+## 2026-08-24
+
+- Seurat command logging for wrapper APIs must not depend on stack inspection
+  inside a shared helper. For ambient correction, the public entry point owns
+  the call and resolved-parameter record. Large matrix inputs are represented
+  by source/class/dimension metadata rather than copied into `@commands`; exact
+  cluster vectors and method-specific scalar controls remain stored. The
+  ShennongOpt bridge resolves current `sn_*` exports first and uses legacy
+  `sno_*` aliases only when an older installed build exposes no current name.
+- The self-written consensus algorithm left `sn_run_annotation()`. With PopV
+  admitted as a full multi-algorithm voting backend, Shennong no longer needs a
+  second, non-equivalent vote definition; marker scoring could not label
+  pbmc3k reliably (59% coarse accuracy) while every reference backend exceeds
+  93%. Annotation results are now backend labels plus descriptive cluster
+  summaries (modal label + agreement share); hierarchy comes from the bundled
+  marker-atlas parent lookup and ontology mapping stays.
+- AutoZyme was replaced by ShennongOpt (`../shennong-opt`) because the project
+  needs an acceleration engine it owns. Wrapper names were neutralized to
+  `*acceleration*`, patch keys map onto ShennongOpt's registry
+  (seurat/scran/decontx/scdblfinder/coralysis/ucell/lisi/rogue), and hot paths
+  without counterparts deliberately run upstream rather than keeping a second
+  accelerator installed. Python pixi runners lost their autozyme dependency;
+  manifests no longer carry patch evidence.
+
+- PopV enters as a full `sn_run_annotation(method = "popv")` backend rather than
+  a native ensemble of the existing R backends. The upstream package owns the
+  voting population (SVM, XGBoost, CellTypist, scVI/scANVI/bbknn/harmony kNN,
+  optional OnClass), so re-implementing vote aggregation locally would create a
+  second, non-equivalent consensus definition. The wrapper keeps PopV's
+  scientific payload untouched and adds only standardization: agreement counts
+  normalized by the number of run algorithms become `prediction_score`,
+  consensus labels are stored under the unified annotation result schema, and
+  cells dropped by the upstream min-count filter keep NA labels instead of
+  invented ones. `hvg` passes through with upstream semantics; NULL means all
+  shared features because small references otherwise lose every gene to the
+  upstream `min_cells = 200` HVG support filter.
+- scmap's output orientation changed across releases. The adapter must detect
+  which axis matches the query cells rather than assume a fixed layout, and
+  rejected assignments (upstream NA) map to an explicit `"unassigned"` label
+  with score zero: silent NA rows crash downstream consensus validation, while
+  fabricated labels would corrupt traceability.
 
 ## 2026-08-23
 
@@ -1371,3 +1413,18 @@ Last updated: 2026-08-23
 - Communication inference must delegate to real backends rather than improvised ligand-receptor joins. `sn_run_cell_communication()` wraps CellChat, NicheNet, and LIANA, and the NicheNet path requires explicit prior resources so provenance remains clear.
 - Fast regulatory inference should use footprint-style resources rather than SCENIC-style GRN reconstruction. `sn_run_regulatory_activity()` uses decoupleR ULM with DoRothEA for TF activity and PROGENy for pathway activity, with optional group averaging for routine Seurat reports.
 - Batch integration in `sn_run_cluster()` should be explicit rather than inferred as Harmony forever. `integration_method` now selects Harmony, Coralysis, Seurat CCA, or Seurat RPCA. Coralysis is restricted to log-normalized workflows because its public API expects a SingleCellExperiment with `logcounts`, while SCTransform integration remains Harmony-only for now.
+
+## 2026-08-24 comprehensive-audit repair milestone
+
+- Audit findings are closed in bounded, independently validated milestones;
+  broad alias-first signature convergence and large module moves are not mixed
+  into the P0 correctness change set.
+- Registered artifacts remain distinct from unified analytical results. They
+  are discoverable through `sn_list_results(include_artifacts = TRUE)`, but
+  `sn_store_result()` rejects their reserved type names so a generic result
+  cannot shadow a runtime/cache namespace.
+- WGCNA execution must not attach its package to the search path. Because the
+  installed WGCNA implementation resolves its extended `cor()` dynamically,
+  Shennong runs `blockwiseModules()` through a guarded namespace-safe wrapper
+  that resolves the selected correlation function with `getExportedValue()` and
+  leaves the user's search path unchanged.

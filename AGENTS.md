@@ -2,7 +2,16 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by durable workflow domains. Current modules include preprocessing (`preprocessing.R`), clustering/integration (`analysis_clustering.R`), differential expression (`analysis_de.R`), enrichment (`analysis_enrichment.R`), metrics/composition (`analysis_metrics.R`), example data (`data_examples.R`), IO (`data_io.R`), interpretation (`interpretation.R`), package helpers (`package_tools.R`), signatures (`signatures.R`), visualization (`visualization.R`), and small utilities (`utils.R`).
+- `R/` is organized by durable workflow domains. Core workflow families include
+  preprocessing; clustering/integration; annotation; differential expression,
+  enrichment, metrics/composition, bulk, priority, trajectory/velocity,
+  communication/regulatory, spatial, CNV, metabolism, and program analysis.
+  Cross-cutting modules cover unified results/bundles, interpretation, usage
+  tracking, acceleration, IO/example data, package/runtime helpers, signatures,
+  plotting/figure export, MCP, utilities, and package startup. Prefer the
+  domain-specific `analysis_*` / `plot_*` file already owning a workflow over
+  adding another generic module; consult the current `R/` inventory because the
+  module set intentionally evolves.
 - `man/` contains roxygen2-generated `.Rd` files. Treat it as generated output and keep it synchronized with the roxygen comments in `R/`.
 - `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
 - `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
@@ -26,6 +35,11 @@
 - Preserve public behavior unless a change is explicitly justified, documented, and validated.
 - Prefer small, reviewable refactors over repo-wide rewrites.
 - Keep exported user-facing functions in the strict `sn_verb_noun` naming family. Do not introduce camelCase, dot.case, or mixed prefixes. Reuse existing `sn_*` naming families whenever possible.
+- Use `sn_list_*` for compact enumeration and `sn_get_*` for materialized
+  retrieval; `sn_check_*` diagnoses environment/readiness, `sn_validate_*`
+  asserts a contract, `sn_assess_*` performs a QC analysis, and
+  `sn_calculate_*` returns a metric value. Reserve `sn_with_*` for scoped
+  execution helpers.
 - Keep internal helpers unexported and clearly named.
 - Prefer explicit namespace usage or roxygen `@importFrom` entries over hidden dependencies.
 - Keep examples deterministic and safe for package checks; wrap network- or dependency-heavy examples in `\dontrun{}` or make them conditional.

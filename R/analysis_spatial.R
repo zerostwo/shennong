@@ -424,14 +424,26 @@ sn_run_spatial_communication <- function(object,
 }
 
 #' Run spatial deconvolution through cell2location
+#'
+#' `sn_run_spatial_deconvolution()` is a deprecated compatibility alias. Use
+#' [sn_run_cell2location()] directly.
 #' @inheritParams sn_run_cell2location
 #' @export
-sn_run_spatial_deconvolution <- function(...) sn_run_cell2location(...)
+sn_run_spatial_deconvolution <- function(...) {
+  .Deprecated("sn_run_cell2location", package = "Shennong")
+  sn_run_cell2location(...)
+}
 
 #' Map single cells to space through Tangram
+#'
+#' `sn_run_spatial_mapping()` is a deprecated compatibility alias. Use
+#' [sn_run_tangram()] directly.
 #' @inheritParams sn_run_tangram
 #' @export
-sn_run_spatial_mapping <- function(...) sn_run_tangram(...)
+sn_run_spatial_mapping <- function(...) {
+  .Deprecated("sn_run_tangram", package = "Shennong")
+  sn_run_tangram(...)
+}
 
 #' Integrate spatial samples with an explicit backend adapter
 #'

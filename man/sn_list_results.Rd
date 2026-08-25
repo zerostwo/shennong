@@ -4,12 +4,15 @@
 \alias{sn_list_results}
 \title{List stored Shennong analysis and interpretation results on a Seurat object}
 \usage{
-sn_list_results(object, type = NULL)
+sn_list_results(object, type = NULL, include_artifacts = FALSE)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
 \item{type}{Optional analysis type used to filter the result inventory.}
+
+\item{include_artifacts}{Include registered workflow artifacts that do not
+implement the unified analysis-result contract.}
 }
 \value{
 A tibble describing registered Shennong stored-result collections,

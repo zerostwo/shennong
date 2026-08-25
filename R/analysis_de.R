@@ -96,7 +96,7 @@
 
   if (analysis == "markers") {
     only_pos <- only_pos %||% TRUE
-    result <- .sn_with_default_seurat_autozyme(
+    result <- .sn_with_default_seurat_acceleration(
       Seurat::FindAllMarkers(
         object = object,
         assay = assay,
@@ -117,7 +117,7 @@
   }
 
   only_pos <- only_pos %||% FALSE
-  .sn_with_default_seurat_autozyme(
+  .sn_with_default_seurat_acceleration(
     Seurat::FindMarkers(
       object = object,
       ident.1 = ident_1,
@@ -481,14 +481,14 @@ sn_find_de <- function(
     stop(glue("Column '{subset_by}' was not found in metadata."))
   }
 
-  de_autozyme_patches <- if (
+  de_acceleration_patches <- if (
     analysis %in% c("markers", "contrast") && !identical(method, "COSGR")
   ) {
     "seurat"
   } else {
     character(0)
   }
-  .sn_with_autozyme_provenance_context({
+  .sn_with_acceleration_provenance_context({
   result <- NULL
 
   if (analysis == "pseudobulk") {
@@ -640,5 +640,5 @@ sn_find_de <- function(
   } else {
     stored_result$table
   }
-  }, patches = de_autozyme_patches)
+  }, patches = de_acceleration_patches)
 }

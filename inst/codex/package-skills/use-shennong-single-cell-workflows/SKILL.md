@@ -59,15 +59,10 @@ This skill is the main entry point for package usage.
 - call `sn_call_*()` helpers for direct managed-Python commands; reserve
   `sn_run_*()` Python wrappers for object-level workflows that export/import a
   Seurat object
-- expect only validated owned intersections—CellChat, NicheNetR, GO cache,
-  LISI, NormalizeData, Assay5 merge, SoupX, UCell, and default scDblFinder—to
-  activate automatically. Keep Coralysis, standalone decontX, broad Seurat,
-  JoinLayers, tradeSeq, and WGCNA explicit-only until their Shennong contracts
-  are admitted. AutoZyme
-  patches to activate lazily only inside compatible workflow
-  calls and restore the prior state afterward; CellChat and call-safe NicheNetR
-  communication scopes allow upstream version-label drift behind runtime guards;
-  the explicit fgsea patch has no current `sn_enrich()` call intersection;
+- expect only ShennongOpt patches (Seurat RunPCA/ScaleData, scran, decontX,
+  scDblFinder, Coralysis, UCell, LISI, Rogue) to activate lazily inside
+  compatible workflow calls with guarded upstream fallback and prior-state
+  restore; paths without a patch run plain upstream code;
   never apply the Seurat fast patch
   to BPCells-backed layers because it can materialize them as `dgCMatrix`, and
   do not infer that CellChat, tradeSeq, or every other backend is BPCells-native
@@ -98,12 +93,12 @@ This skill is the main entry point for package usage.
    object, require a donor/capture `group_by` column and default to
    `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
    For in-memory `dgCMatrix` input, scDblFinder native clustering is the default
-   and the fingerprint-compatible default call can use the pinned fork's
-   33,000-cell-capped AutoZyme patch; grouped and non-default calls remain on
-   the upstream path. Use `cluster_backend = "shennong"` only when the caller
-   explicitly wants `sn_run_cluster()` assignments. `sn_score_programs()` uses
-   UCell by default for per-cell programs, and LISI metrics use the fork patch
-   when their validated matrix contract is met.
+   and supported default-call shapes use the ShennongOpt `scdblfinder` fast
+   path; grouped and non-default calls remain on the upstream path. Use
+   `cluster_backend = "shennong"` only when the caller explicitly wants
+   `sn_run_cluster()` assignments. `sn_score_programs()` uses UCell by default
+   for per-cell programs, and LISI metrics use the ShennongOpt patch when its
+   contract is met.
    Use `sn_set_layer_backend()` when selected Seurat layers must move between
    BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
    by an in-memory-only operation.
@@ -184,8 +179,9 @@ This skill is the main entry point for package usage.
    marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
    marker-class prioritization with `sn_annotate_de_features()` for TF,
    surface/plasma-membrane, cytokine, and chemokine hits,
-   traceable annotation with `sn_run_annotation()`; use its default consensus
-   for marker evidence with optional SingleR/reference support, then inspect
+   traceable annotation with `sn_run_annotation()`; supply a biologically
+   matched reference and backend (default SingleR, or PopV for multi-algorithm
+   voting), then inspect
    low-confidence cells/clusters with `sn_review_annotation()` and retrieve the
    stored result with `sn_get_result(object, "annotation", name)`. Use
    `sn_map_cell_ontology()` for explicit ontology mapping. Lower-level
@@ -280,23 +276,17 @@ This skill is the main entry point for package usage.
    maintenance tasks. From a Shennong source checkout, use
    `sn_install_shennong(channel = "local", source = ".")` to install without
    remote version discovery.
-14. For R acceleration, inspect all strict lazy defaults with
-   `sn_check_autozyme(c("cellchat", "clusterprofiler", "decontx_standalone",
-   "lisi", "nichenetr", "scdblfinder", "seurat", "soupx",
-   "tradeseq", "ucell", "wgcna"))`. Eligible patches are scoped to the
-   compatible workflow call and the prior state must be restored after success
-   or error. Missing or version-drifted dependencies and approximate patches
-   are never activated automatically. Option/environment opt-outs block the
-   automatic scope without deactivating manually active patches; explicit
-   helpers ignore them. For BPCells-backed Seurat layers, bypass the Seurat fast
-   patch and temporarily suspend a manually active copy for the call. This does
-   not make every backend BPCells-native; size any required sparse
-   materialization or aggregation explicitly.
+14. For R acceleration, inspect availability with `sn_check_acceleration()`
+   and `ShennongOpt::sn_list_accelerations(installed = TRUE)`. Eligible patches are
+   scoped to the compatible workflow call and the prior state must be restored
+   after success or error. Option/environment opt-outs block the automatic
+   scope without deactivating manually active patches; explicit helpers ignore
+   them. Paths without a ShennongOpt counterpart run plain upstream code.
 15. When runtime observability is requested, use
    `sn_enable_usage_tracking()` / `sn_disable_usage_tracking()` or the scoped
    helper, inspect exact calls with `sn_list_usage_runs()`, and rank methods or
    parameter fingerprints with `sn_summarize_usage()`. Treat recorded
-   AutoZyme patches as activation-only evidence; a real fast-path claim needs
+   Acceleration patches as activation-only evidence; a real fast-path claim needs
    the three-arm direct/off/on benchmark and an output comparator.
    For managed remote research, use `sn_create_usage_store()`,
    `sn_confirm_usage_consent()`, and `sn_flush_usage_tracking()` with a local
@@ -340,7 +330,7 @@ This skill is the main entry point for package usage.
 - `sn_run_milo()`
 - `sn_run_scissor()` / `sn_plot_scissor()`
 - `sn_run_cell_communication(method = "cellchat")`
-- `sn_check_autozyme()` / `sn_with_autozyme({...})`
+- `sn_check_acceleration()` / `sn_with_acceleration({...})`
 - `sn_run_regulatory_activity(method = "dorothea")`
 - `sn_store_cell_communication()` / `sn_get_cell_communication_result()`
 - `sn_store_regulatory_activity()` / `sn_get_regulatory_activity_result()`

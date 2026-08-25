@@ -735,7 +735,7 @@
     )
     variable_features <- rownames(selected_expression)[feature_order]
     SeuratObject::VariableFeatures(working) <- variable_features
-    working <- .sn_with_default_seurat_autozyme(
+    working <- .sn_with_default_seurat_acceleration(
       Seurat::ScaleData(
         working,
         features = variable_features,
@@ -750,7 +750,7 @@
       ncol(working) - 1L
     )
     if (npcs < 2L) stop("Scissor requires at least two usable PCA dimensions.", call. = FALSE)
-    working <- .sn_with_default_seurat_autozyme(
+    working <- .sn_with_default_seurat_acceleration(
       suppressWarnings(Seurat::RunPCA(
         working,
         features = variable_features,

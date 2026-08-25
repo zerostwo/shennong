@@ -41,7 +41,6 @@ Suggests:
     apeglm,
     aplot,
     AUCell,
-    autozyme,
     BayesPrism,
     Banksy,
     BiocManager,
@@ -121,6 +120,7 @@ Suggests:
     Scissor,
     Seurat,
     SeuratObject,
+    ShennongOpt,
     shadowtext,
     SignatuR,
     SingleR,
@@ -140,7 +140,7 @@ Suggests:
     survival,
     withr
 Remotes:
-    github::zerostwo/autozyme/autozyme_r@8fc2e9c3a7f70302f97589aaa9b0395dcf86f9bc,
+    github::zerostwo/shennong-opt,
     github::cole-trapnell-lab/monocle3,
     github::navinlabcode/copykat,
     github::xiaolab-xjtu/RareQ,

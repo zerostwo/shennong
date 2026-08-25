@@ -548,16 +548,14 @@ sn_enrich <- function(
 
   run_one <- function(current_database) {
     current_cfg <- msigdb_cfgs[[current_database]]
-    with_enrichment_autozyme <- function(expr) {
+    with_enrichment_acceleration <- function(expr) {
       if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
-        return(.sn_with_default_autozyme(
+        return(.sn_with_default_acceleration(
           expr,
-          patches = "clusterprofiler",
-          strict = TRUE,
-          operation = "go_annotation"
+          patches = "clusterprofiler"
         ))
       }
-      .sn_with_autozyme_disabled(expr)
+      .sn_with_acceleration_disabled(expr)
     }
     .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
 
@@ -571,7 +569,7 @@ sn_enrich <- function(
 
       if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::gseGO(
               geneList = gene_list,
               ont = ont,
@@ -587,7 +585,7 @@ sn_enrich <- function(
         )
       } else if (is_null(mapping)) {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::enrichGO(
               gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
               ont = ont,
@@ -604,7 +602,7 @@ sn_enrich <- function(
         )
       } else {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::compareCluster(
               geneClusters = gene_clusters,
               fun = "enrichGO",
@@ -639,7 +637,7 @@ sn_enrich <- function(
           duplicate_gene_method = duplicate_gene_method
         )
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::gseKEGG(
               geneList = kegg_gene_list,
               organism = organism,
@@ -662,7 +660,7 @@ sn_enrich <- function(
           .sn_enrich_symbol_to_entrez(universe, org_db = org_db)$ENTREZID
         }
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::enrichKEGG(
               gene = gid$ENTREZID,
               organism = organism,
@@ -695,7 +693,7 @@ sn_enrich <- function(
         }
 
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::compareCluster(
               geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
               data = kegg_input,
@@ -734,7 +732,7 @@ sn_enrich <- function(
 
       if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::GSEA(
               geneList = gene_list,
               exponent = gsea_exponent,
@@ -749,7 +747,7 @@ sn_enrich <- function(
         )
       } else if (is_null(mapping)) {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::enricher(
               gene = .sn_enrich_resolve_gene_vector(input, gene_col = gene_col),
               TERM2GENE = term2gene,
@@ -765,7 +763,7 @@ sn_enrich <- function(
         )
       } else {
         result <- .sn_enrich_muffle_empty_warning(
-          with_enrichment_autozyme(
+          with_enrichment_acceleration(
             clusterProfiler::compareCluster(
               geneClusters = gene_clusters,
               data = input,
@@ -789,7 +787,7 @@ sn_enrich <- function(
     stop(glue("Unsupported database '{current_database}'."), call. = FALSE)
   }
 
-  .sn_with_autozyme_provenance_context({
+  .sn_with_acceleration_provenance_context({
     results <- stats::setNames(lapply(databases, run_one), databases)
 
     if (!is_null(outdir)) {

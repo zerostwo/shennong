@@ -10,5 +10,6 @@ sn_run_spatial_mapping(...)
 \item{...}{Additional arguments passed to \code{sn_call_pixi_environment()}.}
 }
 \description{
-Map single cells to space through Tangram
+\code{sn_run_spatial_mapping()} is a deprecated compatibility alias. Use
+\code{\link[=sn_run_tangram]{sn_run_tangram()}} directly.
 }

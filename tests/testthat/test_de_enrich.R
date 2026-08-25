@@ -74,11 +74,11 @@ test_that("sn_find_de preserves scoped Seurat acceleration provenance", {
   object <- make_de_test_object()
   testthat::local_mocked_bindings(
     .sn_run_seurat_de = function(...) {
-      Shennong:::.sn_record_autozyme_usage("seurat")
+      Shennong:::.sn_record_acceleration_usage("seurat")
       data.frame(avg_log2FC = 1, p_val_adj = 0.01, row.names = "GENE1")
     },
-    .sn_autozyme_provenance = function() {
-      context <- getOption("shennong.autozyme.provenance_context")
+    .sn_acceleration_provenance = function() {
+      context <- getOption("shennong.acceleration.provenance_context")
       active <- if (is.environment(context)) context$used_patches else character()
       if (length(active) == 0L) list() else list(active_patches = active)
     },

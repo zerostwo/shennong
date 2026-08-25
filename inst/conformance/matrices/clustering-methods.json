@@ -19,7 +19,7 @@
     {
       "method": "coralysis",
       "contract_kind": "transparent_backend",
-      "status": "pending_autozyme_guard",
+      "status": "pending_acceleration_guard",
       "required_cases": ["seurat_batch", "default_icp", "nondefault_icp"]
     },
     {
@@ -31,7 +31,7 @@
     {
       "method": "seurat_rpca",
       "contract_kind": "reference_pipeline",
-      "status": "pending_autozyme_disabled",
+      "status": "pending_acceleration_disabled",
       "required_cases": ["seurat_batch", "split_layers", "new_reduction"]
     },
     {

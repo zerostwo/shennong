@@ -116,7 +116,6 @@ articles:
     contents:
       - analysis-results-and-methods
       - runtime-observability
-      - autozyme-benchmarks
 
 reference:
   - title: Analysis Methods and Result Contract
@@ -133,10 +132,10 @@ reference:
       - sn_build_result_bundle
       - sn_validate_result_bundle
       - sn_export_result_bundle
-      - sn_check_autozyme
-      - sn_enable_autozyme
-      - sn_disable_autozyme
-      - sn_with_autozyme
+      - sn_check_acceleration
+      - sn_enable_acceleration
+      - sn_disable_acceleration
+      - sn_with_acceleration
       - sn_create_usage_store
       - sn_confirm_usage_consent
       - sn_enable_usage_tracking
@@ -194,6 +193,7 @@ reference:
       - sn_call_scanvi
       - sn_call_scarches
       - sn_call_scpoli
+      - sn_call_trajectory
       - sn_call_infercnvpy
       - sn_call_cellphonedb
       - sn_call_cell2location
@@ -228,12 +228,9 @@ reference:
   - title: Annotation, Markers, and Pathways
     contents:
       - sn_run_annotation
-      - sn_annotation_consensus
-      - sn_annotation_confidence
       - sn_map_cell_ontology
       - sn_review_annotation
       - sn_plot_annotation_confidence
-      - sn_plot_annotation_markers
       - sn_plot_annotation_confusion
       - sn_run_celltypist
       - sn_find_de

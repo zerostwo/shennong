@@ -8,9 +8,6 @@ import json
 from pathlib import Path
 import sys
 
-_SHENNONG_PIXI_SHARED = Path(__file__).resolve().parents[2] / "_shared"
-sys.path.insert(0, str(_SHENNONG_PIXI_SHARED))
-from shennong_autozyme import activate_autozyme
 
 import anndata as ad
 import numpy as np
@@ -132,8 +129,7 @@ def _write_velocity_outputs(
             "n_pcs": int(config.get("n_pcs", 30)),
         },
         "versions": _versions(),
-        "autozyme": config.get("_autozyme_status"),
-    }
+            }
     manifest.update(extra_manifest or {})
     (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -308,8 +304,7 @@ def run_fate(output_dir: Path, config: dict) -> None:
         "mode": "fate", "n_cells": int(adata.n_obs),
         "states": [str(x) for x in estimator.fate_probabilities.names],
         "versions": _versions(),
-        "autozyme": config.get("_autozyme_status"),
-    }
+            }
     (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
@@ -326,7 +321,6 @@ def main() -> None:
     patches = ["scanpy"] if mode in {"velocity", "scvelo", "regvelo"} else []
     if mode in {"velocity", "scvelo"} and config.get("velocity_mode", "stochastic") == "dynamical":
         patches.append("scvelo")
-    config["_autozyme_status"] = activate_autozyme(patches)
     if mode in {"velocity", "scvelo"}:
         if args.input_dir is None:
             raise ValueError("Velocity mode requires --input-dir.")

@@ -1000,7 +1000,7 @@ sn_integration_control_template <- function(method = NULL) {
                                           npcs,
                                           integration_control = list(),
                                           verbose = TRUE) {
-  .sn_with_explicit_autozyme_or_disabled(
+  .sn_with_explicit_acceleration_or_disabled(
     .sn_run_coralysis_integration_impl(
       object = object,
       batch = batch,
@@ -1143,7 +1143,7 @@ sn_integration_control_template <- function(method = NULL) {
   if (!exists("IntegrateLayers", envir = asNamespace("Seurat"), inherits = FALSE)) {
     stop("Seurat layer integration requires Seurat >= 5 with `IntegrateLayers()`.", call. = FALSE)
   }
-  integration_fun <- .sn_with_default_seurat_autozyme(
+  integration_fun <- .sn_with_default_seurat_acceleration(
     switch(
       method,
       seurat_cca = Seurat::CCAIntegration,
@@ -1185,14 +1185,14 @@ sn_integration_control_template <- function(method = NULL) {
   }
   args$new.reduction <- resolved_new_reduction
   if (verbose) .sn_log_info("[sn_run_cluster] Running Seurat layer integration with method = {method}.")
-  object <- .sn_with_autozyme_disabled(
+  object <- .sn_with_acceleration_disabled(
     .sn_call_with_symbolic_object(
       fun_call = quote(Seurat::IntegrateLayers),
       object = object,
       args = args
     )
   )
-  object[[assay]] <- .sn_with_autozyme_disabled(
+  object[[assay]] <- .sn_with_acceleration_disabled(
     SeuratObject::JoinLayers(object[[assay]])
   )
   SeuratObject::DefaultAssay(object = object) <- old_default_assay
@@ -1283,10 +1283,6 @@ sn_integration_control_template <- function(method = NULL) {
       useBytes = TRUE
     )
   }
-  .sn_refresh_managed_pixi_autozyme(
-    manifest_path = manifest_path,
-    environment = environment
-  )
   normalizePath(manifest_path, winslash = "/", mustWork = TRUE)
 }
 
@@ -2097,7 +2093,7 @@ sn_run_scanvi <- function(object,
                                         npcs = 20,
                                         dims = 1:10,
                                         resolution = 0.2) {
-  temp_object <- .sn_with_default_seurat_autozyme(
+  temp_object <- .sn_with_default_seurat_acceleration(
     suppressWarnings(
       Seurat::ScaleData(
         object = object,
@@ -2107,7 +2103,7 @@ sn_run_scanvi <- function(object,
     ),
     object = object
   )
-  temp_object <- .sn_with_default_seurat_autozyme(
+  temp_object <- .sn_with_default_seurat_acceleration(
     suppressWarnings(
       Seurat::RunPCA(
         object = temp_object,
@@ -2767,7 +2763,7 @@ sn_detect_rare_cells <- function(object,
                                          layer = NULL,
                                          verbose = TRUE) {
   if (is_null(split_by) || identical(split_by, "global")) {
-    object <- .sn_with_default_seurat_autozyme(
+    object <- .sn_with_default_seurat_acceleration(
       Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose),
       object = object,
       assay = assay
@@ -2828,7 +2824,7 @@ sn_detect_rare_cells <- function(object,
       return(character(0))
     }
     current_object <- hvg_object[, current_cells]
-    current_object <- .sn_with_default_seurat_autozyme(
+    current_object <- .sn_with_default_seurat_acceleration(
       Seurat::FindVariableFeatures(
         current_object,
         nfeatures = nfeatures,
@@ -3635,7 +3631,7 @@ sn_run_cluster <- function(object,
     ),
     control = args$cluster_control
   )
-  .sn_with_default_seurat_autozyme(
+  .sn_with_default_seurat_acceleration(
     .sn_call_with_symbolic_object(
       fun_call = quote(Seurat::FindClusters),
       object = object,
@@ -4433,7 +4429,7 @@ sn_run_cluster <- function(object,
       if (length(user_hvg) > 0L) {
         sct_args$return.only.var.genes <- FALSE
       }
-      object <- .sn_with_default_seurat_autozyme(
+      object <- .sn_with_default_seurat_acceleration(
         .sn_with_auto_future_globals(
           .sn_call_with_symbolic_object(
             fun_call = quote(Seurat::SCTransform),
@@ -4534,7 +4530,7 @@ sn_run_cluster <- function(object,
         if (verbose) .sn_log_info("[3/5] Reusing PCA reduction.")
       } else {
         if (verbose) .sn_log_info("[3/5] Running PCA.")
-        object <- .sn_with_default_seurat_autozyme(
+        object <- .sn_with_default_seurat_acceleration(
           Seurat::RunPCA(
             object,
             npcs = npcs,
@@ -4565,7 +4561,7 @@ sn_run_cluster <- function(object,
       standard_counts <- identical(layer, "counts") &&
         !isTRUE(prepared$context$needs_temp_counts)
       object <- if (standard_counts) {
-        .sn_with_default_seurat_autozyme(
+        .sn_with_default_seurat_acceleration(
           Seurat::NormalizeData(
             object = object,
             assay = assay,
@@ -4575,7 +4571,7 @@ sn_run_cluster <- function(object,
           assay = assay
         )
       } else {
-        .sn_with_autozyme_disabled(
+        .sn_with_acceleration_disabled(
           Seurat::NormalizeData(
             object = object,
             assay = assay,
@@ -4757,7 +4753,7 @@ sn_run_cluster <- function(object,
         if (verbose) .sn_log_info("[4/6] Reusing scaled data and PCA reduction.")
       } else {
         if (verbose) .sn_log_info("[4/6] Scaling data.")
-        object <- .sn_with_default_seurat_autozyme(
+        object <- .sn_with_default_seurat_acceleration(
           Seurat::ScaleData(
             object = object,
             vars.to.regress = vars_to_regress,
@@ -4769,7 +4765,7 @@ sn_run_cluster <- function(object,
         )
 
         if (verbose) .sn_log_info("[5/6] Running PCA.")
-        object <- .sn_with_default_seurat_autozyme(
+        object <- .sn_with_default_seurat_acceleration(
           Seurat::RunPCA(
             object,
             npcs = npcs,
@@ -4843,7 +4839,7 @@ sn_run_cluster <- function(object,
           .sn_log_info("[5/6] Running ADT CLR normalization.")
         }
       }
-      object <- .sn_with_autozyme_disabled(
+      object <- .sn_with_acceleration_disabled(
         Seurat::NormalizeData(
           object = object,
           assay = adt_assay,
@@ -4853,7 +4849,7 @@ sn_run_cluster <- function(object,
         )
       )
       if (isTRUE(needs_adt_pca)) {
-        object <- .sn_with_default_seurat_autozyme(
+        object <- .sn_with_default_seurat_acceleration(
           Seurat::ScaleData(
             object = object,
             assay = adt_assay,
@@ -4863,7 +4859,7 @@ sn_run_cluster <- function(object,
           object = object,
           assay = adt_assay
         )
-        object <- .sn_with_default_seurat_autozyme(
+        object <- .sn_with_default_seurat_acceleration(
           Seurat::RunPCA(
             object = object,
             assay = adt_assay,
@@ -5275,7 +5271,7 @@ sn_run_cluster <- function(object,
         )
       } else {
         if (is.null(result_namespace)) {
-          object <- .sn_with_default_seurat_autozyme(
+          object <- .sn_with_default_seurat_acceleration(
             Seurat::FindNeighbors(
               object,
               reduction = reduction,
@@ -5286,7 +5282,7 @@ sn_run_cluster <- function(object,
             assay = assay
           )
         } else {
-          object <- .sn_with_default_seurat_autozyme(
+          object <- .sn_with_default_seurat_acceleration(
             Seurat::FindNeighbors(
               object,
               reduction = reduction,
@@ -5390,7 +5386,7 @@ sn_run_cluster <- function(object,
       repos = install_repos,
       ask = install_ask
     )
-    object <- .sn_with_default_seurat_autozyme(
+    object <- .sn_with_default_seurat_acceleration(
       .sn_call_with_symbolic_object(
         fun_call = quote(Seurat::FindClusters),
         object = object,
@@ -5616,7 +5612,7 @@ sn_run_cluster <- function(object,
   on.exit(SeuratObject::DefaultAssay(object_for_transfer) <- old_query_assay, add = TRUE)
   SeuratObject::DefaultAssay(reference) <- reference_assay
   SeuratObject::DefaultAssay(object_for_transfer) <- query_assay
-  combined <- .sn_with_default_autozyme(
+  combined <- .sn_with_default_acceleration(
     merge(reference, y = object_for_transfer, merge.data = FALSE),
     patches = "seurat_merge",
     strict = TRUE,
@@ -5749,7 +5745,7 @@ sn_run_cluster <- function(object,
   assay <- assay %||% SeuratObject::DefaultAssay(object = object)
   if (identical(layer, "data") && !"data" %in% SeuratObject::Layers(object = object[[assay]])) {
     if (verbose) .sn_log_info("Normalizing query object before Coralysis reference mapping.")
-    object <- .sn_with_default_seurat_autozyme(
+    object <- .sn_with_default_seurat_acceleration(
       Seurat::NormalizeData(object = object, assay = assay, verbose = verbose),
       object = object,
       assay = assay
@@ -6661,7 +6657,7 @@ sn_simulate_scdesign3 <- function(object,
     original <- object
     original$simulation_source <- "original"
     sim_object$simulation_source <- "simulated"
-    combined <- .sn_with_default_autozyme(
+    combined <- .sn_with_default_acceleration(
       merge(
         x = original,
         y = sim_object,

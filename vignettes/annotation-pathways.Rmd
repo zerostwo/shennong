@@ -183,24 +183,30 @@ sn_plot_dot(
 )
 ```
 
-## Run traceable consensus annotation
+## Run traceable reference annotation
 
-`sn_run_annotation()` is the stable annotation entry point. Its default
-`method = "consensus"` scores the bundled canonical marker database, retains
-the best and second-best candidate, calibrates a confidence margin, assigns
-hierarchical labels, and maps known labels to a versioned Cell Ontology
-snapshot. It supports both cluster- and cell-level output; without a reference,
-each cell inherits the traceable consensus of its cluster.
+`sn_run_annotation()` is the stable annotation entry point. It dispatches to a
+reference backend (default `method = "singleR"`), stores per-cell labels with
+backend scores, summarizes each `group_by` group by its modal predicted label,
+assigns hierarchical labels from the bundled marker-atlas hierarchy, and maps
+known labels to a versioned Cell Ontology snapshot.
 
-```{r consensus-annotation}
+Because the fixture ships no author-provided cell labels, the demo below uses
+CellTypist's pretrained immune atlas as an external labeling source. The chunk
+runs only when the CellTypist command-line tool is installed.
+
+```{r reference-annotation, eval = nzchar(Sys.which("celltypist"))}
+pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl", quiet = TRUE)
 pbmc <- sn_run_annotation(
   pbmc,
   group_by = "seurat_clusters",
-  method = "consensus",
+  method = "singleR",
+  reference = subset(pbmc, cells = sample(colnames(pbmc), floor(ncol(pbmc) / 5))),
+  reference_label_by = "majority_voting",
   species = "human",
   tissue = "peripheral blood",
   ontology = TRUE,
-  store_name = "pbmc_consensus"
+  store_name = "pbmc_annotated"
 )
 
 annotation_index <- sn_list_results(pbmc, type = "annotation")
@@ -209,63 +215,44 @@ annotation_index
 annotation <- sn_get_result(
   pbmc,
   type = "annotation",
-  name = "pbmc_consensus"
+  name = "pbmc_annotated"
 )
 
 head(annotation$tables$clusters)
 head(annotation$tables$cells)
 annotation$diagnostics
 
-confidence_from_evidence <- sn_annotation_confidence(
-  annotation$tables$evidence
-)
-consensus_from_evidence <- sn_annotation_consensus(
-  annotation$tables$evidence,
-  ontology = TRUE
-)
-
-head(confidence_from_evidence)
-head(consensus_from_evidence)
-
 sn_plot_reference_projection(
   pbmc,
-  store_name = "pbmc_consensus",
+  store_name = "pbmc_annotated",
   reduction = "umap",
   color_by = "prediction"
 )
 ```
 
-Every final label remains linked to marker support, conflicts, reference
-coverage, confidence, and provenance. LLM helpers can explain this evidence but
+Every final label remains linked to its backend score, reference coverage, and
+provenance. LLM helpers can explain this evidence but
 cannot replace the stored computational label. Review uncertain assignments
 before using them as biological truth.
 
-```{r annotation-review-plots}
-sn_review_annotation(pbmc, "pbmc_consensus")
+```{r annotation-review-plots, eval = nzchar(Sys.which("celltypist"))}
+sn_review_annotation(pbmc, "pbmc_annotated")
 
 sn_plot_annotation_confidence(
   pbmc,
-  store_name = "pbmc_consensus",
+  store_name = "pbmc_annotated",
   level = "cluster"
 )
 
-sn_plot_annotation_markers(
-  pbmc,
-  store_name = "pbmc_consensus",
-  top_n = 5
-)
-```
-
 If trusted cell-level labels are present, a confusion heatmap makes
 disagreements visible. This fixture has no author-curated cell-type truth
-column, so the real-data example below compares consensus labels with labels
+column, so the real-data example below compares predicted labels with labels
 mapped independently from a disjoint reference subset. That plot measures
 reference-mapping consistency; it is not an accuracy estimate or biological
 ground truth.
 
 Ontology mapping can also be inspected directly. The `all` profile reports the
-versioned mappings for the real consensus labels without changing the stored
-annotation.
+versioned mappings for the stored labels without changing the annotation.
 
 ```{r map-cell-ontology, eval = run_extended}
 sn_map_cell_ontology(
@@ -285,11 +272,12 @@ type is absent.
 | Backend | Best use | Input and runtime | Stored output |
 |---|---|---|---|
 | SingleR | Default reference prediction with per-label scores | Query and annotated Seurat/SummarizedExperiment reference; CPU; optional `SingleR` | Full score evidence, pruned label, delta, coverage |
-| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and consensus evidence |
+| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and confidence evidence |
 | Seurat | Anchor transfer from a compatible Seurat reference | Query/reference assays and labels; CPU; optional `Seurat` | Transferred labels and all returned score columns |
 | Symphony | Repeated mapping to a compressed atlas | Built reference or Seurat reference; CPU; optional `symphony` | kNN confidence and mapped embedding |
 | scmap | Conservative projection to indexed expression centroids | Shared features and annotated reference; CPU; optional `scmap` | Label, similarity, and unassigned status |
 | scANVI | Semi-supervised mapping with batch structure | Raw counts, labels, batch metadata; CPU or CUDA through pixi | Labels and managed backend artifacts |
+| PopV | Multi-algorithm consensus vote for highest-confidence reference annotation | Raw counts, annotated reference; CPU through pixi (`sn_prepare_pixi_environment("popv")`) | Consensus label, per-algorithm votes, and agreement score |
 
 Backend-specific functions stay internal rather than creating parallel result
 types. Select the backend with `sn_run_annotation(method = ...)` and retrieve
@@ -298,8 +286,9 @@ contract.
 
 The underlying methods should be cited in publications: SingleR (Aran et al.,
 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping (Hao et al.,
-2021), Symphony (Kang et al., 2021), scmap (Kiselev et al., 2018), and scANVI
-(Xu et al., 2021). Cell Ontology identifiers come from the bundled 2026-06-08
+2021), Symphony (Kang et al., 2021), scmap (Kiselev et al., 2018), scANVI
+(Xu et al., 2021), and PopV (Heidari et al., Nature Communications 2024).
+Cell Ontology identifiers come from the bundled 2026-06-08
 CL snapshot; verify current author and ontology guidelines when preparing a
 submission.
 
@@ -307,7 +296,7 @@ The optional reference examples split the 20 real biological samples into
 non-overlapping reference and query sets. They run only in the `all` profile
 when the requested backend is installed.
 
-```{r singleR-annotation, eval = run_extended && requireNamespace("SingleR", quietly = TRUE)}
+```{r singleR-annotation, eval = run_extended && nzchar(Sys.which("celltypist")) && requireNamespace("SingleR", quietly = TRUE)}
 reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
 reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
 reference <- subset(pbmc, cells = reference_cells)
@@ -316,22 +305,21 @@ query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
 query_singleR <- sn_run_annotation(
   query,
   group_by = "seurat_clusters",
-  method = "consensus",
+  method = "singleR",
   reference = reference,
-  reference_label_by = "pbmc_consensus_label",
-  consensus_reference_method = "singleR",
+  reference_label_by = "pbmc_annotated_label",
   species = "human",
-  store_name = "kotliarov_reference_consensus"
+  store_name = "kotliarov_reference_singleR"
 )
 
 reference_result <- sn_get_result(
   query_singleR,
   type = "annotation",
-  name = "kotliarov_reference_consensus"
+  name = "kotliarov_reference_singleR"
 )
 
 head(reference_result$tables$backend_predictions)
-head(reference_result$tables$backend_evidence)
+head(reference_result$tables$evidence)
 ```
 
 ## Transfer labels from a reference
@@ -341,11 +329,11 @@ trusted reference already exists, `sn_transfer_labels()` follows Seurat's
 anchor workflow and writes the projected label plus a confidence score back to
 the query metadata. The wrapper keeps the source label and transfer settings in
 `query@misc$label_transfer`, so the annotation is not just a loose metadata
-column. The example below uses the consensus labels computed above as the
+column. The example below uses the reference labels computed above as the
 reference annotation and keeps the reference/query biological samples
 disjoint. These are computational labels, not author-provided truth.
 
-```{r label-transfer, eval = run_vignette}
+```{r label-transfer, eval = run_vignette && "pbmc_annotated_label" %in% colnames(pbmc[[]])}
 reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
 reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
 reference <- subset(pbmc, cells = reference_cells)
@@ -354,7 +342,7 @@ query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "pbmc_consensus_label",
+  label_by = "pbmc_annotated_label",
   prediction_prefix = "kotliarov_reference",
   dims = 1:15,
   verbose = FALSE
@@ -368,7 +356,7 @@ head(query[[]][, c(
 ```
 
 The mapped query labels carry label-transfer provenance in
-`query@misc$label_transfer`. To compare them with the stored consensus result,
+`query@misc$label_transfer`. To compare them with the stored annotation result,
 place only those mapped query labels back into a cell-aligned metadata vector;
 reference cells remain missing and are excluded from the contingency table.
 
@@ -387,7 +375,7 @@ pbmc$kotliarov_reference_label <- unname(
 sn_plot_annotation_confusion(
   pbmc,
   truth = "kotliarov_reference_label",
-  store_name = "pbmc_consensus"
+  store_name = "pbmc_annotated"
 )
 ```
 
@@ -409,7 +397,7 @@ reference <- sn_run_cluster(
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "pbmc_consensus_label",
+  label_by = "pbmc_annotated_label",
   method = "coralysis",
   prediction_prefix = "coral_reference",
   transfer_control = list(k.nn = 10),
@@ -432,7 +420,7 @@ reference object is written into the repository.
 compact_path <- tempfile(fileext = ".qs2")
 compact_reference <- sn_prepare_label_transfer_reference(
   reference,
-  label_by = "pbmc_consensus_label",
+  label_by = "pbmc_annotated_label",
   method = "seurat",
   path = compact_path,
   overwrite = TRUE
@@ -441,7 +429,7 @@ compact_reference <- sn_prepare_label_transfer_reference(
 compact_query <- sn_transfer_labels(
   object = query,
   reference = compact_reference,
-  label_by = "pbmc_consensus_label",
+  label_by = "pbmc_annotated_label",
   prediction_prefix = "compact_reference",
   dims = 1:15,
   verbose = FALSE

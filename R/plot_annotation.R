@@ -37,37 +37,6 @@ sn_plot_annotation_confidence <- function(x, store_name = "annotation", level = 
     ggplot2::theme_bw()
 }
 
-#' Plot annotation marker evidence
-#'
-#' @param x A Seurat object or annotation result.
-#' @param store_name Stored annotation name.
-#' @param top_n Number of candidate labels shown per cluster.
-#'
-#' @return A \code{ggplot} object.
-#'
-#' @examples
-#' \dontrun{sn_plot_annotation_markers(object)}
-#'
-#' @export
-sn_plot_annotation_markers <- function(x, store_name = "annotation", top_n = 5) {
-  result <- .sn_resolve_annotation_result(x, store_name)
-  evidence <- result$tables$evidence %||% tibble::tibble()
-  evidence <- evidence[evidence$method == "markers", , drop = FALSE]
-  if (nrow(evidence) == 0L) {
-    stop("The annotation result contains no marker evidence.", call. = FALSE)
-  }
-  groups <- split(evidence, evidence$entity)
-  evidence <- dplyr::bind_rows(lapply(groups, function(table) {
-    utils::head(table[order(table$score, decreasing = TRUE), , drop = FALSE], top_n)
-  }))
-  ggplot2::ggplot(evidence, ggplot2::aes(x = .data$entity, y = .data$label, size = .data$score, color = .data$reference_coverage)) +
-    ggplot2::geom_point() +
-    ggplot2::scale_color_viridis_c(option = "C", name = "Marker coverage") +
-    ggplot2::labs(x = "Cluster", y = "Candidate label", size = "Marker score") +
-    ggplot2::theme_bw() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-}
-
 #' Plot annotation confusion against known labels
 #'
 #' @param x A Seurat object or annotation result.

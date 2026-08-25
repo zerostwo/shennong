@@ -150,3 +150,34 @@ test_that("spatial methods are registered as implemented", {
   expect_true(all(sn_list_methods("spatial_domain")$implemented))
   expect_true(sn_method_status("distance", "spatial_communication")$implemented)
 })
+
+test_that("legacy spatial aliases warn and forward to canonical workflows", {
+  object <- make_spatial_test_object()
+  local_mocked_bindings(
+    sn_run_cell2location = function(object, marker = NULL, ...) {
+      list(object = object, marker = marker)
+    },
+    sn_run_tangram = function(object, reference_object = NULL, marker = NULL, ...) {
+      list(object = object, reference_object = reference_object, marker = marker)
+    },
+    .package = "Shennong"
+  )
+
+  expect_warning(
+    deconvolution <- sn_run_spatial_deconvolution(object, marker = "deconv"),
+    "deprecated"
+  )
+  expect_identical(deconvolution$marker, "deconv")
+
+  reference <- make_spatial_test_object()
+  expect_warning(
+    mapping <- sn_run_spatial_mapping(
+      object,
+      reference_object = reference,
+      marker = "mapping"
+    ),
+    "deprecated"
+  )
+  expect_identical(mapping$reference_object, reference)
+  expect_identical(mapping$marker, "mapping")
+})

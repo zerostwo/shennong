@@ -25,7 +25,10 @@ Core object rule:
   preserving their established `object@misc` collections and leaving runtime
   artifacts and unregistered payloads untouched
 - `sn_store_result()` / `sn_get_result()` / `sn_list_results()` /
-  `sn_delete_result()`: generic lifecycle APIs for versioned analytical results
+  `sn_delete_result()`: generic lifecycle APIs for versioned analytical results;
+  `sn_list_results(include_artifacts = TRUE)` also discovers registered runtime
+  and cache artifacts, whose reserved namespaces cannot be used for generic
+  analytical results
 - `sn_build_result_bundle()`: build the credential-free
   `shennong.dev/analysis-result-bundle/v1` JSON handoff from one validated
   canonical result, immutable input identifier/revision/SHA-256 references,
@@ -65,17 +68,21 @@ Runtime reference datasets:
 - `sn_filter_genes()`: gene filtering
 - `sn_filter_cells()`: cell-level QC filtering
 - `sn_assess_qc()`: summarize QC outcomes and before/after status
-- `sn_find_doublets()`: doublet detection via `scDblFinder`; native automatic
+- `sn_find_doublets()`: doublet detection via `scDblFinder` (default) or Scrublet through scanpy's native wrapper (`method = "scrublet"`, managed `scrublet` pixi environment, raw counts only, outputs `scrublet.class`/`scrublet.score`); native automatic
   clustering is the default and `cluster_backend = "shennong"` is explicit.
-  The exact default `dgCMatrix` call can use the pinned AutoZyme fork's
-  scDblFinder patch, while BPCells-backed objects require `group_by` and are
+  The exact default `dgCMatrix` call can use the ShennongOpt scDblFinder fast
+  path, while BPCells-backed objects require `group_by` and are
   materialized per sample, with `ncores = 1` providing the lowest peak memory
 - `sn_remove_ambient_contamination()`: direct standalone `decontX::decontX()`
   for RNA and `decontX::decontPro()` for CITE-seq/ADT or protein assays.
   `method = "auto"` detects one CITE-seq-like assay; `cluster_backend =
   "shennong"` is required for decontPro when labels are not supplied. SoupX
   retains its stochastic integer output contract and uses the pinned fork's
-  `soupx` patch when eligible.
+  `soupx` patch when eligible. For a returned Seurat object, inspect
+  `object@commands$sn_remove_ambient_contamination@call.string` and `@params`;
+  the latter records requested/resolved automatic choices, supplied and
+  effective backend arguments, automatic-clustering controls, input source
+  summaries, and the backend package version.
 
 ## Clustering and Integration
 
@@ -103,55 +110,32 @@ Runtime reference datasets:
 - `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
 - `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
 - Use the `sn_call_*()` helpers for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
-- Managed BBKNN, scArches, stLearn, trajectory, cell2location, and CellPhoneDB environments pin `zerostwo/autozyme` at the same revision as the R integration. Patchable upstream packages are pinned to AutoZyme's validated versions, and a second runtime version gate fails closed before activation. Their runners activate only a patch that intersects the executed backend path and write requested/active/inactive status to `manifest.json`. Missing, disabled, incompatible, or unsafe patches retain the upstream Python behavior; cell2location acceleration is additionally limited to CPU full-batch training. Existing Shennong-managed pixi manifests are upgraded with the pinned dependency when they are next prepared.
-- `sn_detect_accelerator()`: detect CUDA-capable NVIDIA GPUs and report CPU fallback status.
-- `sn_configure_pixi_mirror()`: write Shennong-level pixi mirror configuration for default, China, TUNA, USTC, or BFSU sources.
+- Managed pixi environments execute plain upstream Python implementations; no
+  Python acceleration layer is bundled. R-side hot paths are accelerated
+  separately by the ShennongOpt package.
 
 ## Optional R Acceleration
 
-- `sn_check_autozyme()`: side-effect-free compatibility report for the pinned
-  AutoZyme revision and selected upstream patches
-- `sn_enable_autozyme()`: manually activate only patches that satisfy the
-  strict version/equivalence policy
-- `sn_disable_autozyme()`: deactivate only selected Shennong-supported patches
-- `sn_with_autozyme()`: evaluate one workflow with temporary acceleration and
-  restore the caller's prior patch state on exit
-- Shennong never activates AutoZyme on package load. The lazy automatic set is
-  exactly CellChat, NicheNetR, the clusterProfiler annotation cache, LISI,
-  all-default scDblFinder, Seurat NormalizeData, owned SeuratObject Assay5
-  merge, SoupX, and UCell. The pinned AutoZyme fork supplies the corresponding
-  direct backend patches; Shennong vendors the trusted clusterProfiler 4.20
-  GSON-cache and SeuratObject sources when required. Coralysis, standalone
-  decontX, broad Seurat operations beyond NormalizeData, JoinLayers, tradeSeq,
-  and WGCNA remain explicit-only until their Shennong call shapes and guards
-  pass the required contracts. Official AutoZyme still supplies registration
-  and scoped activation for the direct fork backends.
-  AutoZyme and each upstream package must be installed. Seurat, CellChat, and
-  call-safe NicheNetR workflow scopes currently tolerate upstream version-label
-  drift behind runtime/input guards, but the AutoZyme source revision is always
-  verified; other strict checks remain available via
-  `sn_check_autozyme()`. Eligible patches are active only inside the compatible
-  Shennong workflow call, with the pre-call state restored after success or
-  error. Successful automatic scopes emit an INFO log naming the enabled
-  patches; this confirms activation, while guarded fast paths can still fall
-  back for unsupported inputs. Missing or drifted dependencies and all
-  approximate patches are skipped.
-- `options(shennong.autozyme = FALSE)`, `AUTOZYME_DISABLED=true`, and
-  `AUTOZYME_DISABLE=true` prevent automatic scopes but do not turn off a
-  manually active patch. Explicit `sn_enable_autozyme()` and
-  `sn_with_autozyme()` calls ignore these automatic opt-outs. BPCells-backed
-  Seurat layers are the safety exception: they bypass the broad Seurat fast
-  patch to avoid coercion to an in-memory `dgCMatrix`; the narrow validated
-  JoinLayers BPCells route remains eligible for explicit use but is not in the
-  automatic set. Active scope details are
-  retained in result provenance. Shennong does not install AutoZyme, upstream
-  packages, or a Python environment. Automatic loading also restores the
-  caller's `future.globals.maxSize` option before analysis. This Seurat guard is
-  not whole-package BPCells compatibility: CellChat, tradeSeq, and other backend
-  contracts may still require deliberate sparse materialization or aggregation.
-  The `fgsea` patch remains available for explicit direct fgsea work, but is not
-  an automatic Shennong workflow patch because current `sn_enrich()` GSEA calls
-  clusterProfiler/enrichit rather than the fgsea namespace.
+- `sn_check_acceleration()`: report registered and active ShennongOpt patches
+- `sn_enable_acceleration(name)`: activate selected (or all installable)
+  ShennongOpt patches for direct upstream calls
+- `sn_disable_acceleration(name)`: restore upstream implementations
+- `sn_with_acceleration(expr, name)`: evaluate one workflow with temporary
+  acceleration and restore the caller's prior patch state on exit
+- Shennong never activates ShennongOpt on package load. Workflow scopes
+  activate only the patches named for that call; guarded fast paths fall back
+  to captured upstream code for unsupported inputs, so outputs remain
+  bit-exact by construction. Available patch families: Seurat RunPCA/ScaleData,
+  scran, decontX, scDblFinder, Coralysis, UCell, LISI, and Rogue.
+- `options(shennong.acceleration = FALSE)` or
+  `SHENNONG_ACCELERATION_DISABLED=true` prevent automatic scopes but do not
+  turn off a manually active patch. Explicit `sn_enable_acceleration()` and
+  `sn_with_acceleration()` calls ignore these automatic opt-outs. Cap
+  accelerated parallel sections with `shennong.opt.threads` or
+  `SHENNONG_OPT_THREADS`. Paths without a ShennongOpt counterpart (CellChat,
+  NicheNetR, SoupX, clusterProfiler caches, tradeSeq, WGCNA, Seurat
+  merge/JoinLayers) currently run plain upstream code; provenance records
+  requested-but-unavailable patches as suppressed.
 
 ## Local and Managed-Remote Runtime Observability
 
@@ -172,7 +156,7 @@ Runtime reference datasets:
 - `sn_list_usage_runs()`: retrieve run status, elapsed/CPU time, warning/error
   state, nested parentage, workflow invocation number, same-parameter-set
   invocation number, sanitized parameter JSON/hash, and activation-only
-  AutoZyme evidence.
+  acceleration evidence.
 - `sn_summarize_usage()`: rank root calls by frequency, cumulative time, or
   median time; set `by_parameters = TRUE` to separate configurations such as
   `sn_run_cluster()` integration methods.
@@ -183,7 +167,7 @@ Runtime reference datasets:
   and generates no participant/installation ID. Remote DBI requires an exact,
   tamper-checked consent receipt, projects optional fields by its data
   categories, omits PID/error text, and is intended only for managed deployments.
-  An AutoZyme patch in a run row proves only scope activation, not a fast hit.
+  An acceleration patch in a run row proves only scope activation, not a fast hit.
 - The shipped public-API parameter inventory and method matrices are static
   completeness/admission artifacts. They classify formals and required cases;
   they do not show that every case ran or passed an upstream comparison.
@@ -215,17 +199,15 @@ Runtime reference datasets:
 
 ## Annotation, Markers, and Pathways
 
-- `sn_run_annotation()`: marker/reference annotation mainline with consensus,
-  SingleR, CellTypist, Seurat, Symphony, scmap, and scANVI backends; stores
-  cell/cluster labels, confidence, hierarchy, evidence, ontology IDs, raw
-  backend predictions, diagnostics, and provenance
-- `sn_annotation_consensus()` / `sn_annotation_confidence()`: combine and
-  calibrate long-form marker/reference evidence without LLM label overrides
+- `sn_run_annotation()`: reference annotation mainline with SingleR (default),
+  CellTypist, Seurat, Symphony, scmap, scANVI, and PopV backends; stores
+  cell/cluster labels, backend scores, low-confidence flags, hierarchy,
+  ontology IDs, raw backend predictions, diagnostics, and provenance
 - `sn_map_cell_ontology()`: map labels against the bundled versioned Cell
   Ontology snapshot or a project mapping
 - `sn_review_annotation()`: inspect low-confidence cells/clusters and evidence
-- `sn_plot_annotation_confidence()` / `sn_plot_annotation_markers()` /
-  `sn_plot_annotation_confusion()`: result-aware annotation diagnostics
+- `sn_plot_annotation_confidence()` / `sn_plot_annotation_confusion()`:
+  result-aware annotation diagnostics
 - `sn_run_celltypist()`: external CellTypist-based annotation; Seurat layers
   are exported as sparse MatrixMarket plus exact gene/cell sidecars, preserving
   gene-by-cell / `--transpose-input` semantics without dense CSV materialization;

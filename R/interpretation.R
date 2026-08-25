@@ -12,6 +12,7 @@
   artifact_collections <- c(
     "sn_run_cluster",
     "integration",
+    "integration_comparison",
     "mmochi",
     "bpcells_layers",
     "infercnvpy",
@@ -407,8 +408,10 @@
 #'   )
 #'   sn_list_results(obj)
 #' }
+#' @param include_artifacts Include registered workflow artifacts that do not
+#'   implement the unified analysis-result contract.
 #' @export
-sn_list_results <- function(object, type = NULL) {
+sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
   }
@@ -420,6 +423,40 @@ sn_list_results <- function(object, type = NULL) {
     .sn_compact_collection_summary(object, collection)
   }) |>
     dplyr::bind_rows(.sn_generic_result_summary(object))
+  if (ncol(result) == 0L) {
+    result <- tibble::tibble(
+      collection = character(), type = character(), name = character(),
+      analysis = character(), method = character(), created_at = character(),
+      n_rows = integer(), source = character()
+    )
+  }
+  if (isTRUE(include_artifacts)) {
+    artifact_entries <- .sn_stored_analysis_result_entries(
+      object,
+      include_artifacts = TRUE
+    )
+    artifact_entries <- Filter(
+      function(entry) identical(entry$contract_scope, "artifact"),
+      artifact_entries
+    )
+    artifact_summary <- dplyr::bind_rows(lapply(artifact_entries, function(entry) {
+      artifact <- entry$result
+      artifact_field <- function(name) {
+        if (is.list(artifact)) artifact[[name]] else NULL
+      }
+      tibble::tibble(
+        collection = entry$collection,
+        type = entry$type,
+        name = entry$name,
+        analysis = as.character(artifact_field("analysis") %||% NA_character_)[[1]],
+        method = as.character(artifact_field("method") %||% NA_character_)[[1]],
+        created_at = as.character(artifact_field("created_at") %||% NA_character_)[[1]],
+        n_rows = if (is.list(artifact)) .sn_result_n_rows(artifact) else 0L,
+        source = as.character(artifact_field("source_de_name") %||% NA_character_)[[1]]
+      )
+    }))
+    result <- dplyr::bind_rows(result, artifact_summary)
+  }
   if (!is_null(type)) {
     requested_types <- tolower(as.character(type))
     result <- dplyr::filter(result, .data$type %in% .env$requested_types)

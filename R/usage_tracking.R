@@ -395,7 +395,7 @@
 
 .sn_usage_package_versions <- function() {
   packages <- c(
-    "Shennong", "autozyme", "Matrix", "Seurat", "SeuratObject",
+    "Shennong", "ShennongOpt", "Matrix", "Seurat", "SeuratObject",
     "clusterProfiler", "enrichit", "scDblFinder", "lisi", "UCell",
     "CellChat", "nichenetr", "SoupX", "decontX", "tradeSeq", "WGCNA",
     "harmony", "edgeR", "DESeq2", "limma", "miloR", "SingleR",
@@ -410,9 +410,9 @@
     }),
     installed
   )
-  if ("autozyme" %in% names(versions)) {
-    description <- tryCatch(utils::packageDescription("autozyme"), error = function(error) NULL)
-    versions$autozyme$remote_sha <- description$RemoteSha %||% NULL
+  if ("ShennongOpt" %in% names(versions)) {
+    description <- tryCatch(utils::packageDescription("ShennongOpt"), error = function(error) NULL)
+    versions$ShennongOpt$remote_sha <- description$RemoteSha %||% NULL
   }
   versions
 }
@@ -861,7 +861,7 @@
   token$started_at <- .sn_usage_now()
   token$started_proc <- proc.time()
   token$warning_count <- 0L
-  token$autozyme_patches <- character()
+  token$acceleration_patches <- character()
   token$recorded <- FALSE
   token$tracking_active <- FALSE
   token$finished <- FALSE
@@ -930,11 +930,11 @@
   invisible(NULL)
 }
 
-.sn_usage_record_autozyme <- function(patches) {
+.sn_usage_record_acceleration <- function(patches) {
   token <- .sn_usage_current_token()
   if (is.environment(token)) {
-    token$autozyme_patches <- union(
-      token$autozyme_patches,
+    token$acceleration_patches <- union(
+      token$acceleration_patches,
       unique(as.character(patches))
     )
   }
@@ -964,8 +964,8 @@
 .sn_usage_finish_run <- function(token, status, condition, timing) {
   config <- .sn_usage_state$config
   acceleration <- list(
-    patches_activated = sort(unique(token$autozyme_patches)),
-    evidence = if (length(token$autozyme_patches) > 0L) {
+    patches_activated = sort(unique(token$acceleration_patches)),
+    evidence = if (length(token$acceleration_patches) > 0L) {
       "scope_activation_only"
     } else {
       "none"
@@ -1977,7 +1977,7 @@ sn_time_call <- function(expr, label = "ad_hoc", display = TRUE, record = TRUE) 
     token$tracking_active <- FALSE
     token$workflow <- workflow
     token$warning_count <- 0L
-    token$autozyme_patches <- character()
+    token$acceleration_patches <- character()
     token
   }
   status <- "ok"

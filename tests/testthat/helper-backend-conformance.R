@@ -89,26 +89,22 @@
 
 .conformance_without_acceleration <- function(code) {
   expression <- substitute(code)
-  old_options <- options(shennong.autozyme = FALSE)
-  old_disabled <- Sys.getenv("AUTOZYME_DISABLED", unset = NA_character_)
-  old_disable <- Sys.getenv("AUTOZYME_DISABLE", unset = NA_character_)
+  old_options <- options(shennong.acceleration = FALSE)
+  old_disabled <- Sys.getenv("SHENNONG_ACCELERATION_DISABLED", unset = NA_character_)
   on.exit({
     options(old_options)
     if (is.na(old_disabled)) {
-      Sys.unsetenv("AUTOZYME_DISABLED")
+      Sys.unsetenv("SHENNONG_ACCELERATION_DISABLED")
     } else {
-      Sys.setenv(AUTOZYME_DISABLED = old_disabled)
-    }
-    if (is.na(old_disable)) {
-      Sys.unsetenv("AUTOZYME_DISABLE")
-    } else {
-      Sys.setenv(AUTOZYME_DISABLE = old_disable)
+      Sys.setenv(SHENNONG_ACCELERATION_DISABLED = old_disabled)
     }
   }, add = TRUE)
-  Sys.setenv(AUTOZYME_DISABLED = "true", AUTOZYME_DISABLE = "true")
+  Sys.setenv(SHENNONG_ACCELERATION_DISABLED = "true")
 
-  if (base::isNamespaceLoaded("autozyme")) {
-    with_disabled <- base::getExportedValue("autozyme", "with_disabled")
+  if (base::isNamespaceLoaded("ShennongOpt")) {
+    with_disabled <- Shennong:::.sn_acceleration_get_export(
+      "sn_with_acceleration_disabled"
+    )
     return(with_disabled(eval.parent(expression)))
   }
   eval.parent(expression)
@@ -124,5 +120,16 @@
     expected,
     tolerance = tolerance,
     info = info
+  )
+}
+
+.conformance_scrublet_env_installed <- function() {
+  tryCatch(
+    {
+      Shennong:::.sn_pixi_script_path(environment = "scrublet", script_name = "scrublet_run.py")
+      paths <- Shennong::sn_pixi_paths(environment = "scrublet")
+      file.exists(file.path(paths$workspace_env_dir, "default", "bin", "python"))
+    },
+    error = function(e) FALSE
   )
 }

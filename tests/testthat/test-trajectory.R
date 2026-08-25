@@ -93,11 +93,6 @@ test_that("trajectory result provenance includes the scoped Slingshot patch", {
         backend = "slingshot"
       )
     },
-    .sn_autozyme_provenance = function() {
-      context <- getOption("shennong.autozyme.provenance_context")
-      active <- if (is.environment(context)) context$patches else character()
-      if (length(active) == 0L) list() else list(active_patches = active)
-    },
     .package = "Shennong"
   )
 
@@ -111,7 +106,7 @@ test_that("trajectory result provenance includes the scoped Slingshot patch", {
   )
 
   expect_identical(
-    result$provenance$acceleration$active_patches,
+    result$provenance$acceleration$suppressed_patches,
     "slingshot"
   )
 })

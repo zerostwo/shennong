@@ -381,6 +381,41 @@ sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva"
   )
 }
 
+.sn_wgcna_blockwise_modules <- function(...) {
+  runner <- getExportedValue("WGCNA", "blockwiseModules")
+  replacements <- 0L
+  bind_cor <- function(expression) {
+    if (!is.call(expression)) return(expression)
+    operator <- as.character(expression[[1]])[[1]]
+    if (length(expression) == 3L && identical(operator, "=")) {
+      expression[[1]] <- quote(`<-`)
+      operator <- "<-"
+    }
+    if (
+      length(expression) == 3L && operator %in% c("<-", "=") &&
+        identical(expression[[2]], quote(corFnc)) &&
+        identical(expression[[3]], quote(.corFnc[intCorType]))
+    ) {
+      expression[[3]] <- quote(
+        getExportedValue("WGCNA", .corFnc[intCorType])
+      )
+      replacements <<- replacements + 1L
+    }
+    for (index in seq_along(expression)[-1L]) {
+      expression[index] <- list(bind_cor(expression[[index]]))
+    }
+    expression
+  }
+  body(runner) <- bind_cor(body(runner))
+  if (replacements != 1L) {
+    stop(
+      "The installed WGCNA `blockwiseModules()` implementation is not compatible with Shennong's namespace-safe wrapper.",
+      call. = FALSE
+    )
+  }
+  do.call(runner, list(...))
+}
+
 #' Run weighted gene co-expression network analysis
 #'
 #' @param object Bulk input accepted by `sn_assess_bulk_qc()`.
@@ -400,17 +435,12 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
                          merge_cut_height = 0.25, assay = NULL,
                          store_name = "wgcna", backend_control = list()) {
   check_installed("WGCNA", reason = "to run weighted co-expression network analysis.")
-  wgcna_attached <- "package:WGCNA" %in% search()
-  if (!wgcna_attached) {
-    suppressPackageStartupMessages(base::attachNamespace("WGCNA"))
-    on.exit(detach("package:WGCNA"), add = TRUE)
-  }
   input <- .sn_bulk_input(object, metadata, assay)
   expression <- .sn_bulk_log_expression(input)
   variable <- apply(expression, 1L, stats::var)
   expression <- expression[is.finite(variable) & variable > 0, , drop = FALSE]
   dat_expr <- t(expression)
-  .sn_with_explicit_autozyme_or_disabled({
+  .sn_with_explicit_acceleration_or_disabled({
   quality <- WGCNA::goodSamplesGenes(dat_expr, verbose = 0)
   dat_expr <- dat_expr[quality$goodSamples, quality$goodGenes, drop = FALSE]
   selected_power <- power
@@ -429,7 +459,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
     defaults <- list(datExpr = dat_expr, power = selected_power, TOMType = "unsigned",
                      minModuleSize = as.integer(min_module_size), mergeCutHeight = merge_cut_height,
                      numericLabels = FALSE, pamRespectsDendro = FALSE, verbose = 0)
-    fit <- do.call(WGCNA::blockwiseModules, utils::modifyList(defaults, backend_control$blockwise %||% list()))
+    fit <- do.call(.sn_wgcna_blockwise_modules, utils::modifyList(defaults, backend_control$blockwise %||% list()))
     list(model = fit, colors = fit$colors, eigengenes = WGCNA::orderMEs(fit$MEs))
   }
   colors <- as.character(output$colors %||% output$model$colors)

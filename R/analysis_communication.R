@@ -179,7 +179,7 @@
     }
     receiver_object <- subset(object, cells = receiver_cells)
     Seurat::Idents(receiver_object) <- receiver_object[[condition_col, drop = TRUE]]
-    de <- .sn_with_default_seurat_autozyme(
+    de <- .sn_with_default_seurat_acceleration(
       Seurat::FindMarkers(
         receiver_object,
         ident.1 = condition_oi,
@@ -409,18 +409,6 @@
   )
 }
 
-.sn_nichenetr_autozyme_safe <- function(args) {
-  single <- if ("single" %in% names(args)) args[["single"]] else TRUE
-  zyme_enabled <- if ("zyme" %in% names(args)) {
-    isTRUE(args[["zyme"]])
-  } else {
-    TRUE
-  }
-  isTRUE(single) && zyme_enabled &&
-    is.matrix(args[["ligand_target_matrix"]]) &&
-    is.numeric(args[["ligand_target_matrix"]])
-}
-
 .sn_run_communication_backend <- function(object,
                                           method,
                                           group_by,
@@ -462,17 +450,12 @@
         ligand_target_matrix = ligand_target_matrix, lr_network = lr_network,
         expressed_pct = expressed_pct, top_n = top_n
       ), controls, keep.null = TRUE)
-      autozyme_safe <- .sn_nichenetr_autozyme_safe(args)
-
-      if (autozyme_safe) {
-        do.call(.sn_run_nichenetr, args)
-      } else if ("nichenetr" %in% .sn_autozyme_active_patches()) {
-        args[["zyme"]] <- NULL
-        .sn_with_autozyme_disabled(do.call(.sn_run_nichenetr, args))
-      } else {
-        args[["zyme"]] <- NULL
-        do.call(.sn_run_nichenetr, args)
+      for (legacy_key in c("single", "zyme")) {
+        if (legacy_key %in% names(args)) {
+          args[[legacy_key]] <- NULL
+        }
       }
+      do.call(.sn_run_nichenetr, args)
     },
     liana = do.call(.sn_run_liana, utils::modifyList(list(
       object = object, group_by = group_by, assay = assay, layer = layer,
@@ -507,9 +490,9 @@
 #' \code{sn_run_cell_communication()} wraps established communication
 #' backends and stores a comparable ligand-receptor schema. Multiple backends
 #' can be run together to calculate method concordance and a consensus rank.
-#' Eligible CellChat and call-safe NicheNet AutoZyme patches are activated
+#' Requested acceleration patches are recorded in provenance
 #' automatically within the workflow and restored afterward. Set
-#' `options(shennong.autozyme = FALSE)` to disable automatic acceleration.
+#' `options(shennong.acceleration = FALSE)` to disable automatic acceleration.
 #'
 #' @param object A Seurat object.
 #' @param method One or more of \code{"liana"}, \code{"cellchat"},
@@ -599,7 +582,9 @@ sn_run_cell_communication <- function(object,
   if (length(method) > 1L && length(dots) > 0L) {
     stop("For multiple communication methods, place method-specific arguments under `backend_control`.", call. = FALSE)
   }
-  autozyme_patches <- if ("cellchat" %in% method) "cellchat" else character()
+  acceleration_patches <- character()
+  if ("cellchat" %in% method) acceleration_patches <- c(acceleration_patches, "cellchat")
+  if ("nichenet" %in% method) acceleration_patches <- c(acceleration_patches, "nichenetr")
   if ("nichenet" %in% method) {
     nichenet_controls <- backend_control[["nichenet"]] %||%
       if (length(method) == 1L) dots else list()
@@ -608,12 +593,9 @@ sn_run_cell_communication <- function(object,
       nichenet_controls,
       keep.null = TRUE
     )
-    if (.sn_nichenetr_autozyme_safe(nichenet_args)) {
-      autozyme_patches <- c(autozyme_patches, "nichenetr")
-    }
   }
 
-  .sn_with_default_autozyme(
+  .sn_with_default_acceleration(
     {
       results <- lapply(method, function(current) {
         controls <- backend_control[[current]] %||% if (length(method) == 1L) dots else list()
@@ -677,7 +659,7 @@ sn_run_cell_communication <- function(object,
       )
       stored
     },
-    patches = autozyme_patches,
+    patches = acceleration_patches,
     strict = TRUE
   )
 }

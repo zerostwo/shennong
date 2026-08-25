@@ -316,7 +316,7 @@ sn_export_figure_bundle(
 | Keep tissue coordinates | `sn_run_spatial()` and spatial sub-workflows | features, domains, neighborhoods, mapping | [Spatial workflows](spatial-workflows.html) |
 | Translate to cohorts | `sn_run_bulk()`, `sn_find_de()`, `sn_run_survival()`, `sn_deconvolve_bulk()` | QC, PCA, DE, pathways, survival, fractions | [Bulk](bulk-transcriptomics.html), [deconvolution](bulk-deconvolution.html) |
 | Build publication evidence | result retrieval, figure specification, interpretation helpers | exported figure and source-data bundle | [Visualization](visualization.html), [publication](publication-figures.html), [interpretation](interpretation-workflows.html) |
-| Profile the workflow | usage tracking and AutoZyme controls | timing summaries and benchmark figures | [Runtime observability](runtime-observability.html), [AutoZyme benchmarks](autozyme-benchmarks.html) |
+| Profile the workflow | usage tracking and acceleration controls | timing summaries | [Runtime observability](runtime-observability.html) |
 
 ## Read acceleration evidence as four separate gates
 
@@ -355,7 +355,7 @@ globally replaced `mgcv` behavior without an exact dependency guard. Shennong
 therefore uses strict source/version checks, operation-specific scopes, and
 temporary `with_disabled` boundaries around incompatible calls. Those patches
 remain explicit-only until a three-arm contract proves the actual Shennong
-workflow. See [Validated AutoZyme benchmarks](autozyme-benchmarks.html) for the
+workflow. See [Analysis results and methods](analysis-results-and-methods.html) for the
 measured intersections and quarantine rationale.
 
 ## Find the next article from an output

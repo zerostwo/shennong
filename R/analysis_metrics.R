@@ -64,7 +64,7 @@ sn_calculate_lisi <- function(
     required_cols = label_by
   )
 
-  lisi_score <- .sn_with_default_autozyme(
+  lisi_score <- .sn_with_default_acceleration(
     lisi::compute_lisi(
       X = metric_input$embeddings,
       meta_data = metric_input$metadata,

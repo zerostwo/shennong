@@ -195,7 +195,7 @@ test_that("dedicated conformance CI is strict and installs pilot backends", {
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
   workflow <- paste(readLines(path, warn = FALSE), collapse = "\n")
   expect_match(workflow, "SHENNONG_CONFORMANCE_STRICT: 'true'", fixed = TRUE)
-  expect_match(workflow, "AUTOZYME_DISABLED: 'true'", fixed = TRUE)
+  expect_match(workflow, "SHENNONG_ACCELERATION_DISABLED: 'true'", fixed = TRUE)
   expect_match(workflow, "bioc::edgeR@4.10.3", fixed = TRUE)
   expect_match(workflow, "bioc::clusterProfiler", fixed = TRUE)
   expect_match(workflow, "any::msigdbr", fixed = TRUE)

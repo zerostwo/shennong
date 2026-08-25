@@ -422,7 +422,7 @@ sn_normalize_data <- function(
       assay = assay,
       layer = layer
     )
-    object <- .sn_with_default_seurat_autozyme(
+    object <- .sn_with_default_seurat_acceleration(
       Seurat::NormalizeData(object = prepared$object, ...),
       object = prepared$object,
       assay = assay
@@ -484,7 +484,7 @@ sn_normalize_data <- function(
   sct_args <- list(...)
   sct_args$verbose <- sct_args$verbose %||% TRUE
   sct_args$seed.use <- sct_args$seed.use %||% 717
-  object <- .sn_with_default_seurat_autozyme(
+  object <- .sn_with_default_seurat_acceleration(
     .sn_with_auto_future_globals(
       .sn_call_with_symbolic_object(
         fun_call = quote(Seurat::SCTransform),
@@ -1124,7 +1124,7 @@ sn_filter_cells <- function(
       all(vapply(dots, is_null, logical(1)))
 
   if (supported_default_call) {
-    return(.sn_with_default_autozyme(
+    return(.sn_with_default_acceleration(
       scDblFinder::scDblFinder(
         sce = sce,
         verbose = FALSE,
@@ -1135,7 +1135,7 @@ sn_filter_cells <- function(
     ))
   }
 
-  .sn_with_autozyme_disabled(scDblFinder::scDblFinder(sce = sce, ...))
+  .sn_with_acceleration_disabled(scDblFinder::scDblFinder(sce = sce, ...))
 }
 
 .sn_run_grouped_bpcells_scDblFinder <- function(
@@ -1232,58 +1232,160 @@ sn_filter_cells <- function(
   sce
 }
 
-#' Find doublets using scDblFinder
+.sn_format_doublet_classes <- function(values, unresolved = "unresolved") {
+  values <- as.character(values)
+  values[is.na(values) | !nzchar(values)] <- unresolved
+  preferred_levels <- c("singlet", "doublet")
+  other_levels <- setdiff(unique(values), preferred_levels)
+  factor(values, levels = c(preferred_levels, sort(other_levels)))
+}
+
+.sn_find_doublets_scrublet <- function(object, keep_cells, assay, control = list()) {
+  script <- tryCatch(
+    .sn_pixi_script_path(environment = "scrublet", script_name = "scrublet_run.py"),
+    error = function(e) {
+      stop(
+        "Scrublet support requires the `scrublet` pixi environment. ",
+        "Prepare it once with sn_prepare_pixi_environment('scrublet', ",
+        "install_environment = TRUE).",
+        call. = FALSE
+      )
+    }
+  )
+  run_dir <- control$output_dir %||% file.path(
+    tempdir(), paste0("sn_scrublet_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+  )
+  input_dir <- file.path(run_dir, "input")
+  result_dir <- file.path(run_dir, "output")
+  dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(result_dir, recursive = TRUE, showWarnings = FALSE)
+
+  .sn_write_python_object_input(
+    object = object[, keep_cells, drop = FALSE],
+    input_dir = input_dir,
+    assay = assay,
+    layer = "counts"
+  )
+  config <- list(
+    method = "scrublet",
+    seed = as.integer(control$seed %||% 0L),
+    n_prin_comps = control$n_prin_comps %||% NULL,
+    n_neighbors = control$n_neighbors %||% NULL,
+    expected_doublet_rate = control$expected_doublet_rate %||% NULL,
+    stdev_doublet_rate = control$stdev_doublet_rate %||% NULL,
+    synthetic_doublet_umi_subsampling = control$synthetic_doublet_umi_subsampling %||% NULL
+  )
+  config_path <- .sn_write_json_file(config, file.path(run_dir, "scrublet_config.json"))
+  .sn_execute_python_object_pixi(
+    environment = "scrublet",
+    script = script,
+    input_dir = input_dir,
+    output_dir = result_dir,
+    config_path = config_path,
+    quiet = isTRUE(control$quiet)
+  )
+
+  predictions <- utils::read.csv(
+    file.path(result_dir, "predictions.csv"),
+    row.names = 1,
+    check.names = FALSE
+  )
+  aligned <- predictions[keep_cells, , drop = FALSE]
+  class_values <- ifelse(is.na(aligned$is_doublet), NA, as.logical(aligned$is_doublet))
+  class_values <- ifelse(is.na(class_values), NA, ifelse(class_values, "doublet", "singlet"))
+  score_values <- suppressWarnings(as.numeric(aligned$doublet_score))
+
+  manifest <- tryCatch(
+    jsonlite::fromJSON(file.path(result_dir, "manifest.json"), simplifyVector = TRUE),
+    error = function(e) list()
+  )
+  .sn_log_info(
+    "Scrublet scored {sum(!is.na(score_values))}/{length(keep_cells)} retained cell(s); ",
+    "detected rate: {manifest$detected_doublet_rate %||% NA}."
+  )
+  list(
+    class = unname(class_values),
+    score = unname(score_values),
+    manifest = manifest
+  )
+}
+
+
+#' Find doublets with scDblFinder or Scrublet
 #'
-#' This function identifies potential doublets in a Seurat object by converting
-#' it to a SingleCellExperiment and using the \code{scDblFinder} package.
-#' For the validated scDblFinder default workflow on an in-memory
-#' \code{dgCMatrix} with at most 33,000 cells, Shennong lazily registers and
-#' scopes its bundled exact AutoZyme patch. Unsupported calls and inputs use
-#' the captured upstream implementation. Compatibility is determined from the
-#' targeted function fingerprints rather than the package version label.
+#' This function identifies potential doublets in a Seurat object. The default
+#' `method = "scdblfinder"` converts the object to a SingleCellExperiment and
+#' runs the \code{scDblFinder} package; for the validated scDblFinder default
+#' workflow on an in-memory \code{dgCMatrix} with at most 33,000 cells,
+#' Shennong lazily registers and uses its guarded ShennongOpt fast path when
+#' available, falling back to the captured upstream implementation otherwise
+#' (compatibility comes from the targeted function fingerprints rather than the
+#' package version label). `method = "scrublet"` runs Scrublet through scanpy's
+#' native wrapper inside the managed `scrublet` pixi environment and always
+#' consumes raw counts.
 #'
 #' @param object A \code{Seurat} object.
+#' @param method Doublet-detection backend. One of `"scdblfinder"` (default)
+#'   or `"scrublet"`.
+#' @param method Doublet-detection backend (see description).
 #' @param clusters Optional cluster assignments. A metadata column name or one
 #'   value per cell. Explicit assignments take precedence over
-#'   \code{cluster_backend}.
+#'   \code{cluster_backend}. scDblFinder-specific; ignored by scrublet.
 #' @param cluster_backend Clustering implementation used when \code{clusters}
 #'   is \code{NULL}. \code{"native"} (the default) lets scDblFinder perform its
 #'   own automatic clustering. \code{"shennong"} first obtains assignments from
 #'   \code{sn_run_cluster()} using the selected assay and layer.
+#'   scDblFinder-specific; ignored by scrublet.
 #' @param group_by An optional metadata column used as the donor or sample grouping.
+#'   scDblFinder-specific; ignored by scrublet.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
+#'   scDblFinder-specific; ignored by scrublet.
 #' @param ncores Number of sample groups to process concurrently. For a BPCells
 #'   backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
 #'   time and gives the lowest peak memory use. Higher values can hold up to
 #'   \code{ncores} sample matrices in memory concurrently.
+#'   scDblFinder-specific; ignored by scrublet.
 #' @param assay Assay used for doublet detection. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
+#'   Scrublet requires raw counts: a non-\code{"counts"} layer stops with an
+#'   error instead of silently scoring normalized values.
 #' @param min_features Minimum number of detected features required for a cell
-#'   to be passed to \code{scDblFinder()}. Defaults to \code{200}. Cells below
-#'   this threshold are skipped and retain \code{NA} in the output columns.
+#'   to enter doublet detection. Defaults to \code{200}. Cells below this
+#'   threshold are skipped and retain \code{NA} in the output columns.
+#' @param backend_control Optional named list of backend-specific settings. For
+#'   scrublet: `seed`, `n_prin_comps`, `expected_doublet_rate`,
+#'   `synthetic_doublet_umi_subsampling`, `min_counts`, `min_cells`,
+#'   `min_gene_variability_pctl`, `threshold_min`, `threshold_max`,
+#'   `output_dir`, and `quiet`. Ignored by scDblFinder.
 #'
 #' @return The input Seurat object with two new columns in \code{meta.data}:
-#'   \code{scDblFinder.class} and \code{scDblFinder.score} when
-#'   \code{layer = "counts"}, or \code{scDblFinder.class_corrected} and
-#'   \code{scDblFinder.score_corrected} for non-default corrected layers. Cells
-#'   whose selected layer sums to zero or whose detected-feature count is below
-#'   \code{min_features} are skipped and retain \code{NA} in the corresponding
-#'   output columns. Because \code{scDblFinder()} requires an in-memory sparse
-#'   matrix, BPCells-backed inputs must supply \code{group_by}; Shennong then
-#'   materializes each sample independently instead of the complete matrix.
+#'   \code{scDblFinder.class} and \code{scDblFinder.score} for
+#'   \code{method = "scdblfinder"} (with a `_corrected` suffix on non-default
+#'   corrected layers), or \code{scrublet.class} and \code{scrublet.score} for
+#'   \code{method = "scrublet"}. Cells whose selected layer sums to zero or
+#'   whose detected-feature count is below \code{min_features} are skipped and
+#'   retain \code{NA} in the corresponding output columns. Because
+#'   \code{scDblFinder()} requires an in-memory sparse matrix, BPCells-backed
+#'   inputs must supply \code{group_by}; Shennong then materializes each sample
+#'   independently instead of the complete matrix. Scrublet materializes the
+#'   retained cells once and scores them through scanpy's native
+#'   `sc.pp.scrublet()` wrapper.
 #' @examples
 #' \dontrun{
+#' seurat_obj <- sn_find_doublets(seurat_obj, ncores = 4)
+#'
+#' # Scrublet through the managed pixi environment:
+#' sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
 #' seurat_obj <- sn_find_doublets(
 #'   seurat_obj,
-#'   clusters = NULL,
-#'   group_by = NULL,
-#'   dbr_sd = NULL,
-#'   ncores = 4
+#'   method = "scrublet",
+#'   backend_control = list(seed = 717)
 #' )
 #' }
 #' @export
 sn_find_doublets <- function(
   object,
+  method = c("scdblfinder", "scrublet"),
   clusters = NULL,
   cluster_backend = c("native", "shennong"),
   group_by = NULL,
@@ -1291,10 +1393,36 @@ sn_find_doublets <- function(
   ncores = 1,
   assay = "RNA",
   layer = "counts",
-  min_features = 200
+  min_features = 200,
+  backend_control = list()
 ) {
-  check_installed("scDblFinder", reason = "to run doublet detection.")
-  check_installed("SingleCellExperiment")
+  method <- match.arg(method)
+  if (!is.list(backend_control)) {
+    stop("`backend_control` must be a named list.", call. = FALSE)
+  }
+  if (identical(method, "scrublet")) {
+    if (!identical(layer, "counts")) {
+      stop(
+        "`method = \"scrublet\"` scores raw counts only; pass `layer = \"counts\"`.",
+        call. = FALSE
+      )
+    }
+    legacy_args <- c(
+      if (!is_null(clusters)) "clusters",
+      if (!is_null(dbr_sd)) "dbr_sd"
+    )
+    if (length(legacy_args) > 0L || !identical(cluster_backend, "native")) {
+      warning(
+        "`clusters`, `cluster_backend`, `group_by`, `dbr_sd`, and `ncores` ",
+        "are scDblFinder-specific and are ignored by `method = \"scrublet\"`.",
+        call. = FALSE
+      )
+    }
+  }
+  if (!identical(method, "scrublet")) {
+    check_installed("scDblFinder", reason = "to run doublet detection.")
+    check_installed("SingleCellExperiment")
+  }
   stopifnot(is.numeric(min_features), length(min_features) == 1, min_features >= 0)
   if (!is.numeric(ncores) || length(ncores) != 1L || is.na(ncores) || ncores < 1 || ncores %% 1 != 0) {
     stop("`ncores` must be one positive integer.", call. = FALSE)
@@ -1356,6 +1484,27 @@ sn_find_doublets <- function(
 
   counts <- counts[, keep_cells, drop = FALSE]
   metadata <- metadata[keep_cells, , drop = FALSE]
+
+  if (identical(method, "scrublet")) {
+    scrublet_result <- .sn_find_doublets_scrublet(
+      object = object,
+      keep_cells = keep_cells,
+      assay = assay,
+      control = backend_control
+    )
+    class_values <- rep("unresolved", ncol(object))
+    names(class_values) <- colnames(object)
+    class_values[keep_cells] <- scrublet_result$class
+    score_values <- rep(NA_real_, ncol(object))
+    names(score_values) <- colnames(object)
+    score_values[keep_cells] <- scrublet_result$score
+
+    object[["scrublet.class"]] <- .sn_format_doublet_classes(class_values[colnames(object)])
+    object[["scrublet.score"]] <- score_values[colnames(object)]
+    .sn_log_info("Doublet detection complete.")
+    .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_doublets")
+    return(invisible(object))
+  }
 
   if (is_null(clusters) && identical(cluster_backend, "shennong")) {
     .sn_log_info("Inferring doublet-detection clusters with `sn_run_cluster()`.")
@@ -1421,14 +1570,6 @@ sn_find_doublets <- function(
     score_col <- paste0(score_col, "_corrected")
   }
 
-  .sn_format_doublet_classes <- function(values, unresolved = "unresolved") {
-    values <- as.character(values)
-    values[is.na(values) | !nzchar(values)] <- unresolved
-    preferred_levels <- c("singlet", "doublet")
-    other_levels <- setdiff(unique(values), preferred_levels)
-    factor(values, levels = c(preferred_levels, sort(other_levels)))
-  }
-
   class_values <- rep("unresolved", ncol(object))
   names(class_values) <- colnames(object)
   class_values[keep_cells] <- as.character(sce$scDblFinder.class)
@@ -1450,6 +1591,7 @@ sn_find_doublets <- function(
     return(list(
       object = x,
       assay = assay,
+      source = list(type = "Seurat", assay = assay),
       counts = .sn_as_sparse_matrix(
         .sn_get_seurat_layer_data(object = x, assay = assay, layer = "counts")
       )
@@ -1460,15 +1602,34 @@ sn_find_doublets <- function(
     return(list(
       object = NULL,
       assay = NULL,
+      source = list(
+        type = "path",
+        path = normalizePath(x, winslash = "/", mustWork = TRUE)
+      ),
       counts = .sn_as_sparse_matrix(sn_read(path = x))
     ))
   }
 
   if (inherits(x, c("Matrix", "matrix", "data.frame", "MatrixDir", "IterableMatrix", "RenameDims"))) {
-    return(list(object = NULL, assay = NULL, counts = .sn_as_sparse_matrix(x)))
+    return(list(
+      object = NULL,
+      assay = NULL,
+      source = list(type = "matrix", class = class(x), dim = dim(x)),
+      counts = .sn_as_sparse_matrix(x)
+    ))
   }
 
   stop(glue("`{arg}` must be a Seurat object, matrix-like object, or path."))
+}
+
+.sn_ambient_cluster_command_value <- function(cluster) {
+  if (is_null(cluster)) {
+    return(list(type = "automatic", value = NULL))
+  }
+  if (is.character(cluster) && length(cluster) == 1L) {
+    return(list(type = "metadata_column", value = cluster))
+  }
+  list(type = "vector", value = cluster)
 }
 
 .sn_parse_10x_metrics_summary <- function(path) {
@@ -1743,7 +1904,7 @@ sn_find_doublets <- function(
 }
 
 .sn_adjust_soupx_counts <- function(sc) {
-  corrected <- .sn_with_default_autozyme(
+  corrected <- .sn_with_default_acceleration(
     SoupX::adjustCounts(
       sc,
       roundToInt = FALSE,
@@ -1873,7 +2034,7 @@ sn_find_doublets <- function(
   decontx_args <- c(decontx_args, extra_args)
 
   result <- withCallingHandlers(
-    .sn_with_explicit_autozyme_or_disabled(
+    .sn_with_explicit_acceleration_or_disabled(
       do.call(decontX::decontX, decontx_args),
       patches = "decontx_standalone"
     ),
@@ -2058,9 +2219,9 @@ sn_find_doublets <- function(
 #' raw matrix metadata is reused automatically if \code{raw = NULL}.
 #' The `auto` method routes a Seurat object with one CITE-seq-like ADT, protein,
 #' or CITE assay to `decontX::decontPro()`; otherwise it uses
-#' `decontX::decontX()`. Set `options(shennong.autozyme = FALSE)` or
-#' `AUTOZYME_DISABLED=true` to prevent automatic AutoZyme activation; a
-#' manually active patch remains active until [sn_disable_autozyme()] is called.
+#' `decontX::decontX()`. Set `options(shennong.acceleration = FALSE)` or
+#' `SHENNONG_ACCELERATION_DISABLED=true` to prevent automatic acceleration; a
+#' manually active patch remains active until [sn_disable_acceleration()] is called.
 #'
 #' @param x A Seurat object, count matrix-like object, or path to filtered data.
 #' @param raw Optional raw/background counts. Required for \code{method = "soupx"}
@@ -2103,6 +2264,10 @@ sn_find_doublets <- function(
 #'   decontX-based Seurat returns, the \code{decontX_contamination} and
 #'   \code{decontX_clusters} columns are added. decontPro-based returns also
 #'   include the inferred cell type and ambient/background fraction columns.
+#'   The resolved method, assay, clustering backend, input-source summary,
+#'   method-specific \code{...} arguments, and backend version are recorded in
+#'   \code{object@commands$sn_remove_ambient_contamination@params} so automatic
+#'   and wrapper-controlled choices remain inspectable.
 #'
 #' @examples
 #' \dontrun{
@@ -2126,6 +2291,11 @@ sn_remove_ambient_contamination <- function(
 ) {
   check_installed(pkg = "SeuratObject", reason = "to handle Seurat objects.")
 
+  command_call <- match.call()
+  method_requested <- if (missing(method)) "auto" else match.arg(method)
+  assay_requested <- assay
+  cluster_backend_requested <- cluster_backend
+  backend_args <- list(...)
   method <- .sn_resolve_ambient_method(x = x, method = method, assay = assay)
   selected_assay <- if (identical(method, "decontpro")) {
     .sn_detect_cite_seq_assay(
@@ -2191,7 +2361,70 @@ sn_remove_ambient_contamination <- function(
       assay = x_info$assay %||% SeuratObject::DefaultAssay(x_info$object),
       layer = layer
     )
-    return(.sn_log_seurat_command(object = x_info$object, name = "sn_remove_ambient_contamination"))
+    backend_package <- if (identical(method, "soupx")) "SoupX" else "decontX"
+    backend_function <- switch(
+      method,
+      soupx = "SoupX::autoEstCont/SoupX::adjustCounts",
+      decontx = "decontX::decontX",
+      decontpro = "decontX::decontPro"
+    )
+    effective_backend_args <- switch(
+      method,
+      soupx = list(
+        force_accept = backend_args$force_accept %||% FALSE,
+        contamination_range = backend_args$contamination_range %||% c(0.01, 0.8),
+        autoEstCont = list(doPlot = FALSE),
+        adjustCounts = list(roundToInt = FALSE, verbose = 0)
+      ),
+      decontx = utils::modifyList(list(verbose = verbose), backend_args),
+      decontpro = backend_args
+    )
+    command_params <- list(
+      schema_version = "1.0.0",
+      shennong_version = tryCatch(
+        as.character(utils::packageVersion("Shennong")),
+        error = function(e) NA_character_
+      ),
+      requested = list(
+        method = method_requested,
+        assay = assay_requested,
+        cluster_backend = cluster_backend_requested
+      ),
+      method = method,
+      assay = x_info$assay %||% SeuratObject::DefaultAssay(x_info$object),
+      cluster_backend = cluster_backend,
+      remove_zero_count_cells = remove_zero_count_cells,
+      layer = layer,
+      return_object = return_object,
+      verbose = verbose,
+      backend_args = backend_args,
+      effective_backend_args = effective_backend_args,
+      cluster_control = if (identical(cluster_backend, "shennong")) {
+        list(resolution = 2, block_genes = NULL, verbose = verbose)
+      } else {
+        list()
+      },
+      input = list(
+        x = x_info$source,
+        raw = raw_info$source %||% list(type = "none"),
+        cluster = .sn_ambient_cluster_command_value(cluster)
+      ),
+      backend = list(
+        package = backend_package,
+        version = tryCatch(
+          as.character(utils::packageVersion(backend_package)),
+          error = function(e) NA_character_
+        ),
+        backend_function = backend_function
+      )
+    )
+    return(.sn_log_seurat_command(
+      object = x_info$object,
+      assay = command_params$assay,
+      name = "sn_remove_ambient_contamination",
+      call_string = command_call,
+      params = command_params
+    ))
   }
 
   out$counts
