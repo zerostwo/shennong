@@ -4,7 +4,9 @@
   "status": "pilot",
   "shennong": {
     "function": "sn_calculate_silhouette",
-    "selector": {"metric": "silhouette"},
+    "selector": {
+      "metric": "silhouette"
+    },
     "version": "0.3.0.9000",
     "registry_key": null
   },
@@ -12,9 +14,14 @@
     "language": "R",
     "runtime": "r",
     "package": "cluster",
-    "api": ["cluster::silhouette", "stats::dist"],
+    "api": [
+      "cluster::silhouette",
+      "stats::dist"
+    ],
     "repository": "https://svn.r-project.org/R-packages/trunk/cluster",
-    "versions": ["cluster 2.1.8.2"],
+    "versions": [
+      "cluster 2.1.8.2"
+    ],
     "install_source": "R recommended package"
   },
   "oracle": {
@@ -23,10 +30,18 @@
     "harness": "tests/testthat/test-backend-conformance-pilots.R"
   },
   "inputs": {
-    "classes": ["Seurat"],
-    "modalities": ["single-cell"],
-    "assays_layers": ["not used; an existing numeric reduction is selected"],
-    "storage_backends": ["base numeric matrix embeddings"],
+    "classes": [
+      "Seurat"
+    ],
+    "modalities": [
+      "single-cell"
+    ],
+    "assays_layers": [
+      "not used; an existing numeric reduction is selected"
+    ],
+    "storage_backends": [
+      "base numeric matrix embeddings"
+    ],
     "requirements": [
       "complete categorical labels",
       "at least three retained cells",
@@ -34,23 +49,102 @@
     ]
   },
   "parameters": [
-    {"wrapper": "x", "role": "input_adapter", "upstream": "reduction embeddings and metadata", "scenarios": ["synthetic Seurat"]},
-    {"wrapper": "label_by", "role": "input_adapter", "upstream": "integer cluster labels", "scenarios": ["three groups"]},
-    {"wrapper": "reduction", "role": "input_adapter", "upstream": "embedding matrix", "scenarios": ["pca"]},
-    {"wrapper": "dims", "role": "input_adapter", "upstream": "embedding columns", "scenarios": ["all", "non-contiguous subset"]},
-    {"wrapper": "cells", "role": "input_adapter", "upstream": "embedding rows", "scenarios": ["all", "explicit subset"]},
-    {"wrapper": "max_cells", "role": "wrapper_control", "upstream": "pre-backend row selection", "scenarios": ["unbounded", "seeded cap"]},
-    {"wrapper": "stratify_by", "role": "wrapper_control", "upstream": "pre-backend row selection", "scenarios": ["group"]},
-    {"wrapper": "seed", "role": "reproducibility", "upstream": "pre-backend row selection RNG", "scenarios": [717, 82, 91]}
+    {
+      "wrapper": "x",
+      "role": "input_adapter",
+      "upstream": "reduction embeddings and metadata",
+      "scenarios": [
+        "synthetic Seurat"
+      ]
+    },
+    {
+      "wrapper": "label_by",
+      "role": "input_adapter",
+      "upstream": "integer cluster labels",
+      "scenarios": [
+        "three groups"
+      ]
+    },
+    {
+      "wrapper": "reduction",
+      "role": "input_adapter",
+      "upstream": "embedding matrix",
+      "scenarios": [
+        "pca"
+      ]
+    },
+    {
+      "wrapper": "dims",
+      "role": "input_adapter",
+      "upstream": "embedding columns",
+      "scenarios": [
+        "all",
+        "non-contiguous subset"
+      ]
+    },
+    {
+      "wrapper": "cells",
+      "role": "input_adapter",
+      "upstream": "embedding rows",
+      "scenarios": [
+        "all",
+        "explicit subset"
+      ]
+    },
+    {
+      "wrapper": "max_cells",
+      "role": "wrapper_control",
+      "upstream": "pre-backend row selection",
+      "scenarios": [
+        "unbounded",
+        "seeded cap"
+      ]
+    },
+    {
+      "wrapper": "stratify_by",
+      "role": "wrapper_control",
+      "upstream": "pre-backend row selection",
+      "scenarios": [
+        "group"
+      ]
+    },
+    {
+      "wrapper": "seed",
+      "role": "reproducibility",
+      "upstream": "pre-backend row selection RNG",
+      "scenarios": [
+        717,
+        82,
+        91
+      ]
+    },
+    {
+      "wrapper": "object",
+      "role": "wrapper_only",
+      "upstream": "Shennong-side alias of the primary data argument",
+      "scenarios": [
+        "alias resolving to the same input as x"
+      ]
+    }
   ],
   "outputs": {
-    "scientific": ["cell_id", "label", "silhouette_width"],
-    "wrapper": ["stable column names and retained-cell order"],
+    "scientific": [
+      "cell_id",
+      "label",
+      "silhouette_width"
+    ],
+    "wrapper": [
+      "stable column names and retained-cell order"
+    ],
     "waivers": []
   },
   "equivalence": {
     "class": "numeric_exact",
-    "projection": ["cell_id", "label", "silhouette_width"],
+    "projection": [
+      "cell_id",
+      "label",
+      "silhouette_width"
+    ],
     "absolute_tolerance": 0,
     "relative_tolerance": 0,
     "ordering": "cell_id order retained by the wrapper",
@@ -62,7 +156,9 @@
     "threads": 1,
     "fresh_process": false,
     "acceleration": "not applicable",
-    "environment": {"OMP_NUM_THREADS": "1"}
+    "environment": {
+      "OMP_NUM_THREADS": "1"
+    }
   },
   "fixtures": [
     {
@@ -76,19 +172,32 @@
     }
   ],
   "conditions": {
-    "expected": ["none in the validated cases"],
+    "expected": [
+      "none in the validated cases"
+    ],
     "outside_envelope": "Shennong validation errors are tested in the ordinary metric suite."
   },
   "versions": {
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
-    "upstream": ["cluster 2.1.8.2"],
-    "material_dependencies": ["Seurat", "SeuratObject", "Matrix"]
+    "upstream": [
+      "cluster 2.1.8.2"
+    ],
+    "material_dependencies": [
+      "Seurat",
+      "SeuratObject",
+      "Matrix"
+    ]
   },
   "ci": {
-    "required_tiers": ["C0-static", "C1-dispatch-contract"],
+    "required_tiers": [
+      "C0-static",
+      "C1-dispatch-contract"
+    ],
     "profile": "backend-conformance",
-    "platforms": ["ubuntu-latest"]
+    "platforms": [
+      "ubuntu-latest"
+    ]
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-pilots.R",

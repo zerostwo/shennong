@@ -2672,6 +2672,7 @@ sn_compare_composition <- function(x,
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
+#' @param seed Optional random seed recorded in the stored result provenance.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return By default, a data frame of neighborhood-level DA statistics. When
 #'   \code{store_name} is supplied, return the unified stored-result list, or
@@ -2714,6 +2715,7 @@ sn_run_milo <- function(x,
                         return_object = FALSE,
                         return_intermediate = FALSE,
                         verbose = TRUE,
+                        seed = NULL,
                         object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
@@ -2860,6 +2862,7 @@ sn_run_milo <- function(x,
       reduction = reduction,
       dims = colnames(metric_input$embeddings),
       annotation_by = annotation_by,
+      random_seed = seed,
       return_object = FALSE
     )
 
@@ -2898,6 +2901,7 @@ sn_run_milo <- function(x,
 #' @param reduction Reduction used to build the milo neighborhoods.
 #' @param dims Optional embedding dimension names or indices used for milo.
 #' @param annotation_by Optional neighborhood annotation column.
+#' @param random_seed Optional random seed recorded in the result provenance.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A \code{Seurat} object or stored-result list.
@@ -2911,6 +2915,7 @@ sn_store_milo <- function(object,
                           reduction = "pca",
                           dims = NULL,
                           annotation_by = NULL,
+                          random_seed = NULL,
                           return_object = TRUE) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
@@ -2930,7 +2935,8 @@ sn_store_milo <- function(object,
     comparison = comparison,
     reduction = reduction,
     dims = dims,
-    annotation_by = annotation_by
+    annotation_by = annotation_by,
+    provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
 
   object <- .sn_store_misc_result(

@@ -238,7 +238,7 @@
     {
       "function_name": "sn_assess_integration",
       "runtime_classified": true,
-      "formal_digest": "d8aa6825bf073a88fc0868ee1ce6bf5aa5597d8d04ea56c9040a4d18c813658f",
+      "formal_digest": "43348c0d6b3aad5c042693edb4a17824d0c638e5ffd96609da4749b3935c33fe",
       "parameters": [
         {
           "name": "x",
@@ -372,6 +372,13 @@
           "default": "50",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -560,7 +567,7 @@
     {
       "function_name": "sn_calculate_cluster_entropy",
       "runtime_classified": true,
-      "formal_digest": "2614e32566aeedb44d654dd2df394c32bc3ece7dbb952c37a7bf69a1edfabc3a",
+      "formal_digest": "22cc05a9671d9bfd05bfef573126cc371fa2313f49aae473bd57e09ff776f471",
       "parameters": [
         {
           "name": "x",
@@ -578,6 +585,13 @@
         },
         {
           "name": "label_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -588,7 +602,7 @@
     {
       "function_name": "sn_calculate_cluster_purity",
       "runtime_classified": true,
-      "formal_digest": "2614e32566aeedb44d654dd2df394c32bc3ece7dbb952c37a7bf69a1edfabc3a",
+      "formal_digest": "22cc05a9671d9bfd05bfef573126cc371fa2313f49aae473bd57e09ff776f471",
       "parameters": [
         {
           "name": "x",
@@ -606,6 +620,13 @@
         },
         {
           "name": "label_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -616,7 +637,7 @@
     {
       "function_name": "sn_calculate_clustering_agreement",
       "runtime_classified": true,
-      "formal_digest": "2614e32566aeedb44d654dd2df394c32bc3ece7dbb952c37a7bf69a1edfabc3a",
+      "formal_digest": "22cc05a9671d9bfd05bfef573126cc371fa2313f49aae473bd57e09ff776f471",
       "parameters": [
         {
           "name": "x",
@@ -638,13 +659,20 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_composition",
       "runtime_classified": true,
-      "formal_digest": "6135f1cd71f863cff6c995afb0e0c77de4a882068539f7e6f7830629d35091ee",
+      "formal_digest": "9020367c1e7daf6f9a7ca6a6cd1d7cc8880c5fadde91f6b65897eb448107d749",
       "parameters": [
         {
           "name": "x",
@@ -708,13 +736,20 @@
           "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_graph_connectivity",
       "runtime_classified": true,
-      "formal_digest": "d3240eb6409a6b6c2db6fee6b8ee4ca08d47cfdd9ddd85602ed4b0a99d7196e8",
+      "formal_digest": "8bf98e009fb1f0120525820289b382eea49a7ea7231d0cc1db68b824b9da181c",
       "parameters": [
         {
           "name": "x",
@@ -799,13 +834,20 @@
           "default": "50",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_isolated_label_score",
       "runtime_classified": true,
-      "formal_digest": "b3f39554e3d4afdf4d3f750a09a67b80e0c601adbc11ce4e7c38410d964c1031",
+      "formal_digest": "cfbc330f5512f82bb44437e5ff8642cf00230ff480c09e90dbcbf8571551b9ce",
       "parameters": [
         {
           "name": "x",
@@ -876,13 +918,20 @@
           "default": "717",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_lisi",
       "runtime_classified": true,
-      "formal_digest": "bb1380754be8745a400be63a3fc9c34bff6ad4a1ee4e466bbc7f8811521a7dc1",
+      "formal_digest": "d6c30c18eadf50d0d9900b953e2d1e0889e8751c8b12951f7a51364339efaba0",
       "parameters": [
         {
           "name": "x",
@@ -939,13 +988,20 @@
           "default": "717",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_pcr_batch",
       "runtime_classified": true,
-      "formal_digest": "d21152c1408e585d08948f655f68f55998b3cc357e022aea841ab3477be8fc80",
+      "formal_digest": "dcf8403c9743b8e831947303a2e97fbae9c483bf050890317cf2dffde44677fe",
       "parameters": [
         {
           "name": "x",
@@ -1016,13 +1072,20 @@
           "default": "717",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_roe",
       "runtime_classified": true,
-      "formal_digest": "1a282d5da272abfd3c09d5778833b81566e7195e0cb5b8fdd92f0acebcb0f831",
+      "formal_digest": "ef672626cde6eb867c93fefc25e0f9b88dc14dbb6bca07828562a43e7d26d8fc",
       "parameters": [
         {
           "name": "x",
@@ -1065,13 +1128,20 @@
           "default": "c(\"roe\", \"log2_roe\", \"observed\", \"expected\")",
           "selector_values": ["roe", "log2_roe", "observed", "expected"],
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_rogue",
       "runtime_classified": true,
-      "formal_digest": "abc160667b894c9c082b2e411df84513e42e0ab9d81c7326e2b4016277b0f36e",
+      "formal_digest": "4b72276c2b9ea8e10c39a667d6aa70a281c8a25a059c716f8f222863360b24b5",
       "parameters": [
         {
           "name": "x",
@@ -1156,13 +1226,20 @@
           "default": "10",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_silhouette",
       "runtime_classified": true,
-      "formal_digest": "28d74cf604527d7816a6088de7ac9dcff17aecb3d94e1016f9efe619f9ee3d95",
+      "formal_digest": "c23e6acddff915395cb81b14280878f3d4ca34cf47852556c5fe63984f8eb333",
       "parameters": [
         {
           "name": "x",
@@ -1219,13 +1296,20 @@
           "default": "717",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_calculate_variance_explained",
       "runtime_classified": true,
-      "formal_digest": "5214628dcd9b098bab9947f85c292c0fa15c86860bdf1f184d17e59026fb1081",
+      "formal_digest": "db8cc990ce8bfaf0b59ab527a602017d378e1175db4e5688bb70387c18c1df8a",
       "parameters": [
         {
           "name": "x",
@@ -1296,6 +1380,13 @@
           "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -2280,7 +2371,7 @@
     {
       "function_name": "sn_deconvolve_bulk",
       "runtime_classified": true,
-      "formal_digest": "23c61064abad75ba03e4b5d7942f502464f1333004be86939b83d7fb6ecb375a",
+      "formal_digest": "5afa2f6bf5457e55b11e6dc77957ee3f12ba9e6f8c71636237e420bb87d43e44",
       "parameters": [
         {
           "name": "x",
@@ -2505,6 +2596,13 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -2783,7 +2881,7 @@
     {
       "function_name": "sn_discover_programs",
       "runtime_classified": true,
-      "formal_digest": "908d4ee3586995ac8e91bae47adcced3c24dd75e557f31070cd0a1b39d99a7ad",
+      "formal_digest": "0e739b587a12f6fb461e4607b5bf7105376ecc395af54059770f2b8860fbb94c",
       "parameters": [
         {
           "name": "object",
@@ -2854,6 +2952,13 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "store_name",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -2944,7 +3049,7 @@
     {
       "function_name": "sn_enrich",
       "runtime_classified": true,
-      "formal_digest": "0ffb124b91e7390f02515564423f4b3bab50a8fadd22fc68e70358f2731ebf34",
+      "formal_digest": "fd23a96ec0087c89f51ca1863305328c1a22605accc3b561da3ab946d231b0da",
       "parameters": [
         {
           "name": "x",
@@ -3081,6 +3186,13 @@
         },
         {
           "name": "outdir",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -3371,7 +3483,7 @@
     {
       "function_name": "sn_filter_cells",
       "runtime_classified": true,
-      "formal_digest": "44c283d929d2860e81492d7d42f2d49f8135aaae9da9a34020126a06cbfd0b8b",
+      "formal_digest": "5a7ed5148ea079f1748922a99c7de08f48ae0b8792aae92b062b850ceabdaa02",
       "parameters": [
         {
           "name": "x",
@@ -3421,13 +3533,20 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_filter_genes",
       "runtime_classified": true,
-      "formal_digest": "eef849c84c1fa55b400fb1cd95947e2d33ecea6bd36565e6707f38f68ef11297",
+      "formal_digest": "2a1a8ae1d1ded1b3cd44d4ec06c446aa3c1d071e5c99e93f2e96f76fc4cdd68f",
       "parameters": [
         {
           "name": "x",
@@ -3487,6 +3606,13 @@
         },
         {
           "name": "gene_type",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -3840,7 +3966,7 @@
     {
       "function_name": "sn_find_spatial_domains",
       "runtime_classified": true,
-      "formal_digest": "6c0e8207ae7561e29ee7cb07d7579161b2eb13543040332ec25ed5f9d0e60309",
+      "formal_digest": "cc5def3df285e01b388b807474cb8a32a3abbb67075a11e230fce40220df49fa",
       "parameters": [
         {
           "name": "object",
@@ -3897,13 +4023,27 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
         }
       ]
     },
     {
       "function_name": "sn_find_spatial_features",
       "runtime_classified": true,
-      "formal_digest": "0bff45e68fd3fef4ed43138bdd5cd6ec6dbb7d40ccf397f7bb960591bddabb92",
+      "formal_digest": "6f8e3f5ae7bd597517de0c6e3043bd684f1ac5a0a86589efd4e7f5a14d8ca77e",
       "parameters": [
         {
           "name": "object",
@@ -3963,6 +4103,20 @@
         },
         {
           "name": "return_object",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
           "class": "boolean",
           "default": "TRUE",
           "selector_values": null,
@@ -5769,7 +5923,7 @@
     {
       "function_name": "sn_plot_abundance",
       "runtime_classified": true,
-      "formal_digest": "14dfc1a08bc0128852fbb8b2cc10cd781fece17469dfd3fff4218fd7ccdc2f9d",
+      "formal_digest": "227413153bc54f7ae097bb52d48489fefd93537f8317656cbb9e01762bd59f66",
       "parameters": [
         {
           "name": "x",
@@ -5794,6 +5948,13 @@
         },
         {
           "name": "adjusted_p_value",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -6154,7 +6315,7 @@
     {
       "function_name": "sn_plot_branch_comparison",
       "runtime_classified": true,
-      "formal_digest": "11381529dbd90328be6f658753d8c0fa98fb6d51e54d2671516ddb1cdd11cb3e",
+      "formal_digest": "61611d10db694a20c292f17254beb917540b74ff31e0c371e515892878244572",
       "parameters": [
         {
           "name": "x",
@@ -6183,13 +6344,20 @@
           "default": "20L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_bulk_de",
       "runtime_classified": true,
-      "formal_digest": "2f27e4172d0a68539cd912f2e8e179ea8eb8fa903740cc106afdb979d7d78432",
+      "formal_digest": "5fe27d9a2a3e67d43da37e36b59419fd8d460b804b991539eb1bd6145cd4b11e",
       "parameters": [
         {
           "name": "x",
@@ -6218,13 +6386,20 @@
           "default": "10L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_bulk_pca",
       "runtime_classified": true,
-      "formal_digest": "44ea5efb433a5d4fe837205f1a41c5cf5a69b2c3c02babcacfd59c90bc99d3bd",
+      "formal_digest": "33ce65631e5261c7d6f8c7ab26d60e7770eed0631096d3128c116be7452128ae",
       "parameters": [
         {
           "name": "x",
@@ -6260,13 +6435,20 @@
           "default": "2L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_bulk_qc",
       "runtime_classified": true,
-      "formal_digest": "5dd08533b71e52afa23546f08c06b6ced30bfea41a2e2d9312f19e2bd8b0a8ea",
+      "formal_digest": "90beb6786020a15ef8e6188dad842216630255d6aef4f842b33ba9c740301e8a",
       "parameters": [
         {
           "name": "x",
@@ -6280,6 +6462,13 @@
           "class": "selector",
           "default": "c(\"library_size\", \"detected_features\", \"mean_correlation\")",
           "selector_values": ["library_size", "detected_features", "mean_correlation"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
           "minimum_cases": 3
         }
       ]
@@ -6308,7 +6497,7 @@
     {
       "function_name": "sn_plot_cnv",
       "runtime_classified": true,
-      "formal_digest": "08a74c978bd7e5f59404a3fa348b00a83923f632871b4169531b3dde271c085b",
+      "formal_digest": "ceb7aa125928c0e746383d728e0ebb4684d608af509dc2b7ca0c0dbaf5bf8b5a",
       "parameters": [
         {
           "name": "x",
@@ -6337,13 +6526,20 @@
           "default": "100L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_communication",
       "runtime_classified": true,
-      "formal_digest": "b7707a00657b742ebe5bdb9fee0fd0426b8d3b0688d847082af029af760dc457",
+      "formal_digest": "5ebe52ffd8e41e36efa6e08ae8544cf6497424ddf3bc49a39e0c52d50b13f284",
       "parameters": [
         {
           "name": "x",
@@ -6379,13 +6575,20 @@
           "default": "\"primary\"",
           "selector_values": null,
           "minimum_cases": 1
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_communication_comparison",
       "runtime_classified": true,
-      "formal_digest": "0e4657ff3a6d5cb3296dd2cbf3bded00120f2bd534559021eaa003eab2392e5c",
+      "formal_digest": "156fdaf15acc8d3330068e8499644982966a506f4f4f2d16ec69be26b4cc5293",
       "parameters": [
         {
           "name": "x",
@@ -6407,6 +6610,13 @@
           "default": "30L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -6553,7 +6763,7 @@
     {
       "function_name": "sn_plot_de",
       "runtime_classified": true,
-      "formal_digest": "116fd3a680d434414d30cbbcf37bde54cbfe2fb4aefbf69e0e14f104f6d6c063",
+      "formal_digest": "ca8f76149e99222b4c8ad9af39d81b8dd6ce84981d27bc11bbfec1bf202cd391",
       "parameters": [
         {
           "name": "result",
@@ -6589,6 +6799,20 @@
           "default": "40L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "de_name",
+          "class": "character",
+          "default": "\"default\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -6847,7 +7071,7 @@
     {
       "function_name": "sn_plot_discovered_programs",
       "runtime_classified": true,
-      "formal_digest": "a82ad372e0625d7b1137cb6aa8aef72db250b15c33224b152e49bd7837eb1f41",
+      "formal_digest": "fac429f093aa513f1ff8ba7b2a9fa0e05c9b334e2eb62c3b6e7dfec5c4aba8fc",
       "parameters": [
         {
           "name": "x",
@@ -6883,13 +7107,20 @@
           "default": "20L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_dot",
       "runtime_classified": true,
-      "formal_digest": "3a855e064b26f930a7933152a86493a655e054b164f56b5d823b6baa959c65d0",
+      "formal_digest": "c3604ae4e3aad76a9cbf65cd8e64b8a5ee11256723556116c5e210d12dc4971f",
       "parameters": [
         {
           "name": "x",
@@ -7086,6 +7317,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -7127,7 +7365,7 @@
     {
       "function_name": "sn_plot_dynamic_heatmap",
       "runtime_classified": true,
-      "formal_digest": "42ceab8f5740771192a3396c9d7383ab0c8ebe8b3c45306f965cd13655809339",
+      "formal_digest": "3687bac13272572b80690435a08473e2ae61d58ae2738a9b50d8c261eefadbc1",
       "parameters": [
         {
           "name": "x",
@@ -7163,6 +7401,13 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -7197,7 +7442,7 @@
     {
       "function_name": "sn_plot_enrichment",
       "runtime_classified": true,
-      "formal_digest": "5feb40a9a6ab0d13b314cf29f1a04042ff3a64beecd6ef6a774e41fdcde3030b",
+      "formal_digest": "638fad6c5094f35d5d94899c7e0c943ad0646de1abf3606a5b9669cc81514165",
       "parameters": [
         {
           "name": "result",
@@ -7226,13 +7471,27 @@
           "default": "0.1",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "enrichment_name",
+          "class": "character",
+          "default": "\"default\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_plot_fate",
       "runtime_classified": true,
-      "formal_digest": "de9206bdd1dbd2553b19aebb2228c330c0f88f5e97db73bf0400dd46c7f4a22e",
+      "formal_digest": "b6ffe4d6c0552b2834d6ad7da6a9e36e441104066a0dfc5afb642a299ccf682e",
       "parameters": [
         {
           "name": "x",
@@ -7261,6 +7520,13 @@
           "default": "0.7",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -7582,7 +7848,7 @@
     {
       "function_name": "sn_plot_gene_trend",
       "runtime_classified": true,
-      "formal_digest": "5d0e8e9cf86723f24291f0204450b9163dee7fdad09b53719a5d89353f87a010",
+      "formal_digest": "02ef7458c527ab2d55c06d1a9e7cf9ae40030863f76ba93e1a328f03203eef48",
       "parameters": [
         {
           "name": "x",
@@ -7604,6 +7870,13 @@
           "default": "<required>",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -7904,7 +8177,7 @@
     {
       "function_name": "sn_plot_integration",
       "runtime_classified": true,
-      "formal_digest": "2553cfa1f1019454c519ce46c96ec39f443d1207cf5c7b4f9367b53d9b27d534",
+      "formal_digest": "5192bf32ea47e6e3d0e5f4887727546c63d6444da9315e15f80e961e600f05c9",
       "parameters": [
         {
           "name": "x",
@@ -7919,13 +8192,20 @@
           "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_ligand_target",
       "runtime_classified": true,
-      "formal_digest": "479340a2a5156acc0745c603200b3f7986351ea70ee32b05fe6d4b1cac6cc416",
+      "formal_digest": "5601b7815b53d291d5d2c6e804c28b816d653adfea9d2640b71aa154fa5d87f5",
       "parameters": [
         {
           "name": "x",
@@ -7947,13 +8227,20 @@
           "default": "50L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_lineage_probability",
       "runtime_classified": true,
-      "formal_digest": "96e726485f28b366cc926fded8b339bbb4d7ec68a3f47be8137af09581101c40",
+      "formal_digest": "42cff8de92ecc61b1491539fbe2609bd736fe6bbe6018a7b1de6c7ebb9041a6e",
       "parameters": [
         {
           "name": "x",
@@ -7982,13 +8269,20 @@
           "default": "0.7",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_metabolism",
       "runtime_classified": true,
-      "formal_digest": "8fa8f33cd3ac6d2d93a741ac479110f23bb62cd557ad3eca2acc0493fc208712",
+      "formal_digest": "1a7363cc71920910547fd2a8b144c1dd6c34160479af22633e6dce0a554cb1a5",
       "parameters": [
         {
           "name": "x",
@@ -8024,6 +8318,13 @@
           "default": "30L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8128,7 +8429,7 @@
     {
       "function_name": "sn_plot_program_activity",
       "runtime_classified": true,
-      "formal_digest": "df98c6ec3b677bdea2461f1e5445a0629365586f00f121458b787e69f283c74b",
+      "formal_digest": "df39515b7c9129ce9ef5b52c8dd41a617a358a0d6e3871e55e9f0a6f2c67f424",
       "parameters": [
         {
           "name": "x",
@@ -8157,13 +8458,20 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_program_heatmap",
       "runtime_classified": true,
-      "formal_digest": "e0f1a884b1e4743d5fdc612b975935edb15b67029fc3e6c0db09410f6e272fce",
+      "formal_digest": "08f039d3fe95b1080e7fa602ce69a02388b1ee14ecd9f35b6452827cb557ed7e",
       "parameters": [
         {
           "name": "x",
@@ -8199,13 +8507,20 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_pseudotime",
       "runtime_classified": true,
-      "formal_digest": "20b602c9ce57730bcfef81c29215510f936797d52b02a445fa906691738a9b52",
+      "formal_digest": "d8b328e4f33e294db27ab706b5006e04bb54b57cd56cad2a3f067f3ce8828bb0",
       "parameters": [
         {
           "name": "x",
@@ -8234,13 +8549,20 @@
           "default": "0.7",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_qc",
       "runtime_classified": true,
-      "formal_digest": "276ab62fe91fa3257116e2b56e4922361da3a238b813aabcefe29368f0716d8b",
+      "formal_digest": "f0752d05aa3891754fd719e9201188b7702d5b2ac94dfa6bcd5981a1ec1396ec",
       "parameters": [
         {
           "name": "x",
@@ -8255,13 +8577,20 @@
           "default": "c(\"qc_score\", \"n_cells\", \"retention_fraction\")",
           "selector_values": ["qc_score", "n_cells", "retention_fraction"],
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_qc_thresholds",
       "runtime_classified": true,
-      "formal_digest": "a099d0d87729df92d41d9336af69428f900f34b9b727a0b26c7f7907cb3063b1",
+      "formal_digest": "1162947ab0a78401f9aa0e69e80560327f77c04efd57be355330001eafe56b3a",
       "parameters": [
         {
           "name": "x",
@@ -8297,6 +8626,13 @@
           "default": "20000L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8338,7 +8674,7 @@
     {
       "function_name": "sn_plot_regulon",
       "runtime_classified": true,
-      "formal_digest": "81bc3080bf982c3c2b8d67edb8ca1c12600db66f99d00529126d3fdc7ea5abb0",
+      "formal_digest": "c84509cbc95ac6d479b348fe2b4a28291795a2a6d608a1770a8b706142515a09",
       "parameters": [
         {
           "name": "x",
@@ -8374,13 +8710,20 @@
           "default": "50L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_resolution_sweep",
       "runtime_classified": true,
-      "formal_digest": "24a69e6446b5305782375d1856ddd76d010064fc8da2c117543f9e3d57638494",
+      "formal_digest": "d19bcbbf30f850ef7e2ffbe81364a07fe92db0f61b101c1d754b482beab10790",
       "parameters": [
         {
           "name": "x",
@@ -8395,13 +8738,20 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_sample_correlation",
       "runtime_classified": true,
-      "formal_digest": "b03a35ea122353287ec49f8a7858dc464f09596e5d21406f904b7697ee6a24cf",
+      "formal_digest": "d3a693deacb8139c159652efa6b95e624aa2cb696a674aea426ade07fd7d078e",
       "parameters": [
         {
           "name": "x",
@@ -8409,13 +8759,20 @@
           "default": "<required>",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_scissor",
       "runtime_classified": true,
-      "formal_digest": "2c210c67c18650c782b7be93991137e9d08d988ab0b7780aeb3c71ff9ccf6e06",
+      "formal_digest": "02aa17e8684c53ce49aeb864e12f5ca01438ff89c567bf08083a86d85e9b7d66",
       "parameters": [
         {
           "name": "x",
@@ -8444,6 +8801,13 @@
           "default": "5000L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8485,7 +8849,7 @@
     {
       "function_name": "sn_plot_spatial_communication",
       "runtime_classified": true,
-      "formal_digest": "479340a2a5156acc0745c603200b3f7986351ea70ee32b05fe6d4b1cac6cc416",
+      "formal_digest": "5601b7815b53d291d5d2c6e804c28b816d653adfea9d2640b71aa154fa5d87f5",
       "parameters": [
         {
           "name": "x",
@@ -8507,6 +8871,13 @@
           "default": "50L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8555,7 +8926,7 @@
     {
       "function_name": "sn_plot_spatial_domain",
       "runtime_classified": true,
-      "formal_digest": "af26ccc0a8bd2de5a5b4027748feb987a73ab35b0fd3e5b82ad33f216a846e6a",
+      "formal_digest": "2b8d9c68ea709fea990aba6fd5745ae0012bf5d4f76c867676bb6822ff0ed914",
       "parameters": [
         {
           "name": "x",
@@ -8577,6 +8948,13 @@
           "default": "1.5",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8632,7 +9010,7 @@
     {
       "function_name": "sn_plot_spatial_neighborhood",
       "runtime_classified": true,
-      "formal_digest": "2e9aa96b3f721c81096280f95a379a2cc9b8bc1a211fd2df9492fcbe208e4a7d",
+      "formal_digest": "4e1238ea309fc2c1176eb42b72fbce4b361c0ac48dcdc4381e0fec327152474f",
       "parameters": [
         {
           "name": "x",
@@ -8654,13 +9032,20 @@
           "default": "c(\"enrichment\", \"cooccurrence\")",
           "selector_values": ["enrichment", "cooccurrence"],
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_spatial_svg",
       "runtime_classified": true,
-      "formal_digest": "0e4657ff3a6d5cb3296dd2cbf3bded00120f2bd534559021eaa003eab2392e5c",
+      "formal_digest": "156fdaf15acc8d3330068e8499644982966a506f4f4f2d16ec69be26b4cc5293",
       "parameters": [
         {
           "name": "x",
@@ -8682,13 +9067,20 @@
           "default": "30L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_state_priority",
       "runtime_classified": true,
-      "formal_digest": "0e4657ff3a6d5cb3296dd2cbf3bded00120f2bd534559021eaa003eab2392e5c",
+      "formal_digest": "156fdaf15acc8d3330068e8499644982966a506f4f4f2d16ec69be26b4cc5293",
       "parameters": [
         {
           "name": "x",
@@ -8710,13 +9102,20 @@
           "default": "30L",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_survival",
       "runtime_classified": true,
-      "formal_digest": "38ce1f01793ce5b4254cceca133592ecb0f064d8c8124edc32a9d62612bdb460",
+      "formal_digest": "92b061509820e60f9e93eb0b3381bfa4426df69cfd34b10c4e0ded79b910a0b0",
       "parameters": [
         {
           "name": "x",
@@ -8745,13 +9144,20 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_trajectory",
       "runtime_classified": true,
-      "formal_digest": "bc1bdcaf4638d0c98ec2b6ca93ffa2970beb03c5ef20e6fbff2f026f42c987f8",
+      "formal_digest": "c8c3fb1b1f7fc640129c874d76e7e26237f61e39f1bd962193ed27b725b69312",
       "parameters": [
         {
           "name": "x",
@@ -8780,13 +9186,20 @@
           "default": "0.7",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_velocity",
       "runtime_classified": true,
-      "formal_digest": "723deab5304bfafab4812f64bfdd30d2fdb65b64116e34bc259239e028f30b82",
+      "formal_digest": "51ab235ef9d1294f9fbcdff11cb31b6f7022e676c2e74b5fbce5a9754f32099d",
       "parameters": [
         {
           "name": "x",
@@ -8822,6 +9235,13 @@
           "default": "0.6",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -8940,7 +9360,7 @@
     {
       "function_name": "sn_plot_wgcna",
       "runtime_classified": true,
-      "formal_digest": "8517362f2d379fddddc5e700f7d94e1ee07cd76e5451797703f7b423281642f1",
+      "formal_digest": "295c204e3cea83908c52d7a61e1eb2ce04bb70b702ace83d55a227c4538bb3d5",
       "parameters": [
         {
           "name": "x",
@@ -8955,6 +9375,13 @@
           "default": "c(\"traits\", \"modules\")",
           "selector_values": ["traits", "modules"],
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -10249,7 +10676,7 @@
     {
       "function_name": "sn_run_celltypist",
       "runtime_classified": true,
-      "formal_digest": "13d1ff3812c2de6ec5aa51517ce7ab7509ed59acbc74606e1f819f12d36465c3",
+      "formal_digest": "b7d8c68e8a5c9896085c58f2b12662e61578eed4d1e9541783d939292b7236cc",
       "parameters": [
         {
           "name": "x",
@@ -10376,6 +10803,13 @@
           "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -10438,7 +10872,7 @@
     {
       "function_name": "sn_run_cluster",
       "runtime_classified": true,
-      "formal_digest": "93b4478c051daeffdc4fdf9016060675e103e493dd88d3d6191b04c74fd1f608",
+      "formal_digest": "73580869bf74a5632f0c9309578bda773bbf38d264317f296b456f087b98a663",
       "parameters": [
         {
           "name": "object",
@@ -10557,6 +10991,20 @@
           "class": "selector",
           "default": "c(\"modularity\", \"CPM\")",
           "selector_values": ["modularity", "CPM"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
           "minimum_cases": 2
         },
         {
@@ -10683,7 +11131,7 @@
     {
       "function_name": "sn_run_fate",
       "runtime_classified": true,
-      "formal_digest": "76563e56f7685f3461b41da1878117d9e0f6852dc0530494925e4245dbb1c497",
+      "formal_digest": "7f2268d0fdfe232935f5d20519303648e799f4704dacf36d6ff1f594284bffd0",
       "parameters": [
         {
           "name": "object",
@@ -10694,9 +11142,9 @@
         },
         {
           "name": "method",
-          "class": "character",
-          "default": "\"cellrank\"",
-          "selector_values": null,
+          "class": "selector",
+          "default": "c(\"cellrank\")",
+          "selector_values": "cellrank",
           "minimum_cases": 1
         },
         {
@@ -10740,13 +11188,27 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
         }
       ]
     },
     {
       "function_name": "sn_run_grn",
       "runtime_classified": true,
-      "formal_digest": "19e4ddec9242b9b9bed4687ed505a541984e6cae08b3cdaccff52d1b85775613",
+      "formal_digest": "acec1f409ad025d7ac83c7599e2915663d7006267d8b361b4c26d6f4ba69797d",
       "parameters": [
         {
           "name": "object",
@@ -10810,6 +11272,13 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "store_name",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -11208,7 +11677,7 @@
     {
       "function_name": "sn_run_milo",
       "runtime_classified": true,
-      "formal_digest": "1a4e864107ba1ffbae63babb67c31c7bcac9b8ac64bf3c69cfc83d7760099531",
+      "formal_digest": "2d7c61fb215284b80ff0d9c03644ad843a36396cfe7af21ec5db80ec50d6d88a",
       "parameters": [
         {
           "name": "x",
@@ -11370,6 +11839,20 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -12517,7 +13000,7 @@
     {
       "function_name": "sn_run_trajectory",
       "runtime_classified": true,
-      "formal_digest": "f9ae389ac7457c0a731ab044918a38ff08b166b748d82067d05fa83105002ae0",
+      "formal_digest": "8d228fbf919f37b22adcf7a8e40db7c1ff623d8a48ec7918883c7ec38d65747b",
       "parameters": [
         {
           "name": "object",
@@ -12651,13 +13134,27 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
         }
       ]
     },
     {
       "function_name": "sn_run_velocity",
       "runtime_classified": true,
-      "formal_digest": "dea223d1c536cd1c08c92737378e04b3c44f75126adfb49049378f2e57acbdd8",
+      "formal_digest": "f33a8e5fe4ec624fdcaa37f2c891eb54915f1f03b989333f326e8ba65313e6ad",
       "parameters": [
         {
           "name": "object",
@@ -12668,10 +13165,10 @@
         },
         {
           "name": "method",
-          "class": "character",
-          "default": "\"scvelo\"",
-          "selector_values": null,
-          "minimum_cases": 1
+          "class": "selector",
+          "default": "c(\"scvelo\", \"regvelo\")",
+          "selector_values": ["scvelo", "regvelo"],
+          "minimum_cases": 2
         },
         {
           "name": "spliced_assay",
@@ -12731,6 +13228,20 @@
         },
         {
           "name": "return_object",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "verbose",
           "class": "boolean",
           "default": "TRUE",
           "selector_values": null,
@@ -12979,7 +13490,7 @@
     {
       "function_name": "sn_score_programs",
       "runtime_classified": true,
-      "formal_digest": "b8f1e1d70cfc200a95098205d52fb6a058cd9510a24bdc65365e011da752bc6a",
+      "formal_digest": "1f8f6c211a65e05f1bbc8849cf43bd6f4b391ccd191eab2b3ee2995736b1fcc9",
       "parameters": [
         {
           "name": "object",
@@ -13057,6 +13568,13 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "store_name",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -13504,7 +14022,7 @@
     {
       "function_name": "sn_store_deconvolution",
       "runtime_classified": true,
-      "formal_digest": "66c0ded634c3b642daf8e0dd7febbdfef9a8dccf152e270696e542cfe3fbfc0a",
+      "formal_digest": "d67b405227f050a34b8e80950d93eb84fb8d61ceddabd4ba7bb677f2220de87d",
       "parameters": [
         {
           "name": "object",
@@ -13550,6 +14068,13 @@
         },
         {
           "name": "artifacts",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "random_seed",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -13651,7 +14176,7 @@
     {
       "function_name": "sn_store_milo",
       "runtime_classified": true,
-      "formal_digest": "53d1f2b65eed27e1879a22a346d3d7e8a72f3da04a1ae34f96eb6942205b61a1",
+      "formal_digest": "667590f0658fc6747b24ce995109acde40212c8fd348e29be004a6c28a4bd5f1",
       "parameters": [
         {
           "name": "object",
@@ -13717,6 +14242,13 @@
           "minimum_cases": 3
         },
         {
+          "name": "random_seed",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
           "name": "return_object",
           "class": "boolean",
           "default": "TRUE",
@@ -13728,7 +14260,7 @@
     {
       "function_name": "sn_store_regulatory_activity",
       "runtime_classified": true,
-      "formal_digest": "501d926a53cb085aff7b4e4cb8279749c69b3a02209b4bf44d64f00f6b108cef",
+      "formal_digest": "68f56f4ece811521afe974f41a3a79aa94c1f79505c1fc2d3990ab34600acf3c",
       "parameters": [
         {
           "name": "object",
@@ -13774,6 +14306,13 @@
         },
         {
           "name": "network",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "random_seed",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,

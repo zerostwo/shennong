@@ -725,6 +725,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
 #' @param bulk_samples Optional bulk sample identifiers.
 #' @param reference_label Metadata column or label_by set used as the reference.
 #' @param artifacts Optional backend-specific artifacts or file paths.
+#' @param random_seed Optional random seed recorded in the result provenance.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A \code{Seurat} object or stored-result list.
@@ -736,6 +737,7 @@ sn_store_deconvolution <- function(object,
                                    bulk_samples = NULL,
                                    reference_label = NULL,
                                    artifacts = NULL,
+                                   random_seed = NULL,
                                    return_object = TRUE) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.")
@@ -750,7 +752,8 @@ sn_store_deconvolution <- function(object,
     method = method,
     bulk_samples = bulk_samples,
     reference_label = reference_label,
-    artifacts = artifacts
+    artifacts = artifacts,
+    provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
 
   object <- .sn_store_misc_result(

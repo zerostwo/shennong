@@ -249,7 +249,7 @@
 #' }
 #' @export
 sn_run_velocity <- function(object,
-                            method = "scvelo",
+                            method = c("scvelo", "regvelo"),
                             spliced_assay = NULL,
                             spliced_layer = "spliced",
                             unspliced_assay = NULL,
@@ -262,7 +262,7 @@ sn_run_velocity <- function(object,
                             seed = NULL,
                             verbose = TRUE) {
   .sn_validate_result_object(object)
-  method <- match.arg(method, c("scvelo", "regvelo"))
+  method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
   if (!missing(verbose)) {
     backend_control$verbose <- isTRUE(verbose)
@@ -408,7 +408,7 @@ sn_run_velocity <- function(object,
 #' }
 #' @export
 sn_run_fate <- function(object,
-                        method = "cellrank",
+                        method = c("cellrank"),
                         velocity_name = "velocity",
                         reduction = NULL,
                         dims = 1:2,
@@ -418,7 +418,7 @@ sn_run_fate <- function(object,
                         seed = NULL,
                         verbose = TRUE) {
   .sn_validate_result_object(object)
-  method <- match.arg(method, "cellrank")
+  method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
   if (!missing(verbose)) {
     backend_control$verbose <- isTRUE(verbose)

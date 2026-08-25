@@ -36,6 +36,22 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- The method registry is now load-bearing (AUDIT-06): a two-directional
+  parity test asserts every `inst/methods/*.yml` entry is accepted by its
+  owning function's dispatch surface and every dispatch value is registered or
+  explicitly waived. `sn_run_velocity()` and `sn_run_fate()` now declare their
+  choice sets in the `method` formal like every other workflow. The hardcoded
+  integration, normalization, doublet, and pseudobulk-DE choice sets are pinned
+  by a fail-closed snapshot.
+- Added `sn_delete_artifact()`: explicit deletion path for registered workflow
+  artifact collections (`clustering_stage_cache`, `integration_comparison`,
+  `label_transfer`, ...), by member or whole container, failing closed on
+  unknown types (AUDIT-12).
+- Stored-result writers `sn_store_milo()`, `sn_store_deconvolution()`, and
+  `sn_store_regulatory_activity()` now record a provenance block with package
+  versions, timestamp, and an optional `random_seed`; `sn_run_milo()` gained a
+  top-level `seed=` that flows into the stored result (AUDIT-12).
+
 - Unified the analysis interface behind `object=` aliases (AUDIT-04): every
   x-first exported analysis function now also accepts the Seurat object or
   stored result as `object=`, covering all `sn_calculate_*` metrics,

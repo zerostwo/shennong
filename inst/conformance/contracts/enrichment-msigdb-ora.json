@@ -4,7 +4,10 @@
   "status": "pilot",
   "shennong": {
     "function": "sn_enrich",
-    "selector": {"analysis": "ora", "database": "H"},
+    "selector": {
+      "analysis": "ora",
+      "database": "H"
+    },
     "version": "0.3.0.9000",
     "registry_key": null
   },
@@ -12,9 +15,15 @@
     "language": "R",
     "runtime": "r",
     "package": "clusterProfiler",
-    "api": ["clusterProfiler::enricher"],
+    "api": [
+      "clusterProfiler::enricher"
+    ],
     "repository": "https://git.bioconductor.org/packages/clusterProfiler",
-    "versions": ["clusterProfiler 4.20.0", "enrichit 0.2.1", "msigdbr 26.1.1"],
+    "versions": [
+      "clusterProfiler 4.20.0",
+      "enrichit 0.2.1",
+      "msigdbr 26.1.1"
+    ],
     "install_source": "Bioconductor plus CRAN msigdbr/enrichit"
   },
   "oracle": {
@@ -23,42 +32,217 @@
     "harness": "tests/testthat/test-backend-conformance-enrichment.R"
   },
   "inputs": {
-    "classes": ["character"],
-    "modalities": ["gene-list ORA"],
-    "assays_layers": ["not applicable"],
-    "storage_backends": ["character vectors and two-column term tables"],
-    "requirements": ["unique non-empty gene identifiers", "explicit analysis", "gene universe in the same namespace"]
+    "classes": [
+      "character"
+    ],
+    "modalities": [
+      "gene-list ORA"
+    ],
+    "assays_layers": [
+      "not applicable"
+    ],
+    "storage_backends": [
+      "character vectors and two-column term tables"
+    ],
+    "requirements": [
+      "unique non-empty gene identifiers",
+      "explicit analysis",
+      "gene universe in the same namespace"
+    ]
   },
   "parameters": [
-    {"wrapper": "x", "role": "input_adapter", "upstream": "gene", "scenarios": ["eight selected genes"]},
-    {"wrapper": "gene_clusters", "role": "not_applicable", "upstream": "NULL for ungrouped ORA", "scenarios": ["NULL"]},
-    {"wrapper": "analysis", "role": "backend_selector", "upstream": "selects enricher", "scenarios": ["ora"]},
-    {"wrapper": "species", "role": "input_adapter", "upstream": "selects msigdbr species", "scenarios": ["human"]},
-    {"wrapper": "database", "role": "backend_selector", "upstream": "selects MSigDB TERM2GENE", "scenarios": ["H"]},
-    {"wrapper": "collection", "role": "input_adapter", "upstream": "MSigDB collection override", "scenarios": ["NULL"]},
-    {"wrapper": "subcollection", "role": "input_adapter", "upstream": "MSigDB subcollection override", "scenarios": ["NULL"]},
-    {"wrapper": "pvalue_cutoff", "role": "pass_through", "upstream": "pvalueCutoff", "scenarios": [0.5]},
-    {"wrapper": "p_adjust_method", "role": "pass_through", "upstream": "pAdjustMethod", "scenarios": ["BH"]},
-    {"wrapper": "qvalue_cutoff", "role": "pass_through", "upstream": "qvalueCutoff", "scenarios": [1]},
-    {"wrapper": "universe", "role": "pass_through", "upstream": "universe", "scenarios": ["35-gene background"]},
-    {"wrapper": "min_gs_size", "role": "pass_through", "upstream": "minGSSize", "scenarios": [3, "ten-member set with only two universe overlaps is excluded"]},
-    {"wrapper": "max_gs_size", "role": "pass_through", "upstream": "maxGSSize", "scenarios": [20]},
-    {"wrapper": "gsea_exponent", "role": "not_applicable", "upstream": "GSEA-only parameter", "scenarios": [1]},
-    {"wrapper": "duplicate_gene_method", "role": "not_applicable", "upstream": "GSEA-only input policy", "scenarios": ["error"]},
-    {"wrapper": "store_name", "role": "wrapper_only", "upstream": "stored-result name", "scenarios": ["default"]},
-    {"wrapper": "source_de_name", "role": "wrapper_only", "upstream": "stored-DE provenance", "scenarios": ["NULL"]},
-    {"wrapper": "return_object", "role": "wrapper_only", "upstream": "return representation", "scenarios": [false]},
-    {"wrapper": "prefix", "role": "wrapper_only", "upstream": "output filename prefix", "scenarios": ["NULL"]},
-    {"wrapper": "outdir", "role": "wrapper_only", "upstream": "optional RDS output directory", "scenarios": ["NULL"]}
+    {
+      "wrapper": "x",
+      "role": "input_adapter",
+      "upstream": "gene",
+      "scenarios": [
+        "eight selected genes"
+      ]
+    },
+    {
+      "wrapper": "gene_clusters",
+      "role": "not_applicable",
+      "upstream": "NULL for ungrouped ORA",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "analysis",
+      "role": "backend_selector",
+      "upstream": "selects enricher",
+      "scenarios": [
+        "ora"
+      ]
+    },
+    {
+      "wrapper": "species",
+      "role": "input_adapter",
+      "upstream": "selects msigdbr species",
+      "scenarios": [
+        "human"
+      ]
+    },
+    {
+      "wrapper": "database",
+      "role": "backend_selector",
+      "upstream": "selects MSigDB TERM2GENE",
+      "scenarios": [
+        "H"
+      ]
+    },
+    {
+      "wrapper": "collection",
+      "role": "input_adapter",
+      "upstream": "MSigDB collection override",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "subcollection",
+      "role": "input_adapter",
+      "upstream": "MSigDB subcollection override",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "pvalue_cutoff",
+      "role": "pass_through",
+      "upstream": "pvalueCutoff",
+      "scenarios": [
+        0.5
+      ]
+    },
+    {
+      "wrapper": "p_adjust_method",
+      "role": "pass_through",
+      "upstream": "pAdjustMethod",
+      "scenarios": [
+        "BH"
+      ]
+    },
+    {
+      "wrapper": "qvalue_cutoff",
+      "role": "pass_through",
+      "upstream": "qvalueCutoff",
+      "scenarios": [
+        1
+      ]
+    },
+    {
+      "wrapper": "universe",
+      "role": "pass_through",
+      "upstream": "universe",
+      "scenarios": [
+        "35-gene background"
+      ]
+    },
+    {
+      "wrapper": "min_gs_size",
+      "role": "pass_through",
+      "upstream": "minGSSize",
+      "scenarios": [
+        3,
+        "ten-member set with only two universe overlaps is excluded"
+      ]
+    },
+    {
+      "wrapper": "max_gs_size",
+      "role": "pass_through",
+      "upstream": "maxGSSize",
+      "scenarios": [
+        20
+      ]
+    },
+    {
+      "wrapper": "gsea_exponent",
+      "role": "not_applicable",
+      "upstream": "GSEA-only parameter",
+      "scenarios": [
+        1
+      ]
+    },
+    {
+      "wrapper": "duplicate_gene_method",
+      "role": "not_applicable",
+      "upstream": "GSEA-only input policy",
+      "scenarios": [
+        "error"
+      ]
+    },
+    {
+      "wrapper": "store_name",
+      "role": "wrapper_only",
+      "upstream": "stored-result name",
+      "scenarios": [
+        "default"
+      ]
+    },
+    {
+      "wrapper": "source_de_name",
+      "role": "wrapper_only",
+      "upstream": "stored-DE provenance",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "return_object",
+      "role": "wrapper_only",
+      "upstream": "return representation",
+      "scenarios": [
+        false
+      ]
+    },
+    {
+      "wrapper": "prefix",
+      "role": "wrapper_only",
+      "upstream": "output filename prefix",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "outdir",
+      "role": "wrapper_only",
+      "upstream": "optional RDS output directory",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "object",
+      "role": "wrapper_only",
+      "upstream": "Shennong-side alias of the primary data argument",
+      "scenarios": [
+        "alias resolving to the same input as x"
+      ]
+    }
   ],
   "outputs": {
-    "scientific": ["term IDs", "gene/background ratios", "raw p values", "adjusted p values", "q values", "gene IDs", "counts"],
-    "wrapper": ["MSigDB term/name preparation and optional storage"],
-    "waivers": ["The pilot mocks only term retrieval; the real msigdbr fixture remains a C2 task."]
+    "scientific": [
+      "term IDs",
+      "gene/background ratios",
+      "raw p values",
+      "adjusted p values",
+      "q values",
+      "gene IDs",
+      "counts"
+    ],
+    "wrapper": [
+      "MSigDB term/name preparation and optional storage"
+    ],
+    "waivers": [
+      "The pilot mocks only term retrieval; the real msigdbr fixture remains a C2 task."
+    ]
   },
   "equivalence": {
     "class": "standardized_numeric",
-    "projection": ["complete as.data.frame(enrichResult) aligned by ID"],
+    "projection": [
+      "complete as.data.frame(enrichResult) aligned by ID"
+    ],
     "absolute_tolerance": 1e-12,
     "relative_tolerance": 1e-12,
     "ordering": "align by term ID",
@@ -70,22 +254,60 @@
     "threads": 1,
     "fresh_process": false,
     "acceleration": "AutoZyme disabled",
-    "environment": {"AUTOZYME_DISABLED": "true", "OMP_NUM_THREADS": "1"}
+    "environment": {
+      "AUTOZYME_DISABLED": "true",
+      "OMP_NUM_THREADS": "1"
+    }
   },
   "fixtures": [
-    {"id": "synthetic-msigdb-ora-tiny-v1", "tier": "tiny", "source": "generated term and gene lists in executable test", "license": "repository test fixture", "sha256": null, "role": "C1 direct-call pilot", "seed": null}
+    {
+      "id": "synthetic-msigdb-ora-tiny-v1",
+      "tier": "tiny",
+      "source": "generated term and gene lists in executable test",
+      "license": "repository test fixture",
+      "sha256": null,
+      "role": "C1 direct-call pilot",
+      "seed": null
+    }
   ],
   "conditions": {
-    "expected": ["none in validated case"],
+    "expected": [
+      "none in validated case"
+    ],
     "outside_envelope": "GO, KEGG, grouped ORA, real msigdbr retrieval, empty results, and alternate adjustment methods require more scenarios."
   },
   "versions": {
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
-    "upstream": ["clusterProfiler 4.20.0", "enrichit 0.2.1", "msigdbr 26.1.1"],
-    "material_dependencies": ["gson", "qvalue"]
+    "upstream": [
+      "clusterProfiler 4.20.0",
+      "enrichit 0.2.1",
+      "msigdbr 26.1.1"
+    ],
+    "material_dependencies": [
+      "gson",
+      "qvalue"
+    ]
   },
-  "ci": {"required_tiers": ["C0-static", "C1-dispatch-contract"], "profile": "backend-conformance", "platforms": ["ubuntu-latest"]},
-  "evidence": {"test_file": "tests/testthat/test-backend-conformance-enrichment.R", "date": "2026-08-21", "verdict": "pilot", "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, grouped, and warning/error tiers remain pending."},
-  "owner": {"subsystem": "enrichment", "maintainer": "Shennong maintainers", "last_reviewed": "2026-08-21"}
+  "ci": {
+    "required_tiers": [
+      "C0-static",
+      "C1-dispatch-contract"
+    ],
+    "profile": "backend-conformance",
+    "platforms": [
+      "ubuntu-latest"
+    ]
+  },
+  "evidence": {
+    "test_file": "tests/testthat/test-backend-conformance-enrichment.R",
+    "date": "2026-08-21",
+    "verdict": "pilot",
+    "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, grouped, and warning/error tiers remain pending."
+  },
+  "owner": {
+    "subsystem": "enrichment",
+    "maintainer": "Shennong maintainers",
+    "last_reviewed": "2026-08-21"
+  }
 }

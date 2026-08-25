@@ -864,3 +864,74 @@ sn_delete_result <- function(object, type, name) {
   methods::slot(object, "misc") <- misc_data
   object
 }
+
+#' Delete a registered workflow artifact
+#'
+#' Registered artifact collections (for example \code{"clustering_stage_cache"},
+#' \code{"integration_comparison"}, or \code{"label_transfer"}) are removed
+#' either member-by-member or as a whole container. Unknown artifact types fail
+#' closed; unified analysis results must be deleted through
+#' \code{\link{sn_delete_result}} instead.
+#'
+#' @param object A Seurat object.
+#' @param artifact_type Registered artifact type, i.e. the collection name or
+#'   its \code{"*_artifact"} alias (for example \code{"integration"} or
+#'   \code{"integration_artifact"}).
+#' @param name Optional member name. When omitted, the entire artifact
+#'   collection container is removed.
+#'
+#' @return The modified Seurat object.
+#'
+#' @examples
+#' \dontrun{
+#' obj <- sn_delete_artifact(obj, "integration_comparison", "pbmc_grid")
+#' obj <- sn_delete_artifact(obj, "label_transfer")
+#' }
+#'
+#' @export
+sn_delete_artifact <- function(object, artifact_type, name = NULL) {
+  .sn_validate_result_object(object)
+  registry <- .sn_misc_result_registry()
+  artifacts <- registry[registry$contract_scope == "artifact", , drop = FALSE]
+  requested <- tolower(as.character(artifact_type))
+  if (!requested %in% artifacts$type && !requested %in% artifacts$collection) {
+    stop(
+      "'",
+      artifact_type,
+      "' is not a registered artifact type. Registered types: ",
+      paste(sort(artifacts$type), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  type_index <- match(requested, artifacts$type)
+  if (is_na(type_index)) {
+    type_index <- match(requested, artifacts$collection)
+  }
+  collection <- artifacts$collection[[type_index]]
+  misc_data <- methods::slot(object, "misc")
+  if (is_null(name)) {
+    if (is_null(misc_data[[collection]])) {
+      warning("No '", collection, "' artifact collection was present.", call. = FALSE)
+      return(object)
+    }
+    misc_data[[collection]] <- NULL
+    methods::slot(object, "misc") <- misc_data
+    return(object)
+  }
+  entries <- misc_data[[collection]]
+  if (!is.list(entries) || !as.character(name) %in% names(entries)) {
+    stop(
+      "No artifact named '", name, "' was found in the '", collection, "' collection.",
+      call. = FALSE
+    )
+  }
+  entries[[as.character(name)]] <- NULL
+  if (length(entries) == 0L) {
+    misc_data[[collection]] <- NULL
+  } else {
+    misc_data[[collection]] <- entries
+  }
+  methods::slot(object, "misc") <- misc_data
+  object
+}

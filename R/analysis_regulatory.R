@@ -150,6 +150,7 @@ sn_run_regulatory_activity <- function(object,
 #' @param group_by Optional grouping column.
 #' @param species Optional species label.
 #' @param network Optional regulatory network used for inference.
+#' @param random_seed Optional random seed recorded in the result provenance.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A Seurat object or stored-result list.
@@ -161,6 +162,7 @@ sn_store_regulatory_activity <- function(object,
                                          group_by = NULL,
                                          species = NULL,
                                          network = NULL,
+                                         random_seed = NULL,
                                          return_object = TRUE) {
   .sn_validate_seurat_object(object)
   stored_result <- list(
@@ -172,7 +174,8 @@ sn_store_regulatory_activity <- function(object,
     method = method,
     group_by = group_by,
     species = species,
-    network = network
+    network = network,
+    provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
   object <- .sn_store_misc_result(
     object = object,
