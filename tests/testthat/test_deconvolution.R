@@ -28,14 +28,14 @@ make_bulk_matrix <- function(object) {
   )
 }
 
-test_that("sn_deconvolve_bulk prepares local CIBERSORTx commands from a Seurat reference", {
+test_that("sn_run_bulk_deconvolution prepares local CIBERSORTx commands from a Seurat reference", {
   skip_if_not_installed("Seurat")
 
   object <- make_deconvolution_object()
   bulk <- make_bulk_matrix(object)
   outdir <- tempfile("cibersortx-")
 
-  bundle <- sn_deconvolve_bulk(
+  bundle <- sn_run_bulk_deconvolution(
     object,
     bulk = bulk,
     method = "cibersortx",
@@ -59,7 +59,7 @@ test_that("sn_deconvolve_bulk prepares local CIBERSORTx commands from a Seurat r
   expect_true(bundle$artifacts$commands_redacted)
 })
 
-test_that("sn_deconvolve_bulk can import a CIBERSORTx fractions table and store it", {
+test_that("sn_run_bulk_deconvolution can import a CIBERSORTx fractions table and store it", {
   skip_if_not_installed("Seurat")
 
   object <- make_deconvolution_object()
@@ -77,7 +77,7 @@ test_that("sn_deconvolve_bulk can import a CIBERSORTx fractions table and store 
   )
   utils::write.table(fractions, file = result_path, sep = "\t", quote = FALSE, row.names = FALSE)
 
-  object <- sn_deconvolve_bulk(
+  object <- sn_run_bulk_deconvolution(
     object,
     bulk = bulk,
     method = "cibersortx",
@@ -98,7 +98,7 @@ test_that("sn_deconvolve_bulk can import a CIBERSORTx fractions table and store 
   expect_true("deconvolution" %in% listed$type)
 })
 
-test_that("sn_deconvolve_bulk validates BayesPrism availability cleanly", {
+test_that("sn_run_bulk_deconvolution validates BayesPrism availability cleanly", {
   skip_if_not_installed("Seurat")
 
   object <- make_deconvolution_object()
@@ -106,7 +106,7 @@ test_that("sn_deconvolve_bulk validates BayesPrism availability cleanly", {
 
   expect_error(
     testthat::with_mocked_bindings(
-      sn_deconvolve_bulk(
+      sn_run_bulk_deconvolution(
         object,
         bulk = bulk,
         method = "bayesprism",
@@ -131,14 +131,14 @@ test_that("sn_deconvolve_bulk validates BayesPrism availability cleanly", {
   )
 })
 
-test_that("sn_deconvolve_bulk validates local CIBERSORTx credentials", {
+test_that("sn_run_bulk_deconvolution validates local CIBERSORTx credentials", {
   skip_if_not_installed("Seurat")
 
   object <- make_deconvolution_object()
   bulk <- make_bulk_matrix(object)
 
   expect_error(
-    sn_deconvolve_bulk(
+    sn_run_bulk_deconvolution(
       object,
       bulk = bulk,
       method = "cibersortx",

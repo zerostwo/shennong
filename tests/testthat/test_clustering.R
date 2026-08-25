@@ -216,9 +216,9 @@ test_that("sn_run_cluster keeps multi-method integration results side by side", 
 })
 
 test_that("integration control templates cover every supported backend", {
-  templates <- sn_integration_control_template()
+  templates <- sn_get_integration_control_template()
   expect_setequal(names(templates), .sn_supported_integration_methods())
-  expect_identical(sn_integration_control_template("harmony")$theta, 2)
+  expect_identical(sn_get_integration_control_template("harmony")$theta, 2)
   expect_true(all(c("icp_args", "pca_args", "store_sce") %in% names(templates$coralysis)))
   expect_true(all(c("accelerator", "model_args", "train_args", "write_h5ad") %in% names(templates$scvi)))
   expect_true(all(c("label_by", "scanvi_model_args", "scanvi_train_args") %in% names(templates$scanvi)))
@@ -3094,8 +3094,9 @@ test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {
   colnames(sim_counts) <- paste0("sim_cell_", seq_len(6))
 
   simulated <- testthat::with_mocked_bindings(
-    sn_simulate_scdesign3(
+    sn_simulate(
       object = object,
+      method = "scdesign3",
       celltype = "cell_type",
       ncell = 6,
       n_cores = 1,

@@ -110,7 +110,7 @@ trajectory environment already exists on disk.
 
 ```{r velocity-backend-status}
 pixi_info <- sn_check_pixi(quiet = TRUE)
-trajectory_paths <- sn_pixi_paths("trajectory")
+trajectory_paths <- sn_get_pixi_paths("trajectory")
 trajectory_environment <- file.path(
   trajectory_paths$workspace_env_dir,
   "default"

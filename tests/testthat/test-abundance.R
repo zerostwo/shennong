@@ -313,7 +313,7 @@ test_that("direct Scissor entry point preserves cells and exposes unified tables
   for (type in c("states", "cells", "samples", "correlations", "reliability")) {
     plot <- sn_plot_scissor(result, type = type, n = 100L)
     expect_s3_class(plot, "ggplot")
-    expect_s3_class(sn_figure_spec(plot), "sn_figure_spec")
+    expect_s3_class(sn_get_figure_spec(plot), "sn_get_figure_spec")
     expect_false(is.null(attr(plot, "shennong_figure_data", exact = TRUE)))
     expect_silent(ggplot2::ggplotGrob(plot))
   }

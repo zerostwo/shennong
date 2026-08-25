@@ -80,7 +80,7 @@ test_that("MCP stdio loop emits one compact JSON-RPC response per request", {
   input <- textConnection(requests, open = "r")
   output <- textConnection("mcp_output", open = "w", local = TRUE)
   on.exit(close(input), add = TRUE)
-  sn_mcp_server(input = input, output = output)
+  sn_run_mcp_server(input = input, output = output)
   close(output)
 
   expect_length(mcp_output, 3L)
@@ -91,8 +91,8 @@ test_that("MCP stdio loop emits one compact JSON-RPC response per request", {
 })
 
 test_that("MCP launcher configuration is directly consumable", {
-  config <- sn_mcp_server_config()
+  config <- sn_get_mcp_server_config()
   expect_true(file.exists(config$command))
   expect_identical(config$transport, "stdio")
-  expect_match(config$args[[2]], "sn_mcp_server")
+  expect_match(config$args[[2]], "sn_run_mcp_server")
 })

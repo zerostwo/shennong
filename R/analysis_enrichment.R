@@ -401,7 +401,7 @@
 #' @param min_gs_size,max_gs_size Minimum and maximum tested gene-set sizes.
 #' @param gsea_exponent GSEA running-score exponent. For reproducible stochastic
 #'   GSEA results with clusterProfiler 4.20, call `set.seed()` immediately before
-#'   `sn_enrich()`, as for the direct upstream call.
+#'   `sn_run_enrichment()`, as for the direct upstream call.
 #' @param duplicate_gene_method Policy for duplicate identifiers in a GSEA
 #'   ranked list. The default, `"error"`, avoids silent changes. Explicit
 #'   alternatives are `"max_abs"`, `"max"`, and `"mean"`.
@@ -424,7 +424,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' sn_enrich(
+#' sn_run_enrichment(
 #'   x = c("CD3D", "IL7R", "LTB"),
 #'   species = "human",
 #'   database = c("GOBP", "H")
@@ -432,7 +432,7 @@
 #' }
 #'
 #' @export
-sn_enrich <- function(
+sn_run_enrichment <- function(
   x,
   gene_clusters = NULL,
   analysis = NULL,
@@ -953,4 +953,19 @@ sn_store_enrichment <- function(object,
     collection = "enrichment_results",
     store_name = store_name
   )
+}
+
+#' Deprecated alias of `sn_run_enrichment()`
+#'
+#' `sn_enrich()` is a deprecated compatibility alias. Use [sn_run_enrichment()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_run_enrichment()].
+#'
+#' @return Result of `sn_run_enrichment(...)`.
+#'
+#' @export
+sn_enrich <- function(...) {
+  .Deprecated("sn_run_enrichment", package = "Shennong")
+  sn_run_enrichment(...)
 }

@@ -66,11 +66,11 @@ sn_list_results,result_management,Stored-result inventory rather than biological
 sn_list_signatures,signature_management,Signature catalog inventory rather than analysis execution
 sn_list_usage_runs,runtime_admin,Local usage-log query rather than biological analysis execution
 sn_make_ellmer_provider,interpretation_reporting,Provider construction rather than quantitative analysis
-sn_mcp_server,runtime_admin,Agent server lifecycle rather than analysis execution
-sn_mcp_server_config,runtime_admin,Agent server configuration rather than analysis execution
-sn_method_status,runtime_admin,Method capability inspection rather than analysis execution
-sn_pixi_config_path,runtime_admin,Runtime path lookup rather than analysis execution
-sn_pixi_paths,runtime_admin,Runtime path lookup rather than analysis execution
+sn_run_mcp_server,runtime_admin,Agent server lifecycle rather than analysis execution
+sn_get_mcp_server_config,runtime_admin,Agent server configuration rather than analysis execution
+sn_get_method_status,runtime_admin,Method capability inspection rather than analysis execution
+sn_get_pixi_config_path,runtime_admin,Runtime path lookup rather than analysis execution
+sn_get_pixi_paths,runtime_admin,Runtime path lookup rather than analysis execution
 sn_prepare_annotation_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
 sn_prepare_de_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
 sn_prepare_enrichment_evidence,interpretation_reporting,Evidence packaging rather than quantitative analysis
@@ -100,3 +100,15 @@ sn_write,io_project,Data output rather than analysis execution
 sn_write_figure_legend,interpretation_reporting,Narrative reporting rather than visualization execution
 sn_write_presentation_summary,interpretation_reporting,Narrative reporting rather than quantitative analysis
 sn_write_results,interpretation_reporting,Result export and reporting rather than analysis execution
+sn_deconvolve_bulk,deprecated_alias,Deprecated forwarding shim over sn_run_bulk_deconvolution
+sn_enrich,deprecated_alias,Deprecated forwarding shim over sn_run_enrichment
+sn_figure_spec,deprecated_alias,Deprecated forwarding shim over sn_get_figure_spec
+sn_integration_control_template,deprecated_alias,Deprecated forwarding shim over sn_get_integration_control_template
+sn_metabolic_signatures,deprecated_alias,Deprecated forwarding shim over sn_get_metabolic_signatures
+sn_method_status,deprecated_alias,Deprecated forwarding shim over sn_get_method_status
+sn_mcp_server,deprecated_alias,Deprecated forwarding shim over sn_run_mcp_server
+sn_mcp_server_config,deprecated_alias,Deprecated forwarding shim over sn_get_mcp_server_config
+sn_pixi_config_path,deprecated_alias,Deprecated forwarding shim over sn_get_pixi_config_path
+sn_pixi_paths,deprecated_alias,Deprecated forwarding shim over sn_get_pixi_paths
+sn_delete_artifact,runtime_admin,Stored-artifact deletion rather than analysis execution
+sn_simulate_scdesign3,deprecated_alias,Deprecated forwarding shim over sn_simulate(method = 'scdesign3')

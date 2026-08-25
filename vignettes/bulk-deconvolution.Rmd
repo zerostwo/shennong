@@ -107,7 +107,7 @@ commands. It proves that the real reference labels and 20 pseudobulk columns
 satisfy the interface. It does **not** create or import a deconvolution result.
 
 ```{r cibersortx-dry-run, eval=core_ready}
-cibersortx_bundle <- sn_deconvolve_bulk(
+cibersortx_bundle <- sn_run_bulk_deconvolution(
   x = pbmc,
   bulk = pseudobulk_counts,
   method = "cibersortx",
@@ -156,7 +156,7 @@ bulk_for_deconvolution <- pseudobulk_counts[
 ]
 
 bayesprism_attempt <- tryCatch(
-  sn_deconvolve_bulk(
+  sn_run_bulk_deconvolution(
     x = reference,
     bulk = bulk_for_deconvolution,
     method = "bayesprism",

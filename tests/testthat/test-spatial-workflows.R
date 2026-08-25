@@ -148,7 +148,7 @@ test_that("spatial plots preserve aspect and render", {
 test_that("spatial methods are registered as implemented", {
   expect_true(all(sn_list_methods("spatial_svg")$implemented))
   expect_true(all(sn_list_methods("spatial_domain")$implemented))
-  expect_true(sn_method_status("distance", "spatial_communication")$implemented)
+  expect_true(sn_get_method_status("distance", "spatial_communication")$implemented)
 })
 
 test_that("legacy spatial aliases warn and forward to canonical workflows", {

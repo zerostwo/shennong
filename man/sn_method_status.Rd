@@ -2,24 +2,17 @@
 % Please edit documentation in R/analysis_registry.R
 \name{sn_method_status}
 \alias{sn_method_status}
-\title{Report the status of a registered Shennong method}
+\title{Deprecated alias of \code{sn_get_method_status()}}
 \usage{
-sn_method_status(method, task = NULL)
+sn_method_status(...)
 }
 \arguments{
-\item{method}{A registered method name.}
-
-\item{task}{Optional task used to disambiguate a method registered for more
-than one workflow.}
+\item{...}{Named arguments passed on to \code{\link[=sn_get_method_status]{sn_get_method_status()}}.}
 }
 \value{
-A named list describing availability, runtime, environment,
-installation action, requirements, outputs, and citation.
+Result of \code{sn_get_method_status(...)}.
 }
 \description{
-Report the status of a registered Shennong method
-}
-\examples{
-sn_method_status("slingshot", task = "trajectory")
-
+\code{sn_method_status()} is a deprecated compatibility alias. Use \code{\link[=sn_get_method_status]{sn_get_method_status()}} directly;
+the alias will be removed in a future release.
 }

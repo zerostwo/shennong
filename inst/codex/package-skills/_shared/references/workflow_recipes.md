@@ -199,11 +199,11 @@ user request to the right Shennong function family quickly.
    calls skip completed combinations. Inspect
    `object@misc$integration_comparison$performance` for workflow/integration
    time and peak-memory provenance. Use
-   `sn_integration_control_template()` to obtain the complete backend control
+   `sn_get_integration_control_template()` to obtain the complete backend control
    surface rather than guessing nested runtime or model fields.
-   Use `sn_pixi_paths()` to
+   Use `sn_get_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
-   `sn_list_pixi_environments()` / `sn_pixi_config_path()` to inspect bundled
+   `sn_list_pixi_environments()` / `sn_get_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`. Use
 	   `integration_control = list(accelerator = "auto", mirror = "auto")` when
 	   CPU/CUDA selection and Shennong-level mirror configuration should be handled
@@ -262,7 +262,7 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Run pathway analysis
 
-1. If enriching stored DE on a Seurat object, use `sn_enrich(x = object, source_de_name = ...)`.
+1. If enriching stored DE on a Seurat object, use `sn_run_enrichment(x = object, source_de_name = ...)`.
 2. For grouped ORA, use `gene_clusters = gene ~ cluster`, set
    `analysis = "ora"`, and pass the genes that were actually tested as
    `universe`; otherwise clusterProfiler uses every annotated database gene.
@@ -303,7 +303,7 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Export a publication figure
 
-1. Build a native Shennong/ggplot figure and inspect `sn_figure_spec(plot)`.
+1. Build a native Shennong/ggplot figure and inspect `sn_get_figure_spec(plot)`.
    Use `sn_apply_figure_profile()` when an unattached plot needs a column,
    page, screen, or slide profile.
 2. Run `sn_validate_figure()` and resolve category/legend overload, long labels,
@@ -508,7 +508,7 @@ user request to the right Shennong function family quickly.
 ## Recipe: Bulk deconvolution from single-cell reference
 
 1. Prepare or choose reference labels in the Seurat object.
-2. Run `sn_deconvolve_bulk()`.
+2. Run `sn_run_bulk_deconvolution()`.
 3. Store results with `sn_store_deconvolution()`.
 4. Retrieve later with `sn_get_deconvolution_result()`.
 

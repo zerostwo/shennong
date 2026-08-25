@@ -80,7 +80,7 @@
 #'
 #' \code{sn_simulate()} provides a method-based simulation entry point.
 #' Currently \code{method = "scdesign3"} delegates to
-#' \code{sn_simulate_scdesign3()}.
+#' \code{.sn_simulate_scdesign3()}.
 #'
 #' @param object A Seurat or SingleCellExperiment object.
 #' @param method Simulation backend. Currently supports \code{"scdesign3"}.
@@ -99,58 +99,11 @@ sn_simulate <- function(object,
   method <- match.arg(method)
   switch(
     method,
-    scdesign3 = sn_simulate_scdesign3(object = object, ...)
+    scdesign3 = .sn_simulate_scdesign3(object = object, ...)
   )
 }
 
-#' Simulate single-cell counts with scDesign3
-#'
-#' \code{sn_simulate_scdesign3()} prepares a Seurat or SingleCellExperiment
-#' object for \code{scDesign3::scdesign3()}, chooses simple default formulas
-#' from the supplied covariates, and returns simulated counts as a Seurat
-#' object, SingleCellExperiment, sparse count matrix, or raw scDesign3 result.
-#' Prefer \code{sn_simulate(method = "scdesign3")} for new code.
-#'
-#' @param object A Seurat or SingleCellExperiment object.
-#' @param celltype Column in \code{colData(object)} or Seurat metadata used as
-#'   the cell-type covariate. If \code{NULL}, \code{"seurat_clusters"} is used
-#'   when available.
-#' @param pseudotime Optional pseudotime covariate column name.
-#' @param spatial Optional length-two vector naming spatial coordinate columns.
-#' @param other_covariates Optional additional covariate columns.
-#' @param ncell Number of cells to simulate. Defaults to the input cell count.
-#' @param mu_formula,sigma_formula,corr_formula scDesign3 model formulas. When
-#'   \code{mu_formula} or \code{corr_formula} is \code{NULL}, Shennong builds a
-#'   simple default from \code{pseudotime}, \code{spatial}, \code{celltype}, and
-#'   \code{other_covariates}.
-#' @param family_use Marginal distribution passed to scDesign3.
-#' @param n_cores Number of cores passed to scDesign3.
-#' @param assay,layer Assay/layer used when \code{object} is a Seurat object.
-#' @param assay_use Assay name used when \code{object} is already a
-#'   SingleCellExperiment. Defaults to \code{"counts"}.
-#' @param return One of \code{"seurat"}, \code{"sce"}, \code{"counts"}, or
-#'   \code{"result"}.
-#' @param project Project name for returned Seurat objects.
-#' @param combine_original If \code{TRUE}, return a merged Seurat object
-#'   containing original and simulated cells with a \code{simulation_source}
-#'   metadata column. Only applies when \code{return = "seurat"} and
-#'   \code{object} is a Seurat object.
-#' @param seed Optional random seed.
-#' @param ... Additional arguments passed to \code{scDesign3::scdesign3()}.
-#'
-#' @return Simulated data in the requested format.
-#'
-#' @examples
-#' \dontrun{
-#' sim <- sn_simulate_scdesign3(
-#'   object = seurat_obj,
-#'   celltype = "cell_type",
-#'   ncell = 1000,
-#'   n_cores = 4
-#' )
-#' }
-#' @export
-sn_simulate_scdesign3 <- function(object,
+.sn_simulate_scdesign3 <- function(object,
                                   celltype = NULL,
                                   pseudotime = NULL,
                                   spatial = NULL,
@@ -293,4 +246,20 @@ sn_simulate_scdesign3 <- function(object,
     return(combined)
   }
   sim_object
+}
+
+#' Deprecated direct scDesign3 wrapper
+#'
+#' `sn_simulate_scdesign3()` is a deprecated compatibility entry point. Use
+#' [sn_simulate(method = "scdesign3")] instead.
+#'
+#' @param object A Seurat or SingleCellExperiment object.
+#' @param ... Additional arguments passed to the scDesign3 backend.
+#'
+#' @return Simulated data in the backend's requested format.
+#'
+#' @export
+sn_simulate_scdesign3 <- function(object, ...) {
+  .Deprecated("sn_simulate(method = \"scdesign3\")", package = "Shennong")
+  .sn_simulate_scdesign3(object = object, ...)
 }

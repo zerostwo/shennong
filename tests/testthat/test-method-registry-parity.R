@@ -32,7 +32,7 @@ test_that("registry entries are accepted by their owning functions", {
   owners <- list(
     list(file = "annotation.yml", task = "annotation", fn = "sn_run_annotation"),
     list(file = "bulk.yml", task = "bulk_de", fn = ".sn_find_bulk_de"),
-    list(file = "bulk.yml", task = "bulk_deconvolution", fn = "sn_deconvolve_bulk"),
+    list(file = "bulk.yml", task = "bulk_deconvolution", fn = "sn_run_bulk_deconvolution"),
     list(file = "cnv.yml", task = "cnv", fn = "sn_run_cnv"),
     list(file = "communication.yml", task = "communication", fn = "sn_run_cell_communication"),
     list(file = "differential_abundance.yml", task = "differential_abundance", fn = "sn_test_abundance"),

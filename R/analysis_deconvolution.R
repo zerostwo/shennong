@@ -73,7 +73,7 @@
 #'     sample_a = rowSums(counts[, 1:12, drop = FALSE]),
 #'     sample_b = rowSums(counts[, 7:18, drop = FALSE])
 #'   )
-#'   bundle <- sn_deconvolve_bulk(
+#'   bundle <- sn_run_bulk_deconvolution(
 #'     ref,
 #'     bulk = bulk,
 #'     method = "cibersortx",
@@ -88,7 +88,7 @@
 #' }
 #'
 #' @export
-sn_deconvolve_bulk <- function(x,
+sn_run_bulk_deconvolution <- function(x,
                                bulk,
                                method = c("bayesprism", "cibersortx"),
                                cell_type_by = NULL,
@@ -191,7 +191,7 @@ sn_deconvolve_bulk <- function(x,
   )
 
   if (isTRUE(return_object)) {
-    return(.sn_log_seurat_command(object = object, name = "sn_deconvolve_bulk"))
+    return(.sn_log_seurat_command(object = object, name = "sn_run_bulk_deconvolution"))
   }
 
   .sn_get_misc_result(
@@ -806,4 +806,19 @@ sn_get_deconvolution_result <- function(object,
     table <- dplyr::filter(table, .data$cell_type %in% cell_types)
   }
   table
+}
+
+#' Deprecated alias of `sn_run_bulk_deconvolution()`
+#'
+#' `sn_deconvolve_bulk()` is a deprecated compatibility alias. Use [sn_run_bulk_deconvolution()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_run_bulk_deconvolution()].
+#'
+#' @return Result of `sn_run_bulk_deconvolution(...)`.
+#'
+#' @export
+sn_deconvolve_bulk <- function(...) {
+  .Deprecated("sn_run_bulk_deconvolution", package = "Shennong")
+  sn_run_bulk_deconvolution(...)
 }

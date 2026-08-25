@@ -166,8 +166,8 @@ test_that("usage parameter records redact sensitive payloads", {
   expect_false(grepl("patient-a|patient-b|/private/output", generic_json))
 
   generic_input <- Shennong:::.sn_usage_call_parameters(
-    "sn_enrich",
-    quote(sn_enrich(
+    "sn_run_enrichment",
+    quote(sn_run_enrichment(
       x = c("BRCA1", "patient-gene-123"),
       genes = c("TP53", "private-gene"),
       database = "H"

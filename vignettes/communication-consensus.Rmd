@@ -24,7 +24,7 @@ consensus_ready <- core_ready && identical(real_profile, "all") &&
   requireNamespace("liana", quietly = TRUE) &&
   requireNamespace("CellChat", quietly = TRUE)
 cellphonedb_paths <- if (requireNamespace("Shennong", quietly = TRUE)) {
-  tryCatch(Shennong::sn_pixi_paths("cellphonedb"), error = function(error) NULL)
+  tryCatch(Shennong::sn_get_pixi_paths("cellphonedb"), error = function(error) NULL)
 } else {
   NULL
 }

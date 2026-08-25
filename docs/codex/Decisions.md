@@ -1,6 +1,31 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
+
+## 2026-08-25
+
+- Comprehensive-audit renames ship behind `.Deprecated()` forwarding shims
+  instead of hard removals: `sn_enrich()` → `sn_run_enrichment()`,
+  `sn_deconvolve_bulk()` → `sn_run_bulk_deconvolution()`, the noun-first
+  getters (`sn_metabolic_signatures()`, `sn_method_status()`,
+  `sn_figure_spec()`, `sn_integration_control_template()`, `sn_pixi_paths()`,
+  `sn_pixi_config_path()`, `sn_mcp_server_config()`) → their `sn_get_*`
+  forms, and `sn_mcp_server()` → `sn_run_mcp_server()`. Rationale: the
+  exported surface is the public contract; shims keep every existing script
+  working with a visible warning while documentation, vignettes, and shipped
+  Codex skills teach only the new names. The shims are registered as
+  `deprecated_alias` exclusions in the runtime-coverage inventory so the
+  coverage gate stays exact. Removal is deferred to a future major version.
+- `sn_simulate_scdesign3()` is demoted from the primary API to a deprecated
+  shim over `sn_simulate(method = "scdesign3")`; the implementation is now
+  internal (`.sn_simulate_scdesign3`). One simulation entry point keeps the
+  method-registry pattern coherent.
+- The backend-conformance parameter schema now admits `unsupported`,
+  `fallback`, and `waived` parameter roles, and `parameter_map` is reserved
+  for the dots formal. The first gate run caught three real catch-all sweeps
+  (`assay`/`layer` in annotation-popv, `backend_control` in bulk-de-edger);
+  they were reclassified to their precise roles rather than weakening the
+  rule.
 
 ## 2026-08-24
 

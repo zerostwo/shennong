@@ -127,7 +127,7 @@
   tryCatch(
     {
       Shennong:::.sn_pixi_script_path(environment = "scrublet", script_name = "scrublet_run.py")
-      paths <- Shennong::sn_pixi_paths(environment = "scrublet")
+      paths <- Shennong::sn_get_pixi_paths(environment = "scrublet")
       file.exists(file.path(paths$workspace_env_dir, "default", "bin", "python"))
     },
     error = function(e) FALSE

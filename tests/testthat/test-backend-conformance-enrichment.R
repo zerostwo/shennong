@@ -28,7 +28,7 @@
   table
 }
 
-test_that("sn_enrich ORA matches clusterProfiler::enricher including its universe and cutoffs", {
+test_that("sn_run_enrichment ORA matches clusterProfiler::enricher including its universe and cutoffs", {
   .conformance_require_package("clusterProfiler")
   terms <- .make_conformance_enrichment_terms()
   term2gene <- unique(terms[, c("term", "gene")])
@@ -53,7 +53,7 @@ test_that("sn_enrich ORA matches clusterProfiler::enricher including its univers
     .sn_enrich_get_msigdb_terms = function(...) terms,
     .package = "Shennong"
   )
-  candidate <- .conformance_without_acceleration(sn_enrich(
+  candidate <- .conformance_without_acceleration(sn_run_enrichment(
     x = genes,
     analysis = "ora",
     species = "human",
@@ -79,7 +79,7 @@ test_that("sn_enrich ORA matches clusterProfiler::enricher including its univers
   )
 })
 
-test_that("sn_enrich GSEA matches clusterProfiler::GSEA with a controlled seed", {
+test_that("sn_run_enrichment GSEA matches clusterProfiler::GSEA with a controlled seed", {
   .conformance_require_package("clusterProfiler")
   terms <- .make_conformance_enrichment_terms()
   term2gene <- unique(terms[, c("term", "gene")])
@@ -109,7 +109,7 @@ test_that("sn_enrich GSEA matches clusterProfiler::GSEA with a controlled seed",
     .package = "Shennong"
   )
   set.seed(717L)
-  candidate <- .conformance_without_acceleration(sn_enrich(
+  candidate <- .conformance_without_acceleration(sn_run_enrichment(
     x = scores,
     analysis = "gsea",
     species = "human",
@@ -131,7 +131,7 @@ test_that("sn_enrich GSEA matches clusterProfiler::GSEA with a controlled seed",
   .conformance_expect_unchanged(scores, before, "GSEA ranked list")
 })
 
-test_that("sn_enrich retains parameters without false MSigDB patch usage", {
+test_that("sn_run_enrichment retains parameters without false MSigDB patch usage", {
   .conformance_require_package("clusterProfiler")
   .conformance_require_package("SeuratObject")
   terms <- .make_conformance_enrichment_terms()
@@ -161,7 +161,7 @@ test_that("sn_enrich retains parameters without false MSigDB patch usage", {
     },
     .package = "Shennong"
   )
-  object <- sn_enrich(
+  object <- sn_run_enrichment(
     x = object,
     source_de_name = "markers",
     analysis = "ora",

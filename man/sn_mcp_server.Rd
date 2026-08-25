@@ -2,32 +2,17 @@
 % Please edit documentation in R/mcp_server.R
 \name{sn_mcp_server}
 \alias{sn_mcp_server}
-\title{Run the read-only Shennong MCP server over stdio}
+\title{Deprecated alias of \code{sn_run_mcp_server()}}
 \usage{
-sn_mcp_server(input = stdin(), output = stdout())
+sn_mcp_server(...)
 }
 \arguments{
-\item{input}{Input connection. Defaults to standard input.}
-
-\item{output}{Output connection. Defaults to standard output.}
+\item{...}{Named arguments passed on to \code{\link[=sn_run_mcp_server]{sn_run_mcp_server()}}.}
 }
 \value{
-Invisibly returns \code{NULL} when the input stream closes.
+Result of \code{sn_run_mcp_server(...)}.
 }
 \description{
-Starts a newline-delimited JSON-RPC 2.0 server implementing MCP lifecycle,
-tool discovery, and tool calls. The server exposes package metadata and
-documentation only; it does not execute arbitrary R code or modify analysis
-files.
-}
-\examples{
-config <- sn_mcp_server_config()
-config$transport
-\dontrun{
-sn_mcp_server()
-}
-}
-\references{
-Model Context Protocol specification:
-\url{https://modelcontextprotocol.io/specification/2025-11-25}.
+\code{sn_mcp_server()} is a deprecated compatibility alias. Use \code{\link[=sn_run_mcp_server]{sn_run_mcp_server()}} directly;
+the alias will be removed in a future release.
 }

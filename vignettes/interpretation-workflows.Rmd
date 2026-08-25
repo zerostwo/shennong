@@ -123,7 +123,7 @@ head(annotation_evidence$cluster_summary)
 If enrichment has been run, add pathway evidence the same way.
 
 ```{r enrichment-evidence, eval = FALSE}
-pbmc <- sn_enrich(
+pbmc <- sn_run_enrichment(
   x = pbmc,
   source_de_name = "cluster_markers",
   species = "human",

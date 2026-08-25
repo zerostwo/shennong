@@ -2,17 +2,17 @@
 % Please edit documentation in R/analysis_metabolism.R
 \name{sn_metabolic_signatures}
 \alias{sn_metabolic_signatures}
-\title{Retrieve curated core metabolic signatures}
+\title{Deprecated alias of \code{sn_get_metabolic_signatures()}}
 \usage{
-sn_metabolic_signatures(species = c("human", "mouse"))
+sn_metabolic_signatures(...)
 }
 \arguments{
-\item{species}{Species label. Matching is case-insensitive, so the same
-symbols support common human and mouse feature conventions.}
+\item{...}{Named arguments passed on to \code{\link[=sn_get_metabolic_signatures]{sn_get_metabolic_signatures()}}.}
 }
 \value{
-A named list of pathway gene vectors.
+Result of \code{sn_get_metabolic_signatures(...)}.
 }
 \description{
-Retrieve curated core metabolic signatures
+\code{sn_metabolic_signatures()} is a deprecated compatibility alias. Use \code{\link[=sn_get_metabolic_signatures]{sn_get_metabolic_signatures()}} directly;
+the alias will be removed in a future release.
 }

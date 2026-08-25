@@ -113,7 +113,7 @@ test_that("enrichment matrix inventories dispatch without overstating evidence",
   ))
 
   expect_identical(matrix$schema_version, "shennong.parameter-matrix/v1")
-  expect_identical(matrix[["function"]], "sn_enrich")
+  expect_identical(matrix[["function"]], "sn_run_enrichment")
   expect_setequal(keys, expected)
   expect_identical(anyDuplicated(keys), 0L)
   expect_setequal(databases, c("GO", "GOBP", "GOMF", "GOCC", "KEGG", "MSIGDB_COLLECTION"))
@@ -140,7 +140,7 @@ test_that("enrichment matrix inventories dispatch without overstating evidence",
     expect_identical(contracts[[id]]$status, "pilot", info = id)
     expect_identical(
       contracts[[id]]$shennong[["function"]],
-      "sn_enrich",
+      "sn_run_enrichment",
       info = id
     )
   }

@@ -86,8 +86,8 @@ Runtime reference datasets:
 
 ## Clustering and Integration
 
-- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, pixi-managed scVI/scANVI/scPoli latent integration, BBKNN graph integration, and totalVI/MMoCHi integration. RNA workflows can pass multiple methods, including `"unintegrated"`, in one call. Explicit vectors for scalar controls such as `nfeatures`, `npcs`, `resolution`, clustering algorithm, rare-feature count, and Harmony theta form a conditional Cartesian grid; natural vectors such as `dims`, forced HVGs, regression covariates, and blocked genes remain intact. `object@misc$integration_comparison` records run, embedding, and preprocessing identities plus exact native reductions, graphs, cluster columns, UMAP, optional t-SNE, and per-run timing/memory provenance. Resolution variants reuse one graph/UMAP. Set `checkpoint_dir` for atomic run-level persistence and content/metadata-digest-matched recovery. Key `integration_control` by method when parameters differ; use `sn_integration_control_template()` for the complete accepted control surface. scVI, scANVI, and scPoli export the requested `assay`/`layer`; BBKNN computes PCA from that same selected layer and uses its imported batch-balanced graph directly for clustering and UMAP. Python expression/protein inputs remain sparse; only bounded neural-network minibatches and low-dimensional outputs may be dense. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform batch analysis currently supports Harmony and the unintegrated baseline. Coralysis, scVI/scANVI/scPoli, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. UMAP is the default projection; set `run_tsne = TRUE` explicitly when t-SNE is also needed. Re-running on the returned object reuses only content- and metadata-matched stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
-- `sn_integration_control_template()`: return complete executable defaults for
+- `sn_run_cluster()`: single-dataset clustering or batch integration; supports Seurat log-normalization, SCTransform, CITE-seq workflows with `modality = "cite_seq"` and `multimodal_method = "wnn"` / `"totalvi"` / `"coralysis"` / `"mmochi"`, Harmony, native Coralysis, Seurat CCA/RPCA, pixi-managed scVI/scANVI/scPoli latent integration, BBKNN graph integration, and totalVI/MMoCHi integration. RNA workflows can pass multiple methods, including `"unintegrated"`, in one call. Explicit vectors for scalar controls such as `nfeatures`, `npcs`, `resolution`, clustering algorithm, rare-feature count, and Harmony theta form a conditional Cartesian grid; natural vectors such as `dims`, forced HVGs, regression covariates, and blocked genes remain intact. `object@misc$integration_comparison` records run, embedding, and preprocessing identities plus exact native reductions, graphs, cluster columns, UMAP, optional t-SNE, and per-run timing/memory provenance. Resolution variants reuse one graph/UMAP. Set `checkpoint_dir` for atomic run-level persistence and content/metadata-digest-matched recovery. Key `integration_control` by method when parameters differ; use `sn_get_integration_control_template()` for the complete accepted control surface. scVI, scANVI, and scPoli export the requested `assay`/`layer`; BBKNN computes PCA from that same selected layer and uses its imported batch-balanced graph directly for clustering and UMAP. Python expression/protein inputs remain sparse; only bounded neural-network minibatches and low-dimensional outputs may be dense. CITE-seq WNN combines RNA PCA with ADT CLR normalization/PCA, clusters on `wsnn`, and returns `wnn.umap`; CITE-seq totalVI writes RNA and ADT counts to the shared scVI-family pixi backend; CITE-seq Coralysis runs native Coralysis on the ADT protein assay; CITE-seq MMoCHi runs ADT landmark registration across `batch` or in single-sample mode when `batch = NULL`, stores the corrected protein matrix as an assay layer when supported and otherwise under `object@misc$mmochi$corrected_protein`, and clusters on a protein-derived `mmochi` reduction. SCTransform batch analysis currently supports Harmony and the unintegrated baseline. Coralysis, scVI/scANVI/scPoli, totalVI, and MMoCHi skip redundant Seurat PCA stages that their backends do not consume. Native Coralysis stores the trained SingleCellExperiment under `object@misc$coralysis` by default so the returned object can be used directly for label transfer; set `integration_control = list(store_sce = FALSE)` only for clustering-only runs. Use `integration_control = list(accelerator = "auto", mirror = "auto")` for CUDA/CPU auto-selection and Shennong-level mirror configuration. `block_genes` can mix bundled signature queries such as `cellCycle.G2M`, `ribo`, and `mito` with custom gene symbols before internally selected HVGs are stored in log-normalization and SCTransform workflows. Rare-aware feature augmentation can combine `gini` and `local_markers`, with advanced thresholds kept in `rare_feature_control`. Use `hvg_features` to merge user-supplied marker genes into the backend feature set and, for PCA-based workflows, the final ScaleData/PCA feature set. UMAP is the default projection; set `run_tsne = TRUE` explicitly when t-SNE is also needed. Re-running on the returned object reuses only content- and metadata-matched stages by default; use `rerun_from` or `reuse = FALSE` for forced recompute. Leiden clustering auto-installs `leidenbase` unless `auto_install = FALSE`.
+- `sn_get_integration_control_template()`: return complete executable defaults for
   one or every integration backend, including pixi/runtime, accelerator,
   training, graph, and CITE-seq-specific fields.
 - `sn_run_multimodal()`: explicit CITE-seq wrapper over `sn_run_cluster()` for
@@ -97,15 +97,15 @@ Runtime reference datasets:
 - `sn_transfer_labels()`: query-first reference `label_by` transfer wrapper. Defaults to Seurat anchors, can use `method = "coralysis"` for native Coralysis `ReferenceMapping()` when the reference stores a trained Coralysis SingleCellExperiment, and supports semi-supervised scVI-family transfer with `method = "scanvi"` or `method = "scarches"`.
 - `sn_prepare_label_transfer_reference()`: create compact transfer-ready references. Coralysis output is a minimal SingleCellExperiment with trained models, PCA model, feature names, and labels; Seurat/scANVI/scArches output is a slim Seurat reference with selected assay layers and labels.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
-- `sn_simulate_scdesign3()`: backend-specific scDesign3 wrapper when direct control of the scDesign3 design arguments is needed.
+- `sn_simulate(method = "scdesign3", ...)`: direct scDesign3 controls; the bare `sn_simulate_scdesign3()` wrapper is deprecated.
 - `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
 
 ## Python Runtime Helpers
 
 - `sn_check_pixi()`: check whether a pixi executable is available.
 - `sn_install_pixi()` / `sn_ensure_pixi()`: install or ensure the standalone pixi binary when Python backends need it.
-- `sn_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
-- `sn_list_pixi_environments()` / `sn_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
+- `sn_get_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
+- `sn_list_pixi_environments()` / `sn_get_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
 - `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
 - `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, `sn_call_stlearn()`: environment-specific command-call helpers. `scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment.
 - `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
@@ -219,7 +219,7 @@ Runtime reference datasets:
   or pseudobulk DE, while matrix/list/`SummarizedExperiment` inputs run
   standalone bulk DE with explicit design and contrast
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
-- `sn_enrich()`: ORA or GSEA from vectors, tables, or stored DE; grouped ORA
+- `sn_run_enrichment()`: ORA or GSEA from vectors, tables, or stored DE; grouped ORA
   uses `gene ~ group`, a numeric ranking formula requires explicit
   `analysis = "gsea"`, ORA should receive the tested `universe`, and upstream
   p-adjustment/q-value and gene-set-size controls are exposed explicitly
@@ -305,7 +305,7 @@ Runtime reference datasets:
 
 - `sn_list_figure_profiles()`: inspect generic screen, column, page, and slide
   constraints; journal requirements must still be checked at submission time
-- `sn_figure_spec()` / `sn_recommend_figure_size()`: calculate canvas, point,
+- `sn_get_figure_spec()` / `sn_recommend_figure_size()`: calculate canvas, point,
   alpha, font, line, legend, raster, layout, and pagination recommendations
   from plot/data metadata without rendering large synthetic inputs
 - `sn_apply_figure_profile()`: attach profile styling/specification while
@@ -346,7 +346,7 @@ Runtime reference datasets:
   summaries, CNV UMAP, and expression association
 - `sn_plot_cnv()`: chromosome heatmap, CNV UMAP, malignancy distribution,
   sample summary, or CNV-expression association from a stored result
-- `sn_metabolic_signatures()`: curated core metabolic pathway gene sets
+- `sn_get_metabolic_signatures()`: curated core metabolic pathway gene sets
 - `sn_run_metabolism()`: UCell/GSVA/ssGSEA/mean pathway scoring plus
   scMetabolism or explicit scFEA/Compass adapters; condition tests aggregate to
   `sample_by` first
@@ -361,7 +361,7 @@ Runtime reference datasets:
 - `sn_run_milo()`: neighborhood differential abundance with miloR
 - `sn_store_milo()`: persist milo results
 - `sn_get_milo_result()`: retrieve milo results
-- `sn_deconvolve_bulk()`: bulk deconvolution from single-cell reference data
+- `sn_run_bulk_deconvolution()`: bulk deconvolution from single-cell reference data
 - `sn_set_cibersortx_credentials()`: store CIBERSORTx credentials
 - `sn_store_deconvolution()`: persist deconvolution results
 - `sn_get_deconvolution_result()`: retrieve deconvolution results
@@ -380,7 +380,7 @@ Runtime reference datasets:
 
 ## Interpretation and Reporting
 
-- `sn_list_methods()` / `sn_method_status()`: discover registered current and
+- `sn_list_methods()` / `sn_get_method_status()`: discover registered current and
   roadmap backends, their default status, runtime, dependencies, install action,
   requirements, outputs, and current availability
 - `sn_store_result()` / `sn_get_result()` / `sn_delete_result()`: manage any
@@ -434,9 +434,9 @@ Runtime reference datasets:
 - `sn_install_dependencies()`: install missing dependencies
 - `sn_initialize_project()`: initialize a governed analysis project
 - `sn_install_codex_skill()`: install shipped Codex skills
-- `sn_mcp_server_config()`: return the stdio command and arguments for the
+- `sn_get_mcp_server_config()`: return the stdio command and arguments for the
   bundled read-only Shennong MCP server
-- `sn_mcp_server()`: serve method discovery, installed R help, and workflow
+- `sn_run_mcp_server()`: serve method discovery, installed R help, and workflow
   guides over newline-delimited MCP JSON-RPC without arbitrary code execution
 - `sn_set_path()`: create a directory path if needed
 
@@ -450,7 +450,7 @@ Runtime reference datasets:
   standalone bulk differential expression:
   use `sn_find_de()`
 - If the task is pathways:
-  use `sn_enrich()`
+  use `sn_run_enrichment()`
 - If the task is result reuse:
   use `sn_list_results()` plus `sn_get_result()` or a specialized
   `sn_get_*_result()`

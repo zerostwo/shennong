@@ -90,7 +90,7 @@ For a temporary scope, use `sn_with_usage_tracking()`:
 ```{r scoped}
 result <- sn_with_usage_tracking(
   {
-    sn_enrich(
+    sn_run_enrichment(
       genes,
       analysis = "ora",
       database = "GOBP",

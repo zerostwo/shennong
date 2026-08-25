@@ -125,7 +125,7 @@ This skill is the main entry point for package usage.
 	   `run_tsne = TRUE`.
 	   For large grids, set `checkpoint_dir`; matching calls resume completed
 	   combinations by default. Read `$performance` for time and memory
-	   provenance, and call `sn_integration_control_template()` for the complete
+	   provenance, and call `sn_get_integration_control_template()` for the complete
 	   control template of each backend.
 	   scVI/scANVI/scPoli honor
 	   the requested `assay`/`layer`; BBKNN derives PCA from the same selected
@@ -141,8 +141,8 @@ This skill is the main entry point for package usage.
    Coralysis stores the trained reference SingleCellExperiment by default for
    label transfer; use `integration_control = list(store_sce = FALSE)` only for
    clustering-only runs.
-   Use `sn_pixi_paths()` when users ask where Python environments live, use
-   `sn_list_pixi_environments()` and `sn_pixi_config_path()` to inspect bundled
+   Use `sn_get_pixi_paths()` when users ask where Python environments live, use
+   `sn_list_pixi_environments()` and `sn_get_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`, and pass
    `integration_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
@@ -176,7 +176,7 @@ This skill is the main entry point for package usage.
    `sn_identify_challenging_groups()` when sample mixing, rare groups,
    isolated labels, or difficult-to-separate populations matter.
 4. Move to downstream biological interpretation:
-   marker discovery with `sn_find_de()`, pathway analysis with `sn_enrich()`,
+   marker discovery with `sn_find_de()`, pathway analysis with `sn_run_enrichment()`,
    marker-class prioritization with `sn_annotate_de_features()` for TF,
    surface/plasma-membrane, cytokine, and chemokine hits,
    traceable annotation with `sn_run_annotation()`; supply a biologically
@@ -236,7 +236,7 @@ This skill is the main entry point for package usage.
    databases in one call.
 5. Use `sn_calculate_composition()`, `sn_calculate_roe()`,
    `sn_compare_composition()`, `sn_run_milo()`, `sn_plot_composition()`, and
-   `sn_deconvolve_bulk()` for
+   `sn_run_bulk_deconvolution()` for
    comparative summaries across samples, conditions, annotations, or paired
    bulk RNA-seq mixtures.
 6. Use `sn_run_cell_communication()` for LIANA, CellChat, CellPhoneDB,
@@ -262,12 +262,12 @@ This skill is the main entry point for package usage.
 9. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
 10. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or
-   `sn_simulate_scdesign3()` when the task needs direct scDesign3 controls.
+   `sn_simulate(method = "scdesign3", ...)` when the task needs direct scDesign3 controls.
 11. Inspect and reuse bundled signatures with `sn_list_signatures()` and
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
-12. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_pixi_paths()`,
-   `sn_list_pixi_environments()`, `sn_pixi_config_path()`,
+12. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_get_pixi_paths()`,
+   `sn_list_pixi_environments()`, `sn_get_pixi_config_path()`,
    `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`, and the
    family-specific `sn_call_*()` helpers when a Python backend must be checked,
    prepared, or invoked directly.
@@ -321,7 +321,7 @@ This skill is the main entry point for package usage.
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
 - `sn_annotate_de_features(object, de_name = "cluster_markers")`
-- `sn_enrich(x = object, source_de_name = "cluster_markers")`
+- `sn_run_enrichment(x = object, source_de_name = "cluster_markers")`
 - `sn_score_programs(object, signatures, method = "ucell")`
 - `sn_test_programs(object, score_name, condition_by, sample_by)`
 - `sn_plot_program_activity()` / `sn_plot_program_heatmap()`
@@ -337,7 +337,7 @@ This skill is the main entry point for package usage.
 - `sn_plot_dim()`
 - `sn_plot_feature()`
 - `sn_plot_heatmap()`
-- `sn_deconvolve_bulk(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
+- `sn_run_bulk_deconvolution(..., method = "cibersortx", cibersortx_dry_run = TRUE)`
 - `sn_store_deconvolution()` / `sn_get_deconvolution_result()`
 - `sn_check_pixi()` / `sn_call_scvi()`
 - `sn_read()` / `sn_write()`

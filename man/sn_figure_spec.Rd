@@ -2,33 +2,17 @@
 % Please edit documentation in R/figure_spec.R
 \name{sn_figure_spec}
 \alias{sn_figure_spec}
-\title{Inspect or calculate a Shennong figure specification}
+\title{Deprecated alias of \code{sn_get_figure_spec()}}
 \usage{
-sn_figure_spec(
-  plot = NULL,
-  plot_type = NULL,
-  data_summary = NULL,
-  profile = NULL,
-  ...
-)
+sn_figure_spec(...)
 }
 \arguments{
-\item{plot}{A ggplot, patchwork, ComplexHeatmap, or \code{NULL} when calculating
-from synthetic metadata only.}
-
-\item{plot_type}{Optional plot type used by the sizing rules.}
-
-\item{data_summary}{Optional named list describing points, groups, panels,
-features, labels, network size, or spatial aspect ratio.}
-
-\item{profile}{Generic output profile.}
-
-\item{...}{Explicit recommendation overrides such as \code{width_mm} or
-\code{rasterize}.}
+\item{...}{Named arguments passed on to \code{\link[=sn_get_figure_spec]{sn_get_figure_spec()}}.}
 }
 \value{
-A figure specification list.
+Result of \code{sn_get_figure_spec(...)}.
 }
 \description{
-Inspect or calculate a Shennong figure specification
+\code{sn_figure_spec()} is a deprecated compatibility alias. Use \code{\link[=sn_get_figure_spec]{sn_get_figure_spec()}} directly;
+the alias will be removed in a future release.
 }

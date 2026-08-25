@@ -21,7 +21,7 @@ real_root <- if (length(existing_roots)) existing_roots[[1]] else root_candidate
 melanoma_path <- file.path(real_root, "cancer", "melanoma_gse72056.qs2")
 core_ready <- run_vignette && file.exists(melanoma_path)
 infercnvpy_paths <- if (requireNamespace("Shennong", quietly = TRUE)) {
-  tryCatch(Shennong::sn_pixi_paths("infercnvpy"), error = function(error) NULL)
+  tryCatch(Shennong::sn_get_pixi_paths("infercnvpy"), error = function(error) NULL)
 } else {
   NULL
 }
@@ -93,7 +93,7 @@ descriptive stratum. No condition p-value is computed because primary versus
 metastatic is not a sample-level field in GSE72056.
 
 ```{r metabolism, eval=core_ready}
-metabolic_signatures <- sn_metabolic_signatures("human")
+metabolic_signatures <- sn_get_metabolic_signatures("human")
 metabolic_signatures <- metabolic_signatures[c(
   "glycolysis", "tca_cycle", "oxidative_phosphorylation"
 )]

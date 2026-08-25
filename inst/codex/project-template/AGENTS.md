@@ -69,7 +69,7 @@ analysis project, not as an ad hoc scratch directory.
 - Package usage skills can be installed separately from Shennong with
   `sn_install_codex_skill(type = "package_skills")` when API-level guidance is
   needed.
-- An MCP-capable agent can use `sn_mcp_server_config()` to discover installed
+- An MCP-capable agent can use `sn_get_mcp_server_config()` to discover installed
   methods, exact function help, and workflow guides through Shennong's
   read-only stdio server. Keep analysis execution in explicit project scripts.
 - Use `sn_enable_usage_tracking()` only for an explicitly requested local

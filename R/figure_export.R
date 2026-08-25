@@ -39,7 +39,7 @@
 #' @return A structured validation report.
 #' @export
 sn_validate_figure <- function(plot, profile = NULL, error = FALSE) {
-  spec <- sn_figure_spec(plot, profile = profile)
+  spec <- sn_get_figure_spec(plot, profile = profile)
   summary <- spec$data_summary
   recommended <- spec$recommended
   profile_values <- spec$profile_values
@@ -99,7 +99,7 @@ sn_save_figure <- function(plot, filename, profile = NULL, width = "auto", heigh
   units <- match.arg(units)
   extension <- tolower(tools::file_ext(filename))
   device <- .sn_figure_device(extension)
-  spec <- sn_figure_spec(plot, profile = profile)
+  spec <- sn_get_figure_spec(plot, profile = profile)
   width_mm <- .sn_figure_dimension(width, spec$recommended$width_mm, units)
   height_mm <- .sn_figure_dimension(height, spec$recommended$height_mm, units)
   dpi <- if (identical(dpi, "auto") || is_null(dpi)) spec$recommended$raster_dpi else as.numeric(dpi)
@@ -176,7 +176,7 @@ sn_export_figure_bundle <- function(plot, path, formats = c("pdf", "png"),
       files <- c(files, filename)
     }
   }
-  spec <- sn_figure_spec(plot, profile = profile)
+  spec <- sn_get_figure_spec(plot, profile = profile)
   if (isTRUE(include_spec)) {
     filename <- file.path(path, paste0(base, "_spec.yml"))
     jsonlite::write_json(unclass(spec), filename, pretty = TRUE, auto_unbox = TRUE, null = "null")

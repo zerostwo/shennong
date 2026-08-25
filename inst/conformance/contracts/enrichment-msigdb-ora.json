@@ -3,7 +3,7 @@
   "id": "enrichment::msigdb_ora",
   "status": "pilot",
   "shennong": {
-    "function": "sn_enrich",
+    "function": "sn_run_enrichment",
     "selector": {
       "analysis": "ora",
       "database": "H"

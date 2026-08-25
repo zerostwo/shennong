@@ -17,7 +17,7 @@
 }
 
 .conformance_popv_env_installed <- function() {
-  paths <- Shennong::sn_pixi_paths(environment = "popv", runtime_dir = "/home/duansq/.sn_pixi_runtime")
+  paths <- Shennong::sn_get_pixi_paths(environment = "popv", runtime_dir = "/home/duansq/.sn_pixi_runtime")
   env_bin <- file.path(paths$workspace_env_dir, "default", "bin", "python")
   file.exists(env_bin)
 }

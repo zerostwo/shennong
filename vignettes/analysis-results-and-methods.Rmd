@@ -44,7 +44,7 @@ method_table <- sn_list_methods("trajectory")[, c(
 )]
 knitr::kable(method_table)
 
-sn_method_status("slingshot", task = "trajectory")
+sn_get_method_status("slingshot", task = "trajectory")
 ```
 
 Use `implemented` to distinguish a shipped Shennong adapter from a roadmap
@@ -247,7 +247,7 @@ sn_install_codex_skill(
   type = "package_skills"
 )
 
-sn_mcp_server_config()
+sn_get_mcp_server_config()
 ```
 
 The MCP server exposes `list_methods`, `method_status`, `function_help`,

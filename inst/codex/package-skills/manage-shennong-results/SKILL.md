@@ -37,7 +37,7 @@ package API.
 ## Rules
 
 - use package result stores rather than unstructured `misc` access in user code
-- inspect backends with `sn_list_methods()` and `sn_method_status()` before
+- inspect backends with `sn_list_methods()` and `sn_get_method_status()` before
   selecting an optional method; discovery must not install dependencies
 - validate new result payloads with `sn_validate_result()`
 - require `schema_version = "1.0.0"` and a canonical data frame in
@@ -106,9 +106,9 @@ package API.
 
 - `sn_list_results(object)`
 - `sn_list_methods("trajectory")`
-- `sn_method_status("slingshot", task = "trajectory")`
-- `sn_method_status("scvelo", task = "velocity")`
-- `sn_method_status("cellrank", task = "fate")`
+- `sn_get_method_status("slingshot", task = "trajectory")`
+- `sn_get_method_status("scvelo", task = "velocity")`
+- `sn_get_method_status("cellrank", task = "fate")`
 - `sn_validate_result(result, error = FALSE)`
 - `sn_audit_results(object)`
 - `object <- sn_upgrade_results(object)`

@@ -512,7 +512,7 @@
   }
   category <- vapply(included, function(workflow) {
     if (grepl("^[.]?(import|export)[.]rio_", workflow)) return("io")
-    if (identical(workflow, "sn_enrich")) return("enrichment")
+    if (identical(workflow, "sn_run_enrichment")) return("enrichment")
     if (grepl("^sn_plot_", workflow)) return("visualization")
     if (grepl("^sn_(get|list|check|method)_", workflow)) return("query")
     if (grepl("^sn_(read|write|export|convert)_", workflow)) return("io")

@@ -79,8 +79,8 @@ parameters. With multiple methods, provide a list keyed by method, for
 example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 an optional \code{.default} entry is merged into every method. For
 a complete executable template of every accepted field and its default,
-call \code{sn_integration_control_template()} or
-\code{sn_integration_control_template("scvi")}. For
+call \code{sn_get_integration_control_template()} or
+\code{sn_get_integration_control_template("scvi")}. For
 \code{"coralysis"}, use \code{icp_args} for
 \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
@@ -115,8 +115,8 @@ Shennong uses a constant internal backend batch key for single-sample
 registration. When Seurat accepts arbitrary assay layers, the corrected
 matrix is stored as \code{corrected_layer}; otherwise it is kept under
 \code{object@misc$mmochi$corrected_protein}.
-Use \code{sn_pixi_paths()} to inspect the
-generated directory layout, \code{sn_pixi_config_path()} to inspect the
+Use \code{sn_get_pixi_paths()} to inspect the
+generated directory layout, \code{sn_get_pixi_config_path()} to inspect the
 bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.}
 

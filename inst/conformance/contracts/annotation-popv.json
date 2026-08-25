@@ -239,7 +239,7 @@
     },
     {
       "wrapper": "assay",
-      "role": "parameter_map",
+      "role": "input_adapter",
       "upstream": "query_adata.X source layer",
       "scenarios": [
         "default"
@@ -258,7 +258,7 @@
     },
     {
       "wrapper": "layer",
-      "role": "parameter_map",
+      "role": "input_adapter",
       "upstream": "raw counts requirement of Process_Query",
       "scenarios": [
         "counts"

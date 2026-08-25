@@ -2,17 +2,17 @@
 % Please edit documentation in R/mcp_server.R
 \name{sn_mcp_server_config}
 \alias{sn_mcp_server_config}
-\title{Return a stdio configuration for the Shennong MCP server}
+\title{Deprecated alias of \code{sn_get_mcp_server_config()}}
 \usage{
-sn_mcp_server_config()
+sn_mcp_server_config(...)
+}
+\arguments{
+\item{...}{Named arguments passed on to \code{\link[=sn_get_mcp_server_config]{sn_get_mcp_server_config()}}.}
 }
 \value{
-A list containing the command and arguments needed to launch the
-bundled read-only MCP server.
+Result of \code{sn_get_mcp_server_config(...)}.
 }
 \description{
-Return a stdio configuration for the Shennong MCP server
-}
-\examples{
-sn_mcp_server_config()
+\code{sn_mcp_server_config()} is a deprecated compatibility alias. Use \code{\link[=sn_get_mcp_server_config]{sn_get_mcp_server_config()}} directly;
+the alias will be removed in a future release.
 }

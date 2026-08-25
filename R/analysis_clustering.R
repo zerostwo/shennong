@@ -199,10 +199,10 @@
 #' @return A named list keyed by integration method, or one named control list
 #'   when a single `method` is requested.
 #' @examples
-#' sn_integration_control_template("harmony")
-#' sn_integration_control_template(c("scvi", "scanvi"))
+#' sn_get_integration_control_template("harmony")
+#' sn_get_integration_control_template(c("scvi", "scanvi"))
 #' @export
-sn_integration_control_template <- function(method = NULL) {
+sn_get_integration_control_template <- function(method = NULL) {
   templates <- .sn_integration_control_templates()
   if (is.null(method)) {
     return(templates)
@@ -895,7 +895,7 @@ sn_integration_control_template <- function(method = NULL) {
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
-  pixi_paths <- sn_pixi_paths(environment = "mmochi", runtime_dir = runtime_dir)
+  pixi_paths <- sn_get_pixi_paths(environment = "mmochi", runtime_dir = runtime_dir)
   pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
   mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
@@ -1622,7 +1622,7 @@ sn_integration_control_template <- function(method = NULL) {
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
-  pixi_paths <- sn_pixi_paths(environment = method, runtime_dir = runtime_dir)
+  pixi_paths <- sn_get_pixi_paths(environment = method, runtime_dir = runtime_dir)
   pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
   accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
   pixi_environment <- integration_control$environment %||% accelerator$environment
@@ -1756,7 +1756,7 @@ sn_integration_control_template <- function(method = NULL) {
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
-  pixi_paths <- sn_pixi_paths(environment = "scpoli", runtime_dir = runtime_dir)
+  pixi_paths <- sn_get_pixi_paths(environment = "scpoli", runtime_dir = runtime_dir)
   pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
   accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
   pixi_environment <- integration_control$environment %||% accelerator$environment
@@ -1879,7 +1879,7 @@ sn_integration_control_template <- function(method = NULL) {
   dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
   embedding <- Seurat::Embeddings(object = object, reduction = reduction)[, dims, drop = FALSE]
   runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
-  pixi_paths <- sn_pixi_paths(environment = "bbknn", runtime_dir = runtime_dir)
+  pixi_paths <- sn_get_pixi_paths(environment = "bbknn", runtime_dir = runtime_dir)
   pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
   mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
@@ -3160,8 +3160,8 @@ sn_detect_rare_cells <- function(object,
 #'   example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 #'   an optional \code{.default} entry is merged into every method. For
 #'   a complete executable template of every accepted field and its default,
-#'   call \code{sn_integration_control_template()} or
-#'   \code{sn_integration_control_template("scvi")}. For
+#'   call \code{sn_get_integration_control_template()} or
+#'   \code{sn_get_integration_control_template("scvi")}. For
 #'   \code{"coralysis"}, use \code{icp_args} for
 #'   \code{RunParallelDivisiveICP()} arguments, \code{pca_args} for
 #'   \code{RunPCA()} arguments, and \code{store_sce = FALSE} only when the
@@ -3196,8 +3196,8 @@ sn_detect_rare_cells <- function(object,
 #'   registration. When Seurat accepts arbitrary assay layers, the corrected
 #'   matrix is stored as \code{corrected_layer}; otherwise it is kept under
 #'   \code{object@misc$mmochi$corrected_protein}.
-#'   Use \code{sn_pixi_paths()} to inspect the
-#'   generated directory layout, \code{sn_pixi_config_path()} to inspect the
+#'   Use \code{sn_get_pixi_paths()} to inspect the
+#'   generated directory layout, \code{sn_get_pixi_config_path()} to inspect the
 #'   bundled \code{inst/pixi/} config, \code{sn_ensure_pixi()} to preinstall
 #'   pixi, and \code{sn_configure_pixi_mirror()} to set Shennong-level mirrors.
 #' @param nfeatures Number of variable features to select. Multiple values
@@ -5823,4 +5823,19 @@ sn_run_scpoli <- function(object,
     config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )
+}
+
+#' Deprecated alias of `sn_get_integration_control_template()`
+#'
+#' `sn_integration_control_template()` is a deprecated compatibility alias. Use [sn_get_integration_control_template()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_integration_control_template()].
+#'
+#' @return Result of `sn_get_integration_control_template(...)`.
+#'
+#' @export
+sn_integration_control_template <- function(...) {
+  .Deprecated("sn_get_integration_control_template", package = "Shennong")
+  sn_get_integration_control_template(...)
 }

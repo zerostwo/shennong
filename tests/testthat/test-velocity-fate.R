@@ -144,9 +144,9 @@ test_that("velocity and fate plots render", {
 
 test_that("trajectory pixi environment and dynamics methods are registered", {
   expect_true("trajectory" %in% sn_list_pixi_environments())
-  expect_true(sn_method_status("scvelo", "velocity")$implemented)
-  expect_true(sn_method_status("regvelo", "velocity")$implemented)
-  expect_true(sn_method_status("cellrank", "fate")$implemented)
-  manifest <- readLines(sn_pixi_config_path("trajectory"), warn = FALSE)
+  expect_true(sn_get_method_status("scvelo", "velocity")$implemented)
+  expect_true(sn_get_method_status("regvelo", "velocity")$implemented)
+  expect_true(sn_get_method_status("cellrank", "fate")$implemented)
+  manifest <- readLines(sn_get_pixi_config_path("trajectory"), warn = FALSE)
   expect_true(any(grepl("regvelo", manifest, fixed = TRUE)))
 })

@@ -36,6 +36,25 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- Renamed the remaining noun-first getters and off-family actions behind
+  `.Deprecated()` forwarding shims (AUDIT-13): `sn_enrich()` →
+  `sn_run_enrichment()`, `sn_deconvolve_bulk()` → `sn_run_bulk_deconvolution()`,
+  `sn_metabolic_signatures()` → `sn_get_metabolic_signatures()`,
+  `sn_method_status()` → `sn_get_method_status()`, `sn_figure_spec()` →
+  `sn_get_figure_spec()`, `sn_integration_control_template()` →
+  `sn_get_integration_control_template()`, `sn_pixi_paths()` →
+  `sn_get_pixi_paths()`, `sn_pixi_config_path()` → `sn_get_pixi_config_path()`,
+  `sn_mcp_server_config()` → `sn_get_mcp_server_config()`, and
+  `sn_mcp_server()` → `sn_run_mcp_server()`. The old names keep working with a
+  deprecation warning. Vignettes, pkgdown references, and the shipped Codex
+  skills now teach only the new names.
+- Demoted `sn_simulate_scdesign3()` to a deprecated shim;
+  `sn_simulate(method = "scdesign3", ...)` is the supported entry point.
+- Backend-conformance contracts now accept `unsupported`, `fallback`, and
+  `waived` parameter roles, and `parameter_map` is reserved for the dots
+  formal; the stricter gate reclassified three real catch-all parameter
+  sweeps in the popv and bulk-DE contracts (AUDIT-14).
+
 - Reorganized modules without behavior change (AUDIT-08/09): the Python-backed
   runners moved from `package_tools.R` to their owning domains
   (`sn_run_scarches`/`sn_run_scpoli` to clustering, `sn_run_infercnvpy` to CNV,

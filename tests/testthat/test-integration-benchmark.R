@@ -241,6 +241,6 @@ test_that("sn_compare_integrations validates its comparison contract", {
 
 test_that("scib-metrics pixi environment is discoverable and GPU-aware", {
   expect_true("scib-metrics" %in% sn_list_pixi_environments())
-  expect_match(sn_pixi_config_path("scib_metrics"), "scib-metrics/pixi.toml$")
+  expect_match(sn_get_pixi_config_path("scib_metrics"), "scib-metrics/pixi.toml$")
   expect_true(Shennong:::.sn_pixi_gpu_aware_environment("scib-metrics"))
 })

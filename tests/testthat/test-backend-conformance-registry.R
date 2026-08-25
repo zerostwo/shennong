@@ -12,7 +12,7 @@ test_that("backend conformance contracts are complete and machine-readable", {
   allowed_roles <- c(
     "backend_selector", "input_adapter", "input_transform", "not_applicable",
     "parameter_map", "pass_through", "reproducibility", "wrapper_control",
-    "wrapper_only"
+    "wrapper_only", "unsupported", "fallback", "waived"
   )
   parameter_inventory_fields <- c("wrapper", "role", "upstream", "scenarios")
   admitted_parameter_fields <- c(
@@ -80,6 +80,22 @@ test_that("backend conformance contracts are complete and machine-readable", {
     expect_identical(anyDuplicated(mapped), 0L, info = contract$id)
     expect_setequal(mapped, names(formals(wrapper)))
     expect_true(all(roles %in% allowed_roles), info = contract$id)
+    for (index in seq_along(contract$parameters)) {
+      parameter <- contract$parameters[[index]]
+      if (identical(parameter$role, "parameter_map")) {
+        expect_identical(
+          parameter$wrapper,
+          "...",
+          info = paste(contract$id, "parameter_map is reserved for the dots formal")
+        )
+      }
+      if (identical(parameter$role, "unsupported")) {
+        expect_false(
+          identical(parameter$supported, TRUE),
+          info = paste(contract$id, "unsupported parameters cannot claim support")
+        )
+      }
+    }
 
     for (fixture in contract$fixtures) {
       expect_setequal(

@@ -221,7 +221,7 @@ pbmc <- sn_find_de(
 
 sn_plot_dot(pbmc, features = "top_markers", de_name = "cluster_markers")
 
-pbmc <- sn_enrich(
+pbmc <- sn_run_enrichment(
   pbmc,
   source_de_name = "cluster_markers",
   gene_clusters = gene ~ cluster,
@@ -307,14 +307,14 @@ sn_export_figure_bundle(
 | Cluster or integrate modalities | `sn_run_cluster()`, `sn_run_multimodal()` | `sn_plot_dim()`, `sn_plot_resolution_sweep()` | [Clustering](clustering.html) |
 | Respect assay layers | layer-aware arguments across preprocessing, DE, and scoring | embedding and layer audit | [Layered workflows](layered-workflows.html) |
 | Validate integration | `sn_assess_integration()`, `sn_compare_integrations()` | `sn_plot_integration()` | [Metrics and diagnostics](metrics-diagnostics.html) |
-| Annotate and test features | `sn_run_annotation()`, `sn_find_de()`, `sn_enrich()` | marker dot plots, ORA dots, GSEA curves | [Annotation and pathways](annotation-pathways.html) |
+| Annotate and test features | `sn_run_annotation()`, `sn_find_de()`, `sn_run_enrichment()` | marker dot plots, ORA dots, GSEA curves | [Annotation and pathways](annotation-pathways.html) |
 | Score or discover programs | `sn_score_programs()`, `sn_discover_programs()`, `sn_run_grn()` | activity heatmaps and regulon networks | [Programs and GRNs](program-discovery-grn.html) |
 | Compare sample composition | `sn_calculate_composition()`, `sn_test_abundance()` | composition bars and abundance effects | [Composition](composition-analysis.html), [abundance](abundance-priority.html) |
 | Model communication | `sn_run_cell_communication()` | bubble, heatmap, network, ligand-target plot | [Communication](communication-consensus.html) |
 | Follow dynamic states | `sn_run_trajectory()`, `sn_run_velocity()`, `sn_run_fate()` | topology, trends, velocity, fate | [Trajectory](trajectory-dynamics.html), [velocity](velocity-fate.html) |
 | Explain tumour states | `sn_run_cnv()`, `sn_run_metabolism()` | CNV heatmap and pathway activity | [CNV and metabolism](cnv-metabolism.html) |
 | Keep tissue coordinates | `sn_run_spatial()` and spatial sub-workflows | features, domains, neighborhoods, mapping | [Spatial workflows](spatial-workflows.html) |
-| Translate to cohorts | `sn_run_bulk()`, `sn_find_de()`, `sn_run_survival()`, `sn_deconvolve_bulk()` | QC, PCA, DE, pathways, survival, fractions | [Bulk](bulk-transcriptomics.html), [deconvolution](bulk-deconvolution.html) |
+| Translate to cohorts | `sn_run_bulk()`, `sn_find_de()`, `sn_run_survival()`, `sn_run_bulk_deconvolution()` | QC, PCA, DE, pathways, survival, fractions | [Bulk](bulk-transcriptomics.html), [deconvolution](bulk-deconvolution.html) |
 | Build publication evidence | result retrieval, figure specification, interpretation helpers | exported figure and source-data bundle | [Visualization](visualization.html), [publication](publication-figures.html), [interpretation](interpretation-workflows.html) |
 | Profile the workflow | usage tracking and acceleration controls | timing summaries | [Runtime observability](runtime-observability.html) |
 

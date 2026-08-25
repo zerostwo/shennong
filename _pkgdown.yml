@@ -121,6 +121,7 @@ reference:
   - title: Analysis Methods and Result Contract
     contents:
       - sn_list_methods
+      - sn_get_method_status
       - sn_method_status
       - sn_store_result
       - sn_get_result
@@ -174,6 +175,7 @@ reference:
   - title: Clustering and Integration
     contents:
       - sn_run_cluster
+      - sn_get_integration_control_template
       - sn_integration_control_template
       - sn_run_multimodal
       - sn_run_scvi
@@ -184,6 +186,7 @@ reference:
       - sn_prepare_label_transfer_reference
       - sn_simulate
       - sn_simulate_scdesign3
+      - sn_get_integration_control_template
       - sn_sweep_cluster_resolution
   - title: Python and Pixi Backends
     contents:
@@ -236,6 +239,7 @@ reference:
       - sn_run_celltypist
       - sn_find_de
       - sn_annotate_de_features
+      - sn_run_enrichment
       - sn_enrich
       - sn_list_signatures
       - sn_get_signatures
@@ -294,7 +298,7 @@ reference:
       - sn_run_milo
       - sn_store_milo
       - sn_get_milo_result
-      - sn_deconvolve_bulk
+      - sn_run_bulk_deconvolution
       - sn_set_cibersortx_credentials
       - sn_store_deconvolution
       - sn_get_deconvolution_result
@@ -303,6 +307,7 @@ reference:
       - sn_run_bulk
       - sn_assess_bulk_qc
       - sn_find_bulk_de
+      - sn_deconvolve_bulk
       - sn_score_bulk_pathways
       - sn_run_wgcna
       - sn_run_survival
@@ -328,6 +333,7 @@ reference:
     contents:
       - sn_run_cnv
       - sn_plot_cnv
+      - sn_get_metabolic_signatures
       - sn_metabolic_signatures
       - sn_run_metabolism
       - sn_plot_metabolism
@@ -354,6 +360,7 @@ reference:
   - title: Visualization
     contents:
       - sn_list_figure_profiles
+      - sn_get_figure_spec
       - sn_figure_spec
       - sn_recommend_figure_size
       - sn_apply_figure_profile
@@ -391,13 +398,17 @@ reference:
       - sn_install_shennong
       - sn_check_file
       - sn_get_codex_skill_path
+      - sn_get_mcp_server_config
       - sn_mcp_server_config
+      - sn_run_mcp_server
       - sn_mcp_server
       - sn_list_dependencies
       - sn_install_dependencies
       - sn_check_pixi
+      - sn_get_pixi_paths
       - sn_pixi_paths
       - sn_list_pixi_environments
+      - sn_get_pixi_config_path
       - sn_pixi_config_path
       - sn_prepare_pixi_environment
       - sn_detect_accelerator

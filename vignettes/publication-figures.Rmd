@@ -80,7 +80,7 @@ plot can also be profiled after construction.
 
 ```{r apply}
 plot <- sn_apply_figure_profile(plot, "double_column")
-sn_figure_spec(plot)$recommended
+sn_get_figure_spec(plot)$recommended
 sn_validate_figure(plot)
 plot
 ```

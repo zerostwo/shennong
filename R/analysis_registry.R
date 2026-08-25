@@ -185,10 +185,10 @@ sn_list_methods <- function(task = NULL, available = NULL) {
 #'   installation action, requirements, outputs, and citation.
 #'
 #' @examples
-#' sn_method_status("slingshot", task = "trajectory")
+#' sn_get_method_status("slingshot", task = "trajectory")
 #'
 #' @export
-sn_method_status <- function(method, task = NULL) {
+sn_get_method_status <- function(method, task = NULL) {
   if (!is.character(method) || length(method) != 1L || !nzchar(method)) {
     stop("`method` must be a non-empty character scalar.", call. = FALSE)
   }
@@ -228,4 +228,19 @@ sn_method_status <- function(method, task = NULL) {
     cpu_gpu = row$cpu_gpu[[1]],
     citation = row$citation[[1]]
   )
+}
+
+#' Deprecated alias of `sn_get_method_status()`
+#'
+#' `sn_method_status()` is a deprecated compatibility alias. Use [sn_get_method_status()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_method_status()].
+#'
+#' @return Result of `sn_get_method_status(...)`.
+#'
+#' @export
+sn_method_status <- function(...) {
+  .Deprecated("sn_get_method_status", package = "Shennong")
+  sn_get_method_status(...)
 }

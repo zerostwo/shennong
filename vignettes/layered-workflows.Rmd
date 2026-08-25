@@ -214,8 +214,9 @@ sim_pbmc <- sn_simulate(
 sim_pbmc
 sim_pbmc@misc$scdesign3
 
-sim_counts <- sn_simulate_scdesign3(
+sim_counts <- sn_simulate(
   object = pbmc_layered,
+  method = "scdesign3",
   celltype = "seurat_clusters",
   ncell = 50,
   assay = "RNA",

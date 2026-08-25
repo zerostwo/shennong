@@ -11,8 +11,8 @@ parameters, and stored results remain reviewable.
 
 ## Procedure
 
-1. Configure a stdio MCP server from `Shennong::sn_mcp_server_config()` or run
-   `Rscript -e 'Shennong::sn_mcp_server()'`.
+1. Configure a stdio MCP server from `Shennong::sn_get_mcp_server_config()` or run
+   `Rscript -e 'Shennong::sn_run_mcp_server()'`.
 2. Call `package_info` to confirm the installed version and Agent Skill path.
 3. Call `list_methods` with an optional task before selecting a backend.
 4. Call `method_status` to verify runtime availability, installation action,

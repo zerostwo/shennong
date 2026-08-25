@@ -19,7 +19,7 @@
 #'   symbols support common human and mouse feature conventions.
 #' @return A named list of pathway gene vectors.
 #' @export
-sn_metabolic_signatures <- function(species = c("human", "mouse")) {
+sn_get_metabolic_signatures <- function(species = c("human", "mouse")) {
   species <- match.arg(species)
   .sn_core_metabolic_signatures()
 }
@@ -252,7 +252,7 @@ sn_run_metabolism <- function(object,
   coverage <- tibble::tibble()
   expression_info <- list(assay = assay %||% SeuratObject::DefaultAssay(object), layer = layer)
   if (identical(method, "geneset")) {
-    signatures <- signatures %||% sn_metabolic_signatures(if (tolower(species) %in% c("mouse", "mm10", "mus_musculus")) "mouse" else "human")
+    signatures <- signatures %||% sn_get_metabolic_signatures(if (tolower(species) %in% c("mouse", "mm10", "mus_musculus")) "mouse" else "human")
     scored <- .sn_metabolism_score_matrix(
       object, signatures, scoring_method, assay, layer, min_genes, backend_control
     )
@@ -309,4 +309,19 @@ sn_run_metabolism <- function(object,
   out <- lapply(sets, GSEABase::geneIds)
   names(out) <- vapply(sets, GSEABase::setName, character(1))
   out[lengths(out) > 0L]
+}
+
+#' Deprecated alias of `sn_get_metabolic_signatures()`
+#'
+#' `sn_metabolic_signatures()` is a deprecated compatibility alias. Use [sn_get_metabolic_signatures()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_metabolic_signatures()].
+#'
+#' @return Result of `sn_get_metabolic_signatures(...)`.
+#'
+#' @export
+sn_metabolic_signatures <- function(...) {
+  .Deprecated("sn_get_metabolic_signatures", package = "Shennong")
+  sn_get_metabolic_signatures(...)
 }

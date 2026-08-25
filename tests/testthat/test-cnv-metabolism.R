@@ -162,7 +162,7 @@ test_that("curated metabolism workflow preserves samples as inferential units", 
 })
 
 test_that("curated metabolic signatures expose core pathways", {
-  signatures <- sn_metabolic_signatures("human")
+  signatures <- sn_get_metabolic_signatures("human")
   expect_true(all(c("glycolysis", "tca_cycle", "oxidative_phosphorylation") %in% names(signatures)))
   expect_true(all(lengths(signatures) >= 7L))
 })
@@ -217,8 +217,8 @@ test_that("metabolism plots render activity, sample, heatmap, and differential e
 test_that("CNV and metabolism backends are discoverable", {
   expect_true(all(c("infercnvpy", "copykat") %in% sn_list_methods("cnv")$name))
   expect_true(all(c("geneset", "scmetabolism", "scfea", "compass") %in% sn_list_methods("metabolism")$name))
-  expect_true(sn_method_status("infercnvpy", task = "cnv")$implemented)
-  expect_true(sn_method_status("geneset", task = "metabolism")$implemented)
+  expect_true(sn_get_method_status("infercnvpy", task = "cnv")$implemented)
+  expect_true(sn_get_method_status("geneset", task = "metabolism")$implemented)
 })
 
 test_that("scmetabolism backend scores v5 objects through bundled gene sets", {

@@ -4,7 +4,12 @@
   "status": "pilot",
   "shennong": {
     "function": "sn_find_bulk_de",
-    "selector": {"method": ["edger", "auto -> edger"]},
+    "selector": {
+      "method": [
+        "edger",
+        "auto -> edger"
+      ]
+    },
     "version": "0.3.0.9000",
     "registry_key": "bulk_de::edger"
   },
@@ -22,7 +27,9 @@
       "edgeR::topTags"
     ],
     "repository": "https://git.bioconductor.org/packages/edgeR",
-    "versions": ["edgeR 4.10.3"],
+    "versions": [
+      "edgeR 4.10.3"
+    ],
     "install_source": "Bioconductor"
   },
   "oracle": {
@@ -31,10 +38,18 @@
     "harness": "tests/testthat/test-backend-conformance-pilots.R"
   },
   "inputs": {
-    "classes": ["matrix"],
-    "modalities": ["bulk RNA counts"],
-    "assays_layers": ["not applicable to matrix input"],
-    "storage_backends": ["base dense integer-valued matrix"],
+    "classes": [
+      "matrix"
+    ],
+    "modalities": [
+      "bulk RNA counts"
+    ],
+    "assays_layers": [
+      "not applicable to matrix input"
+    ],
+    "storage_backends": [
+      "base dense integer-valued matrix"
+    ],
     "requirements": [
       "unique named features and samples",
       "sample-aligned metadata",
@@ -43,14 +58,74 @@
     ]
   },
   "parameters": [
-    {"wrapper": "object", "role": "input_transform", "upstream": "round(object) passed to edgeR::DGEList(counts = ...)", "scenarios": ["integer matrix"]},
-    {"wrapper": "metadata", "role": "input_adapter", "upstream": "stats::model.matrix design source", "scenarios": ["condition", "batch plus condition"]},
-    {"wrapper": "design", "role": "input_transform", "upstream": "design matrix passed to filterByExpr, estimateDisp, and glmQLFit", "scenarios": ["~ condition", "~ batch + condition"]},
-    {"wrapper": "contrast", "role": "input_transform", "upstream": "numeric contrast passed to glmQLFTest", "scenarios": ["treated minus control"]},
-    {"wrapper": "method", "role": "backend_selector", "upstream": "selects the edgeR pipeline", "scenarios": ["edger", "auto"]},
-    {"wrapper": "assay", "role": "input_adapter", "upstream": "not used for matrix input", "scenarios": ["NULL"]},
-    {"wrapper": "store_name", "role": "wrapper_only", "upstream": "Shennong result name", "scenarios": ["default"]},
-    {"wrapper": "backend_control", "role": "parameter_map", "upstream": "robust passed to estimateDisp and glmQLFit", "scenarios": ["robust TRUE", "robust FALSE"]}
+    {
+      "wrapper": "object",
+      "role": "input_transform",
+      "upstream": "round(object) passed to edgeR::DGEList(counts = ...)",
+      "scenarios": [
+        "integer matrix"
+      ]
+    },
+    {
+      "wrapper": "metadata",
+      "role": "input_adapter",
+      "upstream": "stats::model.matrix design source",
+      "scenarios": [
+        "condition",
+        "batch plus condition"
+      ]
+    },
+    {
+      "wrapper": "design",
+      "role": "input_transform",
+      "upstream": "design matrix passed to filterByExpr, estimateDisp, and glmQLFit",
+      "scenarios": [
+        "~ condition",
+        "~ batch + condition"
+      ]
+    },
+    {
+      "wrapper": "contrast",
+      "role": "input_transform",
+      "upstream": "numeric contrast passed to glmQLFTest",
+      "scenarios": [
+        "treated minus control"
+      ]
+    },
+    {
+      "wrapper": "method",
+      "role": "backend_selector",
+      "upstream": "selects the edgeR pipeline",
+      "scenarios": [
+        "edger",
+        "auto"
+      ]
+    },
+    {
+      "wrapper": "assay",
+      "role": "input_adapter",
+      "upstream": "not used for matrix input",
+      "scenarios": [
+        "NULL"
+      ]
+    },
+    {
+      "wrapper": "store_name",
+      "role": "wrapper_only",
+      "upstream": "Shennong result name",
+      "scenarios": [
+        "default"
+      ]
+    },
+    {
+      "wrapper": "backend_control",
+      "role": "wrapper_control",
+      "upstream": "robust passed to estimateDisp and glmQLFit",
+      "scenarios": [
+        "robust TRUE",
+        "robust FALSE"
+      ]
+    }
   ],
   "outputs": {
     "scientific": [
@@ -61,12 +136,26 @@
       "FDR",
       "logCPM"
     ],
-    "wrapper": ["standardized column names", "method identity", "retained-feature count", "contrast vector"],
-    "waivers": ["The edgeR model object is retained by Shennong but is not byte-compared in this C1 pilot."]
+    "wrapper": [
+      "standardized column names",
+      "method identity",
+      "retained-feature count",
+      "contrast vector"
+    ],
+    "waivers": [
+      "The edgeR model object is retained by Shennong but is not byte-compared in this C1 pilot."
+    ]
   },
   "equivalence": {
     "class": "standardized_numeric",
-    "projection": ["gene", "log2_fold_change", "statistic", "p_value", "adjusted_p_value", "base_mean"],
+    "projection": [
+      "gene",
+      "log2_fold_change",
+      "statistic",
+      "p_value",
+      "adjusted_p_value",
+      "base_mean"
+    ],
     "absolute_tolerance": 1e-12,
     "relative_tolerance": 1e-10,
     "ordering": "align by gene after adjusted-p-value and p-value ordering",
@@ -78,7 +167,10 @@
     "threads": 1,
     "fresh_process": false,
     "acceleration": "not applicable to this backend",
-    "environment": {"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
   },
   "fixtures": [
     {
@@ -92,19 +184,31 @@
     }
   ],
   "conditions": {
-    "expected": ["none in the validated cases"],
+    "expected": [
+      "none in the validated cases"
+    ],
     "outside_envelope": "SummarizedExperiment/list adapters, invalid designs/contrasts, non-integer input, and other DE backends require separate cases or contracts."
   },
   "versions": {
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
-    "upstream": ["edgeR 4.10.3"],
-    "material_dependencies": ["limma", "statmod"]
+    "upstream": [
+      "edgeR 4.10.3"
+    ],
+    "material_dependencies": [
+      "limma",
+      "statmod"
+    ]
   },
   "ci": {
-    "required_tiers": ["C0-static", "C1-dispatch-contract"],
+    "required_tiers": [
+      "C0-static",
+      "C1-dispatch-contract"
+    ],
     "profile": "backend-conformance",
-    "platforms": ["ubuntu-latest"]
+    "platforms": [
+      "ubuntu-latest"
+    ]
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-pilots.R",

@@ -43,7 +43,7 @@ runs, promoted derived data, and exported results.
 - Open `{{rproj_file}}` in RStudio if you want a project-local IDE session.
 - Update project memory after meaningful work.
 - Use project skills in `skills/` for repeatable governance actions.
-- Use `Shennong::sn_mcp_server_config()` when an agent needs read-only discovery
+- Use `Shennong::sn_get_mcp_server_config()` when an agent needs read-only discovery
   of the installed package API; keep executable analysis in `scripts/`.
 - Store an opt-in `Shennong::sn_enable_usage_tracking()` SQLite file below the
   ignored `runs/` tree, never in tracked source or results directories. Enable

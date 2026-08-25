@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 250,
+  "function_count": 261,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -2371,234 +2371,38 @@
     {
       "function_name": "sn_deconvolve_bulk",
       "runtime_classified": true,
-      "formal_digest": "5afa2f6bf5457e55b11e6dc77957ee3f12ba9e6f8c71636237e420bb87d43e44",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "x",
-          "class": "required",
+          "name": "...",
+          "class": "dots",
           "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "bulk",
-          "class": "required",
-          "default": "<required>",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "method",
-          "class": "selector",
-          "default": "c(\"bayesprism\", \"cibersortx\")",
-          "selector_values": ["bayesprism", "cibersortx"],
-          "minimum_cases": 2
-        },
-        {
-          "name": "cell_type_by",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cell_state_by",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cell_type_labels",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cell_state_labels",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "assay",
-          "class": "character",
-          "default": "\"RNA\"",
-          "selector_values": null,
           "minimum_cases": 1
-        },
-        {
-          "name": "layer",
-          "class": "character",
-          "default": "\"counts\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "bulk_gene_axis",
-          "class": "selector",
-          "default": "c(\"auto\", \"rows\", \"columns\")",
-          "selector_values": ["auto", "rows", "columns"],
-          "minimum_cases": 3
-        },
-        {
-          "name": "key",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "outdir",
-          "class": "expression",
-          "default": "tempdir()",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "prefix",
-          "class": "character",
-          "default": "\"deconvolution\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "store_name",
-          "class": "character",
-          "default": "\"default\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "cibersortx_result",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cibersortx_email",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cibersortx_token",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cibersortx_container",
-          "class": "selector",
-          "default": "c(\"docker\", \"apptainer\")",
-          "selector_values": ["docker", "apptainer"],
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_container_path",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "cibersortx_dry_run",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_rmbatch_b_mode",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_rmbatch_s_mode",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_perm",
-          "class": "numeric",
-          "default": "0",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "cibersortx_qn",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_absolute",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "cibersortx_abs_method",
-          "class": "character",
-          "default": "\"sig.score\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "cibersortx_k_max",
-          "class": "numeric",
-          "default": "999",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "gibbs_control",
-          "class": "expression",
-          "default": "list()",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "opt_control",
-          "class": "expression",
-          "default": "list()",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "n_cores",
-          "class": "numeric",
-          "default": "1",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "update_gibbs",
-          "class": "boolean",
-          "default": "TRUE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "return_object",
-          "class": "boolean",
-          "default": "TRUE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
+        }
+      ]
+    },
+    {
+      "function_name": "sn_delete_artifact",
+      "runtime_classified": true,
+      "formal_digest": "a907d7343af50ccc2f115dc58207761877eadeddac44c3f68a1d0efe1767cacd",
+      "parameters": [
         {
           "name": "object",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "artifact_type",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "name",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -3049,154 +2853,14 @@
     {
       "function_name": "sn_enrich",
       "runtime_classified": true,
-      "formal_digest": "fd23a96ec0087c89f51ca1863305328c1a22605accc3b561da3ab946d231b0da",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "x",
-          "class": "required",
+          "name": "...",
+          "class": "dots",
           "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "gene_clusters",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "analysis",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "species",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "database",
-          "class": "character",
-          "default": "\"GOBP\"",
-          "selector_values": null,
           "minimum_cases": 1
-        },
-        {
-          "name": "collection",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "subcollection",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "pvalue_cutoff",
-          "class": "numeric",
-          "default": "0.05",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "p_adjust_method",
-          "class": "character",
-          "default": "\"BH\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "qvalue_cutoff",
-          "class": "numeric",
-          "default": "0.2",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "universe",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "min_gs_size",
-          "class": "numeric",
-          "default": "10",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "max_gs_size",
-          "class": "numeric",
-          "default": "500",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "gsea_exponent",
-          "class": "numeric",
-          "default": "1",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "duplicate_gene_method",
-          "class": "selector",
-          "default": "c(\"error\", \"max_abs\", \"max\", \"mean\")",
-          "selector_values": ["error", "max_abs", "max", "mean"],
-          "minimum_cases": 4
-        },
-        {
-          "name": "store_name",
-          "class": "character",
-          "default": "\"default\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "source_de_name",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "return_object",
-          "class": "expression",
-          "default": "inherits(x, \"Seurat\")",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "prefix",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "outdir",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "object",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
         }
       ]
     },
@@ -3441,36 +3105,8 @@
     {
       "function_name": "sn_figure_spec",
       "runtime_classified": true,
-      "formal_digest": "b4458572153e6b67bd3d0eed889f94377e46bad128f78fe0c4b81dcbf3758e34",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
-        {
-          "name": "plot",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "plot_type",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "data_summary",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "profile",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
         {
           "name": "...",
           "class": "dots",
@@ -4349,6 +3985,62 @@
       ]
     },
     {
+      "function_name": "sn_get_figure_spec",
+      "runtime_classified": true,
+      "formal_digest": "b4458572153e6b67bd3d0eed889f94377e46bad128f78fe0c4b81dcbf3758e34",
+      "parameters": [
+        {
+          "name": "plot",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "plot_type",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "data_summary",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "profile",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
+      "function_name": "sn_get_integration_control_template",
+      "runtime_classified": true,
+      "formal_digest": "707bb672c6108e54609a5f75a5627cd62641af535f4ad0000772cfc818b516ca",
+      "parameters": [
+        {
+          "name": "method",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_get_interpretation_result",
       "runtime_classified": true,
       "formal_digest": "01179e52926d18531d51c888cfb5701917ad5650d35fa698affc0b1fd2e0ed9d",
@@ -4366,6 +4058,47 @@
           "default": "\"default\"",
           "selector_values": null,
           "minimum_cases": 1
+        }
+      ]
+    },
+    {
+      "function_name": "sn_get_mcp_server_config",
+      "runtime_classified": true,
+      "formal_digest": "01234566814cd2a2b3cd7c19c907964b4a4f018a19ec224788d9edb74d7376df",
+      "parameters": []
+    },
+    {
+      "function_name": "sn_get_metabolic_signatures",
+      "runtime_classified": true,
+      "formal_digest": "15d2523708275ece9ec42756da2007e1fac9fb8fe96c2cc3dd65c817e1e15cc2",
+      "parameters": [
+        {
+          "name": "species",
+          "class": "selector",
+          "default": "c(\"human\", \"mouse\")",
+          "selector_values": ["human", "mouse"],
+          "minimum_cases": 2
+        }
+      ]
+    },
+    {
+      "function_name": "sn_get_method_status",
+      "runtime_classified": true,
+      "formal_digest": "3da647e8d9316d3b22c126786dcd8ee1c2cd88451b699909ab0fffe2658515fd",
+      "parameters": [
+        {
+          "name": "method",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "task",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -4443,6 +4176,41 @@
           "default": "1",
           "selector_values": null,
           "minimum_cases": 4
+        }
+      ]
+    },
+    {
+      "function_name": "sn_get_pixi_config_path",
+      "runtime_classified": true,
+      "formal_digest": "0b3e472b69f6c12f19f0c2eb57d4eae97dac3223c9256ae3bd7efa15dafd5a47",
+      "parameters": [
+        {
+          "name": "environment",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
+      "function_name": "sn_get_pixi_paths",
+      "runtime_classified": true,
+      "formal_digest": "c75464d965edc470a254b53fb948b9d3df3d15b85c1be76365cbeb59ff930c36",
+      "parameters": [
+        {
+          "name": "environment",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "runtime_dir",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -5058,14 +4826,14 @@
     {
       "function_name": "sn_integration_control_template",
       "runtime_classified": true,
-      "formal_digest": "707bb672c6108e54609a5f75a5627cd62641af535f4ad0000772cfc818b516ca",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "method",
-          "class": "nullable",
-          "default": "NULL",
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 3
+          "minimum_cases": 1
         }
       ]
     },
@@ -5777,19 +5545,12 @@
     {
       "function_name": "sn_mcp_server",
       "runtime_classified": true,
-      "formal_digest": "98b41735ec893c1e6151a43dfa2c4bc95419091d3105508ab49e59debb125cb6",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "input",
-          "class": "expression",
-          "default": "stdin()",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "output",
-          "class": "expression",
-          "default": "stdout()",
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
           "selector_values": null,
           "minimum_cases": 1
         }
@@ -5798,41 +5559,42 @@
     {
       "function_name": "sn_mcp_server_config",
       "runtime_classified": true,
-      "formal_digest": "01234566814cd2a2b3cd7c19c907964b4a4f018a19ec224788d9edb74d7376df",
-      "parameters": []
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
+      "parameters": [
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
     },
     {
       "function_name": "sn_metabolic_signatures",
       "runtime_classified": true,
-      "formal_digest": "15d2523708275ece9ec42756da2007e1fac9fb8fe96c2cc3dd65c817e1e15cc2",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "species",
-          "class": "selector",
-          "default": "c(\"human\", \"mouse\")",
-          "selector_values": ["human", "mouse"],
-          "minimum_cases": 2
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_method_status",
       "runtime_classified": true,
-      "formal_digest": "3da647e8d9316d3b22c126786dcd8ee1c2cd88451b699909ab0fffe2658515fd",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "method",
-          "class": "required",
+          "name": "...",
+          "class": "dots",
           "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "task",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
+          "minimum_cases": 1
         }
       ]
     },
@@ -5888,35 +5650,28 @@
     {
       "function_name": "sn_pixi_config_path",
       "runtime_classified": true,
-      "formal_digest": "0b3e472b69f6c12f19f0c2eb57d4eae97dac3223c9256ae3bd7efa15dafd5a47",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "environment",
-          "class": "nullable",
-          "default": "NULL",
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 3
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_pixi_paths",
       "runtime_classified": true,
-      "formal_digest": "c75464d965edc470a254b53fb948b9d3df3d15b85c1be76365cbeb59ff930c36",
+      "formal_digest": "1bd00378351189af63939a25cdb51e513d899eee45d02d935bbd738b6740584f",
       "parameters": [
         {
-          "name": "environment",
-          "class": "nullable",
-          "default": "NULL",
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
           "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "runtime_dir",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
+          "minimum_cases": 1
         }
       ]
     },
@@ -10296,6 +10051,244 @@
       ]
     },
     {
+      "function_name": "sn_run_bulk_deconvolution",
+      "runtime_classified": true,
+      "formal_digest": "5afa2f6bf5457e55b11e6dc77957ee3f12ba9e6f8c71636237e420bb87d43e44",
+      "parameters": [
+        {
+          "name": "x",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "bulk",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "method",
+          "class": "selector",
+          "default": "c(\"bayesprism\", \"cibersortx\")",
+          "selector_values": ["bayesprism", "cibersortx"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "cell_type_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cell_state_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cell_type_labels",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cell_state_labels",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "assay",
+          "class": "character",
+          "default": "\"RNA\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"counts\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "bulk_gene_axis",
+          "class": "selector",
+          "default": "c(\"auto\", \"rows\", \"columns\")",
+          "selector_values": ["auto", "rows", "columns"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "key",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "outdir",
+          "class": "expression",
+          "default": "tempdir()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "prefix",
+          "class": "character",
+          "default": "\"deconvolution\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "store_name",
+          "class": "character",
+          "default": "\"default\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "cibersortx_result",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cibersortx_email",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cibersortx_token",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cibersortx_container",
+          "class": "selector",
+          "default": "c(\"docker\", \"apptainer\")",
+          "selector_values": ["docker", "apptainer"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_container_path",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cibersortx_dry_run",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_rmbatch_b_mode",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_rmbatch_s_mode",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_perm",
+          "class": "numeric",
+          "default": "0",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "cibersortx_qn",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_absolute",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cibersortx_abs_method",
+          "class": "character",
+          "default": "\"sig.score\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "cibersortx_k_max",
+          "class": "numeric",
+          "default": "999",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "gibbs_control",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "opt_control",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "n_cores",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "update_gibbs",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "return_object",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_run_cell2location",
       "runtime_classified": true,
       "formal_digest": "0c708d81ecd4513d9337ab2cd3b733f0254883731cfe89e5908f43ffde019434",
@@ -11129,6 +11122,160 @@
       ]
     },
     {
+      "function_name": "sn_run_enrichment",
+      "runtime_classified": true,
+      "formal_digest": "fd23a96ec0087c89f51ca1863305328c1a22605accc3b561da3ab946d231b0da",
+      "parameters": [
+        {
+          "name": "x",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "gene_clusters",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "analysis",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "species",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "database",
+          "class": "character",
+          "default": "\"GOBP\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "collection",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "subcollection",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "pvalue_cutoff",
+          "class": "numeric",
+          "default": "0.05",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "p_adjust_method",
+          "class": "character",
+          "default": "\"BH\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "qvalue_cutoff",
+          "class": "numeric",
+          "default": "0.2",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "universe",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "min_gs_size",
+          "class": "numeric",
+          "default": "10",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "max_gs_size",
+          "class": "numeric",
+          "default": "500",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "gsea_exponent",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "duplicate_gene_method",
+          "class": "selector",
+          "default": "c(\"error\", \"max_abs\", \"max\", \"mean\")",
+          "selector_values": ["error", "max_abs", "max", "mean"],
+          "minimum_cases": 4
+        },
+        {
+          "name": "store_name",
+          "class": "character",
+          "default": "\"default\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "source_de_name",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "return_object",
+          "class": "expression",
+          "default": "inherits(x, \"Seurat\")",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "prefix",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "outdir",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_run_fate",
       "runtime_classified": true,
       "formal_digest": "7f2268d0fdfe232935f5d20519303648e799f4704dacf36d6ff1f594284bffd0",
@@ -11557,6 +11704,27 @@
           "name": "...",
           "class": "dots",
           "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
+      "function_name": "sn_run_mcp_server",
+      "runtime_classified": true,
+      "formal_digest": "98b41735ec893c1e6151a43dfa2c4bc95419091d3105508ab49e59debb125cb6",
+      "parameters": [
+        {
+          "name": "input",
+          "class": "expression",
+          "default": "stdin()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "output",
+          "class": "expression",
+          "default": "stdout()",
           "selector_values": null,
           "minimum_cases": 1
         }
@@ -13707,7 +13875,7 @@
     {
       "function_name": "sn_simulate_scdesign3",
       "runtime_classified": true,
-      "formal_digest": "89366dabf3b90ee89eb59ae0359fc4c5f57e1546e5767a9c54f80ff064fafcaa",
+      "formal_digest": "9ecaa4cc89e6325d3fe82848afd2717c6cf59b9b20347a58084f5559d64c44f8",
       "parameters": [
         {
           "name": "object",
@@ -13715,125 +13883,6 @@
           "default": "<required>",
           "selector_values": null,
           "minimum_cases": 2
-        },
-        {
-          "name": "celltype",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "pseudotime",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "spatial",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "other_covariates",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "ncell",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "mu_formula",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "sigma_formula",
-          "class": "character",
-          "default": "\"1\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "corr_formula",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "family_use",
-          "class": "character",
-          "default": "\"nb\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "n_cores",
-          "class": "numeric",
-          "default": "2",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "assay",
-          "class": "character",
-          "default": "\"RNA\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "layer",
-          "class": "character",
-          "default": "\"counts\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "assay_use",
-          "class": "character",
-          "default": "\"counts\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "return",
-          "class": "selector",
-          "default": "c(\"seurat\", \"sce\", \"counts\", \"result\")",
-          "selector_values": ["seurat", "sce", "counts", "result"],
-          "minimum_cases": 4
-        },
-        {
-          "name": "project",
-          "class": "character",
-          "default": "\"scdesign3\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "combine_original",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "seed",
-          "class": "numeric",
-          "default": "717",
-          "selector_values": null,
-          "minimum_cases": 4
         },
         {
           "name": "...",

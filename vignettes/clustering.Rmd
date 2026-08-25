@@ -56,7 +56,7 @@ library(dplyr)
 
 pixi_environment_ready <- function(environment) {
   if (!nzchar(Sys.which("pixi"))) return(FALSE)
-  paths <- sn_pixi_paths(environment)
+  paths <- sn_get_pixi_paths(environment)
   file.exists(paths$manifest_path) && dir.exists(paths$workspace_env_dir)
 }
 
@@ -495,11 +495,11 @@ field, including runtime, accelerator, model, training, graph, and
 backend-specific arguments:
 
 ```{r integration-control-templates}
-names(sn_integration_control_template())
-sn_integration_control_template("harmony")
-sn_integration_control_template("coralysis")
-sn_integration_control_template(c("scvi", "scanvi", "scpoli"))
-sn_integration_control_template(c("bbknn", "totalvi", "mmochi"))
+names(sn_get_integration_control_template())
+sn_get_integration_control_template("harmony")
+sn_get_integration_control_template("coralysis")
+sn_get_integration_control_template(c("scvi", "scanvi", "scpoli"))
+sn_get_integration_control_template(c("bbknn", "totalvi", "mmochi"))
 ```
 
 For Seurat CCA/RPCA, fields beyond the displayed template are passed directly
@@ -661,7 +661,7 @@ continues with Seurat neighbors, clusters, and UMAP.
 The R package does not vendor the Python environments. It ships only the
 backend runner script and pixi config templates; the pixi workspaces and
 environment prefixes are created under `~/.shennong/pixi/`, matching the
-package's `~/.shennong/data/` convention. Use `sn_pixi_paths("scvi")` to inspect the
+package's `~/.shennong/data/` convention. Use `sn_get_pixi_paths("scvi")` to inspect the
 layout before a run. If pixi is not already available, Shennong can install the
 standalone pixi binary through `sn_ensure_pixi()` and then use the Shennong
 `PIXI_HOME` under `~/.shennong/pixi/home` for runtime configuration. By default
@@ -717,7 +717,7 @@ real melanoma and Visium articles rather than against this PBMC object.
 
 ```{r scvi-integration, eval = run_extended && pixi_environment_ready("scvi")}
 sn_list_pixi_environments()
-sn_pixi_paths("scvi")
+sn_get_pixi_paths("scvi")
 
 pbmc_scvi <- qs2::qs_read(real_data_file)
 pbmc_scvi <- sn_run_scvi(

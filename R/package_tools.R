@@ -456,10 +456,10 @@ sn_ensure_pixi <- function(pixi = NULL,
 #' @return A named list of runtime paths.
 #'
 #' @examples
-#' sn_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
+#' sn_get_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
 #'
 #' @export
-sn_pixi_paths <- function(environment = NULL,
+sn_get_pixi_paths <- function(environment = NULL,
                           runtime_dir = NULL) {
   requested_environment <- tolower(as.character(environment %||% "scvi"))
   environment <- .sn_normalize_pixi_environment(requested_environment)
@@ -474,7 +474,7 @@ sn_pixi_paths <- function(environment = NULL,
     pixi_root = normalizePath(pixi_root, winslash = "/", mustWork = FALSE),
     pixi_home = normalizePath(file.path(pixi_root, "home"), winslash = "/", mustWork = FALSE),
     project_dir = normalizePath(project_dir, winslash = "/", mustWork = FALSE),
-    source_config_path = sn_pixi_config_path(environment),
+    source_config_path = sn_get_pixi_config_path(environment),
     manifest_path = normalizePath(file.path(project_dir, "pixi.toml"), winslash = "/", mustWork = FALSE),
     workspace_env_dir = normalizePath(file.path(project_dir, ".pixi", "envs"), winslash = "/", mustWork = FALSE),
     runs_dir = normalizePath(file.path(runtime_dir, "runs"), winslash = "/", mustWork = FALSE)
@@ -501,10 +501,10 @@ sn_list_pixi_environments <- function() {
 #' @return A path to the package-bundled \code{pixi.toml} template.
 #'
 #' @examples
-#' sn_pixi_config_path("scvi")
+#' sn_get_pixi_config_path("scvi")
 #'
 #' @export
-sn_pixi_config_path <- function(environment = NULL) {
+sn_get_pixi_config_path <- function(environment = NULL) {
   environment <- .sn_normalize_pixi_environment(environment %||% "scvi")
   installed <- system.file("pixi", environment, "pixi.toml", package = "Shennong")
   if (nzchar(installed) && file.exists(installed)) {
@@ -578,7 +578,7 @@ sn_prepare_pixi_environment <- function(environment = NULL,
   pixi_environment <- match.arg(pixi_environment)
   mirror <- match.arg(mirror)
   selected <- .sn_select_pixi_environment(environment = environment, pixi_environment = pixi_environment, cuda_version = cuda_version)
-  paths <- sn_pixi_paths(environment = environment, runtime_dir = runtime_dir)
+  paths <- sn_get_pixi_paths(environment = environment, runtime_dir = runtime_dir)
   if (!is.null(project_dir) && nzchar(project_dir)) {
     paths$project_dir <- normalizePath(path.expand(project_dir), winslash = "/", mustWork = FALSE)
     paths$manifest_path <- normalizePath(file.path(paths$project_dir, "pixi.toml"), winslash = "/", mustWork = FALSE)
@@ -1865,7 +1865,7 @@ sn_install_shennong <- function(
 }
 
 .sn_render_pixi_config <- function(environment, platforms = NULL, cuda_version = "12.6") {
-  template <- readLines(sn_pixi_config_path(environment), warn = FALSE)
+  template <- readLines(sn_get_pixi_config_path(environment), warn = FALSE)
   cuda_version <- .sn_normalize_cuda_requirement(cuda_version)
   cuda_major <- sub("\\..*$", "", cuda_version)
   platforms <- platforms %||% .sn_current_pixi_platform()
@@ -2729,4 +2729,34 @@ sn_install_shennong <- function(
   }
 
   list(status = "up to date", up_to_date = TRUE)
+}
+
+#' Deprecated alias of `sn_get_pixi_paths()`
+#'
+#' `sn_pixi_paths()` is a deprecated compatibility alias. Use [sn_get_pixi_paths()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_pixi_paths()].
+#'
+#' @return Result of `sn_get_pixi_paths(...)`.
+#'
+#' @export
+sn_pixi_paths <- function(...) {
+  .Deprecated("sn_get_pixi_paths", package = "Shennong")
+  sn_get_pixi_paths(...)
+}
+
+#' Deprecated alias of `sn_get_pixi_config_path()`
+#'
+#' `sn_pixi_config_path()` is a deprecated compatibility alias. Use [sn_get_pixi_config_path()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_pixi_config_path()].
+#'
+#' @return Result of `sn_get_pixi_config_path(...)`.
+#'
+#' @export
+sn_pixi_config_path <- function(...) {
+  .Deprecated("sn_get_pixi_config_path", package = "Shennong")
+  sn_get_pixi_config_path(...)
 }

@@ -263,7 +263,7 @@ sn_map_cell_ontology(
 
 ## Choose a reference backend deliberately
 
-Use `sn_list_methods("annotation")` and `sn_method_status()` to inspect current
+Use `sn_list_methods("annotation")` and `sn_get_method_status()` to inspect current
 availability. Reference methods should not be used when tissue, disease,
 species, assay chemistry, or cell-state coverage is badly mismatched; a high
 similarity to an incomplete reference is not evidence that the missing cell
@@ -591,7 +591,7 @@ sn_get_result(
 
 ## Run enrichment from stored marker results
 
-`sn_enrich()` can accept a gene vector, a ranked vector, a data frame, or a
+`sn_run_enrichment()` can accept a gene vector, a ranked vector, a data frame, or a
 Seurat object with stored DE results. For cluster markers, the Seurat-object
 path is the most reproducible because the enrichment knows which DE result it
 came from. Grouped ORA must name the grouping column explicitly, and the tested
@@ -600,7 +600,7 @@ every database-annotated gene as observable. The upstream `pvalueCutoff`,
 multiple-testing adjustment, and q-value rules are retained.
 
 ```{r enrich-markers}
-pbmc <- sn_enrich(
+pbmc <- sn_run_enrichment(
   x = pbmc,
   source_de_name = "cluster_markers",
   gene_clusters = gene ~ cluster,

@@ -19,7 +19,7 @@ Simulated data in the backend's requested format.
 \description{
 \code{sn_simulate()} provides a method-based simulation entry point.
 Currently \code{method = "scdesign3"} delegates to
-\code{sn_simulate_scdesign3()}.
+\code{.sn_simulate_scdesign3()}.
 }
 \examples{
 \dontrun{

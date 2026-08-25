@@ -2,7 +2,7 @@ test_that("figure profiles and large-data specs are deterministic", {
   profiles <- sn_list_figure_profiles()
   expect_true(all(c("screen", "single_column", "double_column", "slide_16_9") %in% profiles$profile))
   sizes <- c(500, 5000, 50000, 500000, 5000000)
-  specs <- lapply(sizes, function(n) sn_figure_spec(
+  specs <- lapply(sizes, function(n) sn_get_figure_spec(
     plot_type = "embedding", data_summary = list(n_points = n, n_groups = 18)
   ))
   points <- vapply(specs, function(x) x$recommended$point_size, numeric(1))
@@ -15,8 +15,8 @@ test_that("figure profiles and large-data specs are deterministic", {
 test_that("auto sizing responds monotonically to panels, genes, and labels", {
   one <- sn_recommend_figure_size(plot_type = "embedding", data_summary = list(n_points = 5000, n_panels = 1))
   four <- sn_recommend_figure_size(plot_type = "embedding", data_summary = list(n_points = 5000, n_panels = 4))
-  dot10 <- sn_figure_spec(plot_type = "dot", data_summary = list(n_features = 10, n_groups = 8, max_label_chars = 8))
-  dot40 <- sn_figure_spec(plot_type = "dot", data_summary = list(n_features = 40, n_groups = 8, max_label_chars = 32))
+  dot10 <- sn_get_figure_spec(plot_type = "dot", data_summary = list(n_features = 10, n_groups = 8, max_label_chars = 8))
+  dot40 <- sn_get_figure_spec(plot_type = "dot", data_summary = list(n_features = 40, n_groups = 8, max_label_chars = 32))
   expect_gte(four$height_mm, one$height_mm)
   expect_gt(dot40$recommended$height_mm, dot10$recommended$height_mm)
   expect_gte(dot40$data_summary$max_label_chars, dot10$data_summary$max_label_chars)
@@ -24,7 +24,7 @@ test_that("auto sizing responds monotonically to panels, genes, and labels", {
 })
 
 test_that("profiles cap dimensions and explicit overrides win", {
-  spec <- sn_figure_spec(
+  spec <- sn_get_figure_spec(
     plot_type = "dot", profile = "single_column",
     data_summary = list(n_features = 100, n_groups = 30),
     width_mm = 72, rasterize = FALSE
@@ -33,7 +33,7 @@ test_that("profiles cap dimensions and explicit overrides win", {
   expect_lte(spec$recommended$height_mm, 120)
   expect_false(spec$recommended$rasterize)
   expect_true(spec$recommended$pagination$required)
-  expect_error(sn_figure_spec(profile = "imaginary"), "Unknown figure profile")
+  expect_error(sn_get_figure_spec(profile = "imaginary"), "Unknown figure profile")
 })
 
 test_that("figure profile attachment and validation preserve native ggplot", {
@@ -46,7 +46,7 @@ test_that("figure profile attachment and validation preserve native ggplot", {
   applied <- sn_apply_figure_profile(plot, "single_column")
   report <- sn_validate_figure(applied)
   expect_s3_class(applied, "ggplot")
-  expect_s3_class(sn_figure_spec(applied), "sn_figure_spec")
+  expect_s3_class(sn_get_figure_spec(applied), "sn_get_figure_spec")
   expect_s3_class(report, "sn_figure_validation")
   expect_true(report$valid)
   expect_equal(report$spec$profile, "single_column")
@@ -145,7 +145,7 @@ test_that("core diagnostic plot helpers expose figure specs", {
     sn_plot_cluster_tree(clusters)
   )
   expect_true(all(vapply(plots, inherits, logical(1), "ggplot")))
-  expect_true(all(vapply(plots, function(x) !is.null(sn_figure_spec(x)), logical(1))))
+  expect_true(all(vapply(plots, function(x) !is.null(sn_get_figure_spec(x)), logical(1))))
 })
 
 test_that("Seurat diagnostic plots and reference projection run on local public data", {
@@ -186,7 +186,7 @@ test_that("migrated core plots carry automatic figure specs", {
     sn_plot_barplot(data, x = cyl, y = mpg),
     sn_plot_composition(data.frame(sample = rep(c("S1", "S2"), each = 2), cell_type = rep(c("T", "B"), 2), proportion = c(60, 40, 30, 70)), x = sample, fill = cell_type)
   )
-  expect_true(all(vapply(plots, function(x) inherits(attr(x, "shennong_figure_spec"), "sn_figure_spec"), logical(1))))
+  expect_true(all(vapply(plots, function(x) inherits(attr(x, "shennong_figure_spec"), "sn_get_figure_spec"), logical(1))))
 })
 test_that("result plots never partially match backup table fields", {
   result <- list(

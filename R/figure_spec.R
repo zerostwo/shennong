@@ -166,7 +166,7 @@ sn_list_figure_profiles <- function() {
     warnings = .sn_figure_warnings(plot_type, summary, recommended, profile_data),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE)
   )
-  class(spec) <- c("sn_figure_spec", "list")
+  class(spec) <- c("sn_get_figure_spec", "list")
   spec
 }
 
@@ -176,7 +176,7 @@ sn_list_figure_profiles <- function() {
 }
 
 .sn_apply_figure_spec <- function(plot, spec, source_data = NULL) {
-  if (!inherits(spec, "sn_figure_spec")) stop("`spec` must be a Shennong figure specification.", call. = FALSE)
+  if (!inherits(spec, "sn_get_figure_spec")) stop("`spec` must be a Shennong figure specification.", call. = FALSE)
   attr(plot, "shennong_figure_spec") <- spec
   attr(plot, "shennong_figure_data_summary") <- spec$data_summary
   if (!is_null(source_data)) attr(plot, "shennong_figure_data") <- source_data
@@ -195,7 +195,7 @@ sn_list_figure_profiles <- function() {
 #'   `rasterize`.
 #' @return A figure specification list.
 #' @export
-sn_figure_spec <- function(plot = NULL, plot_type = NULL, data_summary = NULL, profile = NULL, ...) {
+sn_get_figure_spec <- function(plot = NULL, plot_type = NULL, data_summary = NULL, profile = NULL, ...) {
   existing <- if (!is_null(plot)) attr(plot, "shennong_figure_spec", exact = TRUE) else NULL
   overrides <- list(...)
   if (!is_null(existing) && is_null(plot_type) && is_null(data_summary) && is_null(profile) && length(overrides) == 0L) return(existing)
@@ -207,11 +207,11 @@ sn_figure_spec <- function(plot = NULL, plot_type = NULL, data_summary = NULL, p
 
 #' Recommend output dimensions for a figure
 #'
-#' @inheritParams sn_figure_spec
-#' @return The `recommended` component of `sn_figure_spec()`.
+#' @inheritParams sn_get_figure_spec
+#' @return The `recommended` component of `sn_get_figure_spec()`.
 #' @export
 sn_recommend_figure_size <- function(plot = NULL, plot_type = NULL, data_summary = NULL, profile = NULL, ...) {
-  sn_figure_spec(plot, plot_type, data_summary, profile, ...)$recommended
+  sn_get_figure_spec(plot, plot_type, data_summary, profile, ...)$recommended
 }
 
 #' Apply a generic publication profile to a plot
@@ -222,11 +222,26 @@ sn_recommend_figure_size <- function(plot = NULL, plot_type = NULL, data_summary
 #' @return The original plot with profile styling and an attached specification.
 #' @export
 sn_apply_figure_profile <- function(plot, profile, ...) {
-  spec <- sn_figure_spec(plot, profile = profile, ...)
+  spec <- sn_get_figure_spec(plot, profile = profile, ...)
   if (inherits(plot, "ggplot")) {
     plot <- plot + ggplot2::theme(text = ggplot2::element_text(size = spec$recommended$font_size_pt))
   }
   attr(plot, "shennong_figure_spec") <- spec
   attr(plot, "shennong_figure_data_summary") <- spec$data_summary
   plot
+}
+
+#' Deprecated alias of `sn_get_figure_spec()`
+#'
+#' `sn_figure_spec()` is a deprecated compatibility alias. Use [sn_get_figure_spec()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_figure_spec()].
+#'
+#' @return Result of `sn_get_figure_spec(...)`.
+#'
+#' @export
+sn_figure_spec <- function(...) {
+  .Deprecated("sn_get_figure_spec", package = "Shennong")
+  sn_get_figure_spec(...)
 }

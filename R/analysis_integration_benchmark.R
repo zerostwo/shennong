@@ -360,7 +360,7 @@ sn_compare_integrations <- function(object,
     if (is.function(runner)) {
       runner(input_dir = input_dir, output_dir = output_dir, config = config, config_path = config_path)
     } else {
-      paths <- sn_pixi_paths("scib-metrics", runtime_dir = runtime_dir)
+      paths <- sn_get_pixi_paths("scib-metrics", runtime_dir = runtime_dir)
       manifest_path <- .sn_prepare_scvi_pixi_project(
         project_dir = backend_control$pixi_project %||% paths$project_dir,
         environment = "scib-metrics",

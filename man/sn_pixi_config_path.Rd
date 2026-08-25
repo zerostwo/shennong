@@ -2,20 +2,17 @@
 % Please edit documentation in R/package_tools.R
 \name{sn_pixi_config_path}
 \alias{sn_pixi_config_path}
-\title{Locate a bundled pixi config}
+\title{Deprecated alias of \code{sn_get_pixi_config_path()}}
 \usage{
-sn_pixi_config_path(environment = NULL)
+sn_pixi_config_path(...)
 }
 \arguments{
-\item{environment}{Python environment name.}
+\item{...}{Named arguments passed on to \code{\link[=sn_get_pixi_config_path]{sn_get_pixi_config_path()}}.}
 }
 \value{
-A path to the package-bundled \code{pixi.toml} template.
+Result of \code{sn_get_pixi_config_path(...)}.
 }
 \description{
-Locate a bundled pixi config
-}
-\examples{
-sn_pixi_config_path("scvi")
-
+\code{sn_pixi_config_path()} is a deprecated compatibility alias. Use \code{\link[=sn_get_pixi_config_path]{sn_get_pixi_config_path()}} directly;
+the alias will be removed in a future release.
 }

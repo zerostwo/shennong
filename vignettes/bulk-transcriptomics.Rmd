@@ -179,7 +179,7 @@ signed_de <- signed_de[
 ]
 
 set.seed(717)
-gsea_result <- sn_enrich(
+gsea_result <- sn_run_enrichment(
   x = signed_de,
   gene_clusters = gene ~ log2_fold_change,
   analysis = "gsea",

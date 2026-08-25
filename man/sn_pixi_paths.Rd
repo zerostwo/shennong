@@ -2,28 +2,17 @@
 % Please edit documentation in R/package_tools.R
 \name{sn_pixi_paths}
 \alias{sn_pixi_paths}
-\title{Inspect Shennong pixi runtime paths}
+\title{Deprecated alias of \code{sn_get_pixi_paths()}}
 \usage{
-sn_pixi_paths(environment = NULL, runtime_dir = NULL)
+sn_pixi_paths(...)
 }
 \arguments{
-\item{environment}{Python environment name. Use
-\code{sn_list_pixi_environments()} to see bundled configs.}
-
-\item{runtime_dir}{Optional explicit Shennong runtime directory. Defaults to
-\code{getOption("shennong.runtime_dir")}, \code{SHENNONG_RUNTIME_DIR},
-\code{SHENNONG_HOME}, then \code{"~/.shennong"}.}
+\item{...}{Named arguments passed on to \code{\link[=sn_get_pixi_paths]{sn_get_pixi_paths()}}.}
 }
 \value{
-A named list of runtime paths.
+Result of \code{sn_get_pixi_paths(...)}.
 }
 \description{
-Returns the user-level paths used for optional pixi-managed Python
-environments. Shennong follows the same convention as downloaded example
-data: runtime files are generated under \code{~/.shennong/} by default, not
-under the current analysis project and not inside the installed R package.
-}
-\examples{
-sn_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
-
+\code{sn_pixi_paths()} is a deprecated compatibility alias. Use \code{\link[=sn_get_pixi_paths]{sn_get_pixi_paths()}} directly;
+the alias will be removed in a future release.
 }

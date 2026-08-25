@@ -165,7 +165,7 @@
       available <- arguments$available %||% NULL
       list(methods = .sn_mcp_json_native(sn_list_methods(task = task, available = available)))
     },
-    method_status = list(status = .sn_mcp_json_native(sn_method_status(
+    method_status = list(status = .sn_mcp_json_native(sn_get_method_status(
       method = arguments$method %||% stop("`method` is required.", call. = FALSE),
       task = arguments$task %||% NULL
     ))),
@@ -180,7 +180,7 @@
     package_info = list(
       package = "Shennong",
       version = as.character(utils::packageVersion("Shennong")),
-      mcp = sn_mcp_server_config(),
+      mcp = sn_get_mcp_server_config(),
       package_skills = sn_get_codex_skill_path("package_skills")
     ),
     stop("Unknown tool: ", name, call. = FALSE)
@@ -258,12 +258,12 @@
 #' @return A list containing the command and arguments needed to launch the
 #'   bundled read-only MCP server.
 #' @examples
-#' sn_mcp_server_config()
+#' sn_get_mcp_server_config()
 #' @export
-sn_mcp_server_config <- function() {
+sn_get_mcp_server_config <- function() {
   list(
     command = file.path(R.home("bin"), "Rscript"),
-    args = c("-e", "Shennong::sn_mcp_server()"),
+    args = c("-e", "Shennong::sn_run_mcp_server()"),
     transport = "stdio"
   )
 }
@@ -281,13 +281,13 @@ sn_mcp_server_config <- function() {
 #' @references Model Context Protocol specification:
 #'   \url{https://modelcontextprotocol.io/specification/2025-11-25}.
 #' @examples
-#' config <- sn_mcp_server_config()
+#' config <- sn_get_mcp_server_config()
 #' config$transport
 #' \dontrun{
-#' sn_mcp_server()
+#' sn_run_mcp_server()
 #' }
 #' @export
-sn_mcp_server <- function(input = stdin(), output = stdout()) {
+sn_run_mcp_server <- function(input = stdin(), output = stdout()) {
   repeat {
     line <- readLines(input, n = 1L, warn = FALSE)
     if (length(line) == 0L) break
@@ -308,4 +308,34 @@ sn_mcp_server <- function(input = stdin(), output = stdout()) {
     flush(output)
   }
   invisible(NULL)
+}
+
+#' Deprecated alias of `sn_get_mcp_server_config()`
+#'
+#' `sn_mcp_server_config()` is a deprecated compatibility alias. Use [sn_get_mcp_server_config()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_get_mcp_server_config()].
+#'
+#' @return Result of `sn_get_mcp_server_config(...)`.
+#'
+#' @export
+sn_mcp_server_config <- function(...) {
+  .Deprecated("sn_get_mcp_server_config", package = "Shennong")
+  sn_get_mcp_server_config(...)
+}
+
+#' Deprecated alias of `sn_run_mcp_server()`
+#'
+#' `sn_mcp_server()` is a deprecated compatibility alias. Use [sn_run_mcp_server()] directly;
+#' the alias will be removed in a future release.
+#'
+#' @param ... Named arguments passed on to [sn_run_mcp_server()].
+#'
+#' @return Result of `sn_run_mcp_server(...)`.
+#'
+#' @export
+sn_mcp_server <- function(...) {
+  .Deprecated("sn_run_mcp_server", package = "Shennong")
+  sn_run_mcp_server(...)
 }

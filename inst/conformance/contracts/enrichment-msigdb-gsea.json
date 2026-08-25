@@ -3,7 +3,7 @@
   "id": "enrichment::msigdb_gsea",
   "status": "pilot",
   "shennong": {
-    "function": "sn_enrich",
+    "function": "sn_run_enrichment",
     "selector": {
       "analysis": "gsea",
       "database": "H"
