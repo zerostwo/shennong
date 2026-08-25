@@ -1,6 +1,54 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
+
+## 2026-08-25 comprehensive-audit completion milestone
+
+All fourteen action items from `ComprehensiveAudit-2026-08-24.md` are now
+closed. AUDIT-01..03 and the AUDIT-11/12 partials were landed earlier; this
+milestone completes the remainder:
+
+- AUDIT-04/05/07 (c2bda01): every x-first exported analysis function accepts
+  an `object=` alias with fail-fast double-supply errors, including the
+  result-aware plot family; `store_name=` is accepted beside legacy `name=`
+  on grn/program workflows; top-level `seed=`/`verbose=` with
+  seed-over-control precedence and provenance stamping on cluster,
+  trajectory, velocity, fate, milo, and spatial feature/domain workflows;
+  `sn_plot_de()`/`sn_plot_enrichment()` follow the object-or-result pattern.
+- AUDIT-06/12 (9a4784b): a two-directional registry parity test makes
+  `inst/methods/*.yml` load-bearing with explicit waivers; integration,
+  normalization, doublet, and pseudobulk-DE choice sets are pinned by a
+  fail-closed snapshot; `sn_run_velocity()`/`sn_run_fate()` declare their
+  choice sets in the formal; weak Track-A writers stamp provenance with
+  random seeds; `sn_delete_artifact()` closes the artifact deletion gap.
+- AUDIT-08/09 (96960fc): Python runners moved to owning domains, retrieval
+  family to the result contract module, shared helpers to `utils.R`,
+  simulation extracted, `sn_detect_accelerator()` moved, label-transfer and
+  CellTypist blocks split out of `analysis_clustering.R` (7062 → 5552 lines),
+  and twenty-two identical inline Seurat guards now route through the shared
+  validator while message-distinct guards are intentionally preserved.
+- AUDIT-11 (2497140): all seven previously untested tier-1 exports have
+  focused tests (`test-tier1-coverage.R`, 19 assertions).
+- AUDIT-13/14 (1ebb71e): ten off-family names renamed behind `.Deprecated()`
+  shims registered as `deprecated_alias` coverage exclusions;
+  `sn_simulate_scdesign3()` demoted behind `sn_simulate(method =
+  "scdesign3")`; conformance schema admits `unsupported`/`fallback`/
+  `waived` roles and reserves `parameter_map` for the dots formal, which
+  immediately reclassified three real catch-all sweeps.
+- AUDIT-10: AGENTS.md documents the real 61-file module map and the exact
+  verb-family contracts (list/get, check/validate/assess/calculate,
+  run/call, with).
+
+The two acceleration test failures observed earlier today
+(`test-acceleration.R:65`, `:112`) were environmental ShennongOpt patch-
+registry drift and are now fixed in-repo: the bridge's patch mapper expands
+umbrella keys (`seurat`, `scran`) to every registered granular patch sharing
+their prefix, so legacy wrapper keys keep working against ShennongOpt's
+per-operation registry (`seurat_runpca`, `seurat_scaledata`,
+`seurat_findneighbors`, `scran_computeSumFactors`, ...). The focused
+acceleration suite passes all 24 assertions.
+
+## Previous status
 
 The ShennongOpt bridge now targets the companion repository's standardized
 `sn_*` exports from commit `2e8669c`, with runtime fallback for an older

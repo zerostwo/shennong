@@ -34,6 +34,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   hook, and the autozyme benchmark artifact/article) was removed; managed pixi
   environments run plain upstream Python.
 
+### Fixed
+
+- The ShennongOpt bridge now expands umbrella patch keys (`seurat`, `scran`)
+  to every registered granular patch sharing their prefix
+  (`seurat_runpca`, `seurat_scaledata`, `seurat_findneighbors`,
+  `scran_computeSumFactors`, ...), keeping legacy wrapper keys working after
+  ShennongOpt moved to per-operation patch names.
+
 ### Changed
 
 - Renamed the remaining noun-first getters and off-family actions behind

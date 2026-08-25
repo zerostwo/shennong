@@ -58,11 +58,11 @@ test_that("acceleration can be disabled by option or environment", {
   expect_true(Shennong:::.sn_acceleration_default_enabled())
 })
 
-test_that("the seurat patch activates inside the wrapper and restores state", {
+test_that("the seurat_scaledata patch activates inside the wrapper and restores state", {
   skip_if_not_installed("ShennongOpt")
-  skip_if_not_installed("SeuratObject")
+  skip_if_not_installed("Seurat")
 
-  before <- sn_check_acceleration()[["seurat"]]
+  before <- sn_check_acceleration()[["seurat_scaledata"]]
   counts <- Matrix::Matrix(matrix(rep(1:20, 15), ncol = 15), sparse = TRUE)
   object <- SeuratObject::CreateSeuratObject(counts = counts)
   SeuratObject::DefaultAssay(object) <- "RNA"
@@ -70,11 +70,11 @@ test_that("the seurat patch activates inside the wrapper and restores state", {
 
   result <- Shennong:::.sn_with_default_seurat_acceleration({
     list(
-      status_during = sn_check_acceleration()[["seurat"]],
+      status_during = sn_check_acceleration()[["seurat_scaledata"]],
       scaled = Seurat::ScaleData(object, verbose = FALSE)
     )
   })
-  after <- sn_check_acceleration()[["seurat"]]
+  after <- sn_check_acceleration()[["seurat_scaledata"]]
 
   expect_identical(result$status_during, "active")
   expect_s4_class(result$scaled, "Seurat")
@@ -108,14 +108,14 @@ test_that("wrapper provenance records used and suppressed patches", {
 test_that("public acceleration helpers round trip", {
   skip_if_not_installed("ShennongOpt")
   expect_type(sn_check_acceleration(), "character")
-  status <- sn_enable_acceleration("seurat")
-  expect_true(isTRUE(status) || isTRUE(sn_check_acceleration()[["seurat"]] == "active"))
-  sn_disable_acceleration("seurat")
-  expect_false(isTRUE(sn_check_acceleration()[["seurat"]] == "active"))
+  status <- sn_enable_acceleration("seurat_runpca")
+  expect_true(isTRUE(status) || isTRUE(sn_check_acceleration()[["seurat_runpca"]] == "active"))
+  sn_disable_acceleration("seurat_runpca")
+  expect_false(isTRUE(sn_check_acceleration()[["seurat_runpca"]] == "active"))
 
-  out <- sn_with_acceleration(6L * 7L, name = "seurat")
+  out <- sn_with_acceleration(6L * 7L, name = "ucell")
   expect_identical(out, 42L)
-  expect_false(isTRUE(sn_check_acceleration()[["seurat"]] == "active"))
+  expect_false(isTRUE(sn_check_acceleration()[["ucell"]] == "active"))
 })
 
 test_that("missing ShennongOpt degrades to unaccelerated evaluation", {

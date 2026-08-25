@@ -67,7 +67,21 @@
   supported <- unique(mapped[!is.na(mapped)])
   registered <- .sn_acceleration_registered_patches(installed = FALSE)
   installable <- .sn_acceleration_registered_patches(installed = TRUE)
-  supported <- intersect(supported, registered)
+  # Umbrella keys expand to every registered patch sharing their prefix so
+  # granular ShennongOpt patch registries stay compatible with family
+  # requests such as "seurat" or "scran".
+  expanded <- unique(unlist(lapply(supported, function(target) {
+    if (length(registered) > 0L && target %in% registered) {
+      return(target)
+    }
+    prefix_matches <- grep(
+      paste0("^", gsub("[^a-zA-Z0-9_]", ".", target), "_"),
+      registered,
+      value = TRUE
+    )
+    if (length(prefix_matches) > 0L) prefix_matches else target
+  }), use.names = FALSE))
+  supported <- intersect(expanded, registered)
   list(
     requested = patches,
     supported = intersect(supported, installable),

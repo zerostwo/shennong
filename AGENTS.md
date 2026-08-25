@@ -2,16 +2,32 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by durable workflow domains. Core workflow families include
-  preprocessing; clustering/integration; annotation; differential expression,
-  enrichment, metrics/composition, bulk, priority, trajectory/velocity,
-  communication/regulatory, spatial, CNV, metabolism, and program analysis.
-  Cross-cutting modules cover unified results/bundles, interpretation, usage
-  tracking, acceleration, IO/example data, package/runtime helpers, signatures,
-  plotting/figure export, MCP, utilities, and package startup. Prefer the
-  domain-specific `analysis_*` / `plot_*` file already owning a workflow over
-  adding another generic module; consult the current `R/` inventory because the
-  module set intentionally evolves.
+- `R/` is organized by durable workflow domains (61 files as of 2026-08-25).
+  Analysis domains live in one `analysis_<domain>.R` each: preprocessing,
+  clustering (`analysis_clustering.R` plus extracted `analysis_label_transfer.R`,
+  `analysis_celltypist.R`, and `analysis_integration_benchmark.R`), annotation
+  (`annotation.R`, `annotation_ontology.R`, `feature_annotation.R`),
+  differential expression (`analysis_de.R`), enrichment, metrics/composition,
+  bulk, priority, trajectory and velocity/fate, communication/regulatory,
+  spatial, CNV, metabolism/grn/program discovery/scoring, adapters, abundance,
+  registry, result contract (`analysis_result.R`, `result_bundle.R`), and
+  simulation. Presentation lives in per-domain `plot_<domain>.R` files plus
+  `visualization.R`, `figure_spec.R`, and `figure_export.R`. Cross-cutting
+  modules: interpretation, usage tracking, acceleration, IO (`data_io.R`,
+  `data.R`), package/runtime helpers (`package_tools.R`), signatures, MCP,
+  `utils.R`, and `zzz.R`. Prefer the domain-specific `analysis_*` / `plot_*`
+  file already owning a workflow over adding another generic module; consult
+  the current `R/` inventory because the module set intentionally evolves.
+- Public naming is strictly `sn_verb_noun`. The verb families carry exact
+  contracts: `sn_list_*` enumerates a compact tibble while `sn_get_*`
+  materializes a stored object/result; `sn_check_*` diagnoses environment or
+  readiness without asserting, `sn_validate_*` asserts a schema contract and
+  fails fast, `sn_assess_*` returns a QC analysis, and `sn_calculate_*`
+  returns a metric value. `sn_run_*` executes a workflow that stores a unified
+  result envelope; raw CLI/runtime adapters use `sn_call_*` and never take a
+  Seurat object. `sn_with_*` is reserved for scoped execution helpers.
+  Renames must ship behind `.Deprecated()` forwarding shims registered as
+  `deprecated_alias` exclusions in the runtime-coverage inventory.
 - `man/` contains roxygen2-generated `.Rd` files. Treat it as generated output and keep it synchronized with the roxygen comments in `R/`.
 - `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
 - `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
