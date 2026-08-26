@@ -776,3 +776,60 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   invisible(TRUE)
 }
 
+
+# Shared control/runtime plumbing used across analysis domains.
+
+.sn_default_python_run_dir <- function(method, runtime_dir = NULL) {
+  runtime_dir <- .sn_shennong_runtime_dir(runtime_dir)
+  run_id <- paste0(
+    method,
+    "_",
+    format(Sys.time(), "%Y%m%d_%H%M%S"),
+    "_",
+    Sys.getpid()
+  )
+  file.path(runtime_dir, "runs", run_id)
+}
+
+.sn_merge_control_args <- function(defaults, control) {
+  control <- control %||% list()
+  if (!is.list(control)) {
+    stop("`integration_control` must be a named list.", call. = FALSE)
+  }
+  utils::modifyList(defaults, control, keep.null = TRUE)
+}
+
+.sn_shennong_runtime_dir <- function(path = NULL) {
+  candidates <- c(
+    path,
+    getOption("shennong.runtime_dir", NULL),
+    Sys.getenv("SHENNONG_RUNTIME_DIR", unset = ""),
+    Sys.getenv("SHENNONG_HOME", unset = ""),
+    "~/.shennong"
+  )
+  candidates <- candidates[!is.na(candidates) & nzchar(candidates)]
+  path <- candidates[[1]]
+  path <- path.expand(path)
+  dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  normalizePath(path, winslash = "/", mustWork = TRUE)
+}
+
+.sn_current_pixi_platform <- function() {
+  sysname <- tolower(Sys.info()[["sysname"]] %||% .Platform$OS.type)
+  machine <- tolower(Sys.info()[["machine"]] %||% "")
+  if (grepl("darwin", sysname, fixed = TRUE)) {
+    if (machine %in% c("arm64", "aarch64")) "osx-arm64" else "osx-64"
+  } else if (.Platform$OS.type == "windows" || grepl("windows", sysname, fixed = TRUE)) {
+    "win-64"
+  } else if (machine %in% c("aarch64", "arm64")) {
+    "linux-aarch64"
+  } else {
+    "linux-64"
+  }
+}
+
+.sn_write_json_file <- function(x, path) {
+  jsonlite::write_json(x = x, path = path, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  normalizePath(path, winslash = "/", mustWork = TRUE)
+}
+
