@@ -587,7 +587,8 @@
                                         output_dir,
                                         config_path,
                                         ...) {
-  sn_call_infercnvpy(
+  sn_call_pixi_environment(
+    "infercnvpy",
     command = "python",
     args = c(
       shQuote(script),

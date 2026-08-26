@@ -56,9 +56,10 @@ This skill is the main entry point for package usage.
   them, such as composition, metrics, scArches, scPoli, and label transfer
 - use `layer` for Shennong expression-layer selectors; only internal calls to
   backend packages should use backend-specific names such as Seurat's `slot`
-- call `sn_call_*()` helpers for direct managed-Python commands; reserve
-  `sn_run_*()` Python wrappers for object-level workflows that export/import a
-  Seurat object
+- call `sn_call_pixi_environment("<environment>", command = ..., args = ...)`
+  for direct managed-Python commands (the family-specific `sn_call_*()`
+  aliases are deprecated); reserve `sn_run_*()` Python wrappers for
+  object-level workflows that export/import a Seurat object
 - expect only ShennongOpt patches (Seurat RunPCA/ScaleData, scran, decontX,
   scDblFinder, Coralysis, UCell, LISI, Rogue) to activate lazily inside
   compatible workflow calls with guarded upstream fallback and prior-state
@@ -267,10 +268,11 @@ This skill is the main entry point for package usage.
    `sn_get_signatures()` when workflows need curated blocklists or marker
    programs.
 12. Use `sn_check_pixi()`, `sn_ensure_pixi()`, `sn_get_pixi_paths()`,
-   `sn_list_pixi_environments()`, `sn_get_pixi_config_path()`,
-   `sn_prepare_pixi_environment()`, `sn_call_pixi_environment()`, and the
-   family-specific `sn_call_*()` helpers when a Python backend must be checked,
-   prepared, or invoked directly.
+   `sn_list_pixi_environments()`, `sn_get_pixi_config_path()`, and
+   `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()` when a Python
+   backend must be checked, prepared, or invoked directly. The
+   family-specific `sn_call_*()` aliases are deprecated wrappers over
+   `sn_call_pixi_environment()`.
 13. Use `sn_check_version()`, `sn_install_shennong()`,
    `sn_list_dependencies()`, and `sn_install_dependencies()` for package
    maintenance tasks. From a Shennong source checkout, use

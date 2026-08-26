@@ -8,7 +8,7 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
-- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4379` in the
+- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4382` in the
   current local dependency profile (most optional backends installed; skip
   counts therefore differ from profiles with fewer packages). Warnings are
   environmental diagnostics from optional-backend paths, not failures.
@@ -38,7 +38,10 @@ rationale, and `NEWS.md` records user-visible changes.
   helper pairs from the redundancy audit were consolidated, and four
   duplicated function definitions (scArches/scPoli shims, CellPhoneDB,
   infercnvpy) were removed. Public naming follows the strict `sn_verb_noun`
-  verb-family contracts; off-family names are deprecated shims.
+  verb-family contracts; off-family names are deprecated shims. The
+  environment-specific `sn_call_*()` pixi aliases are deprecated forwarding
+  shims over `sn_call_pixi_environment()`, the single supported runtime
+  primitive.
 - The method registry (`inst/methods/*.yml`) is load-bearing: a two-directional
   parity test pins registry entries to workflow choice sets with explicit
   waivers. New methods cannot claim `implemented: true` without an admitted

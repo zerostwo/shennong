@@ -133,6 +133,19 @@ invisibly returns command output.
 \code{~/.shennong/pixi/<family>/} workspace. \code{sn_call_pixi_environment()}
 runs a command inside one of these environments.
 }
+\details{
+The environment-specific aliases \code{sn_call_scvi()},
+\code{sn_call_scanvi()}, \code{sn_call_mmochi()}, \code{sn_call_scarches()},
+\code{sn_call_scpoli()}, \code{sn_call_infercnvpy()},
+\code{sn_call_trajectory()}, \code{sn_call_cellphonedb()},
+\code{sn_call_cell2location()}, \code{sn_call_tangram()},
+\code{sn_call_squidpy()}, \code{sn_call_spatialdata()}, and
+\code{sn_call_stlearn()} are deprecated compatibility wrappers that only
+forward to \code{sn_call_pixi_environment()}. Call
+\code{sn_call_pixi_environment("<environment>", command = ..., args = ...)}
+directly; the aliases emit a deprecation warning and will be removed in a
+future major release.
+}
 \examples{
 sn_prepare_pixi_environment("scvi", runtime_dir = tempfile("shennong-home-"))
 \dontrun{

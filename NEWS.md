@@ -36,6 +36,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Fixed a crash when printing Seurat command records whose parameters contain
+  nested lists (`Error ... type 'list' cannot be handled by 'cat'`), first
+  observed with `object@commands$sn_remove_ambient_contamination`. Shennong now
+  stores logged commands as an internal `sn_seurat_command` subclass of
+  `SeuratCommand` whose `show()` method renders nested list parameters as
+  compact deparsed one-liners instead of failing. The stored `@params`
+  structure is unchanged, so programmatic access such as
+  `@params$requested$method` continues to work.
+
 - The ShennongOpt bridge now expands umbrella patch keys (`seurat`, `scran`)
   to every registered granular patch sharing their prefix
   (`seurat_runpca`, `seurat_scaledata`, `seurat_findneighbors`,
@@ -43,6 +52,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   ShennongOpt moved to per-operation patch names.
 
 ### Changed
+
+- Deprecated the 13 environment-specific `sn_call_*()` pixi aliases
+  (`sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`,
+  `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`,
+  `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`,
+  `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, and
+  `sn_call_stlearn()`). They now emit a deprecation warning and forward to
+  `sn_call_pixi_environment("<environment>", ...)`, which remains the single
+  supported runtime primitive for direct managed-Python commands. The aliases
+  will be removed in a future major release; object-level `sn_run_*()`
+  workflows are unaffected.
 
 - Renamed the remaining noun-first getters and off-family actions behind
   `.Deprecated()` forwarding shims (AUDIT-13): `sn_enrich()` →

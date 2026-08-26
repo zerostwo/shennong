@@ -480,3 +480,23 @@ test_that("scVI pixi manifest includes CPU and GPU environments", {
   expect_equal(Shennong:::.sn_default_scvi_cuda_version("13.0"), "12.6")
   expect_equal(Shennong:::.sn_default_scvi_cuda_version("11.8"), "11.8")
 })
+
+test_that("deprecated environment-specific pixi call aliases warn and forward", {
+  env <- tempfile("shennong-pixi-alias-")
+  on.exit(unlink(env, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_warning(
+    resolved <- tryCatch(
+      sn_call_stlearn("definitely-not-a-real-command", args = character(), runtime_dir = env, quiet = TRUE),
+      error = function(e) e
+    ),
+    "deprecated",
+    ignore.case = TRUE
+  )
+
+  # The alias must forward to sn_call_pixi_environment(): the failure mode is
+  # the generic unknown-command error from the managed environment, not a
+  # missing-function error.
+  expect_s3_class(resolved, "error")
+  expect_false(grepl("could not find function|no applicable method", conditionMessage(resolved)))
+})

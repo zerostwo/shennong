@@ -4,6 +4,23 @@ Last updated: 2026-08-26
 
 ## 2026-08-26
 
+- The 13 environment-specific `sn_call_*()` pixi aliases
+  (`sn_call_scvi` through `sn_call_stlearn`) are deprecated behind
+  `.Deprecated("sn_call_pixi_environment", ...)` forwarding shims per the
+  staged deprecation lifecycle. Rationale: each alias was a one-line forwarder
+  with zero callers inside the package and no test coverage — pure
+  backend-specific public surface that grows linearly with environment count,
+  contrary to the task-centric API rule. `sn_call_pixi_environment()` itself
+  stays public and supported as the single backend-agnostic runtime primitive:
+  it is load-bearing inside clustering/python-bridge/popv conformance paths,
+  and removing the only escape hatch for custom managed-Python commands would
+  remove real capability rather than accidental surface. The one internal
+  caller of an alias (`.sn_execute_infercnvpy_pixi`) now calls the primitive
+  directly so production runs stay warning-free. Shipped Codex skills teach
+  only the primitive; NEWS records the deprecation.
+
+## 2026-08-26
+
 - The four remaining oversized modules were decomposed via pure moves with
   byte-identical function blocks, verified per-block against R parser spans
   and by whole-package definition-multiset comparison:

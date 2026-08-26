@@ -243,6 +243,19 @@ sn_get_pixi_config_path <- function(environment = NULL) {
 #' \code{~/.shennong/pixi/<family>/} workspace. \code{sn_call_pixi_environment()}
 #' runs a command inside one of these environments.
 #'
+#' @details
+#' The environment-specific aliases \code{sn_call_scvi()},
+#' \code{sn_call_scanvi()}, \code{sn_call_mmochi()}, \code{sn_call_scarches()},
+#' \code{sn_call_scpoli()}, \code{sn_call_infercnvpy()},
+#' \code{sn_call_trajectory()}, \code{sn_call_cellphonedb()},
+#' \code{sn_call_cell2location()}, \code{sn_call_tangram()},
+#' \code{sn_call_squidpy()}, \code{sn_call_spatialdata()}, and
+#' \code{sn_call_stlearn()} are deprecated compatibility wrappers that only
+#' forward to \code{sn_call_pixi_environment()}. Call
+#' \code{sn_call_pixi_environment("<environment>", command = ..., args = ...)}
+#' directly; the aliases emit a deprecation warning and will be removed in a
+#' future major release.
+#'
 #' @param environment Python environment name.
 #' @param pixi_environment Pixi environment inside the manifest, for example
 #'   \code{"cpu"}, \code{"gpu"}, or \code{"default"}. \code{"auto"} uses
@@ -416,78 +429,91 @@ sn_call_pixi_environment <- function(environment = NULL,
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_scvi <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_scvi")
   sn_call_pixi_environment("scvi", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_scanvi <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_scanvi")
   sn_call_pixi_environment("scanvi", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_mmochi <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_mmochi")
   sn_call_pixi_environment("mmochi", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_scarches <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_scarches")
   sn_call_pixi_environment("scarches", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_scpoli <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_scpoli")
   sn_call_pixi_environment("scpoli", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_infercnvpy <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_infercnvpy")
   sn_call_pixi_environment("infercnvpy", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_trajectory <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_trajectory")
   sn_call_pixi_environment("trajectory", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_cellphonedb <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_cellphonedb")
   sn_call_pixi_environment("cellphonedb", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_cell2location <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_cell2location")
   sn_call_pixi_environment("cell2location", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_tangram <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_tangram")
   sn_call_pixi_environment("tangram", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_squidpy <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_squidpy")
   sn_call_pixi_environment("squidpy", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_spatialdata <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_spatialdata")
   sn_call_pixi_environment("spatialdata", command = command, args = args, ...)
 }
 
 #' @rdname sn_prepare_pixi_environment
 #' @export
 sn_call_stlearn <- function(command, args = character(), ...) {
+  .Deprecated("sn_call_pixi_environment", package = "Shennong", old = "sn_call_stlearn")
   sn_call_pixi_environment("stlearn", command = command, args = args, ...)
 }
 
