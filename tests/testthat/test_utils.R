@@ -280,6 +280,42 @@ test_that("Seurat command logging stores named command objects on the Seurat obj
   )
 })
 
+test_that("logged commands with nested list parameters remain printable", {
+  skip_if_not_installed("Seurat")
+
+  object <- make_utils_test_object()
+  logged <- Shennong:::.sn_log_seurat_command(
+    object = object,
+    assay = "RNA",
+    name = "nested_command",
+    params = list(
+      schema_version = "1.0.0",
+      requested = list(method = "auto", assay = NULL),
+      backend_args = list(maxIter = 7L),
+      input = list(x = list(type = "Seurat", assay = "RNA")),
+      hidden = function(x) x
+    )
+  )
+  command <- logged@commands$nested_command
+
+  expect_s4_class(command, "sn_seurat_command")
+  expect_true(methods::is(command, "SeuratCommand"))
+  params <- methods::slot(command, "params")
+  expect_identical(params$schema_version, "1.0.0")
+  expect_identical(params$requested$method, "auto")
+  expect_null(params$requested$assay)
+  expect_identical(params$backend_args, list(maxIter = 7L))
+  expect_identical(params$input$x, list(type = "Seurat", assay = "RNA"))
+
+  output <- expect_no_error(capture.output(print(command)))
+  rendered <- paste(output, collapse = "\n")
+  expect_match(rendered, "Command: ", fixed = TRUE)
+  expect_match(rendered, "requested : list(method = \"auto\", assay = NULL)", fixed = TRUE)
+  expect_match(rendered, "backend_args : list(maxIter = 7L)", fixed = TRUE)
+  expect_match(rendered, "input : list(x = list(type = \"Seurat\", assay = \"RNA\"))", fixed = TRUE)
+  expect_no_match(rendered, "hidden :", fixed = TRUE)
+})
+
 test_that("Seurat layer helpers validate assays and combine split layers safely", {
   skip_if_not_installed("Seurat")
 

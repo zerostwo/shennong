@@ -506,6 +506,46 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   eval(as.call(c(list(fun_call), call_args)), envir = eval_env)
 }
 
+.sn_register_printable_command_class <- function(pkgname) {
+  if (methods::isClass("sn_seurat_command")) {
+    return(invisible(FALSE))
+  }
+  where <- asNamespace(pkgname)
+  methods::setClass("sn_seurat_command", contains = "SeuratCommand", where = where)
+  methods::setMethod("show", "sn_seurat_command", .sn_show_seurat_command, where = where)
+  invisible(TRUE)
+}
+
+.sn_format_command_param <- function(value) {
+  if (is_null(value)) {
+    return(character(0))
+  }
+  if (is.atomic(value)) {
+    return(value)
+  }
+  paste(deparse(value, width.cutoff = 500L), collapse = " ")
+}
+
+.sn_show_seurat_command <- function(object) {
+  params <- slot(object, "params")
+  keep <- vapply(params, function(p) !is.function(p), logical(1))
+  params <- params[keep]
+  cat(
+    "Command: ", slot(object, "call.string"), "\n",
+    "Time: ", as.character(slot(object, "time.stamp")), "\n",
+    sep = ""
+  )
+  for (p in seq_along(along.with = params)) {
+    cat(names(params)[p], ":", .sn_format_command_param(params[[p]]), "\n")
+  }
+  invisible(NULL)
+}
+
+.sn_as_printable_command <- function(cmd) {
+  printable <- tryCatch(methods::as(cmd, "sn_seurat_command"), error = function(e) NULL)
+  printable %||% cmd
+}
+
 .sn_log_seurat_command <- function(object,
                                    assay = NULL,
                                    name = NULL,
@@ -527,7 +567,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
     }
     slot(cmd, "params") <- params
   }
-  object[[command_name]] <- cmd
+  object[[command_name]] <- .sn_as_printable_command(cmd)
   object
 }
 

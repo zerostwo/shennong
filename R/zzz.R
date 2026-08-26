@@ -1,3 +1,10 @@
+.onLoad <- function(libname, pkgname) {
+  if (requireNamespace("SeuratObject", quietly = TRUE)) {
+    .sn_register_printable_command_class(pkgname = pkgname)
+  }
+  invisible()
+}
+
 .onAttach <- function(libname, pkgname) {
   if (!isTRUE(getOption("shennong.startup_message", TRUE))) {
     return(invisible())
