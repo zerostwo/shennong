@@ -1,8 +1,79 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-25
+Last updated: 2026-08-26
+
+## 2026-08-26
+
+- The four remaining oversized modules were decomposed via pure moves with
+  byte-identical function blocks, verified per-block against R parser spans
+  and by whole-package definition-multiset comparison:
+  `analysis_metrics.R` (4046 → 2233) into `analysis_integration_metrics.R`,
+  `analysis_composition.R`, and `analysis_rogue.R`; `interpretation.R`
+  (4034 → 1596) into `interpretation_evidence.R` and
+  `interpretation_backend.R`; `package_tools.R` (2750 → 730) into
+  `pixi_runtime.R`, `python_bridge.R`, and `codex_project.R`;
+  `visualization.R` (2842 → 2000) into `visualization_theme.R`,
+  `visualization_palette.R`, and `visualization_density.R`. Cross-domain
+  helpers stayed inside their owning family files rather than moving to
+  `utils.R`, keeping the change set collision-free. NAMESPACE is unchanged;
+  regenerated man/ differs only in source-file comments. The full suite
+  result is identical before and after
+  (`FAIL 0 | WARN 8 | SKIP 1 | PASS 4379`).
 
 ## 2026-08-25
+
+- `analysis_clustering.R` was decomposed without behavior change: the
+  integration backend adapters (batch/Harmony/MMOCHI/Coralysis/seurat-layer/
+  scVI/scPoli/BBKNN plus their pixi runtime plumbing and the
+  scArches/scPoli object-method wrappers) moved to
+  `analysis_integration_backends.R`, and the rare-cell detection subsystem
+  behind `sn_detect_rare_cells()` moved to `analysis_rare_cells.R`
+  (5841 → 3499 lines). Four helpers shared across domains
+  (`.sn_shennong_runtime_dir`, `.sn_current_pixi_platform`,
+  `.sn_write_json_file`, `.sn_merge_control_args`) moved to `utils.R`.
+  Pure moves only; every definition body is unchanged.
+- The three redundant internal-helper pairs named by the redundancy audit
+  are consolidated: `.sn_default_scvi_run_dir` folded into a single shared
+  `.sn_default_python_run_dir` (now in `utils.R`),
+  `.sn_validate_result_object` call sites now call
+  `.sn_validate_seurat_object` directly, and the identical spatial/dynamics
+  plot-result resolvers merged into one `.sn_resolve_result_input` in
+  `analysis_result.R`. Internal names only; no public contract changed.
+- Four accidentally duplicated function definitions were removed
+  (`sn_run_scarches`/`sn_run_scpoli` defined twice with identical bodies in
+  the clustering module; `sn_run_cellphonedb` twice in communication;
+  `sn_run_infercnvpy` twice in CNV). In each case the later shadowing
+  definition was byte-identical to the first, so deleting the redundant copy
+  cannot change behavior. The duplication likely entered with the earlier
+  module relocations and postdates the 2026-08-21 no-duplicates audit.
+- Standalone-script argument-parser deduplication is declined on purpose:
+  the per-script helpers differ in name and presence, and unifying ten
+  operational gates around an indirection layer would violate the governance
+  principle that small controlled duplication beats a confusing framework.
+
+- The fourteen `.import.rio_*` / `.export.rio_*` transport functions stay
+  exported. Rationale: they are the documented `rio` third-party-format
+  extension contract — plain `rio::import()`/`rio::export()` discovers them
+  only as exports from an attached package, and the shipped package skills
+  document them as the package-level IO hooks behind `sn_read()` /
+  `sn_write()`. Internalizing them would silently remove single-cell formats
+  from plain-`rio` interop for no maintenance gain; the naming-gate whitelist
+  in `test-architecture-gates.R` records them as intentional instead of
+  accidental surface.
+- Maintainer documentation is now current-state-only: `Status.md` was rewritten
+  as a snapshot (validation verdicts, architecture state, open boundaries) and
+  its append-only history moved to
+  `archive/Status-history-through-2026-08-25.md`; the completed
+  `ComprehensiveAudit-2026-08-24.md` and executed
+  `RedundancyAudit-2026-08-21.md` audits moved to `archive/`. Git history is
+  the historical record; active documents describe what is true now.
+- Architecture gates are automated in `tests/testthat/test-architecture-gates.R`
+  with committed baselines under `inst/architecture/`: export growth, export
+  naming (`sn_verb_noun` plus the whitelisted rio hooks), dependency growth,
+  a `docs/codex/` active-document allowlist, and source-file size limits
+  (grandfathered large modules may not grow substantially; new files stay
+  below 1500 lines). Intentional architecture changes update the baseline in
+  the same change set with rationale recorded here.
 
 - Comprehensive-audit renames ship behind `.Deprecated()` forwarding shims
   instead of hard removals: `sn_enrich()` → `sn_run_enrichment()`,

@@ -2,19 +2,26 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by durable workflow domains (61 files as of 2026-08-25).
+- `R/` is organized by durable workflow domains (74 files as of 2026-08-26).
   Analysis domains live in one `analysis_<domain>.R` each: preprocessing,
   clustering (`analysis_clustering.R` plus extracted `analysis_label_transfer.R`,
-  `analysis_celltypist.R`, and `analysis_integration_benchmark.R`), annotation
+  `analysis_celltypist.R`, `analysis_integration_backends.R`,
+  `analysis_rare_cells.R`, and `analysis_integration_benchmark.R`),
+  metrics (`analysis_metrics.R` orchestrators plus extracted
+  `analysis_integration_metrics.R`, `analysis_composition.R`,
+  `analysis_rogue.R`), annotation
   (`annotation.R`, `annotation_ontology.R`, `feature_annotation.R`),
-  differential expression (`analysis_de.R`), enrichment, metrics/composition,
-  bulk, priority, trajectory and velocity/fate, communication/regulatory,
+  differential expression (`analysis_de.R`), enrichment, bulk, priority,
+  trajectory and velocity/fate, communication/regulatory,
   spatial, CNV, metabolism/grn/program discovery/scoring, adapters, abundance,
   registry, result contract (`analysis_result.R`, `result_bundle.R`), and
   simulation. Presentation lives in per-domain `plot_<domain>.R` files plus
-  `visualization.R`, `figure_spec.R`, and `figure_export.R`. Cross-cutting
-  modules: interpretation, usage tracking, acceleration, IO (`data_io.R`,
-  `data.R`), package/runtime helpers (`package_tools.R`), signatures, MCP,
+  `visualization.R` (orchestrators; theme/palette/density aspects extracted)
+  and `figure_spec.R`/`figure_export.R`. Cross-cutting modules: interpretation
+  (`interpretation.R` orchestration plus `interpretation_evidence.R` and
+  `interpretation_backend.R`), runtime plumbing (`package_tools.R` plus
+  `pixi_runtime.R`, `python_bridge.R`, `codex_project.R`), usage tracking,
+  acceleration, IO (`data_io.R`, `data.R`), signatures, MCP,
   `utils.R`, and `zzz.R`. Prefer the domain-specific `analysis_*` / `plot_*`
   file already owning a workflow over adding another generic module; consult
   the current `R/` inventory because the module set intentionally evolves.
@@ -31,7 +38,8 @@
 - `man/` contains roxygen2-generated `.Rd` files. Treat it as generated output and keep it synchronized with the roxygen comments in `R/`.
 - `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
 - `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
-- `data/` stores package datasets. `docs/codex/` stores package-maintainer Codex docs and modernization memory; it is already excluded from package builds via `.Rbuildignore`.
+- `data/` stores package datasets. `docs/codex/` stores package-maintainer Codex docs and modernization memory; it is already excluded from package builds via `.Rbuildignore`. Do not create new files under `docs/codex/` by default: the active-document allowlist is enforced by the architecture-gate test, and historical material belongs in `docs/codex/archive/`. Do not append implementation history to `docs/codex/Status.md`; it describes current state only.
+- `inst/architecture/` holds committed architecture-gate baselines (public API, dependencies, source-file sizes) enforced by `tests/testthat/test-architecture-gates.R`. Intentional growth of exports, dependencies, or oversized files must update the baseline in the same change set with rationale in `docs/codex/Decisions.md`.
 - `inst/codex/project-template/` stores the shipped initialized-project governance template. `inst/codex/package-skills/` stores the shipped package-usage Codex skills. Keep repository-only planning and modernization memory out of those installed user assets.
 - `_pkgdown.yml` and `.github/workflows/` define the package website and CI entry points.
 

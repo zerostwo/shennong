@@ -1,6 +1,6 @@
 # Structural Roadmap
 
-Last updated: 2026-08-22
+Last updated: 2026-08-26
 
 ## Completed since 2026-07-14
 
@@ -34,21 +34,38 @@ Last updated: 2026-08-22
 
 ## Next safe refactors
 
-- Split large durable domains only when a focused test boundary exists. The
-  current size ranking makes `analysis_clustering.R` (~266 KB) the top
-  candidate, followed by `interpretation.R`, `analysis_metrics.R`,
-  `package_tools.R`, and `visualization.R`.
-- Consolidate the three structurally identical internal helper pairs reported
-  by the redundancy audit (`scvi`/`python` run-dir defaults, Seurat/result
-  object validators, spatial/dynamics result resolvers).
-- Deduplicate repeated `.absolute_path`/`.option`/`.flag` argument parsers in
-  standalone scripts while preserving direct execution of each script.
+- Large-domain splitting is essentially complete (2026-08-25/26):
+  `analysis_clustering.R`, `analysis_metrics.R`, `interpretation.R`,
+  `package_tools.R`, and `visualization.R` were decomposed via pure moves.
+  Remaining over-1500-line files are orchestrator remainders
+  (`analysis_clustering.R` 3499, `analysis_metrics.R` 2233,
+  `preprocessing.R` 2437, `usage_tracking.R` 2238,
+  `interpretation_evidence.R` 1947, `visualization.R` 2000); split them only
+  when a focused test boundary exists and a genuinely coherent subsystem is
+  identifiable, per the architecture governance.
 - Add focused source-level tests where CodeGraph cannot infer dynamic
   `object@misc` dispatch or test reachability.
-- Add an automated pre-push check for the recurring pkgdown reference-index
-  omission failure mode instead of relying on review discipline.
+
+Declined deliberately (2026-08-25): consolidating `.absolute_path` /
+`.option` / `.flag` parsers across standalone scripts. The helpers vary in
+name and presence per script; unifying ten operational CI/local gates around
+a new indirection layer trades concrete duplication for framework risk,
+contrary to the minimalism principle in the architecture governance.
+
+Completed earlier: the pkgdown reference-index omission check now runs inside
+`scripts/check-prepush.R`; no separate work remains for it.
 
 ## Correctness milestones
+
+- Investigate the packaged-check-only scDblFinder × monocle3 `counts<-` S4
+  dispatch collision exposed after monocle3 entered the local dependency
+  profile: the source-tree acceleration and doublet suites pass, but one
+  tarball `R CMD check` packaged-test run failed inside
+  `scDblFinder:::.checkSCE` when `BiocGenerics::counts<-` resolved to a
+  monocle3 method. Suspect cross-file session state in the packaged test
+  session; likely needs explicit namespace qualification or dispatch
+  disambiguation in the doublet adapter. Not caused by current maintenance
+  change sets.
 
 - Grow backend-conformance coverage from six pilots toward the frozen 64-method
   implemented inventory; every newly admitted method still requires its own

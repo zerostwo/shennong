@@ -6,8 +6,10 @@ Shennong users under `inst/codex/`.
 
 ## Active documents
 
-- `Status.md`: current repository state and latest validation.
-- `Decisions.md`: chronological architecture and compatibility decisions.
+- `Status.md`: current repository state only. Do not append history here;
+  Git history and `archive/` hold point-in-time evidence.
+- `Decisions.md`: durable architecture and compatibility decisions with
+  rationale, newest first.
 - `Roadmap.md`: remaining structural work, ordered by risk.
 - `Governance.md`: boundaries between package maintenance, initialized-project
   governance, and package-usage skills.
@@ -20,13 +22,15 @@ Shennong users under `inst/codex/`.
 - `UsageTracking.md`: opt-in local-outbox-first SQLite/managed-DBI timing and
   usage architecture, consent/privacy boundary, instrumentation registry, and
   evidence semantics.
-- `RedundancyAudit-2026-08-21.md`: disk/source redundancy classification,
-  cleanup whitelist, and retained-artifact rationale.
 - `Ecosystem.md`: current five-repository development state, interface ledger,
   modality compatibility matrix, shared-contract targets, and cross-repository
   release gates.
 - `NextEcosystemMilestone.md`: self-contained execution handoff for immutable
   service deployment and the first PBMC3K five-repository end-to-end fixture.
+
+New files under this directory are rejected by the architecture-gate test in
+`tests/testthat/test-architecture-gates.R`; extend the allowlist there only
+with an intentional, justified change.
 - `ecosystem-lock.json`: machine-readable compatibility lock for the five
   implementation revisions, package/source and image digests, shared contract
   schemas, CI evidence, and deployed status. All implementation/image fields
