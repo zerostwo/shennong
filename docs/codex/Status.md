@@ -8,7 +8,7 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
-- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4382` in the
+- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4400` in the
   current local dependency profile (most optional backends installed; skip
   counts therefore differ from profiles with fewer packages). Warnings are
   environmental diagnostics from optional-backend paths, not failures.

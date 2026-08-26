@@ -3,6 +3,21 @@
 Last updated: 2026-08-26
 
 ## 2026-08-26
+## 2026-08-26
+
+- The new ShennongOpt granular patches integrate without new hook sites:
+  Shennong's clustering/de/communication workflows already wrap every Seurat
+  stage in `.sn_with_default_seurat_acceleration("seurat", ...)` scopes, and
+  the umbrella-key prefix expansion picks up `seurat_findvariablefeatures`,
+  `seurat_findneighbors`, and `seurat_findclusters` automatically with their
+  own opt-side guards deciding per call. Legacy autozyme-era scope keys
+  `seurat_merge` / `seurat_joinlayers` map to `seuratobject_*` so explicit
+  requests stay reachable; they deliberately have NO automatic hook site
+  because broad merge()/JoinLayers() activation carries a known peak-RSS
+  regression history and needs its own guarded contract before any workflow
+  adopts it. Equivalence evidence: 240-cell synthetic clustering parity
+  (identical HVF/clusters, aligned PCA diff ~3e-4) recorded in NEWS.
+
 
 - The 13 environment-specific `sn_call_*()` pixi aliases
   (`sn_call_scvi` through `sn_call_stlearn`) are deprecated behind

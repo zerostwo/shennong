@@ -13,6 +13,8 @@
   "scdblfinder" = "scdblfinder",
   "scran" = "scran",
   "seurat" = "seurat",
+  "seurat_joinlayers" = "seuratobject_joinlayers",
+  "seurat_merge" = "seuratobject_merge",
   "ucell" = "ucell"
 )
 

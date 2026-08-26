@@ -10,6 +10,33 @@ test_that("ShennongOpt patch mapping routes supported keys and suppresses gaps",
   )
 })
 
+test_that("granular SeuratOpt patches resolve through umbrella and explicit keys", {
+  skip_if_not_installed("ShennongOpt")
+  mapped <- Shennong:::.sn_map_acceleration_patches("seurat")
+  expect_true(all(c(
+    "seurat_runpca",
+    "seurat_scaledata",
+    "seurat_findneighbors",
+    "seurat_findvariablefeatures",
+    "seurat_findclusters"
+  ) %in% mapped$supported))
+  expect_false(any(grepl("^seuratobject_", mapped$supported)))
+
+  legacy <- Shennong:::.sn_map_acceleration_patches(
+    c("seurat_merge", "seurat_joinlayers")
+  )
+  expect_setequal(
+    legacy$supported,
+    c("seuratobject_merge", "seuratobject_joinlayers")
+  )
+
+  # Exact ShennongOpt patch names are accepted by the public controls
+  # directly, without going through the legacy key map.
+  status <- sn_check_acceleration()
+  expect_true("seuratobject_merge" %in% names(status))
+  expect_true("seuratobject_joinlayers" %in% names(status))
+})
+
 test_that("Shennong acceleration bridge uses the current ShennongOpt API", {
   calls <- character()
   local_mocked_bindings(

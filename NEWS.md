@@ -53,6 +53,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
+- Integrated the new ShennongOpt accelerations. `sn_run_cluster()`'s
+  variable-feature selection, nearest-neighbor graph, and clustering stages now
+  run through the guarded `seurat_findvariablefeatures`, `seurat_findneighbors`,
+  and `seurat_findclusters` patches whenever ShennongOpt is installed; the
+  umbrella `seurat` scope expands to every registered granular patch
+  automatically. The `seuratobject_merge` and `seuratobject_joinlayers` patches
+  are reachable through explicit `sn_enable_acceleration()` requests via the new
+  `seurat_merge` / `seurat_joinlayers` scope keys and are never activated
+  automatically. Parity evidence on a 240-cell synthetic run: identical
+  variable features and clusters, sign-aligned PCA difference ~3e-4.
+
 - Deprecated the 13 environment-specific `sn_call_*()` pixi aliases
   (`sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`,
   `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`,
