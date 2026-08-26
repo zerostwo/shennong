@@ -428,10 +428,6 @@ sn_validate_result <- function(result, error = TRUE) {
   if (nrow(hit) == 0L) NULL else hit$collection[[1]]
 }
 
-.sn_validate_result_object <- function(object) {
-  .sn_validate_seurat_object(object)
-}
-
 .sn_prepare_result_for_collection <- function(result, type, name) {
   result <- .sn_upgrade_analysis_result(result, analysis_type = type, name = name)
   collection <- .sn_result_collection(type)
@@ -479,7 +475,7 @@ sn_validate_result <- function(result, error = TRUE) {
 #'
 #' @export
 sn_store_result <- function(object, type, name, result) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   if (!is.character(type) || length(type) != 1L || !nzchar(type)) {
     stop("`type` must be a non-empty character scalar.", call. = FALSE)
   }
@@ -525,7 +521,7 @@ sn_store_result <- function(object, type, name, result) {
 #'
 #' @export
 sn_get_result <- function(object, type, name) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   type <- tolower(as.character(type))
   name <- as.character(name)
   collection <- .sn_result_collection(type)
@@ -673,7 +669,7 @@ sn_get_result <- function(object, type, name) {
 #'
 #' @export
 sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   requested_types <- if (is_null(type)) NULL else tolower(as.character(type))
   entries <- .sn_stored_analysis_result_entries(
     object,
@@ -792,7 +788,7 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
 #'
 #' @export
 sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   requested_types <- if (is_null(type)) NULL else tolower(as.character(type))
   entries <- .sn_stored_analysis_result_entries(object, requested_types)
   for (entry in entries) {
@@ -827,7 +823,7 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
 #'
 #' @export
 sn_delete_result <- function(object, type, name) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   type <- tolower(as.character(type))
   name <- as.character(name)
   collection <- .sn_result_collection(type)
@@ -887,7 +883,7 @@ sn_delete_result <- function(object, type, name) {
 #'
 #' @export
 sn_delete_artifact <- function(object, artifact_type, name = NULL) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   registry <- .sn_misc_result_registry()
   artifacts <- registry[registry$contract_scope == "artifact", , drop = FALSE]
   requested <- tolower(as.character(artifact_type))
@@ -1134,3 +1130,16 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
     store_name = interpretation_name
   )
 }
+
+.sn_resolve_result_input <- function(x, type, name = NULL) {
+  result <- if (inherits(x, "Seurat")) {
+    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
+    sn_get_result(x, type, name)
+  } else {
+    x
+  }
+  sn_validate_result(result)
+  if (!identical(result$analysis_type, type)) stop("Expected a ", type, " result.", call. = FALSE)
+  result
+}
+

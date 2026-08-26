@@ -133,7 +133,7 @@ sn_find_spatial_features <- function(object,
                                      return_object = TRUE,
                                      seed = NULL,
                                      verbose = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
   if (!missing(verbose)) {
@@ -247,7 +247,7 @@ sn_find_spatial_domains <- function(object,
                                     return_object = TRUE,
                                     seed = NULL,
                                     verbose = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
   if (!missing(verbose)) {
@@ -341,7 +341,7 @@ sn_run_spatial_neighborhood <- function(object,
                                         store_name = "spatial_neighborhood",
                                         backend_control = list(),
                                         return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (missing(group_by) || !group_by %in% colnames(object[[]])) stop("`group_by` must name object metadata.", call. = FALSE)
   coordinates <- .sn_spatial_coordinates(object, spatial_cols)
@@ -415,7 +415,7 @@ sn_run_spatial_communication <- function(object,
                                          max_distance = NULL,
                                          store_name = "spatial_communication",
                                          return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   if (missing(group_by) || !group_by %in% colnames(object[[]])) stop("`group_by` must name object metadata.", call. = FALSE)
   communication <- communication %||% sn_get_result(object, "cell_communication", communication_name)
   sn_validate_result(communication)
@@ -482,7 +482,7 @@ sn_integrate_spatial <- function(object,
                                  store_name = "spatial_integration",
                                  backend_control = list(),
                                  return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   coordinates <- .sn_spatial_coordinates(object, spatial_cols)
   output <- if (is.function(backend_control$runner)) backend_control$runner(object = object, method = method, coordinates = coordinates$table, backend_control = backend_control) else backend_control$result

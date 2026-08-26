@@ -686,7 +686,7 @@ sn_run_annotation <- function(object,
                               layer = "data",
                               backend_control = list(),
                               return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (!group_by %in% colnames(object[[]])) {
     stop("`group_by` column '", group_by, "' was not found in object metadata.", call. = FALSE)

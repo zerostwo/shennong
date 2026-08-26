@@ -241,7 +241,7 @@ sn_score_programs <- function(object,
                               backend_control = list(),
                               return_object = TRUE,
                               store_name = NULL) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (!is.null(store_name)) {
     name <- store_name
@@ -356,7 +356,7 @@ sn_test_programs <- function(object,
                              method = c("wilcox", "limma"),
                              store_name = NULL,
                              return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   metadata_columns <- c(condition_by, sample_by, group_by)
   missing <- setdiff(metadata_columns[!is.na(metadata_columns) & nzchar(metadata_columns)], colnames(object[[]]))

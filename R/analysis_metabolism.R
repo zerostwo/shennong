@@ -237,7 +237,7 @@ sn_run_metabolism <- function(object,
                               store_name = "metabolism",
                               backend_control = list(),
                               return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   scoring_method <- match.arg(scoring_method)
   metadata <- object[[]]

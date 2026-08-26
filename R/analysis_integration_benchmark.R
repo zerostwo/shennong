@@ -320,7 +320,7 @@ sn_compare_integrations <- function(object,
   }
 
   runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
-  run_dir <- backend_control$run_dir %||% .sn_default_scvi_run_dir("scib_metrics", runtime_dir)
+  run_dir <- backend_control$run_dir %||% .sn_default_python_run_dir("scib_metrics", runtime_dir)
   selected <- .sn_resolve_scvi_accelerator(accelerator)
   pixi_environment <- backend_control$environment %||% selected$environment
   runner <- backend_control$runner %||% NULL

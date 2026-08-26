@@ -173,7 +173,7 @@ sn_run_grn <- function(object,
                        backend_control = list(),
                        return_object = TRUE,
                        store_name = NULL) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (!is.null(store_name)) {
     name <- store_name

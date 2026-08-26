@@ -1,5 +1,5 @@
 .sn_abundance_inputs <- function(object, sample_by, condition_by, cell_type_by, contrast = NULL, extra_columns = NULL) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   columns <- unique(c(sample_by, condition_by, cell_type_by, extra_columns))
   missing <- setdiff(columns, colnames(object[[]]))
   if (length(missing) > 0L) stop("Missing abundance metadata column(s): ", paste(missing, collapse = ", "), ".", call. = FALSE)

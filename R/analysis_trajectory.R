@@ -428,7 +428,7 @@ sn_run_trajectory <- function(object,
                               return_object = TRUE,
                               seed = NULL,
                               verbose = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
   if (!missing(verbose)) {

@@ -1031,7 +1031,7 @@ sn_prioritize_states <- function(object,
                                  seed = 717L,
                                  backend_control = list(),
                                  return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   method <- match.arg(method)
   family <- match.arg(family)
   if (!identical(method, "rareq") && (is_null(state_by) || !state_by %in% colnames(object[[]]))) {
@@ -1173,7 +1173,7 @@ sn_run_scissor <- function(object,
                            seed = 717L,
                            backend_control = list(),
                            return_object = TRUE) {
-  .sn_validate_result_object(object)
+  .sn_validate_seurat_object(object)
   family <- match.arg(family)
   if (!is_null(state_by) && !state_by %in% colnames(object[[]])) {
     stop("`state_by` must name object metadata for Scissor analysis.", call. = FALSE)

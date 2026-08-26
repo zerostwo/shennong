@@ -56,18 +56,6 @@ sn_plot_spatial_feature <- function(object,
     ggplot2::labs(x = NULL, y = NULL, color = "Expression") + ggplot2::theme_void()
 }
 
-.sn_resolve_spatial_result <- function(x, type, name = NULL) {
-  result <- if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    sn_get_result(x, type, name)
-  } else {
-    x
-  }
-  sn_validate_result(result)
-  if (!identical(result$analysis_type, type)) stop("Expected a ", type, " result.", call. = FALSE)
-  result
-}
-
 #' Plot spatial-domain assignments
 #'
 #' @param x A Seurat object or spatial-domain result.
@@ -78,7 +66,7 @@ sn_plot_spatial_feature <- function(object,
 #' @export
 sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_spatial_result(x, "spatial_domains", name)
+  result <- .sn_resolve_result_input(x, "spatial_domains", name)
   data <- dplyr::left_join(result$tables$coordinates, result$tables$domains, by = "cell")
   ggplot2::ggplot(data, ggplot2::aes(x = .data$spatial_x, y = .data$spatial_y, color = .data$domain)) +
     ggplot2::geom_point(size = point_size) + ggplot2::coord_equal() + ggplot2::scale_y_reverse() +
@@ -95,7 +83,7 @@ sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5, object = NU
 #' @export
 sn_plot_spatial_svg <- function(x, name = NULL, n = 30L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_spatial_result(x, "spatial_features", name)
+  result <- .sn_resolve_result_input(x, "spatial_features", name)
   data <- utils::head(result$tables$features[order(result$tables$features$rank), , drop = FALSE], as.integer(n))
   data$feature <- stats::reorder(data$feature, data$score)
   ggplot2::ggplot(data, ggplot2::aes(x = .data$feature, y = .data$score, fill = -log10(.data$adjusted_p_value))) +
@@ -114,7 +102,7 @@ sn_plot_spatial_svg <- function(x, name = NULL, n = 30L, object = NULL) {
 sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", "cooccurrence"), object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_spatial_result(x, "spatial_neighborhood", name)
+  result <- .sn_resolve_result_input(x, "spatial_neighborhood", name)
   if (identical(type, "enrichment")) {
     data <- result$tables$enrichment
     return(ggplot2::ggplot(data, ggplot2::aes(x = .data$target_group, y = .data$source_group, fill = .data$z_score)) +
@@ -139,7 +127,7 @@ sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", 
 #' @export
 sn_plot_spatial_communication <- function(x, name = NULL, n = 50L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_spatial_result(x, "spatial_communication", name)
+  result <- .sn_resolve_result_input(x, "spatial_communication", name)
   data <- result$tables$primary
   score_column <- .sn_spatial_column(c("consensus_score", "score", "magnitude", "effect"), names(data))
   if (is_null(score_column)) data$display_score <- 1 else data$display_score <- as.numeric(data[[score_column]])
