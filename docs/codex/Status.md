@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-26
+Last updated: 2026-08-30
 
 This file describes what is true now. It is not a change log: Git history and
 `docs/codex/archive/` hold point-in-time evidence, `Decisions.md` holds durable
@@ -8,21 +8,37 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
-- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4400` in the
+- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4436` in the
   current local dependency profile (most optional backends installed; skip
   counts therefore differ from profiles with fewer packages). Warnings are
   environmental diagnostics from optional-backend paths, not failures.
 - Architecture gates (`test-architecture-gates.R`): passing against the
   committed `inst/architecture/` baselines.
-- Strict backend-conformance profile: 381 assertions, no warnings or skips.
-- Source build plus `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual`
-  pass with `Status: OK`; the only local NOTE is the live `.codegraph` daemon
-  socket during staging, absent from a clean checkout.
-- Real-data pkgdown build under `site/dev`: 24 article pages, 65 audited
+- Backend-conformance tests pass as part of the full local suite.
+- Source build and `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual
+  --no-tests` complete with no errors, 1 WARNING and 1 NOTE. The warning is
+  the pre-existing `sn_simulate_scdesign3` Rd link; the note names `cell` and
+  `setNames` in unchanged annotation helpers. Tests run separately above.
+  The pre-push script completes successfully; this is not a clean check.
+- Last full real-data pkgdown audit (2026-08-26) under `site/dev`: 24 article pages, 65 audited
   figure assets; runtime tracing observes 94/94 declared core functions across
-  15/15 mapped articles with zero download attempts.
+  15/15 mapped articles with zero download attempts. This full runtime audit
+  was not rerun for the QC helper extraction.
+- Standalone count QC: 32 focused assertions pass (157 across QC,
+  preprocessing, BPCells, and architecture tests); the 2,000-cell / 32,738-gene
+  local PBMC fixture matches direct column-sum percentages exactly before and
+  after a controlled count perturbation, without changing the source object.
+  This verifies recalculation, not an ambient-correction algorithm.
+- Incremental pkgdown rebuild and rendered QC reference/article checks pass;
+  the package is installed locally and a fresh-session exported-helper call
+  passes.
 
 ## Current architecture state
+
+- `sn_add_qc_metrics()` writes or refreshes three count-based QC percentages
+  independently of initialization. Explicit assay/layer selection and optional
+  suffixes support corrected-count comparisons without changing expression
+  layers, default assay, or `nCount_*`/`nFeature_*` metadata.
 
 - `R/` is organized as the 74-file domain module map documented in
   `AGENTS.md`. The 2026-08-26 decomposition pass split `analysis_metrics.R`

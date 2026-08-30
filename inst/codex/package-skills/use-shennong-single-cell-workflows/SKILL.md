@@ -310,6 +310,7 @@ This skill is the main entry point for package usage.
 ## Examples
 
 - `sn_initialize_seurat_object()`
+- `sn_add_qc_metrics()` (rerun on corrected counts; select assay/layer and use a suffix to retain original QC)
 - `sn_run_cluster()`
 - `sn_transfer_labels()`
 - `sn_run_annotation()`

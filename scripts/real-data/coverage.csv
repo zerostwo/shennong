@@ -148,3 +148,4 @@ sn_plot_wgcna,visualization,melanoma_bridge,extended,ggplot2,Requires the extend
 sn_recommend_figure_size,visualization,kotliarov_pbmc,core,Shennong,Size real figures,vignettes/publication-figures.Rmd
 sn_save_figure,visualization,kotliarov_pbmc,core,ggplot2,Save real result plots,vignettes/publication-figures.Rmd
 sn_validate_figure,visualization,kotliarov_pbmc,core,Shennong,Validate real result figures,vignettes/publication-figures.Rmd
+sn_add_qc_metrics,analysis,kotliarov_pbmc,core,Seurat,Refresh count-based QC percentages,vignettes/preprocessing-qc.Rmd

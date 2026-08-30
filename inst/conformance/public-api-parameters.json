@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 261,
+  "function_count": 262,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -34,6 +34,48 @@
           "name": "key",
           "class": "character",
           "default": "\"umap\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
+      "function_name": "sn_add_qc_metrics",
+      "runtime_classified": true,
+      "formal_digest": "806e2accae315bb75451198d10e3bbc94f0cb594f9de2744f1868296dcc8b890",
+      "parameters": [
+        {
+          "name": "object",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "species",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "assay",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"counts\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "suffix",
+          "class": "character",
+          "default": "\"\"",
           "selector_values": null,
           "minimum_cases": 1
         }

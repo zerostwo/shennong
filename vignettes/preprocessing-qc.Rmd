@@ -97,6 +97,49 @@ data.frame(
 )
 ```
 
+## Recalculate QC after count correction
+
+`sn_initialize_seurat_object()` calls `sn_add_qc_metrics()` internally. You can
+also refresh the same percentages on an existing object without initializing
+it again:
+
+```{r refresh-qc-percentages, eval = run_vignette}
+pbmc_from_counts <- sn_add_qc_metrics(pbmc_from_counts, species = "human")
+head(pbmc_from_counts[[]][, c("percent.mt", "percent.ribo", "percent.hb")])
+```
+
+If a correction workflow replaced the RNA `counts` layer, the same call
+recalculates the percentages from those current counts. If corrected counts
+are stored separately, select their assay/layer explicitly:
+
+```{r corrected-qc-percentages, eval = FALSE}
+# Requires an existing layer containing non-negative corrected counts.
+pbmc <- sn_add_qc_metrics(
+  pbmc, species = "human", assay = "RNA", layer = "counts.corrected",
+  suffix = ".corrected"
+)
+head(pbmc[[]][, c("percent.mt", "percent.mt.corrected",
+                  "percent.hb", "percent.hb.corrected")])
+# Alternatively, select a corrected assay's counts:
+# pbmc <- sn_add_qc_metrics(pbmc, assay = "decontX", suffix = ".corrected")
+```
+
+The default suffix is empty and overwrites `percent.mt`, `percent.ribo`, and
+`percent.hb`; a suffix preserves the original values for comparison. Species
+can be omitted when stored on the object or inferable from the selected assay.
+Use gene symbols and count values, not normalized or scaled expression. The
+helper recomputes its denominator from the selected counts, so stale
+`nCount_*` metadata does not affect percentages. It does not refresh `nCount_*`
+or `nFeature_*`, modify count layers, or change the default assay.
+
+An exact layer name takes precedence over split layers. Otherwise, a name
+such as `counts` selects disjoint `counts.*` layers without joining or
+materializing BPCells matrices. Overlapping cell sets are rejected; choose
+one exact layer in that case. Cells outside selected layers receive `NA`.
+Absent marker genes give zero for positive-total cells; zero-total cells give
+`NaN` because their percentages are undefined. Mitochondrial/ribosomal
+signatures and human/mouse hemoglobin matching are unchanged from initialization.
+
 When gene identifiers or mixed symbol styles are a concern, standardize at
 initialization or call `sn_standardize_gene_symbols()` before downstream
 analysis. If `HGNChelper` cannot provide an unambiguous replacement for an

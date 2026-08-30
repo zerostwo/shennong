@@ -101,6 +101,10 @@ user request to the right Shennong function family quickly.
 
 1. Discover 10x inputs with `sn_list_10x_paths()` when needed.
 2. Initialize the Seurat object with `sn_initialize_seurat_object()`.
+   After count correction, rerun `object <- sn_add_qc_metrics(object, assay = "RNA",
+   layer = "counts", suffix = ".corrected")`; select the actual corrected layer
+   or assay if it is stored separately. This recomputes percentage denominators
+   from counts, but does not update `nCount_*` or `nFeature_*`.
 3. When `sn_list_10x_paths()` returns multiple named paths, pass the whole
    vector to `sn_initialize_seurat_object(x = tenx_paths)` to import all
    samples at once as a named list of Seurat objects.

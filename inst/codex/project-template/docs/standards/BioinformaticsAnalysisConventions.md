@@ -167,3 +167,12 @@ in `memory/Decisions.md`.
 - Deliver the plotted source table, figure specification, session information,
   and checksums with final figures whenever the analysis is intended to be
   reproducible or submitted.
+
+## Count-based single-cell QC
+
+After replacing or correcting counts, refresh percentages with
+`object <- Shennong::sn_add_qc_metrics(object, assay = "RNA", layer = "counts",
+suffix = ".corrected")`. Select the actual corrected assay/layer; retain
+original QC columns when comparing stages. Use gene symbols and non-negative
+counts. The helper recomputes percentage denominators from counts, preserves
+sparse/BPCells storage, and leaves `nCount_*`/`nFeature_*` unchanged.

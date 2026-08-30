@@ -350,21 +350,8 @@ sn_initialize_seurat_object <- function(
         sn_standardize_gene_symbols(species = species, is_gene_id = is_gene_id)
     }
 
-    .sn_log_info("Running QC metrics for {species}.")
-    mt_featuers <- sn_get_signatures(species = species, category = "mito")
-    mt_featuers <- mt_featuers[mt_featuers %in% rownames(x = seurat_obj)]
-    ribo_features <- sn_get_signatures(species = species, category = "ribo")
-    ribo_features <- ribo_features[ribo_features %in% rownames(x = seurat_obj)]
-    if (species == "human") {
-      seurat_obj <- seurat_obj |>
-        Seurat::PercentageFeatureSet(features = mt_featuers, col.name = "percent.mt") |>
-        Seurat::PercentageFeatureSet(features = ribo_features, col.name = "percent.ribo") |>
-        Seurat::PercentageFeatureSet(pattern = "^HB[^(P)]", col.name = "percent.hb")
-    } else if (species == "mouse") {
-      seurat_obj <- seurat_obj |>
-        Seurat::PercentageFeatureSet(features = mt_featuers, col.name = "percent.mt") |>
-        Seurat::PercentageFeatureSet(features = ribo_features, col.name = "percent.ribo") |>
-        Seurat::PercentageFeatureSet(pattern = "^Hb[^(p)]", col.name = "percent.hb")
+    if (species %in% c("human", "mouse")) {
+      seurat_obj <- sn_add_qc_metrics(seurat_obj, species = species)
     } else {
       .sn_log_warn("Unsupported species for QC metrics; skipping QC calculation.")
     }
@@ -376,6 +363,87 @@ sn_initialize_seurat_object <- function(
 
   .sn_log_info("Seurat object initialization complete.")
   return(.sn_log_seurat_command(object = seurat_obj, name = "sn_initialize_seurat_object"))
+}
+
+#' Add or refresh count-based QC percentages
+#'
+#' Recalculate mitochondrial, ribosomal and hemoglobin percentages from a
+#' selected count layer, including after ambient RNA correction.
+#'
+#' @param object A Seurat object with gene symbols as feature names.
+#' @param species Either `"human"` or `"mouse"`. If NULL, use stored species
+#'   metadata or infer species from the selected assay's feature names.
+#' @param assay Assay to use; defaults to the object's default assay.
+#' @param layer Count layer to use. An exact layer name takes precedence;
+#'   otherwise split layers starting with `paste0(layer, ".")` are processed
+#'   separately. Selected layers must not contain overlapping cells.
+#' @param suffix String appended to `percent.mt`, `percent.ribo`, and
+#'   `percent.hb`. The default overwrites those columns; for example,
+#'   `".corrected"` preserves the original columns for comparison.
+#' @return The Seurat object with three QC metadata columns and a command record.
+#' @details Percentages are 100 times marker counts divided by total counts
+#'   in the selected layer, never by potentially stale `nCount_*` metadata.
+#'   Mitochondrial and ribosomal features use [sn_get_signatures()]; hemoglobin
+#'   matching retains the initialization patterns `^HB[^(P)]` (human) and
+#'   `^Hb[^(p)]` (mouse). No matching genes gives zero for nonzero-total cells;
+#'   zero-total cells give NaN. Cells absent from the selected layers get NA.
+#'   Supply non-negative counts, not normalized or scaled expression.
+#'   Counts, default assay, `nCount_*`, `nFeature_*`, and stored species are
+#'   unchanged. Sparse and BPCells matrices are not converted to dense matrices.
+#' @seealso [sn_initialize_seurat_object()], [sn_assess_qc()]
+#' @examples
+#' \dontrun{
+#' object <- sn_add_qc_metrics(object, species = "human")
+#' object <- sn_add_qc_metrics(object, assay = "RNA", layer = "counts.corrected",
+#'                             suffix = ".corrected")
+#' head(object[[]][, c("percent.mt", "percent.mt.corrected")])
+#' }
+#' @export
+sn_add_qc_metrics <- function(object, species = NULL, assay = NULL,
+                              layer = "counts", suffix = "") {
+  .sn_validate_seurat_object(object)
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  for (value in list(assay = assay, layer = layer, suffix = suffix)) {
+    if (!is.character(value) || length(value) != 1L || is.na(value)) {
+      stop("`assay`, `layer`, and `suffix` must be single non-missing strings.", call. = FALSE)
+    }
+  }
+  if (!assay %in% names(object@assays)) {
+    stop("Assay '", assay, "' was not found in the Seurat object.", call. = FALSE)
+  }
+  available <- SeuratObject::Layers(object[[assay]])
+  layers <- if (layer %in% available) layer else available[startsWith(available, paste0(layer, "."))]
+  if (!nzchar(layer) || !length(layers)) {
+    stop("Layer '", layer, "' was not found in assay '", assay, "'.", call. = FALSE)
+  }
+  species <- sn_get_species(rownames(object[[assay]]), species = species %||% object@misc$species)
+  .sn_log_info("Running QC metrics for {species}.")
+  signatures <- list(
+    mt = sn_get_signatures(species = species, category = "mito"),
+    ribo = sn_get_signatures(species = species, category = "ribo")
+  )
+  hb_pattern <- if (species == "human") "^HB[^(P)]" else "^Hb[^(p)]"
+  metrics <- matrix(NA_real_, nrow = ncol(object), ncol = 3L,
+    dimnames = list(colnames(object), paste0(c("percent.mt", "percent.ribo", "percent.hb"), suffix)))
+  seen <- character()
+  for (current_layer in layers) {
+    counts <- SeuratObject::LayerData(object, assay = assay, layer = current_layer)
+    cells <- colnames(counts)
+    if (any(cells %in% seen)) {
+      stop("Selected layers contain overlapping cells; select one exact count layer.", call. = FALSE)
+    }
+    seen <- c(seen, cells)
+    totals <- Matrix::colSums(counts)
+    features <- c(signatures, list(hb = grep(hb_pattern, rownames(counts), value = TRUE)))
+    for (i in seq_along(features)) {
+      present <- intersect(features[[i]], rownames(counts))
+      sums <- if (length(present)) Matrix::colSums(counts[present, , drop = FALSE]) else rep(0, ncol(counts))
+      metrics[cells, i] <- sums / totals * 100
+    }
+  }
+  object <- SeuratObject::AddMetaData(object, as.data.frame(metrics))
+  .sn_log_seurat_command(object, assay = assay, name = "sn_add_qc_metrics",
+    params = list(species = species, assay = assay, layer = layer, suffix = suffix))
 }
 
 #' Normalize data in a Seurat object

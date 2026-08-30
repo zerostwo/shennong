@@ -61,6 +61,7 @@ Runtime reference datasets:
 ## Preprocessing and QC
 
 - `sn_get_species()`: infer or retrieve species
+- `sn_add_qc_metrics()`: refresh `percent.mt`, `percent.ribo`, and `percent.hb` from a selected count assay/layer; use `suffix = ".corrected"` to preserve original QC
 - `sn_initialize_seurat_object()`: initialize a Seurat object, including single-path or multi-path 10x import from `sn_list_10x_paths()` and direct BPCells `IterableMatrix` input that remains on disk
 - `sn_standardize_gene_symbols()`: standardize gene symbols
 - `sn_normalize_data()`: normalize with supported workflows

@@ -13,6 +13,7 @@
 .import.rio_qs2
 .import.rio_starsolo
 sn_add_data_from_anndata
+sn_add_qc_metrics
 sn_add_signature
 sn_annotate_de_features
 sn_apply_figure_profile

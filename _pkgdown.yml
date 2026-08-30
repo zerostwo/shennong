@@ -164,6 +164,7 @@ reference:
     contents:
       - sn_get_species
       - sn_initialize_seurat_object
+      - sn_add_qc_metrics
       - sn_standardize_gene_symbols
       - sn_normalize_data
       - sn_score_cell_cycle

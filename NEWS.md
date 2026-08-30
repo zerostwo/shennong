@@ -34,6 +34,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   hook, and the autozyme benchmark artifact/article) was removed; managed pixi
   environments run plain upstream Python.
 
+### Added
+
+- `sn_add_qc_metrics()` refreshes mitochondrial, ribosomal, and hemoglobin
+  percentages independently of initialization, with explicit assay/layer
+  selection and optional output-column suffixes for before/after correction
+  comparisons. Totals come from the current count layer rather than stale
+  `nCount_*` metadata; sparse/BPCells storage is preserved. Initialization
+  now reuses this helper with the same signatures and hemoglobin patterns.
+
 ### Fixed
 
 - Fixed a crash when printing Seurat command records whose parameters contain

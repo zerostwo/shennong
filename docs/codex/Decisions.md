@@ -1,6 +1,27 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-26
+Last updated: 2026-08-30
+
+## 2026-08-30
+
+- Admit `sn_add_qc_metrics()` as a metadata-writing preprocessing helper, not
+  an `sn_calculate_*` metric-value return or `sn_assess_qc()` QC report. It
+  extracts initialization's species-specific percentages and preserves gene
+  signatures and hemoglobin regexes. Explicit assay/layer selection and a
+  suffix support recalculation after count correction without recreating a
+  Seurat object. Denominators must come from current layer column sums:
+  Seurat's `PercentageFeatureSet()` uses possibly stale `nCount_*` metadata.
+  Process disjoint split layers separately, prefer exact names, reject cell
+  overlap, preserve sparse/BPCells storage, and leave library-size metadata
+  and expression layers unchanged. No new dependency or method backend is
+  admitted. Tests compare ordinary initialization with upstream percentages
+  and cover replaced counts, alternate assays/layers, zero totals, missing
+  markers, split cells, and BPCells storage. Validation: focused tests 157
+  passed; full suite 4,436 passed, 8 warnings, 1 unavailable-fixture skip,
+  zero failures. A 2,000-cell real PBMC count perturbation matched direct
+  sums exactly; installed-package smoke and incremental pkgdown builds passed.
+  Source build and pre-push checks completed; R CMD check retains an unrelated
+  scdesign3 documentation-link warning and an annotation global-binding note.
 
 ## 2026-08-26
 ## 2026-08-26
