@@ -361,7 +361,7 @@
     "acceleration": "ShennongOpt acceleration disabled (SHENNONG_ACCELERATION_DISABLED=true) for conformance runs",
     "environment": {
       "SHENNONG_ACCELERATION_DISABLED": "true",
-      "PIXI_HOME": "/home/duansq/.sn_pixi_runtime/pixi/home"
+      "OMP_NUM_THREADS": "1"
     }
   },
   "fixtures": [

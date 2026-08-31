@@ -409,3 +409,33 @@ test_that("real pkgdown publisher audits an existing static site before Git", {
   expect_gt(changed_runtime$status, 0L)
   expect_match(changed_runtime$output, "runtime-report SHA-256 does not match", fixed = TRUE)
 })
+
+
+test_that("strict conformance CI provisions pinned Python backends before testing", {
+  path <- test_path("..", "..", ".github", "workflows", "backend-conformance.yaml")
+  skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
+  workflow <- yaml::read_yaml(path)
+  job <- workflow$jobs[["backend-conformance"]]
+  expect_identical(job$env$SHENNONG_CONFORMANCE_STRICT, "true")
+  expect_null(job$env$SHENNONG_RUNTIME_DIR)
+  steps <- vapply(job$steps, function(x) x$run %||% "", character(1))
+  configure <- which(grepl("SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime", steps, fixed = TRUE))
+  prepare <- which(grepl("scripts/prepare-conformance-python.R", steps, fixed = TRUE))
+  tests <- which(grepl("testthat::test_local", steps, fixed = TRUE))
+  expect_length(configure, 1L)
+  expect_length(prepare, 1L)
+  expect_length(tests, 1L)
+  expect_lt(configure, prepare)
+  expect_lt(prepare, tests)
+})
+
+
+test_that("CI Python provisioning cannot overwrite the default user runtime", {
+  script <- test_path("..", "..", "scripts", "prepare-conformance-python.R")
+  skip_if_not(file.exists(script), "Repository-only script is excluded from source packages.")
+  withr::local_envvar(SHENNONG_RUNTIME_DIR = NA_character_)
+  output <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"),
+                                    shQuote(script), stdout = TRUE, stderr = TRUE))
+  expect_gt(attr(output, "status"), 0L)
+  expect_match(paste(output, collapse = "\n"), "dedicated CI directory", fixed = TRUE)
+})

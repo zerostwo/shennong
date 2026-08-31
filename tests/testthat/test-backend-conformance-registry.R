@@ -122,9 +122,8 @@ test_that("backend conformance contracts are complete and machine-readable", {
       for (version_spec in validated_versions) {
         package <- sub(" .*", "", version_spec)
         expected_version <- sub("^[^ ]+ ", "", version_spec)
-        .conformance_require_package(package)
         expect_identical(
-          as.character(utils::packageVersion(package)),
+          .conformance_upstream_version(contract, package),
           expected_version,
           info = paste(contract$id, "validated upstream version")
         )

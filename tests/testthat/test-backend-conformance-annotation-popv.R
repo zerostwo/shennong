@@ -6,22 +6,6 @@
 #     integration fixture. The oracle calls the upstream public API without
 #     any Shennong wrapper code.
 
-.conformance_popv_pixi_available <- function() {
-  tryCatch(
-    {
-      Shennong:::.sn_pixi_script_path(environment = "popv", script_name = "popv_run.py")
-      TRUE
-    },
-    error = function(e) FALSE
-  )
-}
-
-.conformance_popv_env_installed <- function() {
-  paths <- Shennong::sn_get_pixi_paths(environment = "popv", runtime_dir = "/home/duansq/.sn_pixi_runtime")
-  env_bin <- file.path(paths$workspace_env_dir, "default", "bin", "python")
-  file.exists(env_bin)
-}
-
 .conformance_popv_fixture_path <- function(name) {
   file.path(.conformance_project_root(), "tests", "conformance", "fixtures", name)
 }
@@ -72,10 +56,7 @@ test_that("annotation::popv contract is admitted and structurally complete", {
 
 test_that("annotation::popv dispatches to the pixi popv backend (C1)", {
   skip_if_not_installed("Seurat")
-  skip_if_not(
-    .conformance_popv_pixi_available() && .conformance_popv_env_installed(),
-    "popv pixi environment is not installed"
-  )
+  .conformance_require_pixi_environment("popv")
   fixture <- .conformance_popv_load_fixture("popv-pbmc3k-tiny-v1.rds")
   run_dir <- file.path(tempdir(), paste0("sn_popv_c1_", format(Sys.time(), "%Y%m%d_%H%M%S")))
   result <- sn_run_annotation(
@@ -103,10 +84,7 @@ test_that("annotation::popv dispatches to the pixi popv backend (C1)", {
 
 test_that("annotation::popv matches the direct PopV oracle (C2)", {
   skip_if_not_installed("Seurat")
-  skip_if_not(
-    .conformance_popv_pixi_available() && .conformance_popv_env_installed(),
-    "popv pixi environment is not installed"
-  )
+  .conformance_require_pixi_environment("popv")
   fixture <- .conformance_popv_load_fixture("popv-pbmc3k-integration-v1.rds")
   seed <- 717L
   run_dir <- file.path(tempdir(), paste0("sn_popv_c2_", format(Sys.time(), "%Y%m%d_%H%M%S")))

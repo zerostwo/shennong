@@ -41,7 +41,7 @@ test_that("doublets::scrublet pilot contract is structurally complete", {
 
 test_that("sn_find_doublets(method='scrublet') matches the direct scanpy oracle (C2)", {
   skip_if_not_installed("Seurat")
-  skip_if_not(.conformance_scrublet_env_installed(), "scrublet pixi environment is not installed")
+  .conformance_require_pixi_environment("scrublet")
 
   fixture <- .conformance_scrublet_load_fixture("scrublet-pbmc3k-integration-v1.rds")
   run_dir <- file.path(tempdir(), paste0("sn_scrublet_c2_", format(Sys.time(), "%Y%m%d_%H%M%S")))
@@ -113,7 +113,7 @@ test_that("sn_find_doublets(method='scrublet') matches the direct scanpy oracle 
 
 test_that("doublets::scrublet dispatch keeps skipped-cell contract (C1)", {
   skip_if_not_installed("Seurat")
-  skip_if_not(.conformance_scrublet_env_installed(), "scrublet pixi environment is not installed")
+  .conformance_require_pixi_environment("scrublet")
 
   fixture <- .conformance_scrublet_load_fixture("scrublet-pbmc3k-tiny-v1.rds")
   counts <- SeuratObject::LayerData(fixture, layer = "counts")

@@ -368,6 +368,16 @@ conformance.
 
 Conformance is cumulative. A skip is diagnostic, not passing evidence.
 
+The strict GitHub job sets `SHENNONG_RUNTIME_DIR` under the runner's temporary
+folder and runs `scripts/prepare-conformance-python.R` before testing. The
+helper pins each Python contract's recorded distribution versions in that
+isolated runtime; it does not change user-facing package manifests. R versions
+are queried with `packageVersion()`, Python distribution versions through
+`importlib.metadata` in the same managed interpreter used by candidate and
+oracle. Missing Python environments fail strict CI. Ordinary coverage may
+skip optional Python integration cases, but never supplies C2 passing evidence.
+No test or contract may require a maintainer's absolute home directory.
+
 | Tier | Trigger and purpose | Minimum gate |
 |---|---|---|
 | **C0: manifest/static** | Every relevant pull request | Schema, unique IDs, referenced files, complete parameter/output declarations, no orphan subjects, and source/version syntax pass. |

@@ -123,13 +123,47 @@
   )
 }
 
-.conformance_scrublet_env_installed <- function() {
-  tryCatch(
-    {
-      Shennong:::.sn_pixi_script_path(environment = "scrublet", script_name = "scrublet_run.py")
-      paths <- Shennong::sn_get_pixi_paths(environment = "scrublet")
-      file.exists(file.path(paths$workspace_env_dir, "default", "bin", "python"))
-    },
-    error = function(e) FALSE
-  )
+.conformance_pixi_python <- function(environment) {
+  paths <- Shennong::sn_get_pixi_paths(environment = environment)
+  file.path(paths$workspace_env_dir, "default", "bin", "python")
+}
+
+.conformance_pixi_env_installed <- function(environment) {
+  tryCatch(file.exists(.conformance_pixi_python(environment)), error = function(e) FALSE)
+}
+
+.conformance_require_pixi_environment <- function(environment) {
+  if (.conformance_pixi_env_installed(environment)) return(invisible(TRUE))
+  message <- paste0(environment, " pixi environment is not installed in the configured Shennong runtime")
+  if (.conformance_strict()) stop(message, call. = FALSE)
+  testthat::skip(message)
+}
+
+.conformance_upstream_version <- function(contract, package) {
+  language <- tolower(contract$upstream$language)
+  if (identical(language, "r")) {
+    .conformance_require_package(package)
+    return(as.character(utils::packageVersion(package)))
+  }
+  if (!identical(language, "python")) stop("Unsupported conformance language: ", language)
+  runtime <- contract$upstream$runtime
+  if (!grepl("^pixi environment `[^`]+`", runtime)) {
+    stop("Python conformance requires a declared pixi environment.", call. = FALSE)
+  }
+  environment <- sub("^pixi environment `([^`]+)`.*$", "\\1", runtime)
+  .conformance_require_pixi_environment(environment)
+  version <- suppressWarnings(system2(
+    .conformance_pixi_python(environment),
+    c("-c", shQuote("import importlib.metadata, sys; print(importlib.metadata.version(sys.argv[1]))"),
+      shQuote(package)),
+    stdout = TRUE, stderr = TRUE
+  ))
+  if (!is.null(attr(version, "status")) && attr(version, "status") != 0L) {
+    stop("Cannot inspect Python dependency `", package, "` in ", environment,
+         ": ", paste(version, collapse = "\n"), call. = FALSE)
+  }
+  if (length(version) != 1L || !nzchar(trimws(version))) {
+    stop("Invalid Python version output for ", package, call. = FALSE)
+  }
+  trimws(version)
 }

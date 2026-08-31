@@ -58,6 +58,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Repaired GitHub coverage and strict backend conformance: optional Python
+  probes now honor the configured Shennong runtime instead of a maintainer's
+  home directory. Python distribution versions are checked by the managed
+  interpreter, and strict CI provisions pinned PopV/Scrublet environments
+  before executing their candidate/oracle comparisons. Missing environments
+  remain failures in strict mode and skips in ordinary package coverage.
+
 - Fixed the invalid scDesign3 deprecation-help link that caused GitHub
   R-CMD-check to fail on warnings; qualified annotation helper bindings and
   wrapped long example lines to remove the accompanying check notes.

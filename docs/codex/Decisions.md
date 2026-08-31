@@ -4,6 +4,17 @@ Last updated: 2026-08-30
 
 ## 2026-08-30
 
+- Close the remaining aefa2c4 CI failures: coverage run 33362836701 and backend
+  run 33362836674 fail on hard-coded PopV runtime paths; strict registry checks
+  additionally treat Python distributions as R packages. Resolve environment
+  paths through the same configured runtime as the candidate/oracle and query
+  version metadata by declared language. Provision both Python conformance
+  environments with recorded versions in the strict job, while ordinary
+  coverage retains optional-environment skips. Missing strict environments
+  still fail; no scientific comparator, tier, tolerance, or test selection is
+  weakened. Reproduce both an empty configured runtime and real strict C1/C2
+  execution locally before pushing. User-facing runtime manifests are unchanged.
+
 - Retire legacy qs at the user's explicit request: remove both exported rio
   adapters, custom dispatch, dependency mapping, and the GitHub installer.
   The public API baseline shrinks by two exports without deprecation shims

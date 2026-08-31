@@ -8,7 +8,16 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
-- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4461` in the
+- CI portability repair: empty-runtime coverage reproduction passes 99
+  assertions (2 expected optional-PopV skips), while strict real Python/R
+  conformance passes 550 assertions (2 warnings, no skips or failures). Strict
+  CI now provisions PopV/Scrublet and checks Python distribution versions in
+  their own interpreters. A second strict pass in an independently provisioned
+  runtime also passes all 550 assertions, and the structural package check is
+  `Status: OK`. These local results do not yet establish remote CI.
+
+- Last completed full suite (before the CI-only repair):
+  `FAIL 0 | WARN 8 | SKIP 1 | PASS 4461` in the
   current local dependency profile (most optional backends installed; skip
   counts therefore differ from profiles with fewer packages). Warnings are
   environmental diagnostics from optional-backend paths, not failures.

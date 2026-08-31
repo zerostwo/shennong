@@ -66,6 +66,20 @@ jobs:
             bioc::clusterProfiler
             bioc::edgeR@4.10.3
 
+      - name: Configure isolated Python runtime
+        run: echo "SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime" >> "$GITHUB_ENV"
+
+      - name: Cache conformance Python environments
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.SHENNONG_RUNTIME_DIR }}/pixi
+            ~/.pixi/bin
+          key: conformance-python-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('inst/pixi/popv/**', 'inst/pixi/scrublet/**', 'inst/conformance/contracts/*.json', 'scripts/prepare-conformance-python.R') }}
+
+      - name: Install pinned conformance Python environments
+        run: Rscript scripts/prepare-conformance-python.R
+
       - name: Run static admission and micro-differential contracts
         run: |
           testthat::test_local(
