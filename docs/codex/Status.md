@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 This file describes what is true now. It is not a change log: Git history and
 `docs/codex/archive/` hold point-in-time evidence, `Decisions.md` holds durable
@@ -16,11 +16,9 @@ rationale, and `NEWS.md` records user-visible changes.
   runtime also passes all 550 assertions, and the structural package check is
   `Status: OK`. These local results do not yet establish remote CI.
 
-- Last completed full suite (before the CI-only repair):
-  `FAIL 0 | WARN 8 | SKIP 1 | PASS 4461` in the
-  current local dependency profile (most optional backends installed; skip
-  counts therefore differ from profiles with fewer packages). Warnings are
-  environmental diagnostics from optional-backend paths, not failures.
+- The shared runtime probe is also used by the live Scrublet clustering smoke
+  test. Both installed-runtime execution and absent-runtime skipping pass.
+  Workflow assertions use base R and introduce no parser dependency.
 - Architecture gates (`test-architecture-gates.R`): passing against the
   committed `inst/architecture/` baselines.
 - Backend-conformance tests pass as part of the full local suite.

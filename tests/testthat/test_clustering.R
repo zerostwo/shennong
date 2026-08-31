@@ -3925,7 +3925,7 @@ test_that("scrublet results map onto retained and skipped cells", {
 
 test_that("sn_find_doublets runs the scrublet pixi backend when installed", {
   skip_if_not_installed("Seurat")
-  skip_if_not(.conformance_scrublet_env_installed(), "scrublet pixi environment is not installed")
+  .conformance_require_pixi_environment("scrublet")
 
   object <- make_test_object(seed = 33, prefix = "scrublet-live", n_genes = 300, n_cells = 120)
   updated <- sn_find_doublets(

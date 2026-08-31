@@ -64,6 +64,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   interpreter, and strict CI provisions pinned PopV/Scrublet environments
   before executing their candidate/oracle comparisons. Missing environments
   remain failures in strict mode and skips in ordinary package coverage.
+  Shared Scrublet smoke tests use the same probe, and workflow assertions use
+  base R without an undeclared YAML-parser dependency.
 
 - Fixed the invalid scDesign3 deprecation-help link that caused GitHub
   R-CMD-check to fail on warnings; qualified annotation helper bindings and

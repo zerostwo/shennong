@@ -414,14 +414,13 @@ test_that("real pkgdown publisher audits an existing static site before Git", {
 test_that("strict conformance CI provisions pinned Python backends before testing", {
   path <- test_path("..", "..", ".github", "workflows", "backend-conformance.yaml")
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
-  workflow <- yaml::read_yaml(path)
-  job <- workflow$jobs[["backend-conformance"]]
-  expect_identical(job$env$SHENNONG_CONFORMANCE_STRICT, "true")
-  expect_null(job$env$SHENNONG_RUNTIME_DIR)
-  steps <- vapply(job$steps, function(x) x$run %||% "", character(1))
-  configure <- which(grepl("SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime", steps, fixed = TRUE))
-  prepare <- which(grepl("scripts/prepare-conformance-python.R", steps, fixed = TRUE))
-  tests <- which(grepl("testthat::test_local", steps, fixed = TRUE))
+  workflow <- readLines(path, warn = FALSE)
+  expect_true(any(grepl("SHENNONG_CONFORMANCE_STRICT: 'true'", workflow, fixed = TRUE)))
+  expect_false(any(grepl("SHENNONG_RUNTIME_DIR:.*runner", workflow)))
+  configure <- which(grepl('run: echo "SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime"',
+                          workflow, fixed = TRUE))
+  prepare <- which(grepl("run: Rscript scripts/prepare-conformance-python.R", workflow, fixed = TRUE))
+  tests <- which(grepl("testthat::test_local(", workflow, fixed = TRUE))
   expect_length(configure, 1L)
   expect_length(prepare, 1L)
   expect_length(tests, 1L)

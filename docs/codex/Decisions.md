@@ -1,6 +1,17 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
+
+## 2026-08-31
+
+- Full-suite verification of 933fce6 exposed one remaining consumer of the
+  removed Scrublet helper in test_clustering.R. Route it through the shared
+  runtime requirement and verify the real-backend and absent-backend cases.
+  Its R-CMD-check also caught an undeclared yaml namespace in the new workflow
+  assertions; use base-R text checks rather than adding a parser dependency.
+  Revalidate with --as-cran (including test dependency scanning), keep the
+  existing strict Python job and scientific tests, and rerun all four remote
+  workflows for the follow-up commit.
 
 ## 2026-08-30
 
