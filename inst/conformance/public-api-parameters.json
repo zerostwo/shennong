@@ -42,7 +42,7 @@
     {
       "function_name": "sn_add_qc_metrics",
       "runtime_classified": true,
-      "formal_digest": "806e2accae315bb75451198d10e3bbc94f0cb594f9de2744f1868296dcc8b890",
+      "formal_digest": "efe8b3825263ca86bb2c028fc0893a62e3adba9e364800a089b673910b683074",
       "parameters": [
         {
           "name": "object",
@@ -74,10 +74,10 @@
         },
         {
           "name": "suffix",
-          "class": "character",
-          "default": "\"\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         }
       ]
     },

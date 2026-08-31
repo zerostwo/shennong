@@ -45,9 +45,9 @@ Core object rule:
   matrices, paths, and Seurat objects and does not re-export data-distribution
   wrappers.
 - `sn_list_10x_paths()`: discover 10x `outs/`, filtered/raw matrices, H5, or metrics paths
-- `sn_read()`: import tabular, serialized (`qs`/`qs2`), and bioinformatics formats
-- `sn_write()`: export tabular, serialized (`qs`/`qs2`), and supported omics formats
-- registered `rio` handlers: `.import.rio_10x()`, `.import.rio_10x_spatial()`, `.import.rio_starsolo()`, `.import.rio_gmt()`, `.import.rio_h5()`, `.import.rio_h5ad()`, `.import.rio_qs()`, `.import.rio_qs2()`, `.import.rio_bpcells()`, `.export.rio_h5()`, `.export.rio_h5ad()`, `.export.rio_qs()`, `.export.rio_qs2()`, and `.export.rio_bpcells()` are the package-level import/export hooks used by `sn_read()` and `sn_write()`
+- `sn_read()`: import tabular, serialized (`qs2`), and bioinformatics formats
+- `sn_write()`: export tabular, serialized (`qs2`), and supported omics formats
+- registered `rio` handlers: `.import.rio_10x()`, `.import.rio_10x_spatial()`, `.import.rio_starsolo()`, `.import.rio_gmt()`, `.import.rio_h5()`, `.import.rio_h5ad()`, `.import.rio_qs2()`, `.import.rio_bpcells()`, `.export.rio_h5()`, `.export.rio_h5ad()`, `.export.rio_qs2()`, and `.export.rio_bpcells()` are the package-level import/export hooks used by `sn_read()` and `sn_write()`
 - `sn_set_layer_backend()`: switch selected Seurat layers bidirectionally between on-disk BPCells matrices and in-memory `dgCMatrix` storage without renaming the layers
 - `sn_convert_bpcells()`: compatibility wrapper for `sn_set_layer_backend(backend = "bpcells")`
 - `sn_add_data_from_anndata()`: add exported AnnData metadata and embeddings
@@ -61,7 +61,7 @@ Runtime reference datasets:
 ## Preprocessing and QC
 
 - `sn_get_species()`: infer or retrieve species
-- `sn_add_qc_metrics()`: refresh `percent.mt`, `percent.ribo`, and `percent.hb` from a selected count assay/layer; use `suffix = ".corrected"` to preserve original QC
+- `sn_add_qc_metrics()`: refresh `percent.mt`, `percent.ribo`, and `percent.hb` from a selected count assay/layer; default `suffix = NULL` automatically adds `_corrected` for `decontaminated_counts` (and its dot-separated split layers); explicit suffixes override this, including `""` to overwrite original QC
 - `sn_initialize_seurat_object()`: initialize a Seurat object, including single-path or multi-path 10x import from `sn_list_10x_paths()` and direct BPCells `IterableMatrix` input that remains on disk
 - `sn_standardize_gene_symbols()`: standardize gene symbols
 - `sn_normalize_data()`: normalize with supported workflows

@@ -30,10 +30,9 @@ sn_read <- function(path,
                     which,
                     row_names = NULL,
                     ...) {
-  check_installed(pkg = "rio", reason = "to use `sn_read()` function.")
-
   format_supplied <- !missing(format)
   format <- if (format_supplied) .sn_standardize_format(format) else .sn_infer_format(path)
+  check_installed(pkg = "rio", reason = "to use `sn_read()` function.")
 
   if ((path != "clipboard") && !.sn_is_url(path) && !file.exists(path)) {
     stop("No such path: ", path, call. = FALSE)
@@ -215,7 +214,12 @@ sn_list_10x_paths <- function(path,
   if (format %in% c(",", ";", "|")) {
     return(format)
   }
-  tolower(format)
+  format <- tolower(format)
+  if (identical(format, "qs")) {
+    stop("The .qs format is no longer supported; use .qs2 instead. ",
+         "Existing files must be converted, not renamed.", call. = FALSE)
+  }
+  format
 }
 
 .sn_infer_format <- function(path) {
@@ -237,12 +241,12 @@ sn_list_10x_paths <- function(path,
     ext <- tolower(tools::file_ext(path))
   }
 
-  if (nzchar(ext)) ext else NULL
+  if (nzchar(ext)) .sn_standardize_format(ext) else NULL
 }
 
 .sn_is_custom_format <- function(format) {
   !is_null(format) && format %in% c(
-    "10x", "10x_spatial", "starsolo", "bpcells", "h5ad", "h5", "gmt", "qs", "qs2", .genomic_exts
+    "10x", "10x_spatial", "starsolo", "bpcells", "h5ad", "h5", "gmt", "qs2", .genomic_exts
   )
 }
 
@@ -273,7 +277,6 @@ sn_list_10x_paths <- function(path,
     h5ad = .import.rio_h5ad,
     h5 = .import.rio_h5,
     gmt = .import.rio_gmt,
-    qs = .import.rio_qs,
     qs2 = .import.rio_qs2,
     NULL
   )
@@ -361,13 +364,6 @@ sn_list_10x_paths <- function(path,
   mat <- Seurat::Read10X_h5(file)
 
   return(mat)
-}
-
-#' @rdname sn_read
-#' @export
-.import.rio_qs <- function(file, ...) {
-  check_installed(pkg = "qs", reason = "to read qs files.")
-  getExportedValue("qs", "qread")(file = file, ...)
 }
 
 #' @rdname sn_read
@@ -461,8 +457,7 @@ sn_list_10x_paths <- function(path,
 #' @param auto_install Logical; when \code{TRUE}, install missing writer
 #'   dependencies before writing. This includes \pkg{rio} plus optional
 #'   Shennong custom writer dependencies such as \code{.qs2}, \code{.h5ad},
-#'   \code{.h5}, or BPCells. Legacy \code{.qs} output installs \pkg{qs} from
-#'   the GitHub remote \code{qsbase/qs} when needed.
+#'   \code{.h5}, or BPCells.
 #' @param install_repos CRAN-like repositories used when \code{auto_install}
 #'   needs to install CRAN packages.
 #' @param install_ask Passed to \code{BiocManager::install()} when
@@ -487,12 +482,6 @@ sn_write <- function(x,
                      install_repos = getOption("repos"),
                      install_ask = FALSE,
                      ...) {
-  .sn_ensure_sn_write_base_dependencies(
-    auto_install = auto_install,
-    repos = install_repos,
-    ask = install_ask
-  )
-
   if (is.null(path) && is.null(to)) {
     stop("Must specify 'path' and/or 'to'")
   }
@@ -503,6 +492,12 @@ sn_write <- function(x,
     .sn_infer_format(path)
   }
 
+  .sn_ensure_sn_write_base_dependencies(
+    auto_install = auto_install,
+    repos = install_repos,
+    ask = install_ask
+  )
+
   if (is.null(path)) {
     path <- paste0(as.character(substitute(x)), ".", format)
   }
@@ -512,12 +507,12 @@ sn_write <- function(x,
     x <- as.data.frame(x)
   }
   if (!is.data.frame(x) && is.list(x) && length(x) == 1 && is.data.frame(x[[1]]) &&
-    !format %in% c("xlsx", "html", "rdata", "rds", "json", "qs", "qs2", "fods", "ods")) {
+    !format %in% c("xlsx", "html", "rdata", "rds", "json", "qs2", "fods", "ods")) {
     x <- x[[1]] ## fix 385
   }
 
   if (!is.data.frame(x) && !format %in% c(
-    "xlsx", "html", "rdata", "rds", "json", "qs", "qs2", "fods", "ods",
+    "xlsx", "html", "rdata", "rds", "json", "qs2", "fods", "ods",
     "bpcells", "h5ad", "h5"
   )) {
       stop("'x' is not a data.frame or matrix", call. = FALSE)
@@ -958,7 +953,6 @@ sn_convert_bpcells <- function(object,
       "rhdf5",
       if (!inherits(x = x, what = "SingleCellExperiment")) "Seurat"
     )),
-    qs = "qs",
     qs2 = "qs2",
     character(0)
   )
@@ -1014,49 +1008,15 @@ sn_convert_bpcells <- function(object,
     return(invisible(NULL))
   }
 
-  if ("qs" %in% packages) {
-    .sn_install_qs_serializer(repos = repos)
-  }
-
-  dependency_packages <- setdiff(packages, "qs")
-  if (length(dependency_packages) > 0) {
-    sn_install_dependencies(
-      packages = dependency_packages,
-      missing_only = TRUE,
-      repos = repos,
-      ask = ask,
-      github_dependencies = NA
-    )
-  }
-
-  invisible(packages)
-}
-
-.sn_install_qs_serializer <- function(repos = getOption("repos")) {
-  if (rlang::is_installed("qs")) {
-    return(invisible("qs"))
-  }
-
-  .sn_log_info("Installing `qs` writer dependency from GitHub: qsbase/qs.")
-  tryCatch(
-    .sn_install_github_packages(
-      remotes = "qsbase/qs",
-      upgrade = FALSE,
-      repos = repos,
-      dependencies = NA
-    ),
-    error = function(e) {
-      stop(
-        "Failed to install `qs` from GitHub remote `qsbase/qs`: ",
-        conditionMessage(e),
-        "\nUse a `.qs2` output path for the recommended modern serializer, ",
-        "or install `qs` manually if this environment needs `.qs` output.",
-        call. = FALSE
-      )
-    }
+  sn_install_dependencies(
+    packages = packages,
+    missing_only = TRUE,
+    repos = repos,
+    ask = ask,
+    github_dependencies = NA
   )
 
-  invisible("qs")
+  invisible(packages)
 }
 
 .sn_ensure_output_parent <- function(path) {
@@ -1084,7 +1044,6 @@ sn_convert_bpcells <- function(object,
     bpcells = .export.rio_bpcells,
     h5ad = .export.rio_h5ad,
     h5 = .export.rio_h5,
-    qs = .export.rio_qs,
     qs2 = .export.rio_qs2,
     NULL
   )
@@ -1139,13 +1098,6 @@ sn_convert_bpcells <- function(object,
   BPCells::write_matrix_10x_hdf5(
     mat = x, path = file, ...
   )
-}
-
-#' @rdname sn_write
-#' @export
-.export.rio_qs <- function(file, x, ...) {
-  check_installed(pkg = "qs", reason = "to write qs files.")
-  getExportedValue("qs", "qsave")(x = x, file = file, ...)
 }
 
 #' @rdname sn_write

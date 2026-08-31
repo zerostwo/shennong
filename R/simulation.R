@@ -251,7 +251,7 @@ sn_simulate <- function(object,
 #' Deprecated direct scDesign3 wrapper
 #'
 #' `sn_simulate_scdesign3()` is a deprecated compatibility entry point. Use
-#' [sn_simulate(method = "scdesign3")] instead.
+#' [sn_simulate()] with `method = "scdesign3"` instead.
 #'
 #' @param object A Seurat or SingleCellExperiment object.
 #' @param ... Additional arguments passed to the scDesign3 backend.

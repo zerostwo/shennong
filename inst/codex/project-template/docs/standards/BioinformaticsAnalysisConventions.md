@@ -172,7 +172,16 @@ in `memory/Decisions.md`.
 
 After replacing or correcting counts, refresh percentages with
 `object <- Shennong::sn_add_qc_metrics(object, assay = "RNA", layer = "counts",
-suffix = ".corrected")`. Select the actual corrected assay/layer; retain
-original QC columns when comparing stages. Use gene symbols and non-negative
+suffix = "_corrected")`. Select the actual corrected assay/layer; retain
+original QC columns when comparing stages. For `layer = "decontaminated_counts"`,
+omit `suffix` to automatically add `_corrected`; use an explicit suffix
+(including `""`) to override automatic naming. Use gene symbols and non-negative
 counts. The helper recomputes percentage denominators from counts, preserves
 sparse/BPCells storage, and leaves `nCount_*`/`nFeature_*` unchanged.
+
+### Serialized project objects
+
+Use `sn_write(object, "data/processed/object.qs2")` and
+`sn_read("data/processed/object.qs2")` for serialized objects. Legacy `.qs`
+read/write adapters and installation are removed. Existing files require
+conversion in a compatible older environment; do not just rename extensions.

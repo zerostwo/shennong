@@ -4,6 +4,53 @@ Last updated: 2026-08-30
 
 ## 2026-08-30
 
+- Retire legacy qs at the user's explicit request: remove both exported rio
+  adapters, custom dispatch, dependency mapping, and the GitHub installer.
+  The public API baseline shrinks by two exports without deprecation shims
+  because continued qs support was explicitly rejected. Both inferred and
+  explicit formats fail before dependency installation, output creation, or
+  URL download, so rio cannot silently revive support. Use qs2 in active
+  workflows, assets, and benchmark producers/consumers. Historical benchmark
+  results and archived decisions retain their real paths; no data is deleted
+  or relabeled as converted. This supersedes earlier optional-qs policies.
+  Validation: 267 focused IO/QC/API assertions and 4,461 full-suite assertions
+  pass (full suite: 8 warnings, 1 skip, no failures). Installed-package qs2 IO
+  preserves a 2,000-cell PBMC Seurat object's metadata and both raw/corrected
+  count layers exactly. The rebuilt site documents qs2 migration. Source build
+  and the GitHub-profile local check pass with 0 ERRORs, 0 WARNINGs, and 2
+  local NOTEs (remote clock verification unavailable, optional dependency
+  log directory); warning-as-failure policy remains enabled.
+
+- CI run 33341641744 at b43c7d5 failed in `check-r-package` because the
+  scdesign3 compatibility help linked a full function call as a topic name.
+  Link the real `sn_simulate` topic and show the method argument as code.
+  Explicit annotation bindings and wrapped roxygen example lines remove the
+  accompanying NOTES without changing analysis behavior. Keep GitHub's
+  warning policy; make local pre-push checks reject warning summaries rather
+  than treating R CMD check's zero exit status as sufficient evidence.
+  The new `--as-cran` flag enables the same additional checks locally. A
+  temporary package with an intentionally invalid Rd link verifies that a
+  warning-only check now fails the script instead of reporting success.
+  A stricter local pass also detected an undeclared legacy serializer in
+  tests; those branches are removed with qs support rather than adding it
+  back to DESCRIPTION.
+  Final package validation uses the exact logged GitHub rcmdcheck arguments
+  and its `_R_CHECK_CRAN_INCOMING_=false` setting, without relaxing
+  `error_on = "warning"`.
+
+- QC suffix selection now defaults to NULL (automatic), reserving every
+  explicit string for the caller. `decontaminated_counts` and its
+  dot-separated split layers use `_corrected`; all other layers keep
+  the previous unsuffixed behavior. In particular `suffix = ""` still
+  explicitly overwrites original columns. No assay or expression layer is
+  selected automatically; only output naming changes. Command records store
+  the resolved suffix. Tests cover preserved raw QC, explicit overrides,
+  split/individual layers, and similar names that must not trigger detection.
+  Validation: 47 QC assertions, 217 targeted assertions, and 4,451 full-suite
+  assertions pass (full suite: 8 warnings, 1 unavailable-fixture skip, no
+  failures). The installed helper matches direct sums exactly on 2,000 real
+  PBMC cells; the rebuilt reference and article show the corrected names.
+
 - Admit `sn_add_qc_metrics()` as a metadata-writing preprocessing helper, not
   an `sn_calculate_*` metric-value return or `sn_assess_qc()` QC report. It
   extracts initialization's species-specific percentages and preserves gene

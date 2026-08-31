@@ -5,7 +5,6 @@
 \alias{.export.rio_bpcells}
 \alias{.export.rio_h5ad}
 \alias{.export.rio_h5}
-\alias{.export.rio_qs}
 \alias{.export.rio_qs2}
 \title{Write tabular and bioinformatics file formats}
 \usage{
@@ -25,8 +24,6 @@ sn_write(
 
 .export.rio_h5(file, x, ...)
 
-.export.rio_qs(file, x, ...)
-
 .export.rio_qs2(file, x, ...)
 }
 \arguments{
@@ -40,8 +37,7 @@ automatically before dispatching the selected writer.}
 \item{auto_install}{Logical; when \code{TRUE}, install missing writer
 dependencies before writing. This includes \pkg{rio} plus optional
 Shennong custom writer dependencies such as \code{.qs2}, \code{.h5ad},
-\code{.h5}, or BPCells. Legacy \code{.qs} output installs \pkg{qs} from
-the GitHub remote \code{qsbase/qs} when needed.}
+\code{.h5}, or BPCells.}
 
 \item{install_repos}{CRAN-like repositories used when \code{auto_install}
 needs to install CRAN packages.}

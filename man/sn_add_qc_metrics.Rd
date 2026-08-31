@@ -9,7 +9,7 @@ sn_add_qc_metrics(
   species = NULL,
   assay = NULL,
   layer = "counts",
-  suffix = ""
+  suffix = NULL
 )
 }
 \arguments{
@@ -25,8 +25,11 @@ otherwise split layers starting with \code{paste0(layer, ".")} are processed
 separately. Selected layers must not contain overlapping cells.}
 
 \item{suffix}{String appended to \code{percent.mt}, \code{percent.ribo}, and
-\code{percent.hb}. The default overwrites those columns; for example,
-\code{".corrected"} preserves the original columns for comparison.}
+\code{percent.hb}. NULL (default) automatically uses \code{"_corrected"}
+for \code{layer = "decontaminated_counts"} or its \verb{decontaminated_counts.*}
+split layers, and \code{""} for other layers. An explicit string always takes
+precedence: \code{""} overwrites the original columns, while \code{"_corrected"}
+preserves them for comparison.}
 }
 \value{
 The Seurat object with three QC metadata columns and a command record.
@@ -49,9 +52,11 @@ unchanged. Sparse and BPCells matrices are not converted to dense matrices.
 \examples{
 \dontrun{
 object <- sn_add_qc_metrics(object, species = "human")
+object <- sn_add_qc_metrics(object, layer = "decontaminated_counts")
+head(object[[]][, c("percent.mt", "percent.mt_corrected")])
 object <- sn_add_qc_metrics(object, assay = "RNA", layer = "counts.corrected",
-                            suffix = ".corrected")
-head(object[[]][, c("percent.mt", "percent.mt.corrected")])
+                            suffix = "_corrected")
+head(object[[]][, c("percent.mt", "percent.mt_corrected")])
 }
 }
 \seealso{

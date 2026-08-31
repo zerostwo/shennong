@@ -103,7 +103,7 @@ validate → run → diagnose → store → plot → interpret
 
 当前 `NAMESPACE` 已经导出以下主要能力：
 
-- 数据读取与写出：10x、10x Spatial、H5、H5AD、BPCells、qs/qs2、STARsolo；
+- 数据读取与写出：10x、10x Spatial、H5、H5AD、BPCells、qs2、STARsolo；
 - 数据下载、Zenodo 索引及 Shennong Data Server；
 - 细胞和基因过滤；
 - doublet detection；

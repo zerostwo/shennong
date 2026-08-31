@@ -273,10 +273,18 @@ dplyr::count(deps, scope, source)
 sn_install_dependencies(scope = "recommended")
 ```
 
-For serialized project objects, prefer `.qs2` files in new workflows. Legacy
-`.qs` files remain supported when the archived `qs` package is already present
-in the active R library, but `sn_install_dependencies()` does not attempt to
-install `qs` on current R releases.
+Serialized project objects use `.qs2` and the `qs2` package:
+
+```{r serialized-project, eval = FALSE}
+sn_write(object, "data/processed/object.qs2")
+object <- sn_read("data/processed/object.qs2")
+```
+
+Legacy `.qs` import/export and its automatic installer have been removed.
+`sn_read()` and `sn_write()` reject that format before IO or installation,
+even if an older serializer is installed. Convert existing files in an older
+compatible environment before using them here; changing the extension alone
+does not convert the serialization format.
 
 The package also ships Codex skill assets for Shennong-style analysis projects.
 These helpers expose their installed locations without making users search the

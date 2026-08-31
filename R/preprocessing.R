@@ -378,8 +378,11 @@ sn_initialize_seurat_object <- function(
 #'   otherwise split layers starting with `paste0(layer, ".")` are processed
 #'   separately. Selected layers must not contain overlapping cells.
 #' @param suffix String appended to `percent.mt`, `percent.ribo`, and
-#'   `percent.hb`. The default overwrites those columns; for example,
-#'   `".corrected"` preserves the original columns for comparison.
+#'   `percent.hb`. NULL (default) automatically uses `"_corrected"`
+#'   for `layer = "decontaminated_counts"` or its `decontaminated_counts.*`
+#'   split layers, and `""` for other layers. An explicit string always takes
+#'   precedence: `""` overwrites the original columns, while `"_corrected"`
+#'   preserves them for comparison.
 #' @return The Seurat object with three QC metadata columns and a command record.
 #' @details Percentages are 100 times marker counts divided by total counts
 #'   in the selected layer, never by potentially stale `nCount_*` metadata.
@@ -394,16 +397,18 @@ sn_initialize_seurat_object <- function(
 #' @examples
 #' \dontrun{
 #' object <- sn_add_qc_metrics(object, species = "human")
+#' object <- sn_add_qc_metrics(object, layer = "decontaminated_counts")
+#' head(object[[]][, c("percent.mt", "percent.mt_corrected")])
 #' object <- sn_add_qc_metrics(object, assay = "RNA", layer = "counts.corrected",
-#'                             suffix = ".corrected")
-#' head(object[[]][, c("percent.mt", "percent.mt.corrected")])
+#'                             suffix = "_corrected")
+#' head(object[[]][, c("percent.mt", "percent.mt_corrected")])
 #' }
 #' @export
 sn_add_qc_metrics <- function(object, species = NULL, assay = NULL,
-                              layer = "counts", suffix = "") {
+                              layer = "counts", suffix = NULL) {
   .sn_validate_seurat_object(object)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
-  for (value in list(assay = assay, layer = layer, suffix = suffix)) {
+  for (value in list(assay = assay, layer = layer, suffix = suffix %||% "")) {
     if (!is.character(value) || length(value) != 1L || is.na(value)) {
       stop("`assay`, `layer`, and `suffix` must be single non-missing strings.", call. = FALSE)
     }
@@ -416,6 +421,8 @@ sn_add_qc_metrics <- function(object, species = NULL, assay = NULL,
   if (!nzchar(layer) || !length(layers)) {
     stop("Layer '", layer, "' was not found in assay '", assay, "'.", call. = FALSE)
   }
+  suffix <- suffix %||% if (layer == "decontaminated_counts" ||
+                            startsWith(layer, "decontaminated_counts.")) "_corrected" else ""
   species <- sn_get_species(rownames(object[[assay]]), species = species %||% object@misc$species)
   .sn_log_info("Running QC metrics for {species}.")
   signatures <- list(
@@ -870,7 +877,9 @@ sn_standardize_gene_symbols <- function(
 #'
 #' @examples
 #' \dontrun{
-#'   pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#'   pbmc <- qs2::qs_read(file.path(
+#'     Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+#'   ))
 #'   pbmc_filtered <- sn_filter_genes(
 #'     pbmc,
 #'     min_cells = 5,
@@ -2345,7 +2354,9 @@ sn_find_doublets <- function(
 #'
 #' @examples
 #' \dontrun{
-#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#' pbmc <- qs2::qs_read(file.path(
+#'   Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+#' ))
 #' pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
 #' }
 #'

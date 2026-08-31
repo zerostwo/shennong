@@ -107,7 +107,7 @@ prepare_input <- function(base, input_path, n_cells, n_batches, assay, layer, se
   SeuratObject::DefaultLayer(object[[assay]]) <- layer
 
   dir.create(dirname(input_path), recursive = TRUE, showWarnings = FALSE)
-  qs::qsave(object, input_path, preset = "fast")
+  qs2::qs_save(object, input_path)
   rm(counts, decontam, metadata, object)
   invisible(gc(verbose = FALSE))
   invisible(input_path)
@@ -118,7 +118,7 @@ args <- parse_args(commandArgs(trailingOnly = TRUE))
 base_path <- args$base %||% Sys.getenv("SHENNONG_BENCHMARK_BASE", unset = "")
 if (!nzchar(base_path)) {
   stop(
-    "Supply `--base /path/to/object.qs` or set `SHENNONG_BENCHMARK_BASE`.",
+    "Supply `--base /path/to/object.qs2` or set `SHENNONG_BENCHMARK_BASE`.",
     call. = FALSE
   )
 }
@@ -153,7 +153,7 @@ dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
 summary_csv <- file.path(outdir, "summary.csv")
 
 suppressPackageStartupMessages({
-  library(qs)
+  library(qs2)
   library(jsonlite)
   library(Seurat)
   library(SeuratObject)
@@ -161,7 +161,7 @@ suppressPackageStartupMessages({
 })
 
 message("Loading base object: ", base_path)
-base <- qs::qread(base_path)
+base <- qs2::qs_read(base_path)
 message("Base dimensions: ", nrow(base), " features x ", ncol(base), " cells")
 
 cmdline <- commandArgs(FALSE)
@@ -182,7 +182,7 @@ if (!file.exists(bench_one)) {
 run_count <- 0L
 for (n_cells in cell_counts) {
   for (n_batches in batch_counts) {
-    input_path <- file.path(input_dir, sprintf("pbmc_n%06d_b%02d.qs", n_cells, n_batches))
+    input_path <- file.path(input_dir, sprintf("pbmc_n%06d_b%02d.qs2", n_cells, n_batches))
     prepare_input(
       base = base,
       input_path = input_path,

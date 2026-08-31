@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Breaking changes
 
+- Removed legacy `.qs` serialization, its exported rio adapters, and its
+  GitHub auto-installer. Use `.qs2` with `qs2` throughout project IO and
+  benchmark scripts. Requests for `.qs` fail with a migration message rather
+  than falling through to rio. Existing files require conversion in a
+  compatible older environment; renaming their extension is insufficient.
+
 - Removed `method = "consensus"` and Shennong's homegrown consensus algorithm
   from `sn_run_annotation()`. The entry point is now purely reference-based:
   the default method is `singleR`, and `celltypist`, `seurat`, `symphony`,
@@ -36,6 +42,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_add_qc_metrics()` now defaults to `suffix = NULL`: selecting
+  `decontaminated_counts` (including its dot-separated split layers)
+  automatically writes `percent.mt_corrected`,
+  `percent.ribo_corrected`, and `percent.hb_corrected`. Other layers
+  retain the original column names. Explicit suffixes, including `""` to
+  overwrite original columns, take precedence.
+
 - `sn_add_qc_metrics()` refreshes mitochondrial, ribosomal, and hemoglobin
   percentages independently of initialization, with explicit assay/layer
   selection and optional output-column suffixes for before/after correction
@@ -44,6 +57,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   now reuses this helper with the same signatures and hemoglobin patterns.
 
 ### Fixed
+
+- Fixed the invalid scDesign3 deprecation-help link that caused GitHub
+  R-CMD-check to fail on warnings; qualified annotation helper bindings and
+  wrapped long example lines to remove the accompanying check notes.
+  The local pre-push script now rejects check warnings even when R exits zero,
+  matching the GitHub warning policy.
 
 - Fixed a crash when printing Seurat command records whose parameters contain
   nested lists (`Error ... type 'list' cannot be handled by 'cat'`), first

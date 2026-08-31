@@ -46,13 +46,13 @@ pca_chunk_size <- as.integer(args$pca_chunk_size %||% "20000")
 predict_chunk_size <- as.integer(args$predict_chunk_size %||% "20000")
 
 if (is.null(input) || is.null(output)) {
-  stop("Usage: bench_one.R --input <input.qs> --output <result.json> [options]", call. = FALSE)
+  stop("Usage: bench_one.R --input <input.qs2> --output <result.json> [options]", call. = FALSE)
 }
 
 dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
 
 suppressPackageStartupMessages({
-  library(qs)
+  library(qs2)
   library(jsonlite)
   library(SeuratObject)
   library(Matrix)
@@ -93,7 +93,7 @@ result <- list(
 )
 
 started <- Sys.time()
-obj <- qs::qread(input)
+obj <- qs2::qs_read(input)
 result$cells <- ncol(obj)
 result$features <- nrow(obj)
 result$batches <- length(unique(as.character(obj[[batch, drop = TRUE]])))

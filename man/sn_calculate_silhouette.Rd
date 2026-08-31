@@ -48,7 +48,9 @@ metadata label_by in the selected embedding.
 }
 \examples{
 \dontrun{
-pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(
   pbmc,
   batch = "sample",

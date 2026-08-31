@@ -29,6 +29,7 @@ args <- commandArgs(trailingOnly = TRUE)
       "  --skip-build           Skip R CMD build.",
       "  --skip-check           Skip R CMD check --no-manual.",
       "  --check-tests          Also run tests inside R CMD check after test_local().",
+      "  --as-cran              Apply the same additional checks as GitHub R-CMD-check.",
       "  --force-suggests       Require every Suggests package during R CMD check.",
       "  --skip-pkgdown         Skip pkgdown reference-index validation.",
       "  --help                 Show this message.",
@@ -51,6 +52,7 @@ skip_full_tests <- .parse_flag("skip-full-tests")
 skip_build <- .parse_flag("skip-build")
 skip_check <- .parse_flag("skip-check")
 check_tests <- .parse_flag("check-tests")
+as_cran <- .parse_flag("as-cran")
 force_suggests <- .parse_flag("force-suggests")
 skip_pkgdown <- .parse_flag("skip-pkgdown")
 
@@ -213,6 +215,7 @@ if (!skip_check) {
       stop("Tarball not found. Run the build step before check.", call. = FALSE)
     }
     check_args <- c("CMD", "check", "--no-manual", "--timings")
+    if (isTRUE(as_cran)) check_args <- c(check_args, "--as-cran")
     full_tests_ran <- !isTRUE(skip_tests) && !isTRUE(skip_full_tests) && !isTRUE(quick)
     if (isTRUE(quick)) {
       check_args <- c(check_args, "--no-tests", "--no-examples", "--ignore-vignettes")
@@ -221,6 +224,16 @@ if (!skip_check) {
     }
     check_env <- if (isTRUE(force_suggests)) character() else "_R_CHECK_FORCE_SUGGESTS_=false"
     run_cmd(c(check_args, basename(tarball)), wd = artifact_dir, env = check_env)
+    # R CMD check can exit successfully despite warnings; GitHub's
+    # check-r-package action treats these as failures.
+    check_log <- file.path(artifact_dir, paste0(pkg_name, ".Rcheck"), "00check.log")
+    if (!file.exists(check_log)) {
+      stop("R CMD check did not produce 00check.log.", call. = FALSE)
+    }
+    check_summary <- readLines(check_log, warn = FALSE)
+    if (any(grepl("^Status:.*[1-9][0-9]* WARNING", check_summary))) {
+      stop("R CMD check found WARNINGs; resolve them before pushing, as required by CI.", call. = FALSE)
+    }
   })
 }
 

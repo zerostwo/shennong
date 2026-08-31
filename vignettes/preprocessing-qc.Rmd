@@ -116,16 +116,28 @@ are stored separately, select their assay/layer explicitly:
 # Requires an existing layer containing non-negative corrected counts.
 pbmc <- sn_add_qc_metrics(
   pbmc, species = "human", assay = "RNA", layer = "counts.corrected",
-  suffix = ".corrected"
+  suffix = "_corrected"
 )
-head(pbmc[[]][, c("percent.mt", "percent.mt.corrected",
-                  "percent.hb", "percent.hb.corrected")])
+head(pbmc[[]][, c("percent.mt", "percent.mt_corrected",
+                  "percent.hb", "percent.hb_corrected")])
 # Alternatively, select a corrected assay's counts:
-# pbmc <- sn_add_qc_metrics(pbmc, assay = "decontX", suffix = ".corrected")
+# pbmc <- sn_add_qc_metrics(pbmc, assay = "decontX", suffix = "_corrected")
 ```
 
-The default suffix is empty and overwrites `percent.mt`, `percent.ribo`, and
-`percent.hb`; a suffix preserves the original values for comparison. Species
+With `suffix = NULL` (the default), `layer = "decontaminated_counts"` or an
+individual `decontaminated_counts.*` split layer automatically adds
+`_corrected`, preserving the original QC columns:
+
+```{r automatic-decontaminated-qc, eval = FALSE}
+pbmc <- sn_add_qc_metrics(pbmc, assay = "RNA", layer = "decontaminated_counts")
+head(pbmc[[]][, c("percent.mt", "percent.mt_corrected",
+                  "percent.hb", "percent.hb_corrected")])
+```
+
+Other layers, including `counts`, keep an empty suffix by default and overwrite
+`percent.mt`, `percent.ribo`, and `percent.hb`. An explicit suffix always wins:
+use `suffix = ""` to overwrite the original columns even for decontaminated
+counts, or `suffix = "_corrected"` to choose a different suffix. Species
 can be omitted when stored on the object or inferable from the selected assay.
 Use gene symbols and count values, not normalized or scaled expression. The
 helper recomputes its denominator from the selected counts, so stale

@@ -33,7 +33,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#' pbmc <- qs2::qs_read(file.path(
+#'   Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+#' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
 #'   batch = "sample",
@@ -223,7 +225,9 @@ sn_identify_challenging_groups <- function(
 #'
 #' @examples
 #' \dontrun{
-#' pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#' pbmc <- qs2::qs_read(file.path(
+#'   Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+#' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
 #'   batch = "sample",
@@ -1579,7 +1583,9 @@ sn_get_milo_result <- function(object,
 #'
 #' @examples
 #' \dontrun{
-#'   pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+#'   pbmc <- qs2::qs_read(file.path(
+#'     Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+#'   ))
 #'   qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
 #'   qc_report$overall
 #' }

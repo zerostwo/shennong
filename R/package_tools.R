@@ -40,8 +40,7 @@ sn_list_dependencies <- function(scope = c("all", "required", "recommended")) {
 #' \code{install.packages()}, Bioconductor packages with
 #' \code{BiocManager::install()}, and GitHub packages with
 #' \code{remotes::install_github()}.
-#' Legacy \code{.qs} files remain supported when the archived \pkg{qs} package
-#' is already available, but new installations should use \pkg{qs2}.
+#' Serialized objects use \pkg{qs2}.
 #'
 #' @param scope One of \code{"all"}, \code{"required"}, or
 #'   \code{"recommended"}.

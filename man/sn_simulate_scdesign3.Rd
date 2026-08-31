@@ -16,5 +16,5 @@ Simulated data in the backend's requested format.
 }
 \description{
 \code{sn_simulate_scdesign3()} is a deprecated compatibility entry point. Use
-\link{sn_simulate(method = "scdesign3")} instead.
+\code{\link[=sn_simulate]{sn_simulate()}} with \code{method = "scdesign3"} instead.
 }

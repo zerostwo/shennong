@@ -285,18 +285,18 @@ test_that("sn_write creates parent directories before dispatching writers", {
   expect_true(dir.exists(dirname(csv_path)))
   expect_true(file.exists(csv_path))
 
-  qs_path <- file.path(root, "custom", "objects", "payload.qs")
+  qs2_path <- file.path(root, "custom", "objects", "payload.qs2")
   testthat::with_mocked_bindings(
-    sn_write(list(a = 1), qs_path),
+    sn_write(list(a = 1), qs2_path),
     .sn_find_missing_packages = function(packages) character(0),
-    .export.rio_qs = function(file, x, ...) {
+    .export.rio_qs2 = function(file, x, ...) {
       saveRDS(x, file = file)
     },
     .package = "Shennong"
   )
 
-  expect_true(dir.exists(dirname(qs_path)))
-  expect_true(file.exists(qs_path))
+  expect_true(dir.exists(dirname(qs2_path)))
+  expect_true(file.exists(qs2_path))
 })
 
 test_that("sn_write auto-installs missing custom writer dependencies", {
@@ -326,26 +326,6 @@ test_that("sn_write auto-installs missing custom writer dependencies", {
 
   expect_true("qs2" %in% installed)
   expect_true(file.exists(qs2_path))
-
-  installed <- character(0)
-  qs_path <- tempfile(fileext = ".qs")
-  testthat::with_mocked_bindings(
-    sn_write(list(a = 1), qs_path),
-    .sn_find_missing_packages = function(packages) {
-      setdiff(packages, installed)
-    },
-    .sn_install_qs_serializer = function(repos = getOption("repos")) {
-      installed <<- union(installed, "qs")
-      invisible("qs")
-    },
-    .export.rio_qs = function(file, x, ...) {
-      saveRDS(x, file = file)
-    },
-    .package = "Shennong"
-  )
-
-  expect_true("qs" %in% installed)
-  expect_true(file.exists(qs_path))
 })
 
 test_that("sn_write can disable custom writer auto-installation", {
@@ -358,18 +338,6 @@ test_that("sn_write can disable custom writer auto-installation", {
     ),
     .sn_find_missing_packages = function(packages) packages,
     .package = "Shennong"
-  )
-
-  expect_error(
-    testthat::with_mocked_bindings(
-      sn_write(list(a = 1), tempfile(fileext = ".qs")),
-      .sn_find_missing_packages = function(packages) packages,
-      .sn_install_qs_serializer = function(repos = getOption("repos")) {
-        stop("qsbase/qs failed", call. = FALSE)
-      },
-      .package = "Shennong"
-    ),
-    "qsbase/qs"
   )
 })
 
@@ -660,19 +628,10 @@ test_that("io helpers cover custom source passthrough and non-csv AnnData import
   expect_equal(as.numeric(updated$score), c(1, 2, 3, 4))
 })
 
-test_that("sn_read and sn_write support qs and qs2 serialized objects", {
+test_that("sn_read and sn_write support qs2 serialized objects", {
   skip_if_not_installed("rio")
 
-  expect_true(Shennong:::.sn_is_custom_format("qs"))
   expect_true(Shennong:::.sn_is_custom_format("qs2"))
-
-  if (requireNamespace("qs", quietly = TRUE)) {
-    qs_path <- tempfile(fileext = ".qs")
-    payload <- list(a = 1:3, b = data.frame(label = c("x", "y"), value = c(2, 4)))
-    sn_write(payload, qs_path)
-    restored <- sn_read(qs_path)
-    expect_equal(restored, payload)
-  }
 
   if (requireNamespace("qs2", quietly = TRUE)) {
     qs2_path <- tempfile(fileext = ".qs2")
@@ -701,4 +660,26 @@ test_that("h5ad writer accepts existing SingleCellExperiment objects", {
   sn_write(sce, h5ad_path)
 
   expect_true(file.exists(h5ad_path))
+})
+
+test_that("retired qs formats fail before IO or automatic installation", {
+  root <- tempfile("retired-serializer-")
+  path <- file.path(root, "payload.qs")
+  testthat::local_mocked_bindings(
+    .sn_ensure_sn_write_base_dependencies = function(...) stop("unexpected installation"),
+    .sn_download_custom_source = function(...) stop("unexpected download"),
+    .package = "Shennong"
+  )
+  expect_false(.sn_is_custom_format("qs"))
+  expect_length(.sn_writer_dependency_packages("qs"), 0L)
+  expect_false(any(c(".import.rio_qs", ".export.rio_qs") %in%
+                     getNamespaceExports("Shennong")))
+  for (candidate in c(path, paste0(path, ".gz"), toupper(path),
+                      "https://example.org/payload.qs?download=1")) {
+    expect_error(sn_read(candidate), "no longer supported; use .qs2")
+    expect_error(sn_write(list(a = 1), candidate), "no longer supported; use .qs2")
+  }
+  expect_error(sn_read("unused", format = "QS"), "no longer supported; use .qs2")
+  expect_error(sn_write(list(a = 1), to = "QS"), "no longer supported; use .qs2")
+  expect_false(dir.exists(root))
 })

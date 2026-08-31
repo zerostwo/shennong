@@ -97,3 +97,42 @@ test_that("QC supports legacy assays and selected-assay species inference", {
   expect_error(sn_add_qc_metrics(object, suffix = NA_character_), "non-missing strings")
   expect_error(sn_add_qc_metrics(object, layer = c("counts", "data")), "single")
 })
+
+test_that("decontaminated counts automatically preserve original QC columns", {
+  object <- sn_add_qc_metrics(SeuratObject::CreateSeuratObject(qc_counts()))
+  corrected <- qc_counts()
+  corrected["HBB", ] <- 0
+  SeuratObject::LayerData(object, layer = "decontaminated_counts") <- corrected
+  result <- sn_add_qc_metrics(object, layer = "decontaminated_counts")
+  columns <- c("percent.mt", "percent.ribo", "percent.hb")
+  expect_identical(result[[]][, columns], object[[]][, columns])
+  expect_equal(unname(result$percent.mt_corrected), c(2 / 16, 1 / 17) * 100)
+  expect_equal(unname(result$percent.ribo_corrected), c(3 / 16, 2 / 17) * 100)
+  expect_equal(unname(result$percent.hb_corrected), c(0, 0))
+  expect_equal(result@commands$sn_add_qc_metrics@params$suffix, "_corrected")
+  expect_equal(sn_add_qc_metrics(object, layer = "decontaminated_counts", suffix = NULL)[[]], result[[]])
+  expect_identical(SeuratObject::LayerData(result, layer = "decontaminated_counts"), corrected)
+
+  overwritten <- sn_add_qc_metrics(object, layer = "decontaminated_counts", suffix = "")
+  expect_equal(unname(overwritten$percent.hb), c(0, 0))
+  expect_false("percent.hb_corrected" %in% colnames(overwritten[[]]))
+  custom <- sn_add_qc_metrics(object, layer = "decontaminated_counts", suffix = ".custom")
+  expect_equal(unname(custom$percent.hb.custom), c(0, 0))
+  expect_false("percent.hb_corrected" %in% colnames(custom[[]]))
+})
+
+test_that("automatic QC suffix recognizes split decontaminated layers only", {
+  object <- SeuratObject::CreateSeuratObject(qc_counts())
+  for (cell in c("a", "b")) {
+    SeuratObject::LayerData(object, layer = paste0("decontaminated_counts.", cell)) <-
+      qc_counts()[, cell, drop = FALSE]
+  }
+  combined <- sn_add_qc_metrics(object, layer = "decontaminated_counts")
+  expect_equal(unname(combined$percent.hb_corrected), c(20, 15))
+  single <- sn_add_qc_metrics(object, layer = "decontaminated_counts.b")
+  expect_equal(unname(single$percent.hb_corrected), c(NA_real_, 15))
+  SeuratObject::LayerData(object, layer = "decontaminated_counts_backup") <- qc_counts()
+  other <- sn_add_qc_metrics(object, layer = "decontaminated_counts_backup")
+  expect_equal(unname(other$percent.hb), c(20, 15))
+  expect_false("percent.hb_corrected" %in% colnames(other[[]]))
+})

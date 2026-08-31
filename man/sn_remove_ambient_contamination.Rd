@@ -91,7 +91,9 @@ manually active patch remains active until \code{\link[=sn_disable_acceleration]
 }
 \examples{
 \dontrun{
-pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_remove_ambient_contamination(pbmc, method = "decontx")
 }
 

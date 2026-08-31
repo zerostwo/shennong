@@ -51,8 +51,7 @@ declared source for each dependency. CRAN packages are installed with
 \code{install.packages()}, Bioconductor packages with
 \code{BiocManager::install()}, and GitHub packages with
 \code{remotes::install_github()}.
-Legacy \code{.qs} files remain supported when the archived \pkg{qs} package
-is already available, but new installations should use \pkg{qs2}.
+Serialized objects use \pkg{qs2}.
 }
 \examples{
 \dontrun{

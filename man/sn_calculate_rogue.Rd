@@ -64,7 +64,9 @@ This function calculates ROGUE score based on Seurat object.
 }
 \examples{
 \dontrun{
-pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 rogue_tbl <- sn_calculate_rogue(pbmc, cluster_by = "seurat_clusters")
 head(rogue_tbl)

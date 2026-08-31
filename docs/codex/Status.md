@@ -8,37 +8,55 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
-- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4436` in the
+- Full local testthat suite: `FAIL 0 | WARN 8 | SKIP 1 | PASS 4461` in the
   current local dependency profile (most optional backends installed; skip
   counts therefore differ from profiles with fewer packages). Warnings are
   environmental diagnostics from optional-backend paths, not failures.
 - Architecture gates (`test-architecture-gates.R`): passing against the
   committed `inst/architecture/` baselines.
 - Backend-conformance tests pass as part of the full local suite.
-- Source build and `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual
-  --no-tests` complete with no errors, 1 WARNING and 1 NOTE. The warning is
-  the pre-existing `sn_simulate_scdesign3` Rd link; the note names `cell` and
-  `setNames` in unchanged annotation helpers. Tests run separately above.
-  The pre-push script completes successfully; this is not a clean check.
+- Source build and `R CMD check --no-manual --as-cran --no-tests` pass
+  with 0 ERRORs, 0 WARNINGs, and 2 NOTEs under the GitHub environment profile
+  (`NOT_CRAN=true`, `_R_CHECK_FORCE_SUGGESTS_=false`,
+  `_R_CHECK_CRAN_INCOMING_=false`). The local NOTEs are unavailable remote
+  clock verification and an `omnipathr-log` directory created by an optional
+  dependency during examples. Tests run separately above. The pre-push
+  script enforces the same warning-as-failure policy as GitHub.
 - Last full real-data pkgdown audit (2026-08-26) under `site/dev`: 24 article pages, 65 audited
   figure assets; runtime tracing observes 94/94 declared core functions across
   15/15 mapped articles with zero download attempts. This full runtime audit
   was not rerun for the QC helper extraction.
-- Standalone count QC: 32 focused assertions pass (157 across QC,
-  preprocessing, BPCells, and architecture tests); the 2,000-cell / 32,738-gene
+- IO/QC/API focused validation: 267 assertions pass without warnings or skips.
+- Standalone count QC: 47 focused assertions pass (217 across QC,
+  preprocessing, BPCells, architecture, and annotation tests); the 2,000-cell / 32,738-gene
   local PBMC fixture matches direct column-sum percentages exactly before and
   after a controlled count perturbation, without changing the source object.
   This verifies recalculation, not an ambient-correction algorithm.
 - Incremental pkgdown rebuild and rendered QC reference/article checks pass;
   the package is installed locally and a fresh-session exported-helper call
-  passes.
+  passes. On the real PBMC fixture, automatic `_corrected` QC matches direct
+  sums exactly while preserving original QC columns and source counts.
+  A qs2 write/read round trip of that installed-package Seurat result preserves
+  metadata, raw counts, and corrected counts exactly.
+- A temporary package with an invalid Rd link verifies that the pre-push script
+  now rejects warning-only checks; `--as-cran` enables GitHub's additional
+  check profile locally.
 
 ## Current architecture state
 
+- Serialized object IO uses qs2. Legacy qs reader/writer exports, dispatch,
+  dependency mapping, and the GitHub installer are removed. Inferred or
+  explicit `.qs` formats fail before IO/installation; rio cannot restore
+  support implicitly. Active benchmark scripts and shipped examples use
+  `.qs2`; historical data and recorded result paths are untouched.
+
 - `sn_add_qc_metrics()` writes or refreshes three count-based QC percentages
-  independently of initialization. Explicit assay/layer selection and optional
-  suffixes support corrected-count comparisons without changing expression
-  layers, default assay, or `nCount_*`/`nFeature_*` metadata.
+  independently of initialization. Default `suffix = NULL` adds `_corrected`
+  automatically for `decontaminated_counts` and its dot-separated split layers,
+  matching `nCount_RNA_corrected` / `nFeature_RNA_corrected` naming. Other layers
+  keep unsuffixed columns. Explicit suffixes override automatic naming,
+  including `""` to overwrite original columns. Expression layers, the default
+  assay, and `nCount_*`/`nFeature_*` metadata remain unchanged.
 
 - `R/` is organized as the 74-file domain module map documented in
   `AGENTS.md`. The 2026-08-26 decomposition pass split `analysis_metrics.R`

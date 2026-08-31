@@ -66,7 +66,9 @@ annotation subset.
 }
 \examples{
 \dontrun{
-  pbmc <- qs2::qs_read(file.path(Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"))
+  pbmc <- qs2::qs_read(file.path(
+    Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+  ))
   pbmc_filtered <- sn_filter_genes(
     pbmc,
     min_cells = 5,

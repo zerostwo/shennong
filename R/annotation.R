@@ -3,17 +3,17 @@
   marker_database <- get("marker_genes", envir = environment())
   required <- c("high_hierarchy_cell_type", "low_hierarchy_cell_type")
   if (!all(required %in% colnames(marker_database))) {
-    return(setNames(as.character(labels), as.character(labels)))
+    return(stats::setNames(as.character(labels), as.character(labels)))
   }
   hierarchy <- unique(marker_database[required])
-  parent <- setNames(
+  parent <- stats::setNames(
     as.character(hierarchy$high_hierarchy_cell_type),
     as.character(hierarchy$low_hierarchy_cell_type)
   )
   labels <- as.character(labels)
   level_1 <- unname(parent[labels])
   level_1[is.na(level_1) | !nzchar(level_1)] <- labels[is.na(level_1) | !nzchar(level_1)]
-  setNames(level_1, labels)
+  stats::setNames(level_1, labels)
 }
 
 .sn_annotation_expression <- function(object, assay = NULL, layer = "data") {
@@ -600,7 +600,7 @@
 .sn_annotation_cluster_table <- function(cells_table, clusters) {
   table <- dplyr::mutate(
     cells_table,
-    cluster = unname(clusters[cell]),
+    cluster = unname(clusters[.data$cell]),
     .after = "cell"
   )
   groups <- split(table, table$cluster)

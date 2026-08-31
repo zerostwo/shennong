@@ -102,8 +102,11 @@ user request to the right Shennong function family quickly.
 1. Discover 10x inputs with `sn_list_10x_paths()` when needed.
 2. Initialize the Seurat object with `sn_initialize_seurat_object()`.
    After count correction, rerun `object <- sn_add_qc_metrics(object, assay = "RNA",
-   layer = "counts", suffix = ".corrected")`; select the actual corrected layer
-   or assay if it is stored separately. This recomputes percentage denominators
+   layer = "counts", suffix = "_corrected")`; select the actual corrected layer
+   or assay if it is stored separately. With `layer = "decontaminated_counts"`,
+   omit `suffix` to automatically add `_corrected`; an explicit suffix
+   always wins, including `""` to overwrite original columns.
+   This recomputes percentage denominators
    from counts, but does not update `nCount_*` or `nFeature_*`.
 3. When `sn_list_10x_paths()` returns multiple named paths, pass the whole
    vector to `sn_initialize_seurat_object(x = tenx_paths)` to import all
@@ -536,3 +539,10 @@ user request to the right Shennong function family quickly.
 - Use `sn_call_*()` for direct managed-Python command execution. Use
   object-level `sn_run_*()` Python wrappers only when a Seurat object is being
   exported to and imported back from the backend workflow.
+
+### Serialized project checkpoints
+
+Use `sn_write(object, "data/processed/object.qs2")` and
+`sn_read("data/processed/object.qs2")`. Shennong no longer reads, writes, or
+installs a serializer for `.qs`; migrate existing files in a compatible older
+environment instead of renaming their extensions.

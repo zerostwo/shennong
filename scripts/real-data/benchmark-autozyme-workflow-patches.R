@@ -61,9 +61,9 @@ repo_root <- normalizePath(
   candidates <- c(
     from_env,
     file.path(repo_root, "data-local", "pkgdown-real", "single-cell", "kotliarov_pbmc.qs2"),
-    file.path(repo_root, "data-local", "single-cell", "capacity_30k.qs"),
-    file.path(repo_root, "data-local", "capacity", "seurat_30k.qs"),
-    file.path(repo_root, "data-local", "capacity", "30k.qs")
+    file.path(repo_root, "data-local", "single-cell", "capacity_30k.qs2"),
+    file.path(repo_root, "data-local", "capacity", "seurat_30k.qs2"),
+    file.path(repo_root, "data-local", "capacity", "30k.qs2")
   )
   candidates <- path.expand(candidates[nzchar(candidates)])
   existing <- candidates[file.exists(candidates)]
@@ -148,7 +148,7 @@ if (.flag("help")) {
     "  shennong_autozyme_on  Shennong workflow with its real lazy AutoZyme scope\n",
     "\n",
     "Options:\n",
-    "  --input PATH          Seurat fixture in .qs2, legacy .qs, or .rds format.\n",
+    "  --input PATH          Seurat fixture in .qs2 or .rds format.\n",
     "                        Default: SHENNONG_AUTOZYME_FIXTURE, validated Kotliarov,\n",
     "                        then known local 30k-capacity paths.\n",
     "  --output PATH         JSON report (default: INPUT.autozyme-workflow.json)\n",
@@ -205,7 +205,7 @@ if (!species %in% c("human", "mouse")) stop("`--species` must be human or mouse.
 orgdb <- .option("orgdb", if (species == "human") "org.Hs.eg.db" else "org.Mm.eg.db")
 output <- .absolute_path(.option(
   "output",
-  paste0(sub("[.](qs2|qs|rds)$", "", input, ignore.case = TRUE), ".autozyme-workflow.json")
+  paste0(sub("[.](qs2|rds)$", "", input, ignore.case = TRUE), ".autozyme-workflow.json")
 ))
 
 .require_packages <- function(packages) {
@@ -223,12 +223,8 @@ output <- .absolute_path(.option(
       .require_packages("qs2")
       qs2::qs_read(path)
     },
-    qs = {
-      .require_packages("qs")
-      qs::qread(path)
-    },
     rds = readRDS(path),
-    stop("Unsupported fixture extension: .", extension, ". Use .qs2, .qs, or .rds.", call. = FALSE)
+    stop("Unsupported fixture extension: .", extension, ". Use .qs2 or .rds.", call. = FALSE)
   )
   if (!inherits(value, "Seurat") && is.list(value) && inherits(value$object, "Seurat")) {
     value <- value$object
