@@ -1,6 +1,20 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-08-31
+Last updated: 2026-09-03
+
+## 2026-09-03
+
+- Composition visualization is metadata-driven rather than restricted to an
+  already summarized table. `sn_plot_composition()` accepts Seurat objects and
+  retains the old table/bar path while adding distinct descriptive bar,
+  sample-replicate summary, cohort-distribution, and alluvial modes. Sample
+  summaries calculate within sample, complete absent cell types with zero, and
+  reject condition labels that vary within a sample so plots do not imply
+  cell-level replication. `unit_by` explicitly deduplicates donor metadata
+  repeated on cells. Static alluvial rendering uses optional `ggalluvial`, now
+  approved in the dependency baseline; ordinary bars and sample summaries do
+  not require it. The expanded implementation lives in `plot_composition.R`
+  instead of growing the already-large visualization orchestrator.
 
 ## 2026-08-31
 

@@ -117,15 +117,36 @@ roe_matrix[, seq_len(min(4, ncol(roe_matrix))), drop = FALSE]
 
 ```{r plot-composition}
 sn_plot_composition(
-  composition,
+  pbmc,
   x = real_sample,
   fill = seurat_clusters,
-  y = proportion,
   position = "stack",
   palette = "Paired",
   title = "PBMC cluster composition by real biological sample"
 )
 ```
+
+The plotting helper can also keep the biological sample as the replicate. The
+following computes per-sample cluster proportions from metadata, fills absent
+sample/cluster combinations with zero, and then draws the sample distributions
+within each response group.
+
+```{r plot-sample-composition}
+sn_plot_composition(
+  pbmc,
+  x = real_response,
+  fill = seurat_clusters,
+  type = "sample_boxplot",
+  sample_by = "real_sample",
+  show_points = TRUE
+)
+```
+
+Use `type = "sample_bar"` with `errorbar = "se"` or `"sd"` when a
+mean-with-error display is required. Use `type = "alluvial"` and
+`flow_by = c("level1", "level2", "level3")` to audit hierarchical annotation
+or source-to-final-label flows; that mode uses the optional `ggalluvial`
+package.
 
 ## Compare sample-level proportions
 

@@ -42,6 +42,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_plot_composition()` now accepts Seurat objects and cell-level metadata
+  directly, in addition to precomputed composition tables. It supports stacked
+  count/proportion bars, donor/sample distributions, sample-level mean with
+  SD/SE error bars, sample-level boxplots with points, and two- or multi-level
+  alluvial/Sankey plots. Sample-level modes treat biological samples as the
+  replicate, enforce sample-constant group labels, filter on total cells per
+  sample, and include zero proportions for absent cell types.
+
 - `sn_add_qc_metrics()` now defaults to `suffix = NULL`: selecting
   `decontaminated_counts` (including its dot-separated split layers)
   automatically writes `percent.mt_corrected`,

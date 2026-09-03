@@ -6420,7 +6420,7 @@
     {
       "function_name": "sn_plot_composition",
       "runtime_classified": true,
-      "formal_digest": "3e14a577101de0d410cc860fdde7b0870115f2525aabaaed77762ca5a6fd6607",
+      "formal_digest": "cfea90aa479e16419305fc907594b8ff85b2c3ca7e9fd04f6c991266fc4c390b",
       "parameters": [
         {
           "name": "data",
@@ -6431,10 +6431,10 @@
         },
         {
           "name": "x",
-          "class": "required",
-          "default": "<required>",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 2
+          "minimum_cases": 3
         },
         {
           "name": "y",
@@ -6445,8 +6445,113 @@
         },
         {
           "name": "fill",
-          "class": "required",
-          "default": "<required>",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "type",
+          "class": "character",
+          "default": "\"bar\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "data_kind",
+          "class": "selector",
+          "default": "c(\"auto\", \"metadata\", \"summary\")",
+          "selector_values": ["auto", "metadata", "summary"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "sample_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "unit_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "flow_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "min_cells",
+          "class": "numeric",
+          "default": "0",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "position",
+          "class": "selector",
+          "default": "c(\"stack\", \"fill\", \"dodge\")",
+          "selector_values": ["stack", "fill", "dodge"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "summary_fun",
+          "class": "selector",
+          "default": "c(\"mean\", \"median\")",
+          "selector_values": ["mean", "median"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "errorbar",
+          "class": "selector",
+          "default": "c(\"se\", \"sd\", \"none\")",
+          "selector_values": ["se", "sd", "none"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "show_points",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "point_alpha",
+          "class": "numeric",
+          "default": "0.7",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "jitter_width",
+          "class": "numeric",
+          "default": "0.15",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "bins",
+          "class": "numeric",
+          "default": "30",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "alluvium_alpha",
+          "class": "numeric",
+          "default": "0.8",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "show_stratum_labels",
+          "class": "boolean",
+          "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
         },
@@ -6462,13 +6567,6 @@
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "position",
-          "class": "selector",
-          "default": "c(\"stack\", \"fill\", \"dodge\")",
-          "selector_values": ["stack", "fill", "dodge"],
           "minimum_cases": 3
         },
         {

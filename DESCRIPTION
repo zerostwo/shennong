@@ -69,6 +69,7 @@ Suggests:
     enrichit,
     GapClust,
     GENIE3,
+    ggalluvial,
     ggrepel,
     ggridges,
     ggrastr,

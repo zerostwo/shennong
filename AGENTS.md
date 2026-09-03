@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by durable workflow domains (74 files as of 2026-08-26).
+- `R/` is organized by durable workflow domains (75 files as of 2026-09-03).
   Analysis domains live in one `analysis_<domain>.R` each: preprocessing,
   clustering (`analysis_clustering.R` plus extracted `analysis_label_transfer.R`,
   `analysis_celltypist.R`, `analysis_integration_backends.R`,
@@ -15,9 +15,10 @@
   trajectory and velocity/fate, communication/regulatory,
   spatial, CNV, metabolism/grn/program discovery/scoring, adapters, abundance,
   registry, result contract (`analysis_result.R`, `result_bundle.R`), and
-  simulation. Presentation lives in per-domain `plot_<domain>.R` files plus
-  `visualization.R` (orchestrators; theme/palette/density aspects extracted)
-  and `figure_spec.R`/`figure_export.R`. Cross-cutting modules: interpretation
+  simulation. Presentation lives in per-domain `plot_<domain>.R` files such as
+  `plot_composition.R`, plus `visualization.R` (orchestrators;
+  theme/palette/density aspects extracted) and
+  `figure_spec.R`/`figure_export.R`. Cross-cutting modules: interpretation
   (`interpretation.R` orchestration plus `interpretation_evidence.R` and
   `interpretation_backend.R`), runtime plumbing (`package_tools.R` plus
   `pixi_runtime.R`, `python_bridge.R`, `codex_project.R`), usage tracking,

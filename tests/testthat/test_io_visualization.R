@@ -162,6 +162,126 @@ test_that("sn_plot_composition resolves named palettes and keeps axis labels", {
   expect_true(length(plot$scales$scales) >= 2)
 })
 
+test_that("sn_plot_composition calculates stacked proportions directly from Seurat metadata", {
+  skip_if_not_installed("Seurat")
+
+  counts <- Matrix::Matrix(matrix(1, nrow = 5, ncol = 12), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(5))
+  colnames(counts) <- paste0("cell", seq_len(12))
+  object <- sn_initialize_seurat_object(counts, project = "composition-plot")
+  object$sample <- rep(c("S1", "S2"), each = 6)
+  object$cell_type <- c(rep("T", 4), rep("B", 2), rep("T", 2), rep("B", 4))
+
+  plot <- sn_plot_composition(object, x = sample, fill = cell_type)
+
+  expect_s3_class(plot, "ggplot")
+  expect_true(all(c("sample", "cell_type", "count", "proportion") %in% colnames(plot$data)))
+  expect_equal(
+    aggregate(proportion ~ sample, plot$data, sum)$proportion,
+    c(100, 100)
+  )
+})
+
+test_that("sample-level composition plots summarize biological samples and include absent categories", {
+  metadata <- data.frame(
+    sample = rep(c("S1", "S2", "S3", "S4"), each = 10),
+    condition = rep(c("Control", "Control", "Treated", "Treated"), each = 10),
+    cell_type = c(rep("T", 10), rep(c("T", "B"), each = 5), rep("B", 10), rep(c("T", "B"), each = 5)),
+    stringsAsFactors = FALSE
+  )
+
+  bars <- sn_plot_composition(
+    metadata,
+    x = condition,
+    fill = cell_type,
+    type = "sample_bar",
+    sample_by = "sample",
+    errorbar = "se"
+  )
+  boxes <- sn_plot_composition(
+    metadata,
+    x = condition,
+    fill = cell_type,
+    type = "sample_boxplot",
+    sample_by = "sample"
+  )
+
+  expect_s3_class(bars, "ggplot")
+  expect_s3_class(boxes, "ggplot")
+  expect_equal(nrow(boxes$data), 8L)
+  expect_true(any(boxes$data$proportion == 0))
+  expect_true(all(c(".sn_center", ".sn_ymin", ".sn_ymax", ".sn_n") %in% colnames(bars$data)))
+  expect_true(all(bars$data$.sn_ymin >= 0 & bars$data$.sn_ymax <= 100))
+  expect_equal(
+    bars$data$.sn_center[bars$data$condition == "Control" & bars$data$cell_type == "T"],
+    75
+  )
+  expect_equal(
+    bars$data$.sn_center[bars$data$condition == "Treated" & bars$data$cell_type == "T"],
+    25
+  )
+  expect_no_error(ggplot2::ggplot_build(bars))
+  expect_no_error(ggplot2::ggplot_build(boxes))
+})
+
+test_that("composition distribution plots count unique donor metadata rather than cells", {
+  metadata <- data.frame(
+    donor = rep(paste0("D", 1:6), each = 3),
+    age = rep(c(21, 35, 35, 52, 63, 70), each = 3),
+    ethnicity = rep(c("A", "A", "B", "A", "B", "NA"), each = 3),
+    stringsAsFactors = FALSE
+  )
+
+  age_plot <- sn_plot_composition(
+    metadata, x = age, type = "histogram", unit_by = "donor", bins = 5
+  )
+  ethnicity_plot <- sn_plot_composition(
+    metadata, x = ethnicity, type = "bar", unit_by = "donor"
+  )
+
+  expect_equal(nrow(age_plot$data), 6L)
+  expect_equal(sum(ethnicity_plot$data$count), 6L)
+  expect_identical(ethnicity_plot$labels$y, "Number of samples")
+  expect_no_error(ggplot2::ggplot_build(age_plot))
+})
+
+test_that("alluvial composition plots support multi-level metadata paths", {
+  skip_if_not_installed("ggalluvial")
+  metadata <- data.frame(
+    level1 = c("Immune", "Immune", "Stroma", "Stroma", "Immune"),
+    level2 = c("Lymphoid", "Myeloid", "Vascular", "Fibroblast", "Lymphoid"),
+    level3 = c("T", "Mono", "EC", "Fibroblast", "B"),
+    stringsAsFactors = FALSE
+  )
+
+  plot <- sn_plot_composition(
+    metadata,
+    type = "sankey",
+    flow_by = c("level1", "level2", "level3")
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(length(unique(plot$data$.sn_axis)), 3L)
+  expect_true(all(c(".sn_alluvium", ".sn_stratum", ".sn_weight") %in% colnames(plot$data)))
+  expect_no_error(ggplot2::ggplot_build(plot))
+})
+
+test_that("sample-level composition rejects condition labels that vary within samples", {
+  metadata <- data.frame(
+    sample = c("S1", "S1", "S2", "S2"),
+    condition = c("A", "B", "A", "A"),
+    cell_type = c("T", "B", "T", "B")
+  )
+
+  expect_error(
+    sn_plot_composition(
+      metadata, x = condition, fill = cell_type,
+      type = "sample_bar", sample_by = "sample"
+    ),
+    "not constant within samples"
+  )
+})
+
 test_that("Seurat plotting helpers return ggplot objects", {
   skip_if_not_installed("Seurat")
 

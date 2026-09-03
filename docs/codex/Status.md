@@ -1,12 +1,24 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-08-31
+Last updated: 2026-09-03
 
 This file describes what is true now. It is not a change log: Git history and
 `docs/codex/archive/` hold point-in-time evidence, `Decisions.md` holds durable
 rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
+
+- Composition plotting now consumes Seurat metadata or data frames and covers
+  stacked counts/proportions, sample-level error-bar and box/point summaries,
+  unique-donor distributions, and multi-level alluvial flows. Focused
+  visualization/composition/architecture tests pass 206 assertions; the public
+  parameter inventory passes 703 assertions. A source build, incremental
+  pkgdown rebuild, installed-package fresh-session smoke test, and the full
+  `R CMD check` test phase pass. The final no-test structural check reports one
+  repository-level NOTE for `.codegraph`; the composition code has no static
+  analysis NOTE. Tests cover direct Seurat use, zero completion, sample-label
+  integrity, donor deduplication, alluvial construction, and rendered ggplot
+  builds.
 
 - CI portability repair: empty-runtime coverage reproduction passes 99
   assertions (2 expected optional-PopV skips), while strict real Python/R

@@ -260,6 +260,13 @@ This skill is the main entry point for package usage.
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
    package-style plots; resolve reusable colors with `sn_list_palettes()` and
    `sn_get_palette()`.
+   `sn_plot_composition()` accepts a Seurat object directly. Use ordinary
+   `type = "bar"` for descriptive cell counts/proportions; use
+   `type = "sample_bar"` or `"sample_boxplot"` with an explicit `sample_by`
+   when biological samples are the replicates; use `type = "alluvial"` with
+   two or more `flow_by` metadata columns for source/annotation flows. Use
+   `unit_by` for donor metadata repeated across cells so donor distributions do
+   not count cells as independent donors.
 9. Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
 10. Simulate from real objects with `sn_simulate(method = "scdesign3")`, or

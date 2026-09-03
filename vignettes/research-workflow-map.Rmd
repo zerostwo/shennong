@@ -253,10 +253,11 @@ composition <- sn_calculate_composition(
 )
 
 sn_plot_composition(
-  composition,
-  x = "real_sample",
-  fill = "seurat_clusters",
-  facet_col = "real_response"
+  pbmc,
+  x = real_response,
+  fill = seurat_clusters,
+  type = "sample_boxplot",
+  sample_by = "real_sample"
 )
 ```
 

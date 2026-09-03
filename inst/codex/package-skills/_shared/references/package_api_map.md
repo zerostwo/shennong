@@ -418,7 +418,8 @@ Runtime reference datasets:
   marker-group panels
 - `sn_plot_boxplot()`: box plot
 - `sn_plot_barplot()`: bar plot
-- `sn_plot_composition()`: composition bar charts
+- `sn_plot_composition()`: metadata/Seurat composition bars, sample-level
+  error-bar or box/point plots, donor distributions, and alluvial/Sankey flows
 - `sn_plot_milo()`: milo differential-abundance visualization
 - `sn_list_palettes()`: list available palettes
 - `sn_get_palette()`: resolve palette colors

@@ -291,10 +291,12 @@ sn_plot_dot(
 )
 ```
 
-## Composition plots for sample-level summaries
+## Metadata-driven composition plots
 
-`sn_calculate_composition()` creates the table; `sn_plot_composition()` displays
-it. Keeping those steps separate makes the denominator and grouping explicit.
+`sn_plot_composition()` can calculate the plot-ready composition directly from
+a Seurat object's metadata. The explicit two-step route through
+`sn_calculate_composition()` remains useful when you want to inspect or export
+the denominator table before plotting.
 
 ```{r plot-composition}
 composition <- sn_calculate_composition(
@@ -306,14 +308,46 @@ composition <- sn_calculate_composition(
 )
 
 sn_plot_composition(
-  composition,
+  pbmc,
   x = real_sample,
   fill = seurat_clusters,
-  y = proportion,
   position = "stack",
   palette = "Paired"
 )
 ```
+
+For condition-level inference, each biological sample should contribute one
+proportion. `sample_boxplot` shows those observations directly; `sample_bar`
+shows their mean or median with SD/SE error bars. Cell types absent from a
+retained sample are represented as zero rather than silently dropped.
+
+```{r plot-sample-composition}
+sn_plot_composition(
+  pbmc,
+  x = real_response,
+  fill = seurat_clusters,
+  type = "sample_boxplot",
+  sample_by = "real_sample",
+  show_points = TRUE
+)
+```
+
+Alluvial/Sankey-style plots trace counts through two or more metadata levels.
+They require the optional `ggalluvial` package.
+
+```{r plot-composition-alluvial}
+if (requireNamespace("ggalluvial", quietly = TRUE)) {
+  sn_plot_composition(
+    pbmc,
+    type = "alluvial",
+    flow_by = c("real_response", "seurat_clusters")
+  )
+}
+```
+
+For cohort metadata repeated on every cell, `unit_by` prevents donor counts or
+histograms from counting cells as independent donors, for example
+`sn_plot_composition(seu, x = age, type = "histogram", unit_by = "donor")`.
 
 ## Standard ggplot2 still fits
 
