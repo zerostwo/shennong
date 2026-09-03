@@ -42,6 +42,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `sn_score_cell_cycle()` now accepts explicit `assay` and `layer` arguments.
+  It keeps the previous defaults (the object's current default assay and its
+  normalized `data` layer), supports custom or split layers, and restores the
+  original default assay and standard assay layers after scoring.
+
 - `sn_plot_composition()` now accepts Seurat objects and cell-level metadata
   directly, in addition to precomputed composition tables. It supports stacked
   count/proportion bars, donor/sample distributions, sample-level mean with

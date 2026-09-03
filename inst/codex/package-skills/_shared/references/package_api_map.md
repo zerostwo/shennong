@@ -65,7 +65,9 @@ Runtime reference datasets:
 - `sn_initialize_seurat_object()`: initialize a Seurat object, including single-path or multi-path 10x import from `sn_list_10x_paths()` and direct BPCells `IterableMatrix` input that remains on disk
 - `sn_standardize_gene_symbols()`: standardize gene symbols
 - `sn_normalize_data()`: normalize with supported workflows
-- `sn_score_cell_cycle()`: cell-cycle scoring
+- `sn_score_cell_cycle()`: cell-cycle scoring from an explicit `assay` and
+  `layer`; omitted `assay` preserves the current default-assay behavior and
+  `layer` defaults to normalized `data`
 - `sn_filter_genes()`: gene filtering
 - `sn_filter_cells()`: cell-level QC filtering
 - `sn_assess_qc()`: summarize QC outcomes and before/after status

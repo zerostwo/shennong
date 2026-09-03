@@ -13777,7 +13777,7 @@
     {
       "function_name": "sn_score_cell_cycle",
       "runtime_classified": true,
-      "formal_digest": "59682b0728166af76ba18f735aac6cb7765d8106ab66142b5bbcceaac13daaf0",
+      "formal_digest": "57e5ec0f7f4c4a3d0145b39009295825f60114c018ee1d05685ea365ea2ce1aa",
       "parameters": [
         {
           "name": "object",
@@ -13792,6 +13792,20 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "assay",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"data\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },

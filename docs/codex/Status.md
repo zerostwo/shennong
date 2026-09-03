@@ -8,6 +8,19 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
+- `sn_score_cell_cycle()` now selects its assay/layer explicitly while keeping
+  the prior default-assay and normalized-data behavior. Focused regression
+  coverage compares custom-layer scores against direct Seurat scoring and
+  checks restoration of the default assay and original layer contents. The
+  preprocessing suite passes 127 assertions, the public parameter inventory
+  passes 703 assertions, incremental pkgdown rebuild succeeds, and the quick
+  source build plus structural `R CMD check` reports `Status: OK`. A full local
+  suite attempt reached 4,511 passing assertions (9 warnings, 1
+  unavailable-data skip), but its three result-registry failures are not a
+  valid isolated baseline signal: the shared worktree acquired a separate
+  `result_id` change set while that process was running. No result-registry code
+  is part of the cell-cycle change set.
+
 - Composition plotting now consumes Seurat metadata or data frames and covers
   stacked counts/proportions, sample-level error-bar and box/point summaries,
   unique-donor distributions, and multi-level alluvial flows. Focused

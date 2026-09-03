@@ -108,6 +108,11 @@ sn_get_species <- function(object, species = NULL) {
 #' @param object A Seurat object containing single-cell RNA-seq data.
 #' @param species (Optional) A character string indicating the species (e.g., "human" or "mouse").
 #'                If NULL, the function will attempt to retrieve species information from `Seurat::Misc(object)`.
+#' @param assay Assay containing the expression values used for scoring. When
+#'   `NULL`, uses the object's current default assay.
+#' @param layer Layer within `assay` used for scoring. Defaults to `"data"`.
+#'   Custom and split layers are supported without permanently replacing the
+#'   assay's standard `data`, `counts`, or `scale.data` layers.
 #'
 #' @return A Seurat object with cell cycle scores added, including:
 #'         - `S.Score`: Score for the S phase
@@ -145,20 +150,31 @@ sn_get_species <- function(object, species = NULL) {
 #'   colnames(counts) <- paste0("cell", 1:20)
 #'   obj <- sn_initialize_seurat_object(counts, species = "human")
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
-#'   obj <- sn_score_cell_cycle(obj, species = "human")
+#'   obj <- sn_score_cell_cycle(
+#'     obj,
+#'     species = "human",
+#'     assay = "RNA",
+#'     layer = "data"
+#'   )
 #'   head(obj[[]][, c("S.Score", "G2M.Score", "Phase")])
 #' }
 #' }
 #'
 #' @export
-sn_score_cell_cycle <- function(object, species = NULL) {
+sn_score_cell_cycle <- function(object, species = NULL, assay = NULL, layer = "data") {
+  if (!inherits(object, "Seurat")) {
+    stop("Input must be a Seurat object.")
+  }
+  assay <- assay %||% SeuratObject::DefaultAssay(object = object)
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = layer)
+
   # Attempt to retrieve species if not provided
   species <- sn_get_species(object = object, species = species)
 
   # Retrieve S-phase and G2M-phase markers
   s_features <- sn_get_signatures(species = species, category = "Programs/cellCycle.G1S")
   g2m_features <- sn_get_signatures(species = species, category = "Programs/cellCycle.G2M")
-  feature_names <- rownames(object)
+  feature_names <- rownames(object[[assay]])
   s_features <- intersect(s_features, feature_names)
   g2m_features <- intersect(g2m_features, feature_names)
 
@@ -171,11 +187,28 @@ sn_score_cell_cycle <- function(object, species = NULL) {
   }
 
   # Perform cell cycle scoring
-  object <- Seurat::CellCycleScoring(object, s.features = s_features, g2m.features = g2m_features)
+  prepared <- .sn_prepare_seurat_layer_alias(
+    object = object,
+    assay = assay,
+    source_layer = layer
+  )
+  object <- Seurat::CellCycleScoring(
+    object = prepared$object,
+    s.features = s_features,
+    g2m.features = g2m_features,
+    assay = assay,
+    slot = prepared$target_layer
+  )
+  object <- .sn_restore_seurat_layer_alias(object = object, context = prepared$context)
 
   # Compute cell cycle difference
   object$CC.Difference <- object$S.Score - object$G2M.Score
-  .sn_log_seurat_command(object = object, name = "sn_score_cell_cycle")
+  .sn_log_seurat_command(
+    object = object,
+    assay = assay,
+    name = "sn_score_cell_cycle",
+    params = list(species = species, assay = assay, layer = layer)
+  )
 }
 
 #' Initialize a Seurat object with optional QC metrics

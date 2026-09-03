@@ -4,13 +4,20 @@
 \alias{sn_score_cell_cycle}
 \title{Score Cell Cycle Phases}
 \usage{
-sn_score_cell_cycle(object, species = NULL)
+sn_score_cell_cycle(object, species = NULL, assay = NULL, layer = "data")
 }
 \arguments{
 \item{object}{A Seurat object containing single-cell RNA-seq data.}
 
 \item{species}{(Optional) A character string indicating the species (e.g., "human" or "mouse").
 If NULL, the function will attempt to retrieve species information from \code{Seurat::Misc(object)}.}
+
+\item{assay}{Assay containing the expression values used for scoring. When
+\code{NULL}, uses the object's current default assay.}
+
+\item{layer}{Layer within \code{assay} used for scoring. Defaults to \code{"data"}.
+Custom and split layers are supported without permanently replacing the
+assay's standard \code{data}, \code{counts}, or \code{scale.data} layers.}
 }
 \value{
 A Seurat object with cell cycle scores added, including:
@@ -52,7 +59,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   colnames(counts) <- paste0("cell", 1:20)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
-  obj <- sn_score_cell_cycle(obj, species = "human")
+  obj <- sn_score_cell_cycle(
+    obj,
+    species = "human",
+    assay = "RNA",
+    layer = "data"
+  )
   head(obj[[]][, c("S.Score", "G2M.Score", "Phase")])
 }
 }

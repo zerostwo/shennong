@@ -262,7 +262,12 @@ pbmc_norm <- sn_normalize_data(
   verbose = FALSE
 )
 
-pbmc_norm <- sn_score_cell_cycle(pbmc_norm, species = "human")
+pbmc_norm <- sn_score_cell_cycle(
+  pbmc_norm,
+  species = "human",
+  assay = "RNA",
+  layer = "data"
+)
 
 table(pbmc_norm$Phase)
 ```

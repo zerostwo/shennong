@@ -4,6 +4,14 @@ Last updated: 2026-09-03
 
 ## 2026-09-03
 
+- Cell-cycle scoring makes its expression source explicit. The public
+  `sn_score_cell_cycle()` API resolves `assay = NULL` to the current default
+  assay and keeps `layer = "data"` as the backward-compatible default. Because
+  Seurat's `CellCycleScoring()` exposes only the legacy `slot` route, Shennong
+  temporarily aliases a selected custom or split layer to the corresponding
+  standard layer and restores both that layer and `DefaultAssay()` after
+  scoring. Marker overlap is evaluated against the selected assay.
+
 - Composition visualization is metadata-driven rather than restricted to an
   already summarized table. `sn_plot_composition()` accepts Seurat objects and
   retains the old table/bar path while adding distinct descriptive bar,

@@ -570,6 +570,67 @@ test_that("sn_score_cell_cycle returns the object unchanged when markers do not 
   expect_false(any(c("S.Score", "G2M.Score", "Phase") %in% colnames(updated[[]])))
 })
 
+test_that("sn_score_cell_cycle scores an explicit assay and custom layer", {
+  skip_if_not_installed("Seurat")
+
+  s_features <- sn_get_signatures(species = "human", category = "Programs/cellCycle.G1S")
+  g2m_features <- sn_get_signatures(species = "human", category = "Programs/cellCycle.G2M")
+  features <- unique(c(s_features, g2m_features, paste0("BACKGROUND", seq_len(3000))))
+  cells <- paste0("cell", seq_len(18))
+  set.seed(717)
+  counts <- Matrix::Matrix(
+    matrix(rpois(length(features) * length(cells), lambda = 3), nrow = length(features),
+      dimnames = list(features, cells)),
+    sparse = TRUE
+  )
+
+  object <- Seurat::CreateSeuratObject(counts = counts, assay = "RNA")
+  object[["cycle"]] <- SeuratObject::CreateAssay5Object(counts = counts)
+  object <- Seurat::NormalizeData(object, assay = "RNA", verbose = FALSE)
+  object <- Seurat::NormalizeData(object, assay = "cycle", verbose = FALSE)
+  original_cycle_data <- SeuratObject::LayerData(object, assay = "cycle", layer = "data")
+  selected_data <- as.matrix(original_cycle_data)
+  selected_data[s_features, seq_len(6)] <- selected_data[s_features, seq_len(6)] + 5
+  selected_data[g2m_features, 7:12] <- selected_data[g2m_features, 7:12] + 5
+  selected_data <- Matrix::Matrix(selected_data, sparse = TRUE)
+  SeuratObject::LayerData(object, assay = "cycle", layer = "cycle_input") <- selected_data
+
+  expected <- object
+  SeuratObject::LayerData(expected, assay = "cycle", layer = "data") <- selected_data
+  expected <- Seurat::CellCycleScoring(
+    expected,
+    s.features = s_features,
+    g2m.features = g2m_features,
+    assay = "cycle",
+    slot = "data"
+  )
+
+  updated <- sn_score_cell_cycle(
+    object,
+    species = "human",
+    assay = "cycle",
+    layer = "cycle_input"
+  )
+
+  expect_equal(updated$S.Score, expected$S.Score)
+  expect_equal(updated$G2M.Score, expected$G2M.Score)
+  expect_identical(updated$Phase, expected$Phase)
+  expect_equal(updated$CC.Difference, expected$S.Score - expected$G2M.Score)
+  expect_identical(SeuratObject::DefaultAssay(updated), "RNA")
+  expect_equal(
+    SeuratObject::LayerData(updated, assay = "cycle", layer = "data"),
+    original_cycle_data
+  )
+  expect_equal(
+    SeuratObject::LayerData(updated, assay = "cycle", layer = "cycle_input"),
+    selected_data
+  )
+  expect_error(
+    sn_score_cell_cycle(object, species = "human", assay = "cycle", layer = "missing"),
+    "Layer 'missing' was not found"
+  )
+})
+
 test_that("count-input resolution supports Seurat objects, paths, and matrix-like inputs", {
   skip_if_not_installed("Seurat")
 
