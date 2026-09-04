@@ -6,7 +6,7 @@
 \usage{
 sn_get_milo_result(
   object,
-  milo_name = "default",
+  result_id = "default",
   annotation = NULL,
   spatial_fdr = NULL,
   with_metadata = FALSE
@@ -15,7 +15,7 @@ sn_get_milo_result(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{milo_name}{Name of the stored milo result.}
+\item{result_id}{Name of the stored milo result.}
 
 \item{annotation}{Optional subset of annotation labels to keep.}
 

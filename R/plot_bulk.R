@@ -7,7 +7,7 @@
     x <- .sn_upgrade_analysis_result(
       x,
       analysis_type = x$analysis_type %||% x$analysis %||% type,
-      name = x$name %||% type,
+      result_id = x$result_id %||% type,
       method = x$method %||% "unknown",
       backend = x$backend %||% x$method %||% "unknown"
     )

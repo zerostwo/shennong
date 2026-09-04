@@ -6,7 +6,7 @@
 \usage{
 sn_plot_cnv(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("heatmap", "umap", "score", "sample", "association"),
   n = 100L,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_cnv(
 \arguments{
 \item{x}{A Seurat object or unified CNV result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{type}{Plot type: chromosome heatmap, CNV UMAP, score distribution,
 sample summary, or CNV-expression association.}

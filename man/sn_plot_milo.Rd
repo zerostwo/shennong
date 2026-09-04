@@ -6,7 +6,7 @@
 \usage{
 sn_plot_milo(
   x,
-  milo_name = "default",
+  result_id = "default",
   annotation_by = NULL,
   fdr_col = c("SpatialFDR", "FDR"),
   fdr_cutoff = 0.1,
@@ -24,7 +24,7 @@ sn_plot_milo(
 \item{x}{A milo result data frame, or a Seurat object containing a stored
 milo result.}
 
-\item{milo_name}{Name of the stored milo result when \code{x} is a Seurat
+\item{result_id}{Name of the stored milo result when \code{x} is a Seurat
 object.}
 
 \item{annotation_by}{Optional column used to color points.}

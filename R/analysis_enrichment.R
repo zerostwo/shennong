@@ -109,57 +109,26 @@
 }
 
 .sn_enrich_resolve_input <- function(x,
-                                     source_de_name = NULL) {
+                                     source_de_result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    de_results <- x@misc$de_results %||% list()
-    if (length(de_results) == 0L) {
-      stop("When `x` is a Seurat object, no stored DE results were found in `x@misc$de_results`.", call. = FALSE)
-    }
-
-    if (is_null(source_de_name) || !nzchar(source_de_name)) {
-      available_names <- names(de_results)
-      marker_names <- available_names[vapply(
-        de_results,
-        function(entry) identical(entry$analysis %||% NULL, "markers"),
-        logical(1)
-      )]
-      latest_name <- function(candidates) {
-        if (length(candidates) == 0L) {
-          return(NULL)
-        }
-        created_at <- vapply(
-          candidates,
-          function(candidate) de_results[[candidate]]$created_at %||% "",
-          character(1)
-        )
-        candidates[[order(created_at, decreasing = TRUE, na.last = TRUE)[[1]]]]
-      }
-
-      source_de_name <- if ("default" %in% available_names) {
-        "default"
-      } else if (length(available_names) == 1L) {
-        available_names[[1]]
-      } else {
-        latest_name(marker_names) %||% latest_name(available_names)
-      }
-
-      .sn_log_info("`source_de_name` was not supplied; using stored DE result '{source_de_name}'.")
-    }
-
-    if (!source_de_name %in% names(de_results)) {
-      stop(glue("Stored DE result '{source_de_name}' was not found in `x@misc$de_results`."), call. = FALSE)
-    }
-    return(list(
-      input = de_results[[source_de_name]]$table,
+    source_de_result_id <- .sn_resolve_stored_result_id(
       object = x,
-      source_de_name = source_de_name
+      type = "de",
+      result_id = source_de_result_id,
+      preferred_analysis = "markers"
+    )
+    de_result <- sn_get_result(x, type = "de", result_id = source_de_result_id)
+    return(list(
+      input = de_result$tables$primary,
+      object = x,
+      source_de_result_id = source_de_result_id
     ))
   }
 
   list(
     input = x,
     object = NULL,
-    source_de_name = source_de_name
+    source_de_result_id = source_de_result_id
   )
 }
 
@@ -311,23 +280,23 @@
   )
 }
 
-.sn_enrich_store_names <- function(store_name, databases) {
+.sn_enrich_result_ids <- function(result_id, databases) {
   if (length(databases) == 1) {
-    return(store_name[[1]])
+    return(result_id[[1]])
   }
 
-  if (length(store_name) == 1) {
+  if (length(result_id) == 1) {
     return(stats::setNames(
-      paste(store_name[[1]], .sn_enrich_output_label(databases), sep = "."),
+      paste(result_id[[1]], .sn_enrich_output_label(databases), sep = "."),
       databases
     ))
   }
 
-  if (length(store_name) != length(databases)) {
-    stop("`store_name` must have length 1 or match the length of `database`.", call. = FALSE)
+  if (length(result_id) != length(databases)) {
+    stop("`result_id` must have length 1 or match the length of `database`.", call. = FALSE)
   }
 
-  stats::setNames(as.character(store_name), databases)
+  stats::setNames(as.character(result_id), databases)
 }
 
 .sn_enrich_symbol_to_entrez <- function(genes, org_db) {
@@ -365,7 +334,7 @@
 #' Runs GO, KEGG, or MSigDB enrichment using \pkg{clusterProfiler}. It supports
 #' both over-representation analysis (ORA) and ranked-list GSEA. The enrichment
 #' input can be a gene vector, a ranked numeric vector, a data frame, or a
-#' Seurat object paired with \code{source_de_name} to reuse stored DE results.
+#' Seurat object paired with \code{source_de_result_id} to reuse stored DE results.
 #'
 #' @param x A character vector of genes, a named numeric vector for GSEA, a
 #'   data frame, or a \code{Seurat} object when enriching a stored DE result.
@@ -405,10 +374,12 @@
 #' @param duplicate_gene_method Policy for duplicate identifiers in a GSEA
 #'   ranked list. The default, `"error"`, avoids silent changes. Explicit
 #'   alternatives are `"max_abs"`, `"max"`, and `"mean"`.
-#' @param store_name Name used when storing the enrichment result on a Seurat
+#' @param result_id Name used when storing the enrichment result on a Seurat
 #'   object. When multiple databases are requested, the database label is
 #'   appended automatically unless a vector of names is supplied.
-#' @param source_de_name Optional stored DE-result name associated with the
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
+#' @param source_de_result_id Optional stored DE-result name associated with the
 #'   enrichment input.
 #' @param return_object Logical; when \code{TRUE} and a Seurat object is
 #'   available, return the updated Seurat object instead of raw enrichment
@@ -448,21 +419,21 @@ sn_run_enrichment <- function(
   max_gs_size = 500,
   gsea_exponent = 1,
   duplicate_gene_method = c("error", "max_abs", "max", "mean"),
-  store_name = "default",
-  source_de_name = NULL,
+  result_id = "default",
+  source_de_result_id = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL,
-  object = NULL
-) {
+  object = NULL) {
+  result_id <- .sn_validate_result_id(result_id)
   x <- .sn_resolve_object_alias(x, object, missing(x))
   resolved <- .sn_enrich_resolve_input(
     x = x,
-    source_de_name = source_de_name
+    source_de_result_id = source_de_result_id
   )
   input <- resolved$input
   object <- resolved$object
-  source_de_name <- resolved$source_de_name %||% source_de_name
+  source_de_result_id <- resolved$source_de_result_id %||% source_de_result_id
 
   species <- species %||% if (!is_null(object)) tryCatch(sn_get_species(object), error = function(...) NULL) else NULL
   species <- species %||% "human"
@@ -803,21 +774,21 @@ sn_run_enrichment <- function(
     }
 
     if (!is_null(object)) {
-      store_names <- .sn_enrich_store_names(store_name = store_name, databases = names(results))
+      result_ids <- .sn_enrich_result_ids(result_id = result_id, databases = names(results))
       for (current_database in names(results)) {
-        current_store <- if (length(databases) == 1) {
-          store_names
+        current_result_id <- if (length(databases) == 1) {
+          result_ids
         } else {
-          store_names[[current_database]]
+          result_ids[[current_database]]
         }
         object <- sn_store_enrichment(
           object = object,
           result = results[[current_database]],
-          store_name = current_store,
+          result_id = current_result_id,
           analysis = analysis,
           database = current_database,
           species = species,
-          source_de_name = source_de_name,
+          source_de_result_id = source_de_result_id,
           gene_col = gene_col,
           score_col = if (identical(analysis, "gsea") && !is_null(mapping)) mapping$value_col else NULL,
           parameters = list(
@@ -863,17 +834,19 @@ sn_run_enrichment <- function(
 #' Store an enrichment result on a Seurat object
 #'
 #' This helper stores enrichment output inside
-#' `object@misc$enrichment_results[[store_name]]` so interpretation and writing
+#' the canonical Shennong result registry so interpretation and writing
 #' helpers can reuse it later.
 #'
 #' @param object A \code{Seurat} object.
 #' @param result An enrichment result object or data frame coercible with
 #'   \code{as.data.frame()}.
-#' @param store_name Name used under \code{object@misc$enrichment_results}.
+#' @param result_id Stable identifier for the stored enrichment result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param analysis One of \code{"ora"} or \code{"gsea"}.
 #' @param database Database used for enrichment, for example \code{"GOBP"}.
 #' @param species Species label used in the enrichment run.
-#' @param source_de_name Optional stored DE result name that produced the input
+#' @param source_de_result_id Optional stored DE result name that produced the input
 #'   ranked gene list or gene set.
 #' @param gene_col Column containing gene symbols when the enrichment input came
 #'   from a data frame.
@@ -899,21 +872,23 @@ sn_run_enrichment <- function(
 #'     NES = c(2.1, 1.7),
 #'     p.adjust = c(0.01, 0.03)
 #'   )
-#'   obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
-#'   names(obj@misc$enrichment_results)
+#'   obj <- sn_store_enrichment(obj, enrich_tbl, result_id = "demo_gsea")
+#'   sn_list_results(obj, type = "enrichment")
+#'   sn_get_result(obj, type = "enrichment", result_id = "demo_gsea")
 #' }
 #' @export
 sn_store_enrichment <- function(object,
                                 result,
-                                store_name = "default",
+                                result_id = "default",
                                 analysis = c("ora", "gsea"),
                                 database = "GOBP",
                                 species = NULL,
-                                source_de_name = NULL,
+                                source_de_result_id = NULL,
                                 gene_col = "gene",
                                 score_col = NULL,
                                 parameters = list(),
                                 return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
 
   analysis <- match.arg(analysis)
@@ -923,24 +898,24 @@ sn_store_enrichment <- function(object,
     stop("`parameters` must be a named list.", call. = FALSE)
   }
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = .sn_as_enrichment_table(result),
     analysis = analysis,
     database = database,
     species = species,
-    source_de_name = source_de_name,
+    source_de_result_id = source_de_result_id,
     gene_col = gene_col,
     score_col = score_col,
     parameters = parameters,
     provenance = .sn_contextual_analysis_provenance()
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "enrichment_results",
-    store_name = store_name,
+    type = "enrichment",
+    result_id = result_id,
     result = stored_result
   )
 
@@ -948,10 +923,10 @@ sn_store_enrichment <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_enrichment"))
   }
 
-  .sn_get_misc_result(
+  sn_get_result(
     object = object,
-    collection = "enrichment_results",
-    store_name = store_name
+    type = "enrichment",
+    result_id = result_id
   )
 }
 

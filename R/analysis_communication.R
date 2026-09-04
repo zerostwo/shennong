@@ -460,7 +460,7 @@
         assay = assay,
         layer = "counts",
         group_by = group_by,
-        result_name = paste0("communication_", format(Sys.time(), "%Y%m%d%H%M%S")),
+        artifact_id = paste0("communication_", format(Sys.time(), "%Y%m%d%H%M%S")),
         return_object = FALSE,
         method_control = controls$method_control %||% list()
       ), controls[setdiff(names(controls), "method_control")], keep.null = TRUE))
@@ -521,7 +521,9 @@
 #' @param contrast Optional length-two condition contrast, with case first and
 #'   reference second.
 #' @param backend_control Named list of method-specific argument lists.
-#' @param store_name Name used under \code{object@misc$cell_communication_results}.
+#' @param result_id Stable identifier for the stored communication result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object;
 #'   otherwise return the stored-result list.
 #' @param ... Backend-specific arguments.
@@ -554,9 +556,10 @@ sn_run_cell_communication <- function(object,
                                       consensus = TRUE,
                                       contrast = NULL,
                                       backend_control = list(),
-                                      store_name = "default",
+                                      result_id = "default",
                                       return_object = TRUE,
                                       ...) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   if (missing(method)) method <- "liana"
   requested_method <- tolower(as.character(method))
@@ -631,7 +634,7 @@ sn_run_cell_communication <- function(object,
       stored <- sn_store_cell_communication(
         object = object,
         result = primary,
-        store_name = store_name,
+        result_id = result_id,
         method = stored_method,
         backend = paste(method, collapse = "+"),
         group_by = group_by,
@@ -661,8 +664,10 @@ sn_run_cell_communication <- function(object,
 #'
 #' @param object A Seurat object.
 #' @param result Communication result table.
-#' @param store_name Name used under
-#'   \code{object@misc$cell_communication_results}.
+#' @param result_id Name used under
+#'   the canonical Shennong result registry.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param method User-facing communication method label.
 #' @param backend Canonical backend identifier. This differs from \code{method}
 #'   only when preserving a legacy alias such as \code{"nichenetr"}.
@@ -680,7 +685,7 @@ sn_run_cell_communication <- function(object,
 #' @export
 sn_store_cell_communication <- function(object,
                                         result,
-                                        store_name = "default",
+                                        result_id = "default",
                                         method = "cellchat",
                                         backend = method,
                                         group_by = NULL,
@@ -698,6 +703,7 @@ sn_store_cell_communication <- function(object,
                                         sample_by = NULL,
                                         condition_by = NULL,
                                         return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   result <- if (all(c("source", "target", "ligand", "receptor", "score", "method") %in% names(result))) {
     tibble::as_tibble(result)
@@ -712,9 +718,9 @@ sn_store_cell_communication <- function(object,
     0L
   }
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "cell_communication",
-    name = store_name,
+    result_id = result_id,
     backend = backend,
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
@@ -748,10 +754,10 @@ sn_store_cell_communication <- function(object,
     species = species,
     artifacts = artifacts
   )
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "cell_communication_results",
-    store_name = store_name,
+    type = "cell_communication",
+    result_id = result_id,
     result = stored_result
   )
   if (isTRUE(return_object)) {
@@ -763,27 +769,27 @@ sn_store_cell_communication <- function(object,
 #' Retrieve a stored cell-cell communication result
 #'
 #' @param object A Seurat object.
-#' @param communication_name Name of the stored result.
+#' @param result_id Name of the stored result.
 #' @param sources,targets Optional source/target labels to keep.
 #' @param with_metadata If \code{TRUE}, return the full stored-result list.
 #'
 #' @return A tibble or stored-result list.
 #' @export
 sn_get_cell_communication_result <- function(object,
-                                             communication_name = "default",
+                                             result_id = "default",
                                              sources = NULL,
                                              targets = NULL,
                                              with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
-  stored <- .sn_get_misc_result(
+  stored <- sn_get_result(
     object = object,
-    collection = "cell_communication_results",
-    store_name = communication_name
+    type = "cell_communication",
+    result_id = result_id
   )
   if (isTRUE(with_metadata)) {
     return(stored)
   }
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   source_col <- .sn_communication_column(table, c("source", "sender", "source_cell", "cell_type1"))
   target_col <- .sn_communication_column(table, c("target", "receiver", "target_cell", "cell_type2"))
   if (!is.null(sources) && !is.null(source_col)) {
@@ -802,7 +808,7 @@ sn_run_cellphonedb <- function(object,
                                group_by = NULL,
                                output_dir = NULL,
                                runtime_dir = NULL,
-                               result_name = "cellphonedb",
+                               artifact_id = "cellphonedb",
                                return_object = TRUE,
                                method_control = list(),
                                ...) {
@@ -819,7 +825,7 @@ sn_run_cellphonedb <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = "cellphonedb_",
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(groupby = group_by), method_control),
     ...

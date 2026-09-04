@@ -5,6 +5,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+* Fixed `backend-conformance` CI after the Bioconductor resolver advanced
+  edgeR from 4.10.3 to 4.10.4. The executable contract and workflow now record
+  the same validated version, and the workflow regression test derives its
+  expected pin from the contract instead of duplicating the version literal.
+
 ### Breaking changes
 
 - Removed legacy `.qs` serialization, its exported rio adapters, and its
@@ -41,6 +46,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   environments run plain upstream Python.
 
 ### Added
+
+- Unified the complete analysis-result lifecycle on one identifier:
+  `result_id`. All 46 public result-producing workflows, generic and
+  specialized stores/getters, listings, deletion, plots, interpretation, and
+  source-result selectors now use that name directly. Canonical envelopes use
+  schema v2 and are stored only at
+  `object@misc$shennong$results[[analysis_type]][[result_id]]`; the former
+  `name`, `store_name`, and result-selector aliases were removed. Runtime and
+  backend artifacts remain separate and use `artifact_id`.
 
 - `sn_score_cell_cycle()` now accepts explicit `assay` and `layer` arguments.
   It keeps the previous defaults (the object's current default assay and its
@@ -183,8 +197,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `sn_filter_cells()`, and the result-aware `sn_plot_*` family. Supplying
   both `x`/first argument and `object=` fails fast. `sn_run_grn()`,
   `sn_score_programs()`, and `sn_discover_programs()` accept the standard
-  `store_name=` storage argument alongside their legacy `name=` formals
-  (which keep working).
+  standard `result_id=` storage argument.
 - Added top-level `seed=` and `verbose=` controls to workflow entry points
   that previously buried them in control bags (AUDIT-05):
   `sn_run_cluster()`, `sn_run_trajectory()`, `sn_run_velocity()`,
@@ -192,7 +205,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   `sn_find_spatial_domains()`. Precedence is `seed > control$seed > task
   default`, and the resolved seed is stamped into stored-result provenance.
 - `sn_plot_de()` and `sn_plot_enrichment()` now follow the object-or-result
-  pattern: pass a Seurat object plus `de_name=`/`enrichment_name=` to plot a
+  pattern: pass a Seurat object plus `de_result_id=`/`enrichment_result_id=` to plot a
   stored DE or enrichment result directly (AUDIT-07).
 
 - Added `method = "scrublet"` to `sn_find_doublets()`: Scrublet doublet
@@ -686,7 +699,7 @@ Released 2026-08-01.
 - Named Scissor Cox phenotypes explicitly preserve bulk-sample identifiers
   after alignment; the regression contract now verifies both reordered values
   and retained names.
-- Analytical results now use `schema_version = "1.0.0"` and a canonical
+- Analytical results now use a versioned schema and a canonical
   data-frame `tables$primary` across registered and generic result stores.
   Existing table aliases and specialized getters remain available as
   compatibility views, while non-analytical caches and backend manifests remain
@@ -1292,12 +1305,12 @@ Released 2026-07-15.
   loads and repeated SYMBOL-to-ENTREZ conversions, which reduces repeated
   overhead during enrichment-heavy test and analysis sessions.
 - `sn_interpret_annotation()` now supports cluster-level functional evidence
-  through `enrichment_name`, can incorporate cluster QC summaries into the
+  through `enrichment_result_id`, can incorporate cluster QC summaries into the
   prompt, requests structured annotation JSON by default, stores the parsed
   cluster annotation table, can map normalized cell-type labels plus
   confidence/risk fields back onto Seurat metadata, and now defaults to an
   `ellmer`-backed provider path rather than Shennong-managed local provider
-  config. It also now resolves `de_name` automatically when omitted,
+  config. It also now resolves `de_result_id` automatically when omitted,
   preferring a stored `default` marker result, then a single available DE
   result, and otherwise the most recent marker result. Annotation prompts now
   include the full cluster_by evidence table instead of truncating at eight rows,
@@ -1520,7 +1533,7 @@ Released 2026-03-25.
   development, replacing the opaque `R/sysdata.rda` storage used by the earlier
   snapshot prototype.
 - `sn_enrich()` now stores enrichment results in
-  `object@misc$enrichment_results[[store_name]]` when a Seurat object is
+  `object@misc$enrichment_results[[result_id]]` when a Seurat object is
   supplied, aligning enrichment with the existing stored DE workflow.
 - pkgdown articles, shipped Codex skill references, and `NEWS.md` are now
   treated as required deliverables for any user-facing workflow change.

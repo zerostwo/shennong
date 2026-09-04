@@ -7,14 +7,13 @@
 sn_run_grn(
   object,
   method = c("genie3", "pyscenic", "scenic", "grnboost2"),
-  name = NULL,
   assay = NULL,
   layer = "data",
   regulators = NULL,
   group_by = NULL,
   backend_control = list(),
   return_object = TRUE,
-  store_name = NULL
+  result_id = NULL
 )
 }
 \arguments{
@@ -23,8 +22,6 @@ sn_run_grn(
 \item{method}{GRN backend. GENIE3 runs in R. SCENIC, pySCENIC, and GRNBoost2
 accept explicit runner/result adapters so their external motif databases and
 runtimes remain visible.}
-
-\item{name}{Stored result name. Deprecated alias; prefer \code{store_name}.}
 
 \item{assay, layer}{Expression assay and layer.}
 
@@ -36,7 +33,7 @@ runtimes remain visible.}
 
 \item{return_object}{Return the modified object or unified result.}
 
-\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
+\item{result_id}{Stable identifier for the stored GRN result.}
 }
 \value{
 A Seurat object or unified GRN result with edge, regulon, activity,

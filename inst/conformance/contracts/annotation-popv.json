@@ -221,11 +221,12 @@
       "outside_envelope": "ignored upstream"
     },
     {
-      "wrapper": "store_name",
+      "wrapper": "result_id",
       "role": "wrapper_only",
       "upstream": null,
       "scenarios": [
-        "popv_c2"
+        "annotation",
+        "popv_explicit"
       ],
       "wrapper_default": "annotation",
       "upstream_default": null,
@@ -235,7 +236,7 @@
         "type": "non-empty string"
       },
       "interactions": [],
-      "outside_envelope": "sanitized"
+      "outside_envelope": "validated by Shennong"
     },
     {
       "wrapper": "assay",

@@ -550,7 +550,7 @@
       "prompts?|messages?|responses?|queries|texts?|descriptions?|notes?|contexts?|",
       "paths?|files?|dirs?|urls?|uris?|endpoint|host|user(name)?|email|",
       "x|objects?|data|metadata|matri(x|ces)|counts?|patients?|subjects?|",
-      "cells?|samples?|genes?|features?|signatures?|references?|names?|",
+      "cells?|samples?|genes?|features?|signatures?|references?|names?|ids?|",
       "contrasts?|ident|idents|subsets?)(_|$)"
     ),
     tolower(name),

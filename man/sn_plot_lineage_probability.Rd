@@ -6,7 +6,7 @@
 \usage{
 sn_plot_lineage_probability(
   x,
-  name = NULL,
+  result_id = NULL,
   lineage,
   point_size = 0.7,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_lineage_probability(
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
 
-\item{name}{Stored trajectory name.}
+\item{result_id}{Stored trajectory result_id.}
 
 \item{lineage}{Lineage to display.}
 

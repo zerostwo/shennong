@@ -18,6 +18,7 @@ implement the unified analysis-result contract.}
 A tibble describing registered Shennong stored-result collections,
 including DE, enrichment, interpretation, deconvolution, Milo,
 communication, regulatory activity, and QC assessment entries when present.
+The canonical lookup key is reported in \code{result_id}.
 }
 \description{
 List stored Shennong analysis and interpretation results on a Seurat object

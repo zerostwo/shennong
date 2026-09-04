@@ -13,7 +13,7 @@ sn_run_wgcna(
   min_module_size = 30L,
   merge_cut_height = 0.25,
   assay = NULL,
-  store_name = "wgcna",
+  result_id = "wgcna",
   backend_control = list()
 )
 }
@@ -34,7 +34,8 @@ sn_run_wgcna(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Additional \code{blockwiseModules} arguments or custom output.}
 }

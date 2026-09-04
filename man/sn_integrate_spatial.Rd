@@ -8,7 +8,7 @@ sn_integrate_spatial(
   object,
   method = c("staligner", "harmony", "custom"),
   spatial_cols = NULL,
-  store_name = "spatial_integration",
+  result_id = "spatial_integration",
   backend_control = list(),
   return_object = TRUE
 )
@@ -20,7 +20,8 @@ sn_integrate_spatial(
 
 \item{spatial_cols}{Coordinate columns.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Required \code{runner} or \code{result} returning an embedding
 table with a \code{cell} column.}

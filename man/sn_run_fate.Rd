@@ -7,10 +7,10 @@
 sn_run_fate(
   object,
   method = c("cellrank"),
-  velocity_name = "velocity",
+  source_result_id = "velocity",
   reduction = NULL,
   dims = 1:2,
-  store_name = "fate",
+  result_id = "fate",
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
@@ -22,11 +22,12 @@ sn_run_fate(
 
 \item{method}{Fate backend; currently CellRank.}
 
-\item{velocity_name}{Stored velocity result used by the default pixi backend.}
+\item{source_result_id}{Stored velocity result used by the default pixi backend.}
 
 \item{reduction, dims}{Embedding and dimensions used for plots.}
 
-\item{store_name}{Stored fate result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{CellRank/pixi controls or an explicit \code{runner}/\code{result}.}
 
@@ -46,7 +47,7 @@ Infer terminal states and fate probabilities with CellRank
 }
 \examples{
 \dontrun{
-object <- sn_run_fate(object, velocity_name = "velocity")
+object <- sn_run_fate(object, source_result_id = "velocity")
 fate <- sn_get_result(object, "fate", "fate")
 }
 }

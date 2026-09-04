@@ -18,7 +18,7 @@ sn_run_bulk_deconvolution(
   key = NULL,
   outdir = tempdir(),
   prefix = "deconvolution",
-  store_name = "default",
+  result_id = "default",
   cibersortx_result = NULL,
   cibersortx_email = NULL,
   cibersortx_token = NULL,
@@ -76,8 +76,8 @@ the reference genes.}
 
 \item{prefix}{Prefix used for exported files and stored result names.}
 
-\item{store_name}{Name used under \code{object@misc$deconvolution_results}
-when \code{x} is a \code{Seurat} object and a fraction table is available.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{cibersortx_result}{Optional path to a completed CIBERSORTx fractions
 result file to import instead of running the local container.}

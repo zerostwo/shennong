@@ -64,7 +64,7 @@ jobs:
             any::SeuratObject
             any::msigdbr
             bioc::clusterProfiler
-            bioc::edgeR@4.10.3
+            bioc::edgeR@4.10.4
 
       - name: Configure isolated Python runtime
         run: echo "SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime" >> "$GITHUB_ENV"

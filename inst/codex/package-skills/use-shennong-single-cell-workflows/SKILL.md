@@ -210,7 +210,7 @@ This skill is the main entry point for package usage.
    external runtime and database provenance remain visible.
    Infer cluster-aware lineage structure with `sn_run_trajectory()`; provide
    explicit `start`/`end` cluster labels, retrieve the complete result with
-   `sn_get_result(object, "trajectory", store_name)`, and inspect per-lineage
+   `sn_get_result(object, "trajectory", result_id)`, and inspect per-lineage
    pseudotime/probabilities before using tradeSeq dynamic or branch tables.
    Set `dynamic_features` to an explicit auditable feature set for formal
    analyses, and use `test_dynamic = FALSE` only for topology review.
@@ -226,7 +226,7 @@ This skill is the main entry point for package usage.
    for perturbation separability or RareQ topology. Use `sn_run_scissor()` only
    when a named gene-by-bulk-sample expression matrix and aligned bulk
    phenotype are supplied; retrieve it with
-   `sn_get_result(object, "scissor", store_name)` and review all-cell, state,
+   `sn_get_result(object, "scissor", result_id)` and review all-cell, state,
    sample, correlation, model, and optional reliability tables before calling
    `sn_plot_scissor()`.
    Use `gene_clusters = gene ~ cluster`, `analysis = "ora"`, and the actually
@@ -330,10 +330,10 @@ This skill is the main entry point for package usage.
 - `sn_calculate_isolated_label_score()`
 - `sn_identify_challenging_groups()`
 - `sn_find_de(..., return_object = TRUE)`
-- `sn_annotate_de_features(object, de_name = "cluster_markers")`
-- `sn_run_enrichment(x = object, source_de_name = "cluster_markers")`
+- `sn_annotate_de_features(object, result_id = "cluster_markers")`
+- `sn_run_enrichment(x = object, source_de_result_id = "cluster_markers")`
 - `sn_score_programs(object, signatures, method = "ucell")`
-- `sn_test_programs(object, score_name, condition_by, sample_by)`
+- `sn_test_programs(object, source_result_id, condition_by, sample_by)`
 - `sn_plot_program_activity()` / `sn_plot_program_heatmap()`
 - `sn_calculate_composition()`
 - `sn_calculate_roe()`

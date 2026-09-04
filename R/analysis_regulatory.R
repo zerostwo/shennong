@@ -76,8 +76,10 @@
 #' @param confidence_levels DoRothEA confidence levels to keep.
 #' @param progeny_top Number of target genes per PROGENy pathway.
 #' @param minsize Minimum target-set size passed to \code{decoupleR::run_ulm()}.
-#' @param store_name Name used under
-#'   \code{object@misc$regulatory_activity_results}.
+#' @param result_id Name used under
+#'   the canonical Shennong result registry.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param ... Additional arguments passed to \code{decoupleR::run_ulm()}.
 #'
@@ -93,9 +95,10 @@ sn_run_regulatory_activity <- function(object,
                                        confidence_levels = c("A", "B", "C"),
                                        progeny_top = 500,
                                        minsize = 5L,
-                                       store_name = "default",
+                                       result_id = "default",
                                        return_object = TRUE,
                                        ...) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   check_installed("decoupleR", reason = "to run fast DoRothEA/PROGENy activity inference.")
   method <- match.arg(method)
@@ -131,7 +134,7 @@ sn_run_regulatory_activity <- function(object,
   sn_store_regulatory_activity(
     object = object,
     result = table,
-    store_name = store_name,
+    result_id = result_id,
     method = method,
     group_by = group_by,
     species = species,
@@ -144,8 +147,10 @@ sn_run_regulatory_activity <- function(object,
 #'
 #' @param object A Seurat object.
 #' @param result Regulatory activity table.
-#' @param store_name Name used under
-#'   \code{object@misc$regulatory_activity_results}.
+#' @param result_id Name used under
+#'   the canonical Shennong result registry.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param method Inference method.
 #' @param group_by Optional grouping column.
 #' @param species Optional species label.
@@ -157,16 +162,17 @@ sn_run_regulatory_activity <- function(object,
 #' @export
 sn_store_regulatory_activity <- function(object,
                                          result,
-                                         store_name = "default",
+                                         result_id = "default",
                                          method = "dorothea",
                                          group_by = NULL,
                                          species = NULL,
                                          network = NULL,
                                          random_seed = NULL,
                                          return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = tibble::as_tibble(result),
@@ -177,26 +183,26 @@ sn_store_regulatory_activity <- function(object,
     network = network,
     provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "regulatory_activity_results",
-    store_name = store_name,
+    type = "regulatory_activity",
+    result_id = result_id,
     result = stored_result
   )
   if (isTRUE(return_object)) {
     return(.sn_log_seurat_command(object = object, name = "sn_store_regulatory_activity"))
   }
-  .sn_get_misc_result(
+  sn_get_result(
     object = object,
-    collection = "regulatory_activity_results",
-    store_name = store_name
+    type = "regulatory_activity",
+    result_id = result_id
   )
 }
 
 #' Retrieve stored regulatory activity results
 #'
 #' @param object A Seurat object.
-#' @param activity_name Name of the stored result.
+#' @param result_id Name of the stored result.
 #' @param sources Optional TF or pathway names to keep.
 #' @param conditions Optional cell or group names to keep.
 #' @param with_metadata If \code{TRUE}, return the full stored-result list.
@@ -204,20 +210,20 @@ sn_store_regulatory_activity <- function(object,
 #' @return A tibble or stored-result list.
 #' @export
 sn_get_regulatory_activity_result <- function(object,
-                                              activity_name = "default",
+                                              result_id = "default",
                                               sources = NULL,
                                               conditions = NULL,
                                               with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
-  stored <- .sn_get_misc_result(
+  stored <- sn_get_result(
     object = object,
-    collection = "regulatory_activity_results",
-    store_name = activity_name
+    type = "regulatory_activity",
+    result_id = result_id
   )
   if (isTRUE(with_metadata)) {
     return(stored)
   }
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   if (!is.null(sources) && "source" %in% colnames(table)) {
     table <- dplyr::filter(table, .data$source %in% sources)
   }

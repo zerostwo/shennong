@@ -10,22 +10,24 @@ Core object rule:
 - Prefer Shennong APIs over raw Seurat calls when the package already exposes
   the needed behavior.
 - Prefer stored-result workflows over ad hoc `object@misc` access.
-- Canonical analytical results use `schema_version = "1.0.0"` and place the
-  principal data frame in `tables$primary`; named tables are synchronized
-  semantic aliases.
+- Canonical analytical results use `schema_version = "2.0.0"`, identify
+  themselves with `result_id`, and place the principal data frame in
+  `tables$primary`.
 
 ## Result Contract
 
 - `sn_validate_result()`: validate the common envelope and type-specific
-  primary-table columns; compatible legacy schema spellings remain readable
-- `sn_audit_results()`: report canonical, legacy, invalid, registered artifact,
+  primary-table columns
+- `sn_audit_results()`: report valid, repairable, invalid, registered artifact,
   and unregistered top-level `object@misc` entries without mutating the Seurat
   object
-- `sn_upgrade_results()`: migrate compatible analytical results in place while
-  preserving their established `object@misc` collections and leaving runtime
+- `sn_upgrade_results()`: normalize analytical results in the canonical store
+  while leaving runtime
   artifacts and unregistered payloads untouched
 - `sn_store_result()` / `sn_get_result()` / `sn_list_results()` /
   `sn_delete_result()`: generic lifecycle APIs for versioned analytical results;
+  all public result writers accept an explicit `result_id`, and listings expose
+  that same identifier;
   `sn_list_results(include_artifacts = TRUE)` also discovers registered runtime
   and cache artifacts, whose reserved namespaces cannot be used for generic
   analytical results

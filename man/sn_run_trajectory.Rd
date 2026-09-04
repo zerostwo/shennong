@@ -12,7 +12,7 @@ sn_run_trajectory(
   start = NULL,
   end = NULL,
   lineages = NULL,
-  store_name = "trajectory",
+  result_id = "trajectory",
   dims = NULL,
   assay = NULL,
   counts_layer = "counts",
@@ -45,7 +45,8 @@ the first available reduction.}
 \item{lineages}{Optional named list of expected cluster paths. Their endpoints
 constrain Slingshot and inferred paths are checked against them.}
 
-\item{store_name}{Name used under the \code{trajectory} result type.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{dims}{Reduction dimensions used for inference.}
 
@@ -91,7 +92,7 @@ The returned result follows the unified Shennong analysis-result contract.
 \dontrun{
 object <- sn_run_trajectory(
   object, reduction = "pca", cluster_by = "seurat_clusters",
-  start = "0", store_name = "development"
+  start = "0", result_id = "development"
 )
 result <- sn_get_result(object, "trajectory", "development")
 result$tables$cells

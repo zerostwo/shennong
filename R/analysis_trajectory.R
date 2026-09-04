@@ -373,7 +373,9 @@
 #' @param start,end Optional start and terminal cluster labels.
 #' @param lineages Optional named list of expected cluster paths. Their endpoints
 #'   constrain Slingshot and inferred paths are checked against them.
-#' @param store_name Name used under the `trajectory` result type.
+#' @param result_id Name used under the `trajectory` result type.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param dims Reduction dimensions used for inference.
 #' @param assay Assay used for dynamic-gene counts.
 #' @param counts_layer Raw-count layer used by tradeSeq.
@@ -400,7 +402,7 @@
 #' \dontrun{
 #' object <- sn_run_trajectory(
 #'   object, reduction = "pca", cluster_by = "seurat_clusters",
-#'   start = "0", store_name = "development"
+#'   start = "0", result_id = "development"
 #' )
 #' result <- sn_get_result(object, "trajectory", "development")
 #' result$tables$cells
@@ -414,7 +416,7 @@ sn_run_trajectory <- function(object,
                               start = NULL,
                               end = NULL,
                               lineages = NULL,
-                              store_name = "trajectory",
+                              result_id = "trajectory",
                               dims = NULL,
                               assay = NULL,
                               counts_layer = "counts",
@@ -428,6 +430,7 @@ sn_run_trajectory <- function(object,
                               return_object = TRUE,
                               seed = NULL,
                               verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -513,12 +516,12 @@ sn_run_trajectory <- function(object,
     )
   }
 
-  object[[paste0(store_name, "_pseudotime")]] <- cells$primary_pseudotime
-  object[[paste0(store_name, "_lineage")]] <- cells$primary_lineage
+  object[[paste0(result_id, "_pseudotime")]] <- cells$primary_pseudotime
+  object[[paste0(result_id, "_lineage")]] <- cells$primary_lineage
   result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "trajectory",
-    name = store_name,
+    result_id = result_id,
     method = method,
     backend = if (isTRUE(test_dynamic)) paste0(backend_name, "+tradeSeq") else backend_name,
     input = list(
@@ -567,9 +570,9 @@ sn_run_trajectory <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "trajectory", store_name, result)
+  object <- sn_store_result(object, "trajectory", result_id, result)
   object <- .sn_log_seurat_command(object = object, assay = assay, name = "sn_run_trajectory")
-  if (isTRUE(return_object)) object else sn_get_result(object, "trajectory", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "trajectory", result_id)
   }, patches = if (isTRUE(test_dynamic)) "tradeseq" else character(0))
   }, patches = trajectory_acceleration_patches)
 }

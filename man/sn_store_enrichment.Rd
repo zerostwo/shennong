@@ -7,11 +7,11 @@
 sn_store_enrichment(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   analysis = c("ora", "gsea"),
   database = "GOBP",
   species = NULL,
-  source_de_name = NULL,
+  source_de_result_id = NULL,
   gene_col = "gene",
   score_col = NULL,
   parameters = list(),
@@ -24,7 +24,8 @@ sn_store_enrichment(
 \item{result}{An enrichment result object or data frame coercible with
 \code{as.data.frame()}.}
 
-\item{store_name}{Name used under \code{object@misc$enrichment_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{analysis}{One of \code{"ora"} or \code{"gsea"}.}
 
@@ -32,7 +33,7 @@ sn_store_enrichment(
 
 \item{species}{Species label used in the enrichment run.}
 
-\item{source_de_name}{Optional stored DE result name that produced the input
+\item{source_de_result_id}{Optional stored DE result name that produced the input
 ranked gene list or gene set.}
 
 \item{gene_col}{Column containing gene symbols when the enrichment input came
@@ -50,7 +51,7 @@ A \code{Seurat} object or a stored-result list.
 }
 \description{
 This helper stores enrichment output inside
-\code{object@misc$enrichment_results[[store_name]]} so interpretation and writing
+the canonical Shennong result registry so interpretation and writing
 helpers can reuse it later.
 }
 \examples{
@@ -68,7 +69,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     NES = c(2.1, 1.7),
     p.adjust = c(0.01, 0.03)
   )
-  obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
-  names(obj@misc$enrichment_results)
+  obj <- sn_store_enrichment(obj, enrich_tbl, result_id = "demo_gsea")
+  sn_list_results(obj, type = "enrichment")
+  sn_get_result(obj, type = "enrichment", result_id = "demo_gsea")
 }
 }

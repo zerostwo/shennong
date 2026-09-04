@@ -12,7 +12,7 @@ sn_test_abundance(
   cell_type_by,
   design = NULL,
   contrast = NULL,
-  store_name = "abundance",
+  result_id = "abundance",
   transform = c("logit", "asin"),
   permutations = 1000L,
   seed = 717L,
@@ -36,7 +36,8 @@ for Propeller; covariate names are forwarded to Milo.}
 
 \item{contrast}{Two condition labels ordered as \code{c(case, control)}.}
 
-\item{store_name}{Stored differential-abundance result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{transform}{Propeller proportion transformation.}
 

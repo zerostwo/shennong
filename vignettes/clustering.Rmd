@@ -535,7 +535,7 @@ sn_list_results(pbmc_comparison, type = "integration_benchmark")
 integration_benchmark <- sn_get_result(
   pbmc_comparison,
   type = "integration_benchmark",
-  name = "integration_benchmark"
+  result_id = "integration_benchmark"
 )
 integration_benchmark$tables$ranking
 integration_benchmark$tables$summary[, c(

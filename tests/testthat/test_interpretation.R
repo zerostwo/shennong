@@ -51,7 +51,7 @@ make_interpretation_object <- function() {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -67,11 +67,11 @@ make_interpretation_object <- function() {
   object <- sn_store_enrichment(
     object = object,
     result = enrich_tbl,
-    store_name = "celltype_gsea",
+    result_id = "celltype_gsea",
     analysis = "gsea",
     database = "GOBP",
     species = "human",
-    source_de_name = "celltype_markers",
+    source_de_result_id = "celltype_markers",
     return_object = TRUE
   )
 
@@ -83,9 +83,8 @@ test_that("sn_store_enrichment stores enrichment results on the Seurat object", 
 
   object <- make_interpretation_object()
 
-  expect_true("enrichment_results" %in% names(methods::slot(object, "misc")))
-  expect_true("celltype_gsea" %in% names(object@misc$enrichment_results))
-  expect_equal(object@misc$enrichment_results$celltype_gsea$database, "GOBP")
+  stored <- sn_get_result(object, "enrichment", "celltype_gsea")
+  expect_equal(stored$database, "GOBP")
 })
 
 test_that("stored-result helpers list and retrieve DE, enrichment, and interpretation outputs", {
@@ -98,26 +97,26 @@ test_that("stored-result helpers list and retrieve DE, enrichment, and interpret
   object <- make_interpretation_object()
   object <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     provider = provider,
-    store_name = "annotation_note",
+    result_id = "annotation_note",
     return_object = TRUE
   )
 
   result_index <- sn_list_results(object)
-  expect_true(all(c("collection", "type", "name") %in% colnames(result_index)))
-  expect_true(any(result_index$name == "celltype_markers"))
-  expect_true(any(result_index$name == "celltype_gsea"))
-  expect_true(any(result_index$name == "annotation_note"))
+  expect_true(all(c("collection", "type", "result_id") %in% colnames(result_index)))
+  expect_true(any(result_index$result_id == "celltype_markers"))
+  expect_true(any(result_index$result_id == "celltype_gsea"))
+  expect_true(any(result_index$result_id == "annotation_note"))
 
-  marker_top <- sn_get_de_result(object, de_name = "celltype_markers", top_n = 2)
+  marker_top <- sn_get_de_result(object, result_id = "celltype_markers", top_n = 2)
   expect_true(nrow(marker_top) > 0)
 
-  enrich_top <- sn_get_enrichment_result(object, enrichment_name = "celltype_gsea", top_n = 1)
+  enrich_top <- sn_get_enrichment_result(object, result_id = "celltype_gsea", top_n = 1)
   expect_equal(nrow(enrich_top), 1)
 
-  interpretation <- sn_get_interpretation_result(object, interpretation_name = "annotation_note")
+  interpretation <- sn_get_interpretation_result(object, result_id = "annotation_note")
   expect_match(interpretation$response$text, "mock response")
 })
 
@@ -131,16 +130,16 @@ test_that("annotation and DE evidence helpers return structured outputs", {
 
   annotation_evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     n_markers = 3,
-    enrichment_name = "celltype_gsea",
+    enrichment_result_id = "celltype_gsea",
     n_terms = 2,
     include_qc = TRUE
   )
   de_evidence <- sn_prepare_de_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     n_genes = 3
   )
 
@@ -152,7 +151,7 @@ test_that("annotation and DE evidence helpers return structured outputs", {
   expect_true("top_markers" %in% names(de_evidence))
 })
 
-test_that("annotation evidence and interpretation resolve a default marker result when de_name is omitted", {
+test_that("annotation evidence and interpretation resolve a default marker result when de_result_id is omitted", {
   skip_if_not_installed("Seurat")
 
   provider <- function(messages, model = NULL, ...) {
@@ -168,18 +167,18 @@ test_that("annotation evidence and interpretation resolve a default marker resul
     cluster_by = "cell_type",
     n_markers = 3
   )
-  expect_equal(evidence$source_de_name, "celltype_markers")
+  expect_equal(evidence$source_de_result_id, "celltype_markers")
 
   object <- sn_interpret_annotation(
     object = object,
     cluster_by = "cell_type",
     provider = provider,
-    store_name = "annotation_default_de",
+    result_id = "annotation_default_de",
     return_object = TRUE
   )
 
   stored <- sn_get_interpretation_result(object, "annotation_default_de")
-  expect_equal(stored$evidence$source_de_name, "celltype_markers")
+  expect_equal(stored$evidence$source_de_result_id, "celltype_markers")
 })
 
 test_that("enrichment and results evidence helpers work from stored results", {
@@ -189,13 +188,13 @@ test_that("enrichment and results evidence helpers work from stored results", {
 
   enrichment_evidence <- sn_prepare_enrichment_evidence(
     object = object,
-    enrichment_name = "celltype_gsea",
+    enrichment_result_id = "celltype_gsea",
     n_terms = 1
   )
   results_evidence <- sn_prepare_results_evidence(
     object = object,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "celltype_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "celltype_gsea",
     cluster_by = "cell_type",
     n_markers = 2,
     n_terms = 1
@@ -214,7 +213,7 @@ test_that("sn_build_prompt creates a prompt bundle from evidence", {
   object <- make_interpretation_object()
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     n_markers = 3
   )
@@ -265,7 +264,7 @@ test_that("sn_build_prompt supports human-readable output with background contex
   object <- make_interpretation_object()
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     n_markers = 3
   )
@@ -293,8 +292,8 @@ test_that("high-level interpretation helpers can return prompts or store provide
 
   prompt <- sn_write_results(
     object = object,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "celltype_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "celltype_gsea",
     cluster_by = "cell_type",
     background = "PBMC treatment study",
     return_prompt = TRUE
@@ -303,7 +302,7 @@ test_that("high-level interpretation helpers can return prompts or store provide
 
   human_prompt <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     background = "PBMC treatment study",
     output_format = "human"
@@ -313,17 +312,16 @@ test_that("high-level interpretation helpers can return prompts or store provide
 
   object <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     provider = provider,
     model = "demo-model",
-    store_name = "annotation_note",
+    result_id = "annotation_note",
     return_object = TRUE
   )
 
-  expect_true("interpretation_results" %in% names(object@misc))
-  expect_true("annotation_note" %in% names(object@misc$interpretation_results))
-  expect_match(object@misc$interpretation_results$annotation_note$response$text, "demo-model")
+  stored <- sn_get_result(object, "interpretation", "annotation_note")
+  expect_match(stored$response$text, "demo-model")
 })
 
 test_that("structured annotation responses are normalized and written back to metadata", {
@@ -349,12 +347,12 @@ test_that("structured annotation responses are normalized and written back to me
 
   object <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
-    enrichment_name = "celltype_gsea",
+    de_result_id = "celltype_markers",
+    enrichment_result_id = "celltype_gsea",
     cluster_by = "cell_type",
     provider = provider,
     model = "demo-model",
-    store_name = "annotation_structured",
+    result_id = "annotation_structured",
     metadata_prefix = "shennong_celltype",
     return_object = TRUE
   )
@@ -562,10 +560,10 @@ test_that("sn_interpret_annotation falls back to the default ellmer provider pat
   object <- with_mocked_bindings(
     sn_interpret_annotation(
       object = object,
-      de_name = "celltype_markers",
-      enrichment_name = "celltype_gsea",
+      de_result_id = "celltype_markers",
+      enrichment_result_id = "celltype_gsea",
       cluster_by = "cell_type",
-      store_name = "annotation_structured_default",
+      result_id = "annotation_structured_default",
       metadata_prefix = "shennong_celltype",
       return_object = TRUE
     ),
@@ -584,7 +582,10 @@ test_that("sn_interpret_annotation falls back to the default ellmer provider pat
     .package = "Shennong"
   )
 
-  expect_true("annotation_structured_default" %in% names(object@misc$interpretation_results))
+  expect_identical(
+    sn_get_result(object, "interpretation", "annotation_structured_default")$result_id,
+    "annotation_structured_default"
+  )
   expect_true("shennong_celltype_label" %in% colnames(object[[]]))
 })
 
@@ -595,7 +596,7 @@ test_that("annotation prompt can include candidate labels for sorted datasets", 
 
   prompt <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     background = "Blood ILC-sorted dataset.",
     label_candidates = c("ILC1", "ILC2", "ILC3", "NK", "T cell"),
@@ -626,12 +627,12 @@ test_that("annotation metadata_fields can opt into detailed metadata columns", {
   object <- make_interpretation_object()
   object <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     provider = provider,
     metadata_prefix = "custom_ann",
     metadata_fields = c("primary_label", "confidence", "supporting_markers"),
-    store_name = "annotation_custom_metadata",
+    result_id = "annotation_custom_metadata",
     return_object = TRUE
   )
 
@@ -643,18 +644,15 @@ test_that("annotation metadata_fields can opt into detailed metadata columns", {
   expect_false("custom_ann_broad_label" %in% colnames(object[[]]))
 })
 
-test_that("misc-result helpers create collections and report missing stored results", {
+test_that("canonical result helpers store and report missing interpretation results", {
   skip_if_not_installed("Seurat")
 
   object <- make_interpretation_base_object()
-  stored_object <- Shennong:::.sn_store_misc_result(
+  stored_object <- sn_store_result(
     object = object,
-    collection = "interpretation_results",
-    store_name = "demo",
+    type = "interpretation",
+    result_id = "demo",
     result = list(
-      schema_version = "1.0.0",
-      package_version = "0.0.0",
-      created_at = "2026-06-22 00:00:00 UTC",
       task = "demo",
       evidence = list(),
       prompt = list(text = "demo"),
@@ -662,21 +660,21 @@ test_that("misc-result helpers create collections and report missing stored resu
     )
   )
 
-  stored_result <- Shennong:::.sn_get_misc_result(
+  stored_result <- sn_get_result(
     object = stored_object,
-    collection = "interpretation_results",
-    store_name = "demo"
+    type = "interpretation",
+    result_id = "demo"
   )
 
   expect_equal(stored_result$task, "demo")
   expect_equal(stored_result$response$text, "stored")
   expect_error(
-    Shennong:::.sn_get_misc_result(
+    sn_get_result(
       object = stored_object,
-      collection = "interpretation_results",
-      store_name = "missing"
+      type = "interpretation",
+      result_id = "missing"
     ),
-    "No stored result named 'missing'"
+    "result_id"
   )
 })
 
@@ -684,13 +682,13 @@ test_that("annotation default DE-name resolution prefers the default stored resu
   skip_if_not_installed("Seurat")
 
   object <- make_interpretation_object()
-  object@misc$de_results$default <- object@misc$de_results$celltype_markers
+  object@misc$shennong$results$de$default <-
+    object@misc$shennong$results$de$celltype_markers
 
-  resolved <- Shennong:::.sn_resolve_misc_result_name(
+  resolved <- Shennong:::.sn_resolve_stored_result_id(
     object = object,
-    collection = "de_results",
-    preferred_analysis = "markers",
-    arg_name = "de_name"
+    type = "de",
+    preferred_analysis = "markers"
   )
 
   expect_equal(resolved, "default")
@@ -708,7 +706,7 @@ test_that("stored-result retrieval supports filtering, ranking, and metadata ret
   object <- sn_store_enrichment(
     object = object,
     result = grouped_terms,
-    store_name = "cluster_ora",
+    result_id = "cluster_ora",
     analysis = "ora",
     database = "TESTDB",
     return_object = TRUE
@@ -716,31 +714,31 @@ test_that("stored-result retrieval supports filtering, ranking, and metadata ret
 
   top_tcell_markers <- sn_get_de_result(
     object = object,
-    de_name = "celltype_markers",
+    result_id = "celltype_markers",
     top_n = 2,
     direction = "up",
     groups = "Tcell"
   )
   de_metadata <- sn_get_de_result(
     object = object,
-    de_name = "celltype_markers",
+    result_id = "celltype_markers",
     with_metadata = TRUE
   )
   top_b_terms <- sn_get_enrichment_result(
     object = object,
-    enrichment_name = "cluster_ora",
+    result_id = "cluster_ora",
     top_n = 1,
     groups = "Bcell"
   )
   enrichment_metadata <- sn_get_enrichment_result(
     object = object,
-    enrichment_name = "cluster_ora",
+    result_id = "cluster_ora",
     with_metadata = TRUE
   )
 
   expect_true(all(top_tcell_markers$cluster == "Tcell"))
   expect_lte(nrow(top_tcell_markers), 2)
-  expect_true(all(c("table", "analysis", "group_col", "rank_col") %in% names(de_metadata)))
+  expect_true(all(c("tables", "analysis", "group_col", "rank_col") %in% names(de_metadata)))
   expect_equal(nrow(top_b_terms), 1)
   expect_equal(top_b_terms$Cluster[[1]], "Bcell")
   expect_equal(top_b_terms$Description[[1]], "best B term")
@@ -783,7 +781,7 @@ test_that("cluster, marker, and prediction summaries keep object-derived structu
 
   de_result <- sn_get_de_result(
     object = object,
-    de_name = "celltype_markers",
+    result_id = "celltype_markers",
     with_metadata = TRUE
   )
   cluster_summary <- Shennong:::.sn_prepare_cluster_summary(object, cluster_col = "cell_type")
@@ -801,12 +799,12 @@ test_that("cluster, marker, and prediction summaries keep object-derived structu
 
 test_that("specific marker selection prefers cluster-restricted markers over shared top hits", {
   de_result <- list(
-    table = tibble::tibble(
+    tables = list(primary = tibble::tibble(
       cluster = c("A", "A", "B", "B"),
       gene = c("SHARED", "A_SPEC", "SHARED", "B_SPEC"),
       avg_log2FC = c(6, 5, 6, 5),
       p_val_adj = c(1e-6, 1e-6, 1e-6, 1e-6)
-    ),
+    )),
     group_col = "cluster",
     rank_col = "avg_log2FC",
     p_col = "p_val_adj",
@@ -844,7 +842,7 @@ test_that("annotation evidence can include cluster neighborhood geometry", {
 
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     reduction = "umap",
     n_neighbor_clusters = 1
@@ -862,7 +860,7 @@ test_that("annotation evidence adds canonical lineage heuristic hints", {
   object <- make_interpretation_object()
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     marker_selection = "specific",
     reduction = NULL
@@ -881,7 +879,7 @@ test_that("annotation evidence exposes a canonical marker snapshot", {
   object <- make_interpretation_object()
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     marker_selection = "specific",
     reduction = NULL
@@ -955,11 +953,11 @@ test_that("sn_interpret_annotation agentic mode performs a focused refinement pa
   object <- make_interpretation_object()
   object <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     annotation_mode = "agentic",
     provider = provider,
-    store_name = "annotation_agentic",
+    result_id = "annotation_agentic",
     metadata_prefix = "agentic_ann",
     return_object = TRUE,
     show_progress = FALSE
@@ -979,7 +977,7 @@ test_that("agentic annotation can return its staged prompt bundle", {
   object <- make_interpretation_object()
   prompt <- sn_interpret_annotation(
     object = object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     annotation_mode = "agentic",
     return_prompt = TRUE

@@ -4,12 +4,12 @@
 \alias{sn_plot_ligand_target}
 \title{Plot NicheNet or MultiNicheNet ligand-target evidence}
 \usage{
-sn_plot_ligand_target(x, name = NULL, n = 50L, object = NULL)
+sn_plot_ligand_target(x, result_id = NULL, n = 50L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or unified communication result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{n}{Maximum number of ligand-target links.}
 

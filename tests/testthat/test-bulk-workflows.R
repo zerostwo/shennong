@@ -117,7 +117,7 @@ test_that("sn_find_de dispatches bulk and preserves the legacy wrapper", {
 
   expect_true(sn_validate_result(unified)$valid)
   expect_identical(unified$analysis_type, "bulk_de")
-  expect_identical(unified$name, "bulk_de")
+  expect_identical(unified$result_id, "bulk_de")
   expect_equal(unified$tables$primary, legacy$tables$primary)
   expect_error(
     sn_find_de(fixture$counts, metadata = fixture$metadata),
@@ -227,7 +227,7 @@ test_that("survival and clinical association use sample-level features", {
     clinical_vars = c("age", "stage"), metadata = fixture$metadata
   )
   expect_true(sn_validate_result(survival)$valid)
-  expect_identical(survival$schema_version, "1.0.0")
+  expect_identical(survival$schema_version, "2.0.0")
   expect_equal(nrow(survival$tables$survival), 2L)
   expect_true(all(c("hazard_ratio", "conf_low", "conf_high", "ph_p_value", "status", "error") %in% names(survival$tables$survival)))
   expect_true(all(c(

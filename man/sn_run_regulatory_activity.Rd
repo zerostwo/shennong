@@ -15,7 +15,7 @@ sn_run_regulatory_activity(
   confidence_levels = c("A", "B", "C"),
   progeny_top = 500,
   minsize = 5L,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   ...
 )
@@ -42,8 +42,8 @@ DoRothEA uses the \pkg{dorothea} package data and PROGENy uses
 
 \item{minsize}{Minimum target-set size passed to \code{decoupleR::run_ulm()}.}
 
-\item{store_name}{Name used under
-\code{object@misc$regulatory_activity_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 

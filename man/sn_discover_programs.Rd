@@ -9,13 +9,12 @@ sn_discover_programs(
   method = c("nmf", "cnmf", "hotspot"),
   n_programs = "auto",
   group_by = NULL,
-  name = NULL,
   assay = NULL,
   layer = "data",
   features = NULL,
   backend_control = list(),
   return_object = TRUE,
-  store_name = NULL
+  result_id = NULL
 )
 }
 \arguments{
@@ -28,8 +27,6 @@ and Hotspot use explicit runner/result adapters.}
 
 \item{group_by}{Optional metadata column for independent within-group discovery.}
 
-\item{name}{Stored result name. Deprecated alias; prefer \code{store_name}.}
-
 \item{assay, layer}{Expression assay and non-negative layer.}
 
 \item{features}{Optional features used for discovery.}
@@ -39,7 +36,7 @@ and Hotspot use explicit runner/result adapters.}
 
 \item{return_object}{Return the modified object or unified result.}
 
-\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
+\item{result_id}{Stable identifier for the stored program-discovery result.}
 }
 \value{
 A Seurat object or unified program-discovery result.

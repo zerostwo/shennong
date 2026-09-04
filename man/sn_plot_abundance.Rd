@@ -6,7 +6,7 @@
 \usage{
 sn_plot_abundance(
   x,
-  name = NULL,
+  result_id = NULL,
   n = 30L,
   adjusted_p_value = NULL,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_abundance(
 \arguments{
 \item{x}{A Seurat object or differential-abundance result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{n}{Maximum number of rows to display.}
 

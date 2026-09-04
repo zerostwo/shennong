@@ -246,7 +246,7 @@ integration_object <- sn_integrate_spatial(
   integration_object,
   method = "custom",
   spatial_cols = c("spatial_x", "spatial_y"),
-  store_name = "lymph_node_sections",
+  result_id = "lymph_node_sections",
   backend_control = list(
     result = list(
       embedding = integration_embedding,
@@ -301,7 +301,7 @@ spatial_object <- sn_run_spatial_neighborhood(
   method = "knn",
   group_by = "core_expression_group",
   spatial_cols = c("spatial_x", "spatial_y"),
-  store_name = "expression_neighborhood",
+  result_id = "expression_neighborhood",
   backend_control = list(
     k = 6L,
     n_permutations = 99L,
@@ -336,7 +336,7 @@ spatial_object <- sn_run_spatial(
   spatial_cols = c("spatial_x", "spatial_y"),
   assay = "Spatial",
   layer = "data",
-  store_name = "lymph_node_morans",
+  result_id = "lymph_node_morans",
   backend_control = list(
     k = 6L,
     n_permutations = 99L,
@@ -386,7 +386,7 @@ spatial_object <- sn_find_spatial_domains(
   spatial_cols = c("spatial_x", "spatial_y"),
   assay = "Spatial",
   layer = "data",
-  store_name = "banksy_domains",
+  result_id = "banksy_domains",
   backend_control = list(
     lambda = 0.8,
     resolution = 0.8,
@@ -415,7 +415,7 @@ spatial_object <- sn_run_spatial_neighborhood(
   method = "knn",
   group_by = "banksy_domains",
   spatial_cols = c("spatial_x", "spatial_y"),
-  store_name = "banksy_neighborhood",
+  result_id = "banksy_neighborhood",
   backend_control = list(
     k = 6L,
     n_permutations = 99L,
@@ -460,7 +460,7 @@ nnsvg <- sn_find_spatial_features(
   assay = "Spatial",
   layer = "data",
   features = utils::head(svg$tables$features$feature, 100L),
-  store_name = "lymph_node_nnsvg",
+  result_id = "lymph_node_nnsvg",
   return_object = FALSE
 )
 
@@ -497,7 +497,7 @@ spatial_communication <- sn_run_spatial_communication(
   communication = communication,
   group_by = "banksy_domains",
   spatial_cols = c("spatial_x", "spatial_y"),
-  store_name = "domain_spatial_communication",
+  result_id = "domain_spatial_communication",
   return_object = FALSE
 )
 
@@ -558,7 +558,7 @@ if (identical(deconvolution_entrypoint, "direct")) {
     reference_signatures = cell2location_signatures_path,
     spatial_cols = c("spatial_x", "spatial_y"),
     output_dir = file.path(external_output_root, "cell2location"),
-    result_name = "lymph_node_cell2location"
+    artifact_id = "lymph_node_cell2location"
   )
 } else {
   deconvolved_object <- sn_run_spatial_deconvolution(
@@ -568,7 +568,7 @@ if (identical(deconvolution_entrypoint, "direct")) {
     reference_signatures = cell2location_signatures_path,
     spatial_cols = c("spatial_x", "spatial_y"),
     output_dir = file.path(external_output_root, "cell2location"),
-    result_name = "lymph_node_cell2location"
+    artifact_id = "lymph_node_cell2location"
   )
 }
 
@@ -613,7 +613,7 @@ if (identical(mapping_entrypoint, "direct")) {
     spatial_cols = c("spatial_x", "spatial_y"),
     cell_type_by = "cell_type",
     output_dir = file.path(external_output_root, "tangram"),
-    result_name = "lymph_node_tangram"
+    artifact_id = "lymph_node_tangram"
   )
 } else {
   mapped_object <- sn_run_spatial_mapping(
@@ -624,7 +624,7 @@ if (identical(mapping_entrypoint, "direct")) {
     spatial_cols = c("spatial_x", "spatial_y"),
     cell_type_by = "cell_type",
     output_dir = file.path(external_output_root, "tangram"),
-    result_name = "lymph_node_tangram"
+    artifact_id = "lymph_node_tangram"
   )
 }
 mapped_object@misc$tangram$lymph_node_tangram
@@ -640,7 +640,7 @@ squidpy_object <- sn_run_squidpy(
   layer = "data",
   spatial_cols = c("spatial_x", "spatial_y"),
   output_dir = file.path(external_output_root, "squidpy"),
-  result_name = "lymph_node_squidpy"
+  artifact_id = "lymph_node_squidpy"
 )
 spatialdata_object <- sn_run_spatialdata(
   spatial_object,
@@ -648,7 +648,7 @@ spatialdata_object <- sn_run_spatialdata(
   layer = "data",
   spatial_cols = c("spatial_x", "spatial_y"),
   output_dir = file.path(external_output_root, "spatialdata"),
-  result_name = "lymph_node_spatialdata"
+  artifact_id = "lymph_node_spatialdata"
 )
 stlearn_object <- sn_run_stlearn(
   spatial_object,
@@ -656,7 +656,7 @@ stlearn_object <- sn_run_stlearn(
   layer = "data",
   spatial_cols = c("spatial_x", "spatial_y"),
   output_dir = file.path(external_output_root, "stlearn"),
-  result_name = "lymph_node_stlearn"
+  artifact_id = "lymph_node_stlearn"
 )
 
 tibble::tibble(

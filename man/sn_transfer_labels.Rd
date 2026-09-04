@@ -28,6 +28,7 @@ sn_transfer_labels(
   return_anchors = FALSE,
   transfer_control = list(),
   verbose = TRUE,
+  result_id = NULL,
   ...
 )
 }
@@ -92,6 +93,10 @@ SingleCellExperiment.}
 \code{install_pixi}.}
 
 \item{verbose}{Whether to print Seurat progress messages.}
+
+\item{result_id}{Optional explicit result identifier. When supplied, it also
+becomes the prediction metadata prefix and overrides
+\code{prediction_prefix}.}
 
 \item{...}{Additional arguments passed to \code{Seurat::FindTransferAnchors()}.}
 }

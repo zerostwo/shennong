@@ -6,7 +6,7 @@
 \usage{
 sn_get_de_result(
   object,
-  de_name = "default",
+  result_id = "default",
   top_n = NULL,
   direction = c("all", "up", "down"),
   groups = NULL,
@@ -16,7 +16,7 @@ sn_get_de_result(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Name of the stored DE result.}
+\item{result_id}{Identifier of the stored DE result.}
 
 \item{top_n}{Optional number of rows to keep. When supplied together with a
 ranking column, results are reduced to the top rows overall or per group.}
@@ -36,6 +36,6 @@ Retrieve a stored DE result from a Seurat object
 }
 \examples{
 \dontrun{
-markers <- sn_get_de_result(seurat_obj, de_name = "cluster_markers", top_n = 5)
+markers <- sn_get_de_result(seurat_obj, result_id = "cluster_markers", top_n = 5)
 }
 }

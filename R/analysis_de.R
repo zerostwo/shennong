@@ -287,7 +287,7 @@
 #'   \item pseudobulk contrasts aggregated by sample.
 #' }
 #'
-#' Results can be stored back into `object@misc$de_results[[store_name]]`, so
+#' Results are stored in the canonical Shennong result registry, so
 #' downstream helpers such as `sn_plot_dot()` can reuse the same marker table.
 #'
 #' @param object A \code{Seurat} object.
@@ -333,7 +333,10 @@
 #'   metadata.
 #' @param min_cells_per_sample Minimum cells required for a sample/group
 #'   pseudobulk profile to be retained.
-#' @param store_name Key used under \code{object@misc$de_results}.
+#' @param result_id Stable identifier for the stored DE result.
+#' @param result_id Optional explicit result identifier. When supplied, it is
+#'   used as the stored-result key and canonical result name; \code{result_id}
+#'   remains a backward-compatible alias.
 #' @param return_object If \code{TRUE}, return the updated Seurat object with
 #'   stored DE results. Otherwise return the result table.
 #' @param verbose Whether to emit progress information.
@@ -379,11 +382,12 @@
 #'     layer = "data",
 #'     min_pct = 0,
 #'     logfc_threshold = 0,
-#'     store_name = "celltype_markers",
+#'     result_id = "celltype_markers",
 #'     return_object = TRUE,
 #'     verbose = FALSE
 #'   )
-#'   names(obj@misc$de_results)
+#'   sn_list_results(obj, type = "de")
+#'   sn_get_result(obj, type = "de", result_id = "celltype_markers")
 #' }
 #'
 #' bulk_counts <- matrix(
@@ -423,7 +427,7 @@ sn_find_de <- function(
   p_val_cutoff = 0.05,
   de_logfc = 0.25,
   min_cells_per_sample = 10,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   verbose = TRUE,
   modality = c("auto", "single_cell", "bulk"),
@@ -433,6 +437,7 @@ sn_find_de <- function(
   backend_control = list(),
   ...
 ) {
+  result_id <- .sn_validate_result_id(result_id)
   assay_missing <- missing(assay)
   modality <- match.arg(modality)
   if (identical(modality, "auto")) {
@@ -451,7 +456,7 @@ sn_find_de <- function(
       contrast = contrast,
       method = bulk_method,
       assay = if (assay_missing) NULL else assay,
-      store_name = if (identical(store_name, "default")) "bulk_de" else store_name,
+      result_id = if (identical(result_id, "default")) "bulk_de" else result_id,
       backend_control = backend_control
     ))
   }
@@ -604,7 +609,7 @@ sn_find_de <- function(
   p_col <- p_col[p_col %in% colnames(result)][1] %||% NA_character_
 
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = tibble::as_tibble(result),
@@ -628,17 +633,17 @@ sn_find_de <- function(
     provenance = .sn_contextual_analysis_provenance()
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "de_results",
-    store_name = store_name,
+    type = "de",
+    result_id = result_id,
     result = stored_result
   )
 
   if (return_object) {
     .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_de")
   } else {
-    stored_result$table
+    tibble::as_tibble(result)
   }
   }, patches = de_acceleration_patches)
 }

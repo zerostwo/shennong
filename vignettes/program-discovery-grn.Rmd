@@ -82,7 +82,7 @@ programs <- sn_discover_programs(
   malignant,
   method = "nmf",
   n_programs = 4,
-  name = "melanoma_programs",
+  result_id = "melanoma_programs",
   assay = "RNA",
   layer = "data",
   features = program_features,
@@ -124,7 +124,7 @@ genie3_attempt <- tryCatch(
     group_by = "tumor",
     assay = "RNA",
     layer = "data",
-    name = "melanoma_genie3",
+    result_id = "melanoma_genie3",
     backend_control = list(
       n_features = 300L,
       n_trees = 200L,

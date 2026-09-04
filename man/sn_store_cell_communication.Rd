@@ -7,7 +7,7 @@
 sn_store_cell_communication(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   method = "cellchat",
   backend = method,
   group_by = NULL,
@@ -32,8 +32,8 @@ sn_store_cell_communication(
 
 \item{result}{Communication result table.}
 
-\item{store_name}{Name used under
-\code{object@misc$cell_communication_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{method}{User-facing communication method label.}
 

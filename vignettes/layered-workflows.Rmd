@@ -122,14 +122,14 @@ pbmc_layered <- sn_find_de(
   group_by = "seurat_clusters",
   assay = "RNA",
   layer = "data",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
 
 sn_get_de_result(
   pbmc_layered,
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   top_n = 3,
   with_metadata = TRUE
 )

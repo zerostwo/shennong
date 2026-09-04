@@ -1,14 +1,4 @@
 .sn_misc_result_registry <- function() {
-  analysis_collections <- c(
-    "de_results",
-    "cell_communication_results",
-    "deconvolution_results",
-    "milo_results",
-    "qc_assessments",
-    "regulatory_activity_results",
-    "enrichment_results",
-    "interpretation_results"
-  )
   artifact_collections <- c(
     "sn_run_cluster",
     "integration",
@@ -33,53 +23,6 @@
     "spatialdata",
     "stlearn"
   )
-  analysis_registry <- tibble::tibble(
-    collection = analysis_collections,
-    type = c(
-      "de",
-      "cell_communication",
-      "deconvolution",
-      "milo",
-      "qc_assessment",
-      "regulatory_activity",
-      "enrichment",
-      "interpretation"
-    ),
-    schema_version = rep("1.0.0", length(analysis_collections)),
-    required_fields = I(c(
-      list(c("schema_version", "package_version", "created_at", "table", "analysis")),
-      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
-      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
-      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
-      list(c("schema_version", "package_version", "created_at", "overall", "by_sample")),
-      list(c("schema_version", "package_version", "created_at", "table", "analysis", "method")),
-      list(c("schema_version", "package_version", "created_at", "table", "analysis", "database")),
-      list(c("schema_version", "package_version", "created_at", "task", "evidence", "prompt", "response"))
-    )),
-    contract_scope = rep("analysis_result", length(analysis_collections)),
-    listable = rep(TRUE, length(analysis_collections)),
-    table_required = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE),
-    reader = c(
-      "sn_get_de_result",
-      "sn_get_cell_communication_result",
-      "sn_get_deconvolution_result",
-      "sn_get_milo_result",
-      NA_character_,
-      "sn_get_regulatory_activity_result",
-      "sn_get_enrichment_result",
-      "sn_get_interpretation_result"
-    ),
-    writer = c(
-      "sn_find_de",
-      "sn_store_cell_communication",
-      "sn_store_deconvolution",
-      "sn_store_milo",
-      "sn_assess_qc",
-      "sn_store_regulatory_activity",
-      "sn_store_enrichment",
-      "sn_interpret_*"
-    )
-  )
   artifact_registry <- tibble::tibble(
     collection = artifact_collections,
     type = paste0(artifact_collections, "_artifact"),
@@ -95,155 +38,25 @@
     "clustering_stage_cache"
   artifact_registry$type[artifact_registry$collection == "input_source"] <-
     "input_source"
-  dplyr::bind_rows(analysis_registry, artifact_registry)
+  artifact_registry
 }
 
-.sn_misc_registry_entry <- function(collection) {
-  registry <- .sn_misc_result_registry()
-  entry <- registry[registry$collection == collection, , drop = FALSE]
-  if (nrow(entry) == 0L) {
-    return(NULL)
-  }
-  entry[1, , drop = FALSE]
-}
 
-.sn_validate_misc_result <- function(collection, store_name, result) {
-  entry <- .sn_misc_registry_entry(collection)
-  if (is_null(entry)) {
-    stop("Unknown Shennong misc collection: ", collection, call. = FALSE)
-  }
+.sn_resolve_stored_result_id <- function(object,
+                                         type,
+                                         result_id = NULL,
+                                         preferred_analysis = NULL) {
+  collection_data <- .sn_result_store(object)[[type]] %||% list()
 
-  required_fields <- entry$required_fields[[1]]
-  if (length(required_fields) > 0L) {
-    missing_fields <- setdiff(required_fields, names(result))
-    if (length(missing_fields) > 0L) {
-      stop(
-        "Stored result '", store_name, "' in collection '", collection,
-        "' does not match schema; missing required field(s): ",
-        paste(missing_fields, collapse = ", "),
-        call. = FALSE
-      )
+  if (!is_null(result_id) && nzchar(result_id)) {
+    if (!result_id %in% names(collection_data)) {
+      stop(glue("No result with `result_id = \"{result_id}\"` was found for analysis type '{type}'."))
     }
-  }
-
-  if (isTRUE(entry$table_required[[1]]) && !is.data.frame(result[["table"]])) {
-    stop(
-      "Stored result '", store_name, "' in collection '", collection,
-      "' does not match schema; `table` must be a data frame or tibble.",
-      call. = FALSE
-    )
-  }
-
-  schema_version <- result[["schema_version"]]
-  if ("schema_version" %in% required_fields &&
-      (!is.character(schema_version) || length(schema_version) != 1L ||
-       is.na(schema_version) || !nzchar(schema_version))) {
-    stop(
-      "Stored result '", store_name, "' in collection '", collection,
-      "' does not match schema; `schema_version` must be a non-empty character scalar.",
-      call. = FALSE
-    )
-  }
-
-  invisible(TRUE)
-}
-
-.sn_prepare_misc_result <- function(collection, store_name, result) {
-  entry <- .sn_misc_registry_entry(collection)
-  if (is_null(entry)) {
-    stop("Unknown Shennong misc collection: ", collection, call. = FALSE)
-  }
-  if (!isTRUE(entry$listable[[1]])) {
-    .sn_validate_misc_result(collection, store_name, result)
-    return(result)
-  }
-
-  # Registered legacy collections keep their established compatibility fields,
-  # but the canonical payload always lives under tables$primary. When both are
-  # present, the legacy field is authoritative for legacy writers.
-  legacy_table <- result[["table"]]
-  if (is.data.frame(legacy_table)) {
-    result[["tables"]] <- result[["tables"]] %||% list()
-    result[["tables"]][["primary"]] <- legacy_table
-  }
-  legacy_by_sample <- result[["by_sample"]]
-  if (identical(collection, "qc_assessments") && is.data.frame(legacy_by_sample)) {
-    result[["tables"]] <- result[["tables"]] %||% list()
-    result[["tables"]][["primary"]] <- legacy_by_sample
-    result[["tables"]][["by_sample"]] <- legacy_by_sample
-  }
-  result <- .sn_upgrade_analysis_result(
-    result,
-    analysis_type = entry$type[[1]],
-    name = store_name
-  )
-  result[["package_version"]] <- result[["package_version"]] %||%
-    result[["provenance"]][["package_versions"]][["Shennong"]] %||% NA_character_
-  result[["created_at"]] <- result[["created_at"]] %||%
-    result[["provenance"]][["timestamp"]]
-  result[["analysis"]] <- result[["analysis"]] %||% result[["analysis_type"]]
-  required <- entry$required_fields[[1]]
-  if ("table" %in% required) {
-    result[["table"]] <- result[["tables"]][["primary"]]
-  }
-  if ("method" %in% required) {
-    result[["method"]] <- result[["method"]] %||% "unknown"
-  }
-  if ("database" %in% required) {
-    result[["database"]] <- result[["database"]] %||%
-      result[["parameters"]][["database"]] %||% "unknown"
-  }
-  if (identical(collection, "qc_assessments")) {
-    result[["by_sample"]] <- result[["tables"]][["by_sample"]] %||%
-      result[["tables"]][["primary"]]
-    result[["overall"]] <- result[["overall"]] %||%
-      result[["tables"]][["overall"]]
-  }
-  .sn_validate_misc_result(collection, store_name, result)
-  sn_validate_result(result)
-  result
-}
-
-.sn_store_misc_result <- function(object, collection, store_name, result) {
-  # New writes must satisfy the registered physical-storage contract before
-  # normalization. Read-time migration may infer compatible legacy envelope
-  # fields, but a malformed payload claiming to be a current writer output
-  # should not be silently accepted.
-  .sn_validate_misc_result(
-    collection = collection,
-    store_name = store_name,
-    result = result
-  )
-  result <- .sn_prepare_misc_result(
-    collection = collection,
-    store_name = store_name,
-    result = result
-  )
-  misc_data <- methods::slot(object, "misc")
-  misc_data[[collection]] <- misc_data[[collection]] %||% list()
-  misc_data[[collection]][[store_name]] <- result
-  methods::slot(object, "misc") <- misc_data
-  object
-}
-
-
-.sn_resolve_misc_result_name <- function(object,
-                                         collection,
-                                         store_name = NULL,
-                                         preferred_analysis = NULL,
-                                         arg_name = "store_name") {
-  misc_data <- methods::slot(object, "misc")
-  collection_data <- misc_data[[collection]] %||% list()
-
-  if (!is_null(store_name) && nzchar(store_name)) {
-    if (!store_name %in% names(collection_data)) {
-      stop(glue("No stored result named '{store_name}' was found in `object@misc${collection}`."))
-    }
-    return(store_name)
+    return(result_id)
   }
 
   if (length(collection_data) == 0L) {
-    stop(glue("No stored results were found in `object@misc${collection}`; please supply `{arg_name}`."), call. = FALSE)
+    stop(glue("No stored results were found for analysis type '{type}'."), call. = FALSE)
   }
 
   available_names <- names(collection_data)
@@ -253,7 +66,9 @@
     }
     created_at <- vapply(
       candidates,
-      function(candidate) collection_data[[candidate]]$created_at %||% "",
+      function(candidate) {
+        collection_data[[candidate]]$provenance$timestamp %||% ""
+      },
       character(1)
     )
     candidates[[order(created_at, decreasing = TRUE, na.last = TRUE)[[1]]]]
@@ -277,7 +92,7 @@
     latest_name(preferred_names) %||% latest_name(available_names)
   }
 
-  .sn_log_info("`{arg_name}` was not supplied; using stored result '{resolved_name}' from `object@misc${collection}`.")
+  .sn_log_info("`result_id` was not supplied; using '{resolved_name}' for analysis type '{type}'.")
   resolved_name
 }
 
@@ -286,39 +101,7 @@
   if (is.data.frame(tables[["primary"]])) {
     return(nrow(tables[["primary"]]))
   }
-  if (is.data.frame(result[["table"]])) {
-    return(nrow(result[["table"]]))
-  }
-  if (is.data.frame(result[["by_sample"]])) {
-    return(nrow(result[["by_sample"]]))
-  }
-  if (is.data.frame(result[["overall"]])) {
-    return(nrow(result[["overall"]]))
-  }
   0L
-}
-
-.sn_compact_collection_summary <- function(object, collection, type_label = NULL) {
-  misc_data <- methods::slot(object, "misc")
-  collection_data <- misc_data[[collection]] %||% list()
-  if (length(collection_data) == 0) {
-    return(tibble::tibble())
-  }
-
-  entry <- .sn_misc_registry_entry(collection)
-  type_label <- type_label %||% if (!is_null(entry)) entry$type[[1]] else collection
-
-  entries <- names(collection_data)
-  tibble::tibble(
-    collection = collection,
-    type = type_label,
-    name = entries,
-    analysis = vapply(entries, function(entry) collection_data[[entry]]$analysis %||% NA_character_, character(1)),
-    method = vapply(entries, function(entry) collection_data[[entry]]$method %||% NA_character_, character(1)),
-    created_at = vapply(entries, function(entry) collection_data[[entry]]$created_at %||% NA_character_, character(1)),
-    n_rows = vapply(entries, function(entry) .sn_result_n_rows(collection_data[[entry]]), integer(1)),
-    source = vapply(entries, function(entry) collection_data[[entry]]$source_de_name %||% NA_character_, character(1))
-  )
 }
 
 .sn_subset_ranked_table <- function(table,
@@ -464,7 +247,7 @@
                                       prompt,
                                       provider = NULL,
                                       model = NULL,
-                                      store_name = "default",
+                                      result_id = "default",
                                       cluster_col = NULL,
                                       metadata_prefix = "sn_annotation",
                                       metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags"),
@@ -525,7 +308,7 @@
 
   progress_state <- .sn_interpret_progress_step(progress_state, "Storing interpretation result")
   interpretation_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     task = task,
@@ -538,10 +321,10 @@
     metadata_prefix = if (isTRUE(apply_metadata) && identical(task, "interpret_annotation")) metadata_prefix else NULL
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "interpretation_results",
-    store_name = store_name,
+    type = "interpretation",
+    result_id = result_id,
     result = interpretation_result
   )
 
@@ -581,7 +364,7 @@
                                           broad_prompt,
                                           provider = NULL,
                                           model = NULL,
-                                          store_name = "default",
+                                          result_id = "default",
                                           cluster_col = "seurat_clusters",
                                           metadata_prefix = "sn_annotation",
                                           metadata_fields = c("primary_label", "broad_label", "confidence", "status", "risk_flags"),
@@ -826,7 +609,7 @@
 
   progress_state <- .sn_interpret_progress_step(progress_state, "Storing interpretation result")
   interpretation_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     task = "interpret_annotation",
@@ -841,10 +624,10 @@
     workflow = workflow
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "interpretation_results",
-    store_name = store_name,
+    type = "interpretation",
+    result_id = result_id,
     result = interpretation_result
   )
 
@@ -867,7 +650,7 @@
 #' Interpret cluster markers for cell-type annotation
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Optional stored marker-result name. When omitted, Shennong
+#' @param de_result_id Optional stored marker-result name. When omitted, Shennong
 #'   prefers \code{"default"}, then a single available result, and otherwise
 #'   the most recent marker result.
 #' @param cluster_by Metadata column containing cluster labels.
@@ -875,10 +658,10 @@
 #' @param marker_selection How to choose marker genes for annotation evidence:
 #'   \code{"specific"} prefers genes that are relatively unique to one cluster,
 #'   while \code{"top"} keeps the raw top-ranked genes.
-#' @param enrichment_name Optional stored enrichment result used to add
+#' @param enrichment_result_id Optional stored enrichment result used to add
 #'   cluster-level functional evidence.
 #' @param n_terms Number of enrichment terms per cluster when
-#'   \code{enrichment_name} is supplied.
+#'   \code{enrichment_result_id} is supplied.
 #' @param enrichment_selection How to choose pathway/function terms for
 #'   annotation evidence: \code{"specific"} prefers terms concentrated in fewer
 #'   clusters, while \code{"top"} keeps the raw top-ranked terms.
@@ -926,7 +709,9 @@
 #'   One of \code{"title"}, \code{"snake"}, or \code{"asis"}.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -953,11 +738,11 @@
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   prompt <- sn_interpret_annotation(
 #'     obj,
-#'     de_name = "celltype_markers",
+#'     de_result_id = "celltype_markers",
 #'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
@@ -965,11 +750,11 @@
 #' }
 #' @export
 sn_interpret_annotation <- function(object,
-                                    de_name = NULL,
+                                    de_result_id = NULL,
                                     cluster_by = NULL,
                                     n_markers = 10,
                                     marker_selection = c("specific", "top"),
-                                    enrichment_name = NULL,
+                                    enrichment_result_id = NULL,
                                     n_terms = 5,
                                     enrichment_selection = c("specific", "top"),
                                     include_qc = TRUE,
@@ -988,10 +773,11 @@ sn_interpret_annotation <- function(object,
                                     label_candidates = NULL,
                                     label_style = c("title", "snake", "asis"),
                                     return_prompt = FALSE,
-                                    store_name = "default",
+                                    result_id = "default",
                                     return_object = TRUE,
                                     show_progress = interactive(),
                                     ...) {
+  result_id <- .sn_validate_result_id(result_id)
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   marker_selection <- match.arg(marker_selection)
@@ -1006,11 +792,11 @@ sn_interpret_annotation <- function(object,
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing annotation evidence")
   evidence <- sn_prepare_annotation_evidence(
     object = object,
-    de_name = de_name,
+    de_result_id = de_result_id,
     cluster_by = cluster_by,
     n_markers = n_markers,
     marker_selection = marker_selection,
-    enrichment_name = enrichment_name,
+    enrichment_result_id = enrichment_result_id,
     n_terms = n_terms,
     enrichment_selection = enrichment_selection,
     include_qc = include_qc,
@@ -1048,7 +834,7 @@ sn_interpret_annotation <- function(object,
       broad_prompt = broad_prompt,
       provider = provider,
       model = model,
-      store_name = store_name,
+      result_id = result_id,
       cluster_col = cluster_by,
       metadata_prefix = metadata_prefix,
       metadata_fields = metadata_fields,
@@ -1085,7 +871,7 @@ sn_interpret_annotation <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     cluster_col = cluster_by,
     metadata_prefix = metadata_prefix,
     metadata_fields = metadata_fields,
@@ -1102,7 +888,7 @@ sn_interpret_annotation <- function(object,
 #' Interpret a stored differential-expression result
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Name of a stored DE result.
+#' @param de_result_id Name of a stored DE result.
 #' @param n_genes Number of top genes to retain.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
@@ -1112,7 +898,9 @@ sn_interpret_annotation <- function(object,
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1139,24 +927,25 @@ sn_interpret_annotation <- function(object,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   prompt <- sn_interpret_de(obj, de_name = "celltype_markers", return_prompt = TRUE)
+#'   prompt <- sn_interpret_de(obj, de_result_id = "celltype_markers", return_prompt = TRUE)
 #'   prompt$task
 #' }
 #' @export
 sn_interpret_de <- function(object,
-                            de_name,
+                            de_result_id,
                             n_genes = 15,
                             background = NULL,
                             output_format = c("llm", "human"),
                             provider = NULL,
                             model = NULL,
                             return_prompt = FALSE,
-                            store_name = "default",
+                            result_id = "default",
                             return_object = TRUE,
                             show_progress = interactive(),
                             ...) {
+  result_id <- .sn_validate_result_id(result_id)
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
     task = "interpret_de",
@@ -1164,7 +953,7 @@ sn_interpret_de <- function(object,
     total_steps = 4L
   )
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing DE evidence")
-  evidence <- sn_prepare_de_evidence(object = object, de_name = de_name, n_genes = n_genes)
+  evidence <- sn_prepare_de_evidence(object = object, de_result_id = de_result_id, n_genes = n_genes)
   progress_state <- .sn_interpret_progress_step(progress_state, "Building interpretation prompt")
   prompt <- sn_build_prompt(
     evidence = evidence,
@@ -1182,7 +971,7 @@ sn_interpret_de <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     return_prompt = return_prompt,
     return_object = return_object,
     progress_state = progress_state,
@@ -1193,7 +982,7 @@ sn_interpret_de <- function(object,
 #' Interpret a stored enrichment result
 #'
 #' @param object A \code{Seurat} object.
-#' @param enrichment_name Name of a stored enrichment result.
+#' @param enrichment_result_id Name of a stored enrichment result.
 #' @param n_terms Number of top enrichment terms to retain.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
@@ -1203,7 +992,9 @@ sn_interpret_de <- function(object,
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1224,28 +1015,29 @@ sn_interpret_de <- function(object,
 #'   obj <- sn_store_enrichment(
 #'     obj,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-#'     store_name = "demo_gsea"
+#'     result_id = "demo_gsea"
 #'   )
 #'   prompt <- sn_interpret_enrichment(
 #'     obj,
-#'     enrichment_name = "demo_gsea",
+#'     enrichment_result_id = "demo_gsea",
 #'     return_prompt = TRUE
 #'   )
 #'   prompt$task
 #' }
 #' @export
 sn_interpret_enrichment <- function(object,
-                                    enrichment_name,
+                                    enrichment_result_id,
                                     n_terms = 10,
                                     background = NULL,
                                     output_format = c("llm", "human"),
                                     provider = NULL,
                                     model = NULL,
                                     return_prompt = FALSE,
-                                    store_name = "default",
+                                    result_id = "default",
                                     return_object = TRUE,
                                     show_progress = interactive(),
                                     ...) {
+  result_id <- .sn_validate_result_id(result_id)
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
     task = "interpret_enrichment",
@@ -1255,7 +1047,7 @@ sn_interpret_enrichment <- function(object,
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing enrichment evidence")
   evidence <- sn_prepare_enrichment_evidence(
     object = object,
-    enrichment_name = enrichment_name,
+    enrichment_result_id = enrichment_result_id,
     n_terms = n_terms
   )
   progress_state <- .sn_interpret_progress_step(progress_state, "Building interpretation prompt")
@@ -1275,7 +1067,7 @@ sn_interpret_enrichment <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     return_prompt = return_prompt,
     return_object = return_object,
     progress_state = progress_state,
@@ -1286,9 +1078,9 @@ sn_interpret_enrichment <- function(object,
 #' Write a manuscript-style results summary from stored analysis outputs
 #'
 #' @param object A \code{Seurat} object.
-#' @param cluster_de_name Optional stored cluster-marker result.
-#' @param contrast_de_name Optional stored contrast or pseudobulk result.
-#' @param enrichment_name Optional stored enrichment result.
+#' @param cluster_de_result_id Optional stored cluster-marker result.
+#' @param contrast_de_result_id Optional stored contrast or pseudobulk result.
+#' @param enrichment_result_id Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
@@ -1298,7 +1090,9 @@ sn_interpret_enrichment <- function(object,
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1321,17 +1115,17 @@ sn_interpret_enrichment <- function(object,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   obj <- sn_store_enrichment(
 #'     obj,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-#'     store_name = "demo_gsea"
+#'     result_id = "demo_gsea"
 #'   )
 #'   prompt <- sn_write_results(
 #'     obj,
-#'     cluster_de_name = "celltype_markers",
-#'     enrichment_name = "demo_gsea",
+#'     cluster_de_result_id = "celltype_markers",
+#'     enrichment_result_id = "demo_gsea",
 #'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
@@ -1339,19 +1133,20 @@ sn_interpret_enrichment <- function(object,
 #' }
 #' @export
 sn_write_results <- function(object,
-                             cluster_de_name = NULL,
-                             contrast_de_name = NULL,
-                             enrichment_name = NULL,
+                             cluster_de_result_id = NULL,
+                             contrast_de_result_id = NULL,
+                             enrichment_result_id = NULL,
                              cluster_by = NULL,
                              background = NULL,
                              output_format = c("llm", "human"),
                              provider = NULL,
                              model = NULL,
                              return_prompt = FALSE,
-                             store_name = "default",
+                             result_id = "default",
                              return_object = TRUE,
                              show_progress = interactive(),
                              ...) {
+  result_id <- .sn_validate_result_id(result_id)
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
@@ -1362,9 +1157,9 @@ sn_write_results <- function(object,
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing results evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
-    cluster_de_name = cluster_de_name,
-    contrast_de_name = contrast_de_name,
-    enrichment_name = enrichment_name,
+    cluster_de_result_id = cluster_de_result_id,
+    contrast_de_result_id = contrast_de_result_id,
+    enrichment_result_id = enrichment_result_id,
     cluster_by = cluster_by
   )
   progress_state <- .sn_interpret_progress_step(progress_state, "Building writing prompt")
@@ -1384,7 +1179,7 @@ sn_write_results <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     return_prompt = return_prompt,
     return_object = return_object,
     progress_state = progress_state,
@@ -1395,8 +1190,8 @@ sn_write_results <- function(object,
 #' Write a figure legend from stored analysis outputs
 #'
 #' @param object A \code{Seurat} object.
-#' @param cluster_de_name Optional stored cluster-marker result.
-#' @param enrichment_name Optional stored enrichment result.
+#' @param cluster_de_result_id Optional stored cluster-marker result.
+#' @param enrichment_result_id Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
@@ -1406,7 +1201,9 @@ sn_write_results <- function(object,
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1429,11 +1226,11 @@ sn_write_results <- function(object,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   prompt <- sn_write_figure_legend(
 #'     obj,
-#'     cluster_de_name = "celltype_markers",
+#'     cluster_de_result_id = "celltype_markers",
 #'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
@@ -1441,18 +1238,19 @@ sn_write_results <- function(object,
 #' }
 #' @export
 sn_write_figure_legend <- function(object,
-                                   cluster_de_name = NULL,
-                                   enrichment_name = NULL,
+                                   cluster_de_result_id = NULL,
+                                   enrichment_result_id = NULL,
                                    cluster_by = NULL,
                                    background = NULL,
                                    output_format = c("llm", "human"),
                                    provider = NULL,
                                    model = NULL,
                                    return_prompt = FALSE,
-                                   store_name = "default",
+                                   result_id = "default",
                                    return_object = TRUE,
                                    show_progress = interactive(),
                                    ...) {
+  result_id <- .sn_validate_result_id(result_id)
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
@@ -1463,8 +1261,8 @@ sn_write_figure_legend <- function(object,
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing legend evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
-    cluster_de_name = cluster_de_name,
-    enrichment_name = enrichment_name,
+    cluster_de_result_id = cluster_de_result_id,
+    enrichment_result_id = enrichment_result_id,
     cluster_by = cluster_by
   )
   progress_state <- .sn_interpret_progress_step(progress_state, "Building legend prompt")
@@ -1484,7 +1282,7 @@ sn_write_figure_legend <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     return_prompt = return_prompt,
     return_object = return_object,
     progress_state = progress_state,
@@ -1495,9 +1293,9 @@ sn_write_figure_legend <- function(object,
 #' Write a presentation-style summary from stored analysis outputs
 #'
 #' @param object A \code{Seurat} object.
-#' @param cluster_de_name Optional stored cluster-marker result.
-#' @param contrast_de_name Optional stored contrast or pseudobulk result.
-#' @param enrichment_name Optional stored enrichment result.
+#' @param cluster_de_result_id Optional stored cluster-marker result.
+#' @param contrast_de_result_id Optional stored contrast or pseudobulk result.
+#' @param enrichment_result_id Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
 #' @param background Optional study-specific background information to provide
 #'   additional interpretation context.
@@ -1507,7 +1305,9 @@ sn_write_figure_legend <- function(object,
 #' @param model Optional model identifier.
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
-#' @param store_name Name used under \code{object@misc$interpretation_results}.
+#' @param result_id Stable identifier for the stored interpretation result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1530,11 +1330,11 @@ sn_write_figure_legend <- function(object,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   prompt <- sn_write_presentation_summary(
 #'     obj,
-#'     cluster_de_name = "celltype_markers",
+#'     cluster_de_result_id = "celltype_markers",
 #'     cluster_by = "cell_type",
 #'     return_prompt = TRUE
 #'   )
@@ -1542,19 +1342,20 @@ sn_write_figure_legend <- function(object,
 #' }
 #' @export
 sn_write_presentation_summary <- function(object,
-                                          cluster_de_name = NULL,
-                                          contrast_de_name = NULL,
-                                          enrichment_name = NULL,
+                                          cluster_de_result_id = NULL,
+                                          contrast_de_result_id = NULL,
+                                          enrichment_result_id = NULL,
                                           cluster_by = NULL,
                                           background = NULL,
                                           output_format = c("llm", "human"),
                                           provider = NULL,
                                           model = NULL,
                                           return_prompt = FALSE,
-                                          store_name = "default",
+                                          result_id = "default",
                                           return_object = TRUE,
                                           show_progress = interactive(),
                                           ...) {
+  result_id <- .sn_validate_result_id(result_id)
   cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
@@ -1565,9 +1366,9 @@ sn_write_presentation_summary <- function(object,
   progress_state <- .sn_interpret_progress_step(progress_state, "Preparing presentation evidence")
   evidence <- sn_prepare_results_evidence(
     object = object,
-    cluster_de_name = cluster_de_name,
-    contrast_de_name = contrast_de_name,
-    enrichment_name = enrichment_name,
+    cluster_de_result_id = cluster_de_result_id,
+    contrast_de_result_id = contrast_de_result_id,
+    enrichment_result_id = enrichment_result_id,
     cluster_by = cluster_by
   )
   progress_state <- .sn_interpret_progress_step(progress_state, "Building presentation prompt")
@@ -1587,7 +1388,7 @@ sn_write_presentation_summary <- function(object,
     prompt = prompt,
     provider = provider,
     model = model,
-    store_name = store_name,
+    result_id = result_id,
     return_prompt = return_prompt,
     return_object = return_object,
     progress_state = progress_state,

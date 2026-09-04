@@ -9,7 +9,7 @@ sn_run_spatial_neighborhood(
   method = c("knn", "squidpy"),
   group_by,
   spatial_cols = NULL,
-  store_name = "spatial_neighborhood",
+  result_id = "spatial_neighborhood",
   backend_control = list(),
   return_object = TRUE
 )
@@ -23,7 +23,8 @@ sn_run_spatial_neighborhood(
 
 \item{spatial_cols}{Coordinate metadata columns.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Graph/permutation controls or \code{runner}/\code{result}.}
 

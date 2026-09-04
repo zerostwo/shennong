@@ -9,7 +9,7 @@ sn_run_cnv(
   method = c("infercnvpy", "copykat"),
   reference_cells = NULL,
   genome = NULL,
-  store_name = "cnv",
+  result_id = "cnv",
   reference_by = NULL,
   reference_cat = NULL,
   sample_by = NULL,
@@ -32,7 +32,8 @@ sn_run_cnv(
 \item{genome}{Species/genome label. Human and mouse are supported by the
 bundled inferCNVpy positions and CopyKAT adapter.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{reference_by, reference_cat}{Alternative metadata-based reference definition.}
 

@@ -11,7 +11,7 @@ sn_run_clinical_association(
   covariates = NULL,
   metadata = NULL,
   assay = NULL,
-  store_name = "bulk_clinical"
+  result_id = "bulk_clinical"
 )
 }
 \arguments{
@@ -27,7 +27,8 @@ sn_run_clinical_association(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 }
 \value{
 A validated clinical-association result.

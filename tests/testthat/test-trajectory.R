@@ -55,7 +55,7 @@ test_that("Slingshot trajectory stores complete per-cell and graph contracts", {
     cluster_by = "seurat_clusters",
     start = "root",
     end = c("effector", "memory"),
-    store_name = "branching",
+    result_id = "branching",
     test_dynamic = FALSE
   )
   result <- sn_get_result(object, "trajectory", "branching")

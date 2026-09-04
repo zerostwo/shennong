@@ -31,7 +31,7 @@ make_dotplot_test_object <- function() {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -467,7 +467,7 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
   feature_info <- Shennong:::.sn_resolve_dotplot_features(
     object = object,
     features = "top_markers",
-    de_name = "celltype_markers",
+    result_id = "celltype_markers",
     n = 2,
     marker_groups = "Tcell"
   )
@@ -475,7 +475,7 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
     sn_plot_dot(
       x = object,
       features = "top_markers",
-      de_name = "celltype_markers",
+      result_id = "celltype_markers",
       n = 2,
       marker_groups = "Tcell",
       palette = "RdBu",
@@ -505,9 +505,9 @@ test_that("sn_plot_dot can reuse stored top markers from object@misc", {
     Shennong:::.sn_resolve_dotplot_features(
       object = object,
       features = "top_markers",
-      de_name = "missing"
+      result_id = "missing"
     ),
-    "No stored DE result named 'missing'"
+    "No result with `result_id = \"missing\"`"
   )
 })
 

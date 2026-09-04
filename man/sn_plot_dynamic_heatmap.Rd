@@ -6,7 +6,7 @@
 \usage{
 sn_plot_dynamic_heatmap(
   x,
-  name = NULL,
+  result_id = NULL,
   features = NULL,
   lineage = NULL,
   scale_rows = TRUE,
@@ -16,7 +16,7 @@ sn_plot_dynamic_heatmap(
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
 
-\item{name}{Stored trajectory name.}
+\item{result_id}{Stored trajectory result_id.}
 
 \item{features}{Optional features to display.}
 

@@ -6,7 +6,7 @@
 \usage{
 sn_plot_regulon(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("network", "activity", "specificity"),
   regulons = NULL,
   n = 50L,
@@ -16,7 +16,7 @@ sn_plot_regulon(
 \arguments{
 \item{x}{A Seurat object or GRN result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{type}{Network edges, regulon activity, or group specificity.}
 

@@ -4,14 +4,14 @@
 \alias{sn_delete_result}
 \title{Delete a stored Shennong analysis result}
 \usage{
-sn_delete_result(object, type, name)
+sn_delete_result(object, type, result_id)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
 \item{type}{Analysis type.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result identifier.}
 }
 \value{
 The modified \code{Seurat} object.

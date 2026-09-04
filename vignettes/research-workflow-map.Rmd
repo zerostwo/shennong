@@ -214,26 +214,26 @@ pbmc <- sn_find_de(
   pbmc,
   analysis = "markers",
   group_by = "seurat_clusters",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
 
-sn_plot_dot(pbmc, features = "top_markers", de_name = "cluster_markers")
+sn_plot_dot(pbmc, features = "top_markers", result_id = "cluster_markers")
 
 pbmc <- sn_run_enrichment(
   pbmc,
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
   gene_clusters = gene ~ cluster,
   database = c("GOBP", "H"),
   universe = rownames(pbmc),
-  store_name = "cluster_pathways",
+  result_id = "cluster_pathways",
   return_object = TRUE
 )
 
 pathways <- sn_get_enrichment_result(
   pbmc,
-  enrichment_name = "cluster_pathways.GOBP"
+  result_id = "cluster_pathways.GOBP"
 )
 sn_plot_enrichment(pathways, type = "dot")
 ```
@@ -289,7 +289,7 @@ then export the plot together with source data and a figure specification. See
 
 ```{r evidence-export}
 sn_list_results(pbmc)
-markers <- sn_get_result(pbmc, type = "de", name = "cluster_markers")
+markers <- sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
 sn_validate_result(markers)
 
 figure <- sn_plot_de(markers, type = "effect")

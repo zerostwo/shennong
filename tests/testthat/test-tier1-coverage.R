@@ -51,7 +51,7 @@ make_interpretation_object <- function() {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -67,11 +67,11 @@ make_interpretation_object <- function() {
   object <- sn_store_enrichment(
     object = object,
     result = enrich_tbl,
-    store_name = "celltype_gsea",
+    result_id = "celltype_gsea",
     analysis = "gsea",
     database = "GOBP",
     species = "human",
-    source_de_name = "celltype_markers",
+    source_de_result_id = "celltype_markers",
     return_object = TRUE
   )
 
@@ -94,7 +94,7 @@ test_that("sn_interpret_de stores a provider response and returns prompts on req
 
   prompt <- sn_interpret_de(
     object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     output_format = "human",
     return_prompt = TRUE
   )
@@ -104,12 +104,12 @@ test_that("sn_interpret_de stores a provider response and returns prompts on req
 
   stored <- sn_interpret_de(
     object,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     provider = mock_provider(),
-    store_name = "de_note",
+    result_id = "de_note",
     return_object = TRUE
   )
-  retrieved <- sn_get_interpretation_result(stored, interpretation_name = "de_note")
+  retrieved <- sn_get_interpretation_result(stored, result_id = "de_note")
   expect_match(as.character(retrieved$response$text), "mock interpretation response")
 })
 
@@ -118,7 +118,7 @@ test_that("sn_interpret_enrichment interprets the stored enrichment result", {
 
   prompt <- sn_interpret_enrichment(
     object,
-    enrichment_name = "celltype_gsea",
+    enrichment_result_id = "celltype_gsea",
     output_format = "human",
     return_prompt = TRUE
   )
@@ -126,9 +126,9 @@ test_that("sn_interpret_enrichment interprets the stored enrichment result", {
 
   stored <- sn_interpret_enrichment(
     object,
-    enrichment_name = "celltype_gsea",
+    enrichment_result_id = "celltype_gsea",
     provider = mock_provider("enrichment mock"),
-    store_name = "enrichment_note",
+    result_id = "enrichment_note",
     return_object = FALSE
   )
   expect_true(is.list(stored))
@@ -139,8 +139,8 @@ test_that("publication writers prepare evidence and store responses", {
 
   legend_prompt <- sn_write_figure_legend(
     object,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "celltype_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "celltype_gsea",
     cluster_by = "cell_type",
     output_format = "human",
     return_prompt = TRUE
@@ -151,14 +151,14 @@ test_that("publication writers prepare evidence and store responses", {
 
   summary_stored <- sn_write_presentation_summary(
     object,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "celltype_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "celltype_gsea",
     cluster_by = "cell_type",
     provider = mock_provider("summary mock"),
-    store_name = "presentation_note",
+    result_id = "presentation_note",
     return_object = TRUE
   )
-  summary_result <- sn_get_interpretation_result(summary_stored, interpretation_name = "presentation_note")
+  summary_result <- sn_get_interpretation_result(summary_stored, result_id = "presentation_note")
   expect_match(as.character(summary_result$response$text), "summary mock")
 })
 

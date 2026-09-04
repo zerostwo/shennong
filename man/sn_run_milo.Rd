@@ -24,7 +24,7 @@ sn_run_milo(
   fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
-  store_name = NULL,
+  result_id = NULL,
   return_object = FALSE,
   return_intermediate = FALSE,
   verbose = TRUE,
@@ -84,10 +84,11 @@ neighborhoods with \code{miloR::annotateNhoods()}.}
 \item{norm_method}{Normalization method passed to
 \code{miloR::testNhoods()}.}
 
-\item{store_name}{Optional name used under \code{object@misc$milo_results}.
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.
 When supplied, the milo result is stored on the Seurat object.}
 
-\item{return_object}{Logical; when \code{TRUE} and \code{store_name} is
+\item{return_object}{Logical; when \code{TRUE} and \code{result_id} is
 supplied, return the updated Seurat object.}
 
 \item{return_intermediate}{Logical; if \code{TRUE}, return a list with the
@@ -101,7 +102,7 @@ DA table, design data, and milo object.}
 }
 \value{
 By default, a data frame of neighborhood-level DA statistics. When
-\code{store_name} is supplied, return the unified stored-result list, or
+\code{result_id} is supplied, return the unified stored-result list, or
 the updated Seurat object when \code{return_object = TRUE}. When
 \code{return_intermediate = TRUE}, return a list with \code{table},
 \code{design_df}, and \code{milo}.

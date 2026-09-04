@@ -1,7 +1,7 @@
 #' Plot differential-abundance effects
 #'
 #' @param x A Seurat object or differential-abundance result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param n Maximum number of rows to display.
 #' @param adjusted_p_value Optional adjusted-p-value cutoff.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -9,11 +9,11 @@
 #' @examples
 #' \dontrun{sn_plot_abundance(object, "abundance")}
 #' @export
-sn_plot_abundance <- function(x, name = NULL, n = 30L, adjusted_p_value = NULL, object = NULL) {
+sn_plot_abundance <- function(x, result_id = NULL, n = 30L, adjusted_p_value = NULL, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    sn_get_result(x, "differential_abundance", name)
+    if (is_null(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    sn_get_result(x, "differential_abundance", result_id)
   } else x
   sn_validate_result(result)
   if (!identical(result$analysis_type, "differential_abundance")) stop("Expected a differential-abundance result.", call. = FALSE)

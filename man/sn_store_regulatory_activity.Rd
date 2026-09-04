@@ -7,7 +7,7 @@
 sn_store_regulatory_activity(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   method = "dorothea",
   group_by = NULL,
   species = NULL,
@@ -21,8 +21,8 @@ sn_store_regulatory_activity(
 
 \item{result}{Regulatory activity table.}
 
-\item{store_name}{Name used under
-\code{object@misc$regulatory_activity_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{method}{Inference method.}
 

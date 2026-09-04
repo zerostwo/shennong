@@ -23,7 +23,7 @@ sn_find_de(
   p_val_cutoff = 0.05,
   de_logfc = 0.25,
   min_cells_per_sample = 10,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   verbose = TRUE,
   modality = c("auto", "single_cell", "bulk"),
@@ -85,7 +85,9 @@ metadata.}
 \item{min_cells_per_sample}{Minimum cells required for a sample/group
 pseudobulk profile to be retained.}
 
-\item{store_name}{Key used under \code{object@misc$de_results}.}
+\item{result_id}{Optional explicit result identifier. When supplied, it is
+used as the stored-result key and canonical result name; \code{result_id}
+remains a backward-compatible alias.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object with
 stored DE results. Otherwise return the result table.}
@@ -121,7 +123,7 @@ This function provides a single entry point for:
 }
 }
 \details{
-Results can be stored back into \code{object@misc$de_results[[store_name]]}, so
+Results are stored in the canonical Shennong result registry, so
 downstream helpers such as \code{sn_plot_dot()} can reuse the same marker table.
 }
 \examples{
@@ -161,11 +163,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
-  names(obj@misc$de_results)
+  sn_list_results(obj, type = "de")
+  sn_get_result(obj, type = "de", result_id = "celltype_markers")
 }
 
 bulk_counts <- matrix(

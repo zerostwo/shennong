@@ -20,8 +20,8 @@ sn_run_enrichment(
   max_gs_size = 500,
   gsea_exponent = 1,
   duplicate_gene_method = c("error", "max_abs", "max", "mean"),
-  store_name = "default",
-  source_de_name = NULL,
+  result_id = "default",
+  source_de_result_id = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL,
@@ -81,11 +81,10 @@ GSEA results with clusterProfiler 4.20, call \code{set.seed()} immediately befor
 ranked list. The default, \code{"error"}, avoids silent changes. Explicit
 alternatives are \code{"max_abs"}, \code{"max"}, and \code{"mean"}.}
 
-\item{store_name}{Name used when storing the enrichment result on a Seurat
-object. When multiple databases are requested, the database label is
-appended automatically unless a vector of names is supplied.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
-\item{source_de_name}{Optional stored DE-result name associated with the
+\item{source_de_result_id}{Optional stored DE-result name associated with the
 enrichment input.}
 
 \item{return_object}{Logical; when \code{TRUE} and a Seurat object is
@@ -108,7 +107,7 @@ multiple databases are requested, or a \code{Seurat} object when
 Runs GO, KEGG, or MSigDB enrichment using \pkg{clusterProfiler}. It supports
 both over-representation analysis (ORA) and ranked-list GSEA. The enrichment
 input can be a gene vector, a ranked numeric vector, a data frame, or a
-Seurat object paired with \code{source_de_name} to reuse stored DE results.
+Seurat object paired with \code{source_de_result_id} to reuse stored DE results.
 }
 \examples{
 \dontrun{

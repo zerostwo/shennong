@@ -168,9 +168,12 @@ test_that("Seurat diagnostic plots and reference projection run on local public 
   elbow <- sn_plot_elbow(object, reduction = "pca", ndims = 5)
   cells <- data.frame(cell = colnames(object), prediction = rep(c("T", "B"), length.out = ncol(object)), prediction_score = seq(.5, .9, length.out = ncol(object)))
   result <- list(
-    schema_version = "1.0.0", analysis_type = "annotation", name = "annotation", method = "test", backend = "test",
+    schema_version = "2.0.0", analysis_type = "annotation", result_id = "annotation", method = "test", backend = "test",
     input = list(), parameters = list(), tables = list(primary = cells, cells = cells), embeddings = list(), graphs = list(), models = list(),
-    diagnostics = list(), warnings = character(), provenance = Shennong:::.sn_analysis_provenance()
+    diagnostics = list(), warnings = character(), provenance = list(
+      package_versions = list(), random_seed = NA_integer_, timestamp = "2026-09-03 UTC",
+      result_id = "annotation", analysis_type = "annotation"
+    )
   )
   object <- sn_store_result(object, "annotation", "annotation", result)
   projection <- sn_plot_reference_projection(object, reduction = "pca")

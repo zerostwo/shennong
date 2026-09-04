@@ -19,14 +19,14 @@ package API.
   survival, or interpretation outputs
 - retrieving stored results for downstream plots or interpretation
 - auditing what is available on a Seurat object
-- migrating compatible legacy result envelopes to the current contract
+- auditing and normalizing result envelopes to the current contract
 - constructing, validating, and exporting a credential-free Result Bundle for
   a trusted external promotion workflow
 
 ## Required Inputs
 
 - Seurat object
-- stored-result name
+- stable stored-result ID
 - intended reuse pattern
 
 ## Required Outputs
@@ -37,15 +37,17 @@ package API.
 ## Rules
 
 - use package result stores rather than unstructured `misc` access in user code
+- set `result_id` explicitly on result-producing workflows when downstream
+  code needs a stable key; it is the only analysis-result identifier
 - inspect backends with `sn_list_methods()` and `sn_get_method_status()` before
   selecting an optional method; discovery must not install dependencies
 - validate new result payloads with `sn_validate_result()`
-- require `schema_version = "1.0.0"` and a canonical data frame in
-  `tables$primary` for new analytical results; named tables are synchronized
-  aliases, not independent copies with different content
+- require `schema_version = "2.0.0"`, matching `result_id` and
+  `analysis_type`, and a canonical data frame in `tables$primary`
 - use `sn_store_result()` / `sn_get_result()` / `sn_delete_result()` for new
   analysis types and specialized getters where their table-focused interface is useful
-- prefer `sn_list_results()` for discovery
+- prefer `sn_list_results()` for discovery and use its `result_id` column as
+  the canonical lookup key
 - prefer `sn_get_*_result()` helpers for retrieval
 - use `sn_build_result_bundle()` only after retrieving and validating the exact
   stored result; bind immutable inputs by resource/artifact identifier,
@@ -73,13 +75,13 @@ package API.
    the matching explicit store helper when available.
 2. Validate and store new result types with `sn_validate_result()` and
    `sn_store_result()`.
-3. Audit existing objects with `sn_audit_results()`. Treat `legacy` as safely
-   migratable, `invalid` as requiring manual review, and `artifact` as a
+3. Audit existing objects with `sn_audit_results()`. Treat `repairable` as
+   safely normalizable, `invalid` as requiring manual review, and `artifact` as a
    registered runtime/cache payload outside the analytical table contract.
    Treat `unregistered` as an unknown top-level `object@misc` payload that
    Shennong will report but never upgrade automatically.
    Use `sn_upgrade_results()` only after reviewing the audit.
-4. Discover result names with `sn_list_results()`; use its `type` filter when
+4. Discover result IDs with `sn_list_results()`; use its `type` filter when
    the object contains many workflows.
 5. Retrieve generic results with `sn_get_result()` or specific results with `sn_get_de_result()`,
    `sn_get_enrichment_result()`, `sn_get_milo_result()`,
@@ -97,7 +99,7 @@ package API.
 ## Common Mistakes
 
 - hard-coding untracked `object@misc` paths in analysis scripts
-- storing outputs without clear names
+- storing outputs without explicit, stable result IDs
 - failing to preserve reusable provenance
 - treating a Result Bundle as proof that artifact bytes were uploaded,
   authorized, or promoted
@@ -128,17 +130,17 @@ package API.
 - `bundle <- sn_build_result_bundle(sn_get_result(object, "trajectory", "cd8"))`
 - `sn_validate_result_bundle(bundle, error = FALSE)`
 - `sn_export_result_bundle(bundle, "cd8-result-bundle.json")`
-- `sn_get_de_result(object, de_name = "cluster_markers")`
-- `sn_annotate_de_features(object, de_name = "cluster_markers")`
-- `sn_store_enrichment(object, result, store_name = "cluster_pathways")`
-- `sn_get_enrichment_result(object, enrichment_name = "cluster_pathways")`
-- `sn_store_milo(object, result, store_name = "condition_da")`
-- `sn_get_milo_result(object, milo_name = "condition_da")`
-- `sn_store_deconvolution(object, result, store_name = "bulk_mix")`
-- `sn_get_deconvolution_result(object, deconvolution_name = "bulk_mix")`
-- `sn_store_cell_communication(object, result, store_name = "cellchat")`
-- `sn_get_cell_communication_result(object, communication_name = "cellchat")`
-- `sn_get_cell_communication_result(object, communication_name = "cellchat", with_metadata = TRUE)$tables$consensus`
-- `sn_store_regulatory_activity(object, result, store_name = "dorothea")`
-- `sn_get_regulatory_activity_result(object, activity_name = "dorothea")`
-- `sn_get_interpretation_result(object, interpretation_name = "annotation_note")`
+- `sn_get_de_result(object, result_id = "cluster_markers")`
+- `sn_annotate_de_features(object, result_id = "cluster_markers")`
+- `sn_store_enrichment(object, result, result_id = "cluster_pathways")`
+- `sn_get_enrichment_result(object, result_id = "cluster_pathways")`
+- `sn_store_milo(object, result, result_id = "condition_da")`
+- `sn_get_milo_result(object, result_id = "condition_da")`
+- `sn_store_deconvolution(object, result, result_id = "bulk_mix")`
+- `sn_get_deconvolution_result(object, result_id = "bulk_mix")`
+- `sn_store_cell_communication(object, result, result_id = "cellchat")`
+- `sn_get_cell_communication_result(object, result_id = "cellchat")`
+- `sn_get_cell_communication_result(object, result_id = "cellchat", with_metadata = TRUE)$tables$consensus`
+- `sn_store_regulatory_activity(object, result, result_id = "dorothea")`
+- `sn_get_regulatory_activity_result(object, result_id = "dorothea")`
+- `sn_get_interpretation_result(object, result_id = "annotation_note")`

@@ -4,12 +4,12 @@
 \alias{sn_get_interpretation_result}
 \title{Retrieve a stored interpretation result from a Seurat object}
 \usage{
-sn_get_interpretation_result(object, interpretation_name = "default")
+sn_get_interpretation_result(object, result_id = "default")
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{interpretation_name}{Name of the stored interpretation result.}
+\item{result_id}{Identifier of the stored interpretation result.}
 }
 \value{
 The stored interpretation-result list.

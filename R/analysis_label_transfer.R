@@ -14,6 +14,7 @@
                                        reference,
                                        label_by,
                                        prediction_prefix,
+                                       result_id,
                                        assay = NULL,
                                        batch_by = NULL,
                                        features = NULL,
@@ -124,6 +125,7 @@
   object <- .sn_store_label_transfer_result(
     object = object,
     prediction_prefix = prediction_prefix,
+    result_id = result_id,
     method = method_name,
     label_by = label_by,
     prediction_columns = colnames(metadata)
@@ -148,6 +150,7 @@
 
 .sn_store_label_transfer_result <- function(object,
                                             prediction_prefix,
+                                            result_id,
                                             method,
                                             label_by,
                                             prediction_columns) {
@@ -175,7 +178,7 @@
   }
   result <- .sn_new_analysis_result(
     analysis_type = "annotation",
-    name = prediction_prefix,
+    result_id = result_id,
     method = method,
     backend = switch(
       method,
@@ -197,7 +200,7 @@
       label_levels = sort(unique(stats::na.omit(primary$prediction)))
     )
   )
-  sn_store_result(object, "annotation", prediction_prefix, result)
+  sn_store_result(object, "annotation", result_id, result)
 }
 
 .sn_get_seurat_logcounts_sce <- function(object,
@@ -531,6 +534,7 @@ sn_prepare_label_transfer_reference <- function(object,
                                           reference,
                                           label_col,
                                           prediction_prefix,
+                                          result_id,
                                           reference_assay = NULL,
                                           query_assay = NULL,
                                           reference_layer = "data",
@@ -604,6 +608,7 @@ sn_prepare_label_transfer_reference <- function(object,
   object <- .sn_store_label_transfer_result(
     object = object,
     prediction_prefix = prediction_prefix,
+    result_id = result_id,
     method = "coralysis",
     label_by = label_col,
     prediction_columns = colnames(metadata)
@@ -641,6 +646,9 @@ sn_prepare_label_transfer_reference <- function(object,
 #'   the scVI-family pixi backend.
 #' @param prediction_prefix Prefix for metadata columns added to
 #'   \code{query}. Defaults to \code{paste0(label_by, "_transfer")}.
+#' @param result_id Optional explicit result identifier. When supplied, it also
+#'   becomes the prediction metadata prefix and overrides
+#'   \code{prediction_prefix}.
 #' @param normalization_method Normalization method passed to
 #'   \code{Seurat::FindTransferAnchors()}.
 #' @param reference_assay,query_assay Assays passed to
@@ -711,9 +719,14 @@ sn_transfer_labels <- function(object = NULL,
                                return_anchors = FALSE,
                                transfer_control = list(),
                                verbose = TRUE,
+                               result_id = NULL,
                                ...) {
   check_installed("Seurat")
   method <- match.arg(method)
+  result_id <- .sn_validate_result_id(
+    result_id %||% prediction_prefix %||% "label_transfer"
+  )
+  prediction_prefix <- prediction_prefix %||% result_id
   if (is.null(object)) {
     stop("`object` must be supplied as the query Seurat object.", call. = FALSE)
   }
@@ -734,6 +747,7 @@ sn_transfer_labels <- function(object = NULL,
       reference = reference,
       label_col = label_by,
       prediction_prefix = prediction_prefix,
+      result_id = result_id,
       reference_assay = reference_assay,
       query_assay = query_assay,
       reference_layer = reference_layer,
@@ -750,6 +764,7 @@ sn_transfer_labels <- function(object = NULL,
       reference = reference,
       label_by = label_by,
       prediction_prefix = prediction_prefix,
+      result_id = result_id,
       assay = query_assay %||% reference_assay,
       batch_by = transfer_control$batch_by %||% NULL,
       features = features,
@@ -830,6 +845,7 @@ sn_transfer_labels <- function(object = NULL,
   object <- .sn_store_label_transfer_result(
     object = object,
     prediction_prefix = prediction_prefix,
+    result_id = result_id,
     method = "seurat",
     label_by = label_by,
     prediction_columns = colnames(metadata)

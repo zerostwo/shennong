@@ -57,7 +57,7 @@ test_that("reference backends produce traceable cell and cluster annotations", {
     group_by = "cluster",
     method = "singleR",
     species = "human",
-    store_name = "immune",
+    result_id = "immune",
     ontology = TRUE
   )
 
@@ -103,7 +103,7 @@ test_that("unmapped and unscored cells are flagged low confidence", {
     group_by = "cluster",
     method = "singleR",
     species = "human",
-    store_name = "flagged",
+    result_id = "flagged",
     ontology = FALSE,
     return_object = FALSE
   )
@@ -126,11 +126,11 @@ test_that("annotation plots render from the stored result", {
     group_by = "cluster",
     method = "singleR",
     species = "human",
-    store_name = "immune"
+    result_id = "immune"
   )
 
   confidence <- sn_plot_annotation_confidence(object, "immune")
-  confusion <- sn_plot_annotation_confusion(object, truth = "known", store_name = "immune")
+  confusion <- sn_plot_annotation_confusion(object, truth = "known", result_id = "immune")
   expect_s3_class(confidence, "ggplot")
   expect_s3_class(confusion, "ggplot")
   expect_silent(ggplot2::ggplotGrob(confidence))
@@ -150,7 +150,7 @@ test_that("SingleR predictions and raw backend evidence are retained", {
     reference = reference,
     reference_label_by = "cell_type",
     species = "human",
-    store_name = "singleR_test",
+    result_id = "singleR_test",
     ontology = TRUE,
     return_object = FALSE
   )
@@ -211,7 +211,7 @@ test_that("Symphony mapping retains confidence and the query embedding", {
     reference = reference,
     reference_label_by = "cell_type",
     species = "human",
-    store_name = "symphony_test",
+    result_id = "symphony_test",
     ontology = FALSE,
     return_object = FALSE,
     backend_control = list(symphony = list(build = list(K = 2, topn = 4, d = 2)))

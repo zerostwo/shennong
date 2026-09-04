@@ -1,16 +1,16 @@
 #' Plot RNA velocity vectors
 #'
 #' @param x A Seurat object or velocity result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param color_by Cell-table field used to color points.
 #' @param arrow_scale Multiplicative arrow-length scale.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_velocity <- function(x, name = NULL, color_by = "pseudotime", arrow_scale = 1, point_size = 0.6, object = NULL) {
+sn_plot_velocity <- function(x, result_id = NULL, color_by = "pseudotime", arrow_scale = 1, point_size = 0.6, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_result_input(x, "velocity", name)
+  result <- .sn_resolve_result_input(x, "velocity", result_id)
   data <- tibble::as_tibble(result$tables$cells)
   if (!color_by %in% names(data)) stop("`color_by` was not found in velocity cells.", call. = FALSE)
   ggplot2::ggplot(data, ggplot2::aes(x = .data$dimension_1, y = .data$dimension_2, color = .data[[color_by]])) +
@@ -29,15 +29,15 @@ sn_plot_velocity <- function(x, name = NULL, color_by = "pseudotime", arrow_scal
 #' Plot CellRank fate probabilities
 #'
 #' @param x A Seurat object or fate result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param states Optional terminal states to retain.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A faceted `ggplot` object.
 #' @export
-sn_plot_fate <- function(x, name = NULL, states = NULL, point_size = 0.7, object = NULL) {
+sn_plot_fate <- function(x, result_id = NULL, states = NULL, point_size = 0.7, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_result_input(x, "fate", name)
+  result <- .sn_resolve_result_input(x, "fate", result_id)
   probabilities <- tibble::as_tibble(result$tables$probabilities)
   if (!is_null(states)) probabilities <- probabilities[probabilities$state %in% states, , drop = FALSE]
   if (nrow(probabilities) == 0L) stop("No fate probabilities remain to plot.", call. = FALSE)

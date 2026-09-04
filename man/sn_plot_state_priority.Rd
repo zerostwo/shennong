@@ -4,12 +4,12 @@
 \alias{sn_plot_state_priority}
 \title{Plot cell-state priority scores}
 \usage{
-sn_plot_state_priority(x, name = NULL, n = 30L, object = NULL)
+sn_plot_state_priority(x, result_id = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or state-priority result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{n}{Maximum states to show.}
 

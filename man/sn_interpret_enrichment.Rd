@@ -6,14 +6,14 @@
 \usage{
 sn_interpret_enrichment(
   object,
-  enrichment_name,
+  enrichment_result_id,
   n_terms = 10,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -22,7 +22,7 @@ sn_interpret_enrichment(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{enrichment_name}{Name of a stored enrichment result.}
+\item{enrichment_result_id}{Name of a stored enrichment result.}
 
 \item{n_terms}{Number of top enrichment terms to retain.}
 
@@ -39,7 +39,8 @@ additional interpretation context.}
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}
 
-\item{store_name}{Name used under \code{object@misc$interpretation_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 
@@ -67,11 +68,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- sn_store_enrichment(
     obj,
     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-    store_name = "demo_gsea"
+    result_id = "demo_gsea"
   )
   prompt <- sn_interpret_enrichment(
     obj,
-    enrichment_name = "demo_gsea",
+    enrichment_result_id = "demo_gsea",
     return_prompt = TRUE
   )
   prompt$task

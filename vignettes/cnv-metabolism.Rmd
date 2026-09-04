@@ -139,7 +139,7 @@ cnv_cells <- unlist(lapply(cells_by_call, function(cells) {
 cnv_object <- subset(melanoma, cells = cnv_cells)
 
 article_infercnvpy_runner <- function(object, reference_cells, genome,
-                                      store_name, assay, layer, sample_by) {
+                                      result_id, assay, layer, sample_by) {
   object$.article_cnv_reference <- ifelse(
     colnames(object) %in% reference_cells, "reference", "query"
   )
@@ -151,7 +151,7 @@ article_infercnvpy_runner <- function(object, reference_cells, genome,
     reference_by = ".article_cnv_reference",
     reference_cat = "reference",
     runtime_dir = infercnvpy_paths$runtime_dir,
-    result_name = store_name,
+    artifact_id = result_id,
     metadata_prefix = "infercnvpy_",
     run_umap = TRUE,
     n_jobs = 2,
@@ -171,7 +171,7 @@ article_infercnvpy_runner <- function(object, reference_cells, genome,
   cluster_column <- intersect(
     c("infercnvpy_cnv_leiden", "infercnvpy_leiden"), colnames(metadata)
   )
-  manifest <- updated@misc$infercnvpy[[store_name]]
+  manifest <- updated@misc$infercnvpy[[result_id]]
 
   chromosome_path <- file.path(manifest$output_dir, "cnv_chromosome.csv")
   chromosomes <- tibble::tibble()

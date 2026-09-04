@@ -6,13 +6,13 @@
 \usage{
 sn_annotate_de_features(
   x,
-  de_name = "default",
+  source_result_id = "default",
   species = NULL,
   gene_col = "gene",
   feature_classes = NULL,
   resource = c("auto", "msigdbr", "custom"),
   custom_resource = NULL,
-  store_name = NULL,
+  result_id = NULL,
   return_object = inherits(x, "Seurat")
 )
 }
@@ -20,7 +20,8 @@ sn_annotate_de_features(
 \item{x}{A DE/marker data frame, or a Seurat object containing a stored DE
 result.}
 
-\item{de_name}{Stored DE result name when \code{x} is a Seurat object.}
+\item{source_result_id}{Identifier of the stored DE result when \code{x} is a
+Seurat object.}
 
 \item{species}{One of \code{"human"} or \code{"mouse"}. When \code{x} is a Seurat object
 and \code{species} is \code{NULL}, Shennong tries \code{sn_get_species(x)}.}
@@ -41,12 +42,12 @@ chooses \code{"custom"} when \code{custom_resource} is supplied and otherwise
 \code{feature_class_label}, \code{feature_class_term}, and
 \code{feature_class_source}.}
 
-\item{store_name}{Optional stored DE result name for the annotated table
+\item{result_id}{Optional stored DE result name for the annotated table
 when \code{x} is a Seurat object and \code{return_object = TRUE}. Defaults to
-\code{paste0(de_name, "_feature_classes")}.}
+\code{paste0(source_result_id, "_feature_classes")}.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object with the
-annotated table stored under \code{object@misc$de_results[[store_name]]}.
+annotated table stored in the canonical Shennong result registry.
 Otherwise return the annotated table.}
 }
 \value{
@@ -57,7 +58,7 @@ A tibble with feature-class columns, or an updated Seurat object.
 expression tables that encode transcription factors, cell-surface or
 plasma-membrane proteins, cytokines, or chemokines. It can annotate a direct
 data frame or a stored Shennong DE result under
-\code{object@misc$de_results[[de_name]]}.
+\code{object@misc$shennong$results$de[[source_result_id]]}.
 }
 \details{
 By default the feature classes are derived from MSigDB GO sets through the
@@ -84,9 +85,9 @@ sn_annotate_de_features(
 
 \dontrun{
 obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
-  store_name = "celltype_markers", return_object = TRUE
+  result_id = "celltype_markers", return_object = TRUE
 )
-obj <- sn_annotate_de_features(obj, de_name = "celltype_markers")
-sn_get_de_result(obj, de_name = "celltype_markers_feature_classes")
+obj <- sn_annotate_de_features(obj, source_result_id = "celltype_markers")
+sn_get_de_result(obj, result_id = "celltype_markers_feature_classes")
 }
 }

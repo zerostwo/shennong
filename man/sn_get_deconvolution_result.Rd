@@ -6,7 +6,7 @@
 \usage{
 sn_get_deconvolution_result(
   object,
-  deconvolution_name = "default",
+  result_id = "default",
   samples = NULL,
   cell_types = NULL,
   with_metadata = FALSE
@@ -15,7 +15,7 @@ sn_get_deconvolution_result(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{deconvolution_name}{Name of the stored result.}
+\item{result_id}{Name of the stored result.}
 
 \item{samples}{Optional subset of bulk samples to keep.}
 

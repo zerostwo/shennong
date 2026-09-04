@@ -140,7 +140,7 @@
 .sn_run_cnv_infercnvpy <- function(object,
                                    reference_cells,
                                    genome,
-                                   store_name,
+                                   result_id,
                                    assay,
                                    layer,
                                    sample_by,
@@ -148,7 +148,7 @@
   if (is.function(backend_control$runner)) {
     return(backend_control$runner(
       object = object, reference_cells = reference_cells, genome = genome,
-      store_name = store_name, assay = assay, layer = layer, sample_by = sample_by
+      result_id = result_id, assay = assay, layer = layer, sample_by = sample_by
     ))
   }
   object$.sn_cnv_reference <- ifelse(colnames(object) %in% reference_cells, "reference", "query")
@@ -165,7 +165,7 @@
     reference_cat = "reference",
     run_umap = TRUE,
     metadata_prefix = prefix,
-    result_name = store_name,
+    artifact_id = result_id,
     return_object = TRUE
   ), controls, keep.null = TRUE)
   updated <- do.call(sn_run_infercnvpy, controls)
@@ -173,7 +173,7 @@
   metadata <- updated[[]]
   score_column <- .sn_communication_column(metadata, c(paste0(prefix, "cnv_score"), paste0(prefix, "score")))
   cluster_column <- .sn_communication_column(metadata, c(paste0(prefix, "cnv_leiden"), paste0(prefix, "leiden")))
-  manifest <- updated@misc$infercnvpy[[store_name]]
+  manifest <- updated@misc$infercnvpy[[result_id]]
   chromosome_path <- file.path(manifest$output_dir, "cnv_chromosome.csv")
   chromosomes <- if (file.exists(chromosome_path)) {
     .sn_cnv_long_chromosomes(utils::read.csv(chromosome_path, row.names = 1, check.names = FALSE))
@@ -217,7 +217,7 @@
 .sn_run_cnv_copykat <- function(object,
                                 reference_cells,
                                 genome,
-                                store_name,
+                                result_id,
                                 assay,
                                 layer,
                                 sample_by,
@@ -225,7 +225,7 @@
   if (is.function(backend_control$runner)) {
     return(backend_control$runner(
       object = object, reference_cells = reference_cells, genome = genome,
-      store_name = store_name, assay = assay, layer = layer, sample_by = sample_by
+      result_id = result_id, assay = assay, layer = layer, sample_by = sample_by
     ))
   }
   check_installed("copykat", reason = "to run CopyKAT CNV inference.")
@@ -245,7 +245,7 @@
     normal <- intersect(cells, reference_cells)
     defaults <- list(
       rawmat = as.matrix(counts[, cells, drop = FALSE]), id.type = "S",
-      sam.name = gsub("[^[:alnum:]_-]", "_", paste(store_name, sample, sep = "_")),
+      sam.name = gsub("[^[:alnum:]_-]", "_", paste(result_id, sample, sep = "_")),
       norm.cell.names = normal, genome = if (tolower(genome %||% "human") %in% c("mouse", "mm10")) "mm10" else "hg20",
       n.cores = 1, plot.genes = FALSE, output.seg = FALSE
     )
@@ -292,7 +292,9 @@
 #' @param reference_cells Normal reference cell names or a logical vector.
 #' @param genome Species/genome label. Human and mouse are supported by the
 #'   bundled inferCNVpy positions and CopyKAT adapter.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param reference_by,reference_cat Alternative metadata-based reference definition.
 #' @param sample_by Optional sample/patient metadata column.
 #' @param assay,layer Expression assay and layer. CopyKAT should use counts;
@@ -319,7 +321,7 @@ sn_run_cnv <- function(object,
                        method = c("infercnvpy", "copykat"),
                        reference_cells = NULL,
                        genome = NULL,
-                       store_name = "cnv",
+                       result_id = "cnv",
                        reference_by = NULL,
                        reference_cat = NULL,
                        sample_by = NULL,
@@ -330,6 +332,7 @@ sn_run_cnv <- function(object,
                        association_features = 50L,
                        backend_control = list(),
                        return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (!is_null(sample_by) && !sample_by %in% colnames(object[[]])) {
@@ -349,7 +352,7 @@ sn_run_cnv <- function(object,
     copykat = .sn_run_cnv_copykat
   )(
     object = object, reference_cells = reference_cells, genome = genome,
-    store_name = store_name, assay = assay, layer = layer,
+    result_id = result_id, assay = assay, layer = layer,
     sample_by = sample_by, backend_control = backend_control
   )
   object <- backend$object %||% object
@@ -377,7 +380,7 @@ sn_run_cnv <- function(object,
     subclone = unname(subclone[colnames(object)]), method = method,
     is_reference = colnames(object) %in% reference_cells
   )
-  prefix <- gsub("[^[:alnum:]_]+", "_", store_name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   cell_metadata <- data.frame(
     stats::setNames(list(primary$cnv_score), paste0(prefix, "_cnv_score")),
     stats::setNames(list(primary$malignant_score), paste0(prefix, "_malignant_score")),
@@ -393,7 +396,7 @@ sn_run_cnv <- function(object,
   embeddings <- list()
   if (!is_null(backend$embedding)) embeddings$cnv_umap <- backend$embedding
   result <- list(
-    schema_version = "1.0.0", analysis_type = "cnv", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "cnv", result_id = result_id,
     method = method, backend = method,
     input = list(
       assay = resolved_assay, layer = association_layer,
@@ -417,9 +420,9 @@ sn_run_cnv <- function(object,
     warnings = character(), provenance = .sn_analysis_provenance()
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "cnv", store_name, result)
+  object <- sn_store_result(object, "cnv", result_id, result)
   object <- .sn_log_seurat_command(object, assay = resolved_assay, name = "sn_run_cnv")
-  if (isTRUE(return_object)) object else sn_get_result(object, "cnv", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "cnv", result_id)
 }
 #' @rdname sn_run_scarches
 #' @export
@@ -452,7 +455,7 @@ sn_run_infercnvpy <- function(object,
                               leiden_resolution = 1,
                               cnv_score_group_by = NULL,
                               metadata_prefix = "infercnvpy_",
-                              result_name = "infercnvpy",
+                              artifact_id = "infercnvpy",
                               return_object = TRUE,
                               ...) {
   gtf_gene_id <- match.arg(gtf_gene_id)
@@ -487,7 +490,7 @@ sn_run_infercnvpy <- function(object,
     leiden_resolution = leiden_resolution,
     cnv_score_group_by = cnv_score_group_by,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     ...
   )

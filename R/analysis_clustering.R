@@ -3400,7 +3400,7 @@ sn_run_cluster <- function(object,
 #' @param leiden_resolution Resolution passed to infercnvpy Leiden clustering.
 #' @param cnv_score_group_by Optional grouping column for infercnvpy CNV scores.
 #' @param metadata_prefix Prefix added to imported infercnvpy metadata columns.
-#' @param result_name Name used under \code{object@misc$infercnvpy}.
+#' @param artifact_id Identifier used for the stored backend artifact.
 #' @param return_object Whether to return the updated object. If \code{FALSE},
 #'   return a run manifest list.
 #' @param ... Additional arguments passed to \code{sn_call_pixi_environment()}.
@@ -3431,7 +3431,7 @@ sn_run_scarches <- function(object,
                             output_dir = NULL,
                             runtime_dir = NULL,
                             metadata_prefix = "scarches_",
-                            result_name = "scarches",
+                            artifact_id = "scarches",
                             return_object = TRUE,
                             method_control = list(),
                             ...) {
@@ -3445,7 +3445,7 @@ sn_run_scarches <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
@@ -3462,7 +3462,7 @@ sn_run_scpoli <- function(object,
                           output_dir = NULL,
                           runtime_dir = NULL,
                           metadata_prefix = "scpoli_",
-                          result_name = "scpoli",
+                          artifact_id = "scpoli",
                           return_object = TRUE,
                           method_control = list(),
                           ...) {
@@ -3476,7 +3476,7 @@ sn_run_scpoli <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...

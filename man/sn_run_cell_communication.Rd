@@ -31,7 +31,7 @@ sn_run_cell_communication(
   consensus = TRUE,
   contrast = NULL,
   backend_control = list(),
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   ...
 )
@@ -92,7 +92,8 @@ reference second.}
 
 \item{backend_control}{Named list of method-specific argument lists.}
 
-\item{store_name}{Name used under \code{object@misc$cell_communication_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object;
 otherwise return the stored-result list.}

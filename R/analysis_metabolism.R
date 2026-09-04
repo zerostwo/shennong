@@ -174,10 +174,10 @@ sn_get_metabolic_signatures <- function(species = c("human", "mouse")) {
   result
 }
 
-.sn_add_metabolism_metadata <- function(object, scores, store_name) {
+.sn_add_metabolism_metadata <- function(object, scores, result_id) {
   pathways <- unique(scores$pathway)
   metadata <- data.frame(row.names = colnames(object))
-  prefix <- gsub("[^[:alnum:]_]+", "_", store_name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   for (pathway in pathways) {
     current <- scores[scores$pathway == pathway, , drop = FALSE]
     values <- stats::setNames(current$score, current$cell)
@@ -206,7 +206,9 @@ sn_get_metabolic_signatures <- function(species = c("human", "mouse")) {
 #' @param contrast Optional two condition levels.
 #' @param species Species used for the curated signatures.
 #' @param min_genes Minimum matched genes per pathway.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Backend options. For scFEA/Compass, provide a
 #'   `runner` function or parsed `result`; this keeps heavyweight
 #'   runtimes outside the default R dependency set.
@@ -234,9 +236,10 @@ sn_run_metabolism <- function(object,
                               contrast = NULL,
                               species = NULL,
                               min_genes = 3L,
-                              store_name = "metabolism",
+                              result_id = "metabolism",
                               backend_control = list(),
                               return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   scoring_method <- match.arg(scoring_method)
@@ -268,7 +271,7 @@ sn_run_metabolism <- function(object,
   }
   scores <- scores[scores$cell %in% colnames(object), , drop = FALSE]
   if (nrow(scores) == 0L) stop("Metabolism backend returned no scores for object cells.", call. = FALSE)
-  object <- .sn_add_metabolism_metadata(object, scores, store_name)
+  object <- .sn_add_metabolism_metadata(object, scores, result_id)
   sample_scores <- .sn_metabolism_sample_scores(scores, metadata, sample_by, condition_by, group_by)
   differential <- .sn_metabolism_differential(sample_scores, contrast)
   warnings <- if (is_null(sample_by) && !is_null(condition_by)) {
@@ -277,7 +280,7 @@ sn_run_metabolism <- function(object,
     character()
   }
   result <- list(
-    schema_version = "1.0.0", analysis_type = "metabolism", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "metabolism", result_id = result_id,
     method = method, backend = backend,
     input = list(
       assay = expression_info$assay, layer = expression_info$layer,
@@ -298,9 +301,9 @@ sn_run_metabolism <- function(object,
     warnings = warnings, provenance = .sn_analysis_provenance()
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "metabolism", store_name, result)
+  object <- sn_store_result(object, "metabolism", result_id, result)
   object <- .sn_log_seurat_command(object, assay = expression_info$assay, name = "sn_run_metabolism")
-  if (isTRUE(return_object)) object else sn_get_result(object, "metabolism", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "metabolism", result_id)
 }
 
 .sn_read_metabolic_gmt <- function(path) {

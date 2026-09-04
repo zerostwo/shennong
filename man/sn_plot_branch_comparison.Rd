@@ -6,7 +6,7 @@
 \usage{
 sn_plot_branch_comparison(
   x,
-  name = NULL,
+  result_id = NULL,
   test = c("pattern", "differential_end"),
   n = 20L,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_branch_comparison(
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
 
-\item{name}{Stored trajectory name.}
+\item{result_id}{Stored trajectory result_id.}
 
 \item{test}{Branch test to display.}
 

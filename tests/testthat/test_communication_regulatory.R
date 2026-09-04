@@ -84,7 +84,7 @@ test_that("cell communication results can be stored and retrieved", {
   object <- sn_store_cell_communication(
     object = object,
     result = tbl,
-    store_name = "manual",
+    result_id = "manual",
     method = "manual"
   )
 
@@ -98,9 +98,9 @@ test_that("cell communication results can be stored and retrieved", {
   expect_equal(metadata$analysis_type, "cell_communication")
   expect_equal(metadata$backend, "manual")
   expect_true(all(c("primary", "backend_raw", "consensus", "sample_evidence", "condition_comparison", "method_concordance", "ligand_targets") %in% names(metadata$tables)))
-  expect_true(all(c("source", "target", "ligand", "receptor", "score", "p_value", "q_value", "rank", "method", "spatial_distance") %in% names(metadata$table)))
+  expect_true(all(c("source", "target", "ligand", "receptor", "score", "p_value", "q_value", "rank", "method", "spatial_distance") %in% names(metadata$tables$primary)))
   expect_true("cell_communication" %in% listed$type)
-  expect_true("cell_communication_results" %in% names(object@misc))
+  expect_true("manual" %in% names(object@misc$shennong$results$cell_communication))
 })
 
 test_that("direct communication storage does not claim ambient acceleration", {
@@ -161,10 +161,10 @@ test_that("NicheNet backend runs with supplied priors", {
   )
 
   expect_equal(stored$method, "nichenetr")
-  expect_true("test_ligand" %in% colnames(stored$table))
-  expect_true("LIG1" %in% stored$table$test_ligand)
+  expect_true("test_ligand" %in% colnames(stored$tables$primary))
+  expect_true("LIG1" %in% stored$tables$primary$test_ligand)
   expect_equal(stored$backend, "nichenet")
-  expect_equal(nrow(stored$tables$sample_evidence), 8L * nrow(stored$table))
+  expect_equal(nrow(stored$tables$sample_evidence), 8L * nrow(stored$tables$primary))
   expect_true(nrow(stored$tables$condition_comparison) > 0L)
   expect_true(all(c("ligand", "target_gene", "weight") %in% names(stored$tables$ligand_targets)))
   expect_s3_class(sn_plot_communication(stored, type = "bubble"), "ggplot")
@@ -466,8 +466,8 @@ test_that("MultiNicheNet backend uses biological samples and conditions", {
 
   expect_equal(stored$method, "multinichenet")
   expect_equal(stored$backend, "multinichenet")
-  expect_true(nrow(stored$table) > 0L)
-  expect_true(all(c("source", "target", "ligand", "receptor", "score", "condition") %in% names(stored$table)))
+  expect_true(nrow(stored$tables$primary) > 0L)
+  expect_true(all(c("source", "target", "ligand", "receptor", "score", "condition") %in% names(stored$tables$primary)))
   expect_true(nrow(stored$tables$sample_evidence) > 0L)
 })
 
@@ -492,7 +492,7 @@ test_that("regulatory activity can run DoRothEA-style and PROGENy-style networks
     group_by = "cell_type",
     network = tf_network,
     minsize = 1,
-    store_name = "tf_activity"
+    result_id = "tf_activity"
   )
   pathway <- sn_run_regulatory_activity(
     object = object,
@@ -505,11 +505,11 @@ test_that("regulatory activity can run DoRothEA-style and PROGENy-style networks
   tf <- sn_get_regulatory_activity_result(object, "tf_activity", sources = "TF1")
   listed <- sn_list_results(object)
 
-  expect_true("regulatory_activity_results" %in% names(object@misc))
+  expect_true("tf_activity" %in% names(object@misc$shennong$results$regulatory_activity))
   expect_true("regulatory_activity" %in% listed$type)
   expect_true(all(tf$source == "TF1"))
   expect_equal(unique(tf$analysis_type), "transcription_factor")
-  expect_equal(unique(pathway$table$analysis_type), "pathway")
+  expect_equal(unique(pathway$tables$primary$analysis_type), "pathway")
 })
 
 test_that("progeny network is reshaped to long source-target form", {

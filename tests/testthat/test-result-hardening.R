@@ -18,7 +18,7 @@ test_that("weak Track-A writers record provenance and random seeds", {
   stored <- sn_store_milo(
     object,
     result = milo_tbl,
-    store_name = "seeded",
+    result_id = "seeded",
     sample_by = "sample",
     group_by = "group",
     random_seed = 4242L,
@@ -70,7 +70,7 @@ test_that("sn_delete_artifact removes members and containers fail-closed", {
   object@misc$integration <- list(existing = 1)
   expect_error(
     sn_delete_artifact(object, "integration", "missing_member"),
-    "No artifact named"
+    "No artifact with artifact_id"
   )
   expect_warning(
     sn_delete_artifact(object, "bpcells_layers"),

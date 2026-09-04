@@ -6,7 +6,7 @@
 \usage{
 sn_plot_trajectory(
   x,
-  name = NULL,
+  result_id = NULL,
   color_by = "cluster",
   point_size = 0.7,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_trajectory(
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
 
-\item{name}{Stored trajectory name when \code{x} is a Seurat object.}
+\item{result_id}{Stored trajectory result_id when \code{x} is a Seurat object.}
 
 \item{color_by}{Cell-table column used for color.}
 

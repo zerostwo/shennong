@@ -6,7 +6,7 @@
 \usage{
 sn_plot_spatial_neighborhood(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("enrichment", "cooccurrence"),
   object = NULL
 )
@@ -14,7 +14,7 @@ sn_plot_spatial_neighborhood(
 \arguments{
 \item{x}{A Seurat object or spatial-neighborhood result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{type}{Enrichment or co-occurrence.}
 

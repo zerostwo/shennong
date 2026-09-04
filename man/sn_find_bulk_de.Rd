@@ -11,7 +11,7 @@ sn_find_bulk_de(
   contrast,
   method = c("auto", "edger", "deseq2", "limma", "dream"),
   assay = NULL,
-  store_name = "bulk_de",
+  result_id = "bulk_de",
   backend_control = list()
 )
 }
@@ -28,7 +28,8 @@ sn_find_bulk_de(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Backend options or a custom \code{runner}/precomputed \code{result}.}
 }

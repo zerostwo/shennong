@@ -74,7 +74,7 @@ pbmc <- sn_find_de(
   analysis = "markers",
   group_by = "seurat_clusters",
   layer = "data",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
@@ -96,7 +96,7 @@ an LLM; this is the step that keeps interpretation transparent.
 ```{r prepare-evidence}
 annotation_evidence <- sn_prepare_annotation_evidence(
   object = pbmc,
-  de_name = "cluster_markers",
+  de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   n_markers = 8,
   include_qc = TRUE,
@@ -105,13 +105,13 @@ annotation_evidence <- sn_prepare_annotation_evidence(
 
 de_evidence <- sn_prepare_de_evidence(
   object = pbmc,
-  de_name = "cluster_markers",
+  de_result_id = "cluster_markers",
   n_genes = 10
 )
 
 results_evidence <- sn_prepare_results_evidence(
   object = pbmc,
-  cluster_de_name = "cluster_markers",
+  cluster_de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   n_markers = 5
 )
@@ -125,16 +125,16 @@ If enrichment has been run, add pathway evidence the same way.
 ```{r enrichment-evidence, eval = FALSE}
 pbmc <- sn_run_enrichment(
   x = pbmc,
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
   species = "human",
   database = "GOBP",
-  store_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   return_object = TRUE
 )
 
 enrichment_evidence <- sn_prepare_enrichment_evidence(
   object = pbmc,
-  enrichment_name = "cluster_gobp",
+  enrichment_result_id = "cluster_gobp",
   n_terms = 8
 )
 ```
@@ -165,7 +165,7 @@ The high-level helper can return the same prompt directly.
 ```{r interpret-annotation-prompt}
 annotation_prompt <- sn_interpret_annotation(
   object = pbmc,
-  de_name = "cluster_markers",
+  de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   output_format = "llm",
@@ -204,7 +204,7 @@ for review, or pass a provider to store a response.
 ```{r interpret-de-enrichment}
 de_prompt <- sn_interpret_de(
   object = pbmc,
-  de_name = "cluster_markers",
+  de_result_id = "cluster_markers",
   n_genes = 10,
   return_prompt = TRUE,
   background = "Summarize Kotliarov PBMC cluster marker programs."
@@ -216,7 +216,7 @@ de_prompt$task
 ```{r interpret-enrichment, eval = FALSE}
 enrichment_prompt <- sn_interpret_enrichment(
   object = pbmc,
-  enrichment_name = "cluster_gobp",
+  enrichment_result_id = "cluster_gobp",
   n_terms = 8,
   return_prompt = TRUE,
   background = "Summarize pathway programs by cluster."
@@ -227,12 +227,12 @@ enrichment_prompt <- sn_interpret_enrichment(
 
 The reporting helpers assemble multiple evidence sources into audience-specific
 outputs. They can return prompts for manual review or store generated responses
-under `object@misc$interpretation_results`.
+in the canonical Shennong result registry.
 
 ```{r reporting-prompts}
 results_prompt <- sn_write_results(
   object = pbmc,
-  cluster_de_name = "cluster_markers",
+  cluster_de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Write a concise Results paragraph for Kotliarov PBMC clustering."
@@ -240,7 +240,7 @@ results_prompt <- sn_write_results(
 
 legend_prompt <- sn_write_figure_legend(
   object = pbmc,
-  cluster_de_name = "cluster_markers",
+  cluster_de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Describe a UMAP and marker dot plot."
@@ -248,7 +248,7 @@ legend_prompt <- sn_write_figure_legend(
 
 summary_prompt <- sn_write_presentation_summary(
   object = pbmc,
-  cluster_de_name = "cluster_markers",
+  cluster_de_result_id = "cluster_markers",
   cluster_by = "seurat_clusters",
   return_prompt = TRUE,
   background = "Prepare a short collaborator-facing Kotliarov PBMC summary."
@@ -262,15 +262,15 @@ When a provider is used, retrieve stored outputs by name.
 ```{r retrieve-interpretation, eval = FALSE}
 pbmc <- sn_interpret_de(
   object = pbmc,
-  de_name = "cluster_markers",
+  de_result_id = "cluster_markers",
   provider = provider,
-  store_name = "cluster_marker_summary",
+  result_id = "cluster_marker_summary",
   return_object = TRUE
 )
 
 sn_get_interpretation_result(
   pbmc,
-  interpretation_name = "cluster_marker_summary"
+  result_id = "cluster_marker_summary"
 )
 ```
 

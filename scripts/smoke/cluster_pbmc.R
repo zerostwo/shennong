@@ -135,7 +135,7 @@ integrated <- suppressWarnings(
     slot = "data",
     logfc_threshold = 0.25,
     min_pct = 0.2,
-    store_name = "cluster_markers",
+    result_id = "cluster_markers",
     return_object = TRUE,
     verbose = FALSE
   )

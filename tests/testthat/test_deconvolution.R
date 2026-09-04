@@ -86,11 +86,11 @@ test_that("sn_run_bulk_deconvolution can import a CIBERSORTx fractions table and
     outdir = tempdir(),
     prefix = "import",
     cibersortx_result = result_path,
-    store_name = "cibersortx_demo",
+    result_id = "cibersortx_demo",
     return_object = TRUE
   )
 
-  expect_true("deconvolution_results" %in% names(object@misc))
+  expect_true("cibersortx_demo" %in% names(object@misc$shennong$results$deconvolution))
   imported <- sn_get_deconvolution_result(object, "cibersortx_demo")
   expect_true(all(c("sample", "cell_type", "fraction") %in% colnames(imported)))
   expect_equal(nrow(imported), 6)
@@ -166,12 +166,12 @@ test_that("sn_store_deconvolution stores and subsets stored results", {
   object <- sn_store_deconvolution(
     object,
     result = tbl,
-    store_name = "manual"
+    result_id = "manual"
   )
 
   filtered <- sn_get_deconvolution_result(
     object,
-    deconvolution_name = "manual",
+    result_id = "manual",
     samples = "sample_b",
     cell_types = "Bcell"
   )

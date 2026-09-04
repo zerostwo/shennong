@@ -6,19 +6,19 @@
 \usage{
 sn_run_spatial_communication(
   object,
-  communication_name = "communication",
+  source_result_id = "communication",
   communication = NULL,
   group_by,
   spatial_cols = NULL,
   max_distance = NULL,
-  store_name = "spatial_communication",
+  result_id = "spatial_communication",
   return_object = TRUE
 )
 }
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{communication_name}{Stored communication result name.}
+\item{source_result_id}{Stored communication result name.}
 
 \item{communication}{Optional communication result supplied directly.}
 
@@ -28,7 +28,8 @@ sn_run_spatial_communication(
 
 \item{max_distance}{Optional maximum mean nearest-group distance.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{Return the modified object or result.}
 }

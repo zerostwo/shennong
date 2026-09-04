@@ -2,9 +2,9 @@ library(testthat)
 
 make_result_bundle_test_result <- function() {
   list(
-    schema_version = "1.0.0",
+    schema_version = "2.0.0",
     analysis_type = "bulk_de",
-    name = "treated_vs_control",
+    result_id = "treated_vs_control",
     method = "limma",
     backend = "limma",
     input = list(features = 2L, samples = 4L),
@@ -21,7 +21,9 @@ make_result_bundle_test_result <- function() {
     provenance = list(
       package_versions = list(Shennong = "0.2.0.9000", R = "4.6.0"),
       random_seed = 717L,
-      timestamp = "2026-07-26 UTC"
+      timestamp = "2026-07-26 UTC",
+      result_id = "treated_vs_control",
+      analysis_type = "bulk_de"
     )
   )
 }
@@ -57,7 +59,7 @@ test_that("result bundle v1 carries canonical result and immutable references", 
 
   expect_s3_class(bundle, "sn_result_bundle")
   expect_identical(bundle$schema, "shennong.dev/analysis-result-bundle/v1")
-  expect_identical(bundle$result$schema_version, "1.0.0")
+  expect_identical(bundle$result$schema_version, "2.0.0")
   expect_identical(bundle$result$analysis_type, "bulk_de")
   expect_identical(bundle$result$parameters$design, "~condition")
   expect_true(bundle$validation$valid)
@@ -132,7 +134,7 @@ test_that("result bundles export atomically with a SHA-256 handoff digest", {
 
   parsed <- jsonlite::read_json(output, simplifyVector = FALSE)
   expect_identical(parsed$schema, "shennong.dev/analysis-result-bundle/v1")
-  expect_identical(parsed$result$schema_version, "1.0.0")
+  expect_identical(parsed$result$schema_version, "2.0.0")
   expect_identical(parsed$validation$valid, TRUE)
 
   expect_error(

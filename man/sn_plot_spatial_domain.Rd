@@ -4,12 +4,12 @@
 \alias{sn_plot_spatial_domain}
 \title{Plot spatial-domain assignments}
 \usage{
-sn_plot_spatial_domain(x, name = NULL, point_size = 1.5, object = NULL)
+sn_plot_spatial_domain(x, result_id = NULL, point_size = 1.5, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-domain result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{point_size}{Point size.}
 

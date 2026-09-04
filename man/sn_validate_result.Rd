@@ -22,11 +22,12 @@ Validate a Shennong analysis result
 }
 \examples{
 result <- list(
-  schema_version = "1.0.0", analysis_type = "demo", name = "example",
+  schema_version = "2.0.0", analysis_type = "demo", result_id = "example",
   method = "mean", backend = "base", input = list(), parameters = list(),
   tables = list(primary = data.frame(value = 1)), embeddings = list(),
   graphs = list(), models = list(), diagnostics = list(), warnings = character(),
-  provenance = list(package_versions = list(), random_seed = 1L, timestamp = "2026-01-01 UTC")
+  provenance = list(package_versions = list(), random_seed = 1L,
+    timestamp = "2026-01-01 UTC", result_id = "example", analysis_type = "demo")
 )
 sn_validate_result(result, error = FALSE)
 

@@ -31,8 +31,10 @@
 #' @param key Optional malignant-cell label_by passed to BayesPrism.
 #' @param outdir Output directory used by CIBERSORTx file export.
 #' @param prefix Prefix used for exported files and stored result names.
-#' @param store_name Name used under \code{object@misc$deconvolution_results}
+#' @param result_id Stable identifier for the stored deconvolution result
 #'   when \code{x} is a \code{Seurat} object and a fraction table is available.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param cibersortx_result Optional path to a completed CIBERSORTx fractions
 #'   result file to import instead of running the local container.
 #' @param cibersortx_email Optional CIBERSORTx account email.
@@ -101,7 +103,7 @@ sn_run_bulk_deconvolution <- function(x,
                                key = NULL,
                                outdir = tempdir(),
                                prefix = "deconvolution",
-                               store_name = "default",
+                               result_id = "default",
                                cibersortx_result = NULL,
                                cibersortx_email = NULL,
                                cibersortx_token = NULL,
@@ -121,6 +123,7 @@ sn_run_bulk_deconvolution <- function(x,
                                update_gibbs = TRUE,
                                return_object = TRUE,
                                object = NULL) {
+  result_id <- .sn_validate_result_id(result_id)
   x <- .sn_resolve_object_alias(x, object, missing(x))
   method <- match.arg(method)
   bulk_gene_axis <- match.arg(bulk_gene_axis)
@@ -183,7 +186,7 @@ sn_run_bulk_deconvolution <- function(x,
   object <- sn_store_deconvolution(
     object = x,
     result = result$table,
-    store_name = store_name,
+    result_id = result_id,
     method = method,
     bulk_samples = rownames(bulk_samples_by_gene),
     reference_label = reference_info$reference_label,
@@ -194,10 +197,10 @@ sn_run_bulk_deconvolution <- function(x,
     return(.sn_log_seurat_command(object = object, name = "sn_run_bulk_deconvolution"))
   }
 
-  .sn_get_misc_result(
+  sn_get_result(
     object = object,
-    collection = "deconvolution_results",
-    store_name = store_name
+    type = "deconvolution",
+    result_id = result_id
   )
 }
 
@@ -670,12 +673,12 @@ sn_set_cibersortx_credentials <- function(email, token) {
     stop("CIBERSORTx fractions estimation failed.", call. = FALSE)
   }
 
-  default_result_name <- if (isTRUE(rmbatch_b_mode) || isTRUE(rmbatch_s_mode)) {
+  default_result_file <- if (isTRUE(rmbatch_b_mode) || isTRUE(rmbatch_s_mode)) {
     paste0("CIBERSORTx_", label_by, "_Adjusted.txt")
   } else {
     paste0("CIBERSORTx_", label_by, "_Results.txt")
   }
-  result_path <- result_path %||% file.path(outdir, default_result_name)
+  result_path <- result_path %||% file.path(outdir, default_result_file)
   imported <- if (!isTRUE(dry_run) && file.exists(result_path)) .sn_import_cibersortx_fractions(result_path = result_path) else NULL
 
   list(
@@ -720,7 +723,9 @@ sn_set_cibersortx_credentials <- function(email, token) {
 #'
 #' @param object A \code{Seurat} object.
 #' @param result A deconvolution table.
-#' @param store_name Name used under \code{object@misc$deconvolution_results}.
+#' @param result_id Stable identifier for the stored deconvolution result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param method Deconvolution backend, for example \code{"bayesprism"}.
 #' @param bulk_samples Optional bulk sample identifiers.
 #' @param reference_label Metadata column or label_by set used as the reference.
@@ -732,17 +737,18 @@ sn_set_cibersortx_credentials <- function(email, token) {
 #' @export
 sn_store_deconvolution <- function(object,
                                    result,
-                                   store_name = "default",
+                                   result_id = "default",
                                    method = "bayesprism",
                                    bulk_samples = NULL,
                                    reference_label = NULL,
                                    artifacts = NULL,
                                    random_seed = NULL,
                                    return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
 
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = tibble::as_tibble(result),
@@ -754,10 +760,10 @@ sn_store_deconvolution <- function(object,
     provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "deconvolution_results",
-    store_name = store_name,
+    type = "deconvolution",
+    result_id = result_id,
     result = stored_result
   )
 
@@ -765,17 +771,17 @@ sn_store_deconvolution <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_deconvolution"))
   }
 
-  .sn_get_misc_result(
+  sn_get_result(
     object = object,
-    collection = "deconvolution_results",
-    store_name = store_name
+    type = "deconvolution",
+    result_id = result_id
   )
 }
 
 #' Retrieve a stored deconvolution result from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param deconvolution_name Name of the stored result.
+#' @param result_id Name of the stored result.
 #' @param samples Optional subset of bulk samples to keep.
 #' @param cell_types Optional subset of cell types to keep.
 #' @param with_metadata If \code{TRUE}, return the full stored-result list.
@@ -783,22 +789,22 @@ sn_store_deconvolution <- function(object,
 #' @return A tibble or stored-result list.
 #' @export
 sn_get_deconvolution_result <- function(object,
-                                        deconvolution_name = "default",
+                                        result_id = "default",
                                         samples = NULL,
                                         cell_types = NULL,
                                         with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
 
-  stored <- .sn_get_misc_result(
+  stored <- sn_get_result(
     object = object,
-    collection = "deconvolution_results",
-    store_name = deconvolution_name
+    type = "deconvolution",
+    result_id = result_id
   )
   if (isTRUE(with_metadata)) {
     return(stored)
   }
 
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   if (!is.null(samples) && "sample" %in% colnames(table)) {
     table <- dplyr::filter(table, .data$sample %in% samples)
   }

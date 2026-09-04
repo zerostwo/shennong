@@ -10,7 +10,7 @@ sn_plot_enrichment(
   n = 20L,
   minimum_overlap = 0.1,
   object = NULL,
-  enrichment_name = "default"
+  result_id = "default"
 )
 }
 \arguments{
@@ -25,7 +25,7 @@ sn_plot_enrichment(
 \item{object}{Optional Seurat object holding a stored enrichment result;
 supply either \code{result} or \code{object}, not both.}
 
-\item{enrichment_name}{Stored enrichment result name used when \code{object}
+\item{result_id}{Stored enrichment result name used when \code{object}
 is supplied.}
 }
 \value{

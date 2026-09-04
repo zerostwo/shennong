@@ -4,12 +4,12 @@
 \alias{sn_plot_gene_trend}
 \title{Plot fitted expression trends for selected genes}
 \usage{
-sn_plot_gene_trend(x, name = NULL, features, object = NULL)
+sn_plot_gene_trend(x, result_id = NULL, features, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or trajectory result.}
 
-\item{name}{Stored trajectory name.}
+\item{result_id}{Stored trajectory result_id.}
 
 \item{features}{Features to plot.}
 

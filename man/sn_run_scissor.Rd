@@ -14,7 +14,7 @@ sn_run_scissor(
   phenotype = "bulk_phenotype",
   assay = NULL,
   layer = "data",
-  store_name = "scissor",
+  result_id = "scissor",
   seed = 717L,
   backend_control = list(),
   return_object = TRUE
@@ -42,7 +42,8 @@ state summary.}
 
 \item{assay, layer}{Single-cell expression source.}
 
-\item{store_name}{Stored result name under \code{scissor}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{seed}{Random seed recorded in provenance.}
 

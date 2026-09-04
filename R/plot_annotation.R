@@ -1,5 +1,5 @@
-.sn_resolve_annotation_result <- function(x, store_name = "annotation") {
-  result <- if (inherits(x, "Seurat")) sn_get_result(x, "annotation", store_name) else x
+.sn_resolve_annotation_result <- function(x, result_id = "annotation") {
+  result <- if (inherits(x, "Seurat")) sn_get_result(x, "annotation", result_id) else x
   sn_validate_result(result)
   if (!identical(result$analysis_type, "annotation")) {
     stop("Expected a Shennong annotation result.", call. = FALSE)
@@ -10,7 +10,7 @@
 #' Plot annotation confidence
 #'
 #' @param x A Seurat object or annotation result.
-#' @param store_name Stored annotation name.
+#' @param result_id Stored annotation name.
 #' @param level Plot cluster- or cell-level confidence.
 #'
 #' @return A \code{ggplot} object.
@@ -19,8 +19,8 @@
 #' \dontrun{sn_plot_annotation_confidence(object)}
 #'
 #' @export
-sn_plot_annotation_confidence <- function(x, store_name = "annotation", level = c("cluster", "cell")) {
-  result <- .sn_resolve_annotation_result(x, store_name)
+sn_plot_annotation_confidence <- function(x, result_id = "annotation", level = c("cluster", "cell")) {
+  result <- .sn_resolve_annotation_result(x, result_id)
   level <- match.arg(level)
   table <- result$tables[[paste0(level, "s")]] %||% tibble::tibble()
   entity <- if (level == "cluster") "cluster" else "cell"
@@ -42,7 +42,7 @@ sn_plot_annotation_confidence <- function(x, store_name = "annotation", level = 
 #' @param x A Seurat object or annotation result.
 #' @param truth Known labels. For a Seurat object this can be a metadata column
 #'   name; otherwise it must be a vector aligned to the cell table.
-#' @param store_name Stored annotation name.
+#' @param result_id Stored annotation name.
 #' @param normalize Normalize rows to proportions.
 #'
 #' @return A \code{ggplot} object.
@@ -51,8 +51,8 @@ sn_plot_annotation_confidence <- function(x, store_name = "annotation", level = 
 #' \dontrun{sn_plot_annotation_confusion(object, truth = "known_cell_type")}
 #'
 #' @export
-sn_plot_annotation_confusion <- function(x, truth, store_name = "annotation", normalize = TRUE) {
-  result <- .sn_resolve_annotation_result(x, store_name)
+sn_plot_annotation_confusion <- function(x, truth, result_id = "annotation", normalize = TRUE) {
+  result <- .sn_resolve_annotation_result(x, result_id)
   cells <- result$tables$cells %||% tibble::tibble()
   if (inherits(x, "Seurat") && is.character(truth) && length(truth) == 1L) {
     if (!truth %in% colnames(x[[]])) {

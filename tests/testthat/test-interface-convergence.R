@@ -76,22 +76,19 @@ test_that("plot functions accept stored results through object=", {
     log2_fold_change = rnorm(10),
     adjusted_p_value = runif(10, 0, 0.1)
   )
-  stored <- .sn_store_misc_result(
+  stored <- sn_store_result(
     object = object,
-    collection = "de_results",
-    store_name = "alias_case",
+    type = "de",
+    result_id = "alias_case",
     result = list(
-      schema_version = "1.0.0",
-      package_version = as.character(utils::packageVersion("Shennong")),
-      created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
       analysis_type = "differential_expression",
       analysis = "differential_expression",
       method = "test",
-      table = de_table
+      tables = list(primary = de_table)
     )
   )
   p_result <- sn_plot_de(result = list(tables = list(primary = de_table)))
-  p_object <- sn_plot_de(object = stored, de_name = "alias_case")
+  p_object <- sn_plot_de(object = stored, result_id = "alias_case")
   expect_s3_class(p_object, "ggplot")
   expect_identical(
     as.character(ggplot2::layer_data(p_result)$gene),
@@ -100,18 +97,18 @@ test_that("plot functions accept stored results through object=", {
   expect_error(sn_plot_de(result = de_table, object = stored), "only one of `result` and `object`")
 })
 
-test_that("store_name= overrides legacy name= on program/grn workflows", {
+test_that("program and GRN workflows use result_id end to end", {
   object <- make_convergence_test_object()
   signatures <- list(program_1 = rownames(object)[seq_len(5)])
   scored <- sn_score_programs(
     object,
     signatures,
     method = "mean",
-    store_name = "aliased_programs",
+    result_id = "aliased_programs",
     return_object = TRUE
   )
   retrieved <- sn_get_result(scored, "program_scoring", "aliased_programs")
-  expect_identical(retrieved$name, "aliased_programs")
+  expect_identical(retrieved$result_id, "aliased_programs")
 
   edges <- data.frame(
     regulator = rep("gene1", 3),
@@ -121,12 +118,12 @@ test_that("store_name= overrides legacy name= on program/grn workflows", {
   grned <- sn_run_grn(
     object,
     method = "genie3",
-    store_name = "aliased_grn",
+    result_id = "aliased_grn",
     backend_control = list(result = list(edges = edges)),
     return_object = TRUE
   )
   grn_stored <- sn_get_result(grned, "grn", "aliased_grn")
-  expect_identical(grn_stored$name, "aliased_grn")
+  expect_identical(grn_stored$result_id, "aliased_grn")
 })
 
 test_that("top-level seed overrides backend_control$seed on trajectory provenance", {

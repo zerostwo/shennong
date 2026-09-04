@@ -17,7 +17,7 @@ sn_run_metabolism(
   contrast = NULL,
   species = NULL,
   min_genes = 3L,
-  store_name = "metabolism",
+  result_id = "metabolism",
   backend_control = list(),
   return_object = TRUE
 )
@@ -47,7 +47,8 @@ for \code{method = "scmetabolism"} through \code{backend_control$scoring_method}
 
 \item{min_genes}{Minimum matched genes per pathway.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Backend options. For scFEA/Compass, provide a
 \code{runner} function or parsed \code{result}; this keeps heavyweight

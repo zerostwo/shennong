@@ -6,7 +6,7 @@
 \usage{
 sn_get_cell_communication_result(
   object,
-  communication_name = "default",
+  result_id = "default",
   sources = NULL,
   targets = NULL,
   with_metadata = FALSE
@@ -15,7 +15,7 @@ sn_get_cell_communication_result(
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{communication_name}{Name of the stored result.}
+\item{result_id}{Name of the stored result.}
 
 \item{sources, targets}{Optional source/target labels to keep.}
 

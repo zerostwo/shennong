@@ -1,7 +1,7 @@
-.sn_resolve_communication_result <- function(x, name = NULL) {
+.sn_resolve_communication_result <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name) || !nzchar(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "cell_communication", name)
+    if (is_null(result_id) || !nzchar(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "cell_communication", result_id)
   } else if (is.data.frame(x)) {
     result <- list(
       analysis_type = "cell_communication",
@@ -71,7 +71,7 @@
 #' Plot standardized cell-cell communication results
 #'
 #' @param x A Seurat object, unified communication result, or standardized table.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Plot type: bubble, heatmap, network, chord, or river.
 #' @param n Maximum number of top-ranked interactions to display.
 #' @param table Stored table to plot.
@@ -81,14 +81,14 @@
 #' \dontrun{sn_plot_communication(object, "communication", type = "bubble")}
 #' @export
 sn_plot_communication <- function(x,
-                                  name = NULL,
+                                  result_id = NULL,
                                   type = c("bubble", "heatmap", "network", "chord", "river"),
                                   n = 50L,
                                   table = "primary",
                                   object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_communication_result(x, name)
+  result <- .sn_resolve_communication_result(x, result_id)
   data <- .sn_communication_plot_table(result, table = table, n = n)
   if (identical(type, "bubble")) {
     data$interaction <- factor(data$interaction, levels = rev(unique(data$interaction)))
@@ -127,14 +127,14 @@ sn_plot_communication <- function(x,
 #' Plot NicheNet or MultiNicheNet ligand-target evidence
 #'
 #' @param x A Seurat object or unified communication result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param n Maximum number of ligand-target links.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_ligand_target <- function(x, name = NULL, n = 50L, object = NULL) {
+sn_plot_ligand_target <- function(x, result_id = NULL, n = 50L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_communication_result(x, name)
+  result <- .sn_resolve_communication_result(x, result_id)
   data <- tibble::as_tibble(result$tables$ligand_targets)
   target_column <- .sn_communication_column(data, c("target_gene", "target", "gene"))
   weight_column <- .sn_communication_column(data, c("weight", "regulatory_potential", "prior_score", "pearson"))
@@ -154,14 +154,14 @@ sn_plot_ligand_target <- function(x, name = NULL, n = 50L, object = NULL) {
 #' Plot sample-aware differential communication effects
 #'
 #' @param x A Seurat object or unified communication result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param n Maximum number of effects.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_communication_comparison <- function(x, name = NULL, n = 30L, object = NULL) {
+sn_plot_communication_comparison <- function(x, result_id = NULL, n = 30L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_communication_result(x, name)
+  result <- .sn_resolve_communication_result(x, result_id)
   data <- tibble::as_tibble(result$tables$condition_comparison)
   if (!all(c("source", "target", "ligand", "receptor", "estimate") %in% names(data))) {
     stop("Condition-comparison table lacks standardized effect columns.", call. = FALSE)

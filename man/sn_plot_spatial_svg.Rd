@@ -4,12 +4,12 @@
 \alias{sn_plot_spatial_svg}
 \title{Plot spatial-feature statistics}
 \usage{
-sn_plot_spatial_svg(x, name = NULL, n = 30L, object = NULL)
+sn_plot_spatial_svg(x, result_id = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-feature result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{n}{Number of features.}
 

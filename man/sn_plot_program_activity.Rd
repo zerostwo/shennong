@@ -6,7 +6,7 @@
 \usage{
 sn_plot_program_activity(
   x,
-  name,
+  result_id,
   programs = NULL,
   group_by = NULL,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_program_activity(
 \arguments{
 \item{x}{A Seurat object or program-scoring result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{programs}{Optional programs to keep.}
 

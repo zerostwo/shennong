@@ -6,7 +6,7 @@
 \usage{
 sn_get_regulatory_activity_result(
   object,
-  activity_name = "default",
+  result_id = "default",
   sources = NULL,
   conditions = NULL,
   with_metadata = FALSE
@@ -15,7 +15,7 @@ sn_get_regulatory_activity_result(
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{activity_name}{Name of the stored result.}
+\item{result_id}{Name of the stored result.}
 
 \item{sources}{Optional TF or pathway names to keep.}
 

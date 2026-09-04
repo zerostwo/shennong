@@ -1,7 +1,7 @@
-.sn_resolve_trajectory_result <- function(x, name = NULL) {
+.sn_resolve_trajectory_result <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name) || !nzchar(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "trajectory", name)
+    if (is_null(result_id) || !nzchar(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "trajectory", result_id)
   } else {
     result <- x
   }
@@ -33,7 +33,7 @@
 #' Plot an inferred trajectory on its embedding
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name when `x` is a Seurat object.
+#' @param result_id Stored trajectory result_id when `x` is a Seurat object.
 #' @param color_by Cell-table column used for color.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -41,9 +41,9 @@
 #' @examples
 #' \dontrun{sn_plot_trajectory(object, "development")}
 #' @export
-sn_plot_trajectory <- function(x, name = NULL, color_by = "cluster", point_size = 0.7, object = NULL) {
+sn_plot_trajectory <- function(x, result_id = NULL, color_by = "cluster", point_size = 0.7, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   cells <- .sn_trajectory_plot_data(result)
   if (!color_by %in% names(cells)) stop("`color_by` was not found in the trajectory cell table.", call. = FALSE)
   plot <- ggplot2::ggplot(cells, ggplot2::aes(
@@ -60,7 +60,7 @@ sn_plot_trajectory <- function(x, name = NULL, color_by = "cluster", point_size 
 #' Plot pseudotime on the trajectory embedding
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name.
+#' @param result_id Stored trajectory result_id.
 #' @param lineage Optional lineage. Defaults to primary pseudotime.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -68,9 +68,9 @@ sn_plot_trajectory <- function(x, name = NULL, color_by = "cluster", point_size 
 #' @examples
 #' \dontrun{sn_plot_pseudotime(object, "development")}
 #' @export
-sn_plot_pseudotime <- function(x, name = NULL, lineage = NULL, point_size = 0.7, object = NULL) {
+sn_plot_pseudotime <- function(x, result_id = NULL, lineage = NULL, point_size = 0.7, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   cells <- .sn_trajectory_plot_data(result)
   column <- if (is_null(lineage)) "primary_pseudotime" else paste0("pseudotime_", make.names(lineage))
   if (!column %in% names(cells)) stop("Lineage '", lineage, "' was not found in the trajectory result.", call. = FALSE)
@@ -89,7 +89,7 @@ sn_plot_pseudotime <- function(x, name = NULL, lineage = NULL, point_size = 0.7,
 #' Plot lineage assignment probability
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name.
+#' @param result_id Stored trajectory result_id.
 #' @param lineage Lineage to display.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -97,9 +97,9 @@ sn_plot_pseudotime <- function(x, name = NULL, lineage = NULL, point_size = 0.7,
 #' @examples
 #' \dontrun{sn_plot_lineage_probability(object, "development", "Lineage1")}
 #' @export
-sn_plot_lineage_probability <- function(x, name = NULL, lineage, point_size = 0.7, object = NULL) {
+sn_plot_lineage_probability <- function(x, result_id = NULL, lineage, point_size = 0.7, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   cells <- .sn_trajectory_plot_data(result)
   column <- paste0("weight_", make.names(lineage))
   if (!column %in% names(cells)) stop("Lineage '", lineage, "' was not found in the trajectory result.", call. = FALSE)
@@ -117,7 +117,7 @@ sn_plot_lineage_probability <- function(x, name = NULL, lineage, point_size = 0.
 #' Plot fitted dynamic-gene trends as a heatmap
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name.
+#' @param result_id Stored trajectory result_id.
 #' @param features Optional features to display.
 #' @param lineage Optional lineage number or label.
 #' @param scale_rows Standardize each feature within lineage.
@@ -126,9 +126,9 @@ sn_plot_lineage_probability <- function(x, name = NULL, lineage, point_size = 0.
 #' @examples
 #' \dontrun{sn_plot_dynamic_heatmap(object, "development")}
 #' @export
-sn_plot_dynamic_heatmap <- function(x, name = NULL, features = NULL, lineage = NULL, scale_rows = TRUE, object = NULL) {
+sn_plot_dynamic_heatmap <- function(x, result_id = NULL, features = NULL, lineage = NULL, scale_rows = TRUE, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   trends <- result$tables$fitted_trends
   if (nrow(trends) == 0L) stop("No fitted expression trends are stored in this result.", call. = FALSE)
   if (!is_null(features)) trends <- trends[trends$gene %in% features, , drop = FALSE]
@@ -153,16 +153,16 @@ sn_plot_dynamic_heatmap <- function(x, name = NULL, features = NULL, lineage = N
 #' Plot fitted expression trends for selected genes
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name.
+#' @param result_id Stored trajectory result_id.
 #' @param features Features to plot.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_gene_trend(object, "development", c("MKI67", "GZMB"))}
 #' @export
-sn_plot_gene_trend <- function(x, name = NULL, features, object = NULL) {
+sn_plot_gene_trend <- function(x, result_id = NULL, features, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   trends <- result$tables$fitted_trends
   trends <- trends[trends$gene %in% features, , drop = FALSE]
   if (nrow(trends) == 0L) stop("None of the requested features has a stored fitted trend.", call. = FALSE)
@@ -181,7 +181,7 @@ sn_plot_gene_trend <- function(x, name = NULL, features, object = NULL) {
 #' Plot branch-specific dynamic-gene evidence
 #'
 #' @param x A Seurat object or trajectory result.
-#' @param name Stored trajectory name.
+#' @param result_id Stored trajectory result_id.
 #' @param test Branch test to display.
 #' @param n Maximum number of features.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -189,9 +189,9 @@ sn_plot_gene_trend <- function(x, name = NULL, features, object = NULL) {
 #' @examples
 #' \dontrun{sn_plot_branch_comparison(object, "development")}
 #' @export
-sn_plot_branch_comparison <- function(x, name = NULL, test = c("pattern", "differential_end"), n = 20L, object = NULL) {
+sn_plot_branch_comparison <- function(x, result_id = NULL, test = c("pattern", "differential_end"), n = 20L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_trajectory_result(x, name)
+  result <- .sn_resolve_trajectory_result(x, result_id)
   test <- match.arg(test)
   table <- result$tables$branch_genes
   if (nrow(table) == 0L || !all(c("test", "pvalue", "adjusted_p_value") %in% names(table))) {

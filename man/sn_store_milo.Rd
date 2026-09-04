@@ -7,7 +7,7 @@
 sn_store_milo(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   sample_by = NULL,
   group_by = NULL,
   comparison = NULL,
@@ -23,7 +23,8 @@ sn_store_milo(
 
 \item{result}{A neighborhood-level differential-abundance table.}
 
-\item{store_name}{Name used under \code{object@misc$milo_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{sample_by}{Sample column used for the design.}
 

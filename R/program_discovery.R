@@ -171,8 +171,7 @@
 #'   and Hotspot use explicit runner/result adapters.
 #' @param n_programs Positive rank or `"auto"`.
 #' @param group_by Optional metadata column for independent within-group discovery.
-#' @param name Stored result name. Deprecated alias; prefer \code{store_name}.
-#' @param store_name Preferred stored-result name. Overrides \code{name} when supplied.
+#' @param result_id Stable identifier for the stored program-discovery result.
 #' @param assay,layer Expression assay and non-negative layer.
 #' @param features Optional features used for discovery.
 #' @param backend_control NMF controls (`nrun`, `max_iter`, `seed`,
@@ -190,19 +189,15 @@ sn_discover_programs <- function(object,
                                  method = c("nmf", "cnmf", "hotspot"),
                                  n_programs = "auto",
                                  group_by = NULL,
-                                 name = NULL,
                                  assay = NULL,
                                  layer = "data",
                                  features = NULL,
                                  backend_control = list(),
                                  return_object = TRUE,
-                                 store_name = NULL) {
+                                 result_id = NULL) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  if (!is.null(store_name)) {
-    name <- store_name
-  }
-  name <- name %||% paste0("programs_", method)
+  result_id <- .sn_validate_result_id(result_id %||% paste0("programs_", method))
   if (identical(method, "nmf")) {
     output <- .sn_discover_programs_nmf(object, n_programs, group_by, assay, layer, features, backend_control)
   } else if (is.function(backend_control$runner)) {
@@ -218,7 +213,7 @@ sn_discover_programs <- function(object,
   output <- .sn_standardize_program_discovery(output, object, method)
   object <- output$object
   activity <- output$activity
-  prefix <- gsub("[^[:alnum:]_]+", "_", name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   metadata <- data.frame(row.names = colnames(object))
   for (program in unique(activity$program)) {
     values <- stats::setNames(activity$score[activity$program == program], activity$cell[activity$program == program])
@@ -226,7 +221,8 @@ sn_discover_programs <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0.0", analysis_type = "program_discovery", name = name,
+    schema_version = .sn_analysis_result_schema_version(),
+    analysis_type = "program_discovery", result_id = result_id,
     method = method, backend = method,
     input = list(
       assay = output$expression$assay %||% assay %||% SeuratObject::DefaultAssay(object),
@@ -247,7 +243,7 @@ sn_discover_programs <- function(object,
     warnings = character(), provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "program_discovery", name, result)
+  object <- sn_store_result(object, "program_discovery", result_id, result)
   object <- .sn_log_seurat_command(object, assay = result$input$assay, name = "sn_discover_programs")
-  if (isTRUE(return_object)) object else sn_get_result(object, "program_discovery", name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "program_discovery", result_id)
 }

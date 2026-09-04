@@ -45,7 +45,7 @@ test_that("Propeller abundance uses biological samples and stores a unified resu
     cell_type_by = "cell_type",
     contrast = c("treated", "control"),
     design = "batch",
-    store_name = "propeller"
+    result_id = "propeller"
   ))
   result <- sn_get_result(object, "differential_abundance", "propeller")
 

@@ -209,9 +209,15 @@ test_that("dedicated conformance CI is strict and installs pilot backends", {
   )
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
   workflow <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  contracts <- .conformance_read_contracts()
+  edger_version_spec <- unlist(
+    contracts[["bulk_de::edger"]]$versions$upstream,
+    use.names = FALSE
+  )
+  edger_version <- sub("^edgeR ", "", edger_version_spec[[1]])
   expect_match(workflow, "SHENNONG_CONFORMANCE_STRICT: 'true'", fixed = TRUE)
   expect_match(workflow, "SHENNONG_ACCELERATION_DISABLED: 'true'", fixed = TRUE)
-  expect_match(workflow, "bioc::edgeR@4.10.3", fixed = TRUE)
+  expect_match(workflow, paste0("bioc::edgeR@", edger_version), fixed = TRUE)
   expect_match(workflow, "bioc::clusterProfiler", fixed = TRUE)
   expect_match(workflow, "any::msigdbr", fixed = TRUE)
   expect_match(workflow, 'filter = "backend-conformance"', fixed = TRUE)

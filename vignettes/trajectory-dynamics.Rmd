@@ -199,7 +199,7 @@ trajectory_object <- sn_run_trajectory(
   cluster_by = "trajectory_cluster",
   start = start_cluster,
   end = end_cluster,
-  store_name = "spermatogenesis",
+  result_id = "spermatogenesis",
   dynamic_features = dynamic_features,
   max_dynamic_features = length(dynamic_features),
   nknots = 3L,
@@ -221,7 +221,7 @@ sn_list_results(trajectory_object, type = "trajectory")
 trajectory <- sn_get_result(
   trajectory_object,
   type = "trajectory",
-  name = "spermatogenesis"
+  result_id = "spermatogenesis"
 )
 
 head(trajectory$tables$cells)

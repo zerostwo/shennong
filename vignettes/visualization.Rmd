@@ -248,7 +248,7 @@ sn_plot_boxplot(
 
 ## Marker dot plots from stored DE results
 
-The DE workflow can store markers under `object@misc$de_results`. Once stored,
+The DE workflow stores markers in the canonical Shennong result registry. Once stored,
 `sn_plot_dot(features = "top_markers")` can reuse that result directly instead
 of asking users to manually copy marker lists between scripts.
 
@@ -258,7 +258,7 @@ pbmc <- sn_find_de(
   analysis = "markers",
   group_by = "seurat_clusters",
   layer = "data",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
@@ -266,7 +266,7 @@ pbmc <- sn_find_de(
 sn_plot_dot(
   x = pbmc,
   features = "top_markers",
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   group_by = "seurat_clusters",
   n = 4,
   palette = "Purples"

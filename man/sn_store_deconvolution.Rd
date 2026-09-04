@@ -7,7 +7,7 @@
 sn_store_deconvolution(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   method = "bayesprism",
   bulk_samples = NULL,
   reference_label = NULL,
@@ -21,7 +21,8 @@ sn_store_deconvolution(
 
 \item{result}{A deconvolution table.}
 
-\item{store_name}{Name used under \code{object@misc$deconvolution_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{method}{Deconvolution backend, for example \code{"bayesprism"}.}
 

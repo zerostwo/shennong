@@ -8,6 +8,19 @@ rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
 
+- Analysis-result identity is unified on `result_id` across all 46 exported
+  result-producing workflows, stores, getters, listings, deletion, plots, and
+  interpretation inputs. The v2 envelope and provenance repeat the same ID and
+  analysis type, and canonical writes use only
+  `object@misc$shennong$results[[analysis_type]][[result_id]]`; backend/runtime
+  payloads use `artifact_id`. A comprehensive local run reached 4,540 passing
+  assertions with nine optional-backend warnings and one unavailable public
+  fixture; its six stale-contract failures were fixed and the affected suites
+  then passed 227 assertions. The result-contract and parameter-matrix suites
+  pass another 829 assertions. Documentation, the full pkgdown site, source
+  build, examples, and structural `R CMD check` pass; check reports only the
+  repository-level `.codegraph` NOTE.
+
 - `sn_score_cell_cycle()` now selects its assay/layer explicitly while keeping
   the prior default-assay and normalized-data behavior. Focused regression
   coverage compares custom-layer scores against direct Seurat scoring and

@@ -1,8 +1,8 @@
-.sn_scissor_plot_result <- function(x, name) {
+.sn_scissor_plot_result <- function(x, result_id) {
   result <- if (inherits(x, "Seurat")) {
     tryCatch(
-      sn_get_result(x, "scissor", name),
-      error = function(error) sn_get_result(x, "state_priority", name)
+      sn_get_result(x, "scissor", result_id),
+      error = function(error) sn_get_result(x, "state_priority", result_id)
     )
   } else {
     x
@@ -30,7 +30,7 @@
 #' Plot a unified Scissor result
 #'
 #' @param x A Scissor state-priority result or a Seurat object containing one.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Plot state ranking, cell coefficients, sample contributions,
 #'   cell-level correlation summaries, or optional reliability output.
 #' @param n Maximum states or cells shown.
@@ -38,18 +38,18 @@
 #' @return A ggplot object.
 #' @examples
 #' \dontrun{
-#' sn_plot_scissor(object, name = "scissor", type = "states")
-#' sn_plot_scissor(object, name = "scissor", type = "correlations")
+#' sn_plot_scissor(object, result_id = "scissor", type = "states")
+#' sn_plot_scissor(object, result_id = "scissor", type = "correlations")
 #' }
 #' @export
 sn_plot_scissor <- function(x,
-                            name = "scissor",
+                            result_id = "scissor",
                             type = c("states", "cells", "samples", "correlations", "reliability"),
                             n = 5000L,
                             object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_scissor_plot_result(x, name = name)
+  result <- .sn_scissor_plot_result(x, result_id = result_id)
 
   if (type == "states") {
     table <- result$tables$states %||% result$tables$primary

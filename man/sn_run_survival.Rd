@@ -12,7 +12,7 @@ sn_run_survival(
   covariates = NULL,
   metadata = NULL,
   assay = NULL,
-  store_name = "bulk_survival",
+  result_id = "bulk_survival",
   group_method = c("median", "quantile", "fixed", "none"),
   group_quantile = 0.5,
   group_cutpoint = NULL,
@@ -34,7 +34,8 @@ sn_run_survival(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{group_method}{Feature grouping used for Kaplan-Meier analysis.}
 

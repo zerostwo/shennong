@@ -646,7 +646,9 @@
 #' @param tissue,disease Optional biological context recorded in provenance.
 #' @param species \code{"human"} or \code{"mouse"}; inferred when possible.
 #' @param ontology Map labels to the bundled Cell Ontology snapshot.
-#' @param store_name Stored-result and metadata prefix.
+#' @param result_id Stored-result and metadata prefix.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param assay,layer Query expression source. Most backends read a
 #'   log-normalized `data` layer; CellTypist and PopV independently default to
 #'   raw `counts` because they normalize internally. Override those backends
@@ -681,11 +683,12 @@ sn_run_annotation <- function(object,
                               disease = NULL,
                               species = NULL,
                               ontology = TRUE,
-                              store_name = "annotation",
+                              result_id = "annotation",
                               assay = NULL,
                               layer = "data",
                               backend_control = list(),
                               return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (!group_by %in% colnames(object[[]])) {
@@ -729,22 +732,22 @@ sn_run_annotation <- function(object,
 
   clusters_table <- .sn_annotation_cluster_table(cells_table, clusters)
 
-  safe_store_name <- gsub("[^[:alnum:]_]+", "_", store_name)
+  safe_result_id <- gsub("[^[:alnum:]_]+", "_", result_id)
   cell_indices <- match(colnames(object), cells_table$cell)
   metadata <- data.frame(row.names = colnames(object))
-  metadata[[paste0(safe_store_name, "_label")]] <- cells_table$prediction[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_1")]] <- cells_table$level_1[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_2")]] <- cells_table$level_2[cell_indices]
-  metadata[[paste0(safe_store_name, "_level_3")]] <- cells_table$level_3[cell_indices]
-  metadata[[paste0(safe_store_name, "_score")]] <- cells_table$prediction_score[cell_indices]
-  metadata[[paste0(safe_store_name, "_low_confidence")]] <- cells_table$low_confidence[cell_indices]
-  metadata[[paste0(safe_store_name, "_ontology_id")]] <- cells_table$ontology_id[cell_indices]
+  metadata[[paste0(safe_result_id, "_label")]] <- cells_table$prediction[cell_indices]
+  metadata[[paste0(safe_result_id, "_level_1")]] <- cells_table$level_1[cell_indices]
+  metadata[[paste0(safe_result_id, "_level_2")]] <- cells_table$level_2[cell_indices]
+  metadata[[paste0(safe_result_id, "_level_3")]] <- cells_table$level_3[cell_indices]
+  metadata[[paste0(safe_result_id, "_score")]] <- cells_table$prediction_score[cell_indices]
+  metadata[[paste0(safe_result_id, "_low_confidence")]] <- cells_table$low_confidence[cell_indices]
+  metadata[[paste0(safe_result_id, "_ontology_id")]] <- cells_table$ontology_id[cell_indices]
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
 
   result <- list(
     schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "annotation",
-    name = store_name,
+    result_id = result_id,
     method = method,
     backend = method,
     input = c(
@@ -783,19 +786,19 @@ sn_run_annotation <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "annotation", store_name, result)
+  object <- sn_store_result(object, "annotation", result_id, result)
   object <- .sn_log_seurat_command(
     object = object,
     assay = backend$input$assay %||% assay,
     name = "sn_run_annotation"
   )
-  if (isTRUE(return_object)) object else sn_get_result(object, "annotation", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "annotation", result_id)
 }
 
 #' Review stored annotation evidence and low-confidence labels
 #'
 #' @param x A Seurat object or unified annotation result.
-#' @param store_name Annotation result name when \code{x} is a Seurat object.
+#' @param result_id Annotation result name when \code{x} is a Seurat object.
 #' @param low_confidence_only Return only low-confidence rows in the review
 #'   tables.
 #'
@@ -805,8 +808,8 @@ sn_run_annotation <- function(object,
 #' \dontrun{sn_review_annotation(object, "annotation")}
 #'
 #' @export
-sn_review_annotation <- function(x, store_name = "annotation", low_confidence_only = TRUE) {
-  result <- if (inherits(x, "Seurat")) sn_get_result(x, "annotation", store_name) else x
+sn_review_annotation <- function(x, result_id = "annotation", low_confidence_only = TRUE) {
+  result <- if (inherits(x, "Seurat")) sn_get_result(x, "annotation", result_id) else x
   sn_validate_result(result)
   if (!identical(result$analysis_type, "annotation")) {
     stop("`x` is not an annotation result.", call. = FALSE)

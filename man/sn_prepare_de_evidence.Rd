@@ -4,12 +4,12 @@
 \alias{sn_prepare_de_evidence}
 \title{Prepare differential-expression evidence from a stored DE result}
 \usage{
-sn_prepare_de_evidence(object, de_name, n_genes = 15)
+sn_prepare_de_evidence(object, de_result_id, n_genes = 15)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Name of a stored DE result in \code{object@misc$de_results}.}
+\item{de_result_id}{Identifier of a stored DE result.}
 
 \item{n_genes}{Number of top genes to include per direction or group.}
 }
@@ -37,9 +37,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  evidence <- sn_prepare_de_evidence(obj, de_name = "celltype_markers", n_genes = 3)
+  evidence <- sn_prepare_de_evidence(obj, de_result_id = "celltype_markers", n_genes = 3)
   names(evidence)
 }
 }

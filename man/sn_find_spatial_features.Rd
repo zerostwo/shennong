@@ -11,7 +11,7 @@ sn_find_spatial_features(
   assay = NULL,
   layer = "data",
   features = NULL,
-  store_name = "spatial_features",
+  result_id = "spatial_features",
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
@@ -29,7 +29,8 @@ sn_find_spatial_features(
 
 \item{features}{Features to test.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Method controls or an explicit \code{runner}/\code{result}.}
 

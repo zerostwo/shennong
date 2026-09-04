@@ -461,7 +461,7 @@
 #'
 #' @examples
 #' result <- list(
-#'   schema_version = "1.0.0", analysis_type = "demo", name = "example",
+#'   schema_version = "2.0.0", analysis_type = "demo", result_id = "example",
 #'   method = "mean", backend = "base", input = list(), parameters = list(),
 #'   tables = list(primary = data.frame(feature = "gene1", value = 1)),
 #'   embeddings = list(), graphs = list(), models = list(), diagnostics = list(),

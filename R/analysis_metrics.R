@@ -990,9 +990,11 @@ sn_sweep_cluster_resolution <- function(
 #'   \code{miloR::testNhoods()}.
 #' @param norm_method Normalization method passed to
 #'   \code{miloR::testNhoods()}.
-#' @param store_name Optional name used under \code{object@misc$milo_results}.
+#' @param result_id Stable identifier for the stored Milo result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #'   When supplied, the milo result is stored on the Seurat object.
-#' @param return_object Logical; when \code{TRUE} and \code{store_name} is
+#' @param return_object Logical; when \code{TRUE} and \code{result_id} is
 #'   supplied, return the updated Seurat object.
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
 #'   DA table, design data, and milo object.
@@ -1000,7 +1002,7 @@ sn_sweep_cluster_resolution <- function(
 #' @param seed Optional random seed recorded in the stored result provenance.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return By default, a data frame of neighborhood-level DA statistics. When
-#'   \code{store_name} is supplied, return the unified stored-result list, or
+#'   \code{result_id} is supplied, return the unified stored-result list, or
 #'   the updated Seurat object when \code{return_object = TRUE}. When
 #'   \code{return_intermediate = TRUE}, return a list with \code{table},
 #'   \code{design_df}, and \code{milo}.
@@ -1036,25 +1038,28 @@ sn_run_milo <- function(x,
                         fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
                         min_mean = 0,
                         norm_method = c("TMM", "RLE", "logMS"),
-                        store_name = NULL,
+                        result_id = NULL,
                         return_object = FALSE,
                         return_intermediate = FALSE,
                         verbose = TRUE,
                         seed = NULL,
                         object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
+  if (!is_null(result_id)) {
+    result_id <- .sn_validate_result_id(result_id)
+  }
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.null(contrast) || (is.character(contrast) && length(contrast) == 2L))
   stopifnot(is.null(covariates) || is.character(covariates))
   stopifnot(is.null(annotation_by) || (is.character(annotation_by) && length(annotation_by) == 1L))
-  stopifnot(is.null(store_name) || (is.character(store_name) && length(store_name) == 1L))
+  stopifnot(is.null(result_id) || (is.character(result_id) && length(result_id) == 1L))
   stopifnot(is.logical(return_object), length(return_object) == 1L)
   stopifnot(is.logical(return_intermediate), length(return_intermediate) == 1L)
   stopifnot(is.logical(verbose), length(verbose) == 1L)
-  if (isTRUE(return_intermediate) && !is.null(store_name)) {
-    stop("`return_intermediate = TRUE` cannot be combined with `store_name`.", call. = FALSE)
+  if (isTRUE(return_intermediate) && !is.null(result_id)) {
+    stop("`return_intermediate = TRUE` cannot be combined with `result_id`.", call. = FALSE)
   }
 
   fdr_weighting <- match.arg(fdr_weighting)
@@ -1176,11 +1181,11 @@ sn_run_milo <- function(x,
   da_table$group_col <- group_by
   da_table$reduction <- reduction
 
-  if (!is.null(store_name)) {
+  if (!is.null(result_id)) {
     stored_result <- sn_store_milo(
       object = x,
       result = da_table,
-      store_name = store_name,
+      result_id = result_id,
       sample_by = sample_by,
       group_by = group_by,
       comparison = da_table$comparison[[1]],
@@ -1192,10 +1197,10 @@ sn_run_milo <- function(x,
     )
 
     if (isTRUE(return_object)) {
-      object <- .sn_store_misc_result(
+      object <- sn_store_result(
         object = x,
-        collection = "milo_results",
-        store_name = store_name,
+        type = "milo",
+        result_id = result_id,
         result = stored_result
       )
       return(.sn_log_seurat_command(object = object, name = "sn_run_milo"))
@@ -1219,7 +1224,9 @@ sn_run_milo <- function(x,
 #'
 #' @param object A \code{Seurat} object.
 #' @param result A neighborhood-level differential-abundance table.
-#' @param store_name Name used under \code{object@misc$milo_results}.
+#' @param result_id Stable identifier for the stored Milo result.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param sample_by Sample column used for the design.
 #' @param group_by Group column used for the design.
 #' @param comparison Human-readable comparison label.
@@ -1233,7 +1240,7 @@ sn_run_milo <- function(x,
 #' @export
 sn_store_milo <- function(object,
                           result,
-                          store_name = "default",
+                          result_id = "default",
                           sample_by = NULL,
                           group_by = NULL,
                           comparison = NULL,
@@ -1242,12 +1249,13 @@ sn_store_milo <- function(object,
                           annotation_by = NULL,
                           random_seed = NULL,
                           return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
 
   stored_result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = tibble::as_tibble(result),
@@ -1262,10 +1270,10 @@ sn_store_milo <- function(object,
     provenance = .sn_analysis_provenance(random_seed = random_seed %||% NA_integer_)
   )
 
-  object <- .sn_store_misc_result(
+  object <- sn_store_result(
     object = object,
-    collection = "milo_results",
-    store_name = store_name,
+    type = "milo",
+    result_id = result_id,
     result = stored_result
   )
 
@@ -1273,17 +1281,17 @@ sn_store_milo <- function(object,
     return(.sn_log_seurat_command(object = object, name = "sn_store_milo"))
   }
 
-  .sn_get_misc_result(
+  sn_get_result(
     object = object,
-    collection = "milo_results",
-    store_name = store_name
+    type = "milo",
+    result_id = result_id
   )
 }
 
 #' Retrieve a stored miloR result from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param milo_name Name of the stored milo result.
+#' @param result_id Name of the stored milo result.
 #' @param annotation Optional subset of annotation labels to keep.
 #' @param spatial_fdr Optional maximum \code{SpatialFDR} threshold.
 #' @param with_metadata If \code{TRUE}, return the full stored-result list.
@@ -1291,22 +1299,22 @@ sn_store_milo <- function(object,
 #' @return A tibble or stored-result list.
 #' @export
 sn_get_milo_result <- function(object,
-                               milo_name = "default",
+                               result_id = "default",
                                annotation = NULL,
                                spatial_fdr = NULL,
                                with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
 
-  stored <- .sn_get_misc_result(
+  stored <- sn_get_result(
     object = object,
-    collection = "milo_results",
-    store_name = milo_name
+    type = "milo",
+    result_id = result_id
   )
   if (isTRUE(with_metadata)) {
     return(stored)
   }
 
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   annotation_by <- stored$annotation_col %||% NULL
   if (!is.null(annotation) && !is.null(annotation_by) && annotation_by %in% colnames(table)) {
     table <- dplyr::filter(table, .data[[annotation_by]] %in% annotation)
@@ -1571,8 +1579,10 @@ sn_get_milo_result <- function(object,
 #' @param sample_by Optional metadata column defining samples. When
 #'   \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 #'   available and otherwise treats the object as one sample.
-#' @param store_name Name used when storing the assessment under
+#' @param result_id Name used when storing the assessment under
 #'   \code{object@misc$qc_assessments}.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object Logical; when \code{TRUE}, store the assessment in the
 #'   Seurat object and return the updated object.
 #' @param verbose Logical; when \code{TRUE}, print a concise QC summary.
@@ -1587,16 +1597,17 @@ sn_get_milo_result <- function(object,
 #'     Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
 #'   ))
 #'   qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
-#'   qc_report$overall
+#'   qc_report$tables$overall
 #' }
 #'
 #' @export
 sn_assess_qc <- function(object,
                          reference = NULL,
                          sample_by = NULL,
-                         store_name = "default",
+                         result_id = "default",
                          return_object = FALSE,
                          verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   check_installed("SeuratObject")
   .sn_validate_seurat_object(object)
   if (!is_null(reference) && !inherits(reference, "Seurat")) {
@@ -1632,7 +1643,7 @@ sn_assess_qc <- function(object,
   )
 
   report <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     overall = overall,
@@ -1654,18 +1665,18 @@ sn_assess_qc <- function(object,
   }
 
   if (isTRUE(return_object)) {
-    object <- .sn_store_misc_result(
+    object <- sn_store_result(
       object = object,
-      collection = "qc_assessments",
-      store_name = store_name,
+      type = "qc_assessment",
+      result_id = result_id,
       result = report
     )
     return(object)
   }
 
-  .sn_prepare_misc_result(
-    collection = "qc_assessments",
-    store_name = store_name,
+  .sn_prepare_result(
+    type = "qc_assessment",
+    result_id = result_id,
     result = report
   )
 }

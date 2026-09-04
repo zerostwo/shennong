@@ -282,7 +282,9 @@
 #' @param design Optional no-intercept formula or sample-level covariate names
 #'   for Propeller; covariate names are forwarded to Milo.
 #' @param contrast Two condition labels ordered as `c(case, control)`.
-#' @param store_name Stored differential-abundance result name.
+#' @param result_id Stored differential-abundance result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param transform Propeller proportion transformation.
 #' @param permutations Number of sample-label permutations.
 #' @param seed Random seed for permutation testing.
@@ -307,12 +309,13 @@ sn_test_abundance <- function(object,
                               cell_type_by,
                               design = NULL,
                               contrast = NULL,
-                              store_name = "abundance",
+                              result_id = "abundance",
                               transform = c("logit", "asin"),
                               permutations = 1000L,
                               seed = 717L,
                               backend_control = list(),
                               return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   method <- match.arg(method)
   transform <- match.arg(transform)
   design_columns <- if (inherits(design, "formula")) all.vars(design) else if (is.character(design)) design else NULL
@@ -359,7 +362,7 @@ sn_test_abundance <- function(object,
       contrast = inputs$contrast,
       covariates = if (is.character(design)) design else NULL,
       annotation_by = cell_type_by,
-      store_name = NULL,
+      result_id = NULL,
       return_object = FALSE,
       return_intermediate = FALSE
     ), backend_control$milo %||% list(), keep.null = TRUE)
@@ -368,9 +371,9 @@ sn_test_abundance <- function(object,
   }
 
   result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "differential_abundance",
-    name = store_name,
+    result_id = result_id,
     method = method,
     backend = if (identical(method, "milo")) "miloR" else if (identical(method, "propeller")) "speckle" else if (identical(method, "sccoda")) "scCODA" else "Shennong",
     input = list(
@@ -406,7 +409,7 @@ sn_test_abundance <- function(object,
     provenance = .sn_analysis_provenance(random_seed = if (identical(method, "permutation")) seed else NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "differential_abundance", store_name, result)
+  object <- sn_store_result(object, "differential_abundance", result_id, result)
   object <- .sn_log_seurat_command(object = object, name = "sn_test_abundance")
-  if (isTRUE(return_object)) object else sn_get_result(object, "differential_abundance", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "differential_abundance", result_id)
 }

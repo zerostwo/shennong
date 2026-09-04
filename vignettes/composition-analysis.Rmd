@@ -237,7 +237,7 @@ object-level convention used for DE and enrichment.
 pbmc <- sn_store_milo(
   object = pbmc,
   result = milo_tbl,
-  store_name = "response_da",
+  result_id = "response_da",
   sample_by = "real_sample",
   group_by = "real_response",
   comparison = "d0_high_vs_d0_low",
@@ -246,7 +246,7 @@ pbmc <- sn_store_milo(
   return_object = TRUE
 )
 
-head(sn_get_milo_result(pbmc, milo_name = "response_da"))
+head(sn_get_milo_result(pbmc, result_id = "response_da"))
 ```
 
 `sn_plot_milo()` then displays the stored neighborhood-level table.
@@ -254,7 +254,7 @@ head(sn_get_milo_result(pbmc, milo_name = "response_da"))
 ```{r plot-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
 sn_plot_milo(
   pbmc,
-  milo_name = "response_da",
+  result_id = "response_da",
   annotation_by = "seurat_clusters",
   title = "Neighborhood differential abundance"
 )

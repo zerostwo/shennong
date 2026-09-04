@@ -280,7 +280,7 @@ output <- .absolute_path(.option(
         assay = assay,
         features = features,
         npcs = min(dimensions, length(features) - 1L, ncol(normalized) - 1L),
-        reduction.name = reduction,
+        reduction.result_id = reduction,
         verbose = FALSE
       )
     })
@@ -538,7 +538,7 @@ output <- .absolute_path(.option(
       method = "ucell",
       assay = context$assay,
       layer = context$layer,
-      name = "autozyme_benchmark_ucell",
+      result_id = "autozyme_benchmark_ucell",
       backend_control = list(ucell = list(
         name = "",
         ncores = 1L,

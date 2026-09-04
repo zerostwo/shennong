@@ -199,16 +199,16 @@ sn_plot_integration <- function(x, aggregate = FALSE, object = NULL) {
 #' Plot reference annotation projection
 #'
 #' @param object A Seurat object with a stored annotation result.
-#' @param store_name Annotation result name.
+#' @param result_id Annotation result name.
 #' @param reduction Reduction used for coordinates.
 #' @param color_by Prediction or confidence.
 #' @return A reference-projection embedding.
 #' @export
-sn_plot_reference_projection <- function(object, store_name = "annotation", reduction = NULL,
+sn_plot_reference_projection <- function(object, result_id = "annotation", reduction = NULL,
                                          color_by = c("prediction", "prediction_score")) {
   color_by <- match.arg(color_by)
   .sn_validate_seurat_object(object)
-  result <- sn_get_result(object, "annotation", store_name)
+  result <- sn_get_result(object, "annotation", result_id)
   cells <- result$tables$cells
   if (!all(c("cell", color_by) %in% names(cells))) stop("Annotation cell table lacks projection labels.", call. = FALSE)
   reduction <- reduction %||% SeuratObject::DefaultDimReduc(object)

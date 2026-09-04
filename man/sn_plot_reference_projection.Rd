@@ -6,7 +6,7 @@
 \usage{
 sn_plot_reference_projection(
   object,
-  store_name = "annotation",
+  result_id = "annotation",
   reduction = NULL,
   color_by = c("prediction", "prediction_score")
 )
@@ -14,7 +14,7 @@ sn_plot_reference_projection(
 \arguments{
 \item{object}{A Seurat object with a stored annotation result.}
 
-\item{store_name}{Annotation result name.}
+\item{result_id}{Annotation result name.}
 
 \item{reduction}{Reduction used for coordinates.}
 

@@ -25,7 +25,7 @@ test_that("mean scoring is sparse-aware, stored, and added to metadata", {
     object,
     signatures = program_test_signatures(),
     method = "mean",
-    name = "programs",
+    result_id = "programs",
     min_genes = 2
   )
 
@@ -103,7 +103,7 @@ test_that("UCell and AUCell backends return cell-level score contracts", {
       object,
       signatures = program_test_signatures(),
       method = "ucell",
-      name = "ucell",
+      result_id = "ucell",
       return_object = FALSE
     )
     expect_equal(nrow(ucell$tables$scores), 2 * ncol(object))
@@ -114,7 +114,7 @@ test_that("UCell and AUCell backends return cell-level score contracts", {
       object,
       signatures = program_test_signatures(),
       method = "aucell",
-      name = "aucell",
+      result_id = "aucell",
       return_object = FALSE
     )
     expect_equal(nrow(aucell$tables$scores), 2 * ncol(object))
@@ -175,7 +175,7 @@ test_that("GSVA and ssGSEA score aggregated sample expression", {
       signatures = program_test_signatures(),
       method = method,
       group_by = "sample",
-      name = paste0("sample_", method),
+      result_id = paste0("sample_", method),
       return_object = FALSE,
       backend_control = stats::setNames(list(list(parameters = list(kcdf = "Gaussian"))), method)
     ))
@@ -187,16 +187,16 @@ test_that("GSVA and ssGSEA score aggregated sample expression", {
 
 test_that("program tests preserve sample as the inferential unit", {
   object <- make_program_test_object()
-  object <- sn_score_programs(object, program_test_signatures(), method = "mean", name = "programs")
+  object <- sn_score_programs(object, program_test_signatures(), method = "mean", result_id = "programs")
   comparison <- sn_test_programs(
     object,
-    score_name = "programs",
+    source_result_id = "programs",
     condition_by = "condition",
     sample_by = "sample",
     group_by = "cell_type",
     contrast = c("control", "treated"),
     method = "wilcox",
-    store_name = "program_condition",
+    result_id = "program_condition",
     return_object = FALSE
   )
 
@@ -209,7 +209,7 @@ test_that("program tests preserve sample as the inferential unit", {
 
 test_that("program activity and heatmap plots render", {
   object <- make_program_test_object()
-  object <- sn_score_programs(object, program_test_signatures(), method = "mean", name = "programs")
+  object <- sn_score_programs(object, program_test_signatures(), method = "mean", result_id = "programs")
   activity <- sn_plot_program_activity(object, "programs", group_by = "condition")
   heatmap <- sn_plot_program_heatmap(object, "programs", group_by = "condition")
   expect_s3_class(activity, "ggplot")
@@ -221,7 +221,7 @@ test_that("program activity and heatmap plots render", {
 test_that("NMF discovers stable weighted programs and cell activities", {
   object <- make_program_test_object()
   updated <- sn_discover_programs(
-    object, method = "nmf", n_programs = 2, name = "latent",
+    object, method = "nmf", n_programs = 2, result_id = "latent",
     features = paste0("G", 1:6),
     backend_control = list(nrun = 3, max_iter = 100, seed = 19, top_genes = 3)
   )

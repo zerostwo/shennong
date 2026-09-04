@@ -28,7 +28,7 @@ grn_adapter_output <- function(object) {
 test_that("GRN adapters derive regulons, activity, and group specificity", {
   object <- make_grn_test_object()
   updated <- sn_run_grn(
-    object, method = "genie3", name = "test_grn", group_by = "condition",
+    object, method = "genie3", result_id = "test_grn", group_by = "condition",
     backend_control = list(result = grn_adapter_output(object), top_targets = 2)
   )
   result <- sn_get_result(updated, "grn", "test_grn")

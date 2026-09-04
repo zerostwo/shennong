@@ -121,7 +121,7 @@ test_that("milo results can be stored, retrieved, and plotted", {
   object <- sn_store_milo(
     object,
     result = milo_tbl,
-    store_name = "demo_milo",
+    result_id = "demo_milo",
     sample_by = "sample",
     group_by = "group",
     annotation_by = "cell_type",
@@ -130,16 +130,16 @@ test_that("milo results can be stored, retrieved, and plotted", {
 
   retrieved <- sn_get_milo_result(
     object,
-    milo_name = "demo_milo",
+    result_id = "demo_milo",
     annotation = "Tcell",
     spatial_fdr = 0.05
   )
-  plot <- sn_plot_milo(object, milo_name = "demo_milo", annotation_by = "cell_type")
+  plot <- sn_plot_milo(object, result_id = "demo_milo", annotation_by = "cell_type")
 
   expect_equal(nrow(retrieved), 1)
   expect_equal(retrieved$cell_type[[1]], "Tcell")
   expect_s3_class(plot, "ggplot")
-  expect_true("milo_results" %in% names(object@misc))
+  expect_true("demo_milo" %in% names(object@misc$shennong$results$milo))
 })
 
 test_that("sn_run_milo requires a constant group label within each sample", {

@@ -795,20 +795,6 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   SeuratObject::DefaultAssay(object) <- context$original_assay
   object
 }
-.sn_get_misc_result <- function(object, collection, store_name) {
-  misc_data <- methods::slot(object, "misc")
-  collection_data <- misc_data[[collection]] %||% list()
-  if (!store_name %in% names(collection_data)) {
-    stop(glue("No stored result named '{store_name}' was found in `object@misc${collection}`."))
-  }
-  result <- collection_data[[store_name]]
-  .sn_prepare_misc_result(
-    collection = collection,
-    store_name = store_name,
-    result = result
-  )
-}
-
 .sn_validate_seurat_object <- function(object) {
   if (!inherits(object, "Seurat")) {
     stop("`object` must be a Seurat object.", call. = FALSE)
@@ -872,4 +858,3 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   jsonlite::write_json(x = x, path = path, auto_unbox = TRUE, pretty = TRUE, null = "null")
   normalizePath(path, winslash = "/", mustWork = TRUE)
 }
-

@@ -11,7 +11,7 @@ sn_plot_de(
   log2_fold_change = 1,
   n = 40L,
   object = NULL,
-  de_name = "default"
+  result_id = "default"
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ sn_plot_de(
 \item{object}{Optional Seurat object holding a stored DE result; supply
 either \code{result} or \code{object}, not both.}
 
-\item{de_name}{Stored DE result name used when \code{object} is supplied.}
+\item{result_id}{Stored DE result name used when \code{object} is supplied.}
 }
 \value{
 A result-aware \code{ggplot} with an attached figure specification.

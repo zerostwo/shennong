@@ -10,7 +10,7 @@ sn_assess_bulk_qc(
   assay = NULL,
   top_variable = 2000L,
   outlier_z = 3.5,
-  store_name = "bulk_qc"
+  result_id = "bulk_qc"
 )
 }
 \arguments{
@@ -25,7 +25,8 @@ containing \code{counts}/\code{expression} and optional \code{metadata}.}
 
 \item{outlier_z}{Robust z-score threshold used for sample flags.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 }
 \value{
 A validated Shennong bulk-QC result.

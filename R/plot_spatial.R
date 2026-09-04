@@ -59,14 +59,14 @@ sn_plot_spatial_feature <- function(object,
 #' Plot spatial-domain assignments
 #'
 #' @param x A Seurat object or spatial-domain result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param point_size Point size.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5, object = NULL) {
+sn_plot_spatial_domain <- function(x, result_id = NULL, point_size = 1.5, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_result_input(x, "spatial_domains", name)
+  result <- .sn_resolve_result_input(x, "spatial_domains", result_id)
   data <- dplyr::left_join(result$tables$coordinates, result$tables$domains, by = "cell")
   ggplot2::ggplot(data, ggplot2::aes(x = .data$spatial_x, y = .data$spatial_y, color = .data$domain)) +
     ggplot2::geom_point(size = point_size) + ggplot2::coord_equal() + ggplot2::scale_y_reverse() +
@@ -76,14 +76,14 @@ sn_plot_spatial_domain <- function(x, name = NULL, point_size = 1.5, object = NU
 #' Plot spatial-feature statistics
 #'
 #' @param x A Seurat object or spatial-feature result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param n Number of features.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_svg <- function(x, name = NULL, n = 30L, object = NULL) {
+sn_plot_spatial_svg <- function(x, result_id = NULL, n = 30L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_result_input(x, "spatial_features", name)
+  result <- .sn_resolve_result_input(x, "spatial_features", result_id)
   data <- utils::head(result$tables$features[order(result$tables$features$rank), , drop = FALSE], as.integer(n))
   data$feature <- stats::reorder(data$feature, data$score)
   ggplot2::ggplot(data, ggplot2::aes(x = .data$feature, y = .data$score, fill = -log10(.data$adjusted_p_value))) +
@@ -94,15 +94,15 @@ sn_plot_spatial_svg <- function(x, name = NULL, n = 30L, object = NULL) {
 #' Plot spatial-neighborhood enrichment or co-occurrence
 #'
 #' @param x A Seurat object or spatial-neighborhood result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param type Enrichment or co-occurrence.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", "cooccurrence"), object = NULL) {
+sn_plot_spatial_neighborhood <- function(x, result_id = NULL, type = c("enrichment", "cooccurrence"), object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_result_input(x, "spatial_neighborhood", name)
+  result <- .sn_resolve_result_input(x, "spatial_neighborhood", result_id)
   if (identical(type, "enrichment")) {
     data <- result$tables$enrichment
     return(ggplot2::ggplot(data, ggplot2::aes(x = .data$target_group, y = .data$source_group, fill = .data$z_score)) +
@@ -120,14 +120,14 @@ sn_plot_spatial_neighborhood <- function(x, name = NULL, type = c("enrichment", 
 #' Plot spatially constrained communication
 #'
 #' @param x A Seurat object or spatial-communication result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param n Maximum interactions.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @export
-sn_plot_spatial_communication <- function(x, name = NULL, n = 50L, object = NULL) {
+sn_plot_spatial_communication <- function(x, result_id = NULL, n = 50L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_result_input(x, "spatial_communication", name)
+  result <- .sn_resolve_result_input(x, "spatial_communication", result_id)
   data <- result$tables$primary
   score_column <- .sn_spatial_column(c("consensus_score", "score", "magnitude", "effect"), names(data))
   if (is_null(score_column)) data$display_score <- 1 else data$display_score <- as.numeric(data[[score_column]])

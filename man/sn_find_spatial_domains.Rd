@@ -10,7 +10,7 @@ sn_find_spatial_domains(
   spatial_cols = NULL,
   assay = NULL,
   layer = "counts",
-  store_name = "spatial_domains",
+  result_id = "spatial_domains",
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
@@ -26,7 +26,8 @@ sn_find_spatial_domains(
 
 \item{assay, layer}{Expression assay and layer.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Backend controls or an explicit \code{runner}/\code{result}.}
 

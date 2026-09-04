@@ -142,11 +142,13 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
     dimnames = list(paste0("G", 1:8), paste0("stored_cell", 1:4))
   )
   object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
-  object@misc$de_results <- list(markers = list(
-    table = data.frame(gene = paste0("G", 1:8)),
-    analysis = "markers",
-    created_at = "2026-08-21 00:00:00 UTC"
-  ))
+  object <- sn_store_result(
+    object, "de", "markers",
+    list(
+      tables = list(primary = data.frame(gene = paste0("G", 1:8))),
+      analysis = "markers", method = "test", backend = "test"
+    )
+  )
 
   local_mocked_bindings(
     .sn_enrich_get_msigdb_terms = function(...) terms,
@@ -163,7 +165,7 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
   )
   object <- sn_run_enrichment(
     x = object,
-    source_de_name = "markers",
+    source_de_result_id = "markers",
     analysis = "ora",
     species = "human",
     database = "H",
@@ -172,12 +174,12 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
     max_gs_size = 20L,
     pvalue_cutoff = 1,
     qvalue_cutoff = 1,
-    store_name = "conformance_ora",
+    result_id = "conformance_ora",
     return_object = TRUE
   )
   stored <- sn_get_enrichment_result(
     object,
-    enrichment_name = "conformance_ora",
+    result_id = "conformance_ora",
     with_metadata = TRUE
   )
 

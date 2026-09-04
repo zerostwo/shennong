@@ -4,12 +4,12 @@
 \alias{sn_review_annotation}
 \title{Review stored annotation evidence and low-confidence labels}
 \usage{
-sn_review_annotation(x, store_name = "annotation", low_confidence_only = TRUE)
+sn_review_annotation(x, result_id = "annotation", low_confidence_only = TRUE)
 }
 \arguments{
 \item{x}{A Seurat object or unified annotation result.}
 
-\item{store_name}{Annotation result name when \code{x} is a Seurat object.}
+\item{result_id}{Annotation result name when \code{x} is a Seurat object.}
 
 \item{low_confidence_only}{Return only low-confidence rows in the review
 tables.}

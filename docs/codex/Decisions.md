@@ -4,6 +4,15 @@ Last updated: 2026-09-03
 
 ## 2026-09-03
 
+- Result identity is explicit and uniform across public analysis writers.
+  `result_id` is the preferred parameter and overrides the historical
+  `result_id`, `name`, or label-transfer `prediction_prefix` spellings without
+  breaking existing calls. Physical storage keys, canonical `name`, and the
+  additive `result_id` envelope field are synchronized so discovery and
+  retrieval cannot disagree. `sn_list_results()` exposes both `result_id` and
+  `name`; schema 1.0.0 remains readable because `result_id` is additive rather
+  than newly required for legacy payload validation.
+
 - Cell-cycle scoring makes its expression source explicit. The public
   `sn_score_cell_cycle()` API resolves `assay = NULL` to the current default
   assay and keeps `layer = "data"` as the backward-compatible default. Because
@@ -1305,7 +1314,7 @@ Last updated: 2026-09-03
   metadata for downstream filtering and plotting.
 - Interpretation helpers should follow the same stored-result ergonomics as
   enrichment helpers. When annotation workflows need a stored marker table and
-  the caller omits `de_name`, Shennong should prefer the stored `default`
+  the caller omits `de_result_id`, Shennong should prefer the stored `default`
   result, then a single available DE result, and otherwise the most recent
   marker result rather than failing on a missing required argument.
 - Cluster annotation prompts should optimize first for evidence completeness,
@@ -1445,7 +1454,7 @@ Last updated: 2026-09-03
 - `sn_enrich()` should prefer one primary input contract over parallel
   `x`/`object`/`gene_clusters` entry points. `x` is now the only primary input;
   stored-result enrichment on Seurat objects should flow through `x` plus
-  `source_de_name`, while direct enrichment of vectors/data frames returns raw
+  `source_de_result_id`, while direct enrichment of vectors/data frames returns raw
   results and can be stored later with `sn_store_enrichment()`.
 - Enrichment intent should be inferred from the formula RHS whenever practical:
   categorical/grouping RHS values mean grouped ORA, while numeric RHS values
@@ -1663,8 +1672,23 @@ Last updated: 2026-09-03
   are discoverable through `sn_list_results(include_artifacts = TRUE)`, but
   `sn_store_result()` rejects their reserved type names so a generic result
   cannot shadow a runtime/cache namespace.
+- Analysis-result identity has one canonical spelling and one physical store.
+  Public writers, stores, getters, plots, and interpretation selectors use
+  `result_id`; references to an upstream result use a qualified form such as
+  `source_result_id` or `de_result_id`. The result envelope repeats
+  `result_id` and `analysis_type` in provenance and lives at
+  `object@misc$shennong$results[[analysis_type]][[result_id]]`. Backend/runtime
+  payloads are artifacts and use `artifact_id`, so they cannot be confused
+  with validated analysis results. Because the package is experimental, the
+  previous `name`, `store_name`, and selector aliases are removed rather than
+  maintained as a parallel compatibility vocabulary.
 - WGCNA execution must not attach its package to the search path. Because the
   installed WGCNA implementation resolves its extended `cor()` dynamically,
   Shennong runs `blockwiseModules()` through a guarded namespace-safe wrapper
   that resolves the selected correlation function with `getExportedValue()` and
   leaves the user's search path unchanged.
+- Strict backend-conformance versions must agree across the executable contract
+  and the CI dependency specification. The workflow regression test derives the
+  edgeR pin from `bulk-de-edger.json`, leaving that contract as the single
+  version authority while still failing when CI installation resolves a
+  different upstream build.

@@ -225,7 +225,9 @@
 #' @param spliced_assay,unspliced_assay Assays containing count layers.
 #' @param spliced_layer,unspliced_layer Layer names.
 #' @param reduction,dims Embedding and dimensions used for projected vectors.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Backend/pixi controls or an explicit `runner`/`result`.
 #'   RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
 #'   table, a target-by-regulator named matrix, or a CSV path. Shared scVelo
@@ -256,11 +258,12 @@ sn_run_velocity <- function(object,
                             unspliced_layer = "unspliced",
                             reduction = NULL,
                             dims = 1:2,
-                            store_name = "velocity",
+                            result_id = "velocity",
                             backend_control = list(),
                             return_object = TRUE,
                             seed = NULL,
                             verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -287,10 +290,10 @@ sn_run_velocity <- function(object,
   }
   standardized <- .sn_standardize_velocity(output, object, embedding, method)
   cells <- standardized$cells
-  object[[paste0(store_name, "_pseudotime")]] <- stats::setNames(cells$pseudotime, cells$cell)[colnames(object)]
-  object[[paste0(store_name, "_confidence")]] <- stats::setNames(cells$confidence, cells$cell)[colnames(object)]
+  object[[paste0(result_id, "_pseudotime")]] <- stats::setNames(cells$pseudotime, cells$cell)[colnames(object)]
+  object[[paste0(result_id, "_confidence")]] <- stats::setNames(cells$confidence, cells$cell)[colnames(object)]
   result <- list(
-    schema_version = "1.0.0", analysis_type = "velocity", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "velocity", result_id = result_id,
     method = method, backend = paste0(method, "-pixi"),
     input = list(
       cells = nrow(cells), spliced_assay = spliced_assay, spliced_layer = spliced_layer,
@@ -327,9 +330,9 @@ sn_run_velocity <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% 717L)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "velocity", store_name, result)
+  object <- sn_store_result(object, "velocity", result_id, result)
   object <- .sn_log_seurat_command(object, assay = spliced_assay, name = "sn_run_velocity")
-  if (isTRUE(return_object)) object else sn_get_result(object, "velocity", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "velocity", result_id)
 }
 
 .sn_run_fate_pixi <- function(velocity_result, backend_control) {
@@ -391,9 +394,11 @@ sn_run_velocity <- function(object,
 #'
 #' @param object A Seurat object.
 #' @param method Fate backend; currently CellRank.
-#' @param velocity_name Stored velocity result used by the default pixi backend.
+#' @param source_result_id Stored velocity result used by the default pixi backend.
 #' @param reduction,dims Embedding and dimensions used for plots.
-#' @param store_name Stored fate result name.
+#' @param result_id Stored fate result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control CellRank/pixi controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or unified fate result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
@@ -403,20 +408,21 @@ sn_run_velocity <- function(object,
 #' @return A Seurat object or fate result.
 #' @examples
 #' \dontrun{
-#' object <- sn_run_fate(object, velocity_name = "velocity")
+#' object <- sn_run_fate(object, source_result_id = "velocity")
 #' fate <- sn_get_result(object, "fate", "fate")
 #' }
 #' @export
 sn_run_fate <- function(object,
                         method = c("cellrank"),
-                        velocity_name = "velocity",
+                        source_result_id = "velocity",
                         reduction = NULL,
                         dims = 1:2,
-                        store_name = "fate",
+                        result_id = "fate",
                         backend_control = list(),
                         return_object = TRUE,
                         seed = NULL,
                         verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -424,7 +430,7 @@ sn_run_fate <- function(object,
     backend_control$verbose <- isTRUE(verbose)
   }
   embedding <- .sn_velocity_embedding(object, reduction, dims)
-  velocity <- tryCatch(sn_get_result(object, "velocity", velocity_name), error = function(e) NULL)
+  velocity <- tryCatch(sn_get_result(object, "velocity", source_result_id), error = function(e) NULL)
   output <- if (is.function(backend_control$runner)) {
     backend_control$runner(
       object = object, method = method, velocity_result = velocity,
@@ -439,7 +445,7 @@ sn_run_fate <- function(object,
   }
   standardized <- .sn_standardize_fate(output, object)
   probabilities <- standardized$probabilities
-  prefix <- gsub("[^[:alnum:]_]+", "_", store_name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   metadata <- data.frame(row.names = colnames(object))
   for (state in unique(probabilities$state)) {
     values <- stats::setNames(probabilities$probability[probabilities$state == state], probabilities$cell[probabilities$state == state])
@@ -447,9 +453,9 @@ sn_run_fate <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0.0", analysis_type = "fate", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "fate", result_id = result_id,
     method = method, backend = "cellrank-pixi",
-    input = list(cells = length(unique(probabilities$cell)), velocity_name = velocity_name, reduction = embedding$reduction, dimensions = embedding$dims),
+    input = list(cells = length(unique(probabilities$cell)), source_result_id = source_result_id, reduction = embedding$reduction, dimensions = embedding$dims),
     parameters = list(
       n_states = backend_control$n_states %||% NULL,
       terminal_states = backend_control$terminal_states %||% NULL,
@@ -464,7 +470,7 @@ sn_run_fate <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% 717L)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "fate", store_name, result)
+  object <- sn_store_result(object, "fate", result_id, result)
   object <- .sn_log_seurat_command(object, assay = SeuratObject::DefaultAssay(object), name = "sn_run_fate")
-  if (isTRUE(return_object)) object else sn_get_result(object, "fate", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "fate", result_id)
 }

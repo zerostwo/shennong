@@ -146,8 +146,7 @@
 #' @param method GRN backend. GENIE3 runs in R. SCENIC, pySCENIC, and GRNBoost2
 #'   accept explicit runner/result adapters so their external motif databases and
 #'   runtimes remain visible.
-#' @param name Stored result name. Deprecated alias; prefer \code{store_name}.
-#' @param store_name Preferred stored-result name. Overrides \code{name} when supplied.
+#' @param result_id Stable identifier for the stored GRN result.
 #' @param assay,layer Expression assay and layer.
 #' @param regulators Optional regulator genes. Strongly recommended for GENIE3.
 #' @param group_by Optional metadata column used to quantify regulon specificity.
@@ -165,20 +164,16 @@
 #' @export
 sn_run_grn <- function(object,
                        method = c("genie3", "pyscenic", "scenic", "grnboost2"),
-                       name = NULL,
                        assay = NULL,
                        layer = "data",
                        regulators = NULL,
                        group_by = NULL,
                        backend_control = list(),
                        return_object = TRUE,
-                       store_name = NULL) {
+                       result_id = NULL) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  if (!is.null(store_name)) {
-    name <- store_name
-  }
-  name <- name %||% paste0("grn_", method)
+  result_id <- .sn_validate_result_id(result_id %||% paste0("grn_", method))
   if (is.function(backend_control$runner)) {
     output <- backend_control$runner(
       object = object, method = method, assay = assay, layer = layer,
@@ -205,7 +200,7 @@ sn_run_grn <- function(object,
     .sn_grn_specificity(activity, object, group_by)
   }
 
-  prefix <- gsub("[^[:alnum:]_]+", "_", name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   metadata <- data.frame(row.names = colnames(object))
   for (regulon in unique(activity$regulon)) {
     values <- stats::setNames(activity$score[activity$regulon == regulon], activity$cell[activity$regulon == regulon])
@@ -213,7 +208,8 @@ sn_run_grn <- function(object,
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
-    schema_version = "1.0.0", analysis_type = "grn", name = name,
+    schema_version = .sn_analysis_result_schema_version(),
+    analysis_type = "grn", result_id = result_id,
     method = method, backend = method,
     input = list(
       assay = expression$assay %||% assay %||% SeuratObject::DefaultAssay(object),
@@ -239,7 +235,7 @@ sn_run_grn <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "grn", name, result)
+  object <- sn_store_result(object, "grn", result_id, result)
   object <- .sn_log_seurat_command(object, assay = result$input$assay, name = "sn_run_grn")
-  if (isTRUE(return_object)) object else sn_get_result(object, "grn", name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "grn", result_id)
 }

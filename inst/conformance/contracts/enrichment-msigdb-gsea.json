@@ -174,15 +174,16 @@
       ]
     },
     {
-      "wrapper": "store_name",
+      "wrapper": "result_id",
       "role": "wrapper_only",
-      "upstream": "stored-result name",
+      "upstream": "explicit stored-result identifier",
       "scenarios": [
-        "default"
+        "enrichment",
+        "custom identifier"
       ]
     },
     {
-      "wrapper": "source_de_name",
+      "wrapper": "source_de_result_id",
       "role": "wrapper_only",
       "upstream": "stored-DE provenance",
       "scenarios": [

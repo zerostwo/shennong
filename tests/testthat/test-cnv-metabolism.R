@@ -24,7 +24,7 @@ make_cnv_metabolism_object <- function() {
 mock_cnv_backend <- function(object,
                              reference_cells,
                              genome,
-                             store_name,
+                             result_id,
                              assay,
                              layer,
                              sample_by) {
@@ -50,7 +50,7 @@ test_that("unified CNV workflow stores malignancy, subclones, and sample evidenc
   object <- make_cnv_metabolism_object()
   updated <- sn_run_cnv(
     object, method = "infercnvpy", reference_by = "reference", reference_cat = "normal",
-    sample_by = "sample", store_name = "tumor_cnv",
+    sample_by = "sample", result_id = "tumor_cnv",
     backend_control = list(runner = mock_cnv_backend)
   )
   result <- sn_get_result(updated, "cnv", "tumor_cnv")
@@ -148,7 +148,7 @@ test_that("curated metabolism workflow preserves samples as inferential units", 
   updated <- sn_run_metabolism(
     object, signatures = signatures, scoring_method = "mean",
     sample_by = "sample", condition_by = "condition", group_by = "cell_type",
-    contrast = c("treated", "control"), store_name = "metabolic_state"
+    contrast = c("treated", "control"), result_id = "metabolic_state"
   )
   result <- sn_get_result(updated, "metabolism", "metabolic_state")
 
@@ -232,7 +232,7 @@ test_that("scmetabolism backend scores v5 objects through bundled gene sets", {
     group_by = "cell_type",
     return_object = FALSE
   )
-  table <- result$table
+  table <- result$tables$primary
   expect_s3_class(table, "tbl_df")
   expect_true(all(c("cell", "pathway", "score", "method") %in% names(table)))
   expect_true(all(unique(table$cell) %in% colnames(object)))

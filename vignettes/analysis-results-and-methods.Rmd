@@ -65,7 +65,7 @@ object <- qs2::qs_read(pbmc_fixture)
 object <- sn_assess_qc(
   object,
   sample_by = "real_sample",
-  store_name = "kotliarov_qc",
+  result_id = "kotliarov_qc",
   return_object = TRUE,
   verbose = FALSE
 )
@@ -73,21 +73,24 @@ object <- sn_assess_qc(
 result <- sn_get_result(object, "qc_assessment", "kotliarov_qc")
 sn_validate_result(result, error = FALSE)
 result$tables$primary |> head()
-result$overall
+result$tables$overall
 ```
 
 ## Store, discover, and retrieve from Seurat
 
-The generic functions support new result types while existing helpers such as
-`sn_get_de_result()` remain available. Registered legacy result writers are
-upgraded to the same contract on write and read.
+The generic functions support new result types while table-focused helpers such
+as `sn_get_de_result()` remain available.
+
+Every public result writer accepts `result_id` as its stable identifier. The
+same ID is used to store, list, retrieve, plot, interpret, and delete the
+result. Runtime and backend artifacts use `artifact_id` instead.
 
 ```{r stored-results}
 object <- sn_store_result(
   object,
   type = "qc_assessment",
-  name = "qc_copy",
-  result = result
+  result = result,
+  result_id = "qc_copy"
 )
 
 sn_list_results(object)
@@ -97,7 +100,7 @@ sn_list_results(object, include_artifacts = TRUE)
 qc_copy <- sn_get_result(
   object,
   type = "qc_assessment",
-  name = "qc_copy"
+  result_id = "qc_copy_explicit"
 )
 
 qc_copy$tables$primary |> head()
@@ -106,13 +109,13 @@ qc_copy$provenance
 object <- sn_delete_result(
   object,
   type = "qc_assessment",
-  name = "qc_copy"
+  result_id = "qc_copy_explicit"
 )
 
 sn_list_results(object)
 ```
 
-Prefer these APIs over direct `object@misc` access. Stable names and explicit
+Prefer these APIs over direct `object@misc` access. Stable result IDs and explicit
 provenance make stored results discoverable by scripts, reports, and future
 agent integrations without allowing an LLM to overwrite computational output.
 
@@ -132,7 +135,7 @@ sn_list_results(object, type = "qc_assessment")
 qc_result <- sn_get_result(
   object,
   type = "qc_assessment",
-  name = "kotliarov_qc"
+  result_id = "kotliarov_qc"
 )
 
 bundle <- sn_build_result_bundle(
@@ -163,23 +166,23 @@ trusted boundary to verify.
 
 ## Audit and upgrade existing objects
 
-`sn_audit_results()` checks every registered result collection, the generic
-result store, and every other populated top-level `object@misc` entry without
-changing the object. Canonical results report `valid`, older compatible
-envelopes report `legacy`, runtime/cache payloads report `artifact`, and
+`sn_audit_results()` checks the canonical result store and every other
+populated top-level `object@misc` entry without changing the object. Canonical
+results report `valid`, normalizable malformed envelopes report `repairable`,
+runtime/cache payloads report `artifact`, and
 unknown payloads report `unregistered` rather than being silently omitted or
 misclassified as analysis results.
-Every analytical result uses `schema_version = "1.0.0"` and a canonical
-`tables$primary`; specialized table names remain synchronized aliases.
+Every analytical result uses `schema_version = "2.0.0"` and a canonical
+`tables$primary`; additional named tables carry analysis-specific outputs.
 
 ```{r audit-results}
 audit <- sn_audit_results(object)
 audit[, c(
-  "type", "name", "contract_scope", "status", "schema_version",
+  "type", "result_id", "contract_scope", "status", "schema_version",
   "primary_rows", "errors"
 )]
 
-# Upgrade only compatible analytical results. Artifacts and unregistered
+# Normalize only analytical results. Artifacts and unregistered
 # payloads are left untouched.
 object <- sn_upgrade_results(object)
 stopifnot(all(
@@ -189,8 +192,8 @@ stopifnot(all(
 sn_audit_results(object, include_artifacts = FALSE)
 ```
 
-Table-returning helpers such as `sn_get_de_result()` remain compatibility
-views over the same canonical primary table. Use `sn_get_result()` when the
+Table-returning helpers such as `sn_get_de_result()` expose the same canonical
+primary table. Use `sn_get_result()` when the
 full envelope, diagnostics, or provenance is required.
 
 ## Use optional ShennongOpt acceleration

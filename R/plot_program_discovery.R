@@ -1,7 +1,7 @@
-.sn_resolve_program_discovery <- function(x, name = NULL) {
+.sn_resolve_program_discovery <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "program_discovery", name)
+    if (is_null(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "program_discovery", result_id)
   } else {
     result <- x
     sn_validate_result(result)
@@ -13,7 +13,7 @@
 #' Plot discovered gene programs
 #'
 #' @param x A Seurat object or program-discovery result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Gene weights, per-cell activity, or run stability.
 #' @param programs Optional programs to retain.
 #' @param n Maximum genes per program.
@@ -21,14 +21,14 @@
 #' @return A `ggplot` object.
 #' @export
 sn_plot_discovered_programs <- function(x,
-                                        name = NULL,
+                                        result_id = NULL,
                                         type = c("weights", "activity", "stability"),
                                         programs = NULL,
                                         n = 20L,
                                         object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_program_discovery(x, name)
+  result <- .sn_resolve_program_discovery(x, result_id)
   if (identical(type, "weights")) {
     data <- tibble::as_tibble(result$tables$gene_weights)
     if (!is_null(programs)) data <- data[data$program %in% programs, , drop = FALSE]

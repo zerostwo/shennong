@@ -118,8 +118,8 @@
     strict = TRUE
   )
 
-  score_name <- as.character(control$name %||% "")[[1]]
-  score_columns <- paste0(names(signatures), score_name)
+  source_result_id <- as.character(control$name %||% "")[[1]]
+  score_columns <- paste0(names(signatures), source_result_id)
   metadata <- scored[[]]
   missing_columns <- setdiff(score_columns, colnames(metadata))
   if (length(missing_columns) > 0L) {
@@ -184,9 +184,9 @@
   dplyr::bind_rows(rows)
 }
 
-.sn_add_program_metadata <- function(object, scores, name) {
+.sn_add_program_metadata <- function(object, scores, result_id) {
   metadata <- data.frame(row.names = colnames(object))
-  prefix <- gsub("[^[:alnum:]_]+", "_", name)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
   for (program in rownames(scores)) {
     suffix <- gsub("[^[:alnum:]_]+", "_", program)
     metadata[[paste(prefix, suffix, sep = "_")]] <- as.numeric(scores[program, colnames(object)])
@@ -205,15 +205,14 @@
 #'   bundled signature query vector.
 #' @param method Scoring backend. UCell is the default for per-cell data.
 #' @param assay,layer Expression source.
-#' @param name Stored-result and metadata prefix. A stable method-derived name
-#'   is used when omitted.
 #' @param group_by Optional metadata column used to average expression before
 #'   GSVA/ssGSEA or other group-level scoring.
 #' @param species Species required for bundled signature queries.
 #' @param min_genes Minimum matched features required per signature.
 #' @param backend_control Named backend-specific control list.
 #' @param return_object Return the updated object or the unified result.
-#' @param store_name Preferred stored-result name. Overrides \code{name} when supplied.
+#' @param result_id Stable identifier for the stored program-scoring result and
+#'   its metadata prefix. A method-derived identifier is used when omitted.
 #'
 #' @return A Seurat object or unified program-scoring result.
 #'
@@ -223,7 +222,7 @@
 #'   object,
 #'   signatures = list(T_cell = c("CD3D", "CD3E")),
 #'   method = "ucell",
-#'   name = "immune_programs"
+#'   result_id = "immune_programs"
 #' )
 #' sn_get_result(object, "program_scoring", "immune_programs")
 #' }
@@ -234,19 +233,15 @@ sn_score_programs <- function(object,
                               method = c("ucell", "aucell", "gsva", "ssgsea", "mean"),
                               assay = NULL,
                               layer = "data",
-                              name = NULL,
                               group_by = NULL,
                               species = NULL,
                               min_genes = 1L,
                               backend_control = list(),
                               return_object = TRUE,
-                              store_name = NULL) {
+                              result_id = NULL) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  if (!is.null(store_name)) {
-    name <- store_name
-  }
-  name <- name %||% paste0("programs_", method)
+  result_id <- .sn_validate_result_id(result_id %||% paste0("programs_", method))
   species <- species %||% tryCatch(sn_get_species(object), error = function(e) NULL)
   signatures <- .sn_normalize_program_signatures(signatures, species = species)
   expression <- .sn_annotation_expression(object, assay = assay, layer = layer)
@@ -283,13 +278,13 @@ sn_score_programs <- function(object,
   if (is.null(colnames(scores))) colnames(scores) <- colnames(matrix)
   score_table <- .sn_program_score_table(scores, level = level, group_by = group_by)
   if (identical(level, "cell")) {
-    object <- .sn_add_program_metadata(object, scores, name = name)
+    object <- .sn_add_program_metadata(object, scores, result_id = result_id)
   }
 
   result <- list(
-    schema_version = "1.0.0",
+    schema_version = .sn_analysis_result_schema_version(),
     analysis_type = "program_scoring",
-    name = name,
+    result_id = result_id,
     method = method,
     backend = method,
     input = list(
@@ -314,9 +309,9 @@ sn_score_programs <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "program_scoring", name, result)
+  object <- sn_store_result(object, "program_scoring", result_id, result)
   object <- .sn_log_seurat_command(object = object, assay = expression$assay, name = "sn_score_programs")
-  if (isTRUE(return_object)) object else sn_get_result(object, "program_scoring", name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "program_scoring", result_id)
 }
 
 #' Test program activity between conditions
@@ -326,14 +321,14 @@ sn_score_programs <- function(object,
 #' independent biological replicates.
 #'
 #' @param object A Seurat object containing a stored program-scoring result.
-#' @param score_name Stored scoring result name.
+#' @param source_result_id Stored scoring result identifier.
 #' @param condition_by Condition metadata column.
 #' @param sample_by Sample/patient metadata column. Strongly recommended for
 #'   inference.
 #' @param group_by Optional cell-type or state column used for stratified tests.
 #' @param contrast Optional two condition levels; defaults to the first two.
 #' @param method \code{"wilcox"} or \code{"limma"}.
-#' @param store_name Result name.
+#' @param result_id Stable identifier for the stored test result.
 #' @param return_object Return the object or unified result.
 #'
 #' @return A Seurat object or unified program-comparison result.
@@ -348,22 +343,25 @@ sn_score_programs <- function(object,
 #'
 #' @export
 sn_test_programs <- function(object,
-                             score_name,
+                             source_result_id,
                              condition_by,
                              sample_by = NULL,
                              group_by = NULL,
                              contrast = NULL,
                              method = c("wilcox", "limma"),
-                             store_name = NULL,
+                             result_id = NULL,
                              return_object = TRUE) {
   .sn_validate_seurat_object(object)
+  result_id <- .sn_validate_result_id(
+    result_id %||% paste0(source_result_id, "_comparison")
+  )
   method <- match.arg(method)
   metadata_columns <- c(condition_by, sample_by, group_by)
   missing <- setdiff(metadata_columns[!is.na(metadata_columns) & nzchar(metadata_columns)], colnames(object[[]]))
   if (length(missing) > 0L) {
     stop("Metadata column(s) not found: ", paste(missing, collapse = ", "), call. = FALSE)
   }
-  scored <- sn_get_result(object, "program_scoring", score_name)
+  scored <- sn_get_result(object, "program_scoring", source_result_id)
   scores <- scored$tables$scores
   if (!identical(unique(scores$level), "cell")) {
     stop("`sn_test_programs()` currently requires cell-level stored scores.", call. = FALSE)
@@ -425,11 +423,11 @@ sn_test_programs <- function(object,
     )
   }))
   tests$adjusted_p_value <- stats::p.adjust(tests$p_value, method = "BH")
-  store_name <- store_name %||% paste0(score_name, "_", condition_by)
+  result_id <- result_id %||% paste0(source_result_id, "_", condition_by)
   result <- list(
-    schema_version = "1.0.0", analysis_type = "program_comparison", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "program_comparison", result_id = result_id,
     method = method, backend = method,
-    input = list(score_name = score_name, condition_by = condition_by, sample_by = sample_by, group_by = group_by),
+    input = list(source_result_id = source_result_id, condition_by = condition_by, sample_by = sample_by, group_by = group_by),
     parameters = list(contrast = contrast),
     tables = list(primary = tests, sample_scores = aggregated),
     embeddings = list(), graphs = list(), models = list(),
@@ -437,6 +435,6 @@ sn_test_programs <- function(object,
     warnings = if (is_null(sample_by)) "Cells were used as exploratory units because sample_by was not supplied." else character(),
     provenance = .sn_analysis_provenance()
   )
-  object <- sn_store_result(object, "program_comparison", store_name, result)
-  if (isTRUE(return_object)) object else sn_get_result(object, "program_comparison", store_name)
+  object <- sn_store_result(object, "program_comparison", result_id, result)
+  if (isTRUE(return_object)) object else sn_get_result(object, "program_comparison", result_id)
 }

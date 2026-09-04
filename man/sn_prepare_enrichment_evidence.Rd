@@ -6,7 +6,7 @@
 \usage{
 sn_prepare_enrichment_evidence(
   object = NULL,
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   result = NULL,
   n_terms = 10
 )
@@ -15,7 +15,7 @@ sn_prepare_enrichment_evidence(
 \item{object}{Optional \code{Seurat} object containing stored enrichment
 results.}
 
-\item{enrichment_name}{Name of a stored enrichment result.}
+\item{enrichment_result_id}{Name of a stored enrichment result.}
 
 \item{result}{Optional enrichment result object supplied directly.}
 

@@ -6,20 +6,20 @@
 \usage{
 sn_test_programs(
   object,
-  score_name,
+  source_result_id,
   condition_by,
   sample_by = NULL,
   group_by = NULL,
   contrast = NULL,
   method = c("wilcox", "limma"),
-  store_name = NULL,
+  result_id = NULL,
   return_object = TRUE
 )
 }
 \arguments{
 \item{object}{A Seurat object containing a stored program-scoring result.}
 
-\item{score_name}{Stored scoring result name.}
+\item{source_result_id}{Stored scoring result identifier.}
 
 \item{condition_by}{Condition metadata column.}
 
@@ -32,7 +32,7 @@ inference.}
 
 \item{method}{\code{"wilcox"} or \code{"limma"}.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Stable identifier for the stored test result.}
 
 \item{return_object}{Return the object or unified result.}
 }

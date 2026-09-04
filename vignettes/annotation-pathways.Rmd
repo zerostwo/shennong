@@ -75,7 +75,7 @@ pbmc <- sn_find_de(
   layer = "data",
   min_pct = 0.25,
   logfc_threshold = 0.25,
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
@@ -83,18 +83,21 @@ pbmc <- sn_find_de(
 table(pbmc$seurat_clusters, pbmc$real_response)
 ```
 
-The result is stored under `object@misc$de_results`. Retrieve it by name instead
-of relying on a temporary variable from an earlier script.
+The result is stored in the canonical Shennong result registry. `result_id` is
+the explicit stable key used consistently by `sn_list_results()` and
+`sn_get_result()`. Retrieve the result by ID instead of relying on a temporary
+variable from an earlier script.
 
 ```{r retrieve-markers}
 marker_tbl <- sn_get_de_result(
   pbmc,
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   top_n = 5
 )
 
 head(marker_tbl)
-names(pbmc@misc$de_results)
+sn_list_results(pbmc, type = "de")
+sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
 ```
 
 ## Prioritize interpretable marker classes
@@ -130,7 +133,7 @@ feature_class_resource <- data.frame(
 
 pbmc <- sn_annotate_de_features(
   pbmc,
-  de_name = "cluster_markers",
+  source_result_id = "cluster_markers",
   species = "human",
   resource = "custom",
   custom_resource = feature_class_resource
@@ -140,7 +143,7 @@ sn_list_results(pbmc)
 
 sn_get_de_result(
   pbmc,
-  de_name = "cluster_markers_feature_classes",
+  result_id = "cluster_markers_feature_classes",
   top_n = 5
 ) |>
   dplyr::select(
@@ -162,7 +165,7 @@ cluster directly.
 sn_plot_dot(
   x = pbmc,
   features = "top_markers",
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   n = 4,
   group_by = "seurat_clusters",
   palette = "RdBu",
@@ -206,7 +209,7 @@ pbmc <- sn_run_annotation(
   species = "human",
   tissue = "peripheral blood",
   ontology = TRUE,
-  store_name = "pbmc_annotated"
+  result_id = "pbmc_annotated"
 )
 
 annotation_index <- sn_list_results(pbmc, type = "annotation")
@@ -215,7 +218,7 @@ annotation_index
 annotation <- sn_get_result(
   pbmc,
   type = "annotation",
-  name = "pbmc_annotated"
+  result_id = "pbmc_annotated"
 )
 
 head(annotation$tables$clusters)
@@ -224,7 +227,7 @@ annotation$diagnostics
 
 sn_plot_reference_projection(
   pbmc,
-  store_name = "pbmc_annotated",
+  result_id = "pbmc_annotated",
   reduction = "umap",
   color_by = "prediction"
 )
@@ -240,7 +243,7 @@ sn_review_annotation(pbmc, "pbmc_annotated")
 
 sn_plot_annotation_confidence(
   pbmc,
-  store_name = "pbmc_annotated",
+  result_id = "pbmc_annotated",
   level = "cluster"
 )
 
@@ -309,13 +312,13 @@ query_singleR <- sn_run_annotation(
   reference = reference,
   reference_label_by = "pbmc_annotated_label",
   species = "human",
-  store_name = "kotliarov_reference_singleR"
+  result_id = "kotliarov_reference_singleR"
 )
 
 reference_result <- sn_get_result(
   query_singleR,
   type = "annotation",
-  name = "kotliarov_reference_singleR"
+  result_id = "kotliarov_reference_singleR"
 )
 
 head(reference_result$tables$backend_predictions)
@@ -375,7 +378,7 @@ pbmc$kotliarov_reference_label <- unname(
 sn_plot_annotation_confusion(
   pbmc,
   truth = "kotliarov_reference_label",
-  store_name = "pbmc_annotated"
+  result_id = "pbmc_annotated"
 )
 ```
 
@@ -531,14 +534,14 @@ pbmc <- sn_score_programs(
   method = "ucell",
   assay = "RNA",
   layer = "data",
-  name = "immune_programs",
+  result_id = "immune_programs",
   min_genes = 2
 )
 
 program_result <- sn_get_result(
   pbmc,
   type = "program_scoring",
-  name = "immune_programs"
+  result_id = "immune_programs"
 )
 
 program_result$tables$coverage
@@ -554,13 +557,13 @@ al., 2013), or ssGSEA (Barbie et al., 2009) according to the selected backend.
 ```{r plot-programs}
 sn_plot_program_activity(
   pbmc,
-  name = "immune_programs",
+  result_id = "immune_programs",
   group_by = "seurat_clusters"
 )
 
 sn_plot_program_heatmap(
   pbmc,
-  name = "immune_programs",
+  result_id = "immune_programs",
   group_by = "seurat_clusters"
 )
 ```
@@ -573,19 +576,19 @@ explicitly marked as exploratory cell-level inference.
 ```{r test-programs, eval = run_vignette}
 pbmc <- sn_test_programs(
   pbmc,
-  score_name = "immune_programs",
+  source_result_id = "immune_programs",
   condition_by = "real_response",
   sample_by = "real_sample",
   group_by = "seurat_clusters",
   contrast = c("d0 high", "d0 low"),
   method = "wilcox",
-  store_name = "immune_program_response"
+  result_id = "immune_program_response"
 )
 
 sn_get_result(
   pbmc,
   type = "program_comparison",
-  name = "immune_program_response"
+  result_id = "immune_program_response"
 )$tables$primary
 ```
 
@@ -602,19 +605,19 @@ multiple-testing adjustment, and q-value rules are retained.
 ```{r enrich-markers}
 pbmc <- sn_run_enrichment(
   x = pbmc,
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
   gene_clusters = gene ~ cluster,
   analysis = "ora",
   species = "human",
   database = "GOBP",
   universe = rownames(pbmc),
-  store_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   return_object = TRUE
 )
 
 pathways <- sn_get_enrichment_result(
   pbmc,
-  enrichment_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   top_n = 5
 )
 
@@ -622,7 +625,7 @@ head(pathways)
 
 stored_pathways <- sn_get_enrichment_result(
   pbmc,
-  enrichment_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   with_metadata = TRUE
 )
 stored_pathways$parameters[c(
@@ -642,11 +645,11 @@ review_terms <- pathways
 pbmc <- sn_store_enrichment(
   object = pbmc,
   result = review_terms,
-  store_name = "reviewed_cluster_gobp",
+  result_id = "reviewed_cluster_gobp",
   analysis = "ora",
   database = "GOBP",
   species = "human",
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
   return_object = TRUE
 )
 
@@ -676,16 +679,16 @@ pbmc <- sn_run_cell_communication(
   condition_by = "real_response",
   contrast = c("d0 high", "d0 low"),
   species = "human",
-  store_name = "cluster_cellchat"
+  result_id = "cluster_cellchat"
 )
 
 cellchat_tbl <- sn_get_cell_communication_result(
   pbmc,
-  communication_name = "cluster_cellchat"
+  result_id = "cluster_cellchat"
 )
 
 head(cellchat_tbl)
-sn_plot_communication(pbmc, name = "cluster_cellchat", type = "bubble", n = 25)
+sn_plot_communication(pbmc, result_id = "cluster_cellchat", type = "bubble", n = 25)
 ```
 
 NicheNet needs its ligand-target matrix and ligand-receptor network. Shennong
@@ -715,7 +718,7 @@ pbmc <- sn_run_cell_communication(
   contrast = c("d0 high", "d0 low"),
   ligand_target_matrix = ligand_target_matrix,
   lr_network = lr_network,
-  store_name = "sender_receiver_nichenet"
+  result_id = "sender_receiver_nichenet"
 )
 
 head(sn_get_cell_communication_result(pbmc, "sender_receiver_nichenet"))
@@ -731,12 +734,12 @@ pbmc <- sn_run_regulatory_activity(
   method = "dorothea",
   group_by = "seurat_clusters",
   species = "human",
-  store_name = "cluster_dorothea"
+  result_id = "cluster_dorothea"
 )
 
 tf_activity <- sn_get_regulatory_activity_result(
   pbmc,
-  activity_name = "cluster_dorothea",
+  result_id = "cluster_dorothea",
   sources = c("NFKB1", "STAT1")
 )
 

@@ -114,7 +114,7 @@ on.exit({
     cellchat_db = database,
     min_cells = 10,
     raw_use = TRUE,
-    store_name = if (accelerated) "accelerated" else "baseline",
+    result_id = if (accelerated) "accelerated" else "baseline",
     return_object = FALSE,
     nboot = 10,
     seed.use = seed

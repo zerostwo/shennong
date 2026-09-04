@@ -170,7 +170,7 @@
   unique_ranks[match(keys, unique_keys)]
 }
 
-.sn_import_scib_metrics_result <- function(output_dir, method_table, label_by, name, parameters) {
+.sn_import_scib_metrics_result <- function(output_dir, method_table, label_by, result_id, parameters) {
   required <- file.path(output_dir, c("summary.csv", "metrics.csv", "ranking.csv", "manifest.json"))
   if (any(!file.exists(required))) {
     stop("scib-metrics output is incomplete: ", paste(basename(required[!file.exists(required)]), collapse = ", "), ".", call. = FALSE)
@@ -225,7 +225,7 @@
   ranking <- ranking[order(ranking$rank_within_preprocess, ranking$run_id), , drop = FALSE]
   .sn_new_analysis_result(
     analysis_type = "integration_benchmark",
-    name = name,
+    result_id = result_id,
     method = "scib_metrics",
     backend = "scib-metrics",
     input = list(cells = backend_manifest$n_cells, features = backend_manifest$n_features),
@@ -270,7 +270,7 @@
 #' @param max_cells Optional shared stratified cell cap.
 #' @param accelerator One of `"auto"`, `"cpu"`, or `"gpu"`.
 #' @param n_jobs Neighbor-search workers.
-#' @param name Stored result name.
+#' @param result_id Stable identifier for the stored benchmark result.
 #' @param return_object Return the updated Seurat object when `TRUE`, otherwise
 #'   return the analysis-result object.
 #' @param backend_control Advanced pixi, runner, metric, and filesystem controls.
@@ -289,11 +289,12 @@ sn_compare_integrations <- function(object,
                                     max_cells = 100000L,
                                     accelerator = c("auto", "cpu", "gpu"),
                                     n_jobs = 1L,
-                                    name = "integration_benchmark",
+                                    result_id = "integration_benchmark",
                                     return_object = TRUE,
                                     backend_control = list(),
                                     seed = 717L,
                                     verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   check_installed(c("Seurat", "Matrix", "jsonlite"))
   .sn_validate_seurat_object(object)
   if (!is.list(backend_control)) stop("`backend_control` must be a list.", call. = FALSE)
@@ -391,7 +392,7 @@ sn_compare_integrations <- function(object,
       selected_cells = input$cells, selected_features = input$features
     )
     group_results[[preprocess_id]] <- .sn_import_scib_metrics_result(
-      output_dir, group_table, label_by, name, group_parameters
+      output_dir, group_table, label_by, result_id, group_parameters
     )
   }
   result <- group_results[[1L]]
@@ -435,5 +436,5 @@ sn_compare_integrations <- function(object,
     vapply(selected_features, length, integer(1))
   }
   if (!isTRUE(return_object)) return(result)
-  sn_store_result(object, "integration_benchmark", name, result)
+  sn_store_result(object, "integration_benchmark", result_id, result)
 }

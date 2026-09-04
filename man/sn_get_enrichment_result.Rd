@@ -6,7 +6,7 @@
 \usage{
 sn_get_enrichment_result(
   object,
-  enrichment_name = "default",
+  result_id = "default",
   top_n = NULL,
   groups = NULL,
   with_metadata = FALSE
@@ -15,7 +15,7 @@ sn_get_enrichment_result(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{enrichment_name}{Name of the stored enrichment result.}
+\item{result_id}{Identifier of the stored enrichment result.}
 
 \item{top_n}{Optional number of top terms to keep.}
 
@@ -33,6 +33,6 @@ Retrieve a stored enrichment result from a Seurat object
 }
 \examples{
 \dontrun{
-terms <- sn_get_enrichment_result(seurat_obj, enrichment_name = "cluster_gsea", top_n = 10)
+terms <- sn_get_enrichment_result(seurat_obj, result_id = "cluster_gsea", top_n = 10)
 }
 }

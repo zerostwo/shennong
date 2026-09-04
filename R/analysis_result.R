@@ -1,21 +1,22 @@
 .sn_analysis_result_required_fields <- function() {
   c(
-    "schema_version", "analysis_type", "name", "method", "backend", "input",
+    "schema_version", "analysis_type", "result_id", "method", "backend", "input",
     "parameters", "tables", "embeddings", "graphs", "models", "diagnostics",
     "warnings", "provenance"
   )
 }
 
-.sn_analysis_result_schema_version <- function() "1.0.0"
+.sn_analysis_result_schema_version <- function() "2.0.0"
 
-.sn_normalize_analysis_result_schema_version <- function(version) {
-  version <- as.character(version %||% .sn_analysis_result_schema_version())
-  if (length(version) != 1L || is.na(version) || !nzchar(version)) {
-    return(version)
+.sn_validate_result_id <- function(result_id) {
+  if (!is.character(result_id) || length(result_id) != 1L ||
+      is.na(result_id) || !nzchar(result_id)) {
+    stop("`result_id` must be a non-empty character scalar.", call. = FALSE)
   }
-  if (grepl("^[0-9]+$", version)) return(paste0(version, ".0.0"))
-  if (grepl("^[0-9]+\\.[0-9]+$", version)) return(paste0(version, ".0"))
-  version
+  if (!identical(result_id, trimws(result_id))) {
+    stop("`result_id` must not start or end with whitespace.", call. = FALSE)
+  }
+  result_id
 }
 
 .sn_is_supported_analysis_result_schema_version <- function(version) {
@@ -114,7 +115,7 @@
 }
 
 .sn_new_analysis_result <- function(analysis_type,
-                                    name,
+                                    result_id,
                                     method,
                                     backend = method,
                                     input = list(),
@@ -127,10 +128,14 @@
                                     warnings = character(),
                                     provenance = NULL,
                                     random_seed = NA_integer_) {
+  result_id <- .sn_validate_result_id(result_id)
+  provenance <- provenance %||% .sn_analysis_provenance(random_seed = random_seed)
+  provenance[["result_id"]] <- result_id
+  provenance[["analysis_type"]] <- analysis_type
   result <- list(
     schema_version = .sn_analysis_result_schema_version(),
     analysis_type = analysis_type,
-    name = name,
+    result_id = result_id,
     method = method,
     backend = backend,
     input = input,
@@ -141,7 +146,7 @@
     models = models,
     diagnostics = diagnostics,
     warnings = as.character(warnings),
-    provenance = provenance %||% .sn_analysis_provenance(random_seed = random_seed)
+    provenance = provenance
   )
   sn_validate_result(result)
   result
@@ -149,7 +154,7 @@
 
 .sn_upgrade_analysis_result <- function(result,
                                         analysis_type,
-                                        name,
+                                        result_id,
                                         method = NULL,
                                         backend = NULL) {
   if (!is.list(result)) {
@@ -158,29 +163,14 @@
   analysis_type <- as.character(
     analysis_type %||% result[["analysis_type"]] %||% result[["analysis"]]
   )
-  name <- as.character(name %||% result[["name"]])
+  result_id <- .sn_validate_result_id(result_id)
   method <- as.character(method %||% result[["method"]] %||% "unknown")
   backend <- as.character(backend %||% result[["backend"]] %||% method)
 
-  original_schema_version <- result[["schema_version"]]
-  if (!is_null(original_schema_version)) {
-    if (!is.character(original_schema_version) || length(original_schema_version) != 1L ||
-        is.na(original_schema_version) || !nzchar(original_schema_version)) {
-      stop("Cannot upgrade a result with an invalid `schema_version`.", call. = FALSE)
-    }
-    normalized_schema <- .sn_normalize_analysis_result_schema_version(original_schema_version)
-    if (!identical(normalized_schema, .sn_analysis_result_schema_version())) {
-      stop(
-        "Cannot upgrade unsupported `schema_version` '", original_schema_version,
-        "'; this Shennong version only upgrades compatible 1.0 results.",
-        call. = FALSE
-      )
-    }
-  }
-
   result[["schema_version"]] <- .sn_analysis_result_schema_version()
   result[["analysis_type"]] <- analysis_type
-  result[["name"]] <- name
+  result[["name"]] <- NULL
+  result[["result_id"]] <- result_id
   result[["method"]] <- method
   result[["backend"]] <- backend
   result[["input"]] <- result[["input"]] %||% list()
@@ -195,20 +185,14 @@
     result,
     capture_acceleration = FALSE
   )
-  if (!is_null(original_schema_version) &&
-      !identical(original_schema_version, result[["schema_version"]])) {
-    result[["provenance"]][["source_schema_version"]] <-
-      result[["provenance"]][["source_schema_version"]] %||% original_schema_version
-  }
+  result[["provenance"]][["result_id"]] <- result_id
+  result[["provenance"]][["analysis_type"]] <- analysis_type
 
-  result[["package_version"]] <- result[["package_version"]] %||%
-    result[["provenance"]][["package_versions"]][["Shennong"]] %||% NA_character_
-  result[["created_at"]] <- result[["created_at"]] %||%
-    result[["provenance"]][["timestamp"]]
-  result[["analysis"]] <- result[["analysis"]] %||% analysis_type
-  if (is_null(result[["table"]]) && is.data.frame(result[["tables"]][["primary"]])) {
-    result[["table"]] <- result[["tables"]][["primary"]]
-  }
+  result[["table"]] <- NULL
+  result[["overall"]] <- NULL
+  result[["by_sample"]] <- NULL
+  result[["package_version"]] <- NULL
+  result[["created_at"]] <- NULL
   result
 }
 
@@ -224,7 +208,7 @@
   if (length(missing) > 0L) {
     errors <- c(errors, paste0("Missing required field(s): ", paste(missing, collapse = ", "), "."))
   }
-  scalar_fields <- c("schema_version", "analysis_type", "name", "method", "backend")
+  scalar_fields <- c("schema_version", "analysis_type", "result_id", "method", "backend")
   for (field in intersect(scalar_fields, names(result))) {
     value <- result[[field]]
     if (!is.character(value) || length(value) != 1L || is.na(value) || !nzchar(value)) {
@@ -232,24 +216,12 @@
     }
   }
   schema_version <- result[["schema_version"]] %||% NA_character_
-  normalized_schema <- .sn_normalize_analysis_result_schema_version(schema_version)
-  legacy_schema <- is.character(schema_version) && length(schema_version) == 1L &&
-    !is.na(schema_version) && !identical(schema_version, normalized_schema) &&
-    identical(normalized_schema, .sn_analysis_result_schema_version())
-  if (isTRUE(legacy_schema)) {
-    warnings <- c(
-      warnings,
-      paste0(
-        "Legacy `schema_version` '", schema_version, "' is compatible but should be upgraded to '",
-        .sn_analysis_result_schema_version(), "'."
-      )
-    )
-  } else if (is.character(schema_version) && length(schema_version) == 1L &&
+  if (is.character(schema_version) && length(schema_version) == 1L &&
              !is.na(schema_version) && nzchar(schema_version) &&
              !grepl("^[0-9]+\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$", schema_version)) {
-    errors <- c(errors, "`schema_version` must use semantic version form such as '1.0.0'.")
+    errors <- c(errors, "`schema_version` must use semantic version form such as '2.0.0'.")
   }
-  if (!isTRUE(legacy_schema) && is.character(schema_version) &&
+  if (is.character(schema_version) &&
       length(schema_version) == 1L && !is.na(schema_version) && nzchar(schema_version) &&
       grepl("^[0-9]+\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$", schema_version) &&
       !.sn_is_supported_analysis_result_schema_version(schema_version)) {
@@ -272,12 +244,21 @@
   }
   provenance <- result[["provenance"]]
   if (is.list(provenance)) {
-    provenance_missing <- setdiff(c("package_versions", "random_seed", "timestamp"), names(provenance))
+    provenance_missing <- setdiff(
+      c("package_versions", "random_seed", "timestamp"),
+      names(provenance)
+    )
     if (length(provenance_missing) > 0L) {
       errors <- c(
         errors,
         paste0("`provenance` is missing field(s): ", paste(provenance_missing, collapse = ", "), ".")
       )
+    }
+    for (field in c("result_id", "analysis_type")) {
+      value <- provenance[[field]]
+      if (!is_null(value) && !identical(value, result[[field]])) {
+        errors <- c(errors, paste0("`provenance$", field, "` must match `", field, "`."))
+      }
     }
     package_versions <- provenance[["package_versions"]]
     if (!is_null(package_versions)) {
@@ -335,24 +316,6 @@
   result_tables <- result[["tables"]]
   tables <- if (is.list(result_tables)) result_tables else list()
   primary <- tables[["primary"]]
-  if (isTRUE(legacy_schema) && !is.data.frame(primary)) {
-    primary <- switch(
-      analysis_type,
-      annotation = tables[["cells"]],
-      program_scoring = tables[["scores"]],
-      trajectory = tables[["cells"]],
-      NULL
-    )
-    if (is.data.frame(primary)) {
-      warnings <- c(
-        warnings,
-        paste0(
-          "Legacy '", analysis_type,
-          "' result uses a named table alias; upgrade it to populate `tables$primary`."
-        )
-      )
-    }
-  }
   if (length(tables) == 0L) {
     if (.sn_analysis_result_requires_primary(analysis_type)) {
       errors <- c(errors, "Table-producing analysis results require `tables$primary`.")
@@ -376,11 +339,6 @@
       )
     }
   }
-  legacy_table <- result[["table"]]
-  if (is.data.frame(legacy_table) && is.data.frame(tables[["primary"]]) &&
-      !identical(legacy_table, tables[["primary"]])) {
-    errors <- c(errors, "Legacy `table` and canonical `tables$primary` are not synchronized.")
-  }
   list(valid = length(errors) == 0L, errors = errors, warnings = warnings)
 }
 
@@ -396,11 +354,12 @@
 #'
 #' @examples
 #' result <- list(
-#'   schema_version = "1.0.0", analysis_type = "demo", name = "example",
+#'   schema_version = "2.0.0", analysis_type = "demo", result_id = "example",
 #'   method = "mean", backend = "base", input = list(), parameters = list(),
 #'   tables = list(primary = data.frame(value = 1)), embeddings = list(),
 #'   graphs = list(), models = list(), diagnostics = list(), warnings = character(),
-#'   provenance = list(package_versions = list(), random_seed = 1L, timestamp = "2026-01-01 UTC")
+#'   provenance = list(package_versions = list(), random_seed = 1L,
+#'     timestamp = "2026-01-01 UTC", result_id = "example", analysis_type = "demo")
 #' )
 #' sn_validate_result(result, error = FALSE)
 #'
@@ -418,50 +377,30 @@ sn_validate_result <- function(result, error = TRUE) {
   if (isTRUE(error)) invisible(report) else report
 }
 
-.sn_result_collection <- function(type) {
-  registry <- .sn_misc_result_registry()
-  hit <- registry[
-    registry$type == type & registry$contract_scope == "analysis_result" & registry$listable,
-    ,
-    drop = FALSE
-  ]
-  if (nrow(hit) == 0L) NULL else hit$collection[[1]]
-}
-
-.sn_prepare_result_for_collection <- function(result, type, name) {
-  result <- .sn_upgrade_analysis_result(result, analysis_type = type, name = name)
-  collection <- .sn_result_collection(type)
-  if (!is_null(collection)) {
-    entry <- .sn_misc_registry_entry(collection)
-    required <- entry$required_fields[[1]]
-    legacy_table <- result[["table"]]
-    if ("table" %in% required && is.data.frame(legacy_table)) {
-      result[["tables"]][["primary"]] <- legacy_table
-    }
-    if ("table" %in% required && is_null(legacy_table)) {
-      stop(
-        "Result type '", type, "' requires `tables$primary` to be a data frame.",
-        call. = FALSE
-      )
-    }
-    if ("database" %in% required) {
-      result[["database"]] <- result[["database"]] %||%
-        result[["parameters"]][["database"]] %||% "unknown"
-    }
-  }
+.sn_prepare_result <- function(result, type, result_id) {
+  result <- .sn_upgrade_analysis_result(
+    result,
+    analysis_type = type,
+    result_id = result_id
+  )
   sn_validate_result(result)
   result
 }
 
+.sn_result_store <- function(object) {
+  misc_data <- methods::slot(object, "misc")
+  shennong <- misc_data[["shennong"]] %||% list()
+  shennong[["results"]] %||% list()
+}
+
 #' Store a Shennong analysis result on a Seurat object
 #'
-#' Registered legacy result types are stored in their established
-#' \code{object@misc} collection. New result types use the generic
-#' \code{object@misc$analysis_results} collection.
+#' Every result is stored at
+#' \code{object@misc$shennong$results[[analysis_type]][[result_id]]}.
 #'
 #' @param object A \code{Seurat} object.
 #' @param type Analysis type, for example \code{"trajectory"} or \code{"de"}.
-#' @param name Stable name used to retrieve the result.
+#' @param result_id Stable identifier used to store and retrieve the result.
 #' @param result A result list. Missing contract fields are filled when they can
 #'   be inferred without changing the analytical content.
 #'
@@ -474,13 +413,11 @@ sn_validate_result <- function(result, error = TRUE) {
 #' }
 #'
 #' @export
-sn_store_result <- function(object, type, name, result) {
+sn_store_result <- function(object, type, result_id, result) {
   .sn_validate_seurat_object(object)
+  result_id <- .sn_validate_result_id(result_id)
   if (!is.character(type) || length(type) != 1L || !nzchar(type)) {
     stop("`type` must be a non-empty character scalar.", call. = FALSE)
-  }
-  if (!is.character(name) || length(name) != 1L || !nzchar(name)) {
-    stop("`name` must be a non-empty character scalar.", call. = FALSE)
   }
   type <- tolower(type)
   artifact_types <- .sn_misc_result_registry() |>
@@ -492,18 +429,14 @@ sn_store_result <- function(object, type, name, result) {
       call. = FALSE
     )
   }
-  prepared <- .sn_prepare_result_for_collection(result, type = type, name = name)
-  collection <- .sn_result_collection(type)
-  if (!is_null(collection)) {
-    prepared <- .sn_prepare_misc_result(collection, name, prepared)
-    return(.sn_store_misc_result(object, collection, name, prepared))
-  }
-
+  prepared <- .sn_prepare_result(result, type = type, result_id = result_id)
   misc_data <- methods::slot(object, "misc")
-  misc_data[["analysis_results"]] <- misc_data[["analysis_results"]] %||% list()
-  misc_data[["analysis_results"]][[type]] <-
-    misc_data[["analysis_results"]][[type]] %||% list()
-  misc_data[["analysis_results"]][[type]][[name]] <- prepared
+  misc_data[["shennong"]] <- misc_data[["shennong"]] %||% list()
+  misc_data[["shennong"]][["results"]] <-
+    misc_data[["shennong"]][["results"]] %||% list()
+  misc_data[["shennong"]][["results"]][[type]] <-
+    misc_data[["shennong"]][["results"]][[type]] %||% list()
+  misc_data[["shennong"]][["results"]][[type]][[result_id]] <- prepared
   methods::slot(object, "misc") <- misc_data
   object
 }
@@ -512,7 +445,7 @@ sn_store_result <- function(object, type, name, result) {
 #'
 #' @param object A \code{Seurat} object.
 #' @param type Analysis type.
-#' @param name Stored result name.
+#' @param result_id Stored result identifier.
 #'
 #' @return A validated Shennong analysis-result list.
 #'
@@ -520,55 +453,48 @@ sn_store_result <- function(object, type, name, result) {
 #' \dontrun{sn_get_result(obj, "trajectory", "cd8_slingshot")}
 #'
 #' @export
-sn_get_result <- function(object, type, name) {
+sn_get_result <- function(object, type, result_id) {
   .sn_validate_seurat_object(object)
   type <- tolower(as.character(type))
-  name <- as.character(name)
-  collection <- .sn_result_collection(type)
-  if (!is_null(collection)) {
-    result <- .sn_get_misc_result(object, collection, name)
-  } else {
-    misc_data <- methods::slot(object, "misc")
-    results <- misc_data[["analysis_results"]][[type]] %||% list()
-    if (!name %in% names(results)) {
-      stop(
-        "No stored result named '", name, "' was found for analysis type '", type, "'.",
-        call. = FALSE
-      )
-    }
-    result <- results[[name]]
+  result_id <- .sn_validate_result_id(result_id)
+  results <- .sn_result_store(object)[[type]] %||% list()
+  if (!result_id %in% names(results)) {
+    stop(
+      "No result with `result_id = \"", result_id,
+      "\"` was found for analysis type '", type, "'.",
+      call. = FALSE
+    )
   }
-  result <- .sn_upgrade_analysis_result(result, analysis_type = type, name = name)
+  result <- results[[result_id]]
   sn_validate_result(result)
   result
 }
 
 .sn_generic_result_summary <- function(object) {
-  misc_data <- methods::slot(object, "misc")
-  collections <- misc_data[["analysis_results"]] %||% list()
+  collections <- .sn_result_store(object)
   if (length(collections) == 0L) {
     return(tibble::tibble())
   }
   dplyr::bind_rows(lapply(names(collections), function(type) {
     entries <- collections[[type]]
     if (length(entries) == 0L) return(tibble::tibble())
-    names <- names(entries)
+    result_ids <- names(entries)
     tibble::tibble(
-      collection = "analysis_results",
+      collection = "shennong.results",
       type = type,
-      name = names,
-      analysis = vapply(names, function(name) {
-        entries[[name]][["analysis_type"]] %||% type
+      result_id = result_ids,
+      analysis = vapply(result_ids, function(result_id) {
+        entries[[result_id]][["analysis_type"]] %||% type
       }, character(1)),
-      method = vapply(names, function(name) {
-        entries[[name]][["method"]] %||% NA_character_
+      method = vapply(result_ids, function(result_id) {
+        entries[[result_id]][["method"]] %||% NA_character_
       }, character(1)),
-      created_at = vapply(names, function(name) {
-        provenance <- entries[[name]][["provenance"]] %||% list()
+      created_at = vapply(result_ids, function(result_id) {
+        provenance <- entries[[result_id]][["provenance"]] %||% list()
         provenance[["timestamp"]] %||% NA_character_
       }, character(1)),
-      n_rows = unname(vapply(names, function(name) {
-        tables <- entries[[name]][["tables"]] %||% list()
+      n_rows = unname(vapply(result_ids, function(result_id) {
+        tables <- entries[[result_id]][["tables"]] %||% list()
         primary <- tables[["primary"]]
         if (is.data.frame(primary)) nrow(primary) else 0L
       }, integer(1))),
@@ -581,53 +507,40 @@ sn_get_result <- function(object, type, name) {
                                                include_artifacts = FALSE) {
   misc_data <- methods::slot(object, "misc")
   registry <- .sn_misc_result_registry()
-  if (!isTRUE(include_artifacts)) {
-    registry <- registry[registry$contract_scope == "analysis_result", , drop = FALSE]
-  }
+  registry <- registry[registry$contract_scope == "artifact", , drop = FALSE]
   entries <- list()
-  for (index in seq_len(nrow(registry))) {
-    current_type <- registry$type[[index]]
-    if (!is_null(type) && !current_type %in% type) next
-    collection <- registry$collection[[index]]
-    collection_data <- misc_data[[collection]] %||% list()
-    contract_scope <- registry$contract_scope[[index]]
-    if (identical(contract_scope, "artifact")) {
+  if (isTRUE(include_artifacts)) {
+    for (index in seq_len(nrow(registry))) {
+      current_type <- registry$type[[index]]
+      if (!is_null(type) && !current_type %in% type) next
+      collection <- registry$collection[[index]]
+      collection_data <- misc_data[[collection]] %||% list()
       if (length(collection_data) > 0L) {
         entries[[length(entries) + 1L]] <- list(
           collection = collection,
           type = current_type,
-          name = collection,
-          contract_scope = contract_scope,
+          result_id = collection,
+          contract_scope = "artifact",
           result = collection_data
         )
       }
-      next
-    }
-    for (name in names(collection_data)) {
-      entries[[length(entries) + 1L]] <- list(
-        collection = collection,
-        type = current_type,
-        name = name,
-        contract_scope = "analysis_result",
-        result = collection_data[[name]]
-      )
     }
   }
-  generic <- misc_data[["analysis_results"]] %||% list()
-  for (current_type in names(generic)) {
+  stored_results <- .sn_result_store(object)
+  for (current_type in names(stored_results)) {
     if (!is_null(type) && !current_type %in% type) next
-    for (name in names(generic[[current_type]])) {
+    for (result_id in names(stored_results[[current_type]])) {
       entries[[length(entries) + 1L]] <- list(
-        collection = "analysis_results",
+        collection = "shennong.results",
         type = current_type,
-        name = name,
+        result_id = result_id,
         contract_scope = "analysis_result",
-        result = generic[[current_type]][[name]]
+        result = stored_results[[current_type]][[result_id]]
       )
     }
   }
   if (isTRUE(include_artifacts)) {
-    registered_collections <- c(registry$collection, "analysis_results")
+    registered_collections <- c(registry$collection, "shennong")
     unregistered_collections <- setdiff(names(misc_data), registered_collections)
     for (collection in unregistered_collections) {
       collection_data <- misc_data[[collection]]
@@ -637,7 +550,7 @@ sn_get_result <- function(object, type, name) {
       entries[[length(entries) + 1L]] <- list(
         collection = collection,
         type = current_type,
-        name = collection,
+        result_id = collection,
         contract_scope = "unregistered",
         result = collection_data
       )
@@ -650,8 +563,8 @@ sn_get_result <- function(object, type, name) {
 #'
 #' Inspect every registered analysis result and artifact, plus unknown populated
 #' top-level \code{object@misc} entries, without mutating the object. The audit
-#' distinguishes results that already satisfy the current contract from legacy
-#' results that can be upgraded safely, and reports unknown payloads as
+#' distinguishes results that satisfy the current contract from malformed
+#' results that can be normalized safely, and reports unknown payloads as
 #' \code{unregistered}.
 #'
 #' @param object A \code{Seurat} object.
@@ -678,7 +591,7 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
   )
   if (length(entries) == 0L) {
     return(tibble::tibble(
-      collection = character(), type = character(), name = character(),
+      collection = character(), type = character(), result_id = character(),
       contract_scope = character(),
       schema_version = character(), target_schema_version = character(),
       status = character(), unified = logical(), valid = logical(),
@@ -692,7 +605,7 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
       return(tibble::tibble(
         collection = entry$collection,
         type = entry$type,
-        name = entry$name,
+        result_id = entry$result_id,
         contract_scope = "unregistered",
         schema_version = NA_character_,
         target_schema_version = NA_character_,
@@ -714,7 +627,7 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
       return(tibble::tibble(
         collection = entry$collection,
         type = entry$type,
-        name = entry$name,
+        result_id = entry$result_id,
         contract_scope = "artifact",
         schema_version = as.character(raw_schema),
         target_schema_version = NA_character_,
@@ -733,7 +646,7 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
     }
     raw_report <- sn_validate_result(raw, error = FALSE)
     upgraded <- tryCatch(
-      .sn_prepare_result_for_collection(raw, type = entry$type, name = entry$name),
+      .sn_prepare_result(raw, type = entry$type, result_id = entry$result_id),
       error = identity
     )
     repairable <- !inherits(upgraded, "error")
@@ -749,12 +662,12 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
     unified <- repairable && isTRUE(upgraded_report$valid) &&
       isTRUE(raw_report$valid) && canonical_version &&
       (!.sn_analysis_result_requires_primary(entry$type) || is.data.frame(raw_primary))
-    status <- if (unified) "valid" else if (isTRUE(upgraded_report$valid)) "legacy" else "invalid"
+    status <- if (unified) "valid" else if (isTRUE(upgraded_report$valid)) "repairable" else "invalid"
     primary <- if (repairable) upgraded[["tables"]][["primary"]] else NULL
     tibble::tibble(
       collection = entry$collection,
       type = entry$type,
-      name = entry$name,
+      result_id = entry$result_id,
       contract_scope = "analysis_result",
       schema_version = as.character(raw_schema),
       target_schema_version = .sn_analysis_result_schema_version(),
@@ -768,18 +681,17 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
       warnings = paste(unique(c(raw_report$warnings, upgraded_report$warnings)), collapse = "; ")
     )
   })) |>
-    dplyr::arrange(.data$collection, .data$type, .data$name)
+    dplyr::arrange(.data$collection, .data$type, .data$result_id)
 }
 
 #' Upgrade stored Shennong analysis results
 #'
-#' Upgrade listable legacy results in place while preserving their established
-#' physical \code{object@misc} collections and compatibility aliases.
+#' Normalize stored analysis results to the current canonical result envelope.
 #'
 #' @param object A \code{Seurat} object.
-#' @param type Optional analysis type or character vector of types to upgrade.
+#' @param type Optional analysis type or character vector of types to normalize.
 #' @param strict If \code{TRUE}, stop at the first result that cannot be safely
-#'   upgraded. If \code{FALSE}, leave invalid entries unchanged and warn.
+#'   normalized. If \code{FALSE}, leave invalid entries unchanged and warn.
 #'
 #' @return The modified \code{Seurat} object.
 #'
@@ -793,12 +705,12 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
   entries <- .sn_stored_analysis_result_entries(object, requested_types)
   for (entry in entries) {
     updated <- tryCatch(
-      sn_store_result(object, entry$type, entry$name, entry$result),
+      sn_store_result(object, entry$type, entry$result_id, entry$result),
       error = identity
     )
     if (inherits(updated, "error")) {
       message <- paste0(
-        "Could not upgrade stored result '", entry$name, "' of type '",
+        "Could not upgrade stored result '", entry$result_id, "' of type '",
         entry$type, "': ", conditionMessage(updated)
       )
       if (isTRUE(strict)) stop(message, call. = FALSE)
@@ -814,7 +726,7 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
 #'
 #' @param object A \code{Seurat} object.
 #' @param type Analysis type.
-#' @param name Stored result name.
+#' @param result_id Stored result identifier.
 #'
 #' @return The modified \code{Seurat} object.
 #'
@@ -822,37 +734,30 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
 #' \dontrun{obj <- sn_delete_result(obj, "trajectory", "cd8_slingshot")}
 #'
 #' @export
-sn_delete_result <- function(object, type, name) {
+sn_delete_result <- function(object, type, result_id) {
   .sn_validate_seurat_object(object)
   type <- tolower(as.character(type))
-  name <- as.character(name)
-  collection <- .sn_result_collection(type)
+  result_id <- .sn_validate_result_id(result_id)
   misc_data <- methods::slot(object, "misc")
-  if (!is_null(collection)) {
-    entries <- misc_data[[collection]] %||% list()
-    if (!name %in% names(entries)) {
-      stop("No stored result named '", name, "' was found for analysis type '", type, "'.", call. = FALSE)
-    }
-    entries[[name]] <- NULL
-    if (length(entries) == 0L) {
-      misc_data[[collection]] <- NULL
-    } else {
-      misc_data[[collection]] <- entries
-    }
+  entries <- misc_data[["shennong"]][["results"]][[type]] %||% list()
+  if (!result_id %in% names(entries)) {
+    stop(
+      "No result with `result_id = \"", result_id,
+      "\"` was found for analysis type '", type, "'.",
+      call. = FALSE
+    )
+  }
+  entries[[result_id]] <- NULL
+  if (length(entries) == 0L) {
+    misc_data[["shennong"]][["results"]][[type]] <- NULL
   } else {
-    entries <- misc_data[["analysis_results"]][[type]] %||% list()
-    if (!name %in% names(entries)) {
-      stop("No stored result named '", name, "' was found for analysis type '", type, "'.", call. = FALSE)
-    }
-    entries[[name]] <- NULL
-    if (length(entries) == 0L) {
-      misc_data[["analysis_results"]][[type]] <- NULL
-    } else {
-      misc_data[["analysis_results"]][[type]] <- entries
-    }
-    if (length(misc_data[["analysis_results"]]) == 0L) {
-      misc_data[["analysis_results"]] <- NULL
-    }
+    misc_data[["shennong"]][["results"]][[type]] <- entries
+  }
+  if (length(misc_data[["shennong"]][["results"]]) == 0L) {
+    misc_data[["shennong"]][["results"]] <- NULL
+  }
+  if (length(misc_data[["shennong"]]) == 0L) {
+    misc_data[["shennong"]] <- NULL
   }
   methods::slot(object, "misc") <- misc_data
   object
@@ -870,7 +775,7 @@ sn_delete_result <- function(object, type, name) {
 #' @param artifact_type Registered artifact type, i.e. the collection name or
 #'   its \code{"*_artifact"} alias (for example \code{"integration"} or
 #'   \code{"integration_artifact"}).
-#' @param name Optional member name. When omitted, the entire artifact
+#' @param artifact_id Optional artifact identifier. When omitted, the entire artifact
 #'   collection container is removed.
 #'
 #' @return The modified Seurat object.
@@ -882,7 +787,7 @@ sn_delete_result <- function(object, type, name) {
 #' }
 #'
 #' @export
-sn_delete_artifact <- function(object, artifact_type, name = NULL) {
+sn_delete_artifact <- function(object, artifact_type, artifact_id = NULL) {
   .sn_validate_seurat_object(object)
   registry <- .sn_misc_result_registry()
   artifacts <- registry[registry$contract_scope == "artifact", , drop = FALSE]
@@ -903,7 +808,7 @@ sn_delete_artifact <- function(object, artifact_type, name = NULL) {
   }
   collection <- artifacts$collection[[type_index]]
   misc_data <- methods::slot(object, "misc")
-  if (is_null(name)) {
+  if (is_null(artifact_id)) {
     if (is_null(misc_data[[collection]])) {
       warning("No '", collection, "' artifact collection was present.", call. = FALSE)
       return(object)
@@ -913,13 +818,13 @@ sn_delete_artifact <- function(object, artifact_type, name = NULL) {
     return(object)
   }
   entries <- misc_data[[collection]]
-  if (!is.list(entries) || !as.character(name) %in% names(entries)) {
+  if (!is.list(entries) || !as.character(artifact_id) %in% names(entries)) {
     stop(
-      "No artifact named '", name, "' was found in the '", collection, "' collection.",
+      "No artifact with artifact_id '", artifact_id, "' was found in the '", collection, "' collection.",
       call. = FALSE
     )
   }
-  entries[[as.character(name)]] <- NULL
+  entries[[as.character(artifact_id)]] <- NULL
   if (length(entries) == 0L) {
     misc_data[[collection]] <- NULL
   } else {
@@ -936,6 +841,7 @@ sn_delete_artifact <- function(object, artifact_type, name = NULL) {
 #' @return A tibble describing registered Shennong stored-result collections,
 #'   including DE, enrichment, interpretation, deconvolution, Milo,
 #'   communication, regulatory activity, and QC assessment entries when present.
+#'   The canonical lookup key is reported in \code{result_id}.
 #'
 #' @examples
 #' if (requireNamespace("Seurat", quietly = TRUE)) {
@@ -965,16 +871,10 @@ sn_delete_artifact <- function(object, artifact_type, name = NULL) {
 sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
   .sn_validate_seurat_object(object)
 
-  registry <- .sn_misc_result_registry()
-  listable_collections <- registry$collection[registry$listable]
-
-  result <- lapply(listable_collections, function(collection) {
-    .sn_compact_collection_summary(object, collection)
-  }) |>
-    dplyr::bind_rows(.sn_generic_result_summary(object))
+  result <- .sn_generic_result_summary(object)
   if (ncol(result) == 0L) {
     result <- tibble::tibble(
-      collection = character(), type = character(), name = character(),
+      collection = character(), type = character(), result_id = character(),
       analysis = character(), method = character(), created_at = character(),
       n_rows = integer(), source = character()
     )
@@ -996,12 +896,12 @@ sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
       tibble::tibble(
         collection = entry$collection,
         type = entry$type,
-        name = entry$name,
+        result_id = entry$result_id,
         analysis = as.character(artifact_field("analysis") %||% NA_character_)[[1]],
         method = as.character(artifact_field("method") %||% NA_character_)[[1]],
         created_at = as.character(artifact_field("created_at") %||% NA_character_)[[1]],
         n_rows = if (is.list(artifact)) .sn_result_n_rows(artifact) else 0L,
-        source = as.character(artifact_field("source_de_name") %||% NA_character_)[[1]]
+        source = as.character(artifact_field("source_result_id") %||% NA_character_)[[1]]
       )
     }))
     result <- dplyr::bind_rows(result, artifact_summary)
@@ -1011,13 +911,13 @@ sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
     result <- dplyr::filter(result, .data$type %in% .env$requested_types)
   }
   result |>
-    dplyr::arrange(.data$collection, .data$name)
+    dplyr::arrange(.data$collection, .data$result_id)
 }
 
 #' Retrieve a stored DE result from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Name of the stored DE result.
+#' @param result_id Identifier of the stored DE result.
 #' @param top_n Optional number of rows to keep. When supplied together with a
 #'   ranking column, results are reduced to the top rows overall or per group.
 #' @param direction One of \code{"all"}, \code{"up"}, or \code{"down"}.
@@ -1029,24 +929,24 @@ sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
 #'
 #' @examples
 #' \dontrun{
-#' markers <- sn_get_de_result(seurat_obj, de_name = "cluster_markers", top_n = 5)
+#' markers <- sn_get_de_result(seurat_obj, result_id = "cluster_markers", top_n = 5)
 #' }
 #' @export
 sn_get_de_result <- function(object,
-                             de_name = "default",
+                             result_id = "default",
                              top_n = NULL,
                              direction = c("all", "up", "down"),
                              groups = NULL,
                              with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
 
-  stored <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
+  stored <- sn_get_result(object, type = "de", result_id = result_id)
   if (isTRUE(with_metadata)) {
     return(stored)
   }
 
   .sn_subset_ranked_table(
-    table = stored$table,
+    table = stored$tables$primary,
     rank_col = stored$rank_col,
     group_col = stored$group_col,
     top_n = top_n,
@@ -1058,7 +958,7 @@ sn_get_de_result <- function(object,
 #' Retrieve a stored enrichment result from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param enrichment_name Name of the stored enrichment result.
+#' @param result_id Identifier of the stored enrichment result.
 #' @param top_n Optional number of top terms to keep.
 #' @param groups Optional subset of cluster/group labels when the stored table
 #'   includes a \code{Cluster} column.
@@ -1069,22 +969,22 @@ sn_get_de_result <- function(object,
 #'
 #' @examples
 #' \dontrun{
-#' terms <- sn_get_enrichment_result(seurat_obj, enrichment_name = "cluster_gsea", top_n = 10)
+#' terms <- sn_get_enrichment_result(seurat_obj, result_id = "cluster_gsea", top_n = 10)
 #' }
 #' @export
 sn_get_enrichment_result <- function(object,
-                                     enrichment_name = "default",
+                                     result_id = "default",
                                      top_n = NULL,
                                      groups = NULL,
                                      with_metadata = FALSE) {
   .sn_validate_seurat_object(object)
 
-  stored <- .sn_get_misc_result(object = object, collection = "enrichment_results", store_name = enrichment_name)
+  stored <- sn_get_result(object, type = "enrichment", result_id = result_id)
   if (isTRUE(with_metadata)) {
     return(stored)
   }
 
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   group_col <- c("Cluster", "cluster", ".sign")[
     c("Cluster", "cluster", ".sign") %in% colnames(table)
   ][1] %||% NULL
@@ -1112,7 +1012,7 @@ sn_get_enrichment_result <- function(object,
 #' Retrieve a stored interpretation result from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param interpretation_name Name of the stored interpretation result.
+#' @param result_id Identifier of the stored interpretation result.
 #'
 #' @return The stored interpretation-result list.
 #'
@@ -1121,20 +1021,18 @@ sn_get_enrichment_result <- function(object,
 #' interpretation <- sn_get_interpretation_result(seurat_obj, "annotation_note")
 #' }
 #' @export
-sn_get_interpretation_result <- function(object, interpretation_name = "default") {
+sn_get_interpretation_result <- function(object, result_id = "default") {
   .sn_validate_seurat_object(object)
 
-  .sn_get_misc_result(
-    object = object,
-    collection = "interpretation_results",
-    store_name = interpretation_name
-  )
+  sn_get_result(object, type = "interpretation", result_id = result_id)
 }
 
-.sn_resolve_result_input <- function(x, type, name = NULL) {
+.sn_resolve_result_input <- function(x, type, result_id = NULL) {
   result <- if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    sn_get_result(x, type, name)
+    if (is_null(result_id)) {
+      stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    }
+    sn_get_result(x, type, result_id)
   } else {
     x
   }
@@ -1142,4 +1040,3 @@ sn_get_interpretation_result <- function(object, interpretation_name = "default"
   if (!identical(result$analysis_type, type)) stop("Expected a ", type, " result.", call. = FALSE)
   result
 }
-

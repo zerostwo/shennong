@@ -60,17 +60,20 @@
   log2(sweep(expression, 2L, scale, "/") + prior_count)
 }
 
-.sn_bulk_result <- function(type, name, method, input, parameters, tables,
+.sn_bulk_result <- function(type, result_id, method, input, parameters, tables,
                             embeddings = list(), models = list(), diagnostics = list(),
                             warnings = character(), backend = method, seed = NA_integer_,
-                            schema_version = "1.0.0") {
+                            schema_version = .sn_analysis_result_schema_version()) {
+  provenance <- .sn_analysis_provenance(random_seed = seed)
+  provenance[["result_id"]] <- result_id
+  provenance[["analysis_type"]] <- type
   result <- list(
-    schema_version = schema_version, analysis_type = type, name = name,
+    schema_version = schema_version, analysis_type = type, result_id = result_id,
     method = method, backend = backend,
     input = input, parameters = parameters, tables = tables,
     embeddings = embeddings, graphs = list(), models = models,
     diagnostics = diagnostics, warnings = as.character(warnings),
-    provenance = .sn_analysis_provenance(random_seed = seed)
+    provenance = provenance
   )
   sn_validate_result(result)
   result
@@ -87,12 +90,15 @@
 #' @param assay Assay name for `SummarizedExperiment` input.
 #' @param top_variable Number of variable features used for PCA/correlation.
 #' @param outlier_z Robust z-score threshold used for sample flags.
-#' @param store_name Result name.
+#' @param result_id Result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated Shennong bulk-QC result.
 #' @export
 sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
                               top_variable = 2000L, outlier_z = 3.5,
-                              store_name = "bulk_qc") {
+                              result_id = "bulk_qc") {
+  result_id <- .sn_validate_result_id(result_id)
   input <- .sn_bulk_input(object, metadata, assay)
   expression <- .sn_bulk_log_expression(input)
   variance <- apply(expression, 1L, stats::var)
@@ -126,7 +132,7 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
     variance_explained = pca$sdev^2 / sum(pca$sdev^2)
   )
   .sn_bulk_result(
-    "bulk_qc", store_name, "robust_qc",
+    "bulk_qc", result_id, "robust_qc",
     list(source = input$source, assay = input$assay, samples = ncol(input$matrix), features = nrow(input$matrix), counts = input$is_counts),
     list(top_variable = length(keep), outlier_z = outlier_z),
     list(primary = sample_table, samples = sample_table, distribution = distribution,
@@ -290,13 +296,16 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 #' @param contrast Character triple: variable, numerator, denominator.
 #' @param method One of `auto`, `edger`, `deseq2`, `limma`, or `dream`.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param store_name Result name.
+#' @param result_id Result name.
 #' @param backend_control Backend options or a custom `runner`/precomputed `result`.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated Shennong bulk-DE result.
 #' @export
 sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
                             contrast, method = c("auto", "edger", "deseq2", "limma", "dream"),
-                            assay = NULL, store_name = "bulk_de", backend_control = list()) {
+                            assay = NULL, result_id = "bulk_de", backend_control = list()) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_find_bulk_de(
     object = object,
     metadata = metadata,
@@ -304,14 +313,14 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
     contrast = contrast,
     method = method,
     assay = assay,
-    store_name = store_name,
+    result_id = result_id,
     backend_control = backend_control
   )
 }
 
 .sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
                              contrast, method = c("auto", "edger", "deseq2", "limma", "dream"),
-                             assay = NULL, store_name = "bulk_de", backend_control = list()) {
+                             assay = NULL, result_id = "bulk_de", backend_control = list()) {
   method <- match.arg(method)
   input <- .sn_bulk_input(object, metadata, assay)
   contrast <- .sn_bulk_validate_contrast(input$metadata, contrast)
@@ -335,7 +344,7 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
   }
   table <- .sn_bulk_standardize_de(output$table %||% output, selected)
   .sn_bulk_result(
-    "bulk_de", store_name, selected,
+    "bulk_de", result_id, selected,
     list(source = input$source, assay = input$assay, samples = ncol(input$matrix), features = nrow(input$matrix), counts = input$is_counts),
     list(design = paste(deparse(design), collapse = ""), contrast = contrast, requested_method = method,
          independent_filtering = backend_control$independent_filtering %||% TRUE, shrink = backend_control$shrink %||% TRUE),
@@ -353,13 +362,16 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
 #' @param min_genes Minimum matched genes per pathway.
-#' @param store_name Result name.
+#' @param result_id Result name.
 #' @param backend_control Backend-specific controls.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated bulk pathway-score result.
 #' @export
 sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva", "ssgsea"),
                                    metadata = NULL, assay = NULL, min_genes = 2L,
-                                   store_name = "bulk_pathways", backend_control = list()) {
+                                   result_id = "bulk_pathways", backend_control = list()) {
+  result_id <- .sn_validate_result_id(result_id)
   method <- match.arg(method)
   input <- .sn_bulk_input(object, metadata, assay)
   expression <- .sn_bulk_log_expression(input)
@@ -373,7 +385,7 @@ sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva"
   score_table <- .sn_program_score_table(scores, level = "sample")
   names(score_table)[match(c("entity", "program"), names(score_table))] <- c("sample", "pathway")
   .sn_bulk_result(
-    "bulk_pathway", store_name, method,
+    "bulk_pathway", result_id, method,
     list(source = input$source, samples = ncol(input$matrix), features = nrow(input$matrix)),
     list(min_genes = min_genes),
     list(primary = score_table, scores = score_table, coverage = matched$coverage),
@@ -426,14 +438,17 @@ sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva"
 #' @param min_module_size Minimum module size.
 #' @param merge_cut_height Module merge threshold.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param store_name Result name.
+#' @param result_id Result name.
 #' @param backend_control Additional `blockwiseModules` arguments or custom output.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated WGCNA result.
 #' @export
 sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
                          powers = c(1:10, 12, 14, 16, 18, 20), min_module_size = 30L,
                          merge_cut_height = 0.25, assay = NULL,
-                         store_name = "wgcna", backend_control = list()) {
+                         result_id = "wgcna", backend_control = list()) {
+  result_id <- .sn_validate_result_id(result_id)
   check_installed("WGCNA", reason = "to run weighted co-expression network analysis.")
   input <- .sn_bulk_input(object, metadata, assay)
   expression <- .sn_bulk_log_expression(input)
@@ -483,7 +498,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
     associations$adjusted_p_value <- stats::p.adjust(associations$p_value, method = "BH")
   }
   .sn_bulk_result(
-    "bulk_network", store_name, "wgcna",
+    "bulk_network", result_id, "wgcna",
     list(source = input$source, samples = nrow(dat_expr), features = ncol(dat_expr)),
     list(power = selected_power, min_module_size = min_module_size, merge_cut_height = merge_cut_height, traits = traits),
     list(primary = modules, modules = modules, eigengenes = tibble::as_tibble(eigengenes),
@@ -1023,7 +1038,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
 #' @param covariates Optional adjustment variables.
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param store_name Result name.
+#' @param result_id Result name.
 #' @param group_method Feature grouping used for Kaplan-Meier analysis.
 #' @param group_quantile Quantile used when `group_method = "quantile"`.
 #' @param group_cutpoint Fixed scalar or feature-named cutpoints.
@@ -1031,15 +1046,18 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
 #' @param ties Cox partial-likelihood tie method.
 #' @param risk_times Optional non-negative times shown in the risk table. The
 #'   default uses at most eight deterministic pretty breaks per feature.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated survival result with one adjusted Cox model per feature.
 #' @export
 sn_run_survival <- function(object, time, event, features, covariates = NULL,
-                            metadata = NULL, assay = NULL, store_name = "bulk_survival",
+                            metadata = NULL, assay = NULL, result_id = "bulk_survival",
                             group_method = c("median", "quantile", "fixed", "none"),
                             group_quantile = 0.5, group_cutpoint = NULL,
                             group_labels = c("Low", "High"),
                             ties = c("efron", "breslow", "exact"),
                             risk_times = NULL) {
+  result_id <- .sn_validate_result_id(result_id)
   check_installed("survival", reason = "to fit Cox proportional-hazards models.")
   input <- .sn_bulk_input(object, metadata, assay)
   if (!is.character(time) || length(time) != 1L || is.na(time) || !nzchar(time)) {
@@ -1197,7 +1215,7 @@ sn_run_survival <- function(object, time, event, features, covariates = NULL,
   models$.kaplan_meier <- km_models
   models$.proportional_hazards <- ph_models
   result <- .sn_bulk_result(
-    "bulk_survival", store_name, "cox",
+    "bulk_survival", result_id, "cox",
     list(source = input$source, samples = ncol(input$matrix), features = features),
     list(
       time = time, event = event, covariates = covariates, ties = ties,
@@ -1229,7 +1247,7 @@ sn_run_survival <- function(object, time, event, features, covariates = NULL,
       endpoint_complete_samples = sum(endpoint_complete)
     ),
     warnings = unique(backend_warnings[nzchar(backend_warnings)]),
-    schema_version = "1.0.0"
+    schema_version = .sn_analysis_result_schema_version()
   )
   sn_validate_result(result)
   result
@@ -1246,12 +1264,15 @@ sn_run_survival <- function(object, time, event, features, covariates = NULL,
 #' @param covariates Optional adjustment variables for linear models.
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param store_name Result name.
+#' @param result_id Result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @return A validated clinical-association result.
 #' @export
 sn_run_clinical_association <- function(object, features, clinical_vars, covariates = NULL,
                                         metadata = NULL, assay = NULL,
-                                        store_name = "bulk_clinical") {
+                                        result_id = "bulk_clinical") {
+  result_id <- .sn_validate_result_id(result_id)
   input <- .sn_bulk_input(object, metadata, assay)
   missing <- setdiff(c(clinical_vars, covariates), colnames(input$metadata))
   if (length(missing) > 0L) stop("Clinical metadata column(s) missing: ", paste(missing, collapse = ", "), ".", call. = FALSE)
@@ -1291,7 +1312,7 @@ sn_run_clinical_association <- function(object, features, clinical_vars, covaria
   table <- dplyr::bind_rows(rows)
   table$adjusted_p_value <- stats::p.adjust(table$p_value, method = "BH")
   .sn_bulk_result(
-    "bulk_clinical", store_name, "model_association",
+    "bulk_clinical", result_id, "model_association",
     list(source = input$source, samples = ncol(input$matrix), features = features),
     list(clinical_variables = clinical_vars, covariates = covariates),
     list(primary = table, associations = table),

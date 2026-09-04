@@ -6,14 +6,14 @@
 \usage{
 sn_plot_annotation_confidence(
   x,
-  store_name = "annotation",
+  result_id = "annotation",
   level = c("cluster", "cell")
 )
 }
 \arguments{
 \item{x}{A Seurat object or annotation result.}
 
-\item{store_name}{Stored annotation name.}
+\item{result_id}{Stored annotation name.}
 
 \item{level}{Plot cluster- or cell-level confidence.}
 }

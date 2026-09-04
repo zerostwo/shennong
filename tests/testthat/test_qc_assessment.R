@@ -29,17 +29,17 @@ test_that("sn_assess_qc summarizes current QC status by sample", {
   report <- sn_assess_qc(object, sample_by = "sample", verbose = FALSE)
 
   expect_type(report, "list")
-  expect_true(all(c("overall", "by_sample", "messages") %in% names(report)))
-  expect_equal(nrow(report$by_sample), 2)
+  expect_true(all(c("tables", "messages") %in% names(report)))
+  expect_equal(nrow(report$tables$by_sample), 2)
   expect_true(all(c(
     "sample", "n_cells", "median_nCount", "median_nFeature",
     "failed_qc_fraction", "doublet_fraction", "zero_count_fraction",
     "qc_score", "qc_label"
-  ) %in% colnames(report$by_sample)))
+  ) %in% colnames(report$tables$by_sample)))
   expect_true(is.character(report$messages))
   expect_equal(report$sample_col, "sample")
   expect_true(sn_validate_result(report, error = FALSE)$valid)
-  expect_identical(report$tables$primary, report$by_sample)
+  expect_identical(report$tables$primary, report$tables$by_sample)
 })
 
 test_that("sn_assess_qc compares filtered objects to a reference and stores reports", {
@@ -59,19 +59,21 @@ test_that("sn_assess_qc compares filtered objects to a reference and stores repo
     "low_quality_removed_fraction",
     "doublet_removed_fraction",
     "clean_retained_fraction"
-  ) %in% colnames(report$by_sample)))
-  expect_true(any(report$by_sample$low_quality_removed_fraction > 0))
-  expect_true(any(report$by_sample$doublet_removed_fraction > 0))
+  ) %in% colnames(report$tables$by_sample)))
+  expect_true(any(report$tables$by_sample$low_quality_removed_fraction > 0))
+  expect_true(any(report$tables$by_sample$doublet_removed_fraction > 0))
 
   stored <- sn_assess_qc(
     object = current,
     reference = reference,
     sample_by = "sample",
-    store_name = "post_filter",
+    result_id = "post_filter",
     return_object = TRUE,
     verbose = FALSE
   )
 
-  expect_true("qc_assessments" %in% names(stored@misc))
-  expect_true("post_filter" %in% names(stored@misc$qc_assessments))
+  expect_identical(
+    sn_get_result(stored, "qc_assessment", "post_filter")$result_id,
+    "post_filter"
+  )
 })

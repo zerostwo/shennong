@@ -67,7 +67,7 @@ test_that("annotation::popv dispatches to the pixi popv backend (C1)", {
     reference_label_by = "cell_type",
     species = "human",
     ontology = FALSE,
-    store_name = "popv_c1",
+    result_id = "popv_c1",
     return_object = FALSE,
     backend_control = list(popv = .popv_test_control(file.path(run_dir, "c1")))
   )
@@ -98,7 +98,7 @@ test_that("annotation::popv matches the direct PopV oracle (C2)", {
     reference_label_by = "cell_type",
     species = "human",
     ontology = FALSE,
-    store_name = "popv_c2",
+    result_id = "popv_c2",
     return_object = FALSE,
     backend_control = list(popv = .popv_test_control(file.path(run_dir, "candidate")))
   )
@@ -168,7 +168,7 @@ test_that("annotation::popv matches the direct PopV oracle (C2)", {
   )
 
   # Wrapper-owned additions: standardized result envelope stays intact.
-  expect_identical(candidate_result$schema_version, "1.0.0")
+  expect_identical(candidate_result$schema_version, "2.0.0")
   expect_identical(candidate_result$analysis_type, "annotation")
   expect_true("popv" %in% candidate_result$tables$evidence$method)
 })

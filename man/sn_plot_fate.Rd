@@ -4,12 +4,18 @@
 \alias{sn_plot_fate}
 \title{Plot CellRank fate probabilities}
 \usage{
-sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7, object = NULL)
+sn_plot_fate(
+  x,
+  result_id = NULL,
+  states = NULL,
+  point_size = 0.7,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A Seurat object or fate result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{states}{Optional terminal states to retain.}
 

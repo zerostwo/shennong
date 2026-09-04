@@ -22,7 +22,7 @@ sn_run_scarches(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "scarches_",
-  result_name = "scarches",
+  artifact_id = "scarches",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -37,7 +37,7 @@ sn_run_scpoli(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "scpoli_",
-  result_name = "scpoli",
+  artifact_id = "scpoli",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -73,7 +73,7 @@ sn_run_infercnvpy(
   leiden_resolution = 1,
   cnv_score_group_by = NULL,
   metadata_prefix = "infercnvpy_",
-  result_name = "infercnvpy",
+  artifact_id = "infercnvpy",
   return_object = TRUE,
   ...
 )
@@ -85,7 +85,7 @@ sn_run_cellphonedb(
   group_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
-  result_name = "cellphonedb",
+  artifact_id = "cellphonedb",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -100,7 +100,7 @@ sn_run_cell2location(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "cell2location_",
-  result_name = "cell2location",
+  artifact_id = "cell2location",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -118,7 +118,7 @@ sn_run_tangram(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "tangram_",
-  result_name = "tangram",
+  artifact_id = "tangram",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -133,7 +133,7 @@ sn_run_squidpy(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "squidpy_",
-  result_name = "squidpy",
+  artifact_id = "squidpy",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -147,7 +147,7 @@ sn_run_spatialdata(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "spatialdata_",
-  result_name = "spatialdata",
+  artifact_id = "spatialdata",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -161,7 +161,7 @@ sn_run_stlearn(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "stlearn_",
-  result_name = "stlearn",
+  artifact_id = "stlearn",
   return_object = TRUE,
   method_control = list(),
   ...
@@ -188,7 +188,7 @@ object workflows.}
 
 \item{metadata_prefix}{Prefix added to imported infercnvpy metadata columns.}
 
-\item{result_name}{Name used under \code{object@misc$infercnvpy}.}
+\item{artifact_id}{Identifier used for the stored backend artifact.}
 
 \item{return_object}{Whether to return the updated object. If \code{FALSE},
 return a run manifest list.}

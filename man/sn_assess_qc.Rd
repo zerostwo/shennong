@@ -8,7 +8,7 @@ sn_assess_qc(
   object,
   reference = NULL,
   sample_by = NULL,
-  store_name = "default",
+  result_id = "default",
   return_object = FALSE,
   verbose = TRUE
 )
@@ -24,8 +24,8 @@ against the QC flags and doublet calls recorded in \code{reference}.}
 \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 available and otherwise treats the object as one sample.}
 
-\item{store_name}{Name used when storing the assessment under
-\code{object@misc$qc_assessments}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{Logical; when \code{TRUE}, store the assessment in the
 Seurat object and return the updated object.}
@@ -51,7 +51,7 @@ zero-count cells.
     Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
   ))
   qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
-  qc_report$overall
+  qc_report$tables$overall
 }
 
 }

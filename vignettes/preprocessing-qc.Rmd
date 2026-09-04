@@ -450,8 +450,8 @@ qc_report <- sn_assess_qc(
   verbose = FALSE
 )
 
-qc_report$overall
-head(qc_report$by_sample)
+qc_report$tables$overall
+head(qc_report$tables$by_sample)
 
 sn_plot_qc(qc_report, metric = "retention_fraction")
 
@@ -459,7 +459,7 @@ pbmc_norm <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
   sample_by = "real_sample",
-  store_name = "kotliarov_preprocessing",
+  result_id = "kotliarov_preprocessing",
   return_object = TRUE,
   verbose = FALSE
 )

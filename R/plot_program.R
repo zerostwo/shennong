@@ -1,5 +1,5 @@
-.sn_resolve_program_result <- function(x, name, type = "program_scoring") {
-  result <- if (inherits(x, "Seurat")) sn_get_result(x, type, name) else x
+.sn_resolve_program_result <- function(x, result_id, type = "program_scoring") {
+  result <- if (inherits(x, "Seurat")) sn_get_result(x, type, result_id) else x
   sn_validate_result(result)
   if (!identical(result$analysis_type, type)) {
     stop("Expected a Shennong ", type, " result.", call. = FALSE)
@@ -10,7 +10,7 @@
 #' Plot program activity distributions
 #'
 #' @param x A Seurat object or program-scoring result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param programs Optional programs to keep.
 #' @param group_by Optional Seurat metadata column used on the x-axis.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
@@ -21,9 +21,9 @@
 #' \dontrun{sn_plot_program_activity(object, "immune_programs", group_by = "cell_type")}
 #'
 #' @export
-sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL, object = NULL) {
+sn_plot_program_activity <- function(x, result_id, programs = NULL, group_by = NULL, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_program_result(x, name)
+  result <- .sn_resolve_program_result(x, result_id)
   table <- result$tables$scores
   if (!is_null(programs)) table <- table[table$program %in% programs, , drop = FALSE]
   if (nrow(table) == 0L) stop("No program scores remain to plot.", call. = FALSE)
@@ -47,7 +47,7 @@ sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL, 
 #' Plot a program activity heatmap
 #'
 #' @param x A Seurat object or program-scoring result.
-#' @param name Stored result name.
+#' @param result_id Stored result result_id.
 #' @param programs Optional programs to keep.
 #' @param group_by Optional Seurat metadata column used to aggregate cell-level
 #'   scores before plotting.
@@ -60,9 +60,9 @@ sn_plot_program_activity <- function(x, name, programs = NULL, group_by = NULL, 
 #' \dontrun{sn_plot_program_heatmap(object, "immune_programs", group_by = "cell_type")}
 #'
 #' @export
-sn_plot_program_heatmap <- function(x, name, programs = NULL, group_by = NULL, scale_rows = TRUE, object = NULL) {
+sn_plot_program_heatmap <- function(x, result_id, programs = NULL, group_by = NULL, scale_rows = TRUE, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  result <- .sn_resolve_program_result(x, name)
+  result <- .sn_resolve_program_result(x, result_id)
   table <- result$tables$scores
   if (!is_null(programs)) table <- table[table$program %in% programs, , drop = FALSE]
   if (inherits(x, "Seurat") && !is_null(group_by)) {

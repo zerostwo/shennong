@@ -15,7 +15,7 @@ sn_compare_integrations(
   max_cells = 100000L,
   accelerator = c("auto", "cpu", "gpu"),
   n_jobs = 1L,
-  name = "integration_benchmark",
+  result_id = "integration_benchmark",
   return_object = TRUE,
   backend_control = list(),
   seed = 717L,
@@ -45,7 +45,7 @@ scib-metrics for its baseline preparation.}
 
 \item{n_jobs}{Neighbor-search workers.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stable identifier for the stored benchmark result.}
 
 \item{return_object}{Return the updated Seurat object when \code{TRUE}, otherwise
 return the analysis-result object.}

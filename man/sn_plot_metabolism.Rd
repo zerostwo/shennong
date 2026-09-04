@@ -6,7 +6,7 @@
 \usage{
 sn_plot_metabolism(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("activity", "heatmap", "differential", "sample"),
   pathways = NULL,
   n = 30L,
@@ -16,7 +16,7 @@ sn_plot_metabolism(
 \arguments{
 \item{x}{A Seurat object or unified metabolism result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{type}{Activity distribution, sample heatmap, differential effects, or
 sample-level pathway summary.}

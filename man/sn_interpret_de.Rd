@@ -6,14 +6,14 @@
 \usage{
 sn_interpret_de(
   object,
-  de_name,
+  de_result_id,
   n_genes = 15,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -22,7 +22,7 @@ sn_interpret_de(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Name of a stored DE result.}
+\item{de_result_id}{Name of a stored DE result.}
 
 \item{n_genes}{Number of top genes to retain.}
 
@@ -39,7 +39,8 @@ additional interpretation context.}
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}
 
-\item{store_name}{Name used under \code{object@misc$interpretation_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 
@@ -73,9 +74,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  prompt <- sn_interpret_de(obj, de_name = "celltype_markers", return_prompt = TRUE)
+  prompt <- sn_interpret_de(obj, de_result_id = "celltype_markers", return_prompt = TRUE)
   prompt$task
 }
 }

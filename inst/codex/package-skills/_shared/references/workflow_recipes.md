@@ -6,23 +6,23 @@ user request to the right Shennong function family quickly.
 ## Recipe: Audit or migrate stored results
 
 1. Run `sn_audit_results(object)` before reading arbitrary `object@misc`
-   entries. Canonical analytical results report `valid`; compatible older
-   envelopes report `legacy`; malformed analytical results report `invalid`;
+   entries. Canonical analytical results report `valid`; normalizable
+   envelopes report `repairable`; malformed analytical results report `invalid`;
    registered runtime/cache payloads report `artifact`; and unknown top-level
    `object@misc` payloads report `unregistered` for manual classification.
-2. Require `schema_version = "1.0.0"` and `tables$primary` for new analytical
-   results. Named tables such as `tables$cells`, `tables$scores`, or
-   `tables$survival` are synchronized semantic aliases.
+2. Require `schema_version = "2.0.0"`, `result_id`, and `tables$primary` for
+   analytical results.
 3. Review errors before calling `object <- sn_upgrade_results(object)`.
    Upgrading leaves registered artifacts and unregistered payloads untouched
    and records the source schema version in provenance.
-4. Use table-focused getters for compatibility views and `sn_get_result()`
+4. Use table-focused getters for primary-table views and `sn_get_result()`
    when diagnostics, models, warnings, or provenance are needed.
 
 ## Recipe: Export a Result Bundle candidate
 
-1. Discover the stored name with `sn_list_results()` and retrieve the exact
-   canonical envelope with `sn_get_result()`.
+1. Set `result_id` explicitly when producing reusable results, discover it with
+`sn_list_results()`, and retrieve the exact
+canonical envelope with `sn_get_result()`.
 2. Validate with `sn_validate_result()` before constructing a bundle.
 3. Call `sn_build_result_bundle()` with immutable resource/artifact
    identifiers, revisions, and SHA-256 digests. Add execution identifiers and candidate output artifact
@@ -269,7 +269,7 @@ user request to the right Shennong function family quickly.
 
 ## Recipe: Run pathway analysis
 
-1. If enriching stored DE on a Seurat object, use `sn_run_enrichment(x = object, source_de_name = ...)`.
+1. If enriching stored DE on a Seurat object, use `sn_run_enrichment(x = object, source_de_result_id = ...)`.
 2. For grouped ORA, use `gene_clusters = gene ~ cluster`, set
    `analysis = "ora"`, and pass the genes that were actually tested as
    `universe`; otherwise clusterProfiler uses every annotated database gene.
@@ -387,7 +387,7 @@ user request to the right Shennong function family quickly.
    malignant call or subclone in downstream figures.
 3. Use `sn_plot_cnv()` for the chromosome, CNV UMAP, malignancy, sample, and
    expression-association views. Retrieve with
-   `sn_get_result(object, "cnv", store_name)`.
+   `sn_get_result(object, "cnv", result_id)`.
 4. Start metabolism with `sn_run_metabolism(scoring_method = "ucell")` and
    curated signatures. Supply `sample_by`, `condition_by`, and optionally
    `group_by` so differential activity is estimated from samples, not cells.
@@ -407,7 +407,7 @@ user request to the right Shennong function family quickly.
    Reference methods must not be used with badly mismatched tissue/species.
 2. Discover and retrieve the result with
    `sn_list_results(object, type = "annotation")` and
-   `sn_get_result(object, "annotation", store_name)`.
+   `sn_get_result(object, "annotation", result_id)`.
 3. Review `sn_review_annotation()` plus the confidence and marker plots before
    accepting low-margin labels.
 4. Use `sn_prepare_annotation_evidence()` when stored DE/enrichment/QC evidence
@@ -433,7 +433,7 @@ user request to the right Shennong function family quickly.
    `branch_genes`.
 5. Use `sn_plot_dynamic_heatmap()`, `sn_plot_gene_trend()`, and
    `sn_plot_branch_comparison()` for result-backed review; retrieve the durable
-   result with `sn_get_result(object, "trajectory", store_name)`.
+   result with `sn_get_result(object, "trajectory", result_id)`.
 
 ## Recipe: Estimate RNA velocity and fate
 
@@ -444,7 +444,7 @@ user request to the right Shennong function family quickly.
    when a versioned regulator-target GRN is part of the model.
 2. Review velocity confidence, projected vectors, and transition edges. A
    visually smooth arrow field is not sufficient evidence by itself.
-3. Run `sn_run_fate(velocity_name = ...)` so CellRank consumes the retained
+3. Run `sn_run_fate(result_id = ...)` so CellRank consumes the retained
    scVelo or RegVelo H5AD transition evidence. Use the stability terminal-state rule by
    default; set `terminal_method = "top_n"` or `terminal_states` only with a
    documented biological rationale.
@@ -468,7 +468,7 @@ user request to the right Shennong function family quickly.
 6. Use `sn_run_scissor()` when a named gene-by-bulk-sample expression matrix
    and its aligned bulk phenotype are available; cell metadata is not a valid
    phenotype replacement. Retrieve the stored result with
-   `sn_get_result(object, "scissor", store_name)` and inspect `tables$cells`,
+   `sn_get_result(object, "scissor", result_id)` and inspect `tables$cells`,
    `tables$states`, `tables$samples`, `tables$correlations`, and `tables$model`
    before plotting with `sn_plot_scissor()`.
 7. Keep the full sample-cell correlation matrix and bootstrap reliability

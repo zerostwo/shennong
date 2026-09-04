@@ -4,12 +4,12 @@
 \alias{sn_plot_communication_comparison}
 \title{Plot sample-aware differential communication effects}
 \usage{
-sn_plot_communication_comparison(x, name = NULL, n = 30L, object = NULL)
+sn_plot_communication_comparison(x, result_id = NULL, n = 30L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or unified communication result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{n}{Maximum number of effects.}
 

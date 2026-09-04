@@ -157,7 +157,7 @@ test_that("usage parameter records redact sensitive payloads", {
       object = patient_object,
       integration_method = "harmony",
       sample_ids = c("patient-a", "patient-b"),
-      store_name = "patient-a-analysis",
+      result_id = "patient-a-analysis",
       output_dir = "/private/output"
     ))
   )
@@ -511,14 +511,14 @@ test_that("plot, get, list, and store APIs create usage rows", {
   )
   result <- Shennong:::.sn_new_analysis_result(
     analysis_type = "usage_test",
-    name = "usage_test",
+    result_id = "usage_test",
     method = "test",
     tables = list(primary = data.frame(value = 1))
   )
   object <- Shennong::sn_store_result(
     object,
     type = "usage_test",
-    name = "usage_test",
+    result_id = "usage_test",
     result = result
   )
   expect_s4_class(object, "Seurat")

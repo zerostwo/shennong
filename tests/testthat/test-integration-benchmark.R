@@ -99,7 +99,7 @@ test_that("sn_compare_integrations stores a discoverable benchmark result", {
   expect_true(all(result$tables$summary$elapsed_seconds == 12))
   expect_true(all(result$tables$ranking$integration_peak_memory_mb == 192))
   listing <- sn_list_results(updated, type = "integration_benchmark")
-  expect_equal(listing$name, "integration_benchmark")
+  expect_equal(listing$result_id, "integration_benchmark")
 })
 
 test_that("sn_compare_integrations returns results and uses shared stratified cells", {

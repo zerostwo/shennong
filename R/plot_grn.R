@@ -1,7 +1,7 @@
-.sn_resolve_grn_result <- function(x, name = NULL) {
+.sn_resolve_grn_result <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "grn", name)
+    if (is_null(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "grn", result_id)
   } else {
     result <- x
     sn_validate_result(result)
@@ -13,7 +13,7 @@
 #' Plot a gene regulatory network result
 #'
 #' @param x A Seurat object or GRN result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Network edges, regulon activity, or group specificity.
 #' @param regulons Optional regulators/regulons to retain.
 #' @param n Maximum network edges.
@@ -23,14 +23,14 @@
 #' \dontrun{sn_plot_regulon(object, "grn_genie3", type = "specificity")}
 #' @export
 sn_plot_regulon <- function(x,
-                            name = NULL,
+                            result_id = NULL,
                             type = c("network", "activity", "specificity"),
                             regulons = NULL,
                             n = 50L,
                             object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_grn_result(x, name)
+  result <- .sn_resolve_grn_result(x, result_id)
   if (identical(type, "network")) {
     data <- tibble::as_tibble(result$tables$edges)
     if (!is_null(regulons)) data <- data[data$source %in% regulons, , drop = FALSE]

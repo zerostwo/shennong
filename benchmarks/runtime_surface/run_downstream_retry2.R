@@ -71,9 +71,9 @@ if (!is.null(big)) {
                     sn_find_de(big, analysis = "markers",
                                ident_1 = id, ident_2 = ids[[1]],
                                group_by = "seurat_clusters", method = "wilcox",
-                               store_name = store))
+                               result_id = store))
     if (!isTRUE(res$ok)) next
-    stored <- sn_get_result(res$value, type = "de", name = store)
+    stored <- sn_get_result(res$value, type = "de", result_id = store)
     table <- stored$tables$primary
     signatures[[paste0("c", id)]] <- head(table[order(-table$avg_log2FC), ]$gene, 100)
     if (is.null(stored_analysis)) stored_analysis <- store
@@ -83,7 +83,7 @@ if (!is.null(big)) {
            sn_find_de(big, analysis = "pseudobulk",
                       ident_1 = ids[[1]], ident_2 = ids[[2]],
                       group_by = "seurat_clusters", sample_by = "sample_id",
-                      method = "edgeR", store_name = "pseudobulk_edger_c0"))
+                      method = "edgeR", result_id = "pseudobulk_edger_c0"))
 
   if (length(signatures)) {
     for (sm in c("ucell", "aucell", "gsva", "ssgsea", "mean")) {

@@ -11,7 +11,7 @@ sn_score_bulk_pathways(
   metadata = NULL,
   assay = NULL,
   min_genes = 2L,
-  store_name = "bulk_pathways",
+  result_id = "bulk_pathways",
   backend_control = list()
 )
 }
@@ -28,7 +28,8 @@ sn_score_bulk_pathways(
 
 \item{min_genes}{Minimum matched genes per pathway.}
 
-\item{store_name}{Result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Backend-specific controls.}
 }

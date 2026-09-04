@@ -8,7 +8,7 @@ sn_plot_dot(
   x,
   assay = NULL,
   features,
-  de_name = "default",
+  result_id = "default",
   n = 3,
   marker_groups = NULL,
   col_min = -2.5,
@@ -44,9 +44,9 @@ sn_plot_dot(
 \item{features}{A character vector of feature names to plot, a named list of
 feature vectors to display in separate free-width panels, or
 \code{"top_markers"} to automatically use the top stored DE markers from
-\code{object@misc$de_results[[de_name]]}.}
+the canonical Shennong result registry under \code{result_id}.}
 
-\item{de_name}{Name of the stored DE result to use when
+\item{result_id}{Name of the stored DE result to use when
 \code{features = "top_markers"}. Defaults to \code{"default"}.}
 
 \item{n}{Number of genes to select per group when

@@ -154,7 +154,7 @@ velocity_object <- sn_run_velocity(
   unspliced_assay = "RNA",
   unspliced_layer = "unspliced",
   reduction = "umap",
-  store_name = "hermann_scvelo",
+  result_id = "hermann_scvelo",
   backend_control = list(
     velocity_mode = "deterministic",
     enforce_normalization = TRUE,
@@ -191,9 +191,9 @@ of terminal states.
 ```{r fate, eval=run_velocity_backend}
 velocity_object <- sn_run_fate(
   velocity_object,
-  velocity_name = "hermann_scvelo",
+  source_result_id = "hermann_scvelo",
   reduction = "umap",
-  store_name = "hermann_fate",
+  result_id = "hermann_fate",
   backend_control = list(
     terminal_method = "stability",
     seed = 717L,
@@ -241,7 +241,7 @@ regvelo_object <- sn_run_velocity(
   unspliced_assay = "RNA",
   unspliced_layer = "unspliced",
   reduction = "umap",
-  store_name = "hermann_regvelo",
+  result_id = "hermann_regvelo",
   backend_control = list(
     prior_grn = regvelo_prior,
     max_epochs = 1500L,

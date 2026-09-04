@@ -165,16 +165,16 @@ if ("E" %in% stages) {
 
     log_step("de:c0-vs-rest:pbmc10k_5p",
              sn_find_de(big, ident_1 = "0", group_by = "seurat_clusters",
-                        method = "wilcoxon", store_name = "markers_c0"))
+                        method = "wilcoxon", result_id = "markers_c0"))
 
     cluster_ids <- head(as.character(sort(unique(as.numeric(as.character(big$seurat_clusters))))), 4L)
     signatures <- list()
     for (id in cluster_ids[-1]) {
       res <- log_step(paste0("de:c", id, "-vs-rest:pbmc10k_5p"),
                       sn_find_de(big, ident_1 = id, group_by = "seurat_clusters",
-                                 method = "wilcoxon", store_name = paste0("markers_c", id)))
+                                 method = "wilcoxon", result_id = paste0("markers_c", id)))
       if (!isTRUE(res$ok)) next
-      stored <- sn_get_result(res$value, type = "de", name = paste0("markers_c", id))
+      stored <- sn_get_result(res$value, type = "de", result_id = paste0("markers_c", id))
       table <- stored$tables$primary
       genes <- head(table[order(-table$avg_log2FC), ]$gene, 100)
       signatures[[paste0("c", id)]] <- genes
@@ -183,7 +183,7 @@ if ("E" %in% stages) {
     log_step("de:pseudobulk-edger:pbmc10k_5p",
              sn_find_de(big, ident_1 = "0", group_by = "seurat_clusters",
                         sample_by = "sample_id", method = "edger",
-                        store_name = "pseudobulk_edger_c0"))
+                        result_id = "pseudobulk_edger_c0"))
 
     if (length(signatures)) {
       for (sm in c("ucell", "aucell", "gsva", "ssgsea", "mean")) {

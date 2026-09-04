@@ -29,7 +29,7 @@ pbmc <- sn_find_de(
   analysis = "markers",
   group_by = "seurat_clusters",
   layer = "data",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )

@@ -6,11 +6,11 @@
 \usage{
 sn_interpret_annotation(
   object,
-  de_name = NULL,
+  de_result_id = NULL,
   cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   n_terms = 5,
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
@@ -30,7 +30,7 @@ sn_interpret_annotation(
   label_candidates = NULL,
   label_style = c("title", "snake", "asis"),
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -39,7 +39,7 @@ sn_interpret_annotation(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Optional stored marker-result name. When omitted, Shennong
+\item{de_result_id}{Optional stored marker-result name. When omitted, Shennong
 prefers \code{"default"}, then a single available result, and otherwise
 the most recent marker result.}
 
@@ -51,11 +51,11 @@ the most recent marker result.}
 \code{"specific"} prefers genes that are relatively unique to one cluster,
 while \code{"top"} keeps the raw top-ranked genes.}
 
-\item{enrichment_name}{Optional stored enrichment result used to add
+\item{enrichment_result_id}{Optional stored enrichment result used to add
 cluster-level functional evidence.}
 
 \item{n_terms}{Number of enrichment terms per cluster when
-\code{enrichment_name} is supplied.}
+\code{enrichment_result_id} is supplied.}
 
 \item{enrichment_selection}{How to choose pathway/function terms for
 annotation evidence: \code{"specific"} prefers terms concentrated in fewer
@@ -121,7 +121,8 @@ One of \code{"title"}, \code{"snake"}, or \code{"asis"}.}
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}
 
-\item{store_name}{Name used under \code{object@misc$interpretation_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 
@@ -155,11 +156,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   prompt <- sn_interpret_annotation(
     obj,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     return_prompt = TRUE
   )

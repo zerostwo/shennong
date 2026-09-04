@@ -4,12 +4,12 @@
 \alias{sn_plot_spatial_communication}
 \title{Plot spatially constrained communication}
 \usage{
-sn_plot_spatial_communication(x, name = NULL, n = 50L, object = NULL)
+sn_plot_spatial_communication(x, result_id = NULL, n = 50L, object = NULL)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-communication result.}
 
-\item{name}{Stored result name.}
+\item{result_id}{Stored result result_id.}
 
 \item{n}{Maximum interactions.}
 

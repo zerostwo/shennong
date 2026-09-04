@@ -62,7 +62,7 @@ if (!is.null(big)) {
                   sn_find_de(big, analysis = "markers",
                              ident_1 = ids[[2]], ident_2 = ids[[1]],
                              group_by = "seurat_clusters", method = "wilcox",
-                             store_name = store))
+                             result_id = store))
   if (isTRUE(res$ok)) {
     big <- res$value
     log_step("enrich:ora-gobp", sn_enrich(big, analysis = store, database = "GOBP"))
@@ -72,7 +72,7 @@ if (!is.null(big)) {
            sn_find_de(big, analysis = "pseudobulk",
                       ident_1 = ids[[1]], ident_2 = ids[[2]],
                       group_by = "seurat_clusters", sample_by = "sample_id",
-                      method = "edgeR", store_name = "pseudobulk_edger_c0"))
+                      method = "edgeR", result_id = "pseudobulk_edger_c0"))
 }
 
 if (!is.null(small)) {

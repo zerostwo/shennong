@@ -6,16 +6,16 @@
 \usage{
 sn_write_results(
   object,
-  cluster_de_name = NULL,
-  contrast_de_name = NULL,
-  enrichment_name = NULL,
+  cluster_de_result_id = NULL,
+  contrast_de_result_id = NULL,
+  enrichment_result_id = NULL,
   cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -24,11 +24,11 @@ sn_write_results(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{cluster_de_name}{Optional stored cluster-marker result.}
+\item{cluster_de_result_id}{Optional stored cluster-marker result.}
 
-\item{contrast_de_name}{Optional stored contrast or pseudobulk result.}
+\item{contrast_de_result_id}{Optional stored contrast or pseudobulk result.}
 
-\item{enrichment_name}{Optional stored enrichment result.}
+\item{enrichment_result_id}{Optional stored enrichment result.}
 
 \item{cluster_by}{Metadata column containing cluster labels.}
 
@@ -45,7 +45,8 @@ additional interpretation context.}
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}
 
-\item{store_name}{Name used under \code{object@misc$interpretation_results}.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 
@@ -75,17 +76,17 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   obj <- sn_store_enrichment(
     obj,
     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-    store_name = "demo_gsea"
+    result_id = "demo_gsea"
   )
   prompt <- sn_write_results(
     obj,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "demo_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "demo_gsea",
     cluster_by = "cell_type",
     return_prompt = TRUE
   )

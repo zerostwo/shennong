@@ -182,7 +182,7 @@ observed_primary <- data.frame(
 observed_communication <- sn_store_cell_communication(
   pbmc,
   result = observed_primary,
-  store_name = "kotliarov_observed_ligand_targets",
+  result_id = "kotliarov_observed_ligand_targets",
   method = "sample_spearman",
   backend = "real_sample_coexpression",
   group_by = "cell_state",
@@ -219,7 +219,7 @@ communication <- sn_run_cell_communication(
     liana = list(resource = "consensus", method = "natmi"),
     cellchat = list(min_cells = 10)
   ),
-  store_name = "kotliarov_consensus",
+  result_id = "kotliarov_consensus",
   return_object = FALSE
 )
 
@@ -260,7 +260,7 @@ cellphonedb_attempt <- tryCatch(
     group_by = "cell_state",
     output_dir = tempfile("shennong-cellphonedb-pkgdown-"),
     runtime_dir = cellphonedb_paths$runtime_dir,
-    result_name = "kotliarov_cellphonedb",
+    artifact_id = "kotliarov_cellphonedb",
     return_object = FALSE,
     method_control = list(iterations = 1000L),
     install_pixi = FALSE,

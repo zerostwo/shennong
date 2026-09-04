@@ -1,7 +1,7 @@
-.sn_resolve_cnv_result <- function(x, name = NULL) {
+.sn_resolve_cnv_result <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name) || !nzchar(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "cnv", name)
+    if (is_null(result_id) || !nzchar(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "cnv", result_id)
   } else {
     result <- x
     sn_validate_result(result)
@@ -13,7 +13,7 @@
 #' Plot CNV, malignancy, and subclone results
 #'
 #' @param x A Seurat object or unified CNV result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Plot type: chromosome heatmap, CNV UMAP, score distribution,
 #'   sample summary, or CNV-expression association.
 #' @param n Maximum cells or features shown.
@@ -23,13 +23,13 @@
 #' \dontrun{sn_plot_cnv(object, "cnv", type = "heatmap")}
 #' @export
 sn_plot_cnv <- function(x,
-                        name = NULL,
+                        result_id = NULL,
                         type = c("heatmap", "umap", "score", "sample", "association"),
                         n = 100L,
                         object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_cnv_result(x, name)
+  result <- .sn_resolve_cnv_result(x, result_id)
   primary <- tibble::as_tibble(result$tables$primary)
   if (identical(type, "score")) {
     return(ggplot2::ggplot(primary, ggplot2::aes(x = .data$malignant_call, y = .data$malignant_score, fill = .data$malignant_call)) +

@@ -113,7 +113,9 @@
 #' @param spatial_cols Coordinate metadata columns.
 #' @param assay,layer Expression assay and layer.
 #' @param features Features to test.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Method controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
@@ -128,11 +130,12 @@ sn_find_spatial_features <- function(object,
                                      assay = NULL,
                                      layer = "data",
                                      features = NULL,
-                                     store_name = "spatial_features",
+                                     result_id = "spatial_features",
                                      backend_control = list(),
                                      return_object = TRUE,
                                      seed = NULL,
                                      verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -167,7 +170,7 @@ sn_find_spatial_features <- function(object,
   table <- if (identical(method, "morans_i") && all(c("feature", "score") %in% names(output$table))) tibble::as_tibble(output$table) else .sn_standardize_spatial_features(output, method)
   graph <- tibble::as_tibble(output$graph %||% tibble::tibble())
   result <- list(
-    schema_version = "1.0.0", analysis_type = "spatial_features", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "spatial_features", result_id = result_id,
     method = method, backend = method,
     input = list(assay = expression$assay, layer = expression$layer, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(k = backend_control$k %||% 6L, n_permutations = backend_control$n_permutations %||% 99L),
@@ -180,9 +183,9 @@ sn_find_spatial_features <- function(object,
   )
   rownames(result$embeddings$spatial) <- coordinates$table$cell
   sn_validate_result(result)
-  object <- sn_store_result(object, "spatial_features", store_name, result)
+  object <- sn_store_result(object, "spatial_features", result_id, result)
   object <- .sn_log_seurat_command(object, assay = expression$assay, name = "sn_find_spatial_features")
-  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_features", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_features", result_id)
 }
 
 .sn_standardize_spatial_domains <- function(output, object) {
@@ -228,7 +231,9 @@ sn_find_spatial_features <- function(object,
 #' @param method BANKSY or an explicit stLearn/BayesSpace/CellCharter adapter.
 #' @param spatial_cols Coordinate metadata columns.
 #' @param assay,layer Expression assay and layer.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Backend controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
@@ -242,11 +247,12 @@ sn_find_spatial_domains <- function(object,
                                     spatial_cols = NULL,
                                     assay = NULL,
                                     layer = "counts",
-                                    store_name = "spatial_domains",
+                                    result_id = "spatial_domains",
                                     backend_control = list(),
                                     return_object = TRUE,
                                     seed = NULL,
                                     verbose = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -265,9 +271,9 @@ sn_find_spatial_domains <- function(object,
   }
   domains <- .sn_standardize_spatial_domains(output, object)
   values <- stats::setNames(domains$domain, domains$cell)
-  object[[store_name]] <- values[colnames(object)]
+  object[[result_id]] <- values[colnames(object)]
   result <- list(
-    schema_version = "1.0.0", analysis_type = "spatial_domains", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "spatial_domains", result_id = result_id,
     method = method, backend = method,
     input = list(assay = assay %||% SeuratObject::DefaultAssay(object), layer = layer, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(lambda = backend_control$lambda %||% NULL, resolution = backend_control$resolution %||% NULL),
@@ -280,9 +286,9 @@ sn_find_spatial_domains <- function(object,
   )
   rownames(result$embeddings$spatial) <- coordinates$table$cell
   sn_validate_result(result)
-  object <- sn_store_result(object, "spatial_domains", store_name, result)
+  object <- sn_store_result(object, "spatial_domains", result_id, result)
   object <- .sn_log_seurat_command(object, assay = result$input$assay, name = "sn_find_spatial_domains")
-  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_domains", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_domains", result_id)
 }
 
 .sn_spatial_enrichment <- function(graph, labels, n_permutations, seed) {
@@ -329,7 +335,9 @@ sn_find_spatial_domains <- function(object,
 #' @param method Local k-nearest-neighbor analysis or an explicit Squidpy adapter.
 #' @param group_by Metadata labels used for enrichment and co-occurrence.
 #' @param spatial_cols Coordinate metadata columns.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Graph/permutation controls or `runner`/`result`.
 #' @param return_object Return the modified object or result.
 #' @return A Seurat object or spatial-neighborhood result.
@@ -338,9 +346,10 @@ sn_run_spatial_neighborhood <- function(object,
                                         method = c("knn", "squidpy"),
                                         group_by,
                                         spatial_cols = NULL,
-                                        store_name = "spatial_neighborhood",
+                                        result_id = "spatial_neighborhood",
                                         backend_control = list(),
                                         return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   if (missing(group_by) || !group_by %in% colnames(object[[]])) stop("`group_by` must name object metadata.", call. = FALSE)
@@ -365,7 +374,7 @@ sn_run_spatial_neighborhood <- function(object,
   cooccurrence <- tibble::as_tibble(output$cooccurrence %||% tibble::tibble())
   if (!all(c("source", "target", "distance") %in% names(graph))) stop("Spatial graph requires source, target, and distance columns.", call. = FALSE)
   result <- list(
-    schema_version = "1.0.0", analysis_type = "spatial_neighborhood", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "spatial_neighborhood", result_id = result_id,
     method = method, backend = method,
     input = list(group_by = group_by, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(k = backend_control$k %||% 6L, n_permutations = backend_control$n_permutations %||% 99L),
@@ -376,9 +385,9 @@ sn_run_spatial_neighborhood <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% 717L)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "spatial_neighborhood", store_name, result)
+  object <- sn_store_result(object, "spatial_neighborhood", result_id, result)
   object <- .sn_log_seurat_command(object, name = "sn_run_spatial_neighborhood")
-  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_neighborhood", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_neighborhood", result_id)
 }
 
 .sn_spatial_group_distance <- function(coordinates, labels) {
@@ -398,26 +407,29 @@ sn_run_spatial_neighborhood <- function(object,
 #' Add spatial distance evidence to a communication result
 #'
 #' @param object A Seurat object.
-#' @param communication_name Stored communication result name.
+#' @param source_result_id Stored communication result name.
 #' @param communication Optional communication result supplied directly.
 #' @param group_by Metadata column matching communication source/target labels.
 #' @param spatial_cols Coordinate metadata columns.
 #' @param max_distance Optional maximum mean nearest-group distance.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param return_object Return the modified object or result.
 #' @return A Seurat object or spatial-communication result.
 #' @export
 sn_run_spatial_communication <- function(object,
-                                         communication_name = "communication",
+                                         source_result_id = "communication",
                                          communication = NULL,
                                          group_by,
                                          spatial_cols = NULL,
                                          max_distance = NULL,
-                                         store_name = "spatial_communication",
+                                         result_id = "spatial_communication",
                                          return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   if (missing(group_by) || !group_by %in% colnames(object[[]])) stop("`group_by` must name object metadata.", call. = FALSE)
-  communication <- communication %||% sn_get_result(object, "cell_communication", communication_name)
+  communication <- communication %||% sn_get_result(object, "cell_communication", source_result_id)
   sn_validate_result(communication)
   interactions <- tibble::as_tibble(communication$tables$primary)
   if (!all(c("source", "target") %in% names(interactions))) stop("Communication result requires source and target columns.", call. = FALSE)
@@ -428,19 +440,19 @@ sn_run_spatial_communication <- function(object,
   spatial$within_distance <- if (is_null(max_distance)) is.finite(spatial$spatial_distance) else is.finite(spatial$spatial_distance) & spatial$spatial_distance <= max_distance
   filtered <- spatial[spatial$within_distance, , drop = FALSE]
   result <- list(
-    schema_version = "1.0.0", analysis_type = "spatial_communication", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "spatial_communication", result_id = result_id,
     method = paste0(communication$method, "+distance"), backend = communication$backend,
-    input = list(communication_name = communication$name, group_by = group_by, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
+    input = list(source_result_id = communication$result_id, group_by = group_by, coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(max_distance = max_distance),
     tables = list(primary = filtered, all_interactions = spatial, group_distances = distances, coordinates = coordinates$table),
-    embeddings = list(), graphs = list(), models = list(source_result = list(name = communication$name, method = communication$method)),
+    embeddings = list(), graphs = list(), models = list(source_result = list(result_id = communication$result_id, method = communication$method)),
     diagnostics = list(input_interactions = nrow(interactions), retained_interactions = nrow(filtered), distance_groups = nrow(distances)),
     warnings = character(), provenance = .sn_analysis_provenance()
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "spatial_communication", store_name, result)
+  object <- sn_store_result(object, "spatial_communication", result_id, result)
   object <- .sn_log_seurat_command(object, name = "sn_run_spatial_communication")
-  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_communication", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_communication", result_id)
 }
 
 #' Run spatial deconvolution through cell2location
@@ -470,7 +482,9 @@ sn_run_spatial_mapping <- function(...) {
 #' @param object A Seurat object.
 #' @param method Integration backend label.
 #' @param spatial_cols Coordinate columns.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param backend_control Required `runner` or `result` returning an embedding
 #'   table with a `cell` column.
 #' @param return_object Return the modified object or result.
@@ -479,9 +493,10 @@ sn_run_spatial_mapping <- function(...) {
 sn_integrate_spatial <- function(object,
                                  method = c("staligner", "harmony", "custom"),
                                  spatial_cols = NULL,
-                                 store_name = "spatial_integration",
+                                 result_id = "spatial_integration",
                                  backend_control = list(),
                                  return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   coordinates <- .sn_spatial_coordinates(object, spatial_cols)
@@ -493,7 +508,7 @@ sn_integrate_spatial <- function(object,
   storage.mode(matrix) <- "numeric"
   rownames(matrix) <- embedding$cell
   result <- list(
-    schema_version = "1.0.0", analysis_type = "spatial_integration", name = store_name,
+    schema_version = .sn_analysis_result_schema_version(), analysis_type = "spatial_integration", result_id = result_id,
     method = method, backend = method,
     input = list(coordinate_columns = coordinates$columns, locations = nrow(coordinates$table)),
     parameters = list(), tables = list(primary = embedding, coordinates = coordinates$table),
@@ -502,9 +517,9 @@ sn_integrate_spatial <- function(object,
     warnings = as.character(output$warnings %||% character()), provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "spatial_integration", store_name, result)
+  object <- sn_store_result(object, "spatial_integration", result_id, result)
   object <- .sn_log_seurat_command(object, name = "sn_integrate_spatial")
-  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_integration", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "spatial_integration", result_id)
 }
 
 #' Unified spatial workflow dispatcher
@@ -549,7 +564,7 @@ sn_run_cell2location <- function(object,
                                  output_dir = NULL,
                                  runtime_dir = NULL,
                                  metadata_prefix = "cell2location_",
-                                 result_name = "cell2location",
+                                 artifact_id = "cell2location",
                                  return_object = TRUE,
                                  method_control = list(),
                                  ...) {
@@ -564,7 +579,7 @@ sn_run_cell2location <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(reference_signatures = reference_signatures), method_control),
     ...
@@ -584,7 +599,7 @@ sn_run_tangram <- function(object,
                            output_dir = NULL,
                            runtime_dir = NULL,
                            metadata_prefix = "tangram_",
-                           result_name = "tangram",
+                           artifact_id = "tangram",
                            return_object = TRUE,
                            method_control = list(),
                            ...) {
@@ -605,7 +620,7 @@ sn_run_tangram <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(cell_type_key = cell_type_by), method_control),
     ...
@@ -622,7 +637,7 @@ sn_run_squidpy <- function(object,
                            output_dir = NULL,
                            runtime_dir = NULL,
                            metadata_prefix = "squidpy_",
-                           result_name = "squidpy",
+                           artifact_id = "squidpy",
                            return_object = TRUE,
                            method_control = list(),
                            ...) {
@@ -637,7 +652,7 @@ sn_run_squidpy <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = c(list(cluster_key = cluster_by), method_control),
     ...
@@ -653,7 +668,7 @@ sn_run_spatialdata <- function(object,
                                output_dir = NULL,
                                runtime_dir = NULL,
                                metadata_prefix = "spatialdata_",
-                               result_name = "spatialdata",
+                               artifact_id = "spatialdata",
                                return_object = TRUE,
                                method_control = list(),
                                ...) {
@@ -668,7 +683,7 @@ sn_run_spatialdata <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = method_control,
     ...
@@ -684,7 +699,7 @@ sn_run_stlearn <- function(object,
                            output_dir = NULL,
                            runtime_dir = NULL,
                            metadata_prefix = "stlearn_",
-                           result_name = "stlearn",
+                           artifact_id = "stlearn",
                            return_object = TRUE,
                            method_control = list(),
                            ...) {
@@ -699,10 +714,9 @@ sn_run_stlearn <- function(object,
     output_dir = output_dir,
     runtime_dir = runtime_dir,
     metadata_prefix = metadata_prefix,
-    result_name = result_name,
+    result_name = artifact_id,
     return_object = return_object,
     config = method_control,
     ...
   )
 }
-

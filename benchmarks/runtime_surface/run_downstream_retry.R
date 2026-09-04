@@ -70,9 +70,9 @@ if (!is.null(big)) {
     res <- log_step(paste0("de:c", id, "-vs-c", cluster_ids[[1]], ":", big_name),
                     sn_find_de(big, ident_1 = id, ident_2 = cluster_ids[[1]],
                                group_by = "seurat_clusters", method = "wilcoxon",
-                               store_name = store))
+                               result_id = store))
     if (!isTRUE(res$ok)) next
-    stored <- sn_get_result(res$value, type = "de", name = store)
+    stored <- sn_get_result(res$value, type = "de", result_id = store)
     table <- stored$tables$primary
     genes <- head(table[order(-table$avg_log2FC), ]$gene, 100)
     signatures[[paste0("c", id)]] <- genes
@@ -81,7 +81,7 @@ if (!is.null(big)) {
   log_step(paste0("de:pseudobulk-edger:", big_name),
            sn_find_de(big, ident_1 = cluster_ids[[1]], ident_2 = cluster_ids[[2]],
                       group_by = "seurat_clusters", sample_by = "sample_id", method = "edger",
-                      store_name = "pseudobulk_edger_c0"))
+                      result_id = "pseudobulk_edger_c0"))
 
   if (length(signatures)) {
     for (sm in c("ucell", "aucell", "gsva", "ssgsea", "mean")) {

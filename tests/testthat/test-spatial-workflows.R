@@ -43,7 +43,7 @@ test_that("spatial domain adapters store assignments in metadata", {
   object <- make_spatial_test_object()
   output <- list(domains = tibble::tibble(cell_id = colnames(object), cluster = rep(c("D1", "D2"), each = 18)))
   for (method in c("banksy", "stlearn", "bayesspace", "cellcharter")) {
-    updated <- sn_find_spatial_domains(object, method = method, store_name = paste0("domain_", method), backend_control = list(result = output))
+    updated <- sn_find_spatial_domains(object, method = method, result_id = paste0("domain_", method), backend_control = list(result = output))
     result <- sn_get_result(updated, "spatial_domains", paste0("domain_", method))
     expect_equal(result$diagnostics$domains, 2L)
     expect_true(paste0("domain_", method) %in% colnames(updated[[]]))
@@ -64,13 +64,16 @@ test_that("spatial neighborhoods preserve enrichment and co-occurrence", {
 
 make_communication_test_result <- function() {
   list(
-    schema_version = "1.0.0", analysis_type = "cell_communication", name = "communication",
+    schema_version = "2.0.0", analysis_type = "cell_communication", result_id = "communication",
     method = "synthetic", backend = "synthetic", input = list(), parameters = list(),
     tables = list(primary = tibble::tibble(
       source = c("left", "left", "right"), target = c("left", "right", "right"),
       ligand = c("L1", "L2", "L3"), receptor = c("R1", "R2", "R3"), score = c(1, 0.7, 0.9)
     )), embeddings = list(), graphs = list(), models = list(), diagnostics = list(), warnings = character(),
-    provenance = list(package_versions = list(), random_seed = 1L, timestamp = "2026-01-01 UTC")
+    provenance = list(
+      package_versions = list(), random_seed = 1L, timestamp = "2026-01-01 UTC",
+      result_id = "communication", analysis_type = "cell_communication"
+    )
   )
 }
 
@@ -93,17 +96,17 @@ test_that("spatial communication reuses stored cell-communication results", {
   object <- sn_store_result(
     object,
     type = "cell_communication",
-    name = "communication",
+    result_id = "communication",
     result = make_communication_test_result()
   )
   result <- sn_run_spatial_communication(
     object,
-    communication_name = "communication",
+    source_result_id = "communication",
     group_by = "region",
     return_object = FALSE
   )
   expect_equal(nrow(result$tables$all_interactions), 3L)
-  expect_equal(result$models$source_result$name, "communication")
+  expect_equal(result$models$source_result$result_id, "communication")
 })
 
 test_that("spatial integration and dispatcher standardize adapter embeddings", {

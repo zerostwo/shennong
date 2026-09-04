@@ -6,7 +6,7 @@
 \usage{
 sn_plot_discovered_programs(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("weights", "activity", "stability"),
   programs = NULL,
   n = 20L,
@@ -16,7 +16,7 @@ sn_plot_discovered_programs(
 \arguments{
 \item{x}{A Seurat object or program-discovery result.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{type}{Gene weights, per-cell activity, or run stability.}
 

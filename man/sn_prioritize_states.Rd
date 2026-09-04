@@ -23,7 +23,7 @@ sn_prioritize_states(
   bulk_expression = NULL,
   bulk_phenotype = NULL,
   family = c("binomial", "gaussian", "cox"),
-  store_name = "priority",
+  result_id = "priority",
   seed = 717L,
   backend_control = list(),
   return_object = TRUE
@@ -62,7 +62,8 @@ required for RareQ phenotype association.}
 
 \item{family}{Scissor phenotype family.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{seed}{Random seed.}
 

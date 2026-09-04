@@ -13,7 +13,7 @@ sn_run_velocity(
   unspliced_layer = "unspliced",
   reduction = NULL,
   dims = 1:2,
-  store_name = "velocity",
+  result_id = "velocity",
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
@@ -31,7 +31,8 @@ sn_run_velocity(
 
 \item{reduction, dims}{Embedding and dimensions used for projected vectors.}
 
-\item{store_name}{Stored result name.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{backend_control}{Backend/pixi controls or an explicit \code{runner}/\code{result}.
 RegVelo requires \code{prior_grn}, supplied as a regulator-target edge

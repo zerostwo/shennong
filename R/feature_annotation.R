@@ -243,7 +243,7 @@
 #' expression tables that encode transcription factors, cell-surface or
 #' plasma-membrane proteins, cytokines, or chemokines. It can annotate a direct
 #' data frame or a stored Shennong DE result under
-#' `object@misc$de_results[[de_name]]`.
+#' `object@misc$shennong$results$de[[source_result_id]]`.
 #'
 #' By default the feature classes are derived from MSigDB GO sets through the
 #' optional \pkg{msigdbr} package. For stricter project-specific definitions,
@@ -252,7 +252,8 @@
 #'
 #' @param x A DE/marker data frame, or a Seurat object containing a stored DE
 #'   result.
-#' @param de_name Stored DE result name when `x` is a Seurat object.
+#' @param source_result_id Identifier of the stored DE result when `x` is a
+#'   Seurat object.
 #' @param species One of `"human"` or `"mouse"`. When `x` is a Seurat object
 #'   and `species` is `NULL`, Shennong tries `sn_get_species(x)`.
 #' @param gene_col Column containing gene symbols in the DE table.
@@ -267,11 +268,11 @@
 #'   `feature_class` columns. Optional columns are `species`,
 #'   `feature_class_label`, `feature_class_term`, and
 #'   `feature_class_source`.
-#' @param store_name Optional stored DE result name for the annotated table
+#' @param result_id Optional stored DE result name for the annotated table
 #'   when `x` is a Seurat object and `return_object = TRUE`. Defaults to
-#'   `paste0(de_name, "_feature_classes")`.
+#'   `paste0(source_result_id, "_feature_classes")`.
 #' @param return_object If `TRUE`, return the updated Seurat object with the
-#'   annotated table stored under `object@misc$de_results[[store_name]]`.
+#'   annotated table stored in the canonical Shennong result registry.
 #'   Otherwise return the annotated table.
 #'
 #' @return A tibble with feature-class columns, or an updated Seurat object.
@@ -295,29 +296,29 @@
 #'
 #' \dontrun{
 #' obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
-#'   store_name = "celltype_markers", return_object = TRUE
+#'   result_id = "celltype_markers", return_object = TRUE
 #' )
-#' obj <- sn_annotate_de_features(obj, de_name = "celltype_markers")
-#' sn_get_de_result(obj, de_name = "celltype_markers_feature_classes")
+#' obj <- sn_annotate_de_features(obj, source_result_id = "celltype_markers")
+#' sn_get_de_result(obj, result_id = "celltype_markers_feature_classes")
 #' }
 #' @export
 sn_annotate_de_features <- function(x,
-                                    de_name = "default",
+                                    source_result_id = "default",
                                     species = NULL,
                                     gene_col = "gene",
                                     feature_classes = NULL,
                                     resource = c("auto", "msigdbr", "custom"),
                                     custom_resource = NULL,
-                                    store_name = NULL,
+                                    result_id = NULL,
                                     return_object = inherits(x, "Seurat")) {
   resource <- match.arg(resource)
   if (inherits(x, "Seurat")) {
     species <- species %||% tryCatch(sn_get_species(x), error = function(...) NULL)
     species <- species %||% "human"
     species <- rlang::arg_match(species, c("human", "mouse"))
-    stored <- .sn_get_misc_result(object = x, collection = "de_results", store_name = de_name)
+    stored <- sn_get_result(x, type = "de", result_id = source_result_id)
     annotated <- .sn_de_table_feature_annotation(
-      table = stored$table,
+      table = stored$tables$primary,
       species = species,
       gene_col = gene_col,
       feature_classes = feature_classes,
@@ -327,22 +328,23 @@ sn_annotate_de_features <- function(x,
     if (!isTRUE(return_object)) {
       return(annotated)
     }
-    store_name <- store_name %||% paste0(de_name, "_feature_classes")
+    result_id <- .sn_validate_result_id(
+      result_id %||% paste0(source_result_id, "_feature_classes")
+    )
     updated <- stored
-    updated$table <- annotated
     updated$tables$primary <- annotated
     updated$schema_version <- .sn_analysis_result_schema_version()
     updated$feature_annotation <- list(
-      source_de_name = de_name,
+      source_result_id = source_result_id,
       species = species,
       gene_col = gene_col,
       feature_classes = .sn_resolve_feature_classes(feature_classes),
       resource = if (identical(resource, "auto") && !is.null(custom_resource)) "custom" else resource
     )
-    x <- .sn_store_misc_result(
+    x <- sn_store_result(
       object = x,
-      collection = "de_results",
-      store_name = store_name,
+      type = "de",
+      result_id = result_id,
       result = updated
     )
     return(.sn_log_seurat_command(object = x, name = "sn_annotate_de_features"))

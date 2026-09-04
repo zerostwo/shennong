@@ -1,7 +1,7 @@
-.sn_resolve_metabolism_result <- function(x, name = NULL) {
+.sn_resolve_metabolism_result <- function(x, result_id = NULL) {
   if (inherits(x, "Seurat")) {
-    if (is_null(name) || !nzchar(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    result <- sn_get_result(x, "metabolism", name)
+    if (is_null(result_id) || !nzchar(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    result <- sn_get_result(x, "metabolism", result_id)
   } else {
     result <- x
     sn_validate_result(result)
@@ -13,7 +13,7 @@
 #' Plot metabolic pathway activity and differential results
 #'
 #' @param x A Seurat object or unified metabolism result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param type Activity distribution, sample heatmap, differential effects, or
 #'   sample-level pathway summary.
 #' @param pathways Optional pathways to retain.
@@ -24,14 +24,14 @@
 #' \dontrun{sn_plot_metabolism(object, "metabolism", type = "differential")}
 #' @export
 sn_plot_metabolism <- function(x,
-                               name = NULL,
+                               result_id = NULL,
                                type = c("activity", "heatmap", "differential", "sample"),
                                pathways = NULL,
                                n = 30L,
                                object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
-  result <- .sn_resolve_metabolism_result(x, name)
+  result <- .sn_resolve_metabolism_result(x, result_id)
   scores <- tibble::as_tibble(result$tables$primary)
   if (!is_null(pathways)) scores <- scores[scores$pathway %in% pathways, , drop = FALSE]
   if (identical(type, "activity")) {

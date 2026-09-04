@@ -10,13 +10,12 @@ sn_score_programs(
   method = c("ucell", "aucell", "gsva", "ssgsea", "mean"),
   assay = NULL,
   layer = "data",
-  name = NULL,
   group_by = NULL,
   species = NULL,
   min_genes = 1L,
   backend_control = list(),
   return_object = TRUE,
-  store_name = NULL
+  result_id = NULL
 )
 }
 \arguments{
@@ -29,9 +28,6 @@ bundled signature query vector.}
 
 \item{assay, layer}{Expression source.}
 
-\item{name}{Stored-result and metadata prefix. A stable method-derived name
-is used when omitted.}
-
 \item{group_by}{Optional metadata column used to average expression before
 GSVA/ssGSEA or other group-level scoring.}
 
@@ -43,7 +39,8 @@ GSVA/ssGSEA or other group-level scoring.}
 
 \item{return_object}{Return the updated object or the unified result.}
 
-\item{store_name}{Preferred stored-result name. Overrides \code{name} when supplied.}
+\item{result_id}{Stable identifier for the stored program-scoring result and
+its metadata prefix. A method-derived identifier is used when omitted.}
 }
 \value{
 A Seurat object or unified program-scoring result.
@@ -59,7 +56,7 @@ object <- sn_score_programs(
   object,
   signatures = list(T_cell = c("CD3D", "CD3E")),
   method = "ucell",
-  name = "immune_programs"
+  result_id = "immune_programs"
 )
 sn_get_result(object, "program_scoring", "immune_programs")
 }

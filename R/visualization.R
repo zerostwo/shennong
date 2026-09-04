@@ -407,7 +407,7 @@ sn_plot_barplot <- function(data,
 #'
 #' @param x A milo result data frame, or a Seurat object containing a stored
 #'   milo result.
-#' @param milo_name Name of the stored milo result when \code{x} is a Seurat
+#' @param result_id Name of the stored milo result when \code{x} is a Seurat
 #'   object.
 #' @param annotation_by Optional column used to color points.
 #' @param fdr_col FDR column used on the y-axis. Defaults to \code{"SpatialFDR"}.
@@ -433,7 +433,7 @@ sn_plot_barplot <- function(data,
 #'
 #' @export
 sn_plot_milo <- function(x,
-                         milo_name = "default",
+                         result_id = "default",
                          annotation_by = NULL,
                          fdr_col = c("SpatialFDR", "FDR"),
                          fdr_cutoff = 0.1,
@@ -446,7 +446,7 @@ sn_plot_milo <- function(x,
                          panel_widths = NULL,
                          panel_heights = NULL) {
   if (inherits(x, "Seurat")) {
-    data <- sn_get_milo_result(x, milo_name = milo_name)
+    data <- sn_get_milo_result(x, result_id = result_id)
   } else if (is.data.frame(x)) {
     data <- x
   } else {
@@ -1284,21 +1284,15 @@ sn_plot_heatmap <- function(object,
 
 .sn_resolve_dotplot_features <- function(object,
                                          features,
-                                         de_name = "default",
+                                         result_id = "default",
                                          n = 3,
                                          marker_groups = NULL) {
   if (!(length(features) == 1 && identical(features, "top_markers"))) {
     return(list(features = features, group_by = NULL))
   }
 
-  misc_data <- methods::slot(object, "misc")
-  de_store <- misc_data$de_results %||% list()
-  if (!de_name %in% names(de_store)) {
-    stop(glue("No stored DE result named '{de_name}' was found in `object@misc$de_results`."))
-  }
-
-  de_result <- de_store[[de_name]]
-  marker_table <- de_result$table
+  de_result <- sn_get_result(object, type = "de", result_id = result_id)
+  marker_table <- de_result$tables$primary
   group_col <- de_result$group_col
   rank_col <- de_result$rank_col
 
@@ -1343,8 +1337,8 @@ sn_plot_heatmap <- function(object,
 #' @param features A character vector of feature names to plot, a named list of
 #'   feature vectors to display in separate free-width panels, or
 #'   \code{"top_markers"} to automatically use the top stored DE markers from
-#'   \code{object@misc$de_results[[de_name]]}.
-#' @param de_name Name of the stored DE result to use when
+#'   the canonical Shennong result registry under \code{result_id}.
+#' @param result_id Name of the stored DE result to use when
 #'   \code{features = "top_markers"}. Defaults to \code{"default"}.
 #' @param n Number of genes to select per group when
 #'   \code{features = "top_markers"}. Defaults to \code{3}.
@@ -1395,7 +1389,7 @@ sn_plot_heatmap <- function(object,
 sn_plot_dot <- function(x,
                         assay = NULL,
                         features,
-                        de_name = "default",
+                        result_id = "default",
                         n = 3,
                         marker_groups = NULL,
                         col_min = -2.5,
@@ -1426,7 +1420,7 @@ sn_plot_dot <- function(x,
   feature_info <- .sn_resolve_dotplot_features(
     object = x,
     features = features,
-    de_name = de_name,
+    result_id = result_id,
     n = n,
     marker_groups = marker_groups
   )

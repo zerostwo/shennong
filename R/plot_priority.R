@@ -1,18 +1,18 @@
 #' Plot cell-state priority scores
 #'
 #' @param x A Seurat object or state-priority result.
-#' @param name Stored result name when `x` is a Seurat object.
+#' @param result_id Stored result result_id when `x` is a Seurat object.
 #' @param n Maximum states to show.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_state_priority(object, "priority")}
 #' @export
-sn_plot_state_priority <- function(x, name = NULL, n = 30L, object = NULL) {
+sn_plot_state_priority <- function(x, result_id = NULL, n = 30L, object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- if (inherits(x, "Seurat")) {
-    if (is_null(name)) stop("`name` is required when `x` is a Seurat object.", call. = FALSE)
-    sn_get_result(x, "state_priority", name)
+    if (is_null(result_id)) stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
+    sn_get_result(x, "state_priority", result_id)
   } else x
   sn_validate_result(result)
   if (!identical(result$analysis_type, "state_priority")) stop("Expected a state-priority result.", call. = FALSE)

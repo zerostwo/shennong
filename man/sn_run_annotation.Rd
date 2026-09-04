@@ -14,7 +14,7 @@ sn_run_annotation(
   disease = NULL,
   species = NULL,
   ontology = TRUE,
-  store_name = "annotation",
+  result_id = "annotation",
   assay = NULL,
   layer = "data",
   backend_control = list(),
@@ -41,7 +41,8 @@ CellTypist, which uses a pre-trained model instead.}
 
 \item{ontology}{Map labels to the bundled Cell Ontology snapshot.}
 
-\item{store_name}{Stored-result and metadata prefix.}
+\item{result_id}{Optional explicit result identifier. Overrides
+\code{result_id} when supplied.}
 
 \item{assay, layer}{Query expression source. Most backends read a
 log-normalized \code{data} layer; CellTypist and PopV independently default to

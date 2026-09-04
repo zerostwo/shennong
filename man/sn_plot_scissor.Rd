@@ -6,7 +6,7 @@
 \usage{
 sn_plot_scissor(
   x,
-  name = "scissor",
+  result_id = "scissor",
   type = c("states", "cells", "samples", "correlations", "reliability"),
   n = 5000L,
   object = NULL
@@ -15,7 +15,7 @@ sn_plot_scissor(
 \arguments{
 \item{x}{A Scissor state-priority result or a Seurat object containing one.}
 
-\item{name}{Stored result name when \code{x} is a Seurat object.}
+\item{result_id}{Stored result result_id when \code{x} is a Seurat object.}
 
 \item{type}{Plot state ranking, cell coefficients, sample contributions,
 cell-level correlation summaries, or optional reliability output.}
@@ -32,7 +32,7 @@ Plot a unified Scissor result
 }
 \examples{
 \dontrun{
-sn_plot_scissor(object, name = "scissor", type = "states")
-sn_plot_scissor(object, name = "scissor", type = "correlations")
+sn_plot_scissor(object, result_id = "scissor", type = "states")
+sn_plot_scissor(object, result_id = "scissor", type = "correlations")
 }
 }

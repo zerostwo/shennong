@@ -6,11 +6,11 @@
 \usage{
 sn_prepare_annotation_evidence(
   object,
-  de_name = NULL,
+  de_result_id = NULL,
   cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   n_terms = 5,
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
@@ -21,8 +21,8 @@ sn_prepare_annotation_evidence(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{de_name}{Optional stored marker-result name in
-\code{object@misc$de_results}. When omitted, Shennong prefers
+\item{de_result_id}{Optional stored marker-result name in
+the canonical Shennong result registry. When omitted, Shennong prefers
 \code{"default"}, then a single available result, and otherwise the most
 recent marker result.}
 
@@ -34,11 +34,11 @@ recent marker result.}
 \code{"specific"} prefers genes that are relatively unique to one cluster,
 while \code{"top"} keeps the raw top-ranked genes.}
 
-\item{enrichment_name}{Optional stored enrichment result used to add
+\item{enrichment_result_id}{Optional stored enrichment result used to add
 cluster-level functional evidence to the annotation prompt.}
 
 \item{n_terms}{Number of enrichment terms to retain per cluster when
-\code{enrichment_name} is supplied.}
+\code{enrichment_result_id} is supplied.}
 
 \item{enrichment_selection}{How to choose pathway/function terms for
 annotation evidence: \code{"specific"} prefers terms concentrated in fewer
@@ -81,11 +81,11 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   evidence <- sn_prepare_annotation_evidence(
     obj,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type"
   )
   names(evidence)

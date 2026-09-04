@@ -867,7 +867,7 @@
 
 .sn_prepare_marker_candidates <- function(de_result,
                                           positive_only = TRUE) {
-  marker_table <- de_result$table
+  marker_table <- de_result$tables$primary
   group_col <- de_result$group_col
   rank_col <- de_result$rank_col
   p_col <- de_result$p_col
@@ -1049,16 +1049,16 @@
 }
 
 .sn_prepare_cluster_enrichment_summary <- function(object,
-                                                  enrichment_name,
+                                                  enrichment_result_id,
                                                   n_terms = 5,
                                                   selection = c("specific", "top")) {
   selection <- match.arg(selection)
-  if (is.null(enrichment_name)) {
+  if (is.null(enrichment_result_id)) {
     return(tibble::tibble())
   }
 
-  stored <- .sn_get_misc_result(object = object, collection = "enrichment_results", store_name = enrichment_name)
-  table <- tibble::as_tibble(stored$table)
+  stored <- sn_get_result(object = object, type = "enrichment", result_id = enrichment_result_id)
+  table <- tibble::as_tibble(stored$tables$primary)
   group_candidates <- c("Cluster", "cluster")[c("Cluster", "cluster") %in% colnames(table)]
   term_candidates <- c("Description", "ID")[c("Description", "ID") %in% colnames(table)]
   rank_candidates <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")[c("NES", "Count", "GeneRatio", "p.adjust", "pvalue") %in% colnames(table)]
@@ -1441,8 +1441,8 @@
 #' Prepare cluster-annotation evidence from a Seurat object
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Optional stored marker-result name in
-#'   \code{object@misc$de_results}. When omitted, Shennong prefers
+#' @param de_result_id Optional stored marker-result name in
+#'   the canonical Shennong result registry. When omitted, Shennong prefers
 #'   \code{"default"}, then a single available result, and otherwise the most
 #'   recent marker result.
 #' @param cluster_by Metadata column containing cluster labels.
@@ -1450,10 +1450,10 @@
 #' @param marker_selection How to choose marker genes for annotation evidence:
 #'   \code{"specific"} prefers genes that are relatively unique to one cluster,
 #'   while \code{"top"} keeps the raw top-ranked genes.
-#' @param enrichment_name Optional stored enrichment result used to add
+#' @param enrichment_result_id Optional stored enrichment result used to add
 #'   cluster-level functional evidence to the annotation prompt.
 #' @param n_terms Number of enrichment terms to retain per cluster when
-#'   \code{enrichment_name} is supplied.
+#'   \code{enrichment_result_id} is supplied.
 #' @param enrichment_selection How to choose pathway/function terms for
 #'   annotation evidence: \code{"specific"} prefers terms concentrated in fewer
 #'   clusters, while \code{"top"} keeps the raw top-ranked terms.
@@ -1488,22 +1488,22 @@
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   evidence <- sn_prepare_annotation_evidence(
 #'     obj,
-#'     de_name = "celltype_markers",
+#'     de_result_id = "celltype_markers",
 #'     cluster_by = "cell_type"
 #'   )
 #'   names(evidence)
 #' }
 #' @export
 sn_prepare_annotation_evidence <- function(object,
-                                           de_name = NULL,
+                                           de_result_id = NULL,
                                            cluster_by = NULL,
                                            n_markers = 10,
                                            marker_selection = c("specific", "top"),
-                                           enrichment_name = NULL,
+                                           enrichment_result_id = NULL,
                                            n_terms = 5,
                                            enrichment_selection = c("specific", "top"),
                                            include_qc = TRUE,
@@ -1514,14 +1514,13 @@ sn_prepare_annotation_evidence <- function(object,
   marker_selection <- match.arg(marker_selection)
   enrichment_selection <- match.arg(enrichment_selection)
 
-  de_name <- .sn_resolve_misc_result_name(
+  de_result_id <- .sn_resolve_stored_result_id(
     object = object,
-    collection = "de_results",
-    store_name = de_name,
-    preferred_analysis = "markers",
-    arg_name = "de_name"
+    type = "de",
+    result_id = de_result_id,
+    preferred_analysis = "markers"
   )
-  de_result <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
+  de_result <- sn_get_result(object = object, type = "de", result_id = de_result_id)
   cluster_summary <- .sn_prepare_cluster_summary(object = object, cluster_col = cluster_by)
   marker_summary <- .sn_prepare_marker_summary(
     de_result = de_result,
@@ -1536,7 +1535,7 @@ sn_prepare_annotation_evidence <- function(object,
   prediction_summary <- .sn_prepare_prediction_summary(object = object, cluster_col = cluster_by)
   enrichment_summary <- .sn_prepare_cluster_enrichment_summary(
     object = object,
-    enrichment_name = enrichment_name,
+    enrichment_result_id = enrichment_result_id,
     n_terms = n_terms,
     selection = enrichment_selection
   )
@@ -1585,8 +1584,8 @@ sn_prepare_annotation_evidence <- function(object,
   list(
     task = "annotation",
     cluster_col = cluster_by,
-    source_de_name = de_name,
-    source_enrichment_name = enrichment_name,
+    source_de_result_id = de_result_id,
+    source_enrichment_result_id = enrichment_result_id,
     analysis_method = de_result$method,
     species = tryCatch(sn_get_species(object), error = function(...) NULL),
     marker_selection = marker_selection,
@@ -1606,7 +1605,7 @@ sn_prepare_annotation_evidence <- function(object,
 #' Prepare differential-expression evidence from a stored DE result
 #'
 #' @param object A \code{Seurat} object.
-#' @param de_name Name of a stored DE result in \code{object@misc$de_results}.
+#' @param de_result_id Identifier of a stored DE result.
 #' @param n_genes Number of top genes to include per direction or group.
 #'
 #' @return A structured list ready for prompt construction.
@@ -1629,17 +1628,17 @@ sn_prepare_annotation_evidence <- function(object,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
-#'   evidence <- sn_prepare_de_evidence(obj, de_name = "celltype_markers", n_genes = 3)
+#'   evidence <- sn_prepare_de_evidence(obj, de_result_id = "celltype_markers", n_genes = 3)
 #'   names(evidence)
 #' }
 #' @export
-sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
+sn_prepare_de_evidence <- function(object, de_result_id, n_genes = 15) {
   .sn_validate_seurat_object(object)
 
-  de_result <- .sn_get_misc_result(object = object, collection = "de_results", store_name = de_name)
-  result_table <- tibble::as_tibble(de_result$table)
+  de_result <- sn_get_result(object = object, type = "de", result_id = de_result_id)
+  result_table <- tibble::as_tibble(de_result$tables$primary)
   rank_col <- de_result$rank_col
   if (is_null(rank_col) || !rank_col %in% colnames(result_table)) {
     stop("The stored DE result does not contain a ranking column.")
@@ -1659,7 +1658,7 @@ sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
     marker_table <- .sn_prepare_marker_table(de_result = de_result, n_markers = n_genes)
     return(list(
       task = "de",
-      source_de_name = de_name,
+      source_de_result_id = de_result_id,
       summary = summary,
       top_markers = top_table,
       top_marker_table = marker_table,
@@ -1674,7 +1673,7 @@ sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
 
   list(
     task = "de",
-    source_de_name = de_name,
+    source_de_result_id = de_result_id,
     summary = summary,
     top_hits = tibble::as_tibble(top_hits),
     top_up = tibble::as_tibble(top_up),
@@ -1687,7 +1686,7 @@ sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
 #'
 #' @param object Optional \code{Seurat} object containing stored enrichment
 #'   results.
-#' @param enrichment_name Name of a stored enrichment result.
+#' @param enrichment_result_id Name of a stored enrichment result.
 #' @param result Optional enrichment result object supplied directly.
 #' @param n_terms Number of top terms to keep.
 #'
@@ -1704,37 +1703,38 @@ sn_prepare_de_evidence <- function(object, de_name, n_genes = 15) {
 #' evidence$top_terms
 #' @export
 sn_prepare_enrichment_evidence <- function(object = NULL,
-                                           enrichment_name = NULL,
+                                           enrichment_result_id = NULL,
                                            result = NULL,
                                            n_terms = 10) {
   if (is_null(object) && is_null(result)) {
-    stop("Supply either `object` + `enrichment_name` or `result`.")
+    stop("Supply either `object` + `enrichment_result_id` or `result`.")
   }
 
   stored <- if (!is_null(object)) {
-    .sn_get_misc_result(object = object, collection = "enrichment_results", store_name = enrichment_name)
+    sn_get_result(object = object, type = "enrichment", result_id = enrichment_result_id)
   } else {
     list(
-      table = .sn_as_enrichment_table(result),
+      tables = list(primary = .sn_as_enrichment_table(result)),
       analysis = NA_character_,
       database = NA_character_,
       species = NA_character_,
-      source_de_name = NULL
+      source_de_result_id = NULL
     )
   }
 
-  table <- tibble::as_tibble(stored$table)
+  table <- tibble::as_tibble(stored$tables$primary)
   rank_candidates <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")
-  rank_col <- rank_candidates[rank_candidates %in% colnames(table)][1]
+  rank_hits <- rank_candidates[rank_candidates %in% colnames(table)]
+  rank_col <- if (length(rank_hits) > 0L) rank_hits[[1L]] else NULL
   ordered <- if (is_null(rank_col)) table else table[order(if (rank_col == "p.adjust" || rank_col == "pvalue") table[[rank_col]] else -abs(table[[rank_col]])), , drop = FALSE]
 
   list(
     task = "enrichment",
-    source_enrichment_name = enrichment_name,
+    source_enrichment_result_id = enrichment_result_id,
     analysis = stored$analysis,
     database = stored$database,
     species = stored$species,
-    source_de_name = stored$source_de_name,
+    source_de_result_id = stored$source_de_result_id,
     top_terms = tibble::as_tibble(utils::head(ordered, n_terms)),
     full_term_table = tibble::as_tibble(table),
     caveats = character()
@@ -1744,9 +1744,9 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #' Prepare manuscript-style results evidence
 #'
 #' @param object A \code{Seurat} object.
-#' @param cluster_de_name Optional stored cluster-marker result.
-#' @param contrast_de_name Optional stored contrast or pseudobulk result.
-#' @param enrichment_name Optional stored enrichment result.
+#' @param cluster_de_result_id Optional stored cluster-marker result.
+#' @param contrast_de_result_id Optional stored contrast or pseudobulk result.
+#' @param enrichment_result_id Optional stored enrichment result.
 #' @param cluster_by Metadata column containing cluster labels.
 #' @param n_markers Number of marker genes to retain per cluster.
 #' @param n_terms Number of enrichment terms to retain.
@@ -1767,26 +1767,26 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
 #'     layer = "data", min_pct = 0, logfc_threshold = 0,
-#'     store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+#'     result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
 #'   )
 #'   obj <- sn_store_enrichment(
 #'     obj,
 #'     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-#'     store_name = "demo_gsea"
+#'     result_id = "demo_gsea"
 #'   )
 #'   evidence <- sn_prepare_results_evidence(
 #'     obj,
-#'     cluster_de_name = "celltype_markers",
-#'     enrichment_name = "demo_gsea",
+#'     cluster_de_result_id = "celltype_markers",
+#'     enrichment_result_id = "demo_gsea",
 #'     cluster_by = "cell_type"
 #'   )
 #'   names(evidence)
 #' }
 #' @export
 sn_prepare_results_evidence <- function(object,
-                                        cluster_de_name = NULL,
-                                        contrast_de_name = NULL,
-                                        enrichment_name = NULL,
+                                        cluster_de_result_id = NULL,
+                                        contrast_de_result_id = NULL,
+                                        enrichment_result_id = NULL,
                                         cluster_by = NULL,
                                         n_markers = 5,
                                         n_terms = 10) {
@@ -1804,27 +1804,27 @@ sn_prepare_results_evidence <- function(object,
     cluster_summary = .sn_prepare_cluster_summary(object = object, cluster_col = cluster_by)
   )
 
-  if (!is_null(cluster_de_name)) {
+  if (!is_null(cluster_de_result_id)) {
     evidence$cluster_markers <- sn_prepare_annotation_evidence(
       object = object,
-      de_name = cluster_de_name,
+      de_result_id = cluster_de_result_id,
       cluster_by = cluster_by,
       n_markers = n_markers
     )$cluster_summary
   }
 
-  if (!is_null(contrast_de_name)) {
+  if (!is_null(contrast_de_result_id)) {
     evidence$de_summary <- sn_prepare_de_evidence(
       object = object,
-      de_name = contrast_de_name,
+      de_result_id = contrast_de_result_id,
       n_genes = n_markers
     )
   }
 
-  if (!is_null(enrichment_name)) {
+  if (!is_null(enrichment_result_id)) {
     evidence$enrichment_summary <- sn_prepare_enrichment_evidence(
       object = object,
-      enrichment_name = enrichment_name,
+      enrichment_result_id = enrichment_result_id,
       n_terms = n_terms
     )
   }

@@ -4,14 +4,14 @@
 \alias{sn_store_result}
 \title{Store a Shennong analysis result on a Seurat object}
 \usage{
-sn_store_result(object, type, name, result)
+sn_store_result(object, type, result_id, result)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
 \item{type}{Analysis type, for example \code{"trajectory"} or \code{"de"}.}
 
-\item{name}{Stable name used to retrieve the result.}
+\item{result_id}{Stable identifier used to store and retrieve the result.}
 
 \item{result}{A result list. Missing contract fields are filled when they can
 be inferred without changing the analytical content.}
@@ -20,9 +20,8 @@ be inferred without changing the analytical content.}
 The modified \code{Seurat} object.
 }
 \description{
-Registered legacy result types are stored in their established
-\code{object@misc} collection. New result types use the generic
-\code{object@misc$analysis_results} collection.
+Every result is stored at
+\code{object@misc$shennong$results[[analysis_type]][[result_id]]}.
 }
 \examples{
 \dontrun{

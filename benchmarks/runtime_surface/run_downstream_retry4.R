@@ -37,16 +37,16 @@ res <- log_step("de:wilcox:c1-vs-c0",
                 sn_find_de(big, analysis = "markers",
                            ident_1 = ids[[2]], ident_2 = ids[[1]],
                            group_by = "seurat_clusters", method = "wilcox",
-                           store_name = store))
+                           result_id = store))
 big <- res$value
-stored <- sn_get_result(big, type = "de", name = store)
+stored <- sn_get_result(big, type = "de", result_id = store)
 table <- stored$tables$primary
 geneset <- head(table[order(-table$avg_log2FC), ]$gene, 100)
 
 log_step("enrich:ora-gobp",
-         sn_enrich(big, analysis = "ora", source_de_name = store, database = "GOBP"))
+         sn_enrich(big, analysis = "ora", source_de_result_id = store, database = "GOBP"))
 log_step("enrich:gsea-hallmark",
-         sn_enrich(big, analysis = "gsea", source_de_name = store, database = "Hallmark"))
+         sn_enrich(big, analysis = "gsea", source_de_result_id = store, database = "Hallmark"))
 
 small <- readRDS("/tmp/opencode/clustered3k.rds")
 log_step("communication:nichenet-geneset", {

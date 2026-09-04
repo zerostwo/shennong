@@ -23,8 +23,8 @@ schema-version, and canonical-primary-table status.
 \description{
 Inspect every registered analysis result and artifact, plus unknown populated
 top-level \code{object@misc} entries, without mutating the object. The audit
-distinguishes results that already satisfy the current contract from legacy
-results that can be upgraded safely, and reports unknown payloads as
+distinguishes results that satisfy the current contract from malformed
+results that can be normalized safely, and reports unknown payloads as
 \code{unregistered}.
 }
 \examples{

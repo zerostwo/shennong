@@ -995,7 +995,9 @@
 #' @param bulk_expression Gene-by-bulk-sample matrix required by Scissor.
 #' @param bulk_phenotype Bulk phenotype vector or survival matrix for Scissor.
 #' @param family Scissor phenotype family.
-#' @param store_name Stored result name.
+#' @param result_id Stored result name.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param seed Random seed.
 #' @param backend_control Backend-specific options.
 #' @param return_object Return the updated object instead of the result.
@@ -1027,10 +1029,11 @@ sn_prioritize_states <- function(object,
                                  bulk_expression = NULL,
                                  bulk_phenotype = NULL,
                                  family = c("binomial", "gaussian", "cox"),
-                                 store_name = "priority",
+                                 result_id = "priority",
                                  seed = 717L,
                                  backend_control = list(),
                                  return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   family <- match.arg(family)
@@ -1077,7 +1080,7 @@ sn_prioritize_states <- function(object,
   }
   result <- .sn_new_analysis_result(
     analysis_type = "state_priority",
-    name = store_name,
+    result_id = result_id,
     method = method,
     backend = switch(method, augur = "Shennong sample-aware Augur", rareq = "RareQ", scissor = "Scissor"),
     input = utils::modifyList(
@@ -1110,9 +1113,9 @@ sn_prioritize_states <- function(object,
       seed
     }
   )
-  object <- sn_store_result(object, "state_priority", store_name, result)
+  object <- sn_store_result(object, "state_priority", result_id, result)
   object <- .sn_log_seurat_command(object = object, assay = assay, name = "sn_prioritize_states")
-  if (isTRUE(return_object)) object else sn_get_result(object, "state_priority", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "state_priority", result_id)
 }
 
 #' Run phenotype-guided Scissor cell selection
@@ -1135,7 +1138,9 @@ sn_prioritize_states <- function(object,
 #' @param family Scissor response family.
 #' @param phenotype Descriptive label stored with the result.
 #' @param assay,layer Single-cell expression source.
-#' @param store_name Stored result name under `scissor`.
+#' @param result_id Stored result name under `scissor`.
+#' @param result_id Optional explicit result identifier. Overrides
+#'   \code{result_id} when supplied.
 #' @param seed Random seed recorded in provenance.
 #' @param backend_control Direct Scissor controls, or a list containing a
 #'   `scissor` sub-list. Set `reliability = TRUE` to run bootstrap reliability;
@@ -1169,10 +1174,11 @@ sn_run_scissor <- function(object,
                            phenotype = "bulk_phenotype",
                            assay = NULL,
                            layer = "data",
-                           store_name = "scissor",
+                           result_id = "scissor",
                            seed = 717L,
                            backend_control = list(),
                            return_object = TRUE) {
+  result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   family <- match.arg(family)
   if (!is_null(state_by) && !state_by %in% colnames(object[[]])) {
@@ -1191,7 +1197,7 @@ sn_run_scissor <- function(object,
   )
   result <- .sn_new_analysis_result(
     analysis_type = "scissor",
-    name = store_name,
+    result_id = result_id,
     method = "scissor",
     backend = "Scissor",
     input = utils::modifyList(
@@ -1224,11 +1230,11 @@ sn_run_scissor <- function(object,
       scissor_backend = 123L
     )
   )
-  object <- sn_store_result(object, "scissor", store_name, result)
+  object <- sn_store_result(object, "scissor", result_id, result)
   object <- .sn_log_seurat_command(
     object = object,
     assay = backend$input$assay %||% assay,
     name = "sn_run_scissor"
   )
-  if (isTRUE(return_object)) object else sn_get_result(object, "scissor", store_name)
+  if (isTRUE(return_object)) object else sn_get_result(object, "scissor", result_id)
 }

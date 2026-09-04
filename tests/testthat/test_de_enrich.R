@@ -55,18 +55,47 @@ test_that("sn_find_de stores marker results on the Seurat object", {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
 
-  expect_true("de_results" %in% names(methods::slot(object, "misc")))
-  expect_true("celltype_markers" %in% names(object@misc$de_results))
-  expect_true("gene" %in% colnames(object@misc$de_results$celltype_markers$table))
-  expect_equal(object@misc$de_results$celltype_markers$schema_version, "1.0.0")
-  expect_equal(object@misc$de_results$celltype_markers$analysis, "markers")
-  expect_equal(object@misc$de_results$celltype_markers$method, "wilcox")
-  expect_true("package_version" %in% names(object@misc$de_results$celltype_markers))
+  stored <- sn_get_result(object, "de", "celltype_markers")
+  expect_true("gene" %in% colnames(stored$tables$primary))
+  expect_equal(stored$schema_version, "2.0.0")
+  expect_equal(stored$analysis, "markers")
+  expect_equal(stored$method, "wilcox")
+  expect_identical(stored$result_id, "celltype_markers")
+})
+
+test_that("sn_find_de accepts an explicit result_id", {
+  skip_if_not_installed("Seurat")
+  object <- make_de_test_object()
+  testthat::local_mocked_bindings(
+    .sn_run_seurat_de = function(...) {
+      data.frame(avg_log2FC = 1, p_val_adj = 0.01, row.names = "GENE1")
+    },
+    .package = "Shennong"
+  )
+
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    result_id = "donor1_celltype_markers",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+
+  expect_true("donor1_celltype_markers" %in% names(object@misc$shennong$results$de))
+  stored <- sn_get_result(object, "de", "donor1_celltype_markers")
+  expect_identical(stored$result_id, "donor1_celltype_markers")
+  listing <- sn_list_results(object, type = "de")
+  expect_identical(listing$result_id, "donor1_celltype_markers")
+  expect_error(
+    sn_find_de(object, result_id = "", return_object = TRUE),
+    "result_id"
+  )
 })
 
 test_that("sn_find_de preserves scoped Seurat acceleration provenance", {
@@ -90,13 +119,13 @@ test_that("sn_find_de preserves scoped Seurat acceleration provenance", {
     analysis = "markers",
     group_by = "cell_type",
     layer = "data",
-    store_name = "accelerated_markers",
+    result_id = "accelerated_markers",
     return_object = TRUE,
     verbose = FALSE
   )
   stored <- sn_get_de_result(
     object,
-    de_name = "accelerated_markers",
+    result_id = "accelerated_markers",
     with_metadata = TRUE
   )
 
@@ -117,7 +146,7 @@ test_that("sn_plot_dot can use stored top markers", {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -126,7 +155,7 @@ test_that("sn_plot_dot can use stored top markers", {
     sn_plot_dot(
       x = object,
       features = "top_markers",
-      de_name = "celltype_markers",
+      result_id = "celltype_markers",
       n = 2
     )
   )
@@ -215,14 +244,15 @@ test_that("sn_find_de supports COSGR markers", {
     layer = "data",
     method = "COSGR",
     n_genes_user = 10,
-    store_name = "cosgr_markers",
+    result_id = "cosgr_markers",
     return_object = TRUE,
     verbose = FALSE
   )
 
-  result <- object@misc$de_results$cosgr_markers$table
+  stored <- sn_get_result(object, "de", "cosgr_markers")
+  result <- stored$tables$primary
   expect_true(all(c("gene", "cluster", "cosg_score", "rank") %in% colnames(result)))
-  expect_equal(object@misc$de_results$cosgr_markers$method, "COSGR")
+  expect_equal(stored$method, "COSGR")
 })
 
 test_that("sn_annotate_de_features annotates marker tables with custom resources", {
@@ -269,7 +299,7 @@ test_that("sn_annotate_de_features stores annotated DE results on Seurat objects
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -281,21 +311,21 @@ test_that("sn_annotate_de_features stores annotated DE results on Seurat objects
 
   object <- sn_annotate_de_features(
     object,
-    de_name = "celltype_markers",
+    source_result_id = "celltype_markers",
     resource = "custom",
     custom_resource = custom_resource,
     return_object = TRUE
   )
 
-  expect_true("celltype_markers_feature_classes" %in% names(object@misc$de_results))
-  stored <- sn_get_de_result(object, de_name = "celltype_markers_feature_classes")
+  expect_true("celltype_markers_feature_classes" %in% names(object@misc$shennong$results$de))
+  stored <- sn_get_de_result(object, result_id = "celltype_markers_feature_classes")
   expect_true("is_surface_membrane" %in% colnames(stored))
   expect_true(any(stored$is_surface_membrane, na.rm = TRUE))
   stored_result <- sn_get_result(object, "de", "celltype_markers_feature_classes")
-  expect_identical(stored_result$table, stored_result$tables$primary)
+  expect_null(stored_result[["table"]])
   expect_true("is_surface_membrane" %in% colnames(stored_result$tables$primary))
   expect_equal(
-    object@misc$de_results$celltype_markers_feature_classes$feature_annotation$source_de_name,
+    stored_result$feature_annotation$source_result_id,
     "celltype_markers"
   )
 })
@@ -337,25 +367,25 @@ test_that("sn_run_enrichment stores enrichment results on the Seurat object by d
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
 
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
-    source_de_name = "celltype_markers",
+    source_de_result_id = "celltype_markers",
     gene_clusters = gene ~ cluster,
     species = "human",
     database = "GOBP",
-    store_name = "demo_gsea"
+    result_id = "demo_gsea"
   ))
 
   expect_s4_class(object, "Seurat")
-  expect_true("demo_gsea" %in% names(object@misc$enrichment_results))
+  expect_true("demo_gsea" %in% names(object@misc$shennong$results$enrichment))
   stored <- sn_get_enrichment_result(
     object,
-    enrichment_name = "demo_gsea",
+    result_id = "demo_gsea",
     with_metadata = TRUE
   )
   expect_identical(stored$parameters$p_adjust_method, "BH")
@@ -378,7 +408,7 @@ test_that("sn_run_enrichment validates object type and GSEA input contracts", {
       database = "GOBP",
       return_object = TRUE
     ),
-    "no stored DE results"
+    "No stored results"
   )
 
   expect_error(
@@ -502,7 +532,7 @@ test_that("sn_run_enrichment supports multi-database requests and database-speci
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
@@ -510,18 +540,18 @@ test_that("sn_run_enrichment supports multi-database requests and database-speci
 
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
-    source_de_name = "celltype_markers",
+    source_de_result_id = "celltype_markers",
     gene_clusters = gene ~ cluster,
     species = "human",
     database = c("GOBP", "H"),
-    store_name = "combined",
+    result_id = "combined",
     prefix = "bundle",
     outdir = outdir,
     pvalue_cutoff = 1
   ))
 
   expect_s4_class(object, "Seurat")
-  expect_true(all(c("combined.GOBP", "combined.H") %in% names(object@misc$enrichment_results)))
+  expect_true(all(c("combined.GOBP", "combined.H") %in% names(object@misc$shennong$results$enrichment)))
   expect_true(file.exists(file.path(outdir, "bundle.enrichment.GOBP.rds")))
   expect_true(file.exists(file.path(outdir, "bundle.enrichment.H.rds")))
 })
@@ -539,23 +569,23 @@ test_that("sn_run_enrichment supports Seurat x input via stored DE results", {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
 
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
-    source_de_name = "celltype_markers",
+    source_de_result_id = "celltype_markers",
     gene_clusters = gene ~ cluster,
     species = "human",
     database = "GOBP",
-    store_name = "from_de",
+    result_id = "from_de",
     pvalue_cutoff = 1
   ))
 
   expect_s4_class(object, "Seurat")
-  expect_true("from_de" %in% names(object@misc$enrichment_results))
+  expect_true("from_de" %in% names(object@misc$shennong$results$enrichment))
 })
 
 test_that("sn_run_enrichment helper parsers validate formulas and msigdb inputs", {
@@ -589,11 +619,11 @@ test_that("sn_run_enrichment helper parsers validate formulas and msigdb inputs"
 
 test_that("sn_run_enrichment helper resolution covers store names and analysis inference", {
   expect_equal(
-    Shennong:::.sn_enrich_store_names("default", c("GOBP", "H")),
+    Shennong:::.sn_enrich_result_ids("default", c("GOBP", "H")),
     stats::setNames(c("default.GOBP", "default.H"), c("GOBP", "H"))
   )
   expect_error(
-    Shennong:::.sn_enrich_store_names(c("only", "two"), c("GOBP", "H", "KEGG")),
+    Shennong:::.sn_enrich_result_ids(c("only", "two"), c("GOBP", "H", "KEGG")),
     "length 1 or match the length"
   )
 
@@ -621,26 +651,29 @@ test_that("sn_run_enrichment helper utilities normalize labels and resolve input
   skip_if_not_installed("Seurat")
 
   object <- make_de_test_object()
-  object@misc$de_results <- list(
-    markers = list(
-      table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")),
-      analysis = "markers",
+  object <- sn_store_result(
+    object, "de", "markers",
+    list(
+      analysis = "markers", method = "test", backend = "test",
+      tables = list(primary = data.frame(
+        gene = c("CD3D", "MS4A1"), cluster = c("T", "B")
+      )),
       created_at = "2026-03-29 00:00:00 UTC"
     )
   )
 
-  resolved <- Shennong:::.sn_enrich_resolve_input(object, source_de_name = "markers")
+  resolved <- Shennong:::.sn_enrich_resolve_input(object, source_de_result_id = "markers")
   resolved_default <- Shennong:::.sn_enrich_resolve_input(object)
   passthrough <- Shennong:::.sn_enrich_resolve_input(c("CD3D", "MS4A1"))
 
   expect_true(is.data.frame(resolved$input))
   expect_identical(resolved$object, object)
-  expect_equal(resolved_default$source_de_name, "markers")
+  expect_equal(resolved_default$source_de_result_id, "markers")
   expect_equal(passthrough$input, c("CD3D", "MS4A1"))
   expect_null(passthrough$object)
   expect_error(
-    Shennong:::.sn_enrich_resolve_input(object, source_de_name = "missing"),
-    "was not found"
+    Shennong:::.sn_enrich_resolve_input(object, source_de_result_id = "missing"),
+    "No result"
   )
 
   expect_equal(
@@ -657,22 +690,30 @@ test_that("sn_run_enrichment prefers stored default DE results on Seurat objects
   skip_if_not_installed("Seurat")
 
   object <- make_de_test_object()
-  object@misc$de_results <- list(
-    default = list(
-      table = data.frame(gene = c("CD3D", "MS4A1"), cluster = c("T", "B")),
-      analysis = "markers",
+  object <- sn_store_result(
+    object, "de", "default",
+    list(
+      analysis = "markers", method = "test", backend = "test",
+      tables = list(primary = data.frame(
+        gene = c("CD3D", "MS4A1"), cluster = c("T", "B")
+      )),
       created_at = "2026-03-29 00:00:00 UTC"
-    ),
-    older = list(
-      table = data.frame(gene = c("LYZ", "S100A8"), cluster = c("M", "M")),
-      analysis = "markers",
+    )
+  )
+  object <- sn_store_result(
+    object, "de", "older",
+    list(
+      analysis = "markers", method = "test", backend = "test",
+      tables = list(primary = data.frame(
+        gene = c("LYZ", "S100A8"), cluster = c("M", "M")
+      )),
       created_at = "2026-03-28 00:00:00 UTC"
     )
   )
 
   resolved <- Shennong:::.sn_enrich_resolve_input(object)
 
-  expect_equal(resolved$source_de_name, "default")
+  expect_equal(resolved$source_de_result_id, "default")
   expect_equal(resolved$input$gene, c("CD3D", "MS4A1"))
 })
 

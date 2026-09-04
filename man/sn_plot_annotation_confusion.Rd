@@ -7,7 +7,7 @@
 sn_plot_annotation_confusion(
   x,
   truth,
-  store_name = "annotation",
+  result_id = "annotation",
   normalize = TRUE
 )
 }
@@ -17,7 +17,7 @@ sn_plot_annotation_confusion(
 \item{truth}{Known labels. For a Seurat object this can be a metadata column
 name; otherwise it must be a vector aligned to the cell table.}
 
-\item{store_name}{Stored annotation name.}
+\item{result_id}{Stored annotation name.}
 
 \item{normalize}{Normalize rows to proportions.}
 }

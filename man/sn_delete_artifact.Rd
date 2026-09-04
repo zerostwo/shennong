@@ -4,7 +4,7 @@
 \alias{sn_delete_artifact}
 \title{Delete a registered workflow artifact}
 \usage{
-sn_delete_artifact(object, artifact_type, name = NULL)
+sn_delete_artifact(object, artifact_type, artifact_id = NULL)
 }
 \arguments{
 \item{object}{A Seurat object.}
@@ -13,7 +13,7 @@ sn_delete_artifact(object, artifact_type, name = NULL)
 its \code{"*_artifact"} alias (for example \code{"integration"} or
 \code{"integration_artifact"}).}
 
-\item{name}{Optional member name. When omitted, the entire artifact
+\item{artifact_id}{Optional artifact identifier. When omitted, the entire artifact
 collection container is removed.}
 }
 \value{
