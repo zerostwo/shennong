@@ -1,12 +1,23 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-05
 
 This file describes what is true now. It is not a change log: Git history and
 `docs/codex/archive/` hold point-in-time evidence, `Decisions.md` holds durable
 rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
+
+- Plotting has a canonical result-aware surface: `sn_list_plot_methods()`
+  enumerates 78 views across 26 analysis types and `sn_plot_result()` resolves
+  direct results or unambiguous Seurat-stored results through one
+  `object`/`analysis_type`/`result_id`/`view` contract. Common numeric
+  distributions use `sn_plot_distribution()` and numeric/sample expression
+  relationships use `sn_plot_association()`. The dedicated registry suite
+  passes 27 assertions. The full local suite passes 4,598 assertions with eight
+  optional-backend warnings and one unavailable local-data skip; source build,
+  structural `R CMD check`, pkgdown reference validation, and the incremental
+  pkgdown site rebuild pass.
 
 - Analysis-result identity is unified on `result_id` across all 46 exported
   result-producing workflows, stores, getters, listings, deletion, plots, and
@@ -103,7 +114,7 @@ rationale, and `NEWS.md` records user-visible changes.
   including `""` to overwrite original columns. Expression layers, the default
   assay, and `nCount_*`/`nFeature_*` metadata remain unchanged.
 
-- `R/` is organized as the 74-file domain module map documented in
+- `R/` is organized as the 77-file domain module map documented in
   `AGENTS.md`. The 2026-08-26 decomposition pass split `analysis_metrics.R`
   (into `analysis_integration_metrics.R`, `analysis_composition.R`,
   `analysis_rogue.R`), `interpretation.R` (into

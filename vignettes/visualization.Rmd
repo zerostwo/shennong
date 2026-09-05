@@ -244,6 +244,24 @@ sn_plot_boxplot(
   panel_widths = 80,
   panel_heights = 70
 )
+
+# The canonical distribution entry handles tables or Seurat metadata/features.
+sn_plot_distribution(
+  qc_summary,
+  features = c("median_features", "median_mito"),
+  group_by = "real_response",
+  view = "box",
+  show_points = TRUE
+)
+
+# Each point is now one biological sample, not one cell.
+sn_plot_association(
+  qc_summary,
+  x = "median_features",
+  y = "median_mito",
+  group_by = "real_response",
+  method = "spearman"
+)
 ```
 
 ## Marker dot plots from stored DE results
@@ -270,6 +288,25 @@ sn_plot_dot(
   group_by = "seurat_clusters",
   n = 4,
   palette = "Purples"
+)
+```
+
+## One result-aware plotting interface
+
+Analysis-specific plotters remain available, but new code can use one stable
+contract: `object`, `analysis_type`, `result_id`, and `view`. Direct result
+objects carry their own analysis type. For a Seurat object, omitted identifiers
+are inferred only when the stored choice is unambiguous.
+
+```{r plot-result-registry}
+sn_list_plot_methods("de")
+sn_list_results(pbmc, type = "de")
+
+sn_plot_result(
+  pbmc,
+  analysis_type = "de",
+  result_id = "cluster_markers",
+  view = "volcano"
 )
 ```
 

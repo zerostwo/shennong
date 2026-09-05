@@ -92,6 +92,7 @@ sn_plot_abundance,visualization,kotliarov_pbmc,core,ggplot2,Real response abunda
 sn_plot_ambient_correction,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended ambient-correction result,vignettes/preprocessing-qc.Rmd
 sn_plot_annotation_confidence,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC confidence result,vignettes/annotation-pathways.Rmd
 sn_plot_annotation_confusion,visualization,kotliarov_pbmc,core,ggplot2,Disjoint real-reference mapping consistency with recorded provenance,vignettes/annotation-pathways.Rmd
+sn_plot_association,visualization,kotliarov_pbmc,core,ggplot2,Real biological-sample QC association,vignettes/visualization.Rmd
 sn_plot_barplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
 sn_plot_boxplot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC summaries,vignettes/composition-analysis.Rmd
 sn_plot_branch_comparison,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real lineage branches,vignettes/trajectory-dynamics.Rmd
@@ -106,6 +107,7 @@ sn_plot_composition,visualization,kotliarov_pbmc,core,ggplot2,Real sample compos
 sn_plot_de,visualization,kotliarov_pbmc,core,ggplot2,Real 20-sample signed pseudobulk edgeR result,vignettes/bulk-transcriptomics.Rmd
 sn_plot_dim,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC embedding,vignettes/clustering.Rmd
 sn_plot_discovered_programs,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC programs,vignettes/program-discovery-grn.Rmd
+sn_plot_distribution,visualization,kotliarov_pbmc,core,ggplot2,Real biological-sample QC distributions,vignettes/visualization.Rmd
 sn_plot_dot,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC markers,vignettes/annotation-pathways.Rmd
 sn_plot_doublets,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended real PBMC doublet result,vignettes/preprocessing-qc.Rmd
 sn_plot_dynamic_heatmap,visualization,hermann_spermatogenesis,extended,ggplot2,Optional real dynamic genes,vignettes/trajectory-dynamics.Rmd
@@ -130,6 +132,7 @@ sn_plot_qc_thresholds,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC QC thr
 sn_plot_reference_projection,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC reference projection,vignettes/annotation-pathways.Rmd
 sn_plot_regulon,visualization,kotliarov_pbmc,extended,ggplot2,Requires the extended real regulatory result,vignettes/program-discovery-grn.Rmd
 sn_plot_resolution_sweep,visualization,kotliarov_pbmc,core,ggplot2,Real PBMC clustering sweep,vignettes/clustering.Rmd
+sn_plot_result,visualization,kotliarov_pbmc,core,ggplot2,Real stored PBMC differential-expression result,vignettes/visualization.Rmd
 sn_plot_sample_correlation,visualization,melanoma_bridge,core,ggplot2,Real TCGA samples,vignettes/bulk-transcriptomics.Rmd
 sn_plot_scissor,visualization,melanoma_bridge,extended,ggplot2,Requires the extended real Scissor result,vignettes/abundance-priority.Rmd
 sn_plot_spatial,visualization,visium_lymph_node,core,ggplot2,Real Visium histology and coordinates,vignettes/spatial-workflows.Rmd

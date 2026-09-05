@@ -320,6 +320,16 @@ Runtime reference datasets:
   PNG output independent of the interactive device
 - `sn_export_figure_bundle()`: figures plus available source data, spec,
   session, checksums, validation, and JSON manifest
+- `sn_list_plot_methods()` / `sn_plot_result()`: canonical discovery and
+  result-aware plotting through one `object`, `analysis_type`, `result_id`,
+  and `view` contract; Seurat result selection is automatic only when
+  unambiguous
+- `sn_plot_distribution()`: violin, box, histogram, density, and optional ridge
+  views for Seurat metadata/features or data frames, with explicit
+  biological-sample aggregation
+- `sn_plot_association()`: numeric association and sample-to-sample expression
+  scatter plots for Seurat, tabular, matrix, SummarizedExperiment, and bulk-QC
+  result inputs
 - `sn_plot_de()` / `sn_plot_enrichment()` / `sn_plot_gsea()`: standardized
   result-aware plots whose evidence tables can be exported in the bundle
 - `sn_plot_qc*()` / `sn_plot_doublets()` /
@@ -327,6 +337,9 @@ Runtime reference datasets:
   `sn_plot_cluster_tree()` / `sn_plot_resolution_sweep()` /
   `sn_plot_integration()` / `sn_plot_reference_projection()`: core diagnostic
   figure surface
+- `sn_plot_qc_thresholds()` now delegates its distribution rendering to the
+  shared `sn_plot_distribution()` engine; QC thresholds remain distinct from
+  composition denominators and proportions
 
 ## Differential Abundance and State Priority
 

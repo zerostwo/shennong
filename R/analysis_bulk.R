@@ -82,7 +82,9 @@
 #' Assess bulk transcriptomics sample quality
 #'
 #' Computes library size, detected features, expression distributions, sample
-#' PCA, sample correlations, and robust multivariate outlier flags.
+#' PCA, sample correlations, and robust multivariate outlier flags. The
+#' analysis-scale expression of the selected variable features is retained in
+#' `tables$expression` for auditable sample-to-sample scatter plots.
 #'
 #' @param object A feature-by-sample matrix, a `SummarizedExperiment`, or a list
 #'   containing `counts`/`expression` and optional `metadata`.
@@ -135,8 +137,14 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
     "bulk_qc", result_id, "robust_qc",
     list(source = input$source, assay = input$assay, samples = ncol(input$matrix), features = nrow(input$matrix), counts = input$is_counts),
     list(top_variable = length(keep), outlier_z = outlier_z),
-    list(primary = sample_table, samples = sample_table, distribution = distribution,
-         variance_explained = variance_explained, correlation = as.data.frame(correlation)),
+    list(
+      primary = sample_table,
+      samples = sample_table,
+      distribution = distribution,
+      variance_explained = variance_explained,
+      correlation = as.data.frame(correlation),
+      expression = as.data.frame(expression[keep, , drop = FALSE], check.names = FALSE)
+    ),
     embeddings = list(pca = pca$x), models = list(pca = pca),
     diagnostics = list(outliers = sum(sample_table$outlier), variable_features = length(keep))
   )

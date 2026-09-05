@@ -133,6 +133,16 @@ qc$tables$samples[, c(
 sn_plot_bulk_qc(qc, metric = "library_size")
 sn_plot_bulk_pca(qc, sample_data, color_by = "response")
 sn_plot_sample_correlation(qc)
+sn_plot_sample_correlation(
+  qc,
+  view = "scatter",
+  sample_x = colnames(pseudobulk_counts)[[1]],
+  sample_y = colnames(pseudobulk_counts)[[2]]
+)
+
+# The same views are discoverable through the unified result interface.
+sn_list_plot_methods("bulk_qc")
+sn_plot_result(qc, view = "pca", metadata = sample_data, color_by = "response")
 ```
 
 ## Count differential expression with real samples

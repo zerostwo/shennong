@@ -47,6 +47,21 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added `sn_list_plot_methods()` and `sn_plot_result()` as the canonical
+  result-aware visualization interface. Stored Seurat results and direct
+  Shennong result objects now share the `object`, `analysis_type`, `result_id`,
+  and `view` contract; omitted stored identifiers are resolved only when a
+  `default` or unique choice is available. The registry exposes 78 views across
+  26 analysis types, including the existing volcano, MA, enrichment,
+  communication, trajectory, spatial, CNV, metabolism, and survival views.
+
+- Added `sn_plot_distribution()` for violin, box, histogram, density, and
+  optional ridge plots from Seurat metadata/features or data frames, with
+  explicit sample-level aggregation, and `sn_plot_association()` for numeric
+  associations and sample-to-sample expression scatter plots from Seurat,
+  tables, feature-by-sample matrices, `SummarizedExperiment`, bulk input lists,
+  or bulk-QC results.
+
 - Unified the complete analysis-result lifecycle on one identifier:
   `result_id`. All 46 public result-producing workflows, generic and
   specialized stores/getters, listings, deletion, plots, interpretation, and
@@ -116,6 +131,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   ShennongOpt moved to per-operation patch names.
 
 ### Changed
+
+- `sn_assess_bulk_qc()` now retains the analysis-scale expression of the selected
+  variable features in `tables$expression`. `sn_plot_sample_correlation()` adds
+  `view = "scatter"` with explicit `sample_x`/`sample_y`, while its existing
+  heatmap remains the default. `sn_plot_qc_thresholds()` now delegates its
+  violin/threshold rendering to the shared distribution engine. Existing
+  domain-specific plotters remain compatible as advanced/transition wrappers.
 
 - Integrated the new ShennongOpt accelerations. `sn_run_cluster()`'s
   variable-feature selection, nearest-neighbor graph, and clustering stages now

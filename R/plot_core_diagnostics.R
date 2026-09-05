@@ -35,18 +35,15 @@ sn_plot_qc_thresholds <- function(x, features = c("nFeature_RNA", "nCount_RNA", 
   missing <- setdiff(c(features, sample_by), names(metadata))
   if (length(missing) > 0L) stop("QC metadata column(s) missing: ", paste(missing, collapse = ", "), ".", call. = FALSE)
   if (nrow(metadata) > max_cells) metadata <- metadata[seq_len(max_cells), , drop = FALSE]
-  data <- dplyr::bind_rows(lapply(features, function(current_feature) tibble::tibble(
-    cell = rownames(metadata), feature = current_feature, value = as.numeric(metadata[[current_feature]]),
-    sample = if (is_null(sample_by)) "cells" else as.character(metadata[[sample_by]])
-  )))
-  threshold_data <- dplyr::bind_rows(lapply(intersect(names(thresholds), features), function(feature) {
-    tibble::tibble(feature = feature, threshold = as.numeric(thresholds[[feature]]))
-  }))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data$sample, y = .data$value, fill = .data$sample)) +
-    ggplot2::geom_violin(scale = "width", show.legend = FALSE) + ggplot2::facet_wrap(~feature, scales = "free_y") +
-    ggplot2::labs(x = NULL, y = "QC value") + ggplot2::theme_bw()
-  if (nrow(threshold_data) > 0L) plot <- plot + ggplot2::geom_hline(data = threshold_data, ggplot2::aes(yintercept = .data$threshold), linetype = 2, color = "#D62728")
-  .sn_attach_figure_spec(plot, "violin", list(n_points = nrow(data), n_panels = length(features), n_categories = length(unique(data$sample)), labels = unique(data$sample)), source_data = list(values = data, thresholds = threshold_data))
+  sn_plot_distribution(
+    object = metadata,
+    features = features,
+    group_by = sample_by,
+    view = "violin",
+    thresholds = thresholds,
+    x_label = NULL,
+    y_label = "QC value"
+  )
 }
 
 #' Plot doublet classifications in an embedding

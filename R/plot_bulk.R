@@ -99,12 +99,61 @@ sn_plot_bulk_pca <- function(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_
 #' Plot bulk sample correlation
 #'
 #' @param x A bulk-QC result.
+#' @param view Correlation heatmap or a feature-level scatter plot comparing
+#'   two samples.
+#' @param sample_x,sample_y Sample names used by `view = "scatter"`. When both
+#'   are omitted, the first two samples are used.
+#' @param features Optional feature subset for the scatter view.
+#' @param method Correlation method shown by the scatter view.
+#' @param transform Optional axis transformation for the scatter view.
+#' @param add_fit Add a least-squares trend line to the scatter view.
+#' @param label Label features in the scatter view.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
-#' @return A `ggplot` correlation heatmap.
+#' @return A `ggplot` correlation heatmap or sample-to-sample scatter plot.
 #' @export
-sn_plot_sample_correlation <- function(x, object = NULL) {
+sn_plot_sample_correlation <- function(x,
+                                       view = c("heatmap", "scatter"),
+                                       sample_x = NULL,
+                                       sample_y = NULL,
+                                       features = NULL,
+                                       method = c("spearman", "pearson", "kendall"),
+                                       transform = c("none", "log1p"),
+                                       add_fit = TRUE,
+                                       label = FALSE,
+                                       object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_qc")
+  view <- match.arg(view)
+  method <- match.arg(method)
+  transform <- match.arg(transform)
+  if (identical(view, "scatter")) {
+    expression <- result$tables$expression
+    if (!is.data.frame(expression) && !is.matrix(expression)) {
+      stop(
+        "The bulk-QC result predates stored expression data; rerun ",
+        "`sn_assess_bulk_qc()` or call `sn_plot_association()` on the source matrix.",
+        call. = FALSE
+      )
+    }
+    samples <- colnames(expression)
+    if (length(samples) < 2L) stop("At least two samples are required for a correlation scatter plot.", call. = FALSE)
+    if (is_null(sample_x) && is_null(sample_y)) {
+      sample_x <- samples[[1L]]
+      sample_y <- samples[[2L]]
+    } else if (is_null(sample_x) || is_null(sample_y)) {
+      stop("Supply both `sample_x` and `sample_y`, or neither.", call. = FALSE)
+    }
+    return(sn_plot_association(
+      object = result,
+      x = sample_x,
+      y = sample_y,
+      features = features,
+      method = method,
+      transform = transform,
+      add_fit = add_fit,
+      label = label
+    ))
+  }
   correlation <- as.matrix(result$tables$correlation)
   data <- as.data.frame(as.table(correlation), stringsAsFactors = FALSE)
   names(data) <- c("sample_x", "sample_y", "correlation")

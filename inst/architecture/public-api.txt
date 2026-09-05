@@ -120,6 +120,7 @@ sn_list_figure_profiles
 sn_list_methods
 sn_list_palettes
 sn_list_pixi_environments
+sn_list_plot_methods
 sn_list_results
 sn_list_signatures
 sn_list_usage_runs
@@ -136,6 +137,7 @@ sn_plot_abundance
 sn_plot_ambient_correction
 sn_plot_annotation_confidence
 sn_plot_annotation_confusion
+sn_plot_association
 sn_plot_barplot
 sn_plot_boxplot
 sn_plot_branch_comparison
@@ -150,6 +152,7 @@ sn_plot_composition
 sn_plot_de
 sn_plot_dim
 sn_plot_discovered_programs
+sn_plot_distribution
 sn_plot_dot
 sn_plot_doublets
 sn_plot_dynamic_heatmap
@@ -174,6 +177,7 @@ sn_plot_qc_thresholds
 sn_plot_reference_projection
 sn_plot_regulon
 sn_plot_resolution_sweep
+sn_plot_result
 sn_plot_sample_correlation
 sn_plot_scissor
 sn_plot_spatial

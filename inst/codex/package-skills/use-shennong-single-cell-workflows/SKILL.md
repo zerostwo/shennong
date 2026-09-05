@@ -255,7 +255,11 @@ This skill is the main entry point for package usage.
    or the explicit feature/domain/neighborhood functions. Run communication
    inference before adding distance constraints; proximity is supporting
    evidence, not a substitute interaction score.
-8. Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
+8. Prefer `sn_plot_result()` for stored/downstream analysis results; inspect
+   valid analysis/view pairs with `sn_list_plot_methods()`. Use
+   `sn_plot_distribution()` for numeric violin/box/histogram/density/ridge
+   views and `sn_plot_association()` for cell- or sample-level correlations.
+   Use `sn_plot_dim()`, `sn_plot_feature()`, `sn_plot_heatmap()`,
    `sn_plot_violin()`, `sn_plot_dot()`, `sn_plot_boxplot()`,
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
    package-style plots; resolve reusable colors with `sn_list_palettes()` and

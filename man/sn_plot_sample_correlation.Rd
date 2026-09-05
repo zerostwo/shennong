@@ -4,15 +4,42 @@
 \alias{sn_plot_sample_correlation}
 \title{Plot bulk sample correlation}
 \usage{
-sn_plot_sample_correlation(x, object = NULL)
+sn_plot_sample_correlation(
+  x,
+  view = c("heatmap", "scatter"),
+  sample_x = NULL,
+  sample_y = NULL,
+  features = NULL,
+  method = c("spearman", "pearson", "kendall"),
+  transform = c("none", "log1p"),
+  add_fit = TRUE,
+  label = FALSE,
+  object = NULL
+)
 }
 \arguments{
 \item{x}{A bulk-QC result.}
 
+\item{view}{Correlation heatmap or a feature-level scatter plot comparing
+two samples.}
+
+\item{sample_x, sample_y}{Sample names used by \code{view = "scatter"}. When both
+are omitted, the first two samples are used.}
+
+\item{features}{Optional feature subset for the scatter view.}
+
+\item{method}{Correlation method shown by the scatter view.}
+
+\item{transform}{Optional axis transformation for the scatter view.}
+
+\item{add_fit}{Add a least-squares trend line to the scatter view.}
+
+\item{label}{Label features in the scatter view.}
+
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
-A \code{ggplot} correlation heatmap.
+A \code{ggplot} correlation heatmap or sample-to-sample scatter plot.
 }
 \description{
 Plot bulk sample correlation

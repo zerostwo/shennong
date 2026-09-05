@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 262,
+  "function_count": 266,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -5368,6 +5368,20 @@
       "parameters": []
     },
     {
+      "function_name": "sn_list_plot_methods",
+      "runtime_classified": true,
+      "formal_digest": "806bf9ea1ea60852b21ae2995a9a9ada0bde3021cc90f072073110e949fbeb01",
+      "parameters": [
+        {
+          "name": "analysis_type",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_list_results",
       "runtime_classified": true,
       "formal_digest": "cd3d91e69545ec5b95dabdb7853727574f22fc81bbd4a3a83d73441db3502377",
@@ -5861,6 +5875,181 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_association",
+      "runtime_classified": true,
+      "formal_digest": "36f216cb97b4ff43a89fd21a5c1dba1a6781c7d53a2591eb4ba8aba52cf00208",
+      "parameters": [
+        {
+          "name": "object",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "x",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "y",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "sample_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "group_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "assay",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"data\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "aggregate_fun",
+          "class": "selector",
+          "default": "c(\"mean\", \"median\", \"sum\")",
+          "selector_values": ["mean", "median", "sum"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "method",
+          "class": "selector",
+          "default": "c(\"spearman\", \"pearson\", \"kendall\")",
+          "selector_values": ["spearman", "pearson", "kendall"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "features",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "transform",
+          "class": "selector",
+          "default": "c(\"none\", \"log1p\")",
+          "selector_values": ["none", "log1p"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "add_fit",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "max_points",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "seed",
+          "class": "numeric",
+          "default": "717",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "point_size",
+          "class": "numeric",
+          "default": "1.5",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "point_alpha",
+          "class": "numeric",
+          "default": "0.7",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"Paired\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "x_label",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "y_label",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "aspect_ratio",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -6998,6 +7187,153 @@
         },
         {
           "name": "object",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_distribution",
+      "runtime_classified": true,
+      "formal_digest": "0a51ef89ebd757ac34111b1302f8cec7e713f797bfe35cf173e4c36e719676f1",
+      "parameters": [
+        {
+          "name": "object",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "features",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "group_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "sample_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "assay",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"data\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "view",
+          "class": "selector",
+          "default": "c(\"violin\", \"box\", \"histogram\", \"density\", \"ridge\")",
+          "selector_values": ["violin", "box", "histogram", "density", "ridge"],
+          "minimum_cases": 5
+        },
+        {
+          "name": "aggregate_fun",
+          "class": "selector",
+          "default": "c(\"mean\", \"median\", \"sum\")",
+          "selector_values": ["mean", "median", "sum"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "thresholds",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "bins",
+          "class": "numeric",
+          "default": "30L",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "show_points",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "point_alpha",
+          "class": "numeric",
+          "default": "0.6",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "jitter_width",
+          "class": "numeric",
+          "default": "0.15",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"Paired\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "x_label",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "y_label",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "aspect_ratio",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -8637,14 +8973,112 @@
       ]
     },
     {
+      "function_name": "sn_plot_result",
+      "runtime_classified": true,
+      "formal_digest": "5218033d17756e12b9531028217da075833071af379d9a5f96d403f9ebf91685",
+      "parameters": [
+        {
+          "name": "object",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "analysis_type",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "result_id",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "view",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_sample_correlation",
       "runtime_classified": true,
-      "formal_digest": "d3a693deacb8139c159652efa6b95e624aa2cb696a674aea426ade07fd7d078e",
+      "formal_digest": "09ffccd0d51aa122146a8d62ff5c2cdc118694fbd9b356a9c4c844f28b31195c",
       "parameters": [
         {
           "name": "x",
           "class": "required",
           "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "view",
+          "class": "selector",
+          "default": "c(\"heatmap\", \"scatter\")",
+          "selector_values": ["heatmap", "scatter"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "sample_x",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "sample_y",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "features",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "method",
+          "class": "selector",
+          "default": "c(\"spearman\", \"pearson\", \"kendall\")",
+          "selector_values": ["spearman", "pearson", "kendall"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "transform",
+          "class": "selector",
+          "default": "c(\"none\", \"log1p\")",
+          "selector_values": ["none", "log1p"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "add_fit",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label",
+          "class": "boolean",
+          "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
         },

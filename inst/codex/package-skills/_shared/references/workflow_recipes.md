@@ -322,8 +322,12 @@ canonical envelope with `sn_get_result()`.
 4. Use `sn_export_figure_bundle()` for deliverables that need the rendered
    figure, source data, figure spec, session information, file checksums, and a
    JSON manifest together.
-5. Use `sn_plot_de()`, `sn_plot_enrichment()`, or `sn_plot_gsea()` on retained
-   result tables so exported source data match the plotted evidence.
+5. Prefer `sn_plot_result()` for retained or Seurat-stored analytical results;
+   use `sn_list_plot_methods()` to discover the valid `analysis_type`/`view`
+   pair. The specialized `sn_plot_de()`, `sn_plot_enrichment()`, and
+   `sn_plot_gsea()` wrappers remain available when their domain-specific
+   arguments are clearer. Exported source data should match the plotted
+   evidence.
 
 ## Recipe: Score and compare gene programs
 

@@ -62,6 +62,7 @@ sn_list_figure_profiles,io_project,Figure configuration lookup rather than visua
 sn_list_methods,runtime_admin,Method registry inspection rather than analysis execution
 sn_list_palettes,io_project,Palette inventory rather than visualization execution
 sn_list_pixi_environments,runtime_admin,Runtime inventory rather than analysis execution
+sn_list_plot_methods,io_project,Plot method registry lookup rather than visualization execution
 sn_list_results,result_management,Stored-result inventory rather than biological analysis
 sn_list_signatures,signature_management,Signature catalog inventory rather than analysis execution
 sn_list_usage_runs,runtime_admin,Local usage-log query rather than biological analysis execution

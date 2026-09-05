@@ -1,6 +1,33 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-03
+Last updated: 2026-09-05
+
+## 2026-09-05
+
+- Result visualization uses one canonical public contract without immediately
+  breaking the specialized plotters used by existing scripts. New code should
+  discover valid analysis/view pairs with `sn_list_plot_methods()` and call
+  `sn_plot_result(object, analysis_type, result_id, view, ...)`. Direct results
+  supply their own analysis type; Seurat storage selection is automatic only
+  for an unambiguous type and a unique or `default` result ID. Specialized
+  `sn_plot_*()` functions remain the implementation and advanced compatibility
+  layer, so this convergence does not require a mass breaking removal.
+
+- Plot names should separate statistical meaning from rendering geometry.
+  QC distributions are not cell composition: the former describe numeric
+  measurements and thresholds, while the latter define categorical
+  denominators and proportions. `sn_plot_qc_thresholds()` therefore reuses the
+  new `sn_plot_distribution()` engine instead of being folded into
+  `sn_plot_composition()`. `sn_plot_distribution()` owns violin/box/histogram/
+  density/ridge geometry, while `sn_plot_association()` owns numeric and
+  sample-level correlation scatter plots.
+
+- Bulk-QC results retain the selected analysis-scale expression matrix needed to audit
+  sample correlations as feature-level scatter plots. This additive
+  `tables$expression` field is limited to `top_variable` features rather than
+  embedding the complete source matrix. The existing correlation heatmap stays
+  the default; the scatter view requires an explicit sample pair unless the
+  first two samples are intentionally accepted.
 
 ## 2026-09-03
 

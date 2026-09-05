@@ -360,6 +360,10 @@ reference:
       - sn_write_presentation_summary
   - title: Visualization
     contents:
+      - sn_list_plot_methods
+      - sn_plot_result
+      - sn_plot_distribution
+      - sn_plot_association
       - sn_list_figure_profiles
       - sn_get_figure_spec
       - sn_figure_spec

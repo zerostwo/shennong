@@ -33,5 +33,7 @@ A validated Shennong bulk-QC result.
 }
 \description{
 Computes library size, detected features, expression distributions, sample
-PCA, sample correlations, and robust multivariate outlier flags.
+PCA, sample correlations, and robust multivariate outlier flags. The
+analysis-scale expression of the selected variable features is retained in
+\code{tables$expression} for auditable sample-to-sample scatter plots.
 }
