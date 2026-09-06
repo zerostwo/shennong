@@ -21,6 +21,7 @@ dev
 ^pkgdown$
 ^site$
 ^scripts$
+^output$
 ^tests/testthat/omnipathr-log$
 ^omnipathr-log$
 ^vignettes/omnipathr-log$

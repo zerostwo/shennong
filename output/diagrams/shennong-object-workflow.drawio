@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" modified="2026-09-06T00:00:00.000Z" agent="Shennong generator" version="24.7.17" type="device">
+  <diagram id="shennong-object-workflow" name="Shennong workflow">
+    <mxGraphModel dx="1900" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="header" value="&lt;div style=&quot;font-size:24px;color:#FFFFFF;&quot;&gt;&lt;b&gt;SHENNONG OBJECT-CENTERED WORKFLOW&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:14px;color:#DCE8F5;margin-top:6px;&quot;&gt;输入 -&amp;gt; 对象 -&amp;gt; 分析模块 -&amp;gt; versioned result -&amp;gt; 可视化与交付&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=24;fillColor=#16324F;strokeColor=#16324F;fontFamily=Noto Sans CJK SC;" vertex="1" parent="1">
+          <mxGeometry x="28" y="22" width="1844" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="input" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Input 输入&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;10x / STARsolo / H5AD / qs2&lt;br&gt;matrix / list / SummarizedExperiment&lt;br&gt;sn_read()&lt;br&gt;sn_list_10x_paths()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#0F8B8D;strokeColor=#0F8B8D;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="285" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="qc" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Prepare &amp;amp; QC 预处理&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_initialize_seurat_object()&lt;br&gt;sn_add_qc_metrics()&lt;br&gt;sn_filter_cells() / sn_filter_genes()&lt;br&gt;sn_normalize_data()&lt;br&gt;sn_find_doublets()&lt;br&gt;sn_remove_ambient_contamination()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#0F8B8D;strokeColor=#0F8B8D;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="285" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="object" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Shennong object&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;Seurat-centered mutable analysis object&lt;br&gt;Assays + layers: RNA / ADT / spatial&lt;br&gt;meta.data: cell + sample provenance&lt;br&gt;reductions / graphs / images&lt;br&gt;misc$shennong$results[type][result_id]&lt;br&gt;commands + reproducibility provenance&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#3751A6;strokeColor=#263A82;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="385" y="355" width="340" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="method_registry" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Method registry 方法发现&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_list_methods(task)  |  sn_get_method_status(method, task)&lt;br&gt;23 tasks; runtime, availability, defaults, citations&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#64748B;strokeColor=#64748B;strokeWidth=2;dashed=1;dashPattern=8 6;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="790" y="55" width="610" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="analysis_container" value="&lt;div style=&quot;font-size:16px;color:#16324F;&quot;&gt;&lt;b&gt;Analysis modules 分析模块&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#52667A;margin-top:8px;&quot;&gt;Each module consumes the object or a validated standalone input.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#EEF4FB;strokeColor=#94A3B8;strokeWidth=2;opacity=45;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="770" y="170" width="650" height="855" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Cluster &amp;amp; Integrate&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_run_cluster()&lt;br&gt;sn_run_multimodal()&lt;br&gt;Harmony / CCA / RPCA&lt;br&gt;scVI / scANVI / scPoli&lt;br&gt;WNN / totalVI / Coralysis&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#2F80ED;strokeColor=#2F80ED;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="255" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="annotation" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Annotation, DE &amp;amp; Pathway&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_run_annotation()&lt;br&gt;sn_find_de()&lt;br&gt;sn_run_enrichment()&lt;br&gt;review confidence + ontology&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#7B61A8;strokeColor=#7B61A8;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="255" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="program" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Programs &amp;amp; Regulation&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_score_programs()&lt;br&gt;sn_test_programs()&lt;br&gt;sn_discover_programs()&lt;br&gt;sn_run_grn()&lt;br&gt;sn_run_metabolism()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#D97706;strokeColor=#D97706;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="485" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="composition" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Composition, DA &amp;amp; CNV&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_calculate_composition()&lt;br&gt;sn_compare_composition()&lt;br&gt;sn_test_abundance()&lt;br&gt;sn_prioritize_states()&lt;br&gt;sn_run_cnv()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#D6456D;strokeColor=#D6456D;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="485" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="dynamic" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Communication &amp;amp; Dynamics&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_run_cell_communication()&lt;br&gt;sn_run_trajectory()&lt;br&gt;sn_run_velocity()&lt;br&gt;sn_run_fate()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#2E8B57;strokeColor=#2E8B57;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="800" y="715" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="spatial" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Spatial&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_run_spatial(task=)&lt;br&gt;SVG / domain&lt;br&gt;neighborhood / mapping&lt;br&gt;deconvolution / communication&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#23967F;strokeColor=#23967F;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="715" width="285" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="bulk" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Standalone bulk lane&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;matrix / list / SummarizedExperiment&lt;br&gt;sn_run_bulk(workflow=)&lt;br&gt;sn_assess_bulk_qc() / sn_find_de()&lt;br&gt;sn_score_bulk_pathways() / sn_run_wgcna()&lt;br&gt;sn_run_survival() / sn_run_clinical_association()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#5B677A;strokeColor=#5B677A;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="385" y="760" width="340" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Versioned result 结果契约&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;schema_version = 2.0.0&lt;br&gt;analysis_type + result_id&lt;br&gt;tables$primary + diagnostics&lt;br&gt;provenance + backend&lt;br&gt;sn_list_results() / sn_get_result()&lt;br&gt;sn_store_result() / sn_validate_result()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#374151;strokeColor=#374151;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="250" width="365" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="plot" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Visualization 可视化&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_list_plot_methods()&lt;br&gt;26 analysis types / 78 views&lt;br&gt;sn_plot_result(object,&lt;br&gt;  analysis_type, result_id, view)&lt;br&gt;direct plots: dim / feature / composition&lt;br&gt;distribution / association&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#006D77;strokeColor=#006D77;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="540" width="365" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="export" value="&lt;div style=&quot;font-size:16px;color:#FFFFFF;&quot;&gt;&lt;b&gt;Validate &amp;amp; Export 输出&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:12px;line-height:1.45;color:#FFFFFF;margin-top:8px;&quot;&gt;sn_apply_figure_profile()&lt;br&gt;sn_validate_figure()&lt;br&gt;sn_export_figure()&lt;br&gt;sn_export_figure_bundle()&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=16;fillColor=#7C3AED;strokeColor=#7C3AED;strokeWidth=2;fontFamily=Noto Sans CJK SC;shadow=0;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="850" width="365" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-100" value="read / initialize" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="input" target="object">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-101" value="update object" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="qc" target="object">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-102" value="analyze" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="object" target="analysis_container">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-103" value="select backend" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;dashed=1;dashPattern=8 6;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="method_registry" target="analysis_container">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-104" value="store or return" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="analysis_container" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-105" value="validated result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="bulk" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-106" value="resolve type + id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="result" target="plot">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-107" value="metadata / stored result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3751A6;strokeWidth=3;endArrow=block;endFill=1;dashed=1;dashPattern=8 6;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="object" target="plot">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-108" value="profile + validate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=3;endArrow=block;endFill=1;fontFamily=Noto Sans CJK SC;fontSize=12;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="plot" target="export">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

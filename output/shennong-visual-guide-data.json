@@ -1,0 +1,1282 @@
+{
+  "generated_from": "live Shennong namespace and registries",
+  "package_version": "0.3.0.9000",
+  "exports": [
+    ".export.rio_bpcells",
+    ".export.rio_h5",
+    ".export.rio_h5ad",
+    ".export.rio_qs2",
+    ".import.rio_10x",
+    ".import.rio_10x_spatial",
+    ".import.rio_bpcells",
+    ".import.rio_gmt",
+    ".import.rio_h5",
+    ".import.rio_h5ad",
+    ".import.rio_qs2",
+    ".import.rio_starsolo",
+    "sn_add_data_from_anndata",
+    "sn_add_qc_metrics",
+    "sn_add_signature",
+    "sn_annotate_de_features",
+    "sn_apply_figure_profile",
+    "sn_assess_bulk_qc",
+    "sn_assess_integration",
+    "sn_assess_qc",
+    "sn_audit_results",
+    "sn_build_prompt",
+    "sn_build_result_bundle",
+    "sn_calculate_cluster_entropy",
+    "sn_calculate_cluster_purity",
+    "sn_calculate_clustering_agreement",
+    "sn_calculate_composition",
+    "sn_calculate_graph_connectivity",
+    "sn_calculate_isolated_label_score",
+    "sn_calculate_lisi",
+    "sn_calculate_pcr_batch",
+    "sn_calculate_roe",
+    "sn_calculate_rogue",
+    "sn_calculate_silhouette",
+    "sn_calculate_variance_explained",
+    "sn_call_cell2location",
+    "sn_call_cellphonedb",
+    "sn_call_infercnvpy",
+    "sn_call_mmochi",
+    "sn_call_pixi_environment",
+    "sn_call_scanvi",
+    "sn_call_scarches",
+    "sn_call_scpoli",
+    "sn_call_scvi",
+    "sn_call_spatialdata",
+    "sn_call_squidpy",
+    "sn_call_stlearn",
+    "sn_call_tangram",
+    "sn_call_trajectory",
+    "sn_check_acceleration",
+    "sn_check_file",
+    "sn_check_pixi",
+    "sn_check_usage_tracking",
+    "sn_check_version",
+    "sn_compare_composition",
+    "sn_compare_integrations",
+    "sn_configure_pixi_mirror",
+    "sn_confirm_usage_consent",
+    "sn_convert_bpcells",
+    "sn_create_usage_store",
+    "sn_deconvolve_bulk",
+    "sn_delete_artifact",
+    "sn_delete_result",
+    "sn_delete_signature",
+    "sn_detect_accelerator",
+    "sn_detect_rare_cells",
+    "sn_disable_acceleration",
+    "sn_disable_usage_tracking",
+    "sn_discover_programs",
+    "sn_enable_acceleration",
+    "sn_enable_usage_tracking",
+    "sn_enrich",
+    "sn_ensure_pixi",
+    "sn_export_figure",
+    "sn_export_figure_bundle",
+    "sn_export_result_bundle",
+    "sn_figure_spec",
+    "sn_filter_cells",
+    "sn_filter_genes",
+    "sn_find_bulk_de",
+    "sn_find_de",
+    "sn_find_doublets",
+    "sn_find_spatial_domains",
+    "sn_find_spatial_features",
+    "sn_flush_usage_tracking",
+    "sn_get_cell_communication_result",
+    "sn_get_codex_skill_path",
+    "sn_get_de_result",
+    "sn_get_deconvolution_result",
+    "sn_get_enrichment_result",
+    "sn_get_figure_spec",
+    "sn_get_integration_control_template",
+    "sn_get_interpretation_result",
+    "sn_get_mcp_server_config",
+    "sn_get_metabolic_signatures",
+    "sn_get_method_status",
+    "sn_get_milo_result",
+    "sn_get_palette",
+    "sn_get_pixi_config_path",
+    "sn_get_pixi_paths",
+    "sn_get_regulatory_activity_result",
+    "sn_get_result",
+    "sn_get_signatures",
+    "sn_get_species",
+    "sn_identify_challenging_groups",
+    "sn_initialize_project",
+    "sn_initialize_seurat_object",
+    "sn_install_codex_skill",
+    "sn_install_dependencies",
+    "sn_install_pixi",
+    "sn_install_shennong",
+    "sn_integrate_spatial",
+    "sn_integration_control_template",
+    "sn_interpret_annotation",
+    "sn_interpret_de",
+    "sn_interpret_enrichment",
+    "sn_list_10x_paths",
+    "sn_list_dependencies",
+    "sn_list_figure_profiles",
+    "sn_list_methods",
+    "sn_list_palettes",
+    "sn_list_pixi_environments",
+    "sn_list_plot_methods",
+    "sn_list_results",
+    "sn_list_signatures",
+    "sn_list_usage_runs",
+    "sn_make_ellmer_provider",
+    "sn_map_cell_ontology",
+    "sn_mcp_server",
+    "sn_mcp_server_config",
+    "sn_metabolic_signatures",
+    "sn_method_status",
+    "sn_normalize_data",
+    "sn_pixi_config_path",
+    "sn_pixi_paths",
+    "sn_plot_abundance",
+    "sn_plot_ambient_correction",
+    "sn_plot_annotation_confidence",
+    "sn_plot_annotation_confusion",
+    "sn_plot_association",
+    "sn_plot_barplot",
+    "sn_plot_boxplot",
+    "sn_plot_branch_comparison",
+    "sn_plot_bulk_de",
+    "sn_plot_bulk_pca",
+    "sn_plot_bulk_qc",
+    "sn_plot_cluster_tree",
+    "sn_plot_cnv",
+    "sn_plot_communication",
+    "sn_plot_communication_comparison",
+    "sn_plot_composition",
+    "sn_plot_de",
+    "sn_plot_dim",
+    "sn_plot_discovered_programs",
+    "sn_plot_distribution",
+    "sn_plot_dot",
+    "sn_plot_doublets",
+    "sn_plot_dynamic_heatmap",
+    "sn_plot_elbow",
+    "sn_plot_enrichment",
+    "sn_plot_fate",
+    "sn_plot_feature",
+    "sn_plot_gene_trend",
+    "sn_plot_gsea",
+    "sn_plot_heatmap",
+    "sn_plot_hvg",
+    "sn_plot_integration",
+    "sn_plot_ligand_target",
+    "sn_plot_lineage_probability",
+    "sn_plot_metabolism",
+    "sn_plot_milo",
+    "sn_plot_program_activity",
+    "sn_plot_program_heatmap",
+    "sn_plot_pseudotime",
+    "sn_plot_qc",
+    "sn_plot_qc_thresholds",
+    "sn_plot_reference_projection",
+    "sn_plot_regulon",
+    "sn_plot_resolution_sweep",
+    "sn_plot_result",
+    "sn_plot_sample_correlation",
+    "sn_plot_scissor",
+    "sn_plot_spatial",
+    "sn_plot_spatial_communication",
+    "sn_plot_spatial_deconvolution",
+    "sn_plot_spatial_domain",
+    "sn_plot_spatial_feature",
+    "sn_plot_spatial_neighborhood",
+    "sn_plot_spatial_svg",
+    "sn_plot_state_priority",
+    "sn_plot_survival",
+    "sn_plot_trajectory",
+    "sn_plot_velocity",
+    "sn_plot_violin",
+    "sn_plot_wgcna",
+    "sn_prepare_annotation_evidence",
+    "sn_prepare_de_evidence",
+    "sn_prepare_enrichment_evidence",
+    "sn_prepare_label_transfer_reference",
+    "sn_prepare_pixi_environment",
+    "sn_prepare_results_evidence",
+    "sn_prioritize_states",
+    "sn_read",
+    "sn_recommend_figure_size",
+    "sn_remove_ambient_contamination",
+    "sn_review_annotation",
+    "sn_run_annotation",
+    "sn_run_bulk",
+    "sn_run_bulk_deconvolution",
+    "sn_run_cell_communication",
+    "sn_run_cell2location",
+    "sn_run_cellphonedb",
+    "sn_run_celltypist",
+    "sn_run_clinical_association",
+    "sn_run_cluster",
+    "sn_run_cnv",
+    "sn_run_enrichment",
+    "sn_run_fate",
+    "sn_run_grn",
+    "sn_run_infercnvpy",
+    "sn_run_llm",
+    "sn_run_mcp_server",
+    "sn_run_metabolism",
+    "sn_run_milo",
+    "sn_run_multimodal",
+    "sn_run_regulatory_activity",
+    "sn_run_scanvi",
+    "sn_run_scarches",
+    "sn_run_scissor",
+    "sn_run_scpoli",
+    "sn_run_scvi",
+    "sn_run_spatial",
+    "sn_run_spatial_communication",
+    "sn_run_spatial_deconvolution",
+    "sn_run_spatial_mapping",
+    "sn_run_spatial_neighborhood",
+    "sn_run_spatialdata",
+    "sn_run_squidpy",
+    "sn_run_stlearn",
+    "sn_run_survival",
+    "sn_run_tangram",
+    "sn_run_trajectory",
+    "sn_run_velocity",
+    "sn_run_wgcna",
+    "sn_save_figure",
+    "sn_score_bulk_pathways",
+    "sn_score_cell_cycle",
+    "sn_score_programs",
+    "sn_set_cibersortx_credentials",
+    "sn_set_layer_backend",
+    "sn_set_path",
+    "sn_simulate",
+    "sn_simulate_scdesign3",
+    "sn_standardize_gene_symbols",
+    "sn_store_cell_communication",
+    "sn_store_deconvolution",
+    "sn_store_enrichment",
+    "sn_store_milo",
+    "sn_store_regulatory_activity",
+    "sn_store_result",
+    "sn_summarize_usage",
+    "sn_sweep_cluster_resolution",
+    "sn_test_abundance",
+    "sn_test_llm_provider",
+    "sn_test_programs",
+    "sn_time_call",
+    "sn_transfer_labels",
+    "sn_update_signature",
+    "sn_upgrade_results",
+    "sn_validate_figure",
+    "sn_validate_result",
+    "sn_validate_result_bundle",
+    "sn_with_acceleration",
+    "sn_with_usage_tracking",
+    "sn_write",
+    "sn_write_figure_legend",
+    "sn_write_presentation_summary",
+    "sn_write_results"
+  ],
+  "analysis_method_tasks": [
+    {
+      "task": "annotation",
+      "name": "singleR",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "annotation",
+      "name": "celltypist",
+      "default": false,
+      "implemented": true,
+      "runtime": "cli"
+    },
+    {
+      "task": "annotation",
+      "name": "popv",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "annotation",
+      "name": "scanvi",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "annotation",
+      "name": "scmap",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "annotation",
+      "name": "seurat",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "annotation",
+      "name": "symphony",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_de",
+      "name": "auto",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_de",
+      "name": "deseq2",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_de",
+      "name": "dream",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_de",
+      "name": "edger",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_de",
+      "name": "limma",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_deconvolution",
+      "name": "bayesprism",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_network",
+      "name": "wgcna",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "bulk_survival",
+      "name": "cox",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "cnv",
+      "name": "infercnvpy",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "cnv",
+      "name": "copykat",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "communication",
+      "name": "liana",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "communication",
+      "name": "cellchat",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "communication",
+      "name": "cellphonedb",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "communication",
+      "name": "multinichenet",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "communication",
+      "name": "nichenet",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "differential_abundance",
+      "name": "propeller",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "differential_abundance",
+      "name": "milo",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "differential_abundance",
+      "name": "permutation",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "differential_abundance",
+      "name": "sccoda",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "dynamic_genes",
+      "name": "tradeseq",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "fate",
+      "name": "cellrank",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "grn",
+      "name": "genie3",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "grn",
+      "name": "grnboost2",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "grn",
+      "name": "pyscenic",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "grn",
+      "name": "scenic",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "metabolism",
+      "name": "geneset",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "metabolism",
+      "name": "compass",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "metabolism",
+      "name": "scfea",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "metabolism",
+      "name": "scmetabolism",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_discovery",
+      "name": "nmf",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_discovery",
+      "name": "cnmf",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "program_discovery",
+      "name": "hotspot",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "program_scoring",
+      "name": "ucell",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_scoring",
+      "name": "aucell",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_scoring",
+      "name": "gsva",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_scoring",
+      "name": "mean",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "program_scoring",
+      "name": "ssgsea",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "spatial_communication",
+      "name": "distance",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "spatial_deconvolution",
+      "name": "cell2location",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "spatial_domain",
+      "name": "banksy",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "spatial_domain",
+      "name": "bayesspace",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "spatial_domain",
+      "name": "cellcharter",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "spatial_domain",
+      "name": "stlearn",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "spatial_mapping",
+      "name": "tangram",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "spatial_neighborhood",
+      "name": "knn",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "spatial_neighborhood",
+      "name": "squidpy",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "spatial_svg",
+      "name": "morans_i",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "spatial_svg",
+      "name": "nnsvg",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "spatial_svg",
+      "name": "sparkx",
+      "default": false,
+      "implemented": true,
+      "runtime": "external"
+    },
+    {
+      "task": "state_priority",
+      "name": "augur",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "state_priority",
+      "name": "rareq",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "state_priority",
+      "name": "scissor",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "trajectory",
+      "name": "slingshot",
+      "default": true,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "trajectory",
+      "name": "monocle3",
+      "default": false,
+      "implemented": true,
+      "runtime": "r"
+    },
+    {
+      "task": "trajectory",
+      "name": "palantir",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "velocity",
+      "name": "scvelo",
+      "default": true,
+      "implemented": true,
+      "runtime": "pixi"
+    },
+    {
+      "task": "velocity",
+      "name": "regvelo",
+      "default": false,
+      "implemented": true,
+      "runtime": "pixi"
+    }
+  ],
+  "plot_views": [
+    {
+      "analysis_type": "annotation",
+      "view": "confidence_cluster",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or annotation result"
+    },
+    {
+      "analysis_type": "annotation",
+      "view": "confidence_cell",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or annotation result"
+    },
+    {
+      "analysis_type": "annotation",
+      "view": "confusion",
+      "default": false,
+      "required_parameters": "truth",
+      "accepted_input": "Seurat or annotation result"
+    },
+    {
+      "analysis_type": "annotation",
+      "view": "projection",
+      "default": false,
+      "required_parameters": "Seurat input",
+      "accepted_input": "Seurat or annotation result"
+    },
+    {
+      "analysis_type": "differential_abundance",
+      "view": "effect",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or differential-abundance result"
+    },
+    {
+      "analysis_type": "de",
+      "view": "volcano",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat, DE result, or compatible table"
+    },
+    {
+      "analysis_type": "de",
+      "view": "ma",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, DE result, or compatible table"
+    },
+    {
+      "analysis_type": "de",
+      "view": "effect",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, DE result, or compatible table"
+    },
+    {
+      "analysis_type": "de",
+      "view": "heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, DE result, or compatible table"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "dot",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "bar",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "ridge",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "network",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "emap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "enrichment",
+      "view": "gsea",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, enrichment result, compatible table, or clusterProfiler result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "library_size",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "detected_features",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "mean_correlation",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "pca",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "correlation_heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_qc",
+      "view": "sample_scatter",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-QC result"
+    },
+    {
+      "analysis_type": "bulk_de",
+      "view": "volcano",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-DE result"
+    },
+    {
+      "analysis_type": "bulk_network",
+      "view": "traits",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-network result"
+    },
+    {
+      "analysis_type": "bulk_network",
+      "view": "modules",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-network result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "forest",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "km",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "risk_table",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "ph",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "ph_test",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "bulk_survival",
+      "view": "cumulative_hazard",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or bulk-survival result"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "bubble",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "network",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "chord",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "river",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "ligand_target",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cell_communication",
+      "view": "comparison",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat, cell-communication result, or compatible table"
+    },
+    {
+      "analysis_type": "cnv",
+      "view": "heatmap",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or CNV result"
+    },
+    {
+      "analysis_type": "cnv",
+      "view": "umap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or CNV result"
+    },
+    {
+      "analysis_type": "cnv",
+      "view": "score",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or CNV result"
+    },
+    {
+      "analysis_type": "cnv",
+      "view": "sample",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or CNV result"
+    },
+    {
+      "analysis_type": "cnv",
+      "view": "association",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or CNV result"
+    },
+    {
+      "analysis_type": "grn",
+      "view": "network",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or GRN result"
+    },
+    {
+      "analysis_type": "grn",
+      "view": "activity",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or GRN result"
+    },
+    {
+      "analysis_type": "grn",
+      "view": "specificity",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or GRN result"
+    },
+    {
+      "analysis_type": "metabolism",
+      "view": "activity",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or metabolism result"
+    },
+    {
+      "analysis_type": "metabolism",
+      "view": "heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or metabolism result"
+    },
+    {
+      "analysis_type": "metabolism",
+      "view": "differential",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or metabolism result"
+    },
+    {
+      "analysis_type": "metabolism",
+      "view": "sample",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or metabolism result"
+    },
+    {
+      "analysis_type": "program_discovery",
+      "view": "weights",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or program-discovery result"
+    },
+    {
+      "analysis_type": "program_discovery",
+      "view": "activity",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or program-discovery result"
+    },
+    {
+      "analysis_type": "program_discovery",
+      "view": "stability",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or program-discovery result"
+    },
+    {
+      "analysis_type": "program_scoring",
+      "view": "activity",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or program-scoring result"
+    },
+    {
+      "analysis_type": "program_scoring",
+      "view": "heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or program-scoring result"
+    },
+    {
+      "analysis_type": "state_priority",
+      "view": "ranking",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or state-priority result"
+    },
+    {
+      "analysis_type": "scissor",
+      "view": "states",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or Scissor result"
+    },
+    {
+      "analysis_type": "scissor",
+      "view": "cells",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or Scissor result"
+    },
+    {
+      "analysis_type": "scissor",
+      "view": "samples",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or Scissor result"
+    },
+    {
+      "analysis_type": "scissor",
+      "view": "correlations",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or Scissor result"
+    },
+    {
+      "analysis_type": "scissor",
+      "view": "reliability",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or Scissor result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "embedding",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "pseudotime",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "lineage_probability",
+      "default": false,
+      "required_parameters": "lineage",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "dynamic_heatmap",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "gene_trend",
+      "default": false,
+      "required_parameters": "features",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "trajectory",
+      "view": "branch_comparison",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or trajectory result"
+    },
+    {
+      "analysis_type": "velocity",
+      "view": "embedding",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or velocity result"
+    },
+    {
+      "analysis_type": "fate",
+      "view": "probability",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or fate result"
+    },
+    {
+      "analysis_type": "spatial_domains",
+      "view": "domain",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or spatial-domain result"
+    },
+    {
+      "analysis_type": "spatial_features",
+      "view": "ranked",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or spatial-feature result"
+    },
+    {
+      "analysis_type": "spatial_neighborhood",
+      "view": "enrichment",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or spatial-neighborhood result"
+    },
+    {
+      "analysis_type": "spatial_neighborhood",
+      "view": "cooccurrence",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "Seurat or spatial-neighborhood result"
+    },
+    {
+      "analysis_type": "spatial_communication",
+      "view": "interactions",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "Seurat or spatial-communication result"
+    },
+    {
+      "analysis_type": "qc",
+      "view": "qc_score",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "QC assessment result or by-sample table"
+    },
+    {
+      "analysis_type": "qc",
+      "view": "n_cells",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "QC assessment result or by-sample table"
+    },
+    {
+      "analysis_type": "qc",
+      "view": "retention_fraction",
+      "default": false,
+      "required_parameters": "",
+      "accepted_input": "QC assessment result or by-sample table"
+    },
+    {
+      "analysis_type": "resolution_sweep",
+      "view": "summary",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "resolution-sweep result or summary table"
+    },
+    {
+      "analysis_type": "integration_assessment",
+      "view": "summary",
+      "default": true,
+      "required_parameters": "",
+      "accepted_input": "integration assessment or summary table"
+    }
+  ]
+}

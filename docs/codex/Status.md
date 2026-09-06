@@ -1,12 +1,20 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 This file describes what is true now. It is not a change log: Git history and
 `docs/codex/archive/` hold point-in-time evidence, `Decisions.md` holds durable
 rationale, and `NEWS.md` records user-visible changes.
 
 ## Current validation
+
+- The maintained visual guide now includes an editable diagrams.net
+  object-centered workflow, SVG/PDF renderings, and a two-page bilingual API
+  cheat sheet. Its generator queries the live namespace, analysis-method
+  registry, and result-plot registry; it currently records 23 analysis tasks
+  and 78 views across 26 result types. Curated explanatory groups fail
+  generation if a named public function disappears. PDF pages were rendered
+  with Poppler and inspected after generation.
 
 - Plotting has a canonical result-aware surface: `sn_list_plot_methods()`
   enumerates 78 views across 26 analysis types and `sn_plot_result()` resolves

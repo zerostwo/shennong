@@ -47,6 +47,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- Added an editable diagrams.net object-centered workflow and a two-page
+  bilingual API cheat sheet. Both are generated from the live analysis-method
+  and result-plot registries, with a machine-readable snapshot for auditing.
+
 - Added `sn_list_plot_methods()` and `sn_plot_result()` as the canonical
   result-aware visualization interface. Stored Seurat results and direct
   Shennong result objects now share the `object`, `analysis_type`, `result_id`,

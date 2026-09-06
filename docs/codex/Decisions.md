@@ -1,6 +1,16 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
+
+## 2026-09-06
+
+- The object workflow and cheat sheet are generated reference artifacts, not a
+  second hand-maintained API inventory. The generator queries
+  `sn_list_methods()`, `sn_list_plot_methods()`, the installed namespace, and
+  the package version, then validates curated workflow groups against the
+  exported surface. The editable `.drawio`, SVG, PDFs, and JSON snapshot are
+  committed under `output/` for direct use but excluded from the package source
+  tarball; temporary fonts and page renders remain uncommitted intermediates.
 
 ## 2026-09-05
 
