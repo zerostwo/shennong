@@ -35,8 +35,10 @@ type or cell-cycle phase.}
 \item{min_cells}{Minimum number of cells required per sample before that
 sample is retained for comparison. Defaults to \code{20}.}
 
-\item{pseudocount}{Small value added to group means before computing
-\code{log2_fc}. Defaults to \code{0.5}.}
+\item{pseudocount}{Cell-count correction used only when either comparison
+group has zero mean abundance. The correction is converted to a
+sample-specific percentage using that sample's total cell count. Defaults
+to the Haldane-Anscombe value of \code{0.5} cells.}
 
 \item{test}{Statistical test to apply to sample-level proportions. One of
 \code{"wilcox"} or \code{"none"}. Defaults to \code{"wilcox"}.}

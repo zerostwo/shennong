@@ -45,8 +45,7 @@ additional interpretation context.}
 \item{return_prompt}{If \code{TRUE}, return the prompt bundle without calling
 the provider.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored interpretation result.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 

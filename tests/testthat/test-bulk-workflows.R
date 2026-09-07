@@ -57,6 +57,101 @@ test_that("bulk input and QC expose aligned sample diagnostics", {
   expect_error(sn_assess_bulk_qc(unnamed_samples, fixture$metadata), "sample column names")
 })
 
+test_that("explicit expression containers are not misclassified as counts solely because values are integers", {
+  fixture <- bulk_fixture(features = 20L, samples = 6L)
+  integer_expression <- round(log2(fixture$counts + 1))
+
+  expression_input <- Shennong:::.sn_bulk_input(list(
+    expression = integer_expression,
+    metadata = fixture$metadata
+  ))
+  counts_input <- Shennong:::.sn_bulk_input(list(
+    counts = integer_expression,
+    metadata = fixture$metadata
+  ))
+
+  expect_false(expression_input$is_counts)
+  expect_true(counts_input$is_counts)
+})
+
+test_that("explicit bulk count inputs fail closed and raw or UMI assays are recognized", {
+  fixture <- bulk_fixture(features = 20L, samples = 6L)
+  fractional <- fixture$counts
+  fractional[[1]] <- fractional[[1]] + 0.25
+  expect_error(
+    Shennong:::.sn_bulk_input(list(counts = fractional, metadata = fixture$metadata)),
+    "explicitly count-scale.*non-negative integer"
+  )
+  negative <- fixture$counts
+  negative[[1]] <- -1
+  expect_error(
+    Shennong:::.sn_bulk_input(list(counts = negative, metadata = fixture$metadata)),
+    "explicitly count-scale.*non-negative integer"
+  )
+})
+
+test_that("raw and UMI bulk assays are recognized as count scale", {
+  skip_if_not_installed("SummarizedExperiment")
+  fixture <- bulk_fixture(features = 20L, samples = 6L)
+  object <- SummarizedExperiment::SummarizedExperiment(
+    assays = list(
+      raw = fixture$counts,
+      umi = fixture$counts,
+      logcounts = round(log2(fixture$counts + 1))
+    ),
+    colData = S4Vectors::DataFrame(fixture$metadata)
+  )
+  expect_true(Shennong:::.sn_bulk_input(object, assay = "raw")$is_counts)
+  expect_true(Shennong:::.sn_bulk_input(object, assay = "umi")$is_counts)
+  expect_false(Shennong:::.sn_bulk_input(object, assay = "logcounts")$is_counts)
+})
+
+test_that("bulk contrasts require a categorical variable", {
+  metadata <- data.frame(age = c(40, 45, 50), condition = c("a", "b", "a"))
+  expect_error(
+    Shennong:::.sn_bulk_validate_contrast(metadata, c("age", "45", "40")),
+    "must be categorical"
+  )
+  expect_error(
+    Shennong:::.sn_bulk_validate_contrast(metadata, c("condition", "a", "a")),
+    "numerator, denominator"
+  )
+  expect_identical(
+    Shennong:::.sn_bulk_validate_contrast(metadata, c("condition", "b", "a")),
+    c("condition", "b", "a")
+  )
+  expect_error(
+    Shennong:::.sn_bulk_validate_contrast(
+      metadata,
+      c("condition", "b", "a"),
+      design = ~age
+    ),
+    "not included in `design`"
+  )
+})
+
+test_that("bulk contrast estimands evaluate interactions at explicit covariate profiles", {
+  metadata <- data.frame(
+    condition = factor(rep(c("normal", "tumor"), 3), levels = c("normal", "tumor")),
+    age = 40:45,
+    batch = factor(rep(c("a", "b"), 3), levels = c("a", "b"))
+  )
+  estimand <- Shennong:::.sn_bulk_contrast_estimand(
+    metadata,
+    ~condition * age + batch,
+    c("condition", "tumor", "normal")
+  )
+
+  expect_equal(
+    estimand$vector[c("conditiontumor", "conditiontumor:age")],
+    c(conditiontumor = 1, `conditiontumor:age` = stats::median(metadata$age))
+  )
+  expect_equal(estimand$numerator_profile$age, stats::median(metadata$age))
+  expect_identical(estimand$numerator_profile$condition, "tumor")
+  expect_identical(estimand$denominator_profile$condition, "normal")
+  expect_identical(estimand$numerator_profile$batch, "a")
+})
+
 test_that("SummarizedExperiment bulk input is supported", {
   skip_if_not_installed("SummarizedExperiment")
   fixture <- bulk_fixture()
@@ -88,6 +183,26 @@ test_that("bulk DE validates design and returns standardized edgeR results", {
   expect_error(
     sn_find_bulk_de(fixture$counts, fixture$metadata, design = ~condition, contrast = c("condition", "other", "normal")),
     "Contrast level"
+  )
+  expect_error(
+    sn_find_bulk_de(
+      fixture$counts,
+      fixture$metadata,
+      design = ~batch,
+      contrast = c("condition", "tumor", "normal"),
+      method = "edger"
+    ),
+    "not included in `design`"
+  )
+  expect_error(
+    sn_find_bulk_de(
+      fixture$counts,
+      fixture$metadata,
+      design = ~condition + (1 | batch),
+      contrast = c("condition", "tumor", "normal"),
+      method = "edger"
+    ),
+    "supported only by.*dream"
   )
 })
 
@@ -168,6 +283,79 @@ test_that("DESeq2 shrinkage and dream repeated measures run through real backend
   expect_true(isTRUE(deseq$diagnostics$shrink_applied))
   expect_true(sn_validate_result(dream)$valid)
   expect_identical(dream$diagnostics$coefficient, "conditiontumor")
+  expected_norm_factors <- Shennong:::.sn_edger_norm_lib_sizes(
+    edgeR::DGEList(counts = counts)
+  )$samples$norm.factors
+  expect_equal(dream$diagnostics$normalization_factors, expected_norm_factors)
+
+  reverse_dream <- suppressWarnings(sn_find_bulk_de(
+    counts, metadata, design = ~condition + (1 | patient),
+    contrast = c("condition", "normal", "tumor"), method = "dream"
+  ))
+  reverse_effects <- reverse_dream$tables$primary$log2_fold_change[
+    reverse_dream$tables$primary$gene %in% paste0("paired_gene_", seq_len(15))
+  ]
+  expect_lt(stats::median(reverse_effects), 0)
+  expect_identical(reverse_dream$diagnostics$coefficient, "conditionnormal")
+  expect_identical(reverse_dream$diagnostics$contrast, "normal vs tumor")
+
+  interaction_metadata <- metadata
+  interaction_metadata$age <- rep(seq(40, 65, by = 5), each = 2)
+  interaction_dream <- suppressWarnings(sn_find_bulk_de(
+    counts,
+    interaction_metadata,
+    design = ~condition * age + (1 | patient),
+    contrast = c("condition", "tumor", "normal"),
+    method = "dream"
+  ))
+  expect_equal(
+    unname(interaction_dream$diagnostics$contrast_vector["conditiontumor:age"]),
+    stats::median(interaction_metadata$age)
+  )
+  expect_equal(
+    interaction_dream$diagnostics$contrast_numerator_profile$age,
+    stats::median(interaction_metadata$age)
+  )
+  expect_match(interaction_dream$diagnostics$coefficient, "conditiontumor:age", fixed = TRUE)
+})
+
+test_that("DESeq2 interaction effects use the same numeric estimand as other bulk backends", {
+  skip_if_not_installed("DESeq2")
+  fixture <- bulk_fixture(features = 50L, samples = 12L)
+  design <- ~condition * age + batch
+  contrast <- c("condition", "tumor", "normal")
+
+  observed <- suppressWarnings(suppressMessages(sn_find_bulk_de(
+    fixture$counts,
+    fixture$metadata,
+    design = design,
+    contrast = contrast,
+    method = "deseq2",
+    backend_control = list(shrink = FALSE, min_count = 0, min_samples = 1L)
+  )))
+  direct_dataset <- DESeq2::DESeqDataSetFromMatrix(
+    fixture$counts,
+    fixture$metadata,
+    design
+  )
+  direct_dataset <- suppressWarnings(suppressMessages(DESeq2::DESeq(direct_dataset, quiet = TRUE)))
+  direct <- DESeq2::results(
+    direct_dataset,
+    contrast = unname(observed$diagnostics$contrast_vector)
+  )
+  direct_effect <- direct$log2FoldChange[
+    match(observed$tables$primary$gene, rownames(direct))
+  ]
+
+  expect_equal(observed$tables$primary$log2_fold_change, direct_effect)
+  expect_gt(
+    abs(observed$diagnostics$contrast_vector[["conditiontumor:age"]]),
+    0
+  )
+  expect_equal(
+    observed$diagnostics$contrast_numerator_profile$age,
+    stats::median(fixture$metadata$age)
+  )
 })
 
 test_that("bulk pathway scoring records coverage and sample scores", {
@@ -203,6 +391,31 @@ test_that("WGCNA adapters standardize modules and trait associations", {
   expect_identical("package:WGCNA" %in% search(), attached_before)
 })
 
+test_that("WGCNA trait p-values use pair-specific effective sample sizes", {
+  skip_if_not_installed("WGCNA")
+  fixture <- bulk_fixture(features = 40)
+  fixture$metadata$age[seq_len(3)] <- NA_real_
+  colors <- rep(c("blue", "brown"), each = 20)
+  names(colors) <- rownames(fixture$counts)
+  eigengenes <- data.frame(
+    MEblue = scale(seq_len(12))[, 1],
+    MEbrown = scale(rev(seq_len(12)))[, 1],
+    row.names = colnames(fixture$counts)
+  )
+
+  result <- sn_run_wgcna(
+    fixture$counts,
+    fixture$metadata,
+    traits = "age",
+    power = 6,
+    min_module_size = 5,
+    backend_control = list(result = list(colors = colors, eigengenes = eigengenes))
+  )
+
+  expect_true("effective_n" %in% colnames(result$tables$trait_associations))
+  expect_identical(unique(result$tables$trait_associations$effective_n), 9L)
+})
+
 test_that("WGCNA constructs a real network on variable expression", {
   skip_if_not_installed("WGCNA")
   fixture <- bulk_fixture(features = 80)
@@ -236,6 +449,44 @@ test_that("survival and clinical association use sample-level features", {
   ) %in% names(survival$tables)))
   expect_true(sn_validate_result(clinical)$valid)
   expect_equal(nrow(clinical$tables$associations), 4L)
+})
+
+test_that("categorical clinical association tests are adjusted for covariates", {
+  set.seed(915L)
+  samples <- paste0("confounded_", seq_len(80))
+  covariate <- stats::rnorm(length(samples))
+  clinical <- factor(ifelse(covariate + stats::rnorm(length(samples), sd = 0.15) > 0, "high", "low"))
+  expression <- matrix(
+    covariate + stats::rnorm(length(samples), sd = 0.35),
+    nrow = 1L,
+    dimnames = list("gene_1", samples)
+  )
+  metadata <- data.frame(
+    clinical = clinical,
+    covariate = covariate,
+    row.names = samples
+  )
+
+  result <- sn_run_clinical_association(
+    expression,
+    features = "gene_1",
+    clinical_vars = "clinical",
+    covariates = "covariate",
+    metadata = metadata
+  )
+  expected_fit <- stats::lm(
+    gene_1 ~ clinical + covariate,
+    data = cbind(metadata, gene_1 = as.numeric(expression[1, ]))
+  )
+  expected_p <- stats::drop1(
+    expected_fit,
+    scope = ~clinical,
+    test = "F"
+  )["clinical", "Pr(>F)"]
+
+  expect_identical(result$tables$primary$test, "adjusted_anova")
+  expect_equal(result$tables$primary$p_value, unname(expected_p), tolerance = 1e-12)
+  expect_gt(result$tables$primary$p_value, 0.1)
 })
 
 test_that("survival validates time and event contracts before fitting", {
@@ -323,6 +574,7 @@ test_that("survival isolates failed features and supports non-syntactic covariat
   expect_true(is.finite(successful$hazard_ratio))
   expect_identical(failed$status, "error")
   expect_match(failed$error, "constant")
+  expect_identical(result$tables$primary$feature, "risk_score")
   expect_equal(result$diagnostics$requested_models, 2L)
   expect_equal(result$diagnostics$failed_models, 1L)
   expect_equal(nrow(result$tables$performance), 2L)

@@ -70,6 +70,7 @@ pbmc <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   cluster_algorithm = "louvain",
+  seed = 717L,
   species = "human",
   verbose = FALSE
 )
@@ -85,6 +86,9 @@ data.frame(
 The check-safe core uses Seurat's Louvain implementation. Select
 `cluster_algorithm = "leiden"` only after installing `leidenbase`; Shennong
 does not substitute a different algorithm when that explicit backend is absent.
+The top-level `seed` is the workflow seed: it takes precedence over nested
+integration and clustering seeds, is recorded in provenance, and runs under a
+scoped RNG context so the caller's random state is restored afterward.
 
 Variable-feature and PCA diagnostics are produced from the same real RNA
 matrix used for clustering.
@@ -674,7 +678,43 @@ Other bundled Python environment configs can be inspected with
 underlying software stack is the same: scANVI uses the `scvi` environment, and
 scPoli uses the `scarches` environment. Spatial tools are represented by
 specific environment names such as `cell2location`, `tangram`, `squidpy`,
-`spatialdata`, and `stlearn`.
+`spatialdata`, and `stlearn`. Environment discovery is not backend admission:
+the exported `sn_run_scarches()` and `sn_run_stlearn()` compatibility entry
+points are currently disabled and fail before object export or Python execution.
+
+The package-tested Pixi release is exact (`0.69.0`):
+`sn_ensure_pixi(version = "0.69.0", install = FALSE)` rejects a missing or
+mismatched executable, and mutable `version = "latest"` is not accepted.
+Official release assets are verified against their SHA-256 sidecar; a custom
+`download_url` must provide `sha256` explicitly. The environment helpers expose
+the same pair as `pixi_download_url` and `pixi_sha256`. Python calls use a unique
+package-owned run directory. Successful temporary runs remove exported inputs
+and backend outputs after the needed result is imported; an explicitly supplied
+run/output directory is retained by default. The object-level wrappers expose
+`keep_run_dir` directly: with `keep_run_dir = FALSE`, an explicit `output_dir`
+is treated only as a parent for a marked child and is never recursively deleted.
+They also expose `max_artifact_import_gb`, so metadata, embeddings, and required
+artifact tables are validated under an explicit import budget even when the run
+directory is retained. Failure records are reduced to sanitized diagnostics
+rather than retaining expression matrices or unrestricted metadata.
+
+```{r pixi-version-contract, eval = FALSE}
+sn_ensure_pixi(version = "0.69.0", install = FALSE)
+
+# Institutional mirror: pin both the immutable asset URL and its digest.
+sn_install_pixi(
+  version = "0.69.0",
+  download_url = "https://mirror.example/pixi-x86_64.tar.gz",
+  sha256 = "replace-with-reviewed-sha256"
+)
+
+sn_prepare_pixi_environment(
+  "scvi",
+  install_pixi = TRUE,
+  pixi_download_url = "https://mirror.example/pixi-x86_64.tar.gz",
+  pixi_sha256 = "replace-with-reviewed-sha256"
+)
+```
 
 These Python environments execute plain upstream implementations; no Python
 acceleration layer is bundled. scVI/scANVI training, scPoli, Tangram, MMoCHi,
@@ -682,7 +722,10 @@ infercnvpy, scIB, and the current Squidpy path all run their original code.
 R-side hot paths are accelerated separately by ShennongOpt and can be disabled
 with `SHENNONG_ACCELERATION_DISABLED=true`.
 
-The layer contract also applies to scANVI and scPoli. BBKNN consumes the PCA
+The raw-count layer contract also applies to scANVI and scPoli: their
+negative-binomial models require finite, non-negative, integer-like values, and
+Shennong validates the selected matrix both before export and inside the Python
+runner. BBKNN consumes the PCA
 computed from that same selected layer, imports its batch-balanced connectivity
 graph, and uses the graph directly for Seurat clustering and UMAP. Therefore a
 comparison on decontaminated counts can keep one explicit input across all
@@ -768,20 +811,13 @@ table(pbmc_scanvi$scanvi_prediction, pbmc_scanvi$real_response)
 
 The scPoli object wrapper trains the same real scPoli model used by
 `integration_method = "scpoli"`; it uses the real batch column as its condition
-and can use RNA clusters as prototype labels. The generic scArches wrapper
-remains a custom-runner surface for reference-mapping workflows. Neither is run
-unless the shared scArches pixi environment has already been materialized.
+and can use RNA clusters as prototype labels. The selected `layer` must be a
+count-like raw-count layer rather than normalized expression. `sn_run_scarches()` is retained
+only as a compatibility signature and currently fails closed because the package
+does not ship an admitted, faithful scArches reference-mapping workflow. The
+scPoli example runs only when its shared pixi environment is already materialized.
 
-```{r scarches-and-scpoli, eval = run_extended && pixi_environment_ready("scarches")}
-pbmc_scarches <- sn_run_scarches(
-  object = pbmc,
-  assay = "RNA",
-  layer = "counts",
-  batch_by = "real_batch",
-  label_by = "seurat_clusters",
-  method_control = list(max_epochs = 100)
-)
-
+```{r scpoli-object-wrapper, eval = run_extended && pixi_environment_ready("scarches")}
 pbmc_scpoli <- sn_run_scpoli(
   object = pbmc,
   assay = "RNA",
@@ -792,10 +828,7 @@ pbmc_scpoli <- sn_run_scpoli(
 )
 
 data.frame(
-  method = c("scarches", "scpoli"),
-  reductions = c(
-    paste(names(pbmc_scarches@reductions), collapse = ", "),
-    paste(names(pbmc_scpoli@reductions), collapse = ", ")
-  )
+  method = "scpoli",
+  reductions = paste(names(pbmc_scpoli@reductions), collapse = ", ")
 )
 ```

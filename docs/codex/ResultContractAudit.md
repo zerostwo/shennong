@@ -1,6 +1,6 @@
 # Analysis Result Contract Audit
 
-Audit date: 2026-07-15
+Audit date: 2026-09-07
 
 ## Verdict
 
@@ -10,23 +10,24 @@ canonical `tables$primary`; several registered legacy writers returned a less
 complete object than they stored; schema strings mixed `1.0` and `1.0.0`; and
 two concrete read/write defects could return stale or unreachable evidence.
 
-The analytical result boundary is now unified on `schema_version = "1.0.0"`.
+The analytical result boundary is now unified on `schema_version = "2.0.0"`.
 Every analytical result has a data-frame `tables$primary`, stable named tables,
-diagnostics, warnings, and provenance. Existing table-focused getters remain
+diagnostics, warnings, provenance, and identity matching its physical
+`(analysis_type, result_id)` storage key. Existing table-focused getters remain
 compatibility views over the canonical primary table.
 
 ## Coverage
 
 | Result family | Canonical primary evidence | Storage boundary |
 |---|---|---|
-| DE, enrichment, communication, deconvolution, Milo, regulatory activity | synchronized legacy `table` and `tables$primary` | registered existing `object@misc` collection |
-| QC assessment | sample summary | registered existing `object@misc` collection |
-| annotation, including reference label transfer | cell predictions | generic analysis-result store; legacy transfer manifest retained as an artifact |
-| program scoring/discovery/comparison | scores, activity, or comparison tests | generic analysis-result store |
-| trajectory, velocity, fate | per-cell trajectory/velocity or fate probabilities | generic analysis-result store |
-| differential abundance and state priority/Scissor | feature/state or selected-cell evidence | generic analysis-result store |
-| communication consensus, GRN, CNV, metabolism | standardized interaction, edge, cell, or score evidence | registered or generic result store |
-| spatial feature/domain/neighborhood/communication/integration | workflow-specific standardized table | generic analysis-result store |
+| DE, enrichment, communication, deconvolution, Milo, regulatory activity | canonical `tables$primary` plus named evidence tables | canonical analysis-result store |
+| QC assessment | sample summary | canonical analysis-result store |
+| annotation, including reference label transfer | cell predictions | canonical analysis-result store; compact transfer manifest retained separately as an artifact |
+| program scoring/discovery/comparison | scores, activity, or comparison tests | canonical analysis-result store |
+| trajectory, velocity, fate | per-cell trajectory/velocity or fate probabilities | canonical analysis-result store |
+| differential abundance and state priority/Scissor | feature/state or selected-cell evidence | canonical analysis-result store |
+| communication consensus, GRN, CNV, metabolism | standardized interaction, edge, cell, or score evidence | canonical analysis-result store |
+| spatial feature/domain/neighborhood/communication/integration | workflow-specific standardized table | canonical analysis-result store |
 | bulk QC, DE, pathway, network, survival, clinical association | workflow-specific sample/feature evidence | standalone validated result |
 | interpretation | narrative/evidence payload; no forced primary table | registered interpretation collection |
 
@@ -34,19 +35,21 @@ compatibility views over the canonical primary table.
 populated top-level `object@misc` entry without mutation. Its statuses are:
 
 - `valid`: current schema and canonical primary table;
-- `legacy`: compatible payload that can be normalized safely;
+- `repairable`: compatible payload that can be normalized safely;
 - `invalid`: manual intervention is required;
 - `artifact`: registered runtime/cache payload outside the analytical table
   contract;
 - `unregistered`: an unknown top-level `object@misc` payload whose ownership
   and semantics must be reviewed before it can be classified.
 
-`sn_upgrade_results()` upgrades only analytical results. It preserves physical
-storage locations and compatibility aliases and records a prior schema spelling
-in provenance. Only missing or compatible `1`, `1.0`, and `1.0.0` schema
-spellings are migratable; unsupported or future semantic versions remain
-invalid and are never rewritten. Contract fields use exact lookup, so similarly
-named fields such as `tables_backup` cannot satisfy `tables` validation.
+`sn_upgrade_results()` upgrades only analytical results. It writes the
+canonical store, removes obsolete result aliases, and records a prior schema
+spelling in provenance. Only missing or compatible `1`, `1.0`, and `1.0.0`
+schema spellings, plus repair of an incomplete current `2.0.0` envelope, are
+migratable; all other historical, prerelease, malformed, or future versions
+remain invalid and are never rewritten. Contract fields use exact lookup, so
+similarly named fields such as `tables_backup` cannot satisfy `tables`
+validation.
 
 ## Defects corrected by the audit
 
@@ -97,8 +100,9 @@ compatibility surfaces. The full canonical envelope is available through
 
 ## Regression gates
 
-- type-specific primary-column validation for annotation, trajectory, program
-  scoring, state priority/Scissor, and survival;
+- exhaustive registry coverage for all 33 built-in analysis types, with
+  type-specific identity, key, type, finite/range, paired-missingness, and
+  cross-row validation where scientifically required;
 - legacy audit and in-place upgrade tests;
 - canonical label-transfer, registered-artifact, and unknown-misc audit tests;
 - alias-synchronization tests for registered legacy collections;

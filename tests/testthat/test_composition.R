@@ -33,12 +33,14 @@ test_that("sn_calculate_composition filters returned categories with fewer cells
     x = small_meta_df,
     group_by = "sample",
     variable = "ctype",
-    min_cells = 2
+    min_cells = 2,
+    measure = "both"
   )
 
   expect_equal(nrow(result), 2)
   expect_true(all(result$ctype == "Tcell"))
-  expect_equal(result$proportion, c(100, 100))
+  expect_equal(result$proportion, c(2 / 3 * 100, 2 / 3 * 100))
+  expect_equal(result$group_total, c(3, 3))
 })
 
 test_that("sn_calculate_composition handles missing columns gracefully", {
@@ -94,14 +96,19 @@ test_that("base composition kernel matches the prior grouped semantics", {
       dplyr::if_all(dplyr::all_of(c("sample", "compartment")), ~ !is.na(.x)),
       !is.na(.data$cell_type)
     ) |>
-    dplyr::count(.data$sample, .data$compartment, .data$cell_type, name = "count") |>
+    dplyr::group_by(.data$sample, .data$compartment) |>
+    dplyr::mutate(group_total = dplyr::n()) |>
+    dplyr::ungroup() |>
+    dplyr::count(.data$sample, .data$compartment, .data$cell_type, .data$group_total, name = "count") |>
     dplyr::filter(.data$count >= 3L) |>
     dplyr::group_by(.data$sample, .data$compartment) |>
     dplyr::mutate(
-      group_total = sum(.data$count),
       proportion = .data$count / .data$group_total * 100
     ) |>
     dplyr::ungroup() |>
+    dplyr::select(dplyr::all_of(c(
+      "sample", "compartment", "cell_type", "count", "group_total", "proportion"
+    ))) |>
     dplyr::arrange(.data$sample, .data$compartment, .data$cell_type)
   actual <- sn_calculate_composition(
     metadata,
@@ -691,4 +698,34 @@ test_that("sn_compare_composition uses min_cells as a per-sample filter", {
   )
 
   expect_setequal(unique(comparison$sample_data$sample), c("S1", "S3"))
+})
+
+test_that("composition contrasts require both groups and preserve nonzero rare fold changes", {
+  only_control <- data.frame(
+    sample = rep(c("S1", "S2"), each = 10),
+    group = "control",
+    cell_type = rep(c("T", "B"), 10),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    sn_compare_composition(
+      only_control, "sample", "group", "cell_type",
+      contrast = c("case", "control"), min_cells = 1, test = "none"
+    ),
+    "missing retained sample"
+  )
+
+  rare <- data.frame(
+    sample = rep(c("case1", "case2", "control1", "control2"), each = 1000),
+    group = rep(c("case", "case", "control", "control"), each = 1000),
+    cell_type = "other",
+    stringsAsFactors = FALSE
+  )
+  rare$cell_type[c(1, 1001)] <- "rare"
+  rare$cell_type[c(2001, 2002, 3001, 3002)] <- "rare"
+  result <- sn_compare_composition(
+    rare, "sample", "group", "cell_type",
+    contrast = c("case", "control"), min_cells = 1, test = "none"
+  )
+  expect_equal(result$log2_fc[result$cell_type == "rare"], -1, tolerance = 1e-12)
 })

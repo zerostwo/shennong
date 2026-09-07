@@ -680,10 +680,20 @@ sn_standardize_gene_symbols <- function(
   }
 
   # -- Extract counts
+  source_features <- NULL
   if (inherits(x, "Seurat")) {
     .sn_log_info("Detected a Seurat object; extracting counts from the RNA assay.")
-    species <- sn_get_species(object = x, species = species)
-    counts <- SeuratObject::LayerData(object = x, layer = "counts")
+    if (!"RNA" %in% names(x@assays)) {
+      stop("A Seurat object must contain an 'RNA' assay for gene-symbol standardization.", call. = FALSE)
+    }
+    counts <- .sn_get_seurat_layer_data(object = x, assay = "RNA", layer = "counts")
+    source_features <- rownames(counts)
+    stored_species <- Seurat::Misc(x, slot = "species")
+    species <- if (!is_null(species) || !is_null(stored_species)) {
+      sn_get_species(object = x, species = species)
+    } else {
+      sn_get_species(object = rownames(counts), species = NULL)
+    }
   } else {
     counts <- x
     species <- sn_get_species(object = counts, species = species)
@@ -716,8 +726,19 @@ sn_standardize_gene_symbols <- function(
 
   # -- Return updated Seurat or matrix
   if (inherits(x, "Seurat")) {
-    x[["RNA"]] <- SeuratObject::CreateAssay5Object(counts = counts)
-    return(.sn_log_seurat_command(object = x, name = "sn_standardize_gene_symbols"))
+    feature_map <- rep(NA_character_, length(standardized$keep))
+    names(feature_map) <- source_features
+    feature_map[standardized$keep] <- standardized$symbols
+    x <- .sn_rebuild_standardized_rna_assay(
+      object = x,
+      feature_map = feature_map,
+      standardized_counts = counts
+    )
+    return(.sn_log_seurat_command(
+      object = x,
+      assay = "RNA",
+      name = "sn_standardize_gene_symbols"
+    ))
   } else {
     return(counts)
   }
@@ -994,10 +1015,11 @@ sn_filter_genes <- function(x,
 
     if (!is_null(gene_class) || !is_null(gene_type)) {
       species <- sn_get_species(x, species = species)
-      annotations <- .sn_match_gene_annotations(rownames(x), species = species)
+      feature_names <- rownames(counts)
+      annotations <- .sn_match_gene_annotations(feature_names, species = species)
 
       if (any(!annotations$matched)) {
-        unmatched_features <- utils::head(rownames(x)[!annotations$matched], 10)
+        unmatched_features <- utils::head(feature_names[!annotations$matched], 10)
         unmatched_msg <- if (length(unmatched_features) > 0) {
           paste0(" Examples: ", paste(unmatched_features, collapse = ", "), ".")
         } else {
@@ -1020,7 +1042,12 @@ sn_filter_genes <- function(x,
       keep_genes <- keep_genes & annotation_keep
     }
 
-    x <- x[keep_genes, ]
+    keep_features <- rownames(counts)[keep_genes]
+    if (length(keep_features) == 0L) {
+      stop("Gene filtering would remove every feature from the selected assay.", call. = FALSE)
+    }
+    filtered_assay <- suppressWarnings(subset(x[[assay]], features = keep_features))
+    suppressWarnings(x[[assay]] <- filtered_assay)
   }
 
   .sn_log_seurat_command(object = x, assay = assay, name = "sn_filter_genes")
@@ -1368,9 +1395,25 @@ sn_filter_cells <- function(
       )
     }
   )
-  run_dir <- control$output_dir %||% file.path(
-    tempdir(), paste0("sn_scrublet_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+  output_supplied <- !is.null(control$output_dir)
+  keep_run_dir <- control$keep_run_dir
+  if (is.null(keep_run_dir)) keep_run_dir <- output_supplied
+  if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  run_dir <- .sn_resolve_python_run_directory(
+    path = control$output_dir,
+    method = "scrublet",
+    runtime_dir = .sn_shennong_runtime_dir(control$runtime_dir %||% NULL),
+    keep_run_dir = keep_run_dir,
+    supplied = output_supplied
   )
+  run_complete <- FALSE
+  on.exit({
+    if (!run_complete && !isTRUE(keep_run_dir) && dir.exists(run_dir)) {
+      .sn_sanitize_failed_python_run(run_dir, method = "scrublet", stage = "doublet_detection")
+    }
+  }, add = TRUE)
   input_dir <- file.path(run_dir, "input")
   result_dir <- file.path(run_dir, "output")
   dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
@@ -1380,7 +1423,8 @@ sn_filter_cells <- function(
     object = object[, keep_cells, drop = FALSE],
     input_dir = input_dir,
     assay = assay,
-    layer = "counts"
+    layer = "counts",
+    require_raw_counts = TRUE
   )
   config <- list(
     method = "scrublet",
@@ -1406,10 +1450,31 @@ sn_filter_cells <- function(
     row.names = 1,
     check.names = FALSE
   )
+  .sn_validate_exact_python_ids(
+    rownames(predictions),
+    keep_cells,
+    "Scrublet prediction cell"
+  )
+  required_predictions <- c("is_doublet", "doublet_score")
+  missing_predictions <- setdiff(required_predictions, colnames(predictions))
+  if (length(missing_predictions) > 0L) {
+    stop(
+      "Scrublet predictions are missing required column(s): ",
+      paste(missing_predictions, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
   aligned <- predictions[keep_cells, , drop = FALSE]
   class_values <- ifelse(is.na(aligned$is_doublet), NA, as.logical(aligned$is_doublet))
-  class_values <- ifelse(is.na(class_values), NA, ifelse(class_values, "doublet", "singlet"))
   score_values <- suppressWarnings(as.numeric(aligned$doublet_score))
+  if (anyNA(class_values) || any(!is.finite(score_values)) ||
+      any(score_values < 0 | score_values > 1)) {
+    stop(
+      "Scrublet predictions must contain logical doublet calls and finite scores in [0, 1].",
+      call. = FALSE
+    )
+  }
+  class_values <- ifelse(class_values, "doublet", "singlet")
 
   manifest <- tryCatch(
     jsonlite::fromJSON(file.path(result_dir, "manifest.json"), simplifyVector = TRUE),
@@ -1419,11 +1484,18 @@ sn_filter_cells <- function(
     "Scrublet scored {sum(!is.na(score_values))}/{length(keep_cells)} retained cell(s); ",
     "detected rate: {manifest$detected_doublet_rate %||% NA}."
   )
-  list(
+  result <- list(
     class = unname(class_values),
     score = unname(score_values),
-    manifest = manifest
+    manifest = manifest,
+    run_dir = if (isTRUE(keep_run_dir)) normalizePath(run_dir, winslash = "/", mustWork = TRUE) else NULL,
+    run_dir_retained = isTRUE(keep_run_dir)
   )
+  if (!isTRUE(keep_run_dir)) {
+    .sn_remove_python_run_directory(run_dir, label = "Scrublet doublet-detection run directory")
+  }
+  run_complete <- TRUE
+  result
 }
 
 
@@ -1443,7 +1515,6 @@ sn_filter_cells <- function(
 #' @param object A \code{Seurat} object.
 #' @param method Doublet-detection backend. One of `"scdblfinder"` (default)
 #'   or `"scrublet"`.
-#' @param method Doublet-detection backend (see description).
 #' @param clusters Optional cluster assignments. A metadata column name or one
 #'   value per cell. Explicit assignments take precedence over
 #'   \code{cluster_backend}. scDblFinder-specific; ignored by scrublet.
@@ -1472,7 +1543,12 @@ sn_filter_cells <- function(
 #'   scrublet: `seed`, `n_prin_comps`, `expected_doublet_rate`,
 #'   `synthetic_doublet_umi_subsampling`, `min_counts`, `min_cells`,
 #'   `min_gene_variability_pctl`, `threshold_min`, `threshold_max`,
-#'   `output_dir`, and `quiet`. Ignored by scDblFinder.
+#'   `output_dir`, `runtime_dir`, `keep_run_dir`, and `quiet`. Default Scrublet
+#'   runs use a unique package-owned temporary directory and remove it after
+#'   import. An explicit `output_dir` is retained only when
+#'   `keep_run_dir = TRUE` (the default for an explicit path); with
+#'   `keep_run_dir = FALSE`, it is a parent for an isolated child and is never
+#'   recursively deleted. Ignored by scDblFinder.
 #'
 #' @return The input Seurat object with two new columns in \code{meta.data}:
 #'   \code{scDblFinder.class} and \code{scDblFinder.score} for
@@ -2009,17 +2085,19 @@ sn_find_doublets <- function(
   cluster_backend
 }
 
-.sn_round_soupx_counts <- function(counts) {
-  fractional <- counts@x - floor(counts@x)
-  counts@x <- floor(counts@x) + stats::rbinom(
-    length(counts@x),
-    size = 1L,
-    prob = fractional
-  )
-  counts
+.sn_round_soupx_counts <- function(counts, seed = 717L) {
+  .sn_with_seed(seed, {
+    fractional <- counts@x - floor(counts@x)
+    counts@x <- floor(counts@x) + stats::rbinom(
+      length(counts@x),
+      size = 1L,
+      prob = fractional
+    )
+    counts
+  })
 }
 
-.sn_adjust_soupx_counts <- function(sc) {
+.sn_adjust_soupx_counts <- function(sc, seed = 717L) {
   corrected <- .sn_with_default_acceleration(
     SoupX::adjustCounts(
       sc,
@@ -2028,7 +2106,7 @@ sn_find_doublets <- function(
     ),
     patches = "soupx"
   )
-  .sn_round_soupx_counts(corrected)
+  .sn_round_soupx_counts(corrected, seed = seed)
 }
 
 .sn_remove_ambient_soupx <- function(x_info,
@@ -2036,6 +2114,7 @@ sn_find_doublets <- function(
                                      cluster = NULL,
                                      force_accept = FALSE,
                                      contamination_range = c(0.01, 0.8),
+                                     seed = 717L,
                                      verbose = FALSE) {
   if (is_null(raw_info)) {
     stop("`raw` is required when `method = \"soupx\"`.")
@@ -2064,9 +2143,9 @@ sn_find_doublets <- function(
   )
 
   soup_profile <- data.frame(
-    row.names = rownames(toc_common),
-    est = Matrix::rowSums(toc_common) / sum(toc_common),
-    counts = Matrix::rowSums(toc_common)
+    row.names = rownames(tod_common),
+    est = Matrix::rowSums(tod_common) / sum(tod_common),
+    counts = Matrix::rowSums(tod_common)
   )
   sc <- SoupX::setSoupProfile(sc, soup_profile)
 
@@ -2083,7 +2162,7 @@ sn_find_doublets <- function(
     forceAccept = force_accept,
     contaminationRange = contamination_range
   )
-  out <- .sn_adjust_soupx_counts(sc)
+  out <- .sn_adjust_soupx_counts(sc, seed = seed)
 
   tod_sum <- sum(Matrix::rowSums(tod_common))
   toc_sum <- sum(Matrix::rowSums(toc_common))
@@ -2110,7 +2189,8 @@ sn_find_doublets <- function(
                                        ...) {
   check_installed(pkg = "decontX", reason = "to remove ambient RNA contamination with decontX.")
 
-  counts <- x_info$counts
+  original_counts <- x_info$counts
+  counts <- original_counts
   background_counts <- NULL
 
   if (!is_null(raw_info)) {
@@ -2163,36 +2243,32 @@ sn_find_doublets <- function(
     }
   )
   out_counts <- .sn_as_sparse_matrix(round(result$decontXcounts))
+  restored_counts <- .sn_restore_count_shape(original_counts, out_counts)
   out <- .sn_handle_zero_count_cells(
-    original_counts = counts,
-    corrected_counts = out_counts,
+    original_counts = original_counts,
+    corrected_counts = restored_counts,
     remove_zero_count_cells = remove_zero_count_cells,
     method = "decontX"
   )
-  contamination <- as.numeric(result$contamination %||% rep(NA_real_, ncol(counts)))
-  clusters <- as.character(result$z %||% rep(NA_character_, ncol(counts)))
-  if (length(contamination) != ncol(counts)) {
-    contamination <- rep(NA_real_, ncol(counts))
+  contamination <- as.numeric(result$contamination %||% rep(NA_real_, ncol(original_counts)))
+  clusters <- as.character(result$z %||% rep(NA_character_, ncol(original_counts)))
+  if (length(contamination) != ncol(original_counts)) {
+    contamination <- rep(NA_real_, ncol(original_counts))
   }
-  if (length(clusters) != ncol(counts)) {
-    clusters <- rep(NA_character_, ncol(counts))
+  if (length(clusters) != ncol(original_counts)) {
+    clusters <- rep(NA_character_, ncol(original_counts))
   }
   metadata <- data.frame(
     decontX_contamination = contamination,
     decontX_clusters = clusters,
-    row.names = colnames(counts),
+    row.names = colnames(original_counts),
     stringsAsFactors = FALSE
   )
   metadata <- metadata[colnames(out$counts), , drop = FALSE]
   metadata$nCount_corrected <- Matrix::colSums(out$counts)
   metadata$nFeature_corrected <- Matrix::colSums(out$counts > 0)
-  base_counts <- counts
-  if (length(out$removed_cells) > 0) {
-    base_counts <- base_counts[, colnames(out$counts), drop = FALSE]
-  }
-
   list(
-    counts = .sn_restore_count_shape(base_counts, out$counts),
+    counts = out$counts,
     metadata = metadata,
     zero_cells = out$zero_cells,
     removed_cells = out$removed_cells
@@ -2208,7 +2284,8 @@ sn_find_doublets <- function(
                                          ...) {
   check_installed(pkg = "decontX", reason = "to remove CITE-seq contamination with decontPro.")
 
-  counts <- x_info$counts
+  original_counts <- x_info$counts
+  counts <- original_counts
   background_counts <- NULL
   if (!is_null(raw_info)) {
     common_features <- intersect(rownames(counts), rownames(raw_info$counts))
@@ -2244,9 +2321,10 @@ sn_find_doublets <- function(
   }
   result <- do.call(decontX::decontPro, c(decontpro_args, extra_args))
   corrected_counts <- .sn_as_sparse_matrix(round(result$decontaminated_counts))
+  restored_counts <- .sn_restore_count_shape(original_counts, corrected_counts)
   out <- .sn_handle_zero_count_cells(
-    original_counts = counts,
-    corrected_counts = corrected_counts,
+    original_counts = original_counts,
+    corrected_counts = restored_counts,
     remove_zero_count_cells = remove_zero_count_cells,
     method = "decontPro"
   )
@@ -2275,13 +2353,8 @@ sn_find_doublets <- function(
   metadata <- metadata[colnames(out$counts), , drop = FALSE]
   metadata$nCount_corrected <- Matrix::colSums(out$counts)
   metadata$nFeature_corrected <- Matrix::colSums(out$counts > 0)
-  base_counts <- counts
-  if (length(out$removed_cells) > 0L) {
-    base_counts <- base_counts[, colnames(out$counts), drop = FALSE]
-  }
-
   list(
-    counts = .sn_restore_count_shape(base_counts, out$counts),
+    counts = out$counts,
     metadata = metadata,
     zero_cells = out$zero_cells,
     removed_cells = out$removed_cells
@@ -2321,7 +2394,7 @@ sn_find_doublets <- function(
     object[[col_name]] <- values
   }
 
-  SeuratObject::LayerData(object = object, layer = layer) <- out$counts
+  SeuratObject::LayerData(object = object, assay = assay, layer = layer) <- out$counts
   object
 }
 
@@ -2369,6 +2442,9 @@ sn_find_doublets <- function(
 #' @param return_object If \code{TRUE} and \code{x} is a Seurat object, return
 #'   the updated Seurat object. Otherwise return the corrected counts matrix.
 #' @param verbose Logical; whether to print progress from helper clustering.
+#' @param seed Random seed used only for reproducible stochastic rounding of
+#'   SoupX-adjusted fractional counts. The caller's random-number-generator
+#'   state is restored after rounding.
 #' @param ... Additional method-specific arguments passed to
 #'   \code{decontX::decontX()}, \code{decontX::decontPro()}, or
 #'   \code{SoupX::autoEstCont()} and \code{SoupX::adjustCounts()}.
@@ -2404,6 +2480,7 @@ sn_remove_ambient_contamination <- function(
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
+  seed = 717L,
   ...,
   assay = NULL
 ) {
@@ -2449,6 +2526,7 @@ sn_remove_ambient_contamination <- function(
       x_info = x_info,
       raw_info = raw_info,
       cluster = cluster,
+      seed = seed,
       verbose = verbose,
       ...
     ),
@@ -2491,6 +2569,7 @@ sn_remove_ambient_contamination <- function(
       soupx = list(
         force_accept = backend_args$force_accept %||% FALSE,
         contamination_range = backend_args$contamination_range %||% c(0.01, 0.8),
+        seed = seed,
         autoEstCont = list(doPlot = FALSE),
         adjustCounts = list(roundToInt = FALSE, verbose = 0)
       ),
@@ -2515,6 +2594,7 @@ sn_remove_ambient_contamination <- function(
       layer = layer,
       return_object = return_object,
       verbose = verbose,
+      seed = if (identical(method, "soupx")) seed else NULL,
       backend_args = backend_args,
       effective_backend_args = effective_backend_args,
       cluster_control = if (identical(cluster_backend, "shennong")) {

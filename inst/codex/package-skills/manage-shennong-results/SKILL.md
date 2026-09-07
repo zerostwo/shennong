@@ -44,8 +44,15 @@ package API.
 - validate new result payloads with `sn_validate_result()`
 - require `schema_version = "2.0.0"`, matching `result_id` and
   `analysis_type`, and a canonical data frame in `tables$primary`
+- treat every built-in result's registered identity, key, type, finite/range,
+  and cross-row checks as part of the scientific contract; do not bypass a
+  failed `sn_validate_result()` report by reading the table directly
 - use `sn_store_result()` / `sn_get_result()` / `sn_delete_result()` for new
   analysis types and specialized getters where their table-focused interface is useful
+- require embedded `analysis_type`/`result_id` to match physical storage keys;
+  delete registered legacy artifacts only with
+  `sn_delete_artifact(..., confirm = TRUE)` and never delete an unregistered
+  `object@misc` payload through Shennong
 - prefer `sn_list_results()` for discovery and use its `result_id` column as
   the canonical lookup key
 - prefer `sn_get_*_result()` helpers for retrieval
@@ -81,6 +88,8 @@ package API.
    Treat `unregistered` as an unknown top-level `object@misc` payload that
    Shennong will report but never upgrade automatically.
    Use `sn_upgrade_results()` only after reviewing the audit.
+   Use `sn_delete_artifact(..., confirm = TRUE)` only after separately
+   confirming ownership of the exact registered artifact target.
 4. Discover result IDs with `sn_list_results()`; use its `type` filter when
    the object contains many workflows.
 5. Retrieve generic results with `sn_get_result()` or specific results with `sn_get_de_result()`,

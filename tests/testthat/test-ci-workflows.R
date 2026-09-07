@@ -7,6 +7,9 @@ test_that("routine package checks avoid duplicate full tests", {
   expect_match(text, "workflow_dispatch:", fixed = TRUE)
   expect_match(text, "--no-tests", fixed = TRUE)
   expect_match(text, "cancel-in-progress: true", fixed = TRUE)
+  expect_match(text, "ubuntu-latest, r: 'oldrel-1'", fixed = TRUE)
+  expect_match(text, "windows-latest, r: 'release'", fixed = TRUE)
+  expect_match(text, "macos-latest, r: 'release'", fixed = TRUE)
 })
 
 test_that("coverage CI installs dependencies exercised by enrichment contracts", {
@@ -16,9 +19,10 @@ test_that("coverage CI installs dependencies exercised by enrichment contracts",
 
   expect_match(workflow, "any::clusterProfiler", fixed = TRUE)
   expect_match(workflow, "any::msigdbr", fixed = TRUE)
+  expect_match(workflow, "fail_ci_if_error: true", fixed = TRUE)
 })
 
-test_that("pkgdown CI checks builds without deployment permissions", {
+test_that("pkgdown CI deploys only after a successful main build", {
   workflow_path <- test_path("..", "..", ".github", "workflows", "pkgdown.yaml")
   helper_path <- test_path("..", "..", "scripts", "build-pkgdown.R")
   skip_if_not(file.exists(workflow_path) && file.exists(helper_path), "Repository-only CI files are excluded from source packages.")
@@ -27,11 +31,10 @@ test_that("pkgdown CI checks builds without deployment permissions", {
   workflow_text <- paste(workflow, collapse = "\n")
   helper_text <- paste(helper, collapse = "\n")
 
-  expect_match(workflow_text, "contents: read", fixed = TRUE)
-  expect_false(grepl("contents: write", workflow_text, fixed = TRUE))
-  expect_false(grepl("deploy_to_branch", workflow_text, fixed = TRUE))
-  expect_false(grepl("git push", workflow_text, fixed = TRUE))
-  expect_false(grepl("gh-pages", workflow_text, fixed = TRUE))
+  expect_match(workflow_text, "contents: write", fixed = TRUE)
+  expect_match(workflow_text, "Deploy successful main build", fixed = TRUE)
+  expect_match(workflow_text, "github.ref == 'refs/heads/main'", fixed = TRUE)
+  expect_match(workflow_text, "pkgdown::deploy_to_branch", fixed = TRUE)
   expect_match(workflow_text, "Rscript scripts/build-pkgdown.R --full", fixed = TRUE)
   expect_match(workflow_text, "Rscript scripts/build-pkgdown.R", fixed = TRUE)
   expect_match(workflow_text, "PKGDOWN_FULL", fixed = TRUE)
@@ -432,6 +435,10 @@ test_that("strict conformance CI provisions pinned Python backends before testin
 test_that("CI Python provisioning cannot overwrite the default user runtime", {
   script <- test_path("..", "..", "scripts", "prepare-conformance-python.R")
   skip_if_not(file.exists(script), "Repository-only script is excluded from source packages.")
+  source <- readLines(script, warn = FALSE)
+  expect_true(any(grepl("install_environment = TRUE", source, fixed = TRUE)))
+  expect_false(any(grepl("writeLines(manifest", source, fixed = TRUE)))
+  expect_false(any(grepl("pin <- paste0", source, fixed = TRUE)))
   withr::local_envvar(SHENNONG_RUNTIME_DIR = NA_character_)
   output <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"),
                                     shQuote(script), stdout = TRUE, stderr = TRUE))

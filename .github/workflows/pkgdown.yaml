@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   pkgdown:
@@ -97,7 +97,7 @@ jobs:
         run: R CMD INSTALL .
         shell: bash
 
-      - name: Build site without deployment
+      - name: Build site
         run: |
           if [ "${PKGDOWN_FULL}" = "true" ]; then
             Rscript scripts/build-pkgdown.R --full
@@ -105,3 +105,13 @@ jobs:
             Rscript scripts/build-pkgdown.R
           fi
         shell: bash
+
+      - name: Deploy successful main build
+        if: github.ref == 'refs/heads/main'
+        run: |
+          pkgdown::deploy_to_branch(
+            new_process = FALSE,
+            install = FALSE,
+            clean = TRUE
+          )
+        shell: Rscript {0}

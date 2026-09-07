@@ -14,7 +14,8 @@ sn_find_spatial_domains(
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_by = NULL
 )
 }
 \arguments{
@@ -26,8 +27,7 @@ sn_find_spatial_domains(
 
 \item{assay, layer}{Expression assay and layer.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Backend controls or an explicit \code{runner}/\code{result}.}
 
@@ -38,6 +38,9 @@ sn_find_spatial_domains(
 
 \item{verbose}{Top-level progress switch forwarded through
 \code{backend_control$verbose} when explicitly supplied.}
+
+\item{sample_by}{Optional metadata column defining independent tissue
+sections. The built-in BANKSY path fails closed for pooled sections.}
 }
 \value{
 A Seurat object or spatial-domain result.

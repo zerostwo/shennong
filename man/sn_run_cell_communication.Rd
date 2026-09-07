@@ -28,6 +28,7 @@ sn_run_cell_communication(
   raw_use = TRUE,
   resource = NULL,
   sample_by = NULL,
+  paired_by = NULL,
   consensus = TRUE,
   contrast = NULL,
   backend_control = list(),
@@ -45,7 +46,9 @@ The legacy alias \code{"nichenetr"} is accepted.}
 
 \item{group_by}{Metadata column defining sender/receiver cell groups.}
 
-\item{assay, layer}{Assay and layer used to retrieve expression.}
+\item{assay, layer}{Assay and layer used to retrieve expression. CellPhoneDB
+requires normalized, log-transformed expression from a Seurat
+\code{"data"}/\code{"data.*"} layer and rejects raw counts.}
 
 \item{species}{Species passed to species-aware resources. Defaults to
 \code{sn_get_species(object)} when available.}
@@ -84,6 +87,10 @@ is considered expressed in NicheNet filtering.}
 ligand and receptor expression is aggregated within each sample before
 condition comparison.}
 
+\item{paired_by}{Optional metadata column identifying matched donors or
+experimental units across conditions. It must be constant within each
+\code{sample_by} unit and enables paired condition tests.}
+
 \item{consensus}{If \code{TRUE} and multiple methods are requested, use the
 cross-method consensus ranking as the primary result table.}
 
@@ -92,8 +99,7 @@ reference second.}
 
 \item{backend_control}{Named list of method-specific argument lists.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored communication result.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object;
 otherwise return the stored-result list.}

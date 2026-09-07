@@ -205,7 +205,7 @@ trajectory_object <- sn_run_trajectory(
   nknots = 3L,
   trend_features = trend_features,
   trend_points = 40L,
-  backend_control = list(seed = 717L)
+  seed = 717L
 )
 ```
 
@@ -237,6 +237,14 @@ trajectory$tables$convergence |>
   head(10L)
 ```
 
+Backend output is accepted only when cell identities and lineage dimensions
+align. Every positive lineage weight must have a finite pseudotime. For a
+multi-lineage result, explicit weights are required; `primary_lineage` is the
+maximum valid weight, and cells with no positive eligible weight retain
+`NA` rather than being assigned arbitrarily to the first lineage. Formal
+tradeSeq fitting reads `counts_layer` and requires finite, non-negative integer
+raw or corrected counts—normalized expression is not rounded into counts.
+
 ## Plot topology, pseudotime, and gene dynamics
 
 The lineage name is taken from the stored graph, so the probability plot stays
@@ -259,7 +267,11 @@ sn_plot_branch_comparison(trajectory, test = "pattern")
 ## Extended backends are explicit
 
 The `all` profile may run Monocle 3 only when its R dependency is already
-installed. The article does not install packages while knitting.
+installed. The article does not install packages while knitting. The direct
+Monocle 3 path uses a real `umap` reduction by default and will not relabel PCA
+coordinates as UMAP. It also fails on an `end` constraint or multiple
+disconnected partitions that cannot be represented faithfully by this adapter;
+use an explicit external result/runner when those semantics are required.
 
 ```{r extended-trajectory-status}
 tibble::tibble(
@@ -281,6 +293,7 @@ monocle <- sn_run_trajectory(
   cluster_by = "real_cell_type",
   start = start_label,
   test_dynamic = FALSE,
+  seed = 717L,
   return_object = FALSE
 )
 

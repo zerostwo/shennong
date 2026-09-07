@@ -378,8 +378,9 @@ sn_compare_integrations <- function(object,
         input_dir = input_dir, output_dir = output_dir, config_path = config_path,
         environment = pixi_environment, pixi_home = backend_control$pixi_home %||% paths$pixi_home,
         install_pixi = backend_control$install_pixi %||% TRUE,
-        pixi_version = backend_control$pixi_version %||% "latest",
+        pixi_version = backend_control$pixi_version %||% "0.69.0",
         pixi_download_url = backend_control$pixi_download_url %||% NULL,
+        pixi_sha256 = backend_control$pixi_sha256 %||% NULL,
         verbose = verbose, backend_label = "scib-metrics"
       )
     }

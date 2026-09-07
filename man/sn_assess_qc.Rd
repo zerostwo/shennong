@@ -24,8 +24,8 @@ against the QC flags and doublet calls recorded in \code{reference}.}
 \code{NULL}, the function uses \code{sample} or \code{orig.ident} when
 available and otherwise treats the object as one sample.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used when storing the assessment under
+\code{object@misc$qc_assessments}.}
 
 \item{return_object}{Logical; when \code{TRUE}, store the assessment in the
 Seurat object and return the updated object.}

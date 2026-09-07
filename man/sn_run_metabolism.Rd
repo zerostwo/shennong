@@ -47,8 +47,7 @@ for \code{method = "scmetabolism"} through \code{backend_control$scoring_method}
 
 \item{min_genes}{Minimum matched genes per pathway.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Backend options. For scFEA/Compass, provide a
 \code{runner} function or parsed \code{result}; this keeps heavyweight

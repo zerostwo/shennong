@@ -42,8 +42,8 @@ DoRothEA uses the \pkg{dorothea} package data and PROGENy uses
 
 \item{minsize}{Minimum target-set size passed to \code{decoupleR::run_ulm()}.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used under
+the canonical Shennong result registry.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object.}
 

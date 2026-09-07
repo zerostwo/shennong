@@ -36,8 +36,7 @@ for Propeller; covariate names are forwarded to Milo.}
 
 \item{contrast}{Two condition labels ordered as \code{c(case, control)}.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored differential-abundance result.}
 
 \item{transform}{Propeller proportion transformation.}
 

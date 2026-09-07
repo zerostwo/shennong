@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata as metadata
 import json
 from pathlib import Path
 
@@ -47,7 +48,17 @@ def main() -> None:
     sdata.write(zarr_path)
     adata.obs.to_csv(output_dir / "obs.csv")
     with (output_dir / "manifest.json").open("w", encoding="utf-8") as handle:
-        json.dump({"method": "spatialdata", "zarr_path": str(zarr_path)}, handle, indent=2)
+        json.dump(
+            {
+                "method": "spatialdata",
+                "zarr_path": str(zarr_path),
+                "n_cells": int(adata.n_obs),
+                "n_features": int(adata.n_vars),
+                "spatialdata_version": metadata.version("spatialdata"),
+            },
+            handle,
+            indent=2,
+        )
 
 
 if __name__ == "__main__":

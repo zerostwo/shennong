@@ -31,6 +31,13 @@ make_roadmap_adapter_object <- function() {
     key = "PC_",
     assay = "RNA"
   )
+  umap <- embedding
+  colnames(umap) <- c("UMAP_1", "UMAP_2")
+  object[["umap"]] <- SeuratObject::CreateDimReducObject(
+    embeddings = umap,
+    key = "UMAP_",
+    assay = "RNA"
+  )
   object
 }
 
@@ -92,7 +99,7 @@ test_that("Monocle 3 direct backend learns and retains a principal graph", {
   result <- sn_run_trajectory(
     object,
     method = "monocle3",
-    reduction = "pca",
+    reduction = "umap",
     dims = 1:2,
     cluster_by = "cluster",
     start = "early",

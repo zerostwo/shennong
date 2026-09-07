@@ -880,10 +880,7 @@ sn_plot_violin <- function(object,
   if (is.null(max_cells) || length(cells) <= max_cells) {
     return(cells)
   }
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  sort(sample(cells, max_cells))
+  .sn_with_seed(seed, sort(sample(cells, max_cells)))
 }
 
 .sn_heatmap_group_colors <- function(object,

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata as metadata
 import json
 from pathlib import Path
 
@@ -30,17 +31,66 @@ def _as_list(x):
     return [x]
 
 
+def _versions() -> dict:
+    versions = {}
+    for package in ("infercnvpy", "scanpy", "anndata", "numpy", "pandas", "scipy", "gtfparse"):
+        try:
+            versions[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            versions[package] = None
+    return versions
+
+
 def _read_adata(input_dir: Path) -> ad.AnnData:
     matrix = io.mmread(input_dir / "matrix.mtx")
     matrix = sparse.csr_matrix(matrix).transpose().tocsr()
 
-    obs = pd.read_csv(input_dir / "obs.csv", index_col=0)
-    var = pd.read_csv(input_dir / "var.csv", index_col=0)
+    obs = pd.read_csv(input_dir / "obs.csv")
+    var = pd.read_csv(input_dir / "var.csv")
+    if "cell_id" not in obs.columns:
+        raise ValueError("obs.csv must contain a cell_id column.")
+    if "feature_id" not in var.columns:
+        raise ValueError("var.csv must contain a feature_id column.")
+    if obs["cell_id"].isna().any() or (obs["cell_id"].astype(str).str.strip() == "").any():
+        raise ValueError("obs.csv cell identifiers must be non-empty.")
+    if var["feature_id"].isna().any() or (var["feature_id"].astype(str).str.strip() == "").any():
+        raise ValueError("var.csv feature identifiers must be non-empty.")
+    if obs["cell_id"].duplicated().any():
+        raise ValueError("obs.csv contains duplicate cell identifiers.")
+    if var["feature_id"].duplicated().any():
+        raise ValueError("var.csv contains duplicate feature identifiers.")
+    if matrix.shape != (obs.shape[0], var.shape[0]):
+        raise ValueError("matrix.mtx dimensions must equal cells-by-features after transposition.")
+    if matrix.data.size and not np.isfinite(matrix.data).all():
+        raise ValueError("infercnvpy expression input must contain only finite values.")
+    obs = obs.set_index("cell_id", drop=True)
+    var = var.set_index("feature_id", drop=False)
 
     adata = ad.AnnData(X=matrix, obs=obs, var=var)
-    if "feature_id" in adata.var.columns:
-        adata.var_names = adata.var["feature_id"].astype(str).to_numpy()
+    adata.obs_names = obs.index.astype(str)
+    adata.var_names = adata.var["feature_id"].astype(str).to_numpy()
     return adata
+
+
+def _validate_control_dependencies(config: dict, obs_columns) -> None:
+    run_pca = bool(config.get("run_pca", True))
+    run_neighbors = bool(config.get("run_neighbors", True))
+    run_leiden = bool(config.get("run_leiden", True))
+    run_umap = bool(config.get("run_umap", False))
+    score = bool(config.get("score", True))
+    score_groupby = config.get("cnv_score_groupby")
+    if run_neighbors and not run_pca:
+        raise ValueError("infercnvpy run_neighbors=True requires run_pca=True.")
+    if run_leiden and not run_neighbors:
+        raise ValueError("infercnvpy run_leiden=True requires run_neighbors=True.")
+    if run_umap and not run_neighbors:
+        raise ValueError("infercnvpy run_umap=True requires run_neighbors=True.")
+    if score and score_groupby is None and not run_leiden:
+        raise ValueError(
+            "infercnvpy score=True requires run_leiden=True unless cnv_score_groupby is supplied."
+        )
+    if score_groupby is not None and score_groupby not in obs_columns:
+        raise ValueError(f"cnv_score_groupby {score_groupby!r} was not found in obs.csv.")
 
 
 def _prepare_genomic_positions(adata: ad.AnnData, config: dict) -> ad.AnnData:
@@ -114,6 +164,8 @@ def main() -> None:
     import infercnvpy as cnv
 
     adata = _read_adata(input_dir)
+    input_n_features = int(adata.n_vars)
+    _validate_control_dependencies(config, adata.obs.columns)
     adata = _prepare_genomic_positions(adata, config)
 
     infer_args = _drop_none(
@@ -174,11 +226,14 @@ def main() -> None:
     _write_chromosome_summary(adata, key_added, output_dir / "cnv_chromosome.csv")
 
     output_h5ad = output_dir / "infercnvpy.h5ad"
-    if config.get("write_h5ad", True):
+    if config.get("write_h5ad", False):
         adata.write_h5ad(output_h5ad)
 
     manifest = {
         "method": "infercnvpy",
+        "n_cells": int(adata.n_obs),
+        "input_n_features": input_n_features,
+        "n_features": int(adata.n_vars),
         "n_obs": int(adata.n_obs),
         "n_vars": int(adata.n_vars),
         "key_added": key_added,
@@ -186,7 +241,8 @@ def main() -> None:
         "cnv_pca_path": str(output_dir / "cnv_pca.csv"),
         "cnv_umap_path": str(output_dir / "cnv_umap.csv"),
         "cnv_chromosome_path": str(output_dir / "cnv_chromosome.csv"),
-        "output_h5ad": str(output_h5ad),
+        "output_h5ad": str(output_h5ad) if output_h5ad.exists() else None,
+        "versions": _versions(),
     }
     with (output_dir / "manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)

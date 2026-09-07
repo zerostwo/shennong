@@ -5,6 +5,19 @@
   env
 })
 
+.sn_enrichment_with_rng_preserved <- function(expr) {
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+  force(expr)
+}
+
 .sn_enrich_cache_key <- function(...) {
   paste(vapply(list(...), as.character, character(1)), collapse = "::")
 }
@@ -121,15 +134,129 @@
     return(list(
       input = de_result$tables$primary,
       object = x,
-      source_de_result_id = source_de_result_id
+      source_de_result_id = source_de_result_id,
+      de_result = de_result
     ))
   }
 
   list(
     input = x,
     object = NULL,
-    source_de_result_id = source_de_result_id
+    source_de_result_id = source_de_result_id,
+    de_result = NULL
   )
+}
+
+.sn_enrich_stored_de_universe <- function(de_result, object) {
+  if (!is.list(de_result)) {
+    stop("The stored DE result must be a list.", call. = FALSE)
+  }
+  de_input <- de_result$input
+  has_input_universe <- is.list(de_input) &&
+    "tested_features" %in% names(de_input)
+  has_top_level_universe <- "tested_features" %in% names(de_result)
+
+  if (has_input_universe || has_top_level_universe) {
+    tested_features <- if (has_input_universe) {
+      de_input$tested_features
+    } else {
+      de_result$tested_features
+    }
+    if (!is.character(tested_features) || length(tested_features) == 0L ||
+        anyNA(tested_features) || any(!nzchar(trimws(tested_features))) ||
+        anyDuplicated(tested_features)) {
+      stop(
+        "The stored DE `tested_features` universe must be a non-empty character vector of distinct, non-missing feature names.",
+        call. = FALSE
+      )
+    }
+    return(list(
+      universe = tested_features,
+      source = "stored_de_tested_features"
+    ))
+  }
+
+  universe_assay <- de_result$assay %||%
+    de_result$input$assay %||%
+    SeuratObject::DefaultAssay(object)
+  if (!universe_assay %in% names(object@assays)) {
+    stop(
+      "The legacy stored DE assay '", universe_assay,
+      "' is unavailable, so an ORA background cannot be reconstructed; supply `universe` explicitly.",
+      call. = FALSE
+    )
+  }
+  list(
+    universe = rownames(object[[universe_assay]]),
+    source = paste0("stored_de_assay_fallback:", universe_assay)
+  )
+}
+
+.sn_enrich_filter_stored_de_ora <- function(input,
+                                             de_result,
+                                             p_adjusted_cutoff = 0.05,
+                                             direction = c("up", "down", "both"),
+                                             logfc_threshold = 0) {
+  direction <- match.arg(direction)
+  input <- as.data.frame(input, check.names = FALSE)
+  adjusted_candidates <- unique(c(
+    de_result$p_col %||% character(),
+    "adjusted_p_value", "p_val_adj", "padj", "FDR", "q_value"
+  ))
+  adjusted_candidates <- adjusted_candidates[
+    !is.na(adjusted_candidates) & adjusted_candidates %in% colnames(input)
+  ]
+  # Ranking scores such as COSG specificity are not signed fold changes and
+  # therefore cannot determine up/down direction for ORA.
+  signed_effect_columns <- c("avg_log2FC", "avg_logFC", "log2FoldChange", "logFC", "effect")
+  preferred_effect <- de_result$rank_col %||% character()
+  preferred_effect <- preferred_effect[!is.na(preferred_effect) & preferred_effect %in% signed_effect_columns]
+  effect_candidates <- unique(c(preferred_effect, signed_effect_columns))
+  effect_candidates <- effect_candidates[
+    !is.na(effect_candidates) & effect_candidates %in% colnames(input)
+  ]
+  if (length(adjusted_candidates) == 0L) {
+    stop(
+      "ORA from a stored DE result requires an adjusted-p-value column ",
+      "(`p_val_adj`, `padj`, `FDR`, or `adjusted_p_value`).",
+      call. = FALSE
+    )
+  }
+  if (length(effect_candidates) == 0L) {
+    stop(
+      "ORA from a stored DE result requires a signed effect column so gene ",
+      "direction can be selected explicitly.",
+      call. = FALSE
+    )
+  }
+  adjusted <- suppressWarnings(as.numeric(input[[adjusted_candidates[[1]]]]))
+  effect <- suppressWarnings(as.numeric(input[[effect_candidates[[1]]]]))
+  keep_direction <- switch(
+    direction,
+    up = effect > logfc_threshold,
+    down = effect < -logfc_threshold,
+    both = abs(effect) > logfc_threshold
+  )
+  keep <- is.finite(adjusted) & adjusted <= p_adjusted_cutoff &
+    is.finite(effect) & keep_direction
+  filtered <- input[keep, , drop = FALSE]
+  if (nrow(filtered) == 0L) {
+    stop(
+      "No stored DE genes passed `de_p_adjusted_cutoff`, ",
+      "`de_logfc_threshold`, and `de_direction`.",
+      call. = FALSE
+    )
+  }
+  attr(filtered, "sn_de_ora_selection") <- list(
+    adjusted_p_column = adjusted_candidates[[1]],
+    effect_column = effect_candidates[[1]],
+    p_adjusted_cutoff = p_adjusted_cutoff,
+    logfc_threshold = logfc_threshold,
+    direction = direction,
+    input_rows = nrow(input),
+    retained_rows = nrow(filtered)
+  )
+  filtered
 }
 
 .sn_enrich_resolve_analysis <- function(input,
@@ -365,8 +492,11 @@
 #' @param qvalue_cutoff ORA q-value cutoff passed as `qvalueCutoff`. It is not
 #'   used by GSEA.
 #' @param universe Optional ORA background gene universe in the same symbol
-#'   namespace as `x`. For KEGG it is converted to ENTREZID together with the
-#'   query genes. Supplying a universe for GSEA is an error.
+#'   namespace as `x`. Stored-DE ORA defaults to the source result's recorded
+#'   \code{input$tested_features}; only legacy results without that field fall
+#'   back to the source assay feature space. For KEGG the universe is converted
+#'   to ENTREZID together with the query genes. Supplying a universe for GSEA is
+#'   an error.
 #' @param min_gs_size,max_gs_size Minimum and maximum tested gene-set sizes.
 #' @param gsea_exponent GSEA running-score exponent. For reproducible stochastic
 #'   GSEA results with clusterProfiler 4.20, call `set.seed()` immediately before
@@ -377,10 +507,12 @@
 #' @param result_id Name used when storing the enrichment result on a Seurat
 #'   object. When multiple databases are requested, the database label is
 #'   appended automatically unless a vector of names is supplied.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param source_de_result_id Optional stored DE-result name associated with the
 #'   enrichment input.
+#' @param de_p_adjusted_cutoff,de_logfc_threshold Significance and absolute
+#'   effect thresholds applied when ORA consumes a stored DE result.
+#' @param de_direction Direction retained from a stored DE result for ORA:
+#'   `"up"`, `"down"`, or an explicit `"both"`.
 #' @param return_object Logical; when \code{TRUE} and a Seurat object is
 #'   available, return the updated Seurat object instead of raw enrichment
 #'   results.
@@ -424,7 +556,10 @@ sn_run_enrichment <- function(
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL,
-  object = NULL) {
+  object = NULL,
+  de_p_adjusted_cutoff = 0.05,
+  de_logfc_threshold = 0,
+  de_direction = c("up", "down", "both")) {
   result_id <- .sn_validate_result_id(result_id)
   x <- .sn_resolve_object_alias(x, object, missing(x))
   resolved <- .sn_enrich_resolve_input(
@@ -483,6 +618,12 @@ sn_run_enrichment <- function(
   qvalue_cutoff <- validate_probability(qvalue_cutoff, "qvalue_cutoff")
   p_adjust_method <- match.arg(p_adjust_method, stats::p.adjust.methods)
   duplicate_gene_method <- match.arg(duplicate_gene_method)
+  de_direction <- match.arg(de_direction)
+  de_p_adjusted_cutoff <- validate_probability(de_p_adjusted_cutoff, "de_p_adjusted_cutoff")
+  if (!is.numeric(de_logfc_threshold) || length(de_logfc_threshold) != 1L ||
+      is.na(de_logfc_threshold) || !is.finite(de_logfc_threshold) || de_logfc_threshold < 0) {
+    stop("`de_logfc_threshold` must be one finite non-negative number.", call. = FALSE)
+  }
   if (!is.numeric(min_gs_size) || length(min_gs_size) != 1L ||
       is.na(min_gs_size) || !is.finite(min_gs_size) || min_gs_size < 1L ||
       min_gs_size > .Machine$integer.max || min_gs_size != as.integer(min_gs_size)) {
@@ -500,6 +641,16 @@ sn_run_enrichment <- function(
       is.na(gsea_exponent) || !is.finite(gsea_exponent) || gsea_exponent < 0) {
     stop("`gsea_exponent` must be one finite non-negative number.", call. = FALSE)
   }
+  universe_source <- if (is.null(universe)) NULL else "user"
+  if (identical(analysis, "ora") && is.null(universe) &&
+      !is.null(resolved$de_result) && !is.null(object)) {
+    stored_universe <- .sn_enrich_stored_de_universe(
+      de_result = resolved$de_result,
+      object = object
+    )
+    universe <- stored_universe$universe
+    universe_source <- stored_universe$source
+  }
   if (!is.null(universe)) {
     if (identical(analysis, "gsea")) {
       stop("`universe` is an ORA parameter and cannot be supplied for GSEA.", call. = FALSE)
@@ -508,6 +659,39 @@ sn_run_enrichment <- function(
       stop("`universe` must be NULL or a character vector of gene identifiers.", call. = FALSE)
     }
     universe <- .sn_enrich_resolve_gene_vector(universe)
+  }
+
+  de_ora_selection <- NULL
+  if (identical(analysis, "ora") && !is_null(resolved$de_result)) {
+    input <- .sn_enrich_filter_stored_de_ora(
+      input = input,
+      de_result = resolved$de_result,
+      p_adjusted_cutoff = de_p_adjusted_cutoff,
+      direction = de_direction,
+      logfc_threshold = de_logfc_threshold
+    )
+    de_ora_selection <- attr(input, "sn_de_ora_selection")
+    if (is_null(mapping)) {
+      group_candidates <- unique(c(
+        resolved$de_result$group_col %||% character(),
+        "cluster", "comparison"
+      ))
+      group_candidates <- group_candidates[
+        !is.na(group_candidates) & group_candidates %in% colnames(input)
+      ]
+      group_hits <- group_candidates[vapply(group_candidates, function(column) {
+        values <- as.character(input[[column]])
+        length(unique(values[!is.na(values) & nzchar(values)])) > 1L
+      }, logical(1))]
+      group_col <- if (length(group_hits) > 0L) group_hits[[1]] else NULL
+      if (!is.null(group_col)) {
+        gene_clusters <- stats::reformulate(group_col, response = gene_col)
+        mapping <- .sn_enrich_parse_formula(gene_clusters)
+        de_ora_selection$group_column <- group_col
+      }
+    }
+    de_ora_selection$universe_source <- universe_source
+    de_ora_selection$universe_size <- length(universe)
   }
 
   if (identical(analysis, "gsea")) {
@@ -524,12 +708,12 @@ sn_run_enrichment <- function(
     current_cfg <- msigdb_cfgs[[current_database]]
     with_enrichment_acceleration <- function(expr) {
       if (current_database %in% c("GO", "GOBP", "GOMF", "GOCC")) {
-        return(.sn_with_default_acceleration(
+        return(.sn_enrichment_with_rng_preserved(.sn_with_default_acceleration(
           expr,
           patches = "clusterprofiler"
-        ))
+        )))
       }
-      .sn_with_acceleration_disabled(expr)
+      .sn_enrichment_with_rng_preserved(.sn_with_acceleration_disabled(expr))
     }
     .sn_log_info("Running {toupper(analysis)} analysis for the {current_database} database.")
 
@@ -810,10 +994,13 @@ sn_run_enrichment <- function(
             p_adjust_method = p_adjust_method,
             qvalue_cutoff = if (identical(analysis, "ora")) qvalue_cutoff else NULL,
             universe = if (identical(analysis, "ora")) universe else NULL,
+            universe_source = if (identical(analysis, "ora")) universe_source else NULL,
+            universe_size = if (identical(analysis, "ora")) length(universe) else NULL,
             min_gs_size = min_gs_size,
             max_gs_size = max_gs_size,
             gsea_exponent = if (identical(analysis, "gsea")) gsea_exponent else NULL,
-            duplicate_gene_method = if (identical(analysis, "gsea")) duplicate_gene_method else NULL
+            duplicate_gene_method = if (identical(analysis, "gsea")) duplicate_gene_method else NULL,
+            de_ora_selection = if (identical(analysis, "ora")) de_ora_selection else NULL
           ),
           return_object = TRUE
         )
@@ -841,8 +1028,6 @@ sn_run_enrichment <- function(
 #' @param result An enrichment result object or data frame coercible with
 #'   \code{as.data.frame()}.
 #' @param result_id Stable identifier for the stored enrichment result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param analysis One of \code{"ora"} or \code{"gsea"}.
 #' @param database Database used for enrichment, for example \code{"GOBP"}.
 #' @param species Species label used in the enrichment run.

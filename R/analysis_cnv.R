@@ -67,16 +67,23 @@
 .sn_cnv_malignancy <- function(scores, reference_cells, threshold = 2) {
   reference_scores <- scores[intersect(names(scores), reference_cells)]
   reference_scores <- reference_scores[is.finite(reference_scores)]
-  if (length(reference_scores) == 0L) {
-    stop("No finite CNV scores were available for reference cells.", call. = FALSE)
+  if (length(reference_scores) < 2L) {
+    stop("At least two finite CNV scores are required from reference cells.", call. = FALSE)
   }
   center <- stats::median(reference_scores)
   spread <- stats::mad(reference_scores, center = center)
   if (!is.finite(spread) || spread <= .Machine$double.eps) spread <- stats::sd(reference_scores)
-  if (!is.finite(spread) || spread <= .Machine$double.eps) spread <- stats::sd(scores, na.rm = TRUE)
-  if (!is.finite(spread) || spread <= .Machine$double.eps) spread <- 1
+  if (!is.finite(spread) || spread <= .Machine$double.eps) {
+    stop(
+      "Reference CNV scores must contain enough variation to calibrate malignancy; query cells are never used to estimate the reference scale.",
+      call. = FALSE
+    )
+  }
   malignant_score <- (scores - center) / spread
-  call <- ifelse(is.finite(malignant_score) & malignant_score >= threshold, "malignant", "non_malignant")
+  call <- rep("unknown", length(malignant_score))
+  call[is.finite(malignant_score) & malignant_score < threshold] <- "non_malignant"
+  call[is.finite(malignant_score) & malignant_score >= threshold] <- "malignant"
+  names(call) <- names(malignant_score)
   call[names(scores) %in% reference_cells] <- "reference"
   list(score = malignant_score, call = call, center = center, spread = spread, threshold = threshold)
 }
@@ -84,7 +91,13 @@
 .sn_cnv_subclones <- function(chromosomes,
                               malignant_calls,
                               existing = NULL,
-                              k = 2L) {
+                              k = 2L,
+                              max_dense_gb = 2) {
+  if (!is.numeric(k) || length(k) != 1L || is.na(k) || !is.finite(k) ||
+      k < 1 || k != floor(k)) {
+    stop("`subclones` must be one positive integer.", call. = FALSE)
+  }
+  k <- as.integer(k)
   cells <- names(malignant_calls)
   subclone <- stats::setNames(rep(NA_character_, length(cells)), cells)
   malignant <- cells[malignant_calls == "malignant"]
@@ -101,10 +114,21 @@
       idvar = "cell", timevar = "chromosome", direction = "wide"
     )
     rownames(wide) <- wide$cell
-    matrix <- as.matrix(wide[, setdiff(names(wide), "cell"), drop = FALSE])
+    matrix <- .sn_cnv_as_dense_matrix(
+      wide[, setdiff(names(wide), "cell"), drop = FALSE],
+      max_dense_gb = max_dense_gb,
+      name = "CNV subclone matrix"
+    )
     matrix[!is.finite(matrix)] <- 0
-    groups <- stats::cutree(stats::hclust(stats::dist(matrix)), k = min(as.integer(k), nrow(matrix)))
-    subclone[names(groups)] <- paste0("subclone_", groups)
+    if (nrow(matrix) == 1L) {
+      subclone[rownames(matrix)] <- "subclone_1"
+    } else if (nrow(matrix) >= 2L) {
+      groups <- stats::cutree(
+        stats::hclust(stats::dist(matrix)),
+        k = min(k, nrow(matrix))
+      )
+      subclone[names(groups)] <- paste0("subclone_", groups)
+    }
   }
   subclone[malignant_calls == "reference"] <- "reference"
   subclone
@@ -122,15 +146,15 @@
   means <- Matrix::rowMeans(matrix)
   variances <- Matrix::rowMeans(matrix ^ 2) - means ^ 2
   features <- names(utils::head(sort(variances, decreasing = TRUE), as.integer(n_features)))
-  values <- as.matrix(matrix[features, , drop = FALSE])
-  associations <- lapply(seq_len(nrow(values)), function(index) {
-    estimate <- suppressWarnings(stats::cor(values[index, ], scores[cells], method = "spearman", use = "complete.obs"))
-    p_value <- if (sum(is.finite(values[index, ]) & is.finite(scores[cells])) >= 4L) {
-      suppressWarnings(stats::cor.test(values[index, ], scores[cells], method = "spearman", exact = FALSE)$p.value)
+  associations <- lapply(features, function(feature) {
+    values <- as.numeric(matrix[feature, cells, drop = TRUE])
+    estimate <- suppressWarnings(stats::cor(values, scores[cells], method = "spearman", use = "complete.obs"))
+    p_value <- if (sum(is.finite(values) & is.finite(scores[cells])) >= 4L) {
+      suppressWarnings(stats::cor.test(values, scores[cells], method = "spearman", exact = FALSE)$p.value)
     } else {
       NA_real_
     }
-    tibble::tibble(feature = rownames(values)[[index]], correlation = estimate, p_value = p_value)
+    tibble::tibble(feature = feature, correlation = estimate, p_value = p_value)
   })
   table <- dplyr::bind_rows(associations)
   table$adjusted_p_value <- stats::p.adjust(table$p_value, method = "BH")
@@ -151,11 +175,41 @@
       result_id = result_id, assay = assay, layer = layer, sample_by = sample_by
     ))
   }
+  if (!is_null(sample_by)) {
+    sample_values <- as.character(object[[sample_by, drop = TRUE]])
+    sample_values <- unique(sample_values[!is.na(sample_values) & nzchar(sample_values)])
+    if (length(sample_values) > 1L) {
+      stop(
+        "The direct inferCNVpy adapter analyzes one biological sample at a time; subset by `sample_by` or supply an explicit sample-aware runner.",
+        call. = FALSE
+      )
+    }
+  }
   object$.sn_cnv_reference <- ifelse(colnames(object) %in% reference_cells, "reference", "query")
   prefix <- backend_control$metadata_prefix %||% "infercnvpy_"
   controls <- backend_control
   controls$runner <- NULL
   controls$metadata_prefix <- NULL
+  requested_keep <- controls$keep_run_dir
+  if (!is_null(requested_keep) &&
+      (!is.logical(requested_keep) || length(requested_keep) != 1L || is.na(requested_keep))) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  output_supplied <- !is_null(controls$output_dir)
+  requested_keep <- requested_keep %||% output_supplied
+  cleanup_dir <- NULL
+  if (!isTRUE(requested_keep)) {
+    cleanup_parent <- if (output_supplied) controls$output_dir else tempdir()
+    controls$output_dir <- .sn_create_owned_run_dir(
+      parent = cleanup_parent,
+      prefix = "shennong-unified-infercnvpy-"
+    )
+    cleanup_dir <- controls$output_dir
+    # The unified adapter must read chromosome artifacts after metadata import.
+    # Retain the run only until those artifacts have been standardized below.
+    controls$keep_run_dir <- TRUE
+    on.exit(.sn_cleanup_owned_run_dir(cleanup_dir), add = TRUE)
+  }
   controls <- utils::modifyList(list(
     object = object,
     assay = assay,
@@ -191,6 +245,12 @@
   if (umap_name %in% names(updated@reductions)) {
     embedding <- SeuratObject::Embeddings(updated[[umap_name]])
   }
+  if (!isTRUE(requested_keep)) {
+    manifest <- .sn_sanitize_python_backend_manifest(manifest, retain_paths = FALSE)
+    manifest$run_dir <- NULL
+    manifest$run_dir_retained <- FALSE
+    updated@misc$infercnvpy[[result_id]] <- manifest
+  }
   list(
     object = updated, scores = scores, chromosomes = chromosomes,
     subclone = existing, prediction = NULL, embedding = embedding,
@@ -207,11 +267,24 @@
   if (length(cell_columns) == 0L) return(tibble::tibble())
   rows <- lapply(unique(as.character(cna[[chromosome_column]])), function(chromosome) {
     keep <- as.character(cna[[chromosome_column]]) == chromosome
-    values <- as.matrix(cna[keep, cell_columns, drop = FALSE])
-    storage.mode(values) <- "numeric"
-    tibble::tibble(cell = cell_columns, chromosome = chromosome, cnv = Matrix::colMeans(values))
+    chromosome_means <- vapply(cell_columns, function(cell) {
+      values <- suppressWarnings(as.numeric(cna[[cell]][keep]))
+      if (any(is.finite(values))) mean(values[is.finite(values)]) else NA_real_
+    }, numeric(1))
+    tibble::tibble(cell = cell_columns, chromosome = chromosome, cnv = chromosome_means)
   })
   dplyr::bind_rows(rows)
+}
+
+.sn_cnv_as_dense_matrix <- function(x, max_dense_gb = 2, name = "CopyKAT input") {
+  if (!is.numeric(max_dense_gb) || length(max_dense_gb) != 1L ||
+      is.na(max_dense_gb) || !is.finite(max_dense_gb) || max_dense_gb <= 0) {
+    stop("`backend_control$max_dense_gb` must be one positive finite number.", call. = FALSE)
+  }
+  .sn_assert_dense_materialization_budget(
+    x, max_dense_gb = max_dense_gb, name = name
+  )
+  as.matrix(x)
 }
 
 .sn_run_cnv_copykat <- function(object,
@@ -228,30 +301,69 @@
       result_id = result_id, assay = assay, layer = layer, sample_by = sample_by
     ))
   }
-  check_installed("copykat", reason = "to run CopyKAT CNV inference.")
   assay <- assay %||% SeuratObject::DefaultAssay(object)
-  counts <- SeuratObject::LayerData(object, assay = assay, layer = layer %||% "counts")
+  layer <- layer %||% "counts"
+  counts <- .sn_validate_pseudobulk_count_layer(
+    SeuratObject::LayerData(object, assay = assay, layer = layer),
+    layer = layer
+  )
   samples <- if (is_null(sample_by)) stats::setNames(rep("all", ncol(object)), colnames(object)) else {
     if (!sample_by %in% colnames(object[[]])) stop("`sample_by` column was not found.", call. = FALSE)
     stats::setNames(as.character(object[[sample_by, drop = TRUE]]), colnames(object))
   }
+  reference_counts <- vapply(unique(samples), function(sample) {
+    sum(names(samples)[samples == sample] %in% reference_cells)
+  }, integer(1))
+  if (any(reference_counts == 0L)) {
+    stop(
+      "CopyKAT requires reference cells within every analyzed sample; missing for: ",
+      paste(names(reference_counts)[reference_counts == 0L], collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  check_installed("copykat", reason = "to run CopyKAT CNV inference.")
   controls <- backend_control
   controls$runner <- NULL
-  output_dir <- controls$output_dir %||% tempfile("shennong-copykat-")
+  max_dense_gb <- controls$max_dense_gb %||% 2
+  controls$max_dense_gb <- NULL
+  output_supplied <- !is_null(controls$output_dir)
+  keep_run_dir <- controls$keep_run_dir %||% output_supplied
+  if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  controls$keep_run_dir <- NULL
+  output_dir <- if (!isTRUE(keep_run_dir)) {
+    .sn_create_owned_run_dir(
+      parent = controls$output_dir %||% tempdir(),
+      prefix = "shennong-copykat-"
+    )
+  } else {
+    controls$output_dir %||% tempfile("shennong-copykat-")
+  }
   controls$output_dir <- NULL
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  if (!isTRUE(keep_run_dir)) {
+    on.exit(.sn_cleanup_owned_run_dir(output_dir), add = TRUE)
+  }
   results <- lapply(unique(samples), function(sample) {
     cells <- names(samples)[samples == sample]
     normal <- intersect(cells, reference_cells)
+    sample_counts <- counts[, cells, drop = FALSE]
     defaults <- list(
-      rawmat = as.matrix(counts[, cells, drop = FALSE]), id.type = "S",
+      rawmat = .sn_cnv_as_dense_matrix(
+        sample_counts, max_dense_gb = max_dense_gb,
+        name = paste0("CopyKAT sample '", sample, "'")
+      ), id.type = "S",
       sam.name = gsub("[^[:alnum:]_-]", "_", paste(result_id, sample, sep = "_")),
       norm.cell.names = normal, genome = if (tolower(genome %||% "human") %in% c("mouse", "mm10")) "mm10" else "hg20",
       n.cores = 1, plot.genes = FALSE, output.seg = FALSE
     )
     old <- setwd(output_dir)
-    on.exit(setwd(old), add = TRUE)
-    do.call(copykat::copykat, utils::modifyList(defaults, controls, keep.null = TRUE))
+    tryCatch(
+      do.call(copykat::copykat, utils::modifyList(defaults, controls, keep.null = TRUE)),
+      finally = setwd(old)
+    )
   })
   prediction <- dplyr::bind_rows(lapply(results, function(result) tibble::as_tibble(result$prediction)))
   cna <- lapply(results, function(result) result$CNAmat)
@@ -265,18 +377,29 @@
   list(
     object = object, scores = scores, chromosomes = chromosomes,
     subclone = NULL, prediction = calls, embedding = NULL,
-    artifacts = list(output_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE))
+    artifacts = if (isTRUE(keep_run_dir)) {
+      list(
+        output_dir = normalizePath(output_dir, winslash = "/", mustWork = TRUE),
+        run_dir_retained = TRUE
+      )
+    } else {
+      list(run_dir_retained = FALSE)
+    }
   )
 }
 
 .sn_cnv_sample_summary <- function(primary) {
   dplyr::bind_rows(lapply(split(primary, primary$sample), function(table) {
+    classified <- table$malignant_call %in% c("malignant", "non_malignant")
     tibble::tibble(
       sample = table$sample[[1]], n_cells = nrow(table),
       mean_cnv_score = mean(table$cnv_score, na.rm = TRUE),
       median_malignant_score = stats::median(table$malignant_score, na.rm = TRUE),
       malignant_fraction = mean(table$malignant_call == "malignant", na.rm = TRUE),
-      reference_fraction = mean(table$malignant_call == "reference", na.rm = TRUE)
+      classified_malignant_fraction = if (any(classified)) mean(table$malignant_call[classified] == "malignant") else NA_real_,
+      reference_fraction = mean(table$malignant_call == "reference", na.rm = TRUE),
+      unknown_fraction = mean(table$malignant_call == "unknown", na.rm = TRUE),
+      classified_cells = sum(classified)
     )
   }))
 }
@@ -293,17 +416,22 @@
 #' @param genome Species/genome label. Human and mouse are supported by the
 #'   bundled inferCNVpy positions and CopyKAT adapter.
 #' @param result_id Stored result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param reference_by,reference_cat Alternative metadata-based reference definition.
 #' @param sample_by Optional sample/patient metadata column.
-#' @param assay,layer Expression assay and layer. CopyKAT should use counts;
-#'   inferCNVpy should use normalized data.
+#' @param assay Expression assay used by the CNV backend.
+#' @param layer Backend input layer. CopyKAT requires a raw or corrected count
+#'   layer. inferCNVpy requires a normalized, log-transformed Seurat
+#'   \code{"data"}/\code{"data.*"} layer and fails when one is unavailable.
+#' @param association_layer Normalized expression layer used only for
+#'   CNV-expression association. When omitted, \code{"data"} is preferred and
+#'   raw counts are never silently reused for this correlation.
 #' @param malignant_threshold Reference-scaled CNV threshold for malignant calls.
 #' @param subclones Maximum number of fallback hierarchical subclones.
 #' @param association_features Number of variable genes tested for CNV-expression association.
 #' @param backend_control Named list forwarded to the selected backend. A
-#'   `runner` function can provide a custom backend adapter.
+#'   `runner` function can provide a custom backend adapter. CopyKAT dense
+#'   materialization is guarded by `max_dense_gb` (default 2 GiB) before each
+#'   sample matrix is converted.
 #' @param return_object Return the modified object or the unified result.
 #'
 #' @return A Seurat object or unified CNV result.
@@ -327,6 +455,7 @@ sn_run_cnv <- function(object,
                        sample_by = NULL,
                        assay = NULL,
                        layer = NULL,
+                       association_layer = NULL,
                        malignant_threshold = 2,
                        subclones = 2L,
                        association_features = 50L,
@@ -335,16 +464,46 @@ sn_run_cnv <- function(object,
   result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
+  if (!is.numeric(malignant_threshold) || length(malignant_threshold) != 1L ||
+      is.na(malignant_threshold) || !is.finite(malignant_threshold) ||
+      malignant_threshold < 0) {
+    stop("`malignant_threshold` must be one finite non-negative number.", call. = FALSE)
+  }
+  if (!is.numeric(association_features) || length(association_features) != 1L ||
+      is.na(association_features) || !is.finite(association_features) ||
+      association_features < 1L || association_features != floor(association_features)) {
+    stop("`association_features` must be one positive integer.", call. = FALSE)
+  }
   if (!is_null(sample_by) && !sample_by %in% colnames(object[[]])) {
     stop("`sample_by` column '", sample_by, "' was not found.", call. = FALSE)
+  }
+  if (!is_null(sample_by)) {
+    sample_values <- as.character(object[[sample_by, drop = TRUE]])
+    if (anyNA(sample_values) || any(!nzchar(sample_values))) {
+      stop("`sample_by` cannot contain missing or empty sample labels.", call. = FALSE)
+    }
   }
   reference_cells <- .sn_cnv_reference_cells(object, reference_cells, reference_by, reference_cat)
   genome <- genome %||% tryCatch(sn_get_species(object), error = function(e) "human")
   resolved_assay <- assay %||% SeuratObject::DefaultAssay(object)
-  association_layer <- layer %||% if (identical(method, "copykat")) {
+  backend_layer <- layer %||% if (identical(method, "copykat")) {
     "counts"
   } else {
     .sn_select_infercnvpy_layer(object, resolved_assay)
+  }
+  available_layers <- SeuratObject::Layers(object[[resolved_assay]])
+  association_layer <- association_layer %||% if ("data" %in% available_layers) {
+    "data"
+  } else if (!grepl("count|raw|umi", backend_layer, ignore.case = TRUE)) {
+    backend_layer
+  } else {
+    stop(
+      "CNV-expression association requires a normalized `association_layer`; run normalization or supply one explicitly.",
+      call. = FALSE
+    )
+  }
+  if (!association_layer %in% available_layers) {
+    stop("Association layer '", association_layer, "' was not found in assay '", resolved_assay, "'.", call. = FALSE)
   }
   backend <- switch(
     method,
@@ -352,7 +511,7 @@ sn_run_cnv <- function(object,
     copykat = .sn_run_cnv_copykat
   )(
     object = object, reference_cells = reference_cells, genome = genome,
-    result_id = result_id, assay = assay, layer = layer,
+    result_id = result_id, assay = assay, layer = backend_layer,
     sample_by = sample_by, backend_control = backend_control
   )
   object <- backend$object %||% object
@@ -362,13 +521,15 @@ sn_run_cnv <- function(object,
   malignancy <- .sn_cnv_malignancy(scores, reference_cells, threshold = malignant_threshold)
   if (!is_null(backend$prediction)) {
     predictions <- tolower(as.character(backend$prediction[colnames(object)]))
-    malignancy$call[predictions == "aneuploid"] <- "malignant"
-    malignancy$call[predictions == "diploid"] <- "non_malignant"
+    finite_evidence <- is.finite(malignancy$score[colnames(object)])
+    malignancy$call[which(finite_evidence & predictions == "aneuploid")] <- "malignant"
+    malignancy$call[which(finite_evidence & predictions == "diploid")] <- "non_malignant"
     malignancy$call[colnames(object) %in% reference_cells] <- "reference"
   }
   subclone <- .sn_cnv_subclones(
     backend$chromosomes %||% tibble::tibble(), malignancy$call,
-    existing = backend$subclone, k = subclones
+    existing = backend$subclone, k = subclones,
+    max_dense_gb = backend_control$max_dense_gb %||% 2
   )
   metadata <- object[[]]
   sample <- if (is_null(sample_by)) rep("all", ncol(object)) else as.character(metadata[[sample_by]])
@@ -399,10 +560,14 @@ sn_run_cnv <- function(object,
     schema_version = .sn_analysis_result_schema_version(), analysis_type = "cnv", result_id = result_id,
     method = method, backend = method,
     input = list(
-      assay = resolved_assay, layer = association_layer,
+      assay = resolved_assay, layer = backend_layer,
+      association_layer = association_layer,
       genome = genome, reference_cells = reference_cells, sample_by = sample_by
     ),
-    parameters = list(malignant_threshold = malignant_threshold, subclones = subclones),
+    parameters = list(
+      malignant_threshold = malignant_threshold, subclones = subclones,
+      max_dense_gb = backend_control$max_dense_gb %||% 2
+    ),
     tables = list(
       primary = primary,
       chromosome = backend$chromosomes %||% tibble::tibble(),
@@ -415,6 +580,7 @@ sn_run_cnv <- function(object,
       reference_cells = length(reference_cells), finite_scores = sum(is.finite(primary$cnv_score)),
       reference_center = malignancy$center, reference_spread = malignancy$spread,
       malignant_cells = sum(primary$malignant_call == "malignant", na.rm = TRUE),
+      unknown_cells = sum(primary$malignant_call == "unknown", na.rm = TRUE),
       samples = length(unique(primary$sample))
     ),
     warnings = character(), provenance = .sn_analysis_provenance()
@@ -457,6 +623,8 @@ sn_run_infercnvpy <- function(object,
                               metadata_prefix = "infercnvpy_",
                               artifact_id = "infercnvpy",
                               return_object = TRUE,
+                              keep_run_dir = NULL,
+                              max_artifact_import_gb = 0.5,
                               ...) {
   gtf_gene_id <- match.arg(gtf_gene_id)
 
@@ -492,6 +660,8 @@ sn_run_infercnvpy <- function(object,
     metadata_prefix = metadata_prefix,
     result_name = artifact_id,
     return_object = return_object,
+    keep_run_dir = keep_run_dir,
+    max_artifact_import_gb = max_artifact_import_gb,
     ...
   )
 }

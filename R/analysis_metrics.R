@@ -990,10 +990,8 @@ sn_sweep_cluster_resolution <- function(
 #'   \code{miloR::testNhoods()}.
 #' @param norm_method Normalization method passed to
 #'   \code{miloR::testNhoods()}.
-#' @param result_id Stable identifier for the stored Milo result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
-#'   When supplied, the milo result is stored on the Seurat object.
+#' @param result_id Optional stable identifier. When supplied, the Milo result
+#'   is stored on the Seurat object.
 #' @param return_object Logical; when \code{TRUE} and \code{result_id} is
 #'   supplied, return the updated Seurat object.
 #' @param return_intermediate Logical; if \code{TRUE}, return a list with the
@@ -1225,8 +1223,6 @@ sn_run_milo <- function(x,
 #' @param object A \code{Seurat} object.
 #' @param result A neighborhood-level differential-abundance table.
 #' @param result_id Stable identifier for the stored Milo result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param sample_by Sample column used for the design.
 #' @param group_by Group column used for the design.
 #' @param comparison Human-readable comparison label.
@@ -1581,8 +1577,6 @@ sn_get_milo_result <- function(object,
 #'   available and otherwise treats the object as one sample.
 #' @param result_id Name used when storing the assessment under
 #'   \code{object@misc$qc_assessments}.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object Logical; when \code{TRUE}, store the assessment in the
 #'   Seurat object and return the updated object.
 #' @param verbose Logical; when \code{TRUE}, print a concise QC summary.
@@ -1795,16 +1789,17 @@ sn_assess_qc <- function(object,
     return(cells)
   }
 
-  set.seed(seed)
-  if (!is.null(stratify_by) && stratify_by %in% colnames(metadata)) {
-    strata <- as.character(metadata[[stratify_by]])
-    strata[is.na(strata)] <- "__NA__"
-    strata_count <- table(strata)
-    weights <- 1 / as.numeric(strata_count[strata])
-    return(sort(sample(cells, size = max_cells, replace = FALSE, prob = weights)))
-  }
+  .sn_with_seed(seed, {
+    if (!is.null(stratify_by) && stratify_by %in% colnames(metadata)) {
+      strata <- as.character(metadata[[stratify_by]])
+      strata[is.na(strata)] <- "__NA__"
+      strata_count <- table(strata)
+      weights <- 1 / as.numeric(strata_count[strata])
+      return(sort(sample(cells, size = max_cells, replace = FALSE, prob = weights)))
+    }
 
-  sort(sample(cells, size = max_cells, replace = FALSE))
+    sort(sample(cells, size = max_cells, replace = FALSE))
+  })
 }
 
 .sn_compute_silhouette_table <- function(embeddings, labels, cell_ids, label_name) {

@@ -97,7 +97,10 @@ marker_tbl <- sn_get_de_result(
 
 head(marker_tbl)
 sn_list_results(pbmc, type = "de")
-sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
+marker_result <- sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
+marker_result$input[c(
+  "assay", "layer", "tested_features_count", "tested_features_source"
+)]
 ```
 
 ## Prioritize interpretable marker classes
@@ -238,6 +241,24 @@ provenance. LLM helpers can explain this evidence but
 cannot replace the stored computational label. Review uncertain assignments
 before using them as biological truth.
 
+`confidence_threshold` is an optional backend-specific cutoff, not a universal
+probability threshold: calibrate it for the chosen method/reference before
+setting it. Missing, non-finite, non-positive, or explicitly unassigned scores
+remain low confidence and are not imputed to zero. The stored parameters mark
+the confidence scale as `backend_specific`.
+
+```{r annotation-confidence-contract, eval = FALSE}
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "singleR",
+  reference = reference,
+  reference_label_by = "cell_type",
+  confidence_threshold = validated_singleR_cutoff,
+  result_id = "pbmc_annotated"
+)
+```
+
 ```{r annotation-review-plots, eval = nzchar(Sys.which("celltypist"))}
 sn_review_annotation(pbmc, "pbmc_annotated")
 
@@ -246,13 +267,12 @@ sn_plot_annotation_confidence(
   result_id = "pbmc_annotated",
   level = "cluster"
 )
+```
 
 If trusted cell-level labels are present, a confusion heatmap makes
 disagreements visible. This fixture has no author-curated cell-type truth
-column, so the real-data example below compares predicted labels with labels
-mapped independently from a disjoint reference subset. That plot measures
-reference-mapping consistency; it is not an accuracy estimate or biological
-ground truth.
+column, so no confusion matrix is presented as an accuracy estimate or
+biological ground truth.
 
 Ontology mapping can also be inspected directly. The `all` profile reports the
 versioned mappings for the stored labels without changing the annotation.
@@ -284,8 +304,12 @@ type is absent.
 
 Backend-specific functions stay internal rather than creating parallel result
 types. Select the backend with `sn_run_annotation(method = ...)` and retrieve
-every result with the same `sn_get_result(object, "annotation", name)`
+every result with the same `sn_get_result(object, "annotation", result_id)`
 contract.
+
+PopV exports only the required reference label and requested batch columns.
+Its default raw-count run is package-owned and removed after import; an explicit
+empty `backend_control$popv$output_dir` opts into retained backend artifacts.
 
 The underlying methods should be cited in publications: SingleR (Aran et al.,
 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping (Hao et al.,
@@ -597,20 +621,23 @@ sn_get_result(
 `sn_run_enrichment()` can accept a gene vector, a ranked vector, a data frame, or a
 Seurat object with stored DE results. For cluster markers, the Seurat-object
 path is the most reproducible because the enrichment knows which DE result it
-came from. Grouped ORA must name the grouping column explicitly, and the tested
-or detectable feature universe should be supplied instead of silently treating
-every database-annotated gene as observable. The upstream `pvalueCutoff`,
-multiple-testing adjustment, and q-value rules are retained.
+came from. When the stored DE table contains multiple clusters/comparisons,
+Shennong preserves those groups automatically rather than pooling their genes.
+`sn_find_de()` records the full `input$tested_features` hypothesis space, even
+when filtering leaves only a smaller result table. If `universe` is omitted,
+stored-DE ORA reuses that exact tested set. Only legacy DE results without the
+field fall back to the source assay feature space; that fallback is labeled
+explicitly, and an unavailable assay causes a fail-closed request for an
+explicit universe. The upstream `pvalueCutoff`, multiple-testing adjustment,
+and q-value rules are retained.
 
 ```{r enrich-markers}
 pbmc <- sn_run_enrichment(
   x = pbmc,
   source_de_result_id = "cluster_markers",
-  gene_clusters = gene ~ cluster,
   analysis = "ora",
   species = "human",
   database = "GOBP",
-  universe = rownames(pbmc),
   result_id = "cluster_gobp",
   return_object = TRUE
 )
@@ -630,9 +657,16 @@ stored_pathways <- sn_get_enrichment_result(
 )
 stored_pathways$parameters[c(
   "backend_versions", "pvalue_cutoff", "p_adjust_method",
-  "qvalue_cutoff", "universe", "min_gs_size", "max_gs_size"
+  "qvalue_cutoff", "universe_source", "universe_size",
+  "min_gs_size", "max_gs_size"
 )]
+stored_pathways$parameters$de_ora_selection
 ```
+
+Pass `gene_clusters = gene ~ cluster` and `universe = ...` when overriding
+those stored-DE defaults deliberately. Standalone gene vectors and data frames
+cannot reconstruct an assay background, so their confirmatory ORA should
+supply the tested/detectable universe explicitly.
 
 If you already have a real enrichment table from another stage or tool, store
 it with `sn_store_enrichment()` so the interpretation layer can find it. Here

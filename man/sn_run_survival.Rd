@@ -34,8 +34,7 @@ sn_run_survival(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the returned survival result.}
 
 \item{group_method}{Feature grouping used for Kaplan-Meier analysis.}
 

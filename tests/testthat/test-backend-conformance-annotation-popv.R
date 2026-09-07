@@ -36,13 +36,16 @@
     object = query,
     input_dir = file.path(input_dir, "query"),
     assay = "RNA",
-    layer = "counts"
+    layer = "counts",
+    require_raw_counts = TRUE
   )
   reference_info <- Shennong:::.sn_write_python_object_input(
     object = reference,
     input_dir = file.path(input_dir, "reference"),
     assay = "RNA",
-    layer = "counts"
+    layer = "counts",
+    metadata_columns = "cell_type",
+    require_raw_counts = TRUE
   )
   list(input_dir = input_dir, query = query_info, reference = reference_info)
 }

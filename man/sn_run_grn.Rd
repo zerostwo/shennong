@@ -29,7 +29,8 @@ runtimes remain visible.}
 
 \item{group_by}{Optional metadata column used to quantify regulon specificity.}
 
-\item{backend_control}{Backend controls or an external \code{runner}/\code{result}.}
+\item{backend_control}{Backend controls or an external \code{runner}/\code{result}.
+Signed edges require \code{activity_method = "weighted_mean"}.}
 
 \item{return_object}{Return the modified object or unified result.}
 
@@ -37,7 +38,7 @@ runtimes remain visible.}
 }
 \value{
 A Seurat object or unified GRN result with edge, regulon, activity,
-and specificity tables.
+specificity tables, and a regulon-to-metadata-column mapping.
 }
 \description{
 Infer and summarize a gene regulatory network

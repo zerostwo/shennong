@@ -21,7 +21,8 @@ sn_find_doublets(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{method}{Doublet-detection backend (see description).}
+\item{method}{Doublet-detection backend. One of \code{"scdblfinder"} (default)
+or \code{"scrublet"}.}
 
 \item{clusters}{Optional cluster assignments. A metadata column name or one
 value per cell. Explicit assignments take precedence over
@@ -59,7 +60,12 @@ threshold are skipped and retain \code{NA} in the output columns.}
 scrublet: \code{seed}, \code{n_prin_comps}, \code{expected_doublet_rate},
 \code{synthetic_doublet_umi_subsampling}, \code{min_counts}, \code{min_cells},
 \code{min_gene_variability_pctl}, \code{threshold_min}, \code{threshold_max},
-\code{output_dir}, and \code{quiet}. Ignored by scDblFinder.}
+\code{output_dir}, \code{runtime_dir}, \code{keep_run_dir}, and \code{quiet}. Default Scrublet
+runs use a unique package-owned temporary directory and remove it after
+import. An explicit \code{output_dir} is retained only when
+\code{keep_run_dir = TRUE} (the default for an explicit path); with
+\code{keep_run_dir = FALSE}, it is a parent for an isolated child and is never
+recursively deleted. Ignored by scDblFinder.}
 }
 \value{
 The input Seurat object with two new columns in \code{meta.data}:

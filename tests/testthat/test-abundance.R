@@ -61,6 +61,8 @@ test_that("Propeller abundance uses biological samples and stores a unified resu
 
 test_that("sample-label permutation retains its null and uncertainty", {
   object <- make_abundance_test_object()
+  set.seed(812L)
+  random_seed_before <- .Random.seed
   result <- sn_test_abundance(
     object,
     method = "permutation",
@@ -77,6 +79,158 @@ test_that("sample-label permutation retains its null and uncertainty", {
   expect_true(all(result$tables$primary$p_value > 0 & result$tables$primary$p_value <= 1))
   expect_true(all(c("null_sd", "adjusted_p_value") %in% names(result$tables$primary)))
   expect_equal(result$provenance$random_seed, 9L)
+  expect_identical(.Random.seed, random_seed_before)
+})
+
+test_that("zero-variance permutation nulls return undefined statistics safely", {
+  object <- make_abundance_test_object()
+  object$cell_type <- "constant"
+  result <- sn_test_abundance(
+    object,
+    method = "permutation",
+    sample_by = "sample",
+    condition_by = "condition",
+    cell_type_by = "cell_type",
+    contrast = c("treated", "control"),
+    permutations = 99L,
+    seed = 9L,
+    return_object = FALSE
+  )
+  expect_equal(unname(result$tables$primary$null_sd), 0)
+  expect_true(is.na(result$tables$primary$statistic))
+  expect_identical(result$tables$primary$p_value, 1)
+})
+
+test_that("Milo designs accept only simple additive sample covariates", {
+  object <- make_abundance_test_object()
+  captured <- NULL
+  result <- with_mocked_bindings(
+    sn_test_abundance(
+      object,
+      method = "milo",
+      sample_by = "sample",
+      condition_by = "condition",
+      cell_type_by = "cell_type",
+      design = ~sample + condition + batch,
+      contrast = c("treated", "control"),
+      backend_control = list(milo = list(covariates = c("sample", "batch", "batch"))),
+      return_object = FALSE
+    ),
+    sn_run_milo = function(...) {
+      captured <<- list(...)
+      data.frame(
+        logFC = 0,
+        PValue = 1,
+        SpatialFDR = 1,
+        row.names = "Nhood1"
+      )
+    },
+    .package = "Shennong"
+  )
+  expect_identical(captured$covariates, "batch")
+  expect_identical(result$method, "milo")
+
+  expect_error(
+    sn_test_abundance(
+      object,
+      method = "milo",
+      sample_by = "sample",
+      condition_by = "condition",
+      cell_type_by = "cell_type",
+      design = ~batch * condition,
+      contrast = c("treated", "control"),
+      return_object = FALSE
+    ),
+    "only supports direct sample-level columns"
+  )
+  expect_error(
+    sn_test_abundance(
+      object,
+      method = "milo",
+      sample_by = "sample",
+      condition_by = "condition",
+      cell_type_by = "cell_type",
+      design = ~I(as.numeric(batch)),
+      contrast = c("treated", "control"),
+      return_object = FALSE
+    ),
+    "only supports direct sample-level columns"
+  )
+})
+
+test_that("abundance designs retain validated sample-level covariates", {
+  object <- make_abundance_test_object()
+  inputs <- Shennong:::.sn_abundance_inputs(
+    object,
+    sample_by = "sample",
+    condition_by = "condition",
+    cell_type_by = "cell_type",
+    contrast = c("treated", "control"),
+    extra_columns = "batch"
+  )
+  design <- Shennong:::.sn_propeller_design(
+    inputs,
+    sample_by = "sample",
+    condition_by = "condition",
+    design = ~0 + condition + batch,
+    contrast = c("treated", "control"),
+    sample_order = unique(as.character(inputs$sample_info$sample))
+  )
+
+  expect_true("batch" %in% colnames(inputs$sample_info))
+  expect_equal(nrow(inputs$sample_info), length(unique(object$sample)))
+  expect_true(any(grepl("batch", colnames(design$matrix), fixed = TRUE)))
+
+  object$bad_batch <- object$batch
+  object$bad_batch[[1]] <- "different"
+  expect_error(
+    Shennong:::.sn_abundance_inputs(
+      object,
+      sample_by = "sample",
+      condition_by = "condition",
+      cell_type_by = "cell_type",
+      contrast = c("treated", "control"),
+      extra_columns = "bad_batch"
+    ),
+    "not constant within samples"
+  )
+})
+
+test_that("abundance backends do not silently ignore formula covariates", {
+  object <- make_abundance_test_object()
+  received_metadata <- NULL
+  runner <- function(sample_counts, sample_metadata, ...) {
+    received_metadata <<- sample_metadata
+    data.frame(feature = "T", estimate = 0, p_value = 1)
+  }
+  result <- sn_test_abundance(
+    object,
+    method = "sccoda",
+    sample_by = "sample",
+    condition_by = "condition",
+    cell_type_by = "cell_type",
+    contrast = c("treated", "control"),
+    design = ~0 + condition + batch,
+    backend_control = list(runner = runner),
+    return_object = FALSE
+  )
+
+  expect_true("batch" %in% colnames(received_metadata))
+  expect_identical(result$parameters$design, ~0 + condition + batch)
+  expect_error(
+    sn_test_abundance(
+      object,
+      method = "permutation",
+      sample_by = "sample",
+      condition_by = "condition",
+      cell_type_by = "cell_type",
+      contrast = c("treated", "control"),
+      design = ~0 + condition + batch,
+      permutations = 99L,
+      return_object = FALSE
+    ),
+    "does not support covariate adjustment"
+  )
 })
 
 test_that("abundance inputs reject cell-level pseudoreplication hazards", {

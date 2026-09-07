@@ -429,9 +429,10 @@ sn_install_shennong <- function(
     package = c(
       "anndataR", "BayesPrism", "BPCells", "COSG", "CellChat", "GapClust",
       "ROGUE", "SignatuR", "catplot", "copykat", "harmony", "liana", "lisi",
-      "nichenetr", "multinichenetr", "scMetabolism"
+      "monocle3", "nichenetr", "multinichenetr", "RareQ", "Scissor",
+      "scMetabolism", "ShennongOpt"
     ),
-    source = rep("GitHub", 16),
+    source = rep("GitHub", 20),
     remote = c(
       "scverse/anndataR",
       "Danko-Lab/BayesPrism/BayesPrism",
@@ -446,9 +447,13 @@ sn_install_shennong <- function(
       "immunogenomics/harmony@harmony2",
       "saezlab/liana",
       "immunogenomics/lisi",
+      "cole-trapnell-lab/monocle3",
       "saeyslab/nichenetr",
       "saeyslab/multinichenetr",
-      "wu-yc/scMetabolism"
+      "xiaolab-xjtu/RareQ",
+      "sunduanchen/Scissor",
+      "wu-yc/scMetabolism",
+      "zerostwo/shennong-opt"
     ),
     stringsAsFactors = FALSE
   )

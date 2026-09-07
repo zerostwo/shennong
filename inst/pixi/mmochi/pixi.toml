@@ -1,27 +1,27 @@
 [workspace]
 name = "shennong-mmochi"
 channels = ["conda-forge"]
-platforms = ["{{ platform }}"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
-python = ">=3.10,<3.13"
-anndata = ">=0.10"
-scanpy = ">=1.10"
-pandas = ">=2"
-numpy = ">=1.23"
-scipy = ">=1.10"
-scikit-learn = ">=1.1"
-scikit-fda = ">=0.5"
-imbalanced-learn = ">=0.11"
-seaborn = ">=0.11"
-matplotlib = ">=3.6"
-tqdm = ">=4.64"
-treelib = ">=1.6"
-pydot = ">=1.4"
-ipython = ">=8.4"
-ipywidgets = ">=7.7"
-leidenalg = ">=0.8"
-pip = "*"
+python = "==3.12.14"
+anndata = "==0.13.3.post0"
+scanpy = "==1.12.4"
+pandas = "==3.0.5"
+numpy = "==2.5.3"
+scipy = "==1.18.0"
+scikit-learn = "==1.9.0"
+scikit-fda = "==0.10.1"
+imbalanced-learn = "==0.14.2"
+seaborn = "==0.13.2"
+matplotlib = "==3.11.1"
+tqdm = "==4.70.0"
+treelib = "==1.7.1"
+pydot = "==4.0.1"
+ipython = "==9.17.1"
+ipywidgets = "==8.1.9"
+leidenalg = "==0.12.0"
+pip = "==25.3"
 
 [pypi-dependencies]
-mmochi = { git = "https://github.com/donnafarberlab/MMoCHi.git" }
+mmochi = { git = "https://github.com/donnafarberlab/MMoCHi.git", rev = "b0f33874a45989d3d7305e80e6809f14509df1ef" }

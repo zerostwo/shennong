@@ -11,7 +11,8 @@ sn_run_spatial_neighborhood(
   spatial_cols = NULL,
   result_id = "spatial_neighborhood",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  sample_by = NULL
 )
 }
 \arguments{
@@ -23,12 +24,14 @@ sn_run_spatial_neighborhood(
 
 \item{spatial_cols}{Coordinate metadata columns.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Graph/permutation controls or \code{runner}/\code{result}.}
 
 \item{return_object}{Return the modified object or result.}
+
+\item{sample_by}{Optional metadata column defining independent samples or
+tissue sections. Neighbors and label permutations never cross boundaries.}
 }
 \value{
 A Seurat object or spatial-neighborhood result.

@@ -42,8 +42,7 @@ state summary.}
 
 \item{assay, layer}{Single-cell expression source.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name under \code{scissor}.}
 
 \item{seed}{Random seed recorded in provenance.}
 

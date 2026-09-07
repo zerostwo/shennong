@@ -29,6 +29,70 @@
   pseudobulk_methods[[method_key]]
 }
 
+.sn_resolve_de_feature_universe <- function(object,
+                                            assay,
+                                            layer,
+                                            features = NULL,
+                                            method = NULL,
+                                            verbose = TRUE) {
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = layer)
+  matched_layers <- .sn_match_seurat_layers(
+    object = object,
+    assay = assay,
+    layer = layer
+  )
+  available <- unique(unlist(lapply(matched_layers, function(current_layer) {
+    rownames(SeuratObject::LayerData(
+      object = object,
+      assay = assay,
+      layer = current_layer
+    ))
+  }), use.names = FALSE))
+  if (length(available) == 0L || anyNA(available) || any(!nzchar(available))) {
+    stop(
+      "The selected assay layer does not expose a valid feature universe for differential expression.",
+      call. = FALSE
+    )
+  }
+
+  requested <- NULL
+  if (!is_null(features)) {
+    if (!is.character(features)) {
+      stop("`features` must be NULL or a character vector of feature names.", call. = FALSE)
+    }
+    supplied <- unique(features[!is.na(features) & nzchar(features)])
+    requested <- intersect(supplied, available)
+    missing_features <- setdiff(supplied, requested)
+    if (length(missing_features) > 0L && isTRUE(verbose)) {
+      .sn_log_warn(
+        "`features` contains {length(missing_features)} feature(s) not present in assay '{assay}' layer '{layer}'; ",
+        "ignoring examples: {paste(utils::head(missing_features, 5), collapse = ', ')}."
+      )
+    }
+    if (length(requested) == 0L) {
+      stop(
+        "`features` did not contain any features present in assay '", assay,
+        "' layer '", layer, "'.",
+        call. = FALSE
+      )
+    }
+  }
+
+  cosgr_full_layer_test <- identical(method, "COSGR")
+  tested <- if (is_null(requested) || cosgr_full_layer_test) available else requested
+  list(
+    requested_features = requested,
+    tested_features = tested,
+    tested_features_source = if (cosgr_full_layer_test && !is_null(requested)) {
+      "assay_layer_full_test_then_result_filter"
+    } else if (is_null(requested)) {
+      "assay_layer"
+    } else {
+      "requested_features"
+    }
+  )
+}
+
 .sn_run_seurat_de <- function(object,
                               analysis = c("markers", "contrast"),
                               ident_1 = NULL,
@@ -138,6 +202,87 @@
   )
 }
 
+.sn_validate_pseudobulk_count_layer <- function(counts,
+                                                layer,
+                                                require_integer = TRUE) {
+  if (!.sn_name_declares_count_scale(layer)) {
+    stop(
+      "Pseudobulk differential expression requires a raw or corrected count layer; normalized expression layers are not supported.",
+      call. = FALSE
+    )
+  }
+  counts <- .sn_as_sparse_matrix(counts)
+  stored_values <- if (inherits(counts, "sparseMatrix")) counts@x else as.numeric(counts)
+  if (anyNA(stored_values) || any(!is.finite(stored_values))) {
+    stop("The pseudobulk count layer contains missing or non-finite values.", call. = FALSE)
+  }
+  if (any(stored_values < 0)) {
+    stop("The pseudobulk count layer contains negative values.", call. = FALSE)
+  }
+  if (isTRUE(require_integer) &&
+      any(abs(stored_values - round(stored_values)) > 1e-8)) {
+    stop(
+      "DESeq2 pseudobulk analysis requires integer-valued raw or corrected counts; values will not be rounded silently.",
+      call. = FALSE
+    )
+  }
+  counts
+}
+
+.sn_validate_de_subset_levels <- function(metadata, subset_by, subset_levels) {
+  if (is_null(subset_by)) {
+    if (!is_null(subset_levels)) {
+      stop("`subset_levels` can only be supplied together with `subset_by`.", call. = FALSE)
+    }
+    return(invisible(NULL))
+  }
+  if (!is.character(subset_by) || length(subset_by) != 1L ||
+      is.na(subset_by) || !nzchar(subset_by)) {
+    stop("`subset_by` must be one non-empty metadata column name.", call. = FALSE)
+  }
+  if (!subset_by %in% colnames(metadata)) {
+    stop(glue("Column '{subset_by}' was not found in metadata."), call. = FALSE)
+  }
+  if (is_null(subset_levels)) {
+    return(invisible(NULL))
+  }
+  if (!is.character(subset_levels) || length(subset_levels) == 0L ||
+      anyNA(subset_levels) || any(!nzchar(subset_levels)) ||
+      anyDuplicated(subset_levels)) {
+    stop("`subset_levels` must be a non-empty character vector of distinct, non-missing subset values.", call. = FALSE)
+  }
+  observed <- unique(as.character(metadata[[subset_by]]))
+  missing_levels <- setdiff(subset_levels, observed)
+  if (length(missing_levels) > 0L) {
+    stop(
+      "`subset_levels` value(s) were not observed in `", subset_by, "`: ",
+      paste(missing_levels, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+.sn_pseudobulk_profile_keys <- function(sample, group) {
+  profiles <- data.frame(
+    sample = as.character(sample),
+    group = as.character(group),
+    stringsAsFactors = FALSE
+  )
+  unique_profiles <- profiles[!duplicated(profiles), , drop = FALSE]
+  profile_index <- integer(nrow(profiles))
+  for (index in seq_len(nrow(unique_profiles))) {
+    profile_index[
+      profiles$sample == unique_profiles$sample[[index]] &
+        profiles$group == unique_profiles$group[[index]]
+    ] <- index
+  }
+  if (any(profile_index == 0L)) {
+    stop("Internal error while constructing pseudobulk profile identifiers.", call. = FALSE)
+  }
+  paste0("profile_", profile_index)
+}
+
 .sn_run_pseudobulk_de <- function(object,
                                   ident_1,
                                   ident_2,
@@ -150,29 +295,85 @@
                                   features = NULL,
                                   method = c("DESeq2", "edgeR", "limma"),
                                   min_cells_per_sample = 10,
+                                  design = NULL,
+                                  contrast = NULL,
                                   verbose = TRUE) {
   method <- match.arg(method)
   metadata <- object[[]]
+  if (!is.character(ident_1) || length(ident_1) != 1L ||
+      !is.character(ident_2) || length(ident_2) != 1L ||
+      is.na(ident_1) || is.na(ident_2) || identical(ident_1, ident_2)) {
+    stop("`ident_1` and `ident_2` must be distinct, non-missing group labels.", call. = FALSE)
+  }
+  if (!is.numeric(min_cells_per_sample) || length(min_cells_per_sample) != 1L ||
+      is.na(min_cells_per_sample) || min_cells_per_sample < 1L ||
+      min_cells_per_sample != as.integer(min_cells_per_sample)) {
+    stop("`min_cells_per_sample` must be a positive integer.", call. = FALSE)
+  }
+  min_cells_per_sample <- as.integer(min_cells_per_sample)
+  if (!is_null(design) && !inherits(design, "formula")) {
+    stop("For pseudobulk analyses, `design` must be a formula when supplied.", call. = FALSE)
+  }
+  if (!is_null(design) && .sn_bulk_has_random_effect(design)) {
+    stop("Pseudobulk DESeq2, edgeR, and limma designs cannot contain random effects.", call. = FALSE)
+  }
 
-  if (!group_by %in% colnames(metadata)) {
-    stop(glue("Column '{group_by}' was not found in metadata."))
-  }
-  if (!sample_col %in% colnames(metadata)) {
-    stop(glue("Column '{sample_col}' was not found in metadata."))
-  }
-  if (!is_null(subset_by) && !subset_by %in% colnames(metadata)) {
-    stop(glue("Column '{subset_by}' was not found in metadata."))
+  design_variables <- if (inherits(design, "formula")) all.vars(design) else character()
+  required_columns <- unique(c(group_by, sample_col, subset_by, design_variables))
+  missing_columns <- setdiff(required_columns, colnames(metadata))
+  if (length(missing_columns) > 0L) {
+    stop("Pseudobulk metadata column(s) missing: ", paste(missing_columns, collapse = ", "), ".", call. = FALSE)
   }
 
   counts <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
+  counts <- .sn_validate_pseudobulk_count_layer(
+    counts,
+    layer = layer,
+    require_integer = identical(method, "DESeq2")
+  )
+  metadata <- metadata[colnames(counts), , drop = FALSE]
+  incomplete <- !stats::complete.cases(metadata[, required_columns, drop = FALSE])
+  empty_identifiers <- !nzchar(as.character(metadata[[group_by]])) |
+    !nzchar(as.character(metadata[[sample_col]]))
+  if (any(incomplete | empty_identifiers)) {
+    stop(
+      "Pseudobulk sample, group, subset, and design metadata must be complete and non-empty.",
+      call. = FALSE
+    )
+  }
+
   if (!is_null(features)) {
     features <- intersect(features, rownames(counts))
+    if (length(features) == 0L) {
+      stop("None of the requested pseudobulk features were found in the selected assay layer.", call. = FALSE)
+    }
     counts <- counts[features, , drop = FALSE]
   }
 
-  subset_values <- subset_levels %||% if (is_null(subset_by)) "all" else unique(as.character(metadata[[subset_by]]))
+  contrast <- contrast %||% c(group_by, ident_1, ident_2)
+  if (!is.character(contrast) || length(contrast) != 3L ||
+      !identical(contrast[[1]], group_by) ||
+      !identical(contrast[[2]], ident_1) ||
+      !identical(contrast[[3]], ident_2)) {
+    stop(
+      "For pseudobulk analyses, `contrast` must be c(group_by, ident_1, ident_2).",
+      call. = FALSE
+    )
+  }
+  if (!is_null(design) && !group_by %in% design_variables) {
+    stop("The pseudobulk `design` formula must include the `group_by` variable.", call. = FALSE)
+  }
+
+  subset_values <- subset_levels %||% if (is_null(subset_by)) {
+    "all"
+  } else {
+    observed_subsets <- unique(as.character(metadata[[subset_by]]))
+    observed_subsets[!is.na(observed_subsets) & nzchar(observed_subsets)]
+  }
   results <- vector("list", length(subset_values))
   names(results) <- subset_values
+  contrast_estimands <- vector("list", length(subset_values))
+  names(contrast_estimands) <- subset_values
 
   for (current_subset in subset_values) {
     keep_cells <- if (is_null(subset_by)) {
@@ -180,88 +381,167 @@
     } else {
       as.character(metadata[[subset_by]]) == current_subset
     }
+    keep_cells <- keep_cells & as.character(metadata[[group_by]]) %in% c(ident_1, ident_2)
 
     meta_subset <- metadata[keep_cells, , drop = FALSE]
     counts_subset <- counts[, rownames(meta_subset), drop = FALSE]
-    meta_subset$pb_group <- as.character(meta_subset[[group_by]])
-    meta_subset$pb_sample <- as.character(meta_subset[[sample_col]])
-    meta_subset$pb_key <- paste(meta_subset$pb_sample, meta_subset$pb_group, sep = "___")
+    meta_subset$.pb_group <- as.character(meta_subset[[group_by]])
+    meta_subset$.pb_sample <- as.character(meta_subset[[sample_col]])
+    meta_subset$.pb_key <- .sn_pseudobulk_profile_keys(
+      meta_subset$.pb_sample,
+      meta_subset$.pb_group
+    )
 
-    cell_totals <- table(meta_subset$pb_key)
+    cell_totals <- table(meta_subset$.pb_key)
     keep_keys <- names(cell_totals)[cell_totals >= min_cells_per_sample]
-    if (length(keep_keys) == 0) {
+    keep_key_cells <- meta_subset$.pb_key %in% keep_keys
+    meta_subset <- meta_subset[keep_key_cells, , drop = FALSE]
+    counts_subset <- counts_subset[, rownames(meta_subset), drop = FALSE]
+    if (nrow(meta_subset) == 0L ||
+        !all(c(ident_1, ident_2) %in% unique(meta_subset$.pb_group))) {
       next
     }
 
-    keep_key_cells <- meta_subset$pb_key %in% keep_keys
-    meta_subset <- meta_subset[keep_key_cells, , drop = FALSE]
-    counts_subset <- counts_subset[, rownames(meta_subset), drop = FALSE]
+    profiles <- unique(meta_subset[, c(".pb_sample", ".pb_group"), drop = FALSE])
+    groups_by_sample <- split(profiles$.pb_group, profiles$.pb_sample)
+    groups_by_sample <- lapply(groups_by_sample, unique)
+    repeated_samples <- vapply(groups_by_sample, length, integer(1)) > 1L
+    auto_design <- is_null(design)
+    if (auto_design) {
+      independent <- all(!repeated_samples)
+      paired <- all(vapply(
+        groups_by_sample,
+        function(groups) setequal(groups, c(ident_1, ident_2)),
+        logical(1)
+      ))
+      if (!independent && !paired) {
+        stop(
+          "Pseudobulk samples have a mixture of paired and unpaired group profiles. Supply an explicit full-rank design or use unique biological sample IDs.",
+          call. = FALSE
+        )
+      }
+      if (paired && length(groups_by_sample) < 2L) {
+        next
+      }
+      design_formula <- if (paired) ~.pb_sample + .pb_group else ~.pb_group
+      current_contrast <- c(".pb_group", ident_1, ident_2)
+    } else {
+      if (any(repeated_samples) && !sample_col %in% design_variables) {
+        stop(
+          "The pseudobulk `design` must include `sample_by` when the same biological unit contributes both contrast groups.",
+          call. = FALSE
+        )
+      }
+      design_formula <- design
+      current_contrast <- contrast
+    }
 
-    if (!all(c(ident_1, ident_2) %in% unique(meta_subset$pb_group))) {
-      next
+    profile_columns <- unique(c(sample_col, group_by, design_variables))
+    for (column in profile_columns) {
+      values_per_profile <- split(meta_subset[[column]], meta_subset$.pb_key)
+      nonconstant <- vapply(values_per_profile, function(values) {
+        length(unique(values)) != 1L
+      }, logical(1))
+      if (any(nonconstant)) {
+        stop(
+          "Pseudobulk design variable '", column,
+          "' is not constant within aggregated sample/group profiles.",
+          call. = FALSE
+        )
+      }
     }
 
     aggregated <- .sn_aggregate_columns_by_group(
       x = counts_subset,
-      groups = meta_subset$pb_key
+      groups = meta_subset$.pb_key
     )
+    pb_meta <- meta_subset[!duplicated(meta_subset$.pb_key), , drop = FALSE]
+    pb_meta <- pb_meta[match(colnames(aggregated), pb_meta$.pb_key), , drop = FALSE]
+    rownames(pb_meta) <- pb_meta$.pb_key
 
-    pb_meta <- unique(meta_subset[, c("pb_key", "pb_sample", "pb_group"), drop = FALSE])
-    pb_meta <- pb_meta[match(colnames(aggregated), pb_meta$pb_key), , drop = FALSE]
-
-    replicate_counts <- table(pb_meta$pb_group)
-    if (any(replicate_counts[c(ident_1, ident_2)] < 2)) {
+    replicate_counts <- table(factor(pb_meta$.pb_group, levels = c(ident_1, ident_2)))
+    if (any(replicate_counts < 2L)) {
       if (verbose) {
         .sn_log_warn(
-          "Skipping pseudobulk DE for subset '{current_subset}' because fewer than 2 samples were available in at least one comparison group."
+          "Skipping pseudobulk DE for subset '{current_subset}' because fewer than 2 biological samples were available in at least one comparison group."
         )
       }
       next
     }
 
-    contrast_keep <- pb_meta$pb_group %in% c(ident_1, ident_2)
-    aggregated <- aggregated[, contrast_keep, drop = FALSE]
-    pb_meta <- pb_meta[contrast_keep, , drop = FALSE]
+    formula_variables <- all.vars(design_formula)
+    for (column in formula_variables) {
+      if (is.character(pb_meta[[column]]) || is.logical(pb_meta[[column]])) {
+        pb_meta[[column]] <- factor(pb_meta[[column]])
+      }
+    }
+    contrast_variable <- current_contrast[[1]]
+    pb_meta[[contrast_variable]] <- factor(
+      as.character(pb_meta[[contrast_variable]]),
+      levels = c(current_contrast[[3]], current_contrast[[2]])
+    )
+    .sn_bulk_validate_contrast(pb_meta, current_contrast, design = design_formula)
+    design_info <- .sn_bulk_design(pb_meta, design_formula)
+    if (.sn_bulk_has_random_effect(design_formula)) {
+      stop(
+        "Pseudobulk DE does not support random-effect designs with DESeq2, edgeR, or limma; ",
+        "encode a supported fixed effect or use `sn_find_bulk_de(method = \"dream\")` ",
+        "on an explicit bulk matrix.",
+        call. = FALSE
+      )
+    }
+    contrast_estimand <- .sn_bulk_contrast_estimand(
+      pb_meta,
+      design_formula,
+      current_contrast
+    )
+    contrast_vector <- contrast_estimand$vector
+    contrast_estimands[[as.character(current_subset)]] <- contrast_estimand
 
     if (identical(method, "DESeq2")) {
       check_installed("DESeq2")
-      col_data <- data.frame(
-        row.names = pb_meta$pb_key,
-        sample = pb_meta$pb_sample,
-        group = factor(pb_meta$pb_group, levels = c(ident_2, ident_1))
-      )
       dds <- DESeq2::DESeqDataSetFromMatrix(
-        countData = round(aggregated),
-        colData = col_data,
-        design = ~ group
+        countData = aggregated,
+        colData = pb_meta,
+        design = design_formula
       )
       dds <- DESeq2::DESeq(dds, quiet = !verbose)
-      result <- as.data.frame(DESeq2::results(dds, contrast = c("group", ident_1, ident_2)))
+      coefficient_names <- DESeq2::resultsNames(dds)
+      if (length(contrast_vector) != length(coefficient_names)) {
+        stop(
+          "DESeq2 coefficient count does not match the validated pseudobulk contrast vector.",
+          call. = FALSE
+        )
+      }
+      result <- as.data.frame(DESeq2::results(
+        dds,
+        contrast = unname(contrast_vector)
+      ))
     } else if (identical(method, "edgeR")) {
       check_installed("edgeR")
-      group_factor <- factor(pb_meta$pb_group, levels = c(ident_2, ident_1))
-      dge <- edgeR::DGEList(counts = round(aggregated), group = group_factor)
+      dge <- edgeR::DGEList(counts = aggregated)
       dge <- edgeR::calcNormFactors(dge)
-      design <- stats::model.matrix(~ group_factor)
-      dge <- edgeR::estimateDisp(dge, design = design)
-      fit <- edgeR::glmQLFit(dge, design = design)
-      test <- edgeR::glmQLFTest(fit, coef = 2)
+      dge <- edgeR::estimateDisp(dge, design = design_info$matrix)
+      fit <- edgeR::glmQLFit(dge, design = design_info$matrix)
+      test <- edgeR::glmQLFTest(fit, contrast = contrast_vector)
       result <- edgeR::topTags(test, n = Inf, sort.by = "none")$table
-      result$baseMean <- if (inherits(aggregated, "Matrix")) Matrix::rowMeans(aggregated) else rowMeans(aggregated)
+      result$baseMean <- Matrix::rowMeans(aggregated)
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$PValue
       result$padj <- result$FDR
     } else {
       check_installed(c("limma", "edgeR"))
-      group_factor <- factor(pb_meta$pb_group, levels = c(ident_2, ident_1))
-      dge <- edgeR::DGEList(counts = round(aggregated), group = group_factor)
+      dge <- edgeR::DGEList(counts = aggregated)
       dge <- edgeR::calcNormFactors(dge)
-      design <- stats::model.matrix(~ group_factor)
-      v <- limma::voom(dge, design = design, plot = FALSE)
-      fit <- limma::lmFit(v, design = design)
+      transformed <- limma::voom(dge, design = design_info$matrix, plot = FALSE)
+      fit <- limma::lmFit(transformed, design = design_info$matrix)
+      fit <- limma::contrasts.fit(
+        fit,
+        contrasts = matrix(contrast_vector, ncol = 1L)
+      )
       fit <- limma::eBayes(fit)
-      result <- limma::topTable(fit, coef = 2, number = Inf, sort.by = "none")
-      result$baseMean <- if (inherits(aggregated, "Matrix")) Matrix::rowMeans(aggregated) else rowMeans(aggregated)
+      result <- limma::topTable(fit, coef = 1L, number = Inf, sort.by = "none")
+      result$baseMean <- Matrix::rowMeans(aggregated)
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$P.Value
       result$padj <- result$adj.P.Val
@@ -275,7 +555,15 @@
     results[[current_subset]] <- tibble::as_tibble(result)
   }
 
-  dplyr::bind_rows(results)
+  output <- dplyr::bind_rows(results)
+  if (nrow(output) == 0L) {
+    stop(
+      "No pseudobulk comparison retained at least two biological replicates per contrast group.",
+      call. = FALSE
+    )
+  }
+  attr(output, "shennong_contrast_estimands") <- Filter(Negate(is.null), contrast_estimands)
+  output
 }
 
 #' Run differential expression analysis on a Seurat object
@@ -308,14 +596,21 @@
 #' @param layer Assay layer used for DE analysis. Defaults to \code{"data"} for
 #'   marker and contrast analyses and to \code{"counts"} for pseudobulk
 #'   analyses.
-#' @param features Optional feature subset to test.
+#' @param features Optional feature subset to test. The resolved feature set is
+#'   retained as \code{input$tested_features} in stored single-cell DE results,
+#'   so downstream stored-DE ORA can reuse the actual hypothesis universe.
 #' @param modality Input modality. \code{"auto"} selects single-cell analysis
 #'   for Seurat objects and bulk analysis for matrices, lists, and
 #'   \code{SummarizedExperiment} objects.
 #' @param metadata Optional sample metadata for bulk analysis.
-#' @param design A fixed- or mixed-effects formula for bulk analysis.
-#' @param contrast Character triple giving the bulk contrast as variable,
-#'   numerator, and denominator.
+#' @param design A fixed- or mixed-effects formula for bulk analysis. For
+#'   pseudobulk analysis, an optional fixed-effects formula over cell metadata;
+#'   include \code{sample_by} when the same biological unit contributes both
+#'   contrast groups. When omitted, independent and completely paired designs
+#'   are detected automatically.
+#' @param contrast Character triple giving the contrast as variable, numerator,
+#'   and denominator. For pseudobulk analysis this must agree with
+#'   \code{c(group_by, ident_1, ident_2)}.
 #' @param backend_control Bulk backend controls or a custom bulk
 #'   \code{runner}/precomputed \code{result}.
 #' @param method Statistical method. For \code{"markers"} and
@@ -333,10 +628,8 @@
 #'   metadata.
 #' @param min_cells_per_sample Minimum cells required for a sample/group
 #'   pseudobulk profile to be retained.
-#' @param result_id Stable identifier for the stored DE result.
-#' @param result_id Optional explicit result identifier. When supplied, it is
-#'   used as the stored-result key and canonical result name; \code{result_id}
-#'   remains a backward-compatible alias.
+#' @param result_id Stable identifier used as the stored-result key and canonical
+#'   result name.
 #' @param return_object If \code{TRUE}, return the updated Seurat object with
 #'   stored DE results. Otherwise return the result table.
 #' @param verbose Whether to emit progress information.
@@ -439,6 +732,7 @@ sn_find_de <- function(
 ) {
   result_id <- .sn_validate_result_id(result_id)
   assay_missing <- missing(assay)
+  design_missing <- missing(design)
   modality <- match.arg(modality)
   if (identical(modality, "auto")) {
     modality <- if (inherits(object, "Seurat")) "single_cell" else "bulk"
@@ -477,14 +771,25 @@ sn_find_de <- function(
   analysis <- match.arg(analysis, c("markers", "contrast", "pseudobulk"))
   layer <- layer %||% if (analysis == "pseudobulk") "counts" else "data"
   method <- .sn_normalize_de_method(analysis = analysis, method = method)
+  de_feature_universe <- .sn_resolve_de_feature_universe(
+    object = object,
+    assay = assay,
+    layer = layer,
+    features = features,
+    method = method,
+    verbose = verbose
+  )
+  features <- de_feature_universe$requested_features
 
   if (analysis %in% c("contrast", "pseudobulk") && (is_null(ident_1) || is_null(ident_2))) {
     stop("`ident_1` and `ident_2` are required for contrast and pseudobulk analyses.")
   }
 
-  if (!is_null(subset_by) && !subset_by %in% colnames(object[[]])) {
-    stop(glue("Column '{subset_by}' was not found in metadata."))
-  }
+  .sn_validate_de_subset_levels(
+    metadata = object[[]],
+    subset_by = subset_by,
+    subset_levels = subset_levels
+  )
 
   de_acceleration_patches <- if (
     analysis %in% c("markers", "contrast") && !identical(method, "COSGR")
@@ -495,6 +800,7 @@ sn_find_de <- function(
   }
   .sn_with_acceleration_provenance_context({
   result <- NULL
+  pseudobulk_estimands <- NULL
 
   if (analysis == "pseudobulk") {
     if (is_null(sample_by)) {
@@ -518,8 +824,11 @@ sn_find_de <- function(
       features = features,
       method = method,
       min_cells_per_sample = min_cells_per_sample,
+      design = if (design_missing) NULL else design,
+      contrast = contrast,
       verbose = verbose
     )
+    pseudobulk_estimands <- attr(result, "shennong_contrast_estimands", exact = TRUE)
   } else {
     prepared <- .sn_prepare_seurat_layer_alias(
       object = object,
@@ -621,6 +930,25 @@ sn_find_de <- function(
     ident_2 = ident_2,
     subset_by = subset_by,
     sample_col = sample_by,
+    design = if (analysis == "pseudobulk") {
+      if (design_missing) "automatic independent-or-paired design" else paste(deparse(design), collapse = "")
+    } else {
+      NULL
+    },
+    contrast = if (analysis == "pseudobulk") contrast %||% c(group_by, ident_1, ident_2) else NULL,
+    parameters = if (analysis == "pseudobulk") {
+      list(contrast_estimands = pseudobulk_estimands %||% list())
+    } else {
+      list()
+    },
+    input = list(
+      assay = assay,
+      layer = layer,
+      requested_features = de_feature_universe$requested_features,
+      tested_features = de_feature_universe$tested_features,
+      tested_features_count = length(de_feature_universe$tested_features),
+      tested_features_source = de_feature_universe$tested_features_source
+    ),
     assay = assay,
     layer = layer,
     rank_col = rank_col,

@@ -203,7 +203,7 @@ Core Shennong:
 - `R/analysis_adapters.R:1-29`: CITE-seq-only multimodal entry point.
 - `R/analysis_bulk.R:1274-1286`: bulk workflow dispatcher.
 - `R/preprocessing.R:216-321`: Seurat initialization and matrix/path boundary.
-- `R/analysis_result.R:1-40`: analytical result schema `1.0.0`.
+- `R/analysis_result.R:1-40`: analytical result schema `2.0.0`.
 
 ShennongData:
 

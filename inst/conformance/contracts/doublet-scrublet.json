@@ -21,7 +21,7 @@
     "versions": [
       "scanpy 1.12.3"
     ],
-    "install_source": "conda-forge scanpy >= 1.10 pinned in inst/pixi/scrublet/pixi.toml"
+    "install_source": "conda-forge scanpy ==1.12.3 with the committed inst/pixi/scrublet/pixi.lock"
   },
   "oracle": {
     "type": "direct_public_api",

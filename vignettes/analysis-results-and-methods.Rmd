@@ -72,9 +72,21 @@ object <- sn_assess_qc(
 
 result <- sn_get_result(object, "qc_assessment", "kotliarov_qc")
 sn_validate_result(result, error = FALSE)
+result[c("schema_version", "analysis_type", "result_id")]
 result$tables$primary |> head()
 result$tables$overall
 ```
+
+For schema 2, `schema_version`, `analysis_type`, and `result_id` are part of
+the result's identity rather than descriptive labels. `sn_get_result()` checks
+that the embedded type and ID agree with the physical keys under which the
+result is stored. The canonical `tables$primary` must also be a data frame with
+at least one column and no duplicate column names. All 33 built-in analysis
+types register their own minimum primary-table semantics: identity columns,
+keys, data types, finite/range checks, and relevant cross-row rules such as fate
+probabilities summing to one. A copied or hand-edited payload whose identity,
+table shape, or scientific invariants no longer match its storage location
+therefore fails closed instead of being returned under the wrong name.
 
 ## Store, discover, and retrieve from Seurat
 
@@ -100,7 +112,7 @@ sn_list_results(object, include_artifacts = TRUE)
 qc_copy <- sn_get_result(
   object,
   type = "qc_assessment",
-  result_id = "qc_copy_explicit"
+  result_id = "qc_copy"
 )
 
 qc_copy$tables$primary |> head()
@@ -109,7 +121,7 @@ qc_copy$provenance
 object <- sn_delete_result(
   object,
   type = "qc_assessment",
-  result_id = "qc_copy_explicit"
+  result_id = "qc_copy"
 )
 
 sn_list_results(object)
@@ -174,6 +186,10 @@ unknown payloads report `unregistered` rather than being silently omitted or
 misclassified as analysis results.
 Every analytical result uses `schema_version = "2.0.0"` and a canonical
 `tables$primary`; additional named tables carry analysis-specific outputs.
+Legacy analytical envelopes with a supported older schema are upgraded only
+when their identity and primary table can be reconstructed unambiguously.
+Malformed payloads and unknown future schema versions are reported for manual
+review rather than guessed into the current contract.
 
 ```{r audit-results}
 audit <- sn_audit_results(object)
@@ -191,6 +207,35 @@ stopifnot(all(
 
 sn_audit_results(object, include_artifacts = FALSE)
 ```
+
+Analytical results and legacy runtime/cache artifacts have different deletion
+APIs. `sn_delete_result()` removes one exact `(type, result_id)` entry from the
+canonical store. A registered artifact may still live in a historical
+top-level `object@misc` collection whose name alone does not prove ownership,
+so `sn_delete_artifact()` always requires explicit confirmation—even when an
+`artifact_id` is supplied:
+
+```{r delete-artifact-contract, eval = FALSE}
+sn_list_results(object, include_artifacts = TRUE)
+
+object <- sn_delete_artifact(
+  object,
+  artifact_type = "integration_comparison",
+  artifact_id = "pbmc_grid",
+  confirm = TRUE
+)
+
+# Omitting artifact_id deletes the whole registered collection and still
+# requires confirm = TRUE.
+object <- sn_delete_artifact(
+  object,
+  artifact_type = "label_transfer",
+  confirm = TRUE
+)
+```
+
+Unknown artifact types fail closed, and unregistered `object@misc` payloads are
+never deletion targets for this API.
 
 Table-returning helpers such as `sn_get_de_result()` expose the same canonical
 primary table. Use `sn_get_result()` when the

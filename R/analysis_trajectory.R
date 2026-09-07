@@ -82,10 +82,20 @@
 
 .sn_trajectory_cell_table <- function(embedding, clusters, pseudotime, weights) {
   lineage_names <- colnames(pseudotime) %||% paste0("Lineage", seq_len(ncol(pseudotime)))
+  safe_lineage_names <- make.names(lineage_names)
+  if (anyNA(lineage_names) || any(!nzchar(lineage_names)) ||
+      anyDuplicated(lineage_names) || anyDuplicated(safe_lineage_names)) {
+    stop(
+      "Trajectory lineage names must be unique, non-empty, and remain unique after column-name sanitization.",
+      call. = FALSE
+    )
+  }
   colnames(pseudotime) <- lineage_names
   colnames(weights) <- lineage_names
-  primary_index <- max.col(weights, ties.method = "first")
-  no_assignment <- rowSums(weights, na.rm = TRUE) <= 0
+  eligible_weights <- weights
+  eligible_weights[!is.finite(pseudotime)] <- 0
+  primary_index <- max.col(eligible_weights, ties.method = "first")
+  no_assignment <- rowSums(eligible_weights, na.rm = TRUE) <= 0
   primary_lineage <- lineage_names[primary_index]
   primary_lineage[no_assignment] <- NA_character_
   primary_pseudotime <- pseudotime[cbind(seq_len(nrow(pseudotime)), primary_index)]
@@ -98,7 +108,7 @@
     primary_pseudotime = as.numeric(primary_pseudotime)
   )
   for (index in seq_along(lineage_names)) {
-    safe <- make.names(lineage_names[[index]])
+    safe <- safe_lineage_names[[index]]
     table[[paste0("pseudotime_", safe)]] <- as.numeric(pseudotime[, index])
     table[[paste0("weight_", safe)]] <- as.numeric(weights[, index])
   }
@@ -119,27 +129,89 @@
 }
 
 .sn_trajectory_backend_matrix <- function(value, cells, value_name) {
+  cells <- as.character(cells)
+  validate_cell_ids <- function(ids, require_all = TRUE) {
+    ids <- as.character(ids)
+    if (anyNA(ids) || any(!nzchar(ids)) || anyDuplicated(ids)) {
+      stop("Trajectory backend cell identifiers must be unique and non-empty.", call. = FALSE)
+    }
+    unknown <- setdiff(ids, cells)
+    missing <- if (isTRUE(require_all)) setdiff(cells, ids) else character()
+    if (length(unknown) > 0L || length(missing) > 0L) {
+      stop(
+        "Trajectory backend cell identifiers must match the analyzed cells exactly; unknown = ",
+        length(unknown), ", missing = ", length(missing), ".",
+        call. = FALSE
+      )
+    }
+    ids
+  }
+  numeric_values <- function(x) {
+    converted <- suppressWarnings(as.numeric(as.character(x)))
+    invalid <- !is.na(x) & is.na(converted)
+    if (any(invalid)) {
+      stop("Trajectory backend `", value_name, "` values must be numeric or missing.", call. = FALSE)
+    }
+    converted
+  }
   if (is.vector(value) && !is.list(value)) {
     names_value <- names(value)
-    matrix_value <- matrix(as.numeric(value), ncol = 1L, dimnames = list(names_value %||% cells, "Lineage1"))
+    if (is_null(names_value)) {
+      if (length(value) != length(cells)) {
+        stop("Unnamed trajectory backend vectors must match the analyzed cell count.", call. = FALSE)
+      }
+      names_value <- cells
+    } else {
+      names_value <- validate_cell_ids(names_value)
+    }
+    matrix_value <- matrix(
+      numeric_values(value), ncol = 1L,
+      dimnames = list(names_value, "Lineage1")
+    )
   } else if (is.data.frame(value) && all(c("cell", "lineage", value_name) %in% names(value))) {
+    cell_ids <- as.character(value$cell)
+    if (anyNA(cell_ids) || any(!nzchar(cell_ids)) || !setequal(unique(cell_ids), cells)) {
+      stop("Long-form trajectory output must cover only and all analyzed cells.", call. = FALSE)
+    }
     lineages <- unique(as.character(value$lineage))
+    if (anyNA(lineages) || any(!nzchar(lineages))) {
+      stop("Long-form trajectory lineage identifiers must be non-empty.", call. = FALSE)
+    }
+    pair_key <- paste(cell_ids, as.character(value$lineage), sep = "\r")
+    if (anyDuplicated(pair_key)) {
+      stop("Long-form trajectory output contains duplicate cell-lineage pairs.", call. = FALSE)
+    }
     matrix_value <- matrix(NA_real_, nrow = length(cells), ncol = length(lineages), dimnames = list(cells, lineages))
-    row <- match(as.character(value$cell), cells); column <- match(as.character(value$lineage), lineages)
-    valid <- !is.na(row) & !is.na(column)
-    matrix_value[cbind(row[valid], column[valid])] <- as.numeric(value[[value_name]][valid])
+    row <- match(cell_ids, cells)
+    column <- match(as.character(value$lineage), lineages)
+    matrix_value[cbind(row, column)] <- numeric_values(value[[value_name]])
   } else if (is.data.frame(value) && "cell" %in% names(value)) {
-    rownames(value) <- as.character(value$cell); value$cell <- NULL
+    ids <- validate_cell_ids(value$cell)
+    rownames(value) <- ids
+    value$cell <- NULL
     matrix_value <- as.matrix(value)
   } else {
     matrix_value <- as.matrix(value)
   }
+  if (ncol(matrix_value) < 1L) {
+    stop("Trajectory backend output must contain at least one lineage column.", call. = FALSE)
+  }
+  matrix_value[] <- numeric_values(matrix_value)
   storage.mode(matrix_value) <- "double"
-  if (is_null(rownames(matrix_value))) rownames(matrix_value) <- cells
-  missing <- setdiff(cells, rownames(matrix_value))
-  if (length(missing) > 0L) stop("Trajectory backend output is missing cell(s): ", paste(utils::head(missing, 5), collapse = ", "), ".", call. = FALSE)
+  if (is_null(rownames(matrix_value))) {
+    if (nrow(matrix_value) != length(cells)) {
+      stop("Unnamed trajectory backend matrices must match the analyzed cell count.", call. = FALSE)
+    }
+    rownames(matrix_value) <- cells
+  } else {
+    validate_cell_ids(rownames(matrix_value))
+  }
   matrix_value <- matrix_value[cells, , drop = FALSE]
   if (is_null(colnames(matrix_value))) colnames(matrix_value) <- paste0("Lineage", seq_len(ncol(matrix_value)))
+  if (anyNA(colnames(matrix_value)) || any(!nzchar(colnames(matrix_value))) ||
+      anyDuplicated(colnames(matrix_value))) {
+    stop("Trajectory backend lineage names must be unique and non-empty.", call. = FALSE)
+  }
   matrix_value
 }
 
@@ -150,12 +222,33 @@
   pseudotime <- .sn_trajectory_backend_matrix(pseudotime_value, rownames(embedding), "pseudotime")
   weights_value <- output$weights %||% output$lineage_weights %||% output$probabilities
   weights <- if (is_null(weights_value)) {
+    if (ncol(pseudotime) > 1L) {
+      stop(
+        "Trajectory backend output with multiple lineages requires explicit lineage `weights`; primary lineage cannot be inferred from pseudotime alone.",
+        call. = FALSE
+      )
+    }
     matrix(as.numeric(is.finite(pseudotime)), nrow = nrow(pseudotime), dimnames = dimnames(pseudotime))
   } else .sn_trajectory_backend_matrix(weights_value, rownames(embedding), "weight")
   if (ncol(weights) != ncol(pseudotime)) stop("Trajectory weights and pseudotime must have the same number of lineages.", call. = FALSE)
+  if (anyDuplicated(colnames(pseudotime)) || anyDuplicated(colnames(weights))) {
+    stop("Trajectory pseudotime and weight lineage names must be unique.", call. = FALSE)
+  }
+  if (!setequal(colnames(weights), colnames(pseudotime))) {
+    stop("Trajectory weight lineage names must match pseudotime lineage names.", call. = FALSE)
+  }
+  weights <- weights[, colnames(pseudotime), drop = FALSE]
+  if (any(!is.na(pseudotime) & !is.finite(pseudotime))) {
+    stop("Trajectory pseudotime values must be finite or missing.", call. = FALSE)
+  }
+  if (any(!is.na(weights) & !is.finite(weights))) {
+    stop("Trajectory lineage weights must be finite or missing.", call. = FALSE)
+  }
   if (any(weights < 0, na.rm = TRUE)) stop("Trajectory lineage weights cannot be negative.", call. = FALSE)
-  weights[!is.finite(weights)] <- 0
-  colnames(weights) <- colnames(pseudotime)
+  if (any(weights > 0 & !is.finite(pseudotime), na.rm = TRUE)) {
+    stop("Every positive trajectory lineage weight must have a finite pseudotime for the same cell and lineage.", call. = FALSE)
+  }
+  weights[is.na(weights)] <- 0
   lineages <- output$lineages %||% requested
   if (is_null(lineages)) {
     lineages <- lapply(seq_len(ncol(pseudotime)), function(index) {
@@ -168,8 +261,14 @@
   if (length(lineages) != ncol(pseudotime) || any(lengths(lineages) == 0L)) {
     stop("Trajectory lineages must provide one non-empty cluster path per pseudotime column.", call. = FALSE)
   }
-  if (is_null(names(lineages)) || any(!nzchar(names(lineages)))) names(lineages) <- colnames(pseudotime)
-  if (!identical(names(lineages), colnames(pseudotime)) && length(lineages) == ncol(pseudotime)) names(lineages) <- colnames(pseudotime)
+  if (is_null(names(lineages)) || any(!nzchar(names(lineages)))) {
+    names(lineages) <- colnames(pseudotime)
+  } else {
+    if (anyDuplicated(names(lineages)) || !setequal(names(lineages), colnames(pseudotime))) {
+      stop("Named trajectory lineage paths must match pseudotime lineage names.", call. = FALSE)
+    }
+    lineages <- lineages[colnames(pseudotime)]
+  }
   cells <- .sn_trajectory_cell_table(embedding, clusters, pseudotime, weights)
   curves <- output$curves %||% tibble::tibble()
   if (!is.data.frame(curves)) stop("Trajectory backend `curves` must be a data frame when supplied.", call. = FALSE)
@@ -185,7 +284,41 @@
   )
 }
 
-.sn_run_monocle3_trajectory <- function(object, embedding, clusters, start, assay, counts_layer, backend_control) {
+.sn_validate_monocle3_partitions <- function(partitions) {
+  partitions <- as.character(partitions)
+  partitions <- unique(partitions[!is.na(partitions) & nzchar(partitions)])
+  if (length(partitions) > 1L) {
+    stop(
+      "The direct Monocle 3 backend recovered multiple disconnected partitions and cannot represent them as one lineage. Use `backend_control$monocle3$use_partition = FALSE`, subset a partition, or supply an explicit runner/result.",
+      call. = FALSE
+    )
+  }
+  invisible(partitions)
+}
+
+.sn_run_monocle3_trajectory <- function(object,
+                                         embedding,
+                                         reduction,
+                                         clusters,
+                                         start,
+                                         assay,
+                                         counts_layer,
+                                         backend_control,
+                                         end = NULL) {
+  if (length(end) > 0L) {
+    stop(
+      "The direct Monocle 3 backend cannot enforce `end` cluster constraints; use an explicit runner/result or omit `end`.",
+      call. = FALSE
+    )
+  }
+  if (!grepl("umap", reduction, ignore.case = TRUE)) {
+    stop(
+      "The direct Monocle 3 backend requires a genuine UMAP reduction; ",
+      "it will not relabel PCA or another embedding as UMAP. Supply `reduction = \"umap\"` ",
+      "or an explicit `backend_control$runner`/`result`.",
+      call. = FALSE
+    )
+  }
   check_installed("monocle3", reason = "to run Monocle 3 trajectory inference.")
   check_installed("SingleCellExperiment", reason = "to store Monocle 3 reduced dimensions.")
   assay <- assay %||% SeuratObject::DefaultAssay(object)
@@ -207,6 +340,7 @@
   cds <- monocle3::order_cells(cds, reduction_method = "UMAP", root_cells = root_cells)
   pseudotime <- monocle3::pseudotime(cds)
   partitions <- monocle3::partitions(cds, reduction_method = "UMAP")
+  .sn_validate_monocle3_partitions(partitions)
   monocle_clusters <- monocle3::clusters(cds, reduction_method = "UMAP")
   cluster_medians <- tapply(pseudotime, clusters[names(pseudotime)], stats::median, na.rm = TRUE)
   cluster_order <- names(sort(cluster_medians[is.finite(cluster_medians)]))
@@ -268,6 +402,20 @@
   tibble::as_tibble(table[, c("feature", "test", setdiff(names(table), c("feature", "test"))), drop = FALSE])
 }
 
+.sn_validate_tradeseq_counts <- function(counts) {
+  stored_values <- if (inherits(counts, "sparseMatrix")) counts@x else as.numeric(counts)
+  if (anyNA(stored_values) || any(!is.finite(stored_values))) {
+    stop("tradeSeq counts must contain only finite values.", call. = FALSE)
+  }
+  if (any(stored_values < 0)) {
+    stop("tradeSeq counts must be non-negative.", call. = FALSE)
+  }
+  if (any(abs(stored_values - round(stored_values)) > 1e-8)) {
+    stop("tradeSeq requires integer-valued raw or corrected counts; values will not be rounded silently.", call. = FALSE)
+  }
+  counts
+}
+
 .sn_fit_trajectory_dynamics <- function(object,
                                         pseudotime,
                                         weights,
@@ -284,6 +432,7 @@
     stop("Counts layer '", counts_layer, "' was not found in assay '", assay, "'.", call. = FALSE)
   }
   counts <- .sn_get_seurat_layer_data(object, assay = assay, layer = counts_layer)
+  counts <- .sn_validate_tradeseq_counts(counts)
   if (is_null(features)) {
     features <- SeuratObject::VariableFeatures(object[[assay]])
     if (length(features) == 0L) features <- rownames(counts)
@@ -366,19 +515,19 @@
 #' @param object A Seurat object with a dimensional reduction and cluster labels.
 #' @param method Trajectory backend. Slingshot and Monocle 3 run directly;
 #'   Palantir accepts a standardized external runner or result.
-#' @param reduction Reduction used for inference. Defaults to PCA, then UMAP or
-#'   the first available reduction.
+#' @param reduction Reduction used for inference. Monocle 3 defaults to an
+#'   existing UMAP reduction; other methods default to PCA, then UMAP or the
+#'   first available reduction.
 #' @param cluster_by Metadata column containing cluster labels. Defaults to
 #'   `seurat_clusters`, then active identities.
 #' @param start,end Optional start and terminal cluster labels.
 #' @param lineages Optional named list of expected cluster paths. Their endpoints
 #'   constrain Slingshot and inferred paths are checked against them.
 #' @param result_id Name used under the `trajectory` result type.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param dims Reduction dimensions used for inference.
 #' @param assay Assay used for dynamic-gene counts.
-#' @param counts_layer Raw-count layer used by tradeSeq.
+#' @param counts_layer Raw or corrected count layer used by tradeSeq. Values
+#'   must be finite, non-negative, and integer-valued.
 #' @param test_dynamic Fit tradeSeq dynamic and branch tests.
 #' @param dynamic_features Optional features tested by tradeSeq.
 #' @param max_dynamic_features Maximum number of dynamic features fitted by default.
@@ -388,7 +537,9 @@
 #' @param backend_control Backend controls. Use named `slingshot`, `monocle3`,
 #'   and `tradeSeq` argument lists for direct backends. Palantir accepts
 #'   `runner` or `result`; the same explicit adapter boundary can override
-#'   Monocle 3 for externally managed execution.
+#'   Monocle 3 for externally managed execution. The direct Monocle 3 path
+#'   rejects terminal-cluster constraints and disconnected partitions that it
+#'   cannot faithfully encode as one lineage.
 #' @param return_object Return the updated object instead of the result.
 #' @param seed Top-level reproducibility seed. Precedence:
 #'   \code{seed} > \code{backend_control$seed} > task default, and the resolved
@@ -437,6 +588,7 @@ sn_run_trajectory <- function(object,
   if (!missing(verbose)) {
     backend_control$verbose <- isTRUE(verbose)
   }
+  if (identical(method, "monocle3") && is_null(reduction)) reduction <- "umap"
   embedding <- .sn_trajectory_embedding(object, reduction = reduction, dims = dims)
   clusters <- .sn_trajectory_clusters(object, cluster_by = cluster_by)
   requested <- .sn_validate_requested_lineages(lineages, clusters$values)
@@ -471,7 +623,10 @@ sn_run_trajectory <- function(object,
   } else if (!is_null(backend_control$result)) {
     backend_control$result
   } else if (identical(method, "monocle3")) {
-    .sn_run_monocle3_trajectory(object, embedding$matrix, clusters$values, start, assay, counts_layer, backend_control)
+    .sn_run_monocle3_trajectory(
+      object, embedding$matrix, embedding$reduction, clusters$values, start,
+      assay, counts_layer, backend_control, end = end
+    )
   } else {
     stop("Trajectory method '", method, "' requires `backend_control$runner` or `backend_control$result`.", call. = FALSE)
   }

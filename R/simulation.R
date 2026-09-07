@@ -162,24 +162,23 @@ sn_simulate <- function(object,
     other_covariates = other_covariates
   )
 
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-  result <- .sn_run_scdesign3_backend(
-    sce = sce,
-    assay_use = assay_use,
-    celltype = celltype,
-    pseudotime = pseudotime,
-    spatial = spatial,
-    other_covariates = other_covariates,
-    ncell = ncell,
-    mu_formula = mu_formula,
-    sigma_formula = sigma_formula,
-    family_use = family_use,
-    n_cores = n_cores,
-    corr_formula = corr_formula,
-    ...
-  )
+  result <- .sn_with_seed(seed, {
+    .sn_run_scdesign3_backend(
+      sce = sce,
+      assay_use = assay_use,
+      celltype = celltype,
+      pseudotime = pseudotime,
+      spatial = spatial,
+      other_covariates = other_covariates,
+      ncell = ncell,
+      mu_formula = mu_formula,
+      sigma_formula = sigma_formula,
+      family_use = family_use,
+      n_cores = n_cores,
+      corr_formula = corr_formula,
+      ...
+    )
+  })
   result$shennong <- list(
     celltype = celltype,
     pseudotime = pseudotime,

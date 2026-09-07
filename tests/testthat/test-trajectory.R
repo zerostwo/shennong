@@ -132,6 +132,213 @@ test_that("trajectory endpoints and expected lineage paths are validated", {
   expect_equal(length(result$parameters$requested_lineages), 2L)
 })
 
+test_that("trajectory lineage assignment requires finite pseudotime", {
+  embedding <- matrix(
+    c(0, 0, 1, 1), ncol = 2L, byrow = TRUE,
+    dimnames = list(c("c1", "c2"), c("x", "y"))
+  )
+  pseudotime <- matrix(
+    c(NA, 0.2, NA, 0.8), nrow = 2L, byrow = TRUE,
+    dimnames = list(c("c1", "c2"), c("L1", "L2"))
+  )
+  weights <- matrix(
+    c(0.9, 0.1, 0.8, 0.2), nrow = 2L, byrow = TRUE,
+    dimnames = dimnames(pseudotime)
+  )
+
+  cells <- Shennong:::.sn_trajectory_cell_table(
+    embedding,
+    clusters = stats::setNames(c("a", "b"), c("c1", "c2")),
+    pseudotime = pseudotime,
+    weights = weights
+  )
+
+  expect_identical(cells$primary_lineage, c("L2", "L2"))
+  expect_equal(cells$primary_pseudotime, c(0.2, 0.8))
+
+  pseudotime[,] <- NA_real_
+  unassigned <- Shennong:::.sn_trajectory_cell_table(
+    embedding,
+    clusters = stats::setNames(c("a", "b"), c("c1", "c2")),
+    pseudotime = pseudotime,
+    weights = weights
+  )
+  expect_true(all(is.na(unassigned$primary_lineage)))
+  expect_true(all(is.na(unassigned$primary_pseudotime)))
+})
+
+test_that("trajectory weights align by lineage name rather than column position", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  embedding <- SeuratObject::Embeddings(object[["pca"]])
+  cells <- rownames(embedding)
+  clusters <- stats::setNames(as.character(object$seurat_clusters), cells)
+  pseudotime <- cbind(
+    LineageA = seq(0, 1, length.out = length(cells)),
+    LineageB = seq(1, 0, length.out = length(cells))
+  )
+  rownames(pseudotime) <- cells
+  weights <- cbind(LineageB = rep(0.2, length(cells)), LineageA = rep(0.8, length(cells)))
+  rownames(weights) <- cells
+
+  standardized <- Shennong:::.sn_standardize_trajectory_backend(
+    list(
+      pseudotime = pseudotime,
+      weights = weights,
+      lineages = list(LineageB = c("middle", "late"), LineageA = c("early", "middle"))
+    ),
+    embedding, clusters, requested = NULL, start = NULL, end = NULL, method = "mock"
+  )
+
+  expect_identical(colnames(standardized$weights), c("LineageA", "LineageB"))
+  expect_equal(unname(standardized$weights[, "LineageA"]), rep(0.8, length(cells)))
+  expect_identical(names(standardized$lineages), c("LineageA", "LineageB"))
+  expect_error(
+    Shennong:::.sn_standardize_trajectory_backend(
+      list(pseudotime = pseudotime, weights = unname(weights)),
+      embedding, clusters, requested = NULL, start = NULL, end = NULL, method = "mock"
+    ),
+    "lineage names must match"
+  )
+})
+
+test_that("multi-lineage trajectory outputs require explicit coherent weights", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  embedding <- SeuratObject::Embeddings(object[["pca"]])
+  cells <- rownames(embedding)
+  clusters <- stats::setNames(as.character(object$seurat_clusters), cells)
+  pseudotime <- cbind(
+    LineageA = seq(0, 1, length.out = length(cells)),
+    LineageB = seq(1, 0, length.out = length(cells))
+  )
+  rownames(pseudotime) <- cells
+
+  expect_error(
+    Shennong:::.sn_standardize_trajectory_backend(
+      list(pseudotime = pseudotime), embedding, clusters,
+      requested = NULL, start = NULL, end = NULL, method = "mock"
+    ),
+    "requires explicit lineage `weights`"
+  )
+
+  weights <- matrix(0.5, nrow = nrow(pseudotime), ncol = 2L, dimnames = dimnames(pseudotime))
+  pseudotime[1, 1] <- NA_real_
+  weights[1, 1] <- 0.5
+  expect_error(
+    Shennong:::.sn_standardize_trajectory_backend(
+      list(pseudotime = pseudotime, weights = weights), embedding, clusters,
+      requested = NULL, start = NULL, end = NULL, method = "mock"
+    ),
+    "positive trajectory lineage weight.*finite pseudotime"
+  )
+})
+
+test_that("trajectory adapters reject ambiguous identities and lineage columns", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  embedding <- SeuratObject::Embeddings(object[["pca"]])
+  cells <- rownames(embedding)
+  clusters <- stats::setNames(as.character(object$seurat_clusters), cells)
+
+  duplicated_long <- tibble::tibble(
+    cell = c(cells, cells[[1L]]),
+    lineage = "LineageA",
+    pseudotime = seq_len(length(cells) + 1L)
+  )
+  expect_error(
+    Shennong:::.sn_trajectory_backend_matrix(
+      duplicated_long, cells, "pseudotime"
+    ),
+    "duplicate cell-lineage"
+  )
+
+  extra <- matrix(
+    seq_len(length(cells) + 1L), ncol = 1L,
+    dimnames = list(c(cells, "unknown-cell"), "LineageA")
+  )
+  expect_error(
+    Shennong:::.sn_trajectory_backend_matrix(extra, cells, "pseudotime"),
+    "match the analyzed cells exactly"
+  )
+
+  pseudotime <- cbind(
+    `A-B` = seq(0, 1, length.out = length(cells)),
+    A.B = seq(1, 0, length.out = length(cells))
+  )
+  rownames(pseudotime) <- cells
+  weights <- matrix(0.5, nrow = length(cells), ncol = 2L, dimnames = dimnames(pseudotime))
+  expect_error(
+    Shennong:::.sn_standardize_trajectory_backend(
+      list(pseudotime = pseudotime, weights = weights),
+      embedding, clusters, requested = NULL, start = NULL, end = NULL,
+      method = "mock"
+    ),
+    "remain unique after column-name sanitization"
+  )
+})
+
+test_that("Monocle 3 defaults to an existing UMAP reduction", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  umap <- SeuratObject::Embeddings(object[["pca"]])
+  colnames(umap) <- c("UMAP_1", "UMAP_2")
+  object[["umap"]] <- SeuratObject::CreateDimReducObject(
+    embeddings = umap, key = "UMAP_", assay = "RNA"
+  )
+  runner <- function(object, method, embedding, clusters, ...) {
+    expect_equal(colnames(embedding), c("UMAP_1", "UMAP_2"))
+    cells <- rownames(embedding)
+    pseudotime <- stats::setNames(seq(0, 1, length.out = length(cells)), cells)
+    list(
+      pseudotime = pseudotime,
+      lineages = list(Lineage1 = unique(as.character(clusters))),
+      backend = "mock_monocle3"
+    )
+  }
+  result <- sn_run_trajectory(
+    object, method = "monocle3", start = "early", test_dynamic = FALSE,
+    backend_control = list(runner = runner), return_object = FALSE
+  )
+  expect_identical(result$input$reduction, "umap")
+})
+
+test_that("direct Monocle backend refuses to relabel PCA as UMAP", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  embedding <- SeuratObject::Embeddings(object[["pca"]])
+  clusters <- stats::setNames(as.character(object$seurat_clusters), rownames(embedding))
+  expect_error(
+    Shennong:::.sn_run_monocle3_trajectory(
+      object, embedding, reduction = "pca", clusters = clusters,
+      start = "early", assay = "RNA", counts_layer = "counts", backend_control = list()
+    ),
+    "genuine UMAP"
+  )
+})
+
+test_that("direct Monocle backend fails closed for unsupported ends and partitions", {
+  object <- make_trajectory_test_object(branching = FALSE)
+  embedding <- SeuratObject::Embeddings(object[["pca"]])
+  clusters <- stats::setNames(as.character(object$seurat_clusters), rownames(embedding))
+  expect_error(
+    Shennong:::.sn_run_monocle3_trajectory(
+      object, embedding, reduction = "umap", clusters = clusters,
+      start = "early", assay = "RNA", counts_layer = "counts",
+      backend_control = list(), end = "late"
+    ),
+    "cannot enforce `end`"
+  )
+  expect_error(
+    Shennong:::.sn_validate_monocle3_partitions(c("1", "2", "1")),
+    "multiple disconnected partitions"
+  )
+  expect_silent(Shennong:::.sn_validate_monocle3_partitions(rep("1", 3)))
+})
+
+test_that("tradeSeq count validation rejects invalid count semantics", {
+  valid <- Matrix::Matrix(matrix(c(0, 1, 2, 3), nrow = 2), sparse = TRUE)
+  expect_identical(Shennong:::.sn_validate_tradeseq_counts(valid), valid)
+  expect_error(Shennong:::.sn_validate_tradeseq_counts(matrix(c(0, -1))), "non-negative")
+  expect_error(Shennong:::.sn_validate_tradeseq_counts(matrix(c(0, Inf))), "finite")
+  expect_error(Shennong:::.sn_validate_tradeseq_counts(matrix(c(0, 1.5))), "integer-valued")
+})
+
 test_that("tradeSeq dynamic tests retain tests, trends, and convergence", {
   skip_if_not_installed("slingshot")
   skip_if_not_installed("tradeSeq")

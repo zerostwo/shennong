@@ -236,8 +236,11 @@ sn_plot_association <- function(object,
     stop("`max_points` must be NULL or one number of at least 2.", call. = FALSE)
   }
   if (!is_null(max_points) && nrow(data) > max_points) {
-    if (!is.null(seed)) set.seed(seed)
-    data <- data[sort(sample.int(nrow(data), as.integer(max_points))), , drop = FALSE]
+    selected <- .sn_with_seed(
+      seed,
+      sort(sample.int(nrow(data), as.integer(max_points)))
+    )
+    data <- data[selected, , drop = FALSE]
   }
   correlation <- suppressWarnings(stats::cor(data$.sn_x, data$.sn_y, method = method))
   label_text <- paste0(

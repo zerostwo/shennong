@@ -57,23 +57,31 @@ test_that("sn_delete_artifact removes members and containers fail-closed", {
   )
   object@misc$label_transfer <- list(ref1 = data.frame(x = 1))
 
-  object <- sn_delete_artifact(object, "integration_comparison", "grid_a")
+  expect_error(
+    sn_delete_artifact(object, "integration_comparison", "grid_a"),
+    "confirm = TRUE"
+  )
+  object <- sn_delete_artifact(
+    object, "integration_comparison", "grid_a", confirm = TRUE
+  )
   expect_identical(names(object@misc$integration_comparison), "grid_b")
 
-  object <- sn_delete_artifact(object, "integration_comparison_artifact", "grid_b")
+  object <- sn_delete_artifact(
+    object, "integration_comparison_artifact", "grid_b", confirm = TRUE
+  )
   expect_null(object@misc$integration_comparison)
 
-  object <- sn_delete_artifact(object, "label_transfer")
+  object <- sn_delete_artifact(object, "label_transfer", confirm = TRUE)
   expect_null(object@misc$label_transfer)
 
   expect_error(sn_delete_artifact(object, "not_an_artifact"), "not a registered artifact type")
   object@misc$integration <- list(existing = 1)
   expect_error(
-    sn_delete_artifact(object, "integration", "missing_member"),
+    sn_delete_artifact(object, "integration", "missing_member", confirm = TRUE),
     "No artifact with artifact_id"
   )
   expect_warning(
-    sn_delete_artifact(object, "bpcells_layers"),
+    sn_delete_artifact(object, "bpcells_layers", confirm = TRUE),
     "artifact collection was present"
   )
 })

@@ -50,6 +50,29 @@
   regulons
 }
 
+.sn_score_grn_weighted_mean <- function(matrix, regulons, min_targets = 1L) {
+  regulons <- regulons[is.finite(regulons$weight) & regulons$weight != 0, , drop = FALSE]
+  signatures <- split(regulons$target, regulons$regulon)
+  matched <- .sn_match_program_features(signatures, rownames(matrix), min_genes = min_targets)
+  feature_keys <- toupper(sub("\\.[0-9]+$", "", rownames(matrix)))
+  scores <- vapply(names(matched$signatures), function(regulon) {
+    current <- regulons[regulons$regulon == regulon, , drop = FALSE]
+    target_indices <- match(toupper(sub("\\.[0-9]+$", "", current$target)), feature_keys)
+    current$feature <- rownames(matrix)[target_indices]
+    current <- current[!is.na(current$feature), , drop = FALSE]
+    weights <- tapply(current$weight, current$feature, sum)
+    weights <- weights[is.finite(weights) & weights != 0]
+    if (length(weights) < as.integer(min_targets)) {
+      stop("No signed GRN regulon retained the requested number of non-zero targets.", call. = FALSE)
+    }
+    as.numeric(weights %*% matrix[names(weights), , drop = FALSE]) / sum(abs(weights))
+  }, numeric(ncol(matrix)))
+  scores <- t(scores)
+  rownames(scores) <- names(matched$signatures)
+  colnames(scores) <- colnames(matrix)
+  scores
+}
+
 .sn_grn_activity_table <- function(activity, object, regulons, expression, method, control) {
   if (!is_null(activity)) {
     activity <- tibble::as_tibble(activity)
@@ -70,12 +93,22 @@
     return(out)
   }
 
-  signatures <- split(regulons$target, regulons$regulon)
-  matched <- .sn_match_program_features(signatures, rownames(expression$matrix), min_genes = control$min_targets %||% 1L)
-  score_method <- match.arg(control$activity_method %||% "mean", c("mean", "ucell"))
+  score_method <- match.arg(control$activity_method %||% "weighted_mean", c("weighted_mean", "mean", "ucell"))
+  if (any(regulons$weight < 0) && !identical(score_method, "weighted_mean")) {
+    stop(
+      "Signed GRN edges require `activity_method = \"weighted_mean\"`; unweighted mean and UCell scores cannot preserve edge direction.",
+      call. = FALSE
+    )
+  }
   scores <- if (identical(score_method, "ucell")) {
+    signatures <- split(regulons$target, regulons$regulon)
+    matched <- .sn_match_program_features(signatures, rownames(expression$matrix), min_genes = control$min_targets %||% 1L)
     .sn_score_programs_ucell(expression$matrix, matched$signatures, control$activity_control %||% list())
+  } else if (identical(score_method, "weighted_mean")) {
+    .sn_score_grn_weighted_mean(expression$matrix, regulons, min_targets = control$min_targets %||% 1L)
   } else {
+    signatures <- split(regulons$target, regulons$regulon)
+    matched <- .sn_match_program_features(signatures, rownames(expression$matrix), min_genes = control$min_targets %||% 1L)
     .sn_score_programs_mean(expression$matrix, matched$signatures)
   }
   dplyr::bind_rows(lapply(rownames(scores), function(regulon) {
@@ -130,12 +163,11 @@
   if (length(current) > (control$max_dense_values %||% 5e6)) {
     stop("GENIE3 input exceeds `backend_control$max_dense_values`; reduce features/cells.", call. = FALSE)
   }
-  set.seed(as.integer(control$seed %||% 717L))
-  weight_matrix <- GENIE3::GENIE3(
+  weight_matrix <- .sn_with_seed(control$seed %||% 717L, GENIE3::GENIE3(
     exprMatrix = as.matrix(current), regulators = regulators,
     nTrees = as.integer(control$n_trees %||% 1000L),
     nCores = as.integer(control$n_cores %||% 1L), verbose = FALSE
-  )
+  ))
   edges <- GENIE3::getLinkList(weight_matrix, reportMax = as.integer(control$max_edges %||% 10000L))
   list(edges = edges, expression = expression, model = weight_matrix)
 }
@@ -151,9 +183,10 @@
 #' @param regulators Optional regulator genes. Strongly recommended for GENIE3.
 #' @param group_by Optional metadata column used to quantify regulon specificity.
 #' @param backend_control Backend controls or an external `runner`/`result`.
+#'   Signed edges require `activity_method = "weighted_mean"`.
 #' @param return_object Return the modified object or unified result.
 #' @return A Seurat object or unified GRN result with edge, regulon, activity,
-#'   and specificity tables.
+#'   specificity tables, and a regulon-to-metadata-column mapping.
 #' @examples
 #' \dontrun{
 #' object <- sn_run_grn(object, method = "genie3", regulators = c("STAT1", "IRF1"),
@@ -201,10 +234,25 @@ sn_run_grn <- function(object,
   }
 
   prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
+  regulon_names <- unique(as.character(activity$regulon))
+  metadata_candidates <- paste(
+    prefix,
+    gsub("[^[:alnum:]_]+", "_", regulon_names),
+    sep = "_"
+  )
+  metadata_columns <- utils::tail(
+    make.unique(c(colnames(object[[]]), metadata_candidates), sep = "_"),
+    length(metadata_candidates)
+  )
+  regulon_metadata_columns <- tibble::tibble(
+    regulon = regulon_names,
+    metadata_column = metadata_columns
+  )
   metadata <- data.frame(row.names = colnames(object))
-  for (regulon in unique(activity$regulon)) {
+  for (index in seq_along(regulon_names)) {
+    regulon <- regulon_names[[index]]
     values <- stats::setNames(activity$score[activity$regulon == regulon], activity$cell[activity$regulon == regulon])
-    metadata[[paste(prefix, gsub("[^[:alnum:]_]+", "_", regulon), sep = "_")]] <- as.numeric(values[colnames(object)])
+    metadata[[metadata_columns[[index]]]] <- as.numeric(values[colnames(object)])
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
@@ -218,11 +266,12 @@ sn_run_grn <- function(object,
     ),
     parameters = list(
       top_targets = backend_control$top_targets %||% 50L,
-      activity_method = backend_control$activity_method %||% "mean"
+      activity_method = backend_control$activity_method %||% "weighted_mean"
     ),
     tables = list(
       primary = edges, edges = edges, regulons = regulons,
-      activity = activity, specificity = specificity
+      activity = activity, specificity = specificity,
+      regulon_metadata_columns = regulon_metadata_columns
     ),
     embeddings = list(), graphs = list(network = edges),
     models = list(backend = output$model %||% NULL),

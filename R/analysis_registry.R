@@ -77,22 +77,57 @@
   suppressWarnings(requireNamespace(package, quietly = TRUE))
 }
 
+.sn_method_conformance_statuses <- function() {
+  installed <- system.file("conformance", "contracts", package = "Shennong")
+  candidates <- unique(c(
+    if (nzchar(installed)) installed else character(),
+    file.path(getwd(), "inst", "conformance", "contracts")
+  ))
+  candidates <- candidates[dir.exists(candidates)]
+  if (length(candidates) == 0L) {
+    return(character(0))
+  }
+  paths <- sort(list.files(candidates[[1]], pattern = "\\.json$", full.names = TRUE))
+  contracts <- lapply(paths, jsonlite::read_json, simplifyVector = TRUE)
+  statuses <- vapply(
+    contracts,
+    function(contract) as.character(contract$status %||% "unassessed"),
+    character(1)
+  )
+  ids <- vapply(contracts, function(contract) as.character(contract$id %||% ""), character(1))
+  keep <- nzchar(ids)
+  stats::setNames(statuses[keep], ids[keep])
+}
+
 .sn_method_availability <- function(entry) {
   implemented <- isTRUE(entry$implemented)
   runtime <- tolower(as.character(entry$runtime))
-  package_available <- .sn_method_package_available(entry$package %||% "")
+  requires_call_adapter <- identical(runtime, "external") || isTRUE(entry$supports$external_runner)
+  package_available <- if (requires_call_adapter) {
+    NA
+  } else {
+    .sn_method_package_available(entry$package %||% "")
+  }
   executable <- as.character(entry$executable %||% "")
-  executable_available <- if (nzchar(executable)) nzchar(Sys.which(executable)) else TRUE
+  executable_available <- if (requires_call_adapter) {
+    NA
+  } else if (nzchar(executable)) {
+    nzchar(Sys.which(executable))
+  } else {
+    TRUE
+  }
   pixi_available <- if (identical(runtime, "pixi")) {
     isTRUE(sn_check_pixi(quiet = TRUE)$installed)
   } else {
     NA
   }
-  available <- implemented && package_available && executable_available &&
+  runnable <- implemented && !requires_call_adapter && isTRUE(package_available) && isTRUE(executable_available) &&
     (!identical(runtime, "pixi") || isTRUE(pixi_available))
 
   reason <- if (!implemented) {
     "Backend is registered for roadmap discovery but is not implemented yet."
+  } else if (requires_call_adapter) {
+    "Adapter is implemented, but each run requires an explicit upstream runner or result."
   } else if (!package_available) {
     paste0("Optional R package '", entry$package, "' is not installed.")
   } else if (!executable_available) {
@@ -104,7 +139,8 @@
   }
 
   list(
-    available = available,
+    available = runnable,
+    runnable = runnable,
     package_available = package_available,
     executable_available = executable_available,
     pixi_available = pixi_available,
@@ -112,13 +148,19 @@
   )
 }
 
-.sn_method_registry_row <- function(entry, include_status = TRUE) {
+.sn_method_registry_row <- function(entry, include_status = TRUE, conformance = character(0)) {
   status <- if (include_status) .sn_method_availability(entry) else list(
     available = NA,
+    runnable = NA,
     package_available = NA,
     pixi_available = NA,
     reason = NA_character_
   )
+  registry_key <- paste(entry$task, entry$name, sep = "::")
+  conformance_status <- unname(conformance[registry_key])
+  if (length(conformance_status) != 1L || is.na(conformance_status) || !nzchar(conformance_status)) {
+    conformance_status <- "unassessed"
+  }
   tibble::tibble(
     task = as.character(entry$task),
     name = as.character(entry$name),
@@ -128,8 +170,10 @@
     environment = as.character(entry$environment %||% NA_character_),
     implemented = isTRUE(entry$implemented),
     default = isTRUE(entry$default),
+    runnable = isTRUE(status$runnable),
     available = isTRUE(status$available),
     availability_reason = as.character(status$reason),
+    conformance_status = as.character(conformance_status),
     cpu_gpu = as.character(entry$cpu_gpu),
     install_action = as.character(entry$install),
     input_requirements = list(entry$input_requirements),
@@ -161,11 +205,18 @@
 #' @export
 sn_list_methods <- function(task = NULL, available = NULL) {
   entries <- .sn_method_registry()
-  table <- dplyr::bind_rows(lapply(entries, .sn_method_registry_row))
   if (!is_null(task)) {
     requested_tasks <- tolower(as.character(task))
-    table <- dplyr::filter(table, .data$task %in% .env$requested_tasks)
+    entries <- Filter(
+      function(entry) tolower(as.character(entry$task)) %in% requested_tasks,
+      entries
+    )
   }
+  conformance <- .sn_method_conformance_statuses()
+  table <- dplyr::bind_rows(lapply(
+    entries,
+    function(entry) .sn_method_registry_row(entry, conformance = conformance)
+  ))
   if (!is_null(available)) {
     if (!is.logical(available) || length(available) != 1L || is.na(available)) {
       stop("`available` must be NULL, TRUE, or FALSE.", call. = FALSE)
@@ -215,7 +266,9 @@ sn_get_method_status <- function(method, task = NULL) {
     method = row$name[[1]],
     task = row$task[[1]],
     available = row$available[[1]],
+    runnable = row$runnable[[1]],
     implemented = row$implemented[[1]],
+    conformance_status = row$conformance_status[[1]],
     reason = row$availability_reason[[1]],
     runtime = row$runtime[[1]],
     package = row$package[[1]],

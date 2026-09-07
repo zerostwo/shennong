@@ -108,6 +108,23 @@ data.frame(
 )
 ```
 
+Bulk scale is an input contract, not a guess made after choosing a method.
+`list(counts = ..., metadata = ...)` explicitly declares non-negative integer
+counts; `list(expression = ..., metadata = ...)` explicitly declares
+continuous expression even if every observed value happens to be an integer.
+For `SummarizedExperiment`, assay names containing `count`, `raw`, or `umi`
+declare counts, while names containing `log`, `norm`, `scale`, `CPM`, `TPM`, or
+`FPKM` declare expression. A declared count assay containing fractional or
+negative values fails instead of being silently reclassified.
+
+```{r bulk-scale-contract, eval = FALSE}
+count_input <- list(counts = pseudobulk_counts, metadata = sample_data)
+expression_input <- list(expression = tcga_expression, metadata = tcga_metadata)
+
+sn_assess_bulk_qc(count_input)
+sn_assess_bulk_qc(expression_input)
+```
+
 ## Audit real pseudobulk samples through the unified dispatcher
 
 The dedicated QC API and `sn_run_bulk()` dispatcher both run on the same 20
@@ -166,6 +183,51 @@ head(de$tables$differential_expression[
 ], 15)
 sn_plot_bulk_de(de, log2_fold_change = 0.5)
 ```
+
+The contrast variable must be categorical and both named levels must be
+observed. Fixed-effect designs must be full rank. A design containing a random
+effect selects `dream` under `method = "auto"`; for count input, the dream path
+first applies edgeR library-size/TMM normalization and then
+`voomWithDreamWeights()`. Count-only methods (`edgeR`, `DESeq2`) reject an
+expression-scale input instead of coercing it.
+
+For designs with interactions, the contrast has one backend-independent
+meaning. edgeR, DESeq2, limma, and dream compare the same numerator and
+denominator model-matrix profiles, holding numeric nuisance covariates at their
+median and categorical nuisance covariates at their first declared factor
+level. Inspect `de$diagnostics$contrast_numerator_profile`,
+`contrast_denominator_profile`, `contrast_vector`, and
+`contrast_covariate_policy` before interpreting an interaction coefficient.
+
+Single-cell pseudobulk follows the same count-scale boundary but keeps method-
+specific handling of corrected fractional counts. `DESeq2` requires integer
+raw/corrected counts and never rounds them. `edgeR` and limma-voom accept
+finite, non-negative fractional corrected counts. `subset_levels` is valid
+only with `subset_by`, must contain distinct observed labels, and limits the
+explicit per-subset comparisons.
+
+```{r single-cell-pseudobulk-contract, eval = FALSE}
+annotated_pbmc <- sn_find_de(
+  annotated_pbmc,
+  analysis = "pseudobulk",
+  ident_1 = "treated",
+  ident_2 = "control",
+  group_by = "condition",
+  sample_by = "sample_id",
+  subset_by = "cell_type",
+  subset_levels = c("CD4 T", "CD8 T"),
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  method = "edgeR",
+  design = ~ condition,
+  contrast = c("condition", "treated", "control"),
+  result_id = "response_by_t_cell_type"
+)
+```
+
+When the same biological unit contributes both groups, include `sample_by` in
+an explicit fixed-effect design, or omit `design` and let Shennong recognize a
+completely paired layout. Mixed paired/unpaired profiles fail closed.
 
 The generic result-aware figure API consumes the same fitted edgeR result.
 Unlike cluster-marker tables restricted to positive markers, this real

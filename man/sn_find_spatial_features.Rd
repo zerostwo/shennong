@@ -15,7 +15,8 @@ sn_find_spatial_features(
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  sample_by = NULL
 )
 }
 \arguments{
@@ -29,8 +30,7 @@ sn_find_spatial_features(
 
 \item{features}{Features to test.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Method controls or an explicit \code{runner}/\code{result}.}
 
@@ -41,6 +41,10 @@ sn_find_spatial_features(
 
 \item{verbose}{Top-level progress switch forwarded through
 \code{backend_control$verbose} when explicitly supplied.}
+
+\item{sample_by}{Optional metadata column defining independent samples or
+tissue sections. Spatial graphs and permutations are restricted within
+these boundaries.}
 }
 \value{
 A Seurat object or unified spatial-feature result.

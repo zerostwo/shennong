@@ -34,8 +34,9 @@ sn_run_trajectory(
 \item{method}{Trajectory backend. Slingshot and Monocle 3 run directly;
 Palantir accepts a standardized external runner or result.}
 
-\item{reduction}{Reduction used for inference. Defaults to PCA, then UMAP or
-the first available reduction.}
+\item{reduction}{Reduction used for inference. Monocle 3 defaults to an
+existing UMAP reduction; other methods default to PCA, then UMAP or the
+first available reduction.}
 
 \item{cluster_by}{Metadata column containing cluster labels. Defaults to
 \code{seurat_clusters}, then active identities.}
@@ -45,14 +46,14 @@ the first available reduction.}
 \item{lineages}{Optional named list of expected cluster paths. Their endpoints
 constrain Slingshot and inferred paths are checked against them.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used under the \code{trajectory} result type.}
 
 \item{dims}{Reduction dimensions used for inference.}
 
 \item{assay}{Assay used for dynamic-gene counts.}
 
-\item{counts_layer}{Raw-count layer used by tradeSeq.}
+\item{counts_layer}{Raw or corrected count layer used by tradeSeq. Values
+must be finite, non-negative, and integer-valued.}
 
 \item{test_dynamic}{Fit tradeSeq dynamic and branch tests.}
 
@@ -69,7 +70,9 @@ constrain Slingshot and inferred paths are checked against them.}
 \item{backend_control}{Backend controls. Use named \code{slingshot}, \code{monocle3},
 and \code{tradeSeq} argument lists for direct backends. Palantir accepts
 \code{runner} or \code{result}; the same explicit adapter boundary can override
-Monocle 3 for externally managed execution.}
+Monocle 3 for externally managed execution. The direct Monocle 3 path
+rejects terminal-cluster constraints and disconnected partitions that it
+cannot faithfully encode as one lineage.}
 
 \item{return_object}{Return the updated object instead of the result.}
 

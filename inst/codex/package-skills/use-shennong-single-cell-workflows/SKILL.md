@@ -56,6 +56,11 @@ This skill is the main entry point for package usage.
   them, such as composition, metrics, scArches, scPoli, and label transfer
 - use `layer` for Shennong expression-layer selectors; only internal calls to
   backend packages should use backend-specific names such as Seurat's `slot`
+- standardize RNA feature identity before normalization/clustering; gene-symbol
+  rebuilding invalidates RNA-derived reductions, graphs, and command records
+- for pseudobulk, select a raw/corrected count-named layer: DESeq2 requires
+  integer values, while edgeR/limma accept finite non-negative fractional
+  corrected counts; use `subset_levels` only with observed `subset_by` labels
 - call `sn_call_pixi_environment("<environment>", command = ..., args = ...)`
   for direct managed-Python commands (the family-specific `sn_call_*()`
   aliases are deprecated); reserve `sn_run_*()` Python wrappers for
@@ -134,9 +139,14 @@ This skill is the main entry point for package usage.
 	   retain complete expression matrices as sparse objects; only bounded
 	   neural-network minibatches and low-dimensional outputs may be dense. For scVI/scANVI,
 	   Shennong manages a
-   shared pixi scverse project under `~/.shennong/pixi/scvi/`, writes run
-   artifacts under `~/.shennong/runs/`, and imports the latent reduction back
-   into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
+	   shared pixi scverse project under `~/.shennong/pixi/scvi/`, uses a unique
+	   package-owned temporary run directory unless an explicit directory is
+	   supplied, and imports the latent reduction back
+	   into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
+	   For object-level Python wrappers, use the explicit `keep_run_dir` and
+	   `max_artifact_import_gb` arguments to control retained diagnostics and the
+	   bounded validation/materialization budget. With cleanup requested, a
+	   supplied output path is only a parent for a marked child and is preserved.
    scPoli uses the shared `scarches` pixi family and accepts optional
    `integration_control = list(label_by = ...)` for prototype supervision.
    Coralysis stores the trained reference SingleCellExperiment by default for
@@ -148,6 +158,10 @@ This skill is the main entry point for package usage.
    `integration_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
    by Shennong.
+   Default to tested exact Pixi `0.69.0`; overrides must name an immutable
+   release, mutable `latest` is rejected, and custom download URLs require an
+   explicit SHA-256. Temporary successful runs are cleaned and failure metadata
+   is sanitized unless retention is explicit.
    Re-running `sn_run_cluster()` on its own output reuses stages only when the
    selected layer content and relevant metadata digests still match; use
    `rerun_from = "integration"` or `reuse = FALSE` when a stage
@@ -185,6 +199,8 @@ This skill is the main entry point for package usage.
    voting), then inspect
    low-confidence cells/clusters with `sn_review_annotation()` and retrieve the
    stored result with `sn_get_result(object, "annotation", name)`. Use
+   `confidence_threshold` only after backend/reference-specific calibration;
+   missing or non-finite scores remain low confidence. Use
    `sn_map_cell_ontology()` for explicit ontology mapping. Lower-level
    reference annotation remains available with `sn_transfer_labels()` or
    `sn_transfer_labels(method = "coralysis")`; use
@@ -212,6 +228,9 @@ This skill is the main entry point for package usage.
    explicit `start`/`end` cluster labels, retrieve the complete result with
    `sn_get_result(object, "trajectory", result_id)`, and inspect per-lineage
    pseudotime/probabilities before using tradeSeq dynamic or branch tables.
+   Multi-lineage results require explicit weights, positive weights require
+   finite pseudotime, and direct Monocle 3 uses UMAP while failing closed on
+   unsupported terminal/partition constraints.
    Set `dynamic_features` to an explicit auditable feature set for formal
    analyses, and use `test_dynamic = FALSE` only for topology review.
    Run `sn_run_velocity()` only when raw spliced and unspliced layers are
@@ -229,8 +248,10 @@ This skill is the main entry point for package usage.
    `sn_get_result(object, "scissor", result_id)` and review all-cell, state,
    sample, correlation, model, and optional reliability tables before calling
    `sn_plot_scissor()`.
-   Use `gene_clusters = gene ~ cluster`, `analysis = "ora"`, and the actually
-   tested gene `universe` for grouped ORA. Use `gene ~ log2fc` together with
+   For stored-DE ORA, omit `gene_clusters`/`universe` to preserve multi-level
+   grouping and reconstruct the background from the stored assay; otherwise use
+   `gene_clusters = gene ~ cluster`, `analysis = "ora"`, and the actually
+   tested gene `universe`. Use `gene ~ log2fc` together with
    explicit `analysis = "gsea"` for ranked GSEA; set the RNG immediately before
    stochastic GSEA and resolve duplicate gene IDs explicitly. Use
    `database = c(...)` when the same input should be tested against multiple
@@ -243,15 +264,20 @@ This skill is the main entry point for package usage.
 6. Use `sn_run_cell_communication()` for LIANA, CellChat, CellPhoneDB,
    NicheNet, MultiNicheNet, or cross-method consensus. Supply `sample_by` and
    `condition_by` for replicate-aware comparisons, then inspect the stored
-   concordance, sample evidence, condition effects, and ligand-target tables.
+concordance, sample evidence, condition effects, and ligand-target tables.
+CellPhoneDB requires a normalized, log-transformed `data`/`data.*` layer;
+never pass raw counts or rely on an implicit fallback.
+   Add `paired_by` only for complete one-sample-per-condition matched units.
    Use `sn_run_regulatory_activity()` for DoRothEA TF or PROGENy pathway
    activity workflows.
 7. Use `sn_run_cnv()` only with explicit normal references; include
    `sample_by` for multi-patient data and review chromosome evidence,
-   malignancy scores, subclones, and sample summaries with `sn_plot_cnv()`.
+   malignancy scores, subclones, and sample summaries with `sn_plot_cnv()`;
+   keep normalized `association_layer` separate from the backend `layer`.
    Use `sn_run_metabolism()` with UCell by default and `sample_by` before any
    condition claim; scFEA/Compass require an explicit runner or parsed result.
-   For spatial data, preserve coordinate metadata and use `sn_run_spatial()`
+   For spatial data, preserve coordinate and section metadata, pass `sample_by`
+   so graphs/permutations/distances cannot cross sections, and use `sn_run_spatial()`
    or the explicit feature/domain/neighborhood functions. Run communication
    inference before adding distance constraints; proximity is supporting
    evidence, not a substitute interaction score.

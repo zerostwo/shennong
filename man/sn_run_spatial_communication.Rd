@@ -12,7 +12,8 @@ sn_run_spatial_communication(
   spatial_cols = NULL,
   max_distance = NULL,
   result_id = "spatial_communication",
-  return_object = TRUE
+  return_object = TRUE,
+  sample_by = NULL
 )
 }
 \arguments{
@@ -26,12 +27,18 @@ sn_run_spatial_communication(
 
 \item{spatial_cols}{Coordinate metadata columns.}
 
-\item{max_distance}{Optional maximum mean nearest-group distance.}
+\item{max_distance}{Optional finite non-negative maximum mean nearest-group
+distance.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{return_object}{Return the modified object or result.}
+
+\item{sample_by}{Optional metadata column defining independent samples or
+tissue sections. Distances are calculated within sections and then
+aggregated, never between sections. When communication rows contain a
+non-missing \code{sample} column, distances are matched by source, target, and
+sample instead of using the cross-sample aggregate.}
 }
 \value{
 A Seurat object or spatial-communication result.

@@ -66,6 +66,121 @@ test_that("sn_find_de stores marker results on the Seurat object", {
   expect_equal(stored$analysis, "markers")
   expect_equal(stored$method, "wilcox")
   expect_identical(stored$result_id, "celltype_markers")
+  expect_setequal(stored$input$tested_features, rownames(object[["RNA"]]))
+  expect_equal(stored$input$tested_features_count, nrow(object[["RNA"]]))
+  expect_identical(stored$input$tested_features_source, "assay_layer")
+})
+
+test_that("stored-DE ORA passes the exact tested feature subset to enrichment backends", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("org.Hs.eg.db")
+  skip_if_not_installed("msigdbr")
+
+  object <- make_de_test_object()
+  tested_features <- c("CD3D", "CD3E", "TRAC", "LCK")
+  local_mocked_bindings(
+    .sn_run_seurat_de = function(...) {
+      data.frame(
+        avg_log2FC = c(1.5, 1),
+        p_val_adj = c(0.001, 0.002),
+        row.names = c("CD3D", "CD3E")
+      )
+    },
+    .sn_enrich_get_msigdb_terms = function(...) {
+      tibble::tibble(
+        term = c("TEST_TERM", "TEST_TERM"),
+        description = c("test term", "test term"),
+        gene = c("CD3D", "CD3E")
+      )
+    },
+    .package = "Shennong"
+  )
+  object <- sn_find_de(
+    object,
+    analysis = "markers",
+    group_by = "cell_type",
+    layer = "data",
+    features = tested_features,
+    result_id = "feature_subset",
+    return_object = TRUE,
+    verbose = FALSE
+  )
+  stored_de <- sn_get_result(object, "de", "feature_subset")
+  expect_identical(stored_de$input$tested_features, tested_features)
+  expect_equal(stored_de$input$tested_features_count, length(tested_features))
+  expect_identical(stored_de$input$tested_features_source, "requested_features")
+
+  go_universe <- NULL
+  msigdb_universe <- NULL
+  mock_enrichment <- data.frame(
+    ID = "TEST_TERM",
+    Description = "test term",
+    pvalue = 0.01,
+    p.adjust = 0.02,
+    qvalue = 0.02
+  )
+  enrichment_outputs <- with_mocked_bindings(
+    {
+      go_object <- sn_run_enrichment(
+        x = object,
+        source_de_result_id = "feature_subset",
+        analysis = "ora",
+        species = "human",
+        database = "GOBP",
+        result_id = "go_subset",
+        return_object = TRUE
+      )
+      hallmark_result <- sn_run_enrichment(
+        x = object,
+        source_de_result_id = "feature_subset",
+        analysis = "ora",
+        species = "human",
+        database = "H",
+        result_id = "hallmark_subset",
+        return_object = FALSE
+      )
+      list(go_object = go_object, hallmark_result = hallmark_result)
+    },
+    enrichGO = function(..., universe) {
+      go_universe <<- universe
+      mock_enrichment
+    },
+    enricher = function(..., universe) {
+      msigdb_universe <<- universe
+      mock_enrichment
+    },
+    .package = "clusterProfiler"
+  )
+
+  expect_identical(go_universe, tested_features)
+  expect_identical(msigdb_universe, tested_features)
+  stored_go <- sn_get_result(enrichment_outputs$go_object, "enrichment", "go_subset")
+  expect_identical(stored_go$parameters$universe_source, "stored_de_tested_features")
+  expect_equal(stored_go$parameters$universe_size, length(tested_features))
+})
+
+test_that("stored-DE universe resolution only falls back for legacy results", {
+  skip_if_not_installed("Seurat")
+  object <- make_de_test_object()
+
+  legacy <- Shennong:::.sn_enrich_stored_de_universe(
+    de_result = list(assay = "RNA", input = list()),
+    object = object
+  )
+  expect_identical(legacy$source, "stored_de_assay_fallback:RNA")
+  expect_setequal(legacy$universe, rownames(object[["RNA"]]))
+
+  expect_error(
+    Shennong:::.sn_enrich_stored_de_universe(
+      de_result = list(
+        assay = "RNA",
+        input = list(tested_features = c("CD3D", NA_character_))
+      ),
+      object = object
+    ),
+    "tested_features"
+  )
 })
 
 test_that("sn_find_de accepts an explicit result_id", {
@@ -95,6 +210,36 @@ test_that("sn_find_de accepts an explicit result_id", {
   expect_error(
     sn_find_de(object, result_id = "", return_object = TRUE),
     "result_id"
+  )
+})
+
+test_that("stored-DE ORA uses a signed effect rather than an unsigned ranking score", {
+  input <- data.frame(
+    gene = c("UP", "DOWN"),
+    cosg_score = c(0.9, 0.8),
+    avg_log2FC = c(1, -1),
+    p_val_adj = c(0.01, 0.01)
+  )
+  de_result <- list(rank_col = "cosg_score", p_col = "p_val_adj")
+
+  up <- Shennong:::.sn_enrich_filter_stored_de_ora(
+    input, de_result, direction = "up"
+  )
+  down <- Shennong:::.sn_enrich_filter_stored_de_ora(
+    input, de_result, direction = "down"
+  )
+
+  expect_identical(up$gene, "UP")
+  expect_identical(down$gene, "DOWN")
+  expect_identical(attr(up, "sn_de_ora_selection")$effect_column, "avg_log2FC")
+
+  expect_error(
+    Shennong:::.sn_enrich_filter_stored_de_ora(
+      input[, c("gene", "cosg_score", "p_val_adj")],
+      de_result,
+      direction = "up"
+    ),
+    "signed effect column"
   )
 })
 
@@ -230,6 +375,184 @@ test_that("sn_find_de supports limma pseudobulk contrasts", {
 
   expect_true(nrow(result) > 0)
   expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
+})
+
+test_that("pseudobulk rejects normalized layers and applies method-specific integer rules", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("edgeR")
+  object <- make_de_test_object()
+
+  expect_error(
+    sn_find_de(
+      object,
+      analysis = "pseudobulk",
+      ident_1 = "treated",
+      ident_2 = "control",
+      group_by = "condition",
+      sample_by = "sample",
+      layer = "data",
+      method = "edgeR",
+      min_cells_per_sample = 5,
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "requires a raw or corrected count layer"
+  )
+
+  fractional <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+  fractional@x <- fractional@x + 0.25
+  SeuratObject::LayerData(object, assay = "RNA", layer = "corrected_counts") <- fractional
+  expect_error(
+    Shennong:::.sn_validate_pseudobulk_count_layer(
+      fractional,
+      layer = "corrected_counts"
+    ),
+    "DESeq2.*integer-valued"
+  )
+  expect_no_error(Shennong:::.sn_validate_pseudobulk_count_layer(
+    fractional,
+    layer = "corrected_counts",
+    require_integer = FALSE
+  ))
+  result <- sn_find_de(
+    object,
+    analysis = "pseudobulk",
+    ident_1 = "treated",
+    ident_2 = "control",
+    group_by = "condition",
+    sample_by = "sample",
+    layer = "corrected_counts",
+    method = "edgeR",
+    min_cells_per_sample = 5,
+    return_object = FALSE,
+    verbose = FALSE
+  )
+  expect_gt(nrow(result), 0L)
+
+  expect_no_error(Shennong:::.sn_validate_pseudobulk_count_layer(
+    SeuratObject::LayerData(object, assay = "RNA", layer = "counts"),
+    layer = "raw"
+  ))
+  expect_no_error(Shennong:::.sn_validate_pseudobulk_count_layer(
+    SeuratObject::LayerData(object, assay = "RNA", layer = "counts"),
+    layer = "umi"
+  ))
+  expect_error(
+    Shennong:::.sn_validate_pseudobulk_count_layer(
+      SeuratObject::LayerData(object, assay = "RNA", layer = "counts"),
+      layer = "normalized_counts"
+    ),
+    "requires a raw or corrected count layer"
+  )
+})
+
+test_that("subset_levels is explicit, unique, and observed", {
+  skip_if_not_installed("Seurat")
+  object <- make_de_test_object()
+
+  expect_error(
+    sn_find_de(
+      object,
+      analysis = "markers",
+      group_by = "cell_type",
+      subset_levels = "T",
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "only be supplied together"
+  )
+  expect_error(
+    sn_find_de(
+      object,
+      analysis = "markers",
+      group_by = "condition",
+      subset_by = "cell_type",
+      subset_levels = c("T", "T"),
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "distinct"
+  )
+  expect_error(
+    sn_find_de(
+      object,
+      analysis = "markers",
+      group_by = "condition",
+      subset_by = "cell_type",
+      subset_levels = "not_observed",
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "not observed"
+  )
+})
+
+test_that("pseudobulk profile identifiers cannot collide on user labels", {
+  keys <- Shennong:::.sn_pseudobulk_profile_keys(
+    sample = c("a___b", "a", "a___b", "a"),
+    group = c("c", "b___c", "c", "b___c")
+  )
+  expect_identical(keys, c("profile_1", "profile_2", "profile_1", "profile_2"))
+  expect_length(unique(keys), 2L)
+})
+
+test_that("pseudobulk supports explicit paired designs and validates sample semantics", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("edgeR")
+  object <- make_de_test_object()
+
+  result <- sn_find_de(
+    object,
+    analysis = "pseudobulk",
+    ident_1 = "treated",
+    ident_2 = "control",
+    group_by = "condition",
+    sample_by = "sample",
+    method = "edgeR",
+    min_cells_per_sample = 5,
+    design = ~sample + condition,
+    contrast = c("condition", "treated", "control"),
+    return_object = FALSE,
+    verbose = FALSE
+  )
+  expect_gt(nrow(result), 0L)
+  expect_true(all(result$comparison == "treated vs control"))
+
+  expect_error(
+    sn_find_de(
+      object,
+      analysis = "pseudobulk",
+      ident_1 = "treated",
+      ident_2 = "control",
+      group_by = "condition",
+      sample_by = "sample",
+      method = "edgeR",
+      min_cells_per_sample = 5,
+      design = ~condition,
+      contrast = c("condition", "treated", "control"),
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "must include `sample_by`"
+  )
+
+  mixed <- object
+  mixed$sample[as.character(mixed$sample) == "s4" & mixed$condition == "treated"] <- "s4_treated"
+  expect_error(
+    sn_find_de(
+      mixed,
+      analysis = "pseudobulk",
+      ident_1 = "treated",
+      ident_2 = "control",
+      group_by = "condition",
+      sample_by = "sample",
+      method = "edgeR",
+      min_cells_per_sample = 5,
+      return_object = FALSE,
+      verbose = FALSE
+    ),
+    "mixture of paired and unpaired"
+  )
 })
 
 test_that("sn_find_de supports COSGR markers", {
@@ -395,6 +718,7 @@ test_that("sn_run_enrichment stores enrichment results on the Seurat object by d
     stored$parameters$backend_versions[["clusterProfiler"]],
     as.character(utils::packageVersion("clusterProfiler"))
   )
+  expect_true(ncol(stored$tables$primary) > 0L)
 })
 
 test_that("sn_run_enrichment validates object type and GSEA input contracts", {
@@ -577,7 +901,6 @@ test_that("sn_run_enrichment supports Seurat x input via stored DE results", {
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
     source_de_result_id = "celltype_markers",
-    gene_clusters = gene ~ cluster,
     species = "human",
     database = "GOBP",
     result_id = "from_de",
@@ -586,6 +909,12 @@ test_that("sn_run_enrichment supports Seurat x input via stored DE results", {
 
   expect_s4_class(object, "Seurat")
   expect_true("from_de" %in% names(object@misc$shennong$results$enrichment))
+  stored <- sn_get_result(object, "enrichment", "from_de")
+  expect_identical(stored$parameters$de_ora_selection$group_column, "cluster")
+  expect_identical(stored$parameters$universe_source, "stored_de_tested_features")
+  expect_equal(stored$parameters$universe_size, nrow(object[["RNA"]]))
+  expect_identical(stored$parameters$de_ora_selection$universe_source, "stored_de_tested_features")
+  expect_equal(stored$parameters$de_ora_selection$universe_size, nrow(object[["RNA"]]))
 })
 
 test_that("sn_run_enrichment helper parsers validate formulas and msigdb inputs", {
@@ -645,6 +974,43 @@ test_that("sn_run_enrichment helper resolution covers store names and analysis i
     Shennong:::.sn_enrich_resolve_analysis(stats::setNames(c(1, -1), c("A", "B"))),
     "gsea"
   )
+})
+
+test_that("stored DE ORA selects significant genes with an explicit direction", {
+  input <- data.frame(
+    gene = c("A", "B", "C", "D"),
+    avg_log2FC = c(2, -2, 3, 0),
+    p_val_adj = c(0.01, 0.02, 0.2, 0.001)
+  )
+  metadata <- list(p_col = "p_val_adj", rank_col = "avg_log2FC")
+
+  up <- Shennong:::.sn_enrich_filter_stored_de_ora(input, metadata, direction = "up")
+  down <- Shennong:::.sn_enrich_filter_stored_de_ora(input, metadata, direction = "down")
+  both <- Shennong:::.sn_enrich_filter_stored_de_ora(input, metadata, direction = "both")
+
+  expect_identical(up$gene, "A")
+  expect_identical(down$gene, "B")
+  expect_setequal(both$gene, c("A", "B"))
+  expect_equal(attr(up, "sn_de_ora_selection")$retained_rows, 1L)
+  expect_error(
+    Shennong:::.sn_enrich_filter_stored_de_ora(
+      input[, c("gene", "avg_log2FC")], metadata, direction = "up"
+    ),
+    "adjusted-p-value"
+  )
+  expect_error(
+    Shennong:::.sn_enrich_filter_stored_de_ora(
+      input[, c("gene", "p_val_adj")], metadata, direction = "up"
+    ),
+    "signed effect"
+  )
+})
+
+test_that("enrichment backends do not change caller RNG state", {
+  set.seed(103)
+  before <- .Random.seed
+  Shennong:::.sn_enrichment_with_rng_preserved(runif(10))
+  expect_identical(.Random.seed, before)
 })
 
 test_that("sn_run_enrichment helper utilities normalize labels and resolve inputs consistently", {

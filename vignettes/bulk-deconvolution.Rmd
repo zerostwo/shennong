@@ -105,6 +105,9 @@ data.frame(
 The dry run writes only temporary input files and returns redacted container
 commands. It proves that the real reference labels and 20 pseudobulk columns
 satisfy the interface. It does **not** create or import a deconvolution result.
+Both inputs are raw counts here. CIBERSORTx also accepts non-log linear
+expression, but the reference and mixture must have the same detected scale;
+the returned `scale_provenance` records that decision.
 
 ```{r cibersortx-dry-run, eval=core_ready}
 cibersortx_bundle <- sn_run_bulk_deconvolution(
@@ -190,4 +193,8 @@ if (inherits(bayesprism_attempt, "error")) {
 ```
 
 CIBERSORTx production runs remain credentialed and containerized. The article
-does not synthesize a fraction table when that backend is unavailable.
+does not synthesize a fraction table when that backend is unavailable. An
+explicit `outdir` is a parent for a unique marked child run and is never
+recursively owned; the default temporary run is cleaned after success.
+BayesPrism accepts only finite non-negative integer-like raw counts and never
+rounds fractional expression silently.

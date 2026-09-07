@@ -298,6 +298,18 @@
   )
 }
 
+.sn_assert_rare_dense_budget <- function(x,
+                                         max_dense_gb = 2,
+                                         name = "rare-cell input",
+                                         peak_copies = 3) {
+  .sn_assert_dense_materialization_budget(
+    x = x,
+    max_dense_gb = max_dense_gb,
+    name = name,
+    peak_copies = peak_copies
+  )
+}
+
 .sn_run_sccad <- function(expr,
                           cell_ids,
                           gene_ids,
@@ -308,7 +320,31 @@
                           rare_h = 0.01,
                           merge_h = 0.3,
                           overlap_h = 0.7,
-                          save_full = FALSE) {
+                          save_full = FALSE,
+                          max_dense_gb = 2) {
+  if (length(dim(expr)) != 2L || ncol(expr) != length(cell_ids) ||
+      nrow(expr) != length(gene_ids)) {
+    stop("scCAD expression dimensions must match `gene_ids` by `cell_ids`.", call. = FALSE)
+  }
+  cell_ids <- as.character(cell_ids)
+  gene_ids <- as.character(gene_ids)
+  if (anyNA(cell_ids) || any(!nzchar(cell_ids)) || anyDuplicated(cell_ids)) {
+    stop("scCAD `cell_ids` must be unique and non-empty.", call. = FALSE)
+  }
+  if (anyNA(gene_ids) || any(!nzchar(gene_ids)) || anyDuplicated(gene_ids)) {
+    stop("scCAD `gene_ids` must be unique and non-empty.", call. = FALSE)
+  }
+  if (!is.null(colnames(expr)) && !identical(as.character(colnames(expr)), cell_ids)) {
+    stop("scCAD `cell_ids` must match expression columns in order.", call. = FALSE)
+  }
+  if (!is.null(rownames(expr)) && !identical(as.character(rownames(expr)), gene_ids)) {
+    stop("scCAD `gene_ids` must match expression rows in order.", call. = FALSE)
+  }
+  sparse_expr <- .sn_as_sparse_matrix(expr)
+  stored_values <- if (inherits(sparse_expr, "sparseMatrix")) sparse_expr@x else as.numeric(sparse_expr)
+  if (anyNA(stored_values) || any(!is.finite(stored_values)) || any(stored_values < 0)) {
+    stop("scCAD expression must contain finite, non-negative values.", call. = FALSE)
+  }
   python <- python %||% getOption("shennong.sccad_python", Sys.which("python"))
   if (!nzchar(python)) {
     stop("Could not find a Python executable for the scCAD backend.", call. = FALSE)
@@ -331,6 +367,7 @@
   output_path <- file.path(workdir, "sccad_result.json")
   runner_path <- file.path(workdir, "run_sccad.py")
 
+  .sn_assert_rare_dense_budget(expr, max_dense_gb, "scCAD expression input")
   expr_df <- as.data.frame(t(as.matrix(expr)))
   colnames(expr_df) <- gene_ids
   rownames(expr_df) <- cell_ids
@@ -370,10 +407,11 @@
     "        else:",
     "            out.append(str(item))",
     "    return out",
-    "rare_sets = [_to_str_list(cluster) for cluster_by in result]",
+    "rare_sets = [_to_str_list(cluster) for cluster in result]",
     "sub_clusters = [str(x) for x in sub_clusters]",
     "score = [float(x) for x in score]",
     "payload = {",
+    "    'cell_ids': _to_str_list(cell_names),",
     "    'rare_sets': rare_sets,",
     "    'scores': score,",
     "    'sub_clusters': sub_clusters,",
@@ -408,7 +446,66 @@
     )
   }
 
-  jsonlite::read_json(output_path, simplifyVector = TRUE)
+  parsed <- jsonlite::read_json(output_path, simplifyVector = FALSE)
+  .sn_validate_sccad_result(parsed, cell_ids = cell_ids, gene_ids = gene_ids)
+}
+
+.sn_validate_sccad_result <- function(result, cell_ids, gene_ids) {
+  required <- c("cell_ids", "rare_sets", "scores", "sub_clusters", "degs_list")
+  if (!is.list(result) || !all(required %in% names(result))) {
+    stop(
+      "scCAD output must contain: ", paste(required, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  output_cells <- as.character(unlist(result$cell_ids, use.names = FALSE))
+  if (!identical(output_cells, as.character(cell_ids))) {
+    stop("scCAD output cell identifiers must exactly match the input order.", call. = FALSE)
+  }
+  if (!is.list(result$rare_sets) || !is.list(result$degs_list)) {
+    stop("scCAD `rare_sets` and `degs_list` outputs must be lists.", call. = FALSE)
+  }
+  rare_sets <- lapply(result$rare_sets, function(values) {
+    as.character(unlist(values, use.names = FALSE))
+  })
+  degs_list <- lapply(result$degs_list, function(values) {
+    as.character(unlist(values, use.names = FALSE))
+  })
+  scores <- suppressWarnings(as.numeric(unlist(result$scores, use.names = FALSE)))
+  sub_clusters <- as.character(unlist(result$sub_clusters, use.names = FALSE))
+  if (length(scores) != length(rare_sets) || length(degs_list) != length(rare_sets)) {
+    stop("scCAD must return one finite score and one DEG set per rare cell set.", call. = FALSE)
+  }
+  if (length(scores) > 0L && (anyNA(scores) || any(!is.finite(scores)))) {
+    stop("scCAD rare-set scores must be finite numeric values.", call. = FALSE)
+  }
+  if (length(sub_clusters) != length(cell_ids) || anyNA(sub_clusters) ||
+      any(!nzchar(sub_clusters))) {
+    stop("scCAD `sub_clusters` must contain one non-empty label per input cell.", call. = FALSE)
+  }
+  for (index in seq_along(rare_sets)) {
+    members <- rare_sets[[index]]
+    genes <- degs_list[[index]]
+    if (length(members) == 0L || anyNA(members) || any(!nzchar(members)) ||
+        anyDuplicated(members) || !all(members %in% cell_ids)) {
+      stop("Each scCAD rare set must contain unique input cell identifiers.", call. = FALSE)
+    }
+    if (anyNA(genes) || any(!nzchar(genes)) || anyDuplicated(genes) ||
+        !all(genes %in% gene_ids)) {
+      stop("Each scCAD DEG set must contain unique input gene identifiers.", call. = FALSE)
+    }
+  }
+  all_members <- unlist(rare_sets, use.names = FALSE)
+  if (anyDuplicated(all_members)) {
+    stop("scCAD rare sets must not assign a cell to multiple rare populations.", call. = FALSE)
+  }
+  list(
+    cell_ids = output_cells,
+    rare_sets = rare_sets,
+    scores = scores,
+    sub_clusters = sub_clusters,
+    degs_list = degs_list
+  )
 }
 
 .sn_get_embedding_knn <- function(embeddings, k = 20, n_trees = 50) {
@@ -440,9 +537,10 @@
   stats::setNames(as.numeric(rare_score), rownames(embeddings))
 }
 
-.sn_run_gapclust <- function(expr, k = 200) {
+.sn_run_gapclust <- function(expr, k = 200, max_dense_gb = 2) {
   check_installed_github("GapClust", "fabotao/GapClust", reason = "to detect rare cells with the GapClust backend.")
 
+  .sn_assert_rare_dense_budget(expr, max_dense_gb, "GapClust expression input")
   result <- GapClust::GapClust(data = as.matrix(expr), k = as.integer(k))
   cell_ids <- colnames(expr)
   if (length(result) == 1 && is.na(result)) {
@@ -477,7 +575,8 @@
                         iters = 3,
                         nbhd_size = 15,
                         model = "wilcoxon",
-                        seed = 717) {
+                        seed = 717,
+                        max_dense_gb = 2) {
   python <- python %||% getOption("shennong.sca_python", Sys.which("python"))
   if (!nzchar(python)) {
     stop("Could not find a Python executable for the SCA backend.", call. = FALSE)
@@ -491,6 +590,7 @@
   output_path <- file.path(workdir, "sca_result.json")
   runner_path <- file.path(workdir, "run_sca.py")
 
+  .sn_assert_rare_dense_budget(expr, max_dense_gb, "SCA expression input")
   expr_df <- as.data.frame(t(as.matrix(expr)))
   colnames(expr_df) <- rownames(expr)
   rownames(expr_df) <- colnames(expr)
@@ -580,6 +680,8 @@
 #' @param sca_iters Number of SCA iterations.
 #' @param sca_nbhd_size Neighborhood size passed to SCA.
 #' @param sca_model Scoring model passed to SCA.
+#' @param max_dense_gb Maximum estimated peak GiB allowed before a rare-cell
+#'   backend materializes the complete expression matrix as dense.
 #'
 #' @return A data frame with one row per cell, including a \code{rare_score}
 #'   column and a logical \code{rare_cell} flag.
@@ -618,7 +720,8 @@ sn_detect_rare_cells <- function(object,
                                  sca_n_comps = 20,
                                  sca_iters = 3,
                                  sca_nbhd_size = 15,
-                                 sca_model = "wilcoxon") {
+                                 sca_model = "wilcoxon",
+                                 max_dense_gb = 2) {
   if (!inherits(object, "Seurat")) {
     stop("Input must be a Seurat object.", call. = FALSE)
   }
@@ -659,14 +762,15 @@ sn_detect_rare_cells <- function(object,
       seed = seed,
       rare_h = sccad_rare_h,
       merge_h = sccad_merge_h,
-      overlap_h = sccad_overlap_h
+      overlap_h = sccad_overlap_h,
+      max_dense_gb = max_dense_gb
     )
     rare_membership <- unique(unlist(sccad_result$rare_sets, use.names = FALSE))
-    subcluster_score <- stats::setNames(
-      as.numeric(sccad_result$scores),
-      unique(sccad_result$sub_clusters)
-    )
-    rare_score <- unname(subcluster_score[as.character(sccad_result$sub_clusters)])
+    rare_score <- stats::setNames(rep(0, length(cell_ids)), cell_ids)
+    for (index in seq_along(sccad_result$rare_sets)) {
+      rare_score[sccad_result$rare_sets[[index]]] <- sccad_result$scores[[index]]
+    }
+    rare_score <- unname(rare_score[cell_ids])
     rare_flag <- cell_ids %in% rare_membership
     return(data.frame(
       cell_id = cell_ids,
@@ -678,7 +782,7 @@ sn_detect_rare_cells <- function(object,
     ))
   } else if (identical(method, "gapclust")) {
     return(transform(
-      .sn_run_gapclust(expr = expr, k = gapclust_k),
+      .sn_run_gapclust(expr = expr, k = gapclust_k, max_dense_gb = max_dense_gb),
       method = method
     ))
   } else if (identical(method, "sca")) {
@@ -689,7 +793,8 @@ sn_detect_rare_cells <- function(object,
       iters = sca_iters,
       nbhd_size = sca_nbhd_size,
       model = sca_model,
-      seed = seed
+      seed = seed,
+      max_dense_gb = max_dense_gb
     )
     rare_score <- .sn_score_embedding_rarity(sca_embedding, k = k)
   } else {
@@ -722,4 +827,3 @@ sn_detect_rare_cells <- function(object,
     stringsAsFactors = FALSE
   )
 }
-

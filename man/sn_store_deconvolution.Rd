@@ -21,8 +21,7 @@ sn_store_deconvolution(
 
 \item{result}{A deconvolution table.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored deconvolution result.}
 
 \item{method}{Deconvolution backend, for example \code{"bayesprism"}.}
 

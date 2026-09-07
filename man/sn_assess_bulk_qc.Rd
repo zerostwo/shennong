@@ -25,8 +25,7 @@ containing \code{counts}/\code{expression} and optional \code{metadata}.}
 
 \item{outlier_z}{Robust z-score threshold used for sample flags.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the returned bulk-QC result.}
 }
 \value{
 A validated Shennong bulk-QC result.

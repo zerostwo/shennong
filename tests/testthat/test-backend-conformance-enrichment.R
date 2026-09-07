@@ -145,7 +145,11 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
   object <- sn_store_result(
     object, "de", "markers",
     list(
-      tables = list(primary = data.frame(gene = paste0("G", 1:8))),
+      tables = list(primary = data.frame(
+        gene = paste0("G", 1:8),
+        avg_log2FC = rep(1, 8L),
+        p_val_adj = rep(0.01, 8L)
+      )),
       analysis = "markers", method = "test", backend = "test"
     )
   )

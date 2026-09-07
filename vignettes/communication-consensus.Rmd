@@ -70,6 +70,13 @@ This core chunk is useful even when no communication backend is installed: it
 shows exactly how many cells, clusters, and biological samples would enter the
 extended analysis.
 
+`sample_by` defines the replicate used for ligand/receptor expression. When a
+study has repeated conditions from the same donor or experimental unit,
+`paired_by` names that unit. It must be non-missing and constant within each
+sample. For every tested edge, each retained pair must contribute exactly one
+sample to each side of the explicit `contrast`; incomplete or duplicated pairs
+fail closed instead of falling back to an unpaired test.
+
 ```{r prepare-communication, eval=core_ready}
 library(Shennong)
 library(Seurat)
@@ -237,6 +244,34 @@ if (nrow(communication$tables$condition_comparison) > 0) {
 }
 ```
 
+The real fixture above has independent sample IDs, so it uses an unpaired
+sample-level comparison. A paired design is declared explicitly as follows:
+
+```{r paired-communication-template, eval = FALSE}
+paired_communication <- sn_run_cell_communication(
+  paired_object,
+  method = c("liana", "cellchat"),
+  group_by = "cell_state",
+  sample_by = "sample_id",
+  condition_by = "condition",
+  paired_by = "donor_id",
+  contrast = c("treated", "control"),
+  consensus = TRUE,
+  result_id = "paired_treatment_communication",
+  return_object = FALSE
+)
+
+paired_communication$tables$condition_comparison[, c(
+  "source", "target", "ligand", "receptor",
+  "estimate", "paired", "n_pairs", "adjusted_p_value"
+)]
+```
+
+Here the condition table reports a paired Wilcoxon comparison and the number
+of complete pairs. `condition` and `sample` are comparison context, not part of
+the biological ligand-receptor edge key; this prevents the two conditions from
+being split into incomparable one-row groups.
+
 ## Extended: direct CellPhoneDB object workflow
 
 The direct object adapter runs only when an audited local CellPhoneDB pixi
@@ -256,7 +291,7 @@ cellphonedb_attempt <- tryCatch(
   sn_run_cellphonedb(
     cellphonedb_object,
     assay = "RNA",
-    layer = "counts",
+    layer = "data",
     group_by = "cell_state",
     output_dir = tempfile("shennong-cellphonedb-pkgdown-"),
     runtime_dir = cellphonedb_paths$runtime_dir,

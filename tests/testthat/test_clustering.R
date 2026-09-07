@@ -109,6 +109,72 @@ make_fake_python_runner <- function(payload_expr) {
   script_path
 }
 
+test_that("sn_run_cluster top-level seed controls every stochastic stage", {
+  captured <- NULL
+  local_mocked_bindings(
+    .sn_run_cluster_impl = function(args) {
+      stats::runif(1)
+      captured <<- args
+      args
+    },
+    .package = "Shennong"
+  )
+
+  set.seed(81L)
+  rng_before <- .Random.seed
+  sn_run_cluster(
+    object = NULL,
+    integration_method = "unintegrated",
+    integration_control = list(seed = 9L, icp_args = list(RNGseed = 8L)),
+    seed = 123L,
+    verbose = FALSE
+  )
+  expect_identical(captured$workflow_seed, 123L)
+  expect_identical(captured$cluster_random_seed, 123L)
+  expect_identical(captured$integration_control$seed, 123L)
+  expect_identical(captured$integration_control$icp_args$RNGseed, 123L)
+  expect_identical(.Random.seed, rng_before)
+  expect_error(
+    sn_run_cluster(NULL, integration_method = "unintegrated", seed = -1),
+    "non-negative integer"
+  )
+
+  captured_multi <- NULL
+  local_mocked_bindings(
+    .sn_run_cluster_multi = function(args) {
+      captured_multi <<- args
+      args
+    },
+    .package = "Shennong"
+  )
+  sn_run_cluster(
+    object = NULL,
+    integration_method = c("harmony", "scvi"),
+    integration_control = list(
+      .default = list(seed = 7L),
+      harmony = list(theta = 3),
+      scvi = list(seed = 9L)
+    ),
+    seed = 123L,
+    verbose = FALSE
+  )
+  expect_identical(captured_multi$integration_control$.default$seed, 123L)
+  expect_identical(captured_multi$integration_control$harmony$seed, 123L)
+  expect_identical(captured_multi$integration_control$scvi$seed, 123L)
+  expect_identical(
+    captured_multi$integration_control$harmony$icp_args$RNGseed,
+    123L
+  )
+  expect_identical(
+    Shennong:::.sn_multi_method_control(
+      captured_multi$integration_control,
+      c("harmony", "scvi"),
+      "scvi"
+    )$seed,
+    123L
+  )
+})
+
 test_that("sn_run_cluster clusters a single dataset with the standard workflow", {
   skip_if_not_installed("Seurat")
 
@@ -221,6 +287,7 @@ test_that("integration control templates cover every supported backend", {
   expect_identical(sn_get_integration_control_template("harmony")$theta, 2)
   expect_true(all(c("icp_args", "pca_args", "store_sce") %in% names(templates$coralysis)))
   expect_true(all(c("accelerator", "model_args", "train_args", "write_h5ad") %in% names(templates$scvi)))
+  expect_true(all(c("pixi_download_url", "pixi_sha256") %in% names(templates$scvi)))
   expect_true(all(c("label_by", "scanvi_model_args", "scanvi_train_args") %in% names(templates$scanvi)))
   expect_true(all(c("n_epochs", "pretraining_epochs", "latent_batch_size") %in% names(templates$scpoli)))
   expect_true(all(c("bbknn_args", "umap_args", "graph_name") %in% names(templates$bbknn)))
@@ -232,6 +299,7 @@ test_that("pixi execution records backend process resource usage when available"
   output_dir <- tempfile("resource-usage-")
   dir.create(output_dir)
   on.exit(unlink(output_dir, recursive = TRUE), add = TRUE)
+  ensure_args <- NULL
 
   result <- testthat::with_mocked_bindings(
     .sn_execute_scvi_pixi(
@@ -242,12 +310,19 @@ test_that("pixi execution records backend process resource usage when available"
       output_dir = output_dir,
       config_path = tempfile(),
       install_pixi = FALSE,
+      pixi_download_url = "https://mirror.example/pixi.tar.gz",
+      pixi_sha256 = strrep("d", 64L),
       verbose = FALSE
     ),
-    sn_ensure_pixi = function(...) list(path = "/bin/true"),
+    sn_ensure_pixi = function(...) {
+      ensure_args <<- list(...)
+      list(path = "/bin/true")
+    },
     .package = "Shennong"
   )
 
+  expect_identical(ensure_args$download_url, "https://mirror.example/pixi.tar.gz")
+  expect_identical(ensure_args$sha256, strrep("d", 64L))
   expect_true(is.list(result$performance))
   expect_true(is.finite(result$performance$elapsed_seconds))
   if (identical(Sys.info()[["sysname"]], "Linux") && file.exists("/usr/bin/time")) {
@@ -1353,7 +1428,7 @@ test_that("python rare-cell backends serialize inputs and parse JSON outputs", {
   fake_sccad_script <- tempfile("scCAD-", fileext = ".py")
   writeLines("# placeholder", fake_sccad_script)
   fake_python_sccad <- make_fake_python_runner(
-    "printf '%s' '{\"rare_sets\":[[\"cell1\",\"cell2\"]],\"scores\":[0.91],\"sub_clusters\":[\"rare_a\",\"rare_a\",\"major_b\"],\"degs_list\":[[\"gene1\",\"gene2\"]]}' > \"$out\""
+    "printf '%s' '{\"cell_ids\":[\"cell1\",\"cell2\",\"cell3\"],\"rare_sets\":[[\"cell1\",\"cell2\"]],\"scores\":[0.91],\"sub_clusters\":[\"rare_a\",\"rare_a\",\"major_b\"],\"degs_list\":[[\"gene1\",\"gene2\"]]}' > \"$out\""
   )
   sccad_result <- Shennong:::.sn_run_sccad(
     expr = expr,
@@ -1752,6 +1827,8 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
     control <- list(
       runtime_dir = runtime_dir,
       pixi_project = file.path(runtime_dir, "pixi", "scvi"),
+      pixi_download_url = "https://mirror.example/pixi.tar.gz",
+      pixi_sha256 = strrep("a", 64L),
       n_latent = 6,
       max_epochs = 1,
       write_h5ad = FALSE
@@ -1786,15 +1863,19 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
                                        install_pixi = TRUE,
                                        pixi_version = "latest",
                                        pixi_download_url = NULL,
+                                       pixi_sha256 = NULL,
                                        verbose = TRUE) {
         captured <<- list(
           manifest_path = manifest_path,
           script = script,
           input_dir = input_dir,
+          run_dir = dirname(input_dir),
           output_dir = output_dir,
           environment = environment,
           pixi_home = pixi_home,
           install_pixi = install_pixi,
+          pixi_download_url = pixi_download_url,
+          pixi_sha256 = pixi_sha256,
           config = jsonlite::read_json(config_path, simplifyVector = TRUE),
           exported = Matrix::readMM(file.path(input_dir, "counts.mtx")),
           exported_features = utils::read.csv(file.path(input_dir, "features.csv"), stringsAsFactors = FALSE)$feature_id,
@@ -1811,7 +1892,11 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
         }
         utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
         jsonlite::write_json(
-          list(output_h5ad = file.path(output_dir, "integrated.h5ad")),
+          list(
+            method = backend,
+            n_cells = length(cells),
+            n_features = length(captured$exported_features)
+          ),
           file.path(output_dir, "manifest.json"),
           auto_unbox = TRUE
         )
@@ -1838,7 +1923,12 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
       as.matrix(original_counts)
     )
     expect_true(captured$environment %in% c("cpu", "gpu"))
+    expect_identical(captured$pixi_download_url, control$pixi_download_url)
+    expect_identical(captured$pixi_sha256, control$pixi_sha256)
     expect_true(grepl("pixi/home$", captured$pixi_home))
+    expect_false(dir.exists(captured$run_dir))
+    expect_false(clustered@misc$integration$run_dir_retained)
+    expect_null(clustered@misc$integration$run_dir)
     expect_true("scvi_qc" %in% colnames(clustered[[]]))
     if (identical(backend, "scanvi")) {
       expect_true("scanvi_prediction" %in% colnames(clustered[[]]))
@@ -1859,6 +1949,7 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
   SeuratObject::LayerData(merged, assay = "RNA", layer = "decontaminated_counts") <- selected_counts
   runtime_dir <- tempfile("shennong-scpoli-runtime-")
   captured <- NULL
+  captured_budgets <- numeric()
 
   clustered <- testthat::with_mocked_bindings(
     sn_run_cluster(
@@ -1870,6 +1961,9 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
       integration_control = list(
         runtime_dir = runtime_dir,
         pixi_project = file.path(runtime_dir, "pixi", "scarches"),
+        pixi_download_url = "https://mirror.example/pixi.tar.gz",
+        pixi_sha256 = strrep("b", 64L),
+        max_artifact_import_gb = 0.123,
         n_latent = 5,
         n_epochs = 2,
         write_h5ad = FALSE,
@@ -1892,11 +1986,15 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
                                      install_pixi = TRUE,
                                      pixi_version = "latest",
                                      pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
                                      verbose = TRUE,
                                      backend_label = "scVI") {
       captured <<- list(
         input_dir = input_dir,
+        run_dir = dirname(input_dir),
         backend_label = backend_label,
+        pixi_download_url = pixi_download_url,
+        pixi_sha256 = pixi_sha256,
         config = jsonlite::read_json(config_path, simplifyVector = TRUE),
         exported = Matrix::readMM(file.path(input_dir, "counts.mtx")),
         features = utils::read.csv(file.path(input_dir, "features.csv"), stringsAsFactors = FALSE)$feature_id,
@@ -1910,7 +2008,20 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
       )
       utils::write.csv(latent, file.path(output_dir, "latent.csv"))
       utils::write.csv(data.frame(scpoli_qc = seq_along(captured$cells), row.names = captured$cells), file.path(output_dir, "obs.csv"))
-      jsonlite::write_json(list(scarches_version = "0.test"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE)
+      jsonlite::write_json(
+        list(
+          method = "scpoli",
+          n_cells = length(captured$cells),
+          n_features = length(captured$features),
+          scarches_version = "0.test"
+        ),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
+    },
+    .sn_assert_python_artifact_budget = function(paths, max_import_gb, label) {
+      captured_budgets <<- c(captured_budgets, max_import_gb)
+      invisible(TRUE)
     },
     .package = "Shennong"
   )
@@ -1920,8 +2031,14 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
   expect_equal(clustered@misc$integration$method, "scpoli")
   expect_equal(clustered@misc$integration$source_layer, "decontaminated_counts")
   expect_equal(captured$backend_label, "scPoli")
+  expect_identical(captured$pixi_download_url, "https://mirror.example/pixi.tar.gz")
+  expect_identical(captured$pixi_sha256, strrep("b", 64L))
+  expect_gte(length(captured_budgets), 2L)
+  expect_true(all(captured_budgets == 0.123))
   expect_equal(captured$config$source_layer, "decontaminated_counts")
   expect_equal(captured$config$n_epochs, 2)
+  expect_false(dir.exists(captured$run_dir))
+  expect_false(clustered@misc$integration$run_dir_retained)
   expected_export <- selected_counts[captured$features, captured$cells, drop = FALSE]
   expect_equal(unname(as.matrix(captured$exported)), unname(as.matrix(expected_export)))
 })
@@ -1951,6 +2068,8 @@ test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
       integration_control = list(
         runtime_dir = runtime_dir,
         pixi_project = file.path(runtime_dir, "pixi", "bbknn"),
+        pixi_download_url = "https://mirror.example/pixi.tar.gz",
+        pixi_sha256 = strrep("c", 64L),
         bbknn_args = list(neighbors_within_batch = 2L)
       ),
       nfeatures = 50,
@@ -1971,12 +2090,16 @@ test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
                                      install_pixi = TRUE,
                                      pixi_version = "latest",
                                      pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
                                      verbose = TRUE,
                                      backend_label = "scVI") {
       pca <- utils::read.csv(file.path(input_dir, "pca.csv"), row.names = 1, check.names = FALSE)
       captured <<- list(
         pca = pca,
+        run_dir = dirname(input_dir),
         backend_label = backend_label,
+        pixi_download_url = pixi_download_url,
+        pixi_sha256 = pixi_sha256,
         config = jsonlite::read_json(config_path, simplifyVector = TRUE)
       )
       n <- nrow(pca)
@@ -1984,11 +2107,28 @@ test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
       diag(graph) <- 0
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       Matrix::writeMM(graph, file.path(output_dir, "connectivities.mtx"))
+      Matrix::writeMM(graph, file.path(output_dir, "distances.mtx"))
+      utils::write.csv(
+        data.frame(cell_id = rownames(pca)),
+        file.path(output_dir, "cells.csv"),
+        row.names = FALSE
+      )
       utils::write.csv(
         matrix(seq_len(n * 2), nrow = n, dimnames = list(rownames(pca), c("UMAP_1", "UMAP_2"))),
         file.path(output_dir, "umap.csv")
       )
-      jsonlite::write_json(list(bbknn_version = "1.6.test"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE)
+      jsonlite::write_json(
+        list(
+          method = "bbknn",
+          n_cells = n,
+          n_pcs = ncol(pca),
+          n_batches = 2L,
+          umap_dimensions = 2L,
+          bbknn_version = "1.6.test"
+        ),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
     },
     .package = "Shennong"
   )
@@ -2003,9 +2143,13 @@ test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
   expect_equal(clustered@misc$sn_run_cluster$stages$neighbors$snn_graph, "bbknn_snn")
   expect_equal(clustered@misc$sn_run_cluster$stages$umap$signature$graph, "bbknn_snn")
   expect_equal(captured$backend_label, "BBKNN")
+  expect_identical(captured$pixi_download_url, "https://mirror.example/pixi.tar.gz")
+  expect_identical(captured$pixi_sha256, strrep("c", 64L))
   expect_equal(captured$config$source_layer, "decontaminated_counts")
   expect_equal(captured$config$bbknn_args$neighbors_within_batch, 2)
   expect_equal(nrow(captured$pca), ncol(merged))
+  expect_false(dir.exists(captured$run_dir))
+  expect_false(clustered@misc$integration$run_dir_retained)
   expect_equal(
     as.matrix(Shennong:::.sn_get_seurat_layer_data(clustered, assay = "RNA", layer = "counts")),
     as.matrix(original_counts)
@@ -2053,14 +2197,18 @@ test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
                                      install_pixi = TRUE,
                                      pixi_version = "latest",
                                      pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
                                      verbose = TRUE) {
       captured <<- list(
         manifest_path = manifest_path,
         script = script,
         input_dir = input_dir,
+        run_dir = dirname(input_dir),
         output_dir = output_dir,
         environment = environment,
-        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+        protein_counts_exists = file.exists(file.path(input_dir, "protein_counts.mtx")),
+        proteins_exists = file.exists(file.path(input_dir, "proteins.csv"))
       )
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       cells <- utils::read.csv(file.path(input_dir, "cells.csv"), stringsAsFactors = FALSE)$cell_id
@@ -2070,7 +2218,12 @@ test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
       metadata <- data.frame(totalvi_qc = seq_along(cells), row.names = cells)
       utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
       jsonlite::write_json(
-        list(output_h5ad = file.path(output_dir, "integrated.h5ad")),
+        list(
+          method = "totalvi",
+          n_cells = length(cells),
+          n_features = nrow(Matrix::readMM(file.path(input_dir, "counts.mtx"))),
+          n_proteins = nrow(Matrix::readMM(file.path(input_dir, "protein_counts.mtx")))
+        ),
         file.path(output_dir, "manifest.json"),
         auto_unbox = TRUE
       )
@@ -2090,8 +2243,9 @@ test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
   expect_equal(captured$config$batch_key, "sample")
   expect_equal(captured$config$protein_assay, "ADT")
   expect_equal(captured$config$protein_features, paste0("ADT", 1:6))
-  expect_true(file.exists(file.path(captured$input_dir, "protein_counts.mtx")))
-  expect_true(file.exists(file.path(captured$input_dir, "proteins.csv")))
+  expect_true(captured$protein_counts_exists)
+  expect_true(captured$proteins_exists)
+  expect_false(dir.exists(captured$run_dir))
 })
 
 test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
@@ -2137,16 +2291,21 @@ test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
                                      install_pixi = TRUE,
                                      pixi_version = "latest",
                                      pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
                                      verbose = TRUE,
                                      backend_label = "scVI") {
       captured <<- list(
         manifest_path = manifest_path,
         script = script,
         input_dir = input_dir,
+        run_dir = dirname(input_dir),
         output_dir = output_dir,
         environment = environment,
         backend_label = backend_label,
-        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+        protein_exists = file.exists(file.path(input_dir, "protein.csv")),
+        obs_exists = file.exists(file.path(input_dir, "obs.csv")),
+        obs_columns = colnames(utils::read.csv(file.path(input_dir, "obs.csv"), check.names = FALSE))
       )
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       protein <- utils::read.csv(file.path(input_dir, "protein.csv"), check.names = FALSE)
@@ -2156,7 +2315,7 @@ test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
       utils::write.csv(corrected, file.path(output_dir, "landmark_protein.csv"))
       utils::write.csv(data.frame(row.names = rownames(protein)), file.path(output_dir, "obs.csv"))
       jsonlite::write_json(
-        list(mmochi_version = "0.3.5"),
+        list(method = "mmochi", n_cells = nrow(protein), mmochi_version = "0.3.5"),
         file.path(output_dir, "manifest.json"),
         auto_unbox = TRUE
       )
@@ -2181,8 +2340,10 @@ test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
   expect_equal(captured$config$protein_features, paste0("ADT", 1:10))
   expect_equal(captured$backend_label, "MMoCHi")
   expect_equal(captured$environment, "default")
-  expect_true(file.exists(file.path(captured$input_dir, "protein.csv")))
-  expect_true(file.exists(file.path(captured$input_dir, "obs.csv")))
+  expect_true(captured$protein_exists)
+  expect_true(captured$obs_exists)
+  expect_setequal(captured$obs_columns, c("cell_id", "sample"))
+  expect_false(dir.exists(captured$run_dir))
   if (identical(clustered@misc$integration$corrected_storage, "layer")) {
     expect_equal(dim(SeuratObject::LayerData(clustered, assay = "ADT", layer = "mmochi.data")), c(10L, ncol(clustered)))
   } else {
@@ -2231,12 +2392,15 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
                                      install_pixi = TRUE,
                                      pixi_version = "latest",
                                      pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
                                      verbose = TRUE,
                                      backend_label = "scVI") {
       captured <<- list(
         input_dir = input_dir,
+        run_dir = dirname(input_dir),
         output_dir = output_dir,
-        config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+        config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+        obs = utils::read.csv(file.path(input_dir, "obs.csv"), check.names = FALSE)
       )
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       protein <- utils::read.csv(file.path(input_dir, "protein.csv"), check.names = FALSE)
@@ -2245,7 +2409,7 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
       corrected <- protein + 0.5
       utils::write.csv(corrected, file.path(output_dir, "landmark_protein.csv"))
       jsonlite::write_json(
-        list(mmochi_version = "0.3.5"),
+        list(method = "mmochi", n_cells = nrow(protein), mmochi_version = "0.3.5"),
         file.path(output_dir, "manifest.json"),
         auto_unbox = TRUE
       )
@@ -2253,7 +2417,7 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
     .package = "Shennong"
   )
 
-  obs <- utils::read.csv(file.path(captured$input_dir, "obs.csv"), check.names = FALSE)
+  obs <- captured$obs
   expect_s4_class(clustered, "Seurat")
   expect_true("mmochi" %in% names(clustered@reductions))
   expect_false("pca" %in% names(clustered@reductions))
@@ -2265,6 +2429,7 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
   expect_true(captured$config$batch_key %in% colnames(obs))
   expect_equal(unique(obs[[captured$config$batch_key]]), "single_sample")
   expect_false(captured$config$batch_key %in% colnames(clustered[[]]))
+  expect_false(dir.exists(captured$run_dir))
 })
 
 test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
@@ -2278,6 +2443,7 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
   rownames(counts) <- genes
   colnames(counts) <- paste0("cnv_cell", seq_len(6))
   object <- sn_initialize_seurat_object(x = counts, project = "infercnvpy")
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
   object$cell_type <- rep(c("normal", "tumor"), each = 3)
 
   captured <- NULL
@@ -2286,7 +2452,7 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
     sn_run_infercnvpy(
       object = object,
       assay = "RNA",
-      layer = "counts",
+      layer = "data",
       species = "human",
       reference_by = "cell_type",
       reference_cat = "normal",
@@ -2307,10 +2473,13 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
         input_dir = input_dir,
         output_dir = output_dir,
         config = jsonlite::read_json(config_path, simplifyVector = TRUE),
-        dots = list(...)
+        dots = list(...),
+        matrix_exists = file.exists(file.path(input_dir, "matrix.mtx")),
+        var_exists = file.exists(file.path(input_dir, "var.csv"))
       )
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       obs <- utils::read.csv(file.path(input_dir, "obs.csv"), stringsAsFactors = FALSE)
+      features <- utils::read.csv(file.path(input_dir, "var.csv"), stringsAsFactors = FALSE)$feature_id
       metadata <- data.frame(
         cnv_score = seq_len(nrow(obs)) / 10,
         cnv_leiden = rep(c("0", "1"), length.out = nrow(obs)),
@@ -2323,8 +2492,17 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
         row.names = obs$cell_id
       )
       utils::write.csv(pca, file.path(output_dir, "cnv_pca.csv"))
+      utils::write.csv(
+        data.frame(chr1 = seq_len(nrow(obs)) / 100, row.names = obs$cell_id),
+        file.path(output_dir, "cnv_chromosome.csv")
+      )
       jsonlite::write_json(
-        list(output_h5ad = file.path(output_dir, "infercnvpy.h5ad")),
+        list(
+          method = "infercnvpy",
+          n_cells = nrow(obs),
+          input_n_features = length(features),
+          n_features = length(features)
+        ),
         file.path(output_dir, "manifest.json"),
         auto_unbox = TRUE
       )
@@ -2340,8 +2518,9 @@ test_that("sn_run_infercnvpy accepts a Seurat object and imports outputs", {
   expect_equal(captured$config$reference_cat, "normal")
   expect_equal(captured$config$window_size, 5)
   expect_equal(captured$config$cnv_score_groupby, "cell_type")
-  expect_true(file.exists(file.path(captured$input_dir, "matrix.mtx")))
-  expect_true(file.exists(file.path(captured$input_dir, "var.csv")))
+  expect_true(captured$matrix_exists)
+  expect_true(captured$var_exists)
+  expect_false(dir.exists(dirname(captured$input_dir)))
   expect_true("infercnvpy" %in% names(updated@misc))
   expect_true("infercnvpy" %in% names(updated@misc$infercnvpy))
 })
@@ -2360,21 +2539,33 @@ test_that("python method wrappers accept Seurat object inputs", {
   rownames(counts) <- genes
   colnames(counts) <- paste0("py_cell", seq_len(6))
   object <- sn_initialize_seurat_object(x = counts, project = "python-methods")
+  SeuratObject::LayerData(object, assay = "RNA", layer = "data") <-
+    log1p(SeuratObject::LayerData(object, assay = "RNA", layer = "counts"))
   object$cell_type <- rep(c("T", "B"), each = 3)
   object$sample <- rep(c("A", "B"), length.out = ncol(object))
   object$x <- seq_len(ncol(object))
   object$y <- rev(seq_len(ncol(object)))
   signatures <- data.frame(T = runif(length(genes)), B = runif(length(genes)), row.names = genes)
 
+  expect_error(
+    sn_run_scarches(object = object, batch_by = "sample", install_pixi = FALSE),
+    "faithful upstream scarches workflow"
+  )
+  expect_error(
+    sn_run_stlearn(object = object, spatial_cols = c("x", "y"), install_pixi = FALSE),
+    "faithful upstream stlearn workflow"
+  )
+
   calls <- list(
-    scarches = function() sn_run_scarches(object = object, batch_by = "sample", install_pixi = FALSE),
     scpoli = function() sn_run_scpoli(object = object, batch_by = "sample", label_by = "cell_type", install_pixi = FALSE),
     cellphonedb = function() sn_run_cellphonedb(object = object, group_by = "cell_type", install_pixi = FALSE),
     cell2location = function() sn_run_cell2location(object = object, reference_signatures = signatures, spatial_cols = c("x", "y"), install_pixi = FALSE),
     tangram = function() sn_run_tangram(object = object, reference_object = object, cell_type_by = "cell_type", spatial_cols = c("x", "y"), install_pixi = FALSE),
     squidpy = function() sn_run_squidpy(object = object, spatial_cols = c("x", "y"), cluster_by = "cell_type", install_pixi = FALSE),
-    spatialdata = function() sn_run_spatialdata(object = object, spatial_cols = c("x", "y"), install_pixi = FALSE),
-    stlearn = function() sn_run_stlearn(object = object, spatial_cols = c("x", "y"), install_pixi = FALSE)
+    spatialdata = function() sn_run_spatialdata(
+      object = object, spatial_cols = c("x", "y"), keep_run_dir = TRUE,
+      install_pixi = FALSE
+    )
   )
 
   for (method in names(calls)) {
@@ -2392,7 +2583,10 @@ test_that("python method wrappers accept Seurat object inputs", {
           script = script,
           input_dir = input_dir,
           output_dir = output_dir,
-          config = jsonlite::read_json(config_path, simplifyVector = TRUE)
+          config = jsonlite::read_json(config_path, simplifyVector = TRUE),
+          query_matrix_exists = file.exists(file.path(input_dir, "query", "matrix.mtx")),
+          reference_matrix_exists = file.exists(file.path(input_dir, "reference", "matrix.mtx")),
+          spatial_exists = file.exists(file.path(input_dir, "query", "spatial.csv"))
         )
         dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
         obs <- utils::read.csv(file.path(input_dir, "query", "obs.csv"), stringsAsFactors = FALSE)
@@ -2400,8 +2594,33 @@ test_that("python method wrappers accept Seurat object inputs", {
         utils::write.csv(metadata, file.path(output_dir, "obs.csv"))
         latent <- data.frame(AXIS1 = seq_len(nrow(obs)), AXIS2 = rev(seq_len(nrow(obs))), row.names = obs$cell_id)
         utils::write.csv(latent, file.path(output_dir, "latent.csv"))
+        h5ad_path <- file.path(output_dir, paste0(method, ".h5ad"))
+        file.create(h5ad_path)
+        manifest <- list(method = method, output_h5ad = h5ad_path, n_cells = nrow(obs))
+        if (identical(method, "tangram")) {
+          manifest$mapping_path <- file.path(output_dir, "mapping.csv")
+          mapping <- matrix(
+            1 / nrow(obs),
+            nrow = nrow(obs),
+            ncol = nrow(obs),
+            dimnames = list(obs$cell_id, obs$cell_id)
+          )
+          utils::write.csv(mapping, manifest$mapping_path)
+        } else if (identical(method, "squidpy")) {
+          manifest$spatial_graph_path <- file.path(output_dir, "spatial_graph.csv")
+          writeLines(
+            c("source,target,weight", paste(obs$cell_id[[1L]], obs$cell_id[[2L]], "1", sep = ",")),
+            manifest$spatial_graph_path
+          )
+        } else if (identical(method, "spatialdata")) {
+          manifest$zarr_path <- file.path(output_dir, "spatialdata.zarr")
+          dir.create(manifest$zarr_path)
+        } else if (identical(method, "cellphonedb")) {
+          manifest$result_files <- file.path(output_dir, "significant_means.txt")
+          writeLines("result", manifest$result_files)
+        }
         jsonlite::write_json(
-          list(output_h5ad = file.path(output_dir, paste0(method, ".h5ad"))),
+          manifest,
           file.path(output_dir, "manifest.json"),
           auto_unbox = TRUE
         )
@@ -2412,15 +2631,19 @@ test_that("python method wrappers accept Seurat object inputs", {
     expect_true(paste0(method, "_method_score") %in% colnames(updated[[]]))
     expect_true(paste0(method, "_latent") %in% names(updated@reductions))
     expect_true(method %in% names(updated@misc))
-    expect_true(file.exists(file.path(captured$input_dir, "query", "matrix.mtx")))
+    expect_true(captured$query_matrix_exists)
+    if (!identical(method, "spatialdata")) {
+      expect_false(dir.exists(dirname(captured$input_dir)))
+      expect_false(updated@misc[[method]][[method]]$run_dir_retained)
+    }
     if (identical(method, "cellphonedb")) {
       expect_equal(captured$config$groupby, "cell_type")
     }
     if (method %in% c("tangram")) {
-      expect_true(file.exists(file.path(captured$input_dir, "reference", "matrix.mtx")))
+      expect_true(captured$reference_matrix_exists)
     }
     if (method %in% c("cell2location", "tangram", "squidpy", "spatialdata", "stlearn")) {
-      expect_true(file.exists(file.path(captured$input_dir, "query", "spatial.csv")))
+      expect_true(captured$spatial_exists)
     }
   }
 
@@ -3921,6 +4144,76 @@ test_that("scrublet results map onto retained and skipped cells", {
     as.character(updated$scrublet.class[-1]),
     c("singlet", "doublet")
   )
+})
+
+test_that("scrublet uses unique owned temporary runs and sanitizes failures", {
+  skip_if_not_installed("Seurat")
+  object <- make_test_object(seed = 34, prefix = "scrublet-owned", n_genes = 80, n_cells = 8)
+  observed_runs <- character()
+  runner <- function(input_dir, output_dir, ...) {
+    observed_runs <<- c(observed_runs, dirname(input_dir))
+    obs <- utils::read.csv(file.path(input_dir, "obs.csv"), check.names = FALSE)
+    cells <- obs$cell_id
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    utils::write.csv(
+      data.frame(
+        is_doublet = rep(c(FALSE, TRUE), length.out = length(cells)),
+        doublet_score = seq(0.1, 0.8, length.out = length(cells)),
+        row.names = cells
+      ),
+      file.path(output_dir, "predictions.csv")
+    )
+    jsonlite::write_json(
+      list(method = "scrublet", n_cells = length(cells)),
+      file.path(output_dir, "manifest.json"),
+      auto_unbox = TRUE
+    )
+  }
+
+  for (index in seq_len(2L)) {
+    updated <- testthat::with_mocked_bindings(
+      sn_find_doublets(
+        object,
+        method = "scrublet",
+        min_features = 1,
+        backend_control = list(quiet = TRUE)
+      ),
+      .sn_execute_python_object_pixi = runner,
+      .package = "Shennong"
+    )
+    expect_true(all(is.finite(updated$scrublet.score)))
+  }
+  expect_length(unique(observed_runs), 2L)
+  expect_false(any(dir.exists(observed_runs)))
+
+  failure_parent <- tempfile("scrublet-failure-parent-")
+  dir.create(failure_parent)
+  writeLines("keep", file.path(failure_parent, "user-sentinel.txt"))
+  withr::defer(unlink(failure_parent, recursive = TRUE, force = TRUE))
+  failed_run <- NULL
+  expect_error(
+    testthat::with_mocked_bindings(
+      sn_find_doublets(
+        object,
+        method = "scrublet",
+        min_features = 1,
+        backend_control = list(
+          output_dir = failure_parent,
+          keep_run_dir = FALSE,
+          quiet = TRUE
+        )
+      ),
+      .sn_execute_python_object_pixi = function(input_dir, ...) {
+        failed_run <<- dirname(input_dir)
+        stop("Scrublet fixture failure")
+      },
+      .package = "Shennong"
+    ),
+    "Scrublet fixture failure"
+  )
+  expect_true(file.exists(file.path(failure_parent, "user-sentinel.txt")))
+  expect_true(file.exists(file.path(failed_run, "failure.json")))
+  expect_false(dir.exists(file.path(failed_run, "input")))
 })
 
 test_that("sn_find_doublets runs the scrublet pixi backend when installed", {

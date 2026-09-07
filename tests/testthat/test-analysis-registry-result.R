@@ -76,6 +76,94 @@ test_that("analysis-result v2 has one canonical identifier", {
   old_schema <- result
   old_schema$schema_version <- "1.0.0"
   expect_false(sn_validate_result(old_schema, error = FALSE)$valid)
+
+  malformed_de <- result
+  malformed_de$analysis_type <- "de"
+  malformed_de$provenance$analysis_type <- "de"
+  malformed_de$tables$primary <- tibble::tibble(foo = 1)
+  expect_false(sn_validate_result(malformed_de, error = FALSE)$valid)
+})
+
+test_that("schema-v2 random seeds fail closed without validator crashes", {
+  result <- Shennong:::.sn_new_analysis_result(
+    "trajectory", "seed_contract", "test", "test",
+    tables = list(primary = tibble::tibble(
+      cell = "cell1", primary_pseudotime = 1
+    )),
+    random_seed = 1L
+  )
+  invalid_seeds <- list(
+    above_integer_range = as.double(.Machine$integer.max) + 1,
+    enormous = 1e100,
+    positive_infinity = Inf,
+    negative_infinity = -Inf,
+    not_a_number = NaN,
+    negative = -1,
+    fractional = 1.5,
+    vector = c(1, 2),
+    matrix = matrix(1, nrow = 1),
+    character = "1",
+    malformed_named_list = list(stage = as.double(.Machine$integer.max) + 1)
+  )
+
+  for (seed_name in names(invalid_seeds)) {
+    malformed <- result
+    malformed$provenance$random_seed <- invalid_seeds[[seed_name]]
+    report <- NULL
+    expect_no_error(
+      report <- sn_validate_result(malformed, error = FALSE)
+    )
+    expect_false(report$valid, info = seed_name)
+    expect_match(
+      paste(report$errors, collapse = " "),
+      "provenance\\$random_seed",
+      info = seed_name
+    )
+  }
+
+  for (seed in list(
+    0L,
+    as.double(.Machine$integer.max),
+    NA_integer_,
+    NA_real_,
+    list(export = 1L, model = NA_integer_)
+  )) {
+    candidate <- result
+    candidate$provenance$random_seed <- seed
+    expect_true(sn_validate_result(candidate, error = FALSE)$valid)
+  }
+})
+
+test_that("result audits continue after a malformed schema-v2 random seed", {
+  object <- make_analysis_result_test_object()
+  good <- Shennong:::.sn_new_analysis_result(
+    "trajectory", "good", "test", "test",
+    tables = list(primary = tibble::tibble(
+      cell = colnames(object),
+      primary_pseudotime = seq_len(ncol(object))
+    )),
+    random_seed = 1L
+  )
+  object <- sn_store_result(object, "trajectory", "good", good)
+  bad <- good
+  bad$result_id <- "bad"
+  bad$provenance$result_id <- "bad"
+  bad$provenance$random_seed <- as.double(.Machine$integer.max) + 1
+  object@misc$shennong$results$trajectory <- list(bad = bad, good = good)
+
+  audit <- NULL
+  expect_no_error(
+    audit <- sn_audit_results(object, include_artifacts = FALSE)
+  )
+  expect_setequal(audit$result_id, c("bad", "good"))
+  expect_false(audit$valid[audit$result_id == "bad"])
+  expect_identical(audit$status[audit$result_id == "bad"], "invalid")
+  expect_match(
+    audit$errors[audit$result_id == "bad"],
+    "provenance\\$random_seed"
+  )
+  expect_true(audit$valid[audit$result_id == "good"])
+  expect_identical(audit$status[audit$result_id == "good"], "valid")
 })
 
 test_that("store, list, get, audit, and delete share (type, result_id)", {
@@ -129,6 +217,124 @@ test_that("result identifiers are validated consistently", {
   expect_error(sn_get_result(object, "custom", ""), "result_id")
 })
 
+test_that("future result schemas and mismatched stored identities fail closed", {
+  object <- make_analysis_result_test_object()
+  result <- Shennong:::.sn_new_analysis_result(
+    "trajectory", "inner", "test", "test",
+    tables = list(primary = tibble::tibble(
+      cell = colnames(object),
+      primary_pseudotime = seq_len(ncol(object))
+    ))
+  )
+
+  future <- result
+  future$schema_version <- "99.0.0"
+  expect_error(
+    sn_store_result(object, "trajectory", "future", future),
+    "future `schema_version`"
+  )
+
+  object <- sn_store_result(object, "trajectory", "outer", result)
+  object@misc$shennong$results$trajectory$outer$result_id <- "inner"
+  object@misc$shennong$results$trajectory$outer$provenance$result_id <- "inner"
+  expect_error(
+    sn_get_result(object, "trajectory", "outer"),
+    "does not match its storage key"
+  )
+  audit <- sn_audit_results(object, include_artifacts = FALSE)
+  expect_false(audit$valid)
+  expect_identical(audit$status, "repairable")
+  expect_match(audit$errors, "storage key")
+
+  repaired <- sn_upgrade_results(object)
+  expect_identical(
+    sn_get_result(repaired, "trajectory", "outer")$result_id,
+    "outer"
+  )
+})
+
+test_that("legacy two-part result schemas remain safely upgradeable", {
+  legacy <- Shennong:::.sn_new_analysis_result(
+    "de", "legacy", "test", "test",
+    tables = list(primary = tibble::tibble(gene = "A"))
+  )
+  legacy$schema_version <- "1.0"
+
+  upgraded <- Shennong:::.sn_upgrade_analysis_result(
+    legacy,
+    analysis_type = "de",
+    result_id = "legacy"
+  )
+
+  expect_identical(upgraded$schema_version, "2.0.0")
+  expect_identical(upgraded$provenance$migrated_from_schema_version, "1.0")
+})
+
+test_that("result upgrades accept only known legacy schema spellings", {
+  legacy <- Shennong:::.sn_new_analysis_result(
+    "de", "legacy", "test", "test",
+    tables = list(primary = tibble::tibble(gene = "A", score = 1))
+  )
+  for (version in c("1", "1.0", "1.0.0")) {
+    candidate <- legacy
+    candidate$schema_version <- version
+    upgraded <- Shennong:::.sn_upgrade_analysis_result(
+      candidate, analysis_type = "de", result_id = "legacy"
+    )
+    expect_identical(upgraded$schema_version, "2.0.0")
+  }
+  for (version in c("0.1.0", "1.9.9", "2.0.0-beta")) {
+    candidate <- legacy
+    candidate$schema_version <- version
+    expect_error(
+      Shennong:::.sn_upgrade_analysis_result(
+        candidate, analysis_type = "de", result_id = "legacy"
+      ),
+      "unsupported `schema_version`"
+    )
+  }
+})
+
+test_that("DE upgrades canonicalize unambiguous feature identifiers", {
+  legacy <- Shennong:::.sn_new_analysis_result(
+    "de", "legacy_feature", "test", "test",
+    tables = list(primary = tibble::tibble(gene = c("A", "B")))
+  )
+  legacy$tables$primary <- tibble::tibble(feature = c("A", "B"), score = c(2, 1))
+
+  upgraded <- Shennong:::.sn_upgrade_analysis_result(
+    legacy, analysis_type = "de", result_id = "legacy_feature"
+  )
+
+  expect_identical(upgraded$tables$primary$gene, c("A", "B"))
+  expect_identical(upgraded$provenance$migrated_primary_gene_from, "feature")
+  expect_true(sn_validate_result(upgraded, error = FALSE)$valid)
+})
+
+test_that("DE upgrades explicit row names only when identifier sources agree", {
+  legacy <- Shennong:::.sn_new_analysis_result(
+    "de", "legacy_rows", "test", "test",
+    tables = list(primary = tibble::tibble(gene = c("A", "B")))
+  )
+  row_named <- data.frame(score = c(2, 1), row.names = c("A", "B"))
+  legacy$tables$primary <- row_named
+  upgraded <- Shennong:::.sn_upgrade_analysis_result(
+    legacy, analysis_type = "de", result_id = "legacy_rows"
+  )
+  expect_identical(upgraded$tables$primary$gene, c("A", "B"))
+  expect_identical(upgraded$provenance$migrated_primary_gene_from, "rownames")
+
+  legacy$tables$primary <- data.frame(
+    feature = c("A", "B"), score = c(2, 1), row.names = c("X", "Y")
+  )
+  expect_error(
+    Shennong:::.sn_upgrade_analysis_result(
+      legacy, analysis_type = "de", result_id = "legacy_rows"
+    ),
+    "feature.*row names disagree"
+  )
+})
+
 test_that("analysis results and runtime artifacts remain separate", {
   object <- make_analysis_result_test_object()
   object@misc$input_source <- list(path = "/data/example", format = "10x")
@@ -143,6 +349,20 @@ test_that("analysis results and runtime artifacts remain separate", {
   audit <- sn_audit_results(object)
   expect_true(any(audit$contract_scope == "artifact"))
   expect_true(any(audit$collection == "user_payload" & audit$contract_scope == "unregistered"))
+})
+
+test_that("whole legacy artifact collections require explicit confirmation", {
+  object <- make_analysis_result_test_object()
+  object@misc$integration <- list(user_payload = list(note = "keep me"))
+
+  expect_error(
+    sn_delete_artifact(object, "integration"),
+    "confirm = TRUE"
+  )
+  expect_true("integration" %in% names(object@misc))
+
+  deleted <- sn_delete_artifact(object, "integration", confirm = TRUE)
+  expect_false("integration" %in% names(deleted@misc))
 })
 
 test_that("label transfer stores a canonical traceable annotation result", {
@@ -163,15 +383,28 @@ test_that("label transfer stores a canonical traceable annotation result", {
 
 test_that("registered table stores return v2 envelopes", {
   object <- make_analysis_result_test_object()
-  table <- tibble::tibble(feature = "gene1", score = 1)
   returned <- list(
-    sn_store_deconvolution(object, table, return_object = FALSE),
-    sn_store_regulatory_activity(object, table, return_object = FALSE),
-    sn_store_milo(
-      object, table, sample_by = "sample", group_by = "condition",
+    sn_store_deconvolution(
+      object,
+      tibble::tibble(sample = "sample1", cell_type = "T", fraction = 1),
       return_object = FALSE
     ),
-    sn_store_enrichment(object, table, return_object = FALSE)
+    sn_store_regulatory_activity(
+      object,
+      tibble::tibble(source = "STAT1", condition = "cell1", score = 1),
+      return_object = FALSE
+    ),
+    sn_store_milo(
+      object,
+      tibble::tibble(Nhood = 1, logFC = 1, SpatialFDR = 0.05),
+      sample_by = "sample", group_by = "condition",
+      return_object = FALSE
+    ),
+    sn_store_enrichment(
+      object,
+      tibble::tibble(ID = "GO:1", Description = "term", p.adjust = 0.05),
+      return_object = FALSE
+    )
   )
   expect_true(all(vapply(returned, function(result) {
     sn_validate_result(result, error = FALSE)$valid &&

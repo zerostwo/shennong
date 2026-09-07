@@ -588,6 +588,20 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   invisible(TRUE)
 }
 
+.sn_validate_log_normalized_layer <- function(object, assay, layer, backend) {
+  .sn_validate_seurat_assay_layer(object = object, assay = assay, layer = layer)
+  matched_layers <- .sn_match_seurat_layers(object = object, assay = assay, layer = layer)
+  if (!all(grepl("^data(?:\\.|$)", matched_layers))) {
+    stop(
+      backend, " requires normalized, log-transformed expression from a Seurat ",
+      "`data`/`data.*` layer; raw counts and other undeclared scales are rejected. ",
+      "Run normalization first and select `layer = \"data\"`.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
 .sn_match_seurat_layers <- function(object, assay = "RNA", layer = "counts") {
   assay_layers <- SeuratObject::Layers(object[[assay]])
   if (layer %in% assay_layers) {
@@ -805,16 +819,136 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
 
 # Shared control/runtime plumbing used across analysis domains.
 
-.sn_default_python_run_dir <- function(method, runtime_dir = NULL) {
-  runtime_dir <- .sn_shennong_runtime_dir(runtime_dir)
-  run_id <- paste0(
-    method,
-    "_",
-    format(Sys.time(), "%Y%m%d_%H%M%S"),
-    "_",
-    Sys.getpid()
+.sn_default_python_run_dir <- function(method, runtime_dir = NULL, temporary = FALSE) {
+  method <- gsub("[^A-Za-z0-9_.-]+", "_", as.character(method)[[1]])
+  if (!nzchar(method) || method %in% c(".", "..")) {
+    stop("`method` must identify a safe Python backend run directory.", call. = FALSE)
+  }
+  runs_dir <- if (isTRUE(temporary)) {
+    file.path(tempdir(), "shennong-runs")
+  } else {
+    file.path(.sn_shennong_runtime_dir(runtime_dir), "runs")
+  }
+  dir.create(runs_dir, recursive = TRUE, showWarnings = FALSE)
+  # `tempfile()` adds a process-local unique suffix. The previous
+  # second-resolution timestamp + PID scheme collided whenever the same
+  # backend was launched twice within one second in the same R process.
+  tempfile(
+    pattern = paste0(method, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_"),
+    tmpdir = runs_dir
   )
-  file.path(runtime_dir, "runs", run_id)
+}
+
+.sn_create_owned_run_dir <- function(parent = NULL, prefix = "shennong-run-") {
+  parent <- parent %||% tempdir()
+  parent <- path.expand(as.character(parent)[[1L]])
+  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
+  if (!dir.exists(parent)) {
+    stop("Could not create the run-directory parent: ", parent, ".", call. = FALSE)
+  }
+  run_dir <- tempfile(pattern = prefix, tmpdir = parent)
+  if (!dir.create(run_dir, recursive = FALSE, showWarnings = FALSE)) {
+    stop("Could not create an isolated Shennong run directory under: ", parent, ".", call. = FALSE)
+  }
+  # Keep the marker beside the run directory so backends that require an empty
+  # output directory do not mistake the ownership sentinel for stale output.
+  marker <- paste0(run_dir, ".shennong-owned-run")
+  writeLines("shennong-owned-run-v1", marker, useBytes = TRUE)
+  normalizePath(run_dir, winslash = "/", mustWork = TRUE)
+}
+
+.sn_is_owned_run_dir <- function(run_dir) {
+  if (is.null(run_dir) || length(run_dir) != 1L || is.na(run_dir) || !nzchar(run_dir)) {
+    return(FALSE)
+  }
+  run_dir <- normalizePath(run_dir, winslash = "/", mustWork = FALSE)
+  marker <- paste0(run_dir, ".shennong-owned-run")
+  file.exists(marker) && identical(
+    readLines(marker, warn = FALSE, n = 1L),
+    "shennong-owned-run-v1"
+  )
+}
+
+.sn_cleanup_owned_run_dir <- function(run_dir,
+                                      unlink_fn = unlink,
+                                      label = "package-owned run directory") {
+  if (is.null(run_dir) || length(run_dir) != 1L || is.na(run_dir) || !nzchar(run_dir)) {
+    return(invisible(FALSE))
+  }
+  run_dir <- normalizePath(run_dir, winslash = "/", mustWork = FALSE)
+  marker <- paste0(run_dir, ".shennong-owned-run")
+  if (!.sn_is_owned_run_dir(run_dir)) {
+    stop(
+      "Refusing to recursively delete a run directory without a Shennong ownership marker: ",
+      run_dir, ".",
+      call. = FALSE
+    )
+  }
+  unlink_fn(run_dir, recursive = TRUE, force = TRUE)
+  removed <- !dir.exists(run_dir)
+  if (!removed) {
+    stop(
+      "Could not remove ", label, ": ", run_dir,
+      ". The run is not reported as cleaned.",
+      call. = FALSE
+    )
+  }
+  unlink_fn(marker, force = TRUE)
+  if (file.exists(marker)) {
+    warning("Removed the run directory but could not remove its ownership marker: ", marker, call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+.sn_with_seed <- function(seed, code) {
+  if (is.null(seed) || length(seed) == 0L || is.na(seed[[1]])) {
+    return(force(code))
+  }
+  if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed) ||
+      seed < 0 || seed > .Machine$integer.max || seed != floor(seed)) {
+    stop("`seed` must be one non-negative finite integer or NULL.", call. = FALSE)
+  }
+  seed <- as.integer(seed)
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) {
+    previous_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  }
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", previous_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+  set.seed(seed)
+  force(code)
+}
+
+.sn_assert_dense_materialization_budget <- function(x,
+                                                     max_dense_gb = 2,
+                                                     name = "matrix input",
+                                                     peak_copies = 3) {
+  if (!is.numeric(max_dense_gb) || length(max_dense_gb) != 1L ||
+      !is.finite(max_dense_gb) || max_dense_gb <= 0) {
+    stop("`max_dense_gb` must be one positive finite number.", call. = FALSE)
+  }
+  if (!is.numeric(peak_copies) || length(peak_copies) != 1L ||
+      !is.finite(peak_copies) || peak_copies < 1) {
+    stop("`peak_copies` must be one finite number greater than or equal to 1.", call. = FALSE)
+  }
+  dimensions <- dim(x)
+  if (is.null(dimensions) || length(dimensions) != 2L) return(invisible(TRUE))
+  estimated_gb <- prod(as.double(dimensions)) * 8 * peak_copies / 1024^3
+  if (!is.finite(estimated_gb) || estimated_gb > max_dense_gb) {
+    stop(
+      "Dense materialization of `", name, "` is estimated to peak at ",
+      format(round(estimated_gb, 2), nsmall = 2),
+      " GiB, exceeding `max_dense_gb = ", max_dense_gb,
+      "`. Reduce features/cells or explicitly raise the budget.",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
 }
 
 .sn_merge_control_args <- function(defaults, control) {

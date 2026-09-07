@@ -21,8 +21,8 @@ sn_store_regulatory_activity(
 
 \item{result}{Regulatory activity table.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used under
+the canonical Shennong result registry.}
 
 \item{method}{Inference method.}
 

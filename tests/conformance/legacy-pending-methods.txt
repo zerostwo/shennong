@@ -48,7 +48,6 @@ spatial_deconvolution::cell2location
 spatial_domain::banksy
 spatial_domain::bayesspace
 spatial_domain::cellcharter
-spatial_domain::stlearn
 spatial_mapping::tangram
 spatial_neighborhood::knn
 spatial_neighborhood::squidpy
@@ -63,4 +62,3 @@ trajectory::palantir
 trajectory::slingshot
 velocity::regvelo
 velocity::scvelo
-

@@ -5,6 +5,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+* Restored verified custom Pixi downloads through
+  `sn_prepare_pixi_environment()` and `sn_call_pixi_environment()`: callers can
+  now pair `pixi_download_url` with the required `pixi_sha256`. Official pinned
+  downloads retain automatic checksum-sidecar verification. Pixi bootstrap
+  also recognizes Windows `Sys.info()[["machine"]] == "x86-64"`.
+
 * Fixed `backend-conformance` CI after the Bioconductor resolver advanced
   edgeR from 4.10.3 to 4.10.4. The executable contract and workflow now record
   the same validated version, and the workflow regression test derives its
@@ -104,6 +110,89 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Hardened the statistical contracts identified by the package-wide audit.
+  SoupX now estimates contamination from the raw droplet profile and performs
+  reproducible scoped rounding; decontX/decontPro restore filtered features;
+  pseudobulk backends distinguish integer-only DESeq2 input from non-negative
+  fractional edgeR/limma input; bulk count-scale declarations fail closed,
+  categorical contrasts are validated, dream applies TMM before voom, and Milo
+  accepts only auditable additive designs. Composition denominators are fixed
+  before low-count filtering, and zero-variance permutation statistics remain
+  missing rather than becoming infinite.
+
+- Corrected scientific edge cases across trajectory, spatial, CNV, enrichment,
+  GRN, annotation, and communication workflows. Pseudotime and lineage weights
+  must be finite; monocle3 uses its UMAP contract and fails closed on unsupported
+  multipartition roots; Moran permutations are null-centred and preserve sample
+  boundaries; malignancy scaling uses reference cells only; CNV association
+  uses a separately selected normalized layer; stored-DE ORA preserves grouping
+  and reuses the exact recorded DE hypothesis universe (with an explicitly
+  labeled assay fallback only for legacy results); signed GRN weights are not
+  silently applied to unsupported aggregators; missing annotation confidence
+  remains missing; and paired communication contrasts require complete pairs.
+
+- Strengthened the schema-v2 result lifecycle. Stored identity must match the
+  physical `(analysis_type, result_id)` key, malformed or future schemas fail
+  closed, legacy DE `feature`/row-name identifiers upgrade unambiguously to
+  `gene`, no-hit enrichment runs retain a typed zero-row primary table, and
+  artifact deletion requires explicit confirmation. All 33 built-in analysis
+  types now have registered primary-table semantics, including typed identities,
+  unique keys, finite/range checks, paired missingness, fate-probability sums,
+  survival interval ordering, and spatial-embedding dimensions. Plot dispatch
+  now passes the selected result context instead of silently falling back to
+  `default`.
+
+- Unified bulk-DE contrast semantics across edgeR, DESeq2, limma, and dream.
+  Interaction designs now compare the same explicit numerator and denominator
+  covariate profiles: numeric covariates are held at their median and
+  categorical covariates at their first declared factor level. The complete
+  estimand and policy are retained in diagnostics; unsupported or unalignable
+  contrasts fail before backend execution.
+
+- Repaired and hardened managed Python adapters. CellPhoneDB, inferCNVpy,
+  Tangram, Squidpy, scVI/scANVI/totalVI, scPoli, BBKNN, CellRank, and rare-cell
+  imports now validate method, dimensions, exact cell/feature identity, finite
+  values, required artifacts, and import budgets. Unsupported stLearn/scArches
+  capabilities fail closed instead of reporting placeholder success. Temporary
+  inputs and local paths are removed from retained manifests, while failed runs
+  retain only sanitized diagnostics. Object-level Python wrappers now expose
+  `keep_run_dir` and `max_artifact_import_gb` directly. Retained Tangram,
+  Squidpy, and CellPhoneDB tables are validated in bounded chunks without
+  materializing them or misapplying the in-memory import budget; metadata and
+  embeddings remain budgeted because they are imported. CellPhoneDB and
+  infercnvpy now require normalized, log-transformed `data`/`data.*` layers
+  and fail closed instead of silently feeding raw counts to those methods.
+  Cell2location and scPoli now require finite, non-negative, integer-like raw
+  counts under matching R/Python checks; cell2location also validates reference
+  signature identifiers and values. Retained Tangram mappings must be valid
+  row-wise probability distributions. Custom integration Pixi URLs now carry
+  their required SHA-256 through scVI, scPoli, BBKNN, MMoCHi, and scIB paths,
+  and scPoli honors the configured artifact import budget. Delimited artifact
+  validation is record-aware, so quoted fields containing embedded newlines are
+  checked as one logical record rather than split into false rows. PopV and
+  Scrublet export only validated raw counts and required metadata into unique
+  owned runs, import exact cell identities and bounded scores, clean successful
+  temporary runs by default, and sanitize retained failure evidence. Velocity
+  intentionally retains its owned H5AD run by default because CellRank consumes
+  that artifact; callers that do not need fate inference can set
+  `keep_run_dir = FALSE` for verified cleanup.
+
+- Prevented destructive output cleanup and unbounded materialization. Temporary
+  backend work now uses unique package-owned directories and never recursively
+  deletes a user-supplied parent; cleanup failure is detected. CopyKAT, rare-cell
+  and deconvolution dense paths enforce explicit budgets, and CIBERSORTx writes
+  sparse expression in bounded chunks instead of coercing the complete matrix
+  to a character data frame. BayesPrism rejects non-count references/mixtures,
+  while CIBERSORTx requires matched raw-count or non-log linear scales and
+  records that scale provenance. Credentials travel through a mode-0600
+  read-only secret file and never appear in host command arguments or stored
+  manifests.
+
+- Made stochastic execution composable: top-level clustering seeds override
+  every selected backend (including keyed multi-method controls), SoupX and
+  permutation helpers restore the caller RNG state, and public provenance
+  records the effective seed consistently.
+
 - Repaired GitHub coverage and strict backend conformance: optional Python
   probes now honor the configured Shennong runtime instead of a maintainer's
   home directory. Python distribution versions are checked by the managed
@@ -135,6 +224,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   ShennongOpt moved to per-operation patch names.
 
 ### Changed
+
+- Pixi bootstrap now requires the exact package-tested Pixi release, verifies
+  official release SHA-256 sidecars, rejects mutable `latest` downloads, and
+  executes against committed lockfiles with exact direct dependency pins.
+  Existing executables with a different version no longer satisfy the request.
+
+- Method status now distinguishes declared implementation, current runtime
+  availability, and executable conformance instead of collapsing them into one
+  optimistic flag. External backend manifests retain only portable provenance
+  fields and explicitly report whether a run directory remains available.
+
+- GitHub R package checks now cover Ubuntu release/oldrel plus Windows and
+  macOS, coverage upload fails on real coverage errors, and pkgdown deployment
+  is restricted to the main branch after a clean build.
 
 - `sn_assess_bulk_qc()` now retains the analysis-scale expression of the selected
   variable features in `tables$expression`. `sn_plot_sample_correlation()` adds

@@ -161,9 +161,9 @@ velocity_object <- sn_run_velocity(
     log1p_transform = TRUE,
     n_top_genes = 1500L,
     n_neighbors = 30L,
-    seed = 717L,
     pixi = pixi_control
-  )
+  ),
+  seed = 717L
 )
 
 velocity <- sn_get_result(velocity_object, "velocity", "hermann_scvelo")
@@ -177,10 +177,24 @@ velocity_manifest
 sn_plot_velocity(velocity, color_by = "confidence")
 ```
 
+Managed velocity runs retain their output directory by default because the
+stored H5AD is the input to `sn_run_fate()`. The redundant CSV/Matrix Market
+input export is removed after a successful run, and the manifest records the
+retained directory and reason. If fate inference is not needed, set
+`backend_control$keep_run_dir = FALSE`; Shennong then imports the velocity
+tables, removes its owned run directory, and intentionally stores no reusable
+H5AD path. An explicit `backend_control$run_dir` must be empty.
+
 Low confidence, weak splicing signal, or unstable directionality remains
 visible in the stored diagnostics. The H5AD artifact recorded in
 `models$artifacts` is the transition evidence consumed by CellRank; a smooth
 arrow field is not sufficient evidence by itself.
+
+Imported velocity output must contain unique known cell IDs, either two finite
+vector components or two missing components per row, and at least one finite
+vector overall. Transition endpoints must name known cells and weights must be
+finite. A custom runner or precomputed result is recorded as such in `backend`;
+it is not mislabeled as a pixi execution.
 
 ## Estimate terminal states and fate
 
@@ -196,9 +210,9 @@ velocity_object <- sn_run_fate(
   result_id = "hermann_fate",
   backend_control = list(
     terminal_method = "stability",
-    seed = 717L,
     pixi = pixi_control
-  )
+  ),
+  seed = 717L
 )
 
 fate <- sn_get_result(velocity_object, "fate", "hermann_fate")
@@ -214,6 +228,13 @@ If no macrostate meets the stability threshold, the backend raises an error.
 A documented project may instead choose `terminal_method = "top_n"` or supply
 explicit terminal states, but that decision should not be made automatically
 inside a teaching article.
+
+Fate import also verifies that every terminal state occurs in the returned
+probability table and that probability cells belong to the object. Its
+package-owned temporary run directory is removed after successful import by
+default. Supplying `backend_control$run_dir` retains that explicit directory;
+set `keep_run_dir = FALSE` to request cleanup while treating the supplied path
+as a parent rather than deleting the parent itself.
 
 ## RegVelo requires a real, versioned prior
 

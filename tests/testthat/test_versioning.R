@@ -257,6 +257,16 @@ test_that("sn_list_dependencies reports declared package metadata", {
     deps$remote[deps$package == "anndataR"][[1]],
     "scverse/anndataR"
   )
+  expected_github <- c(
+    ShennongOpt = "zerostwo/shennong-opt",
+    monocle3 = "cole-trapnell-lab/monocle3",
+    RareQ = "xiaolab-xjtu/RareQ",
+    Scissor = "sunduanchen/Scissor"
+  )
+  for (package in names(expected_github)) {
+    expect_identical(deps$source[deps$package == package][[1]], "GitHub")
+    expect_identical(deps$remote[deps$package == package][[1]], expected_github[[package]])
+  }
   expect_false("tidytemplate" %in% deps$package)
   expect_equal(
     deps$source[deps$package == "Nebulosa"][[1]],
@@ -400,8 +410,16 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_true(info$installed)
   expect_equal(info$version, "0.99.0")
 
-  ensured <- sn_ensure_pixi(pixi = fake_pixi, install = FALSE, quiet = TRUE)
+  ensured <- sn_ensure_pixi(
+    pixi = fake_pixi, install = FALSE, version = "0.99.0", quiet = TRUE
+  )
   expect_equal(ensured$path, fake_pixi)
+  expect_error(
+    sn_ensure_pixi(
+      pixi = fake_pixi, install = FALSE, version = "0.69.0", quiet = TRUE
+    ),
+    "does not match required version"
+  )
 
   runtime_dir <- tempfile("shennong-home-")
   paths <- sn_get_pixi_paths("scanvi", runtime_dir = runtime_dir)
@@ -440,10 +458,16 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
     platforms = "linux-64"
   )
   expect_true(file.exists(prepared$manifest_path))
+  expect_true(file.exists(prepared$lock_path))
   expect_equal(prepared$family, "scarches")
   prepared_manifest <- readLines(prepared$manifest_path)
   expect_true(any(grepl('name = "shennong-scarches"', prepared_manifest, fixed = TRUE)))
-  expect_true(any(grepl('platforms = ["linux-64"]', prepared_manifest, fixed = TRUE)))
+  expect_true(any(grepl(
+    'platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]',
+    prepared_manifest,
+    fixed = TRUE
+  )))
+  expect_true("linux-64" %in% Shennong:::.sn_pixi_lock_platforms(prepared$lock_path))
 
   python_backends <- c(
     system.file("pixi", "scvi", "scripts", "scvi_integration.py", package = "Shennong"),
@@ -464,21 +488,133 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
   expect_true(any(grepl("files.pythonhosted.org/packages", config, fixed = TRUE)))
 })
 
+test_that("Pixi bootstrap uses explicit versioned and verified release assets", {
+  linux <- Shennong:::.sn_pixi_release_asset(
+    "0.69.0", sysname = "Linux", machine = "x86_64"
+  )
+  mac <- Shennong:::.sn_pixi_release_asset(
+    "v0.69.0", sysname = "Darwin", machine = "arm64"
+  )
+  windows <- Shennong:::.sn_pixi_release_asset(
+    "0.69.0", sysname = "Windows", machine = "AMD64"
+  )
+  windows_x86_hyphen <- Shennong:::.sn_pixi_release_asset(
+    "0.69.0", sysname = "Windows", machine = "x86-64"
+  )
+  expect_match(linux$url, "/v0.69.0/pixi-x86_64-unknown-linux-musl\\.tar\\.gz$")
+  expect_match(mac$asset, "pixi-aarch64-apple-darwin\\.tar\\.gz$")
+  expect_match(windows$asset, "pixi-x86_64-pc-windows-msvc\\.zip$")
+  expect_identical(windows_x86_hyphen$asset, windows$asset)
+  expect_error(Shennong:::.sn_pixi_release_asset("latest"), "explicit semantic")
+  expect_true(Shennong:::.sn_pixi_version_matches("pixi 0.69.0", "0.69.0"))
+  expect_false(Shennong:::.sn_pixi_version_matches("0.68.0", "0.69.0"))
+
+  payload <- tempfile("pixi-digest-")
+  writeBin(charToRaw("verified payload"), payload)
+  expected <- digest::digest(payload, algo = "sha256", file = TRUE, serialize = FALSE)
+  expect_invisible(Shennong:::.sn_verify_file_sha256(payload, expected))
+  expect_error(
+    Shennong:::.sn_verify_file_sha256(payload, paste(rep("0", 64), collapse = "")),
+    "mismatch"
+  )
+})
+
+test_that("Pixi environment helpers forward custom download SHA-256", {
+  runtime_dir <- tempfile("pixi-sha-runtime-")
+  withr::defer(unlink(runtime_dir, recursive = TRUE, force = TRUE))
+  custom_url <- "https://mirror.example/pixi-x86_64.tar.gz"
+  custom_sha <- paste(rep("a", 64L), collapse = "")
+  ensure_calls <- list()
+
+  output <- testthat::with_mocked_bindings(
+    sn_call_pixi_environment(
+      environment = "scvi",
+      command = "python",
+      args = "--version",
+      runtime_dir = runtime_dir,
+      overwrite = TRUE,
+      platforms = "linux-64",
+      install_pixi = TRUE,
+      pixi_download_url = custom_url,
+      pixi_sha256 = custom_sha,
+      quiet = TRUE
+    ),
+    sn_ensure_pixi = function(download_url = NULL, sha256 = NULL, ...) {
+      ensure_calls[[length(ensure_calls) + 1L]] <<- list(
+        download_url = download_url,
+        sha256 = sha256
+      )
+      list(path = "/mock/pixi")
+    },
+    .sn_pixi_run_command = function(...) "pixi 0.69.0",
+    .package = "Shennong"
+  )
+
+  expect_identical(output, "pixi 0.69.0")
+  expect_length(ensure_calls, 2L)
+  expect_true(all(vapply(
+    ensure_calls,
+    function(call) identical(call$download_url, custom_url),
+    logical(1)
+  )))
+  expect_true(all(vapply(
+    ensure_calls,
+    function(call) identical(call$sha256, custom_sha),
+    logical(1)
+  )))
+  expect_true("pixi_sha256" %in% names(formals(sn_prepare_pixi_environment)))
+  expect_true("pixi_sha256" %in% names(formals(sn_call_pixi_environment)))
+})
+
 test_that("scVI pixi manifest includes CPU and GPU environments", {
   manifest <- Shennong:::.sn_scvi_pixi_manifest_lines(cuda_version = "12.6", platforms = "linux-64")
 
-  expect_true(any(grepl('platforms = \\["linux-64"\\]', manifest)))
+  expect_true(any(grepl(
+    'platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]',
+    manifest,
+    fixed = TRUE
+  )))
   expect_true(any(grepl("\\[feature.cpu.dependencies\\]", manifest)))
   expect_true(any(grepl("pytorch-cpu", manifest, fixed = TRUE)))
   expect_true(any(grepl("\\[feature.gpu.system-requirements\\]", manifest)))
   expect_true(any(grepl('cuda = "12"', manifest, fixed = TRUE)))
   expect_true(any(grepl("pytorch-gpu", manifest, fixed = TRUE)))
-  expect_true(any(grepl('cuda-version = "12.6.*"', manifest, fixed = TRUE)))
+  expect_true(any(grepl('cuda-version = "==12.6"', manifest, fixed = TRUE)))
   expect_true(any(grepl("gpu = \\[\"gpu\"\\]", manifest)))
   expect_equal(Shennong:::.sn_normalize_cuda_requirement("12.6"), "12.6")
   expect_equal(Shennong:::.sn_normalize_cuda_requirement("12"), "12.0")
   expect_equal(Shennong:::.sn_default_scvi_cuda_version("13.0"), "12.6")
   expect_equal(Shennong:::.sn_default_scvi_cuda_version("11.8"), "11.8")
+})
+
+test_that("integration Pixi projects always materialize a matching lock", {
+  project <- tempfile("scvi-locked-project-")
+  manifest_path <- Shennong:::.sn_prepare_scvi_pixi_project(
+    project_dir = project,
+    environment = "scvi",
+    overwrite = TRUE,
+    platforms = "linux-64"
+  )
+  lock_path <- file.path(dirname(manifest_path), "pixi.lock")
+  expect_true(file.exists(lock_path))
+  expect_true("linux-64" %in% Shennong:::.sn_pixi_lock_platforms(lock_path))
+
+  custom <- tempfile("scvi-custom-project-")
+  expect_error(
+    Shennong:::.sn_prepare_scvi_pixi_project(
+      project_dir = custom,
+      environment = "scvi",
+      manifest_lines = c(
+        "[workspace]",
+        'name = "custom"',
+        'channels = ["conda-forge"]',
+        'platforms = ["linux-64"]'
+      ),
+      overwrite = TRUE,
+      platforms = "linux-64"
+    ),
+    "custom pixi manifest requires a matching"
+  )
 })
 
 test_that("deprecated environment-specific pixi call aliases warn and forward", {

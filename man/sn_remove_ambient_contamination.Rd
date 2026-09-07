@@ -14,6 +14,7 @@ sn_remove_ambient_contamination(
   layer = "decontaminated_counts",
   return_object = TRUE,
   verbose = FALSE,
+  seed = 717L,
   ...,
   assay = NULL
 )
@@ -53,6 +54,10 @@ overwrite the original counts layer explicitly.}
 the updated Seurat object. Otherwise return the corrected counts matrix.}
 
 \item{verbose}{Logical; whether to print progress from helper clustering.}
+
+\item{seed}{Random seed used only for reproducible stochastic rounding of
+SoupX-adjusted fractional counts. The caller's random-number-generator
+state is restored after rounding.}
 
 \item{...}{Additional method-specific arguments passed to
 \code{decontX::decontX()}, \code{decontX::decontPro()}, or

@@ -28,6 +28,17 @@ def _drop_none(mapping: dict | None) -> dict:
     return {key: value for key, value in mapping.items() if value is not None}
 
 
+def _validate_raw_counts(matrix: sp.csr_matrix) -> None:
+    values = matrix.data
+    if values.size and (not np.isfinite(values).all() or np.min(values) < 0):
+        raise ValueError("scPoli input must contain finite, non-negative raw counts.")
+    if values.size and np.any(np.abs(values - np.rint(values)) > 1e-8):
+        raise ValueError(
+            "scPoli input must contain integer-like raw counts for its negative-binomial model; "
+            "values are never rounded silently."
+        )
+
+
 def _read_input(input_dir: Path) -> ad.AnnData:
     if (input_dir / "counts.mtx").exists():
         matrix_path = input_dir / "counts.mtx"
@@ -49,8 +60,7 @@ def _read_input(input_dir: Path) -> ad.AnnData:
     features = var[feature_column].astype(str).to_numpy()
     if matrix.shape != (obs.shape[0], len(features)):
         raise ValueError("Exported expression matrix dimensions do not match obs.csv and feature metadata.")
-    if matrix.data.size and (not np.isfinite(matrix.data).all() or np.min(matrix.data) < 0):
-        raise ValueError("scPoli input must contain finite, non-negative expression values.")
+    _validate_raw_counts(matrix)
     adata = ad.AnnData(X=matrix, obs=obs, var=pd.DataFrame(index=features))
     adata.obs_names = obs.index.astype(str)
     adata.var_names_make_unique()
@@ -148,7 +158,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     if bool(config.get("save_model", True)):
         model.save(model_dir, overwrite=True, save_anndata=False)
     h5ad_path = output_dir / "integrated.h5ad"
-    if bool(config.get("write_h5ad", True)):
+    if bool(config.get("write_h5ad", False)):
         adata.obsm["X_scpoli"] = latent
         adata.write_h5ad(h5ad_path)
 

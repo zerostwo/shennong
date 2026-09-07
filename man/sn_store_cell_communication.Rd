@@ -24,6 +24,7 @@ sn_store_cell_communication(
   warnings = character(),
   sample_by = NULL,
   condition_by = NULL,
+  paired_by = NULL,
   return_object = TRUE
 )
 }
@@ -32,8 +33,8 @@ sn_store_cell_communication(
 
 \item{result}{Communication result table.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used under
+the canonical Shennong result registry.}
 
 \item{method}{User-facing communication method label.}
 
@@ -52,7 +53,8 @@ only when preserving a legacy alias such as \code{"nichenetr"}.}
 
 \item{warnings}{Character vector of backend warnings retained for audit.}
 
-\item{sample_by, condition_by}{Optional sample and condition metadata columns.}
+\item{sample_by, condition_by, paired_by}{Optional sample, condition, and
+matched-unit metadata columns.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
 }

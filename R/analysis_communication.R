@@ -251,6 +251,38 @@
   )
 }
 
+.sn_liana_sce_input <- function(object, assay = NULL, layer = "data") {
+  check_installed("SingleCellExperiment", reason = "to construct LIANA input from an explicit Seurat assay layer.")
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  expression <- .sn_get_seurat_layer_data(object, assay = assay, layer = layer)
+  cells <- colnames(object)
+  missing <- setdiff(cells, colnames(expression))
+  if (length(missing) > 0L) {
+    stop("The selected LIANA layer is missing object cell(s): ", paste(utils::head(missing, 5L), collapse = ", "), ".", call. = FALSE)
+  }
+  expression <- expression[, cells, drop = FALSE]
+  assay_name <- "shennong_selected_layer"
+  counts <- tryCatch(
+    .sn_get_seurat_layer_data(object, assay = assay, layer = "counts"),
+    error = function(error) expression
+  )
+  if (!identical(rownames(counts), rownames(expression)) ||
+      !all(cells %in% colnames(counts))) {
+    counts <- expression
+  } else {
+    counts <- counts[, cells, drop = FALSE]
+  }
+  sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(
+      counts = counts,
+      logcounts = expression,
+      shennong_selected_layer = expression
+    ),
+    colData = object[[]][cells, , drop = FALSE]
+  )
+  list(object = sce, assay = assay_name, source_assay = assay, source_layer = layer)
+}
+
 .sn_run_liana <- function(object,
                           group_by,
                           assay = NULL,
@@ -264,17 +296,15 @@
   input_object <- object
   liana_assay <- assay
   if (identical(input_name, "sce")) {
-    check_installed("SingleCellExperiment", reason = "to adapt Seurat v5 objects for current LIANA releases.")
-    assay <- assay %||% Seurat::DefaultAssay(object)
-    input_object <- suppressWarnings(Seurat::as.SingleCellExperiment(object, assay = assay))
-    available_assays <- SummarizedExperiment::assayNames(input_object)
-    liana_assay <- if (identical(layer, "counts") && "counts" %in% available_assays) {
-      "counts"
-    } else if ("logcounts" %in% available_assays) {
-      "logcounts"
-    } else {
-      available_assays[[1]]
-    }
+    selected <- .sn_liana_sce_input(object, assay = assay, layer = layer)
+    input_object <- selected$object
+    liana_assay <- selected$assay
+  } else if (!identical(layer, "data")) {
+    stop(
+      "The installed LIANA Seurat interface cannot honor `layer = \"", layer,
+      "\"`. Install a LIANA release with the `sce` interface or select `layer = \"data\"`.",
+      call. = FALSE
+    )
   }
   input <- list(input_object)
   names(input) <- input_name
@@ -458,13 +488,23 @@
       manifest <- do.call(sn_run_cellphonedb, utils::modifyList(list(
         object = object,
         assay = assay,
-        layer = "counts",
+        layer = layer,
         group_by = group_by,
         artifact_id = paste0("communication_", format(Sys.time(), "%Y%m%d%H%M%S")),
         return_object = FALSE,
         method_control = controls$method_control %||% list()
       ), controls[setdiff(names(controls), "method_control")], keep.null = TRUE))
-      parsed <- .sn_read_cellphonedb_output(manifest$output_dir)
+      imported <- manifest$imported_tables %||% list()
+      parsed <- if (all(c("pvalues", "means") %in% names(imported))) {
+        .sn_parse_cellphonedb_tables(imported$pvalues, imported$means)
+      } else if (!is_null(manifest$output_dir) && dir.exists(manifest$output_dir)) {
+        .sn_read_cellphonedb_output(manifest$output_dir)
+      } else {
+        stop(
+          "CellPhoneDB completed without accessible imported `pvalues` and `means` tables.",
+          call. = FALSE
+        )
+      }
       list(table = parsed$table, backend_result = parsed$raw, artifacts = list(manifest = manifest))
     },
     multinichenet = do.call(.sn_run_multinichenet, utils::modifyList(list(
@@ -492,7 +532,9 @@
 #'   \code{"cellphonedb"}, \code{"nichenet"}, or \code{"multinichenet"}.
 #'   The legacy alias \code{"nichenetr"} is accepted.
 #' @param group_by Metadata column defining sender/receiver cell groups.
-#' @param assay,layer Assay and layer used to retrieve expression.
+#' @param assay,layer Assay and layer used to retrieve expression. CellPhoneDB
+#'   requires normalized, log-transformed expression from a Seurat
+#'   \code{"data"}/\code{"data.*"} layer and rejects raw counts.
 #' @param species Species passed to species-aware resources. Defaults to
 #'   \code{sn_get_species(object)} when available.
 #' @param sender,receiver Sender and receiver group labels required by
@@ -516,14 +558,15 @@
 #' @param sample_by Metadata column defining biological samples. When supplied,
 #'   ligand and receptor expression is aggregated within each sample before
 #'   condition comparison.
+#' @param paired_by Optional metadata column identifying matched donors or
+#'   experimental units across conditions. It must be constant within each
+#'   \code{sample_by} unit and enables paired condition tests.
 #' @param consensus If \code{TRUE} and multiple methods are requested, use the
 #'   cross-method consensus ranking as the primary result table.
 #' @param contrast Optional length-two condition contrast, with case first and
 #'   reference second.
 #' @param backend_control Named list of method-specific argument lists.
 #' @param result_id Stable identifier for the stored communication result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object;
 #'   otherwise return the stored-result list.
 #' @param ... Backend-specific arguments.
@@ -553,6 +596,7 @@ sn_run_cell_communication <- function(object,
                                       raw_use = TRUE,
                                       resource = NULL,
                                       sample_by = NULL,
+                                      paired_by = NULL,
                                       consensus = TRUE,
                                       contrast = NULL,
                                       backend_control = list(),
@@ -574,6 +618,14 @@ sn_run_cell_communication <- function(object,
   }
   if (!is_null(sample_by) && !sample_by %in% colnames(object[[]])) stop("`sample_by` was not found in object metadata.", call. = FALSE)
   if (!is_null(condition_by) && !condition_by %in% colnames(object[[]])) stop("`condition_by` was not found in object metadata.", call. = FALSE)
+  if (!is_null(paired_by) && is_null(sample_by)) stop("`paired_by` requires `sample_by`.", call. = FALSE)
+  if (!is_null(paired_by) && !paired_by %in% colnames(object[[]])) stop("`paired_by` was not found in object metadata.", call. = FALSE)
+  if (!is_null(paired_by)) {
+    pair_values <- as.character(object[[]][[paired_by]])
+    if (anyNA(pair_values) || any(!nzchar(trimws(pair_values)))) {
+      stop("`paired_by` labels cannot be missing or empty.", call. = FALSE)
+    }
+  }
   dots <- list(...)
   if (length(method) > 1L && length(dots) > 0L) {
     stop("For multiple communication methods, place method-specific arguments under `backend_control`.", call. = FALSE)
@@ -612,12 +664,12 @@ sn_run_cell_communication <- function(object,
           receiver = paste(receiver %||% NA_character_, collapse = ",")
         )
       }))
-      consensus_table <- .sn_communication_consensus(standardized)
+      consensus_table <- .sn_communication_consensus(standardized, methods = method)
       primary <- if (isTRUE(consensus) && length(method) > 1L) consensus_table else standardized
       concordance <- .sn_communication_concordance(standardized)
       assay_resolved <- assay %||% Seurat::DefaultAssay(object)
       sample_evidence <- .sn_communication_sample_evidence(
-        object, primary, group_by, sample_by, condition_by, assay_resolved, layer
+        object, primary, group_by, sample_by, condition_by, paired_by, assay_resolved, layer
       )
       comparison_contrast <- contrast %||% if (!is_null(condition_oi) && !is_null(condition_reference)) c(condition_oi, condition_reference) else NULL
       comparison <- .sn_compare_communication_samples(sample_evidence, contrast = comparison_contrast)
@@ -651,6 +703,7 @@ sn_run_cell_communication <- function(object,
         warnings = backend_warnings,
         sample_by = sample_by,
         condition_by = condition_by,
+        paired_by = paired_by,
         return_object = return_object
       )
       stored
@@ -666,8 +719,6 @@ sn_run_cell_communication <- function(object,
 #' @param result Communication result table.
 #' @param result_id Name used under
 #'   the canonical Shennong result registry.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param method User-facing communication method label.
 #' @param backend Canonical backend identifier. This differs from \code{method}
 #'   only when preserving a legacy alias such as \code{"nichenetr"}.
@@ -678,7 +729,8 @@ sn_run_cell_communication <- function(object,
 #' @param raw_result,consensus_result,sample_evidence,comparison,concordance,ligand_targets
 #'   Optional standardized secondary tables stored in the unified result.
 #' @param warnings Character vector of backend warnings retained for audit.
-#' @param sample_by,condition_by Optional sample and condition metadata columns.
+#' @param sample_by,condition_by,paired_by Optional sample, condition, and
+#'   matched-unit metadata columns.
 #' @param return_object If \code{TRUE}, return the updated object.
 #'
 #' @return A Seurat object or stored-result list.
@@ -702,6 +754,7 @@ sn_store_cell_communication <- function(object,
                                         warnings = character(),
                                         sample_by = NULL,
                                         condition_by = NULL,
+                                        paired_by = NULL,
                                         return_object = TRUE) {
   result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
@@ -725,7 +778,10 @@ sn_store_cell_communication <- function(object,
     package_version = as.character(utils::packageVersion("Shennong")),
     created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
     table = result,
-    input = list(group_by = group_by, sample_by = sample_by, condition_by = condition_by, species = species),
+    input = list(
+      group_by = group_by, sample_by = sample_by, condition_by = condition_by,
+      paired_by = paired_by, species = species
+    ),
     parameters = list(sender = sender, receiver = receiver),
     tables = list(
       primary = result,
@@ -804,17 +860,26 @@ sn_get_cell_communication_result <- function(object,
 #' @export
 sn_run_cellphonedb <- function(object,
                                assay = NULL,
-                               layer = "counts",
+                               layer = "data",
                                group_by = NULL,
                                output_dir = NULL,
                                runtime_dir = NULL,
                                artifact_id = "cellphonedb",
                                return_object = TRUE,
                                method_control = list(),
+                               keep_run_dir = NULL,
+                               max_artifact_import_gb = 0.5,
                                ...) {
   if (is.null(group_by) || !nzchar(group_by)) {
     stop("`group_by` is required for `sn_run_cellphonedb()`.", call. = FALSE)
   }
+  assay <- assay %||% SeuratObject::DefaultAssay(object)
+  .sn_validate_log_normalized_layer(
+    object = object,
+    assay = assay,
+    layer = layer,
+    backend = "CellPhoneDB"
+  )
   .sn_run_python_object_method(
     object = object,
     environment = "cellphonedb",
@@ -827,6 +892,8 @@ sn_run_cellphonedb <- function(object,
     metadata_prefix = "cellphonedb_",
     result_name = artifact_id,
     return_object = return_object,
+    keep_run_dir = keep_run_dir,
+    max_artifact_import_gb = max_artifact_import_gb,
     config = c(list(groupby = group_by), method_control),
     ...
   )

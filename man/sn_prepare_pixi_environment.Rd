@@ -31,8 +31,9 @@ sn_prepare_pixi_environment(
   install_pixi = FALSE,
   install_environment = FALSE,
   pixi = NULL,
-  pixi_version = "latest",
+  pixi_version = "0.69.0",
   pixi_download_url = NULL,
+  pixi_sha256 = NULL,
   quiet = FALSE
 )
 
@@ -50,8 +51,9 @@ sn_call_pixi_environment(
   mirror = c("default", "auto", "china", "tuna", "ustc", "bfsu"),
   install_pixi = TRUE,
   pixi = NULL,
-  pixi_version = "latest",
+  pixi_version = "0.69.0",
   pixi_download_url = NULL,
+  pixi_sha256 = NULL,
   quiet = FALSE
 )
 
@@ -98,7 +100,10 @@ CUDA when available for GPU-aware configs and otherwise CPU/default.}
 
 \item{cuda_version}{CUDA runtime version used when rendering templates.}
 
-\item{platforms}{Pixi platform vector. Defaults to the current platform.}
+\item{platforms}{Platforms that the bundled lock must cover. This does not
+narrow the platform inventory declared by the bundled manifest, because
+doing so would make its multi-platform lock stale. Defaults to the current
+platform.}
 
 \item{mirror}{Mirror setting passed to \code{sn_configure_pixi_mirror()}.}
 
@@ -113,6 +118,10 @@ environment after materializing the manifest.}
 
 \item{pixi_download_url}{Optional custom pixi binary download URL.}
 
+\item{pixi_sha256}{Optional expected SHA-256 digest for
+\code{pixi_download_url}. Custom URLs require this value; official pinned
+release downloads obtain their checksum sidecar automatically.}
+
 \item{quiet}{Logical; suppress status messages where possible.}
 
 \item{command}{Command to run inside the pixi environment.}
@@ -124,8 +133,9 @@ environment after materializing the manifest.}
 }
 \value{
 \code{sn_prepare_pixi_environment()} returns a named list of paths
-and selected environment metadata. \code{sn_call_pixi_environment()}
-invisibly returns command output.
+(including \code{manifest_path} and \code{lock_path}) and selected
+environment metadata. \code{sn_call_pixi_environment()} invisibly returns
+command output.
 }
 \description{
 \code{sn_prepare_pixi_environment()} materializes a package-bundled

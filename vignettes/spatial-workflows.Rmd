@@ -164,6 +164,7 @@ spatial_qc <- sn_run_spatial(
   spatial_object,
   task = "qc",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   k = 6L
 )
 spatial_qc$diagnostics
@@ -278,6 +279,11 @@ joint real-expression PCA and then test those labels on the spatial KNN graph.
 The expression grouping and spatial enrichment therefore use independent
 feature and coordinate evidence from the same real spots.
 
+`sample_by` is part of the spatial design, even when the current object holds
+one section. KNN edges and label permutations are built within that boundary;
+when sections are combined, no spot can acquire a neighbor from another
+section merely because their coordinate ranges overlap.
+
 ```{r core-spatial-neighborhoods}
 set.seed(717)
 section_pca <- integrated_pca[
@@ -301,6 +307,7 @@ spatial_object <- sn_run_spatial_neighborhood(
   method = "knn",
   group_by = "core_expression_group",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   result_id = "expression_neighborhood",
   backend_control = list(
     k = 6L,
@@ -326,7 +333,9 @@ sn_plot_spatial_neighborhood(core_neighborhood, type = "cooccurrence")
 The core backend builds a memory-bounded spatial KNN graph and retains the
 observed Moran's I, permutation null, adjusted P value, rank, and graph edges.
 The feature cap and permutation count are explicit so the real site build stays
-auditable and bounded.
+auditable and bounded. Its two-sided permutation P value compares the observed
+statistic with deviations around the empirical null mean, rather than assuming
+that the finite-sample permutation null is centered exactly at zero.
 
 ```{r spatial-features}
 spatial_object <- sn_run_spatial(
@@ -334,6 +343,7 @@ spatial_object <- sn_run_spatial(
   task = "svg",
   method = "morans_i",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   assay = "Spatial",
   layer = "data",
   result_id = "lymph_node_morans",
@@ -415,6 +425,7 @@ spatial_object <- sn_run_spatial_neighborhood(
   method = "knn",
   group_by = "banksy_domains",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   result_id = "banksy_neighborhood",
   backend_control = list(
     k = 6L,
@@ -440,8 +451,11 @@ sn_plot_spatial_neighborhood(neighborhood, type = "cooccurrence")
 ## Extended spatial-feature backend
 
 nnSVG runs only in the `all` profile and only when its two R dependencies are
-already installed. SPARK-X, stLearn, BayesSpace, CellCharter, and Squidpy use
-explicit runner/result boundaries; no placeholder result is created here.
+already installed. SPARK-X, BayesSpace, CellCharter, and Squidpy use explicit
+runner/result boundaries; no placeholder result is created here. An explicit
+stLearn result may be supplied to its adapter, but the package-level
+`sn_run_stlearn()` object wrapper is currently disabled and is not an execution
+path for this article.
 
 ```{r nnsvg-status}
 tibble::tibble(
@@ -457,6 +471,7 @@ nnsvg <- sn_find_spatial_features(
   spatial_object,
   method = "nnsvg",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   assay = "Spatial",
   layer = "data",
   features = utils::head(svg$tables$features$feature, 100L),
@@ -476,6 +491,13 @@ eligible only in the `all` profile, after BANKSY has produced real groups, and
 when `SHENNONG_SPATIAL_COMMUNICATION_RESULT` points to a real Shennong
 cell-communication result serialized with `qs2`. The source and target labels
 in that result must match the domain labels used here.
+
+Distances are always calculated within `sample_by`. If every communication row
+also has a non-missing `sample` column, Shennong joins distance evidence by
+`source`, `target`, and `sample`; a mixture of sampled and unsampled rows fails
+closed. Without row-level samples, it reports a transparent across-section
+aggregate. `max_distance`, when supplied, must be one finite non-negative
+distance in the coordinate system used by `spatial_cols`.
 
 ```{r spatial-communication-status}
 tibble::tibble(
@@ -497,6 +519,7 @@ spatial_communication <- sn_run_spatial_communication(
   communication = communication,
   group_by = "banksy_domains",
   spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
   result_id = "domain_spatial_communication",
   return_object = FALSE
 )
@@ -515,11 +538,16 @@ set deliberately for already-prepared local environments. Cell2location also
 requires a real signature CSV, and Tangram requires a real, biologically matched
 single-cell reference serialized with `qs2`. The status table therefore makes
 every unmet gate visible instead of reporting an optional backend as successful.
+Cell2location accepts only a count-like layer whose values are finite,
+non-negative, integer-like raw counts. Its signature table uses genes as rows
+and cell states as columns, requires unique non-empty identifiers on both axes,
+and accepts only finite non-negative numeric values. Shennong checks these
+contracts in R before export and again in the Python runner.
 
 ```{r external-spatial-status}
 tibble::tibble(
   workflow = c(
-    "cell2location", "Tangram", "Squidpy", "SpatialData", "stLearn"
+    "cell2location", "Tangram", "Squidpy", "SpatialData"
   ),
   profile_all = run_extended,
   external_execution_enabled = external_spatial_enabled,
@@ -528,13 +556,12 @@ tibble::tibble(
       file.exists(cell2location_signatures_path),
     nzchar(spatial_reference_path) && file.exists(spatial_reference_path),
     TRUE,
-    TRUE,
     TRUE
   ),
   will_run = c(
     run_cell2location,
     run_tangram,
-    rep(external_spatial_enabled, 3L)
+    rep(external_spatial_enabled, 2L)
   )
 )
 ```
@@ -593,7 +620,9 @@ sn_plot_spatial_deconvolution(deconvolution_table)
 
 Tangram likewise exposes a direct and a unified mapping entry point. The
 selected call consumes the real local reference object; it never substitutes a
-fixture-derived pseudo-reference.
+fixture-derived pseudo-reference. Its retained mapping is validated as a
+reference-cell-by-spatial-cell probability matrix: every value is finite and
+non-negative and each reference-cell row sums to one within numerical tolerance.
 
 ```{r run-tangram, eval=run_tangram}
 spatial_reference <- qs2::qs_read(spatial_reference_path)
@@ -630,8 +659,10 @@ if (identical(mapping_entrypoint, "direct")) {
 mapped_object@misc$tangram$lymph_node_tangram
 ```
 
-Squidpy, SpatialData, and stLearn need no additional biological reference, but
-they remain behind the same explicit already-prepared-environment gate.
+Squidpy and SpatialData need no additional biological reference, but they remain
+behind the same explicit already-prepared-environment gate. `sn_run_stlearn()`
+is not included: its exported compatibility signature is intentionally disabled
+and always fails before object export or Python execution.
 
 ```{r run-external-spatial-objects, eval=external_spatial_enabled}
 squidpy_object <- sn_run_squidpy(
@@ -650,21 +681,11 @@ spatialdata_object <- sn_run_spatialdata(
   output_dir = file.path(external_output_root, "spatialdata"),
   artifact_id = "lymph_node_spatialdata"
 )
-stlearn_object <- sn_run_stlearn(
-  spatial_object,
-  assay = "Spatial",
-  layer = "data",
-  spatial_cols = c("spatial_x", "spatial_y"),
-  output_dir = file.path(external_output_root, "stlearn"),
-  artifact_id = "lymph_node_stlearn"
-)
-
 tibble::tibble(
-  backend = c("Squidpy", "SpatialData", "stLearn"),
+  backend = c("Squidpy", "SpatialData"),
   result_recorded = c(
     !is.null(squidpy_object@misc$squidpy$lymph_node_squidpy),
-    !is.null(spatialdata_object@misc$spatialdata$lymph_node_spatialdata),
-    !is.null(stlearn_object@misc$stlearn$lymph_node_stlearn)
+    !is.null(spatialdata_object@misc$spatialdata$lymph_node_spatialdata)
   )
 )
 ```

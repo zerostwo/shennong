@@ -173,6 +173,32 @@
       ]
     },
     {
+      "wrapper": "de_p_adjusted_cutoff",
+      "role": "wrapper_only",
+      "upstream": "Shennong stored-DE prefilter before enricher",
+      "scenarios": [
+        0.05
+      ]
+    },
+    {
+      "wrapper": "de_logfc_threshold",
+      "role": "wrapper_only",
+      "upstream": "Shennong stored-DE absolute log-fold-change prefilter before enricher",
+      "scenarios": [
+        0
+      ]
+    },
+    {
+      "wrapper": "de_direction",
+      "role": "wrapper_only",
+      "upstream": "Shennong stored-DE direction prefilter before enricher",
+      "scenarios": [
+        "up",
+        "down",
+        "both"
+      ]
+    },
+    {
       "wrapper": "result_id",
       "role": "wrapper_only",
       "upstream": "explicit stored-result identifier",

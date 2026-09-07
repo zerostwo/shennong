@@ -65,6 +65,59 @@ test_that("sn_plot_result infers one stored Seurat result without an ID", {
   )
 })
 
+test_that("canonical stored-result plots retain Seurat metadata context", {
+  skip_if_not_installed("SeuratObject")
+  counts <- Matrix::Matrix(
+    matrix(
+      seq_len(24L), nrow = 6L,
+      dimnames = list(paste0("gene", 1:6), paste0("cell", 1:4))
+    ),
+    sparse = TRUE
+  )
+  object <- SeuratObject::CreateSeuratObject(counts)
+  object$group <- c("A", "A", "B", "B")
+  object$known <- c("T", "T", "B", "B")
+
+  scores <- tidyr::expand_grid(
+    entity = colnames(object),
+    program = c("p1", "p2")
+  ) |>
+    dplyr::mutate(score = seq_len(dplyr::n()), level = "cell")
+  program <- Shennong:::.sn_new_analysis_result(
+    "program_scoring", "programs", "mean", "Shennong",
+    tables = list(primary = scores, scores = scores)
+  )
+  object <- sn_store_result(object, "program_scoring", "programs", program)
+  program_plot <- sn_plot_result(
+    object,
+    "program_scoring",
+    "programs",
+    group_by = "group"
+  )
+  expect_setequal(unique(program_plot$data$display_group), c("A", "B"))
+
+  cells <- tibble::tibble(
+    cell = colnames(object),
+    prediction = c("T", "T", "B", "B"),
+    prediction_score = 1,
+    low_confidence = FALSE
+  )
+  annotation <- Shennong:::.sn_new_analysis_result(
+    "annotation", "labels", "test", "test",
+    tables = list(primary = cells, cells = cells)
+  )
+  object <- sn_store_result(object, "annotation", "labels", annotation)
+  confusion <- sn_plot_result(
+    object,
+    "annotation",
+    "labels",
+    view = "confusion",
+    truth = "known"
+  )
+  expect_s3_class(confusion, "ggplot")
+  expect_equal(sum(confusion$data$Freq), ncol(object))
+})
+
 test_that("sn_plot_association supports observation and sample-level data", {
   data <- data.frame(
     sample = rep(paste0("S", 1:4), each = 3L),
@@ -94,6 +147,23 @@ test_that("sn_plot_association supports observation and sample-level data", {
     ),
     "constant within each sample"
   )
+})
+
+test_that("plot subsampling is reproducible without changing caller RNG state", {
+  data <- data.frame(x = seq_len(50), y = rev(seq_len(50)))
+  set.seed(812L)
+  before <- .Random.seed
+
+  first <- sn_plot_association(
+    data, x = "x", y = "y", max_points = 12L, seed = 19L
+  )
+  after <- .Random.seed
+  second <- sn_plot_association(
+    data, x = "x", y = "y", max_points = 12L, seed = 19L
+  )
+
+  expect_identical(after, before)
+  expect_identical(first$data, second$data)
 })
 
 test_that("sample-to-sample correlation scatter uses stored bulk expression", {

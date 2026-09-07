@@ -62,7 +62,9 @@ Defaults to all observed values in \code{subset_by}.}
 marker and contrast analyses and to \code{"counts"} for pseudobulk
 analyses.}
 
-\item{features}{Optional feature subset to test.}
+\item{features}{Optional feature subset to test. The resolved feature set is
+retained as \code{input$tested_features} in stored single-cell DE results,
+so downstream stored-DE ORA can reuse the actual hypothesis universe.}
 
 \item{method}{Statistical method. For \code{"markers"} and
 \code{"contrast"}, this can be any Seurat \code{test.use} value or
@@ -85,9 +87,8 @@ metadata.}
 \item{min_cells_per_sample}{Minimum cells required for a sample/group
 pseudobulk profile to be retained.}
 
-\item{result_id}{Optional explicit result identifier. When supplied, it is
-used as the stored-result key and canonical result name; \code{result_id}
-remains a backward-compatible alias.}
+\item{result_id}{Stable identifier used as the stored-result key and canonical
+result name.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object with
 stored DE results. Otherwise return the result table.}
@@ -100,10 +101,15 @@ for Seurat objects and bulk analysis for matrices, lists, and
 
 \item{metadata}{Optional sample metadata for bulk analysis.}
 
-\item{design}{A fixed- or mixed-effects formula for bulk analysis.}
+\item{design}{A fixed- or mixed-effects formula for bulk analysis. For
+pseudobulk analysis, an optional fixed-effects formula over cell metadata;
+include \code{sample_by} when the same biological unit contributes both
+contrast groups. When omitted, independent and completely paired designs
+are detected automatically.}
 
-\item{contrast}{Character triple giving the bulk contrast as variable,
-numerator, and denominator.}
+\item{contrast}{Character triple giving the contrast as variable, numerator,
+and denominator. For pseudobulk analysis this must agree with
+\code{c(group_by, ident_1, ident_2)}.}
 
 \item{backend_control}{Bulk backend controls or a custom bulk
 \code{runner}/precomputed \code{result}.}

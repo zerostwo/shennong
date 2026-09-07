@@ -28,19 +28,6 @@
   identical(version, .sn_analysis_result_schema_version())
 }
 
-.sn_analysis_result_type_specs <- function() {
-  list(
-    annotation = list(primary_columns = c("cell", "prediction")),
-    program_scoring = list(primary_columns = c("entity", "program", "score")),
-    trajectory = list(primary_columns = c("cell", "primary_pseudotime")),
-    state_priority = list(primary_columns = c("state", "priority_score")),
-    scissor = list(primary_columns = c("cell", "coefficient", "selection")),
-    bulk_survival = list(primary_columns = c(
-      "feature", "hazard_ratio", "conf_low", "conf_high", "p_value"
-    ))
-  )
-}
-
 .sn_analysis_result_requires_primary <- function(analysis_type) {
   !analysis_type %in% c("interpretation")
 }
@@ -114,6 +101,44 @@
   tables
 }
 
+.sn_upgrade_de_primary_gene <- function(tables) {
+  primary <- tables[["primary"]]
+  if (!is.data.frame(primary) || "gene" %in% colnames(primary)) {
+    return(list(tables = tables, source = NULL))
+  }
+
+  feature_available <- "feature" %in% colnames(primary)
+  row_ids <- rownames(primary)
+  rownames_available <- nrow(primary) > 0L && length(row_ids) == nrow(primary) &&
+    !identical(as.character(row_ids), as.character(seq_len(nrow(primary))))
+  candidates <- list()
+  if (feature_available) candidates$feature <- as.character(primary[["feature"]])
+  if (rownames_available) candidates$rownames <- as.character(row_ids)
+  if (length(candidates) == 0L) return(list(tables = tables, source = NULL))
+
+  valid <- vapply(candidates, function(value) {
+    length(value) == nrow(primary) && !anyNA(value) && all(nzchar(trimws(value)))
+  }, logical(1))
+  if (!all(valid)) {
+    stop(
+      "Cannot upgrade DE identifiers: `feature`/row names contain missing or empty values.",
+      call. = FALSE
+    )
+  }
+  if (length(candidates) > 1L &&
+      !identical(unname(candidates[[1L]]), unname(candidates[[2L]]))) {
+    stop(
+      "Cannot upgrade DE identifiers because `feature` and row names disagree.",
+      call. = FALSE
+    )
+  }
+
+  source <- names(candidates)[[1L]]
+  primary[["gene"]] <- candidates[[source]]
+  tables[["primary"]] <- primary
+  list(tables = tables, source = source)
+}
+
 .sn_new_analysis_result <- function(analysis_type,
                                     result_id,
                                     method,
@@ -167,6 +192,44 @@
   method <- as.character(method %||% result[["method"]] %||% "unknown")
   backend <- as.character(backend %||% result[["backend"]] %||% method)
 
+  source_schema_version <- result[["schema_version"]]
+  if (!is_null(source_schema_version)) {
+    valid_source_version <- is.character(source_schema_version) &&
+      length(source_schema_version) == 1L && !is.na(source_schema_version)
+    if (!valid_source_version) {
+      stop(
+        "Cannot upgrade result with invalid `schema_version` '",
+        paste(as.character(source_schema_version), collapse = ", "), "'.",
+        call. = FALSE
+      )
+    }
+    migratable_versions <- c("1", "1.0", "1.0.0", .sn_analysis_result_schema_version())
+    semantic_version <- grepl(
+      "^[0-9]+\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$",
+      source_schema_version
+    )
+    if (semantic_version &&
+        utils::compareVersion(
+          sub("[+-].*$", "", source_schema_version),
+          .sn_analysis_result_schema_version()
+        ) > 0L) {
+      stop(
+        "Cannot read future `schema_version` '", source_schema_version,
+        "' with Shennong result schema '", .sn_analysis_result_schema_version(),
+        "'. Upgrade Shennong before reading or storing this result.",
+        call. = FALSE
+      )
+    }
+    if (!source_schema_version %in% migratable_versions) {
+      stop(
+        "Cannot safely upgrade unsupported `schema_version` '",
+        source_schema_version, "'. Migratable versions are: ",
+        paste(migratable_versions, collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+  }
+
   result[["schema_version"]] <- .sn_analysis_result_schema_version()
   result[["analysis_type"]] <- analysis_type
   result[["name"]] <- NULL
@@ -176,6 +239,11 @@
   result[["input"]] <- result[["input"]] %||% list()
   result[["parameters"]] <- result[["parameters"]] %||% list()
   result[["tables"]] <- .sn_result_tables(result)
+  de_gene_migration <- list(tables = result[["tables"]], source = NULL)
+  if (identical(analysis_type, "de")) {
+    de_gene_migration <- .sn_upgrade_de_primary_gene(result[["tables"]])
+    result[["tables"]] <- de_gene_migration$tables
+  }
   result[["embeddings"]] <- result[["embeddings"]] %||% list()
   result[["graphs"]] <- result[["graphs"]] %||% list()
   result[["models"]] <- result[["models"]] %||% list()
@@ -187,6 +255,15 @@
   )
   result[["provenance"]][["result_id"]] <- result_id
   result[["provenance"]][["analysis_type"]] <- analysis_type
+  if (!is_null(source_schema_version) &&
+      !identical(source_schema_version, .sn_analysis_result_schema_version())) {
+    result[["provenance"]][["migrated_from_schema_version"]] <-
+      source_schema_version
+  }
+  if (!is_null(de_gene_migration$source)) {
+    result[["provenance"]][["migrated_primary_gene_from"]] <-
+      de_gene_migration$source
+  }
 
   result[["table"]] <- NULL
   result[["overall"]] <- NULL
@@ -286,8 +363,15 @@
       errors <- c(errors, "`provenance$timestamp` must be a non-empty character scalar.")
     }
     valid_seed <- function(value) {
-      is.numeric(value) && length(value) == 1L &&
-        (is.na(value) || (is.finite(value) && value >= 0 && value == as.integer(value)))
+      if (!is.numeric(value) || length(value) != 1L || is.object(value) ||
+          !is.null(dim(value))) {
+        return(FALSE)
+      }
+      if (is.na(value)) {
+        return(!is.nan(value))
+      }
+      is.finite(value) && value >= 0 && value <= .Machine$integer.max &&
+        value == trunc(value)
     }
     random_seed <- provenance[["random_seed"]]
     if (!is_null(random_seed)) {
@@ -326,6 +410,14 @@
              !is.data.frame(primary)) {
     errors <- c(errors, "`tables$primary` must be a data frame or tibble.")
   }
+  if (is.data.frame(primary)) {
+    if (ncol(primary) == 0L) {
+      errors <- c(errors, "`tables$primary` must contain at least one column.")
+    }
+    if (anyDuplicated(names(primary))) {
+      errors <- c(errors, "`tables$primary` must not contain duplicate column names.")
+    }
+  }
   spec <- .sn_analysis_result_type_specs()[[analysis_type]]
   if (!is_null(spec) && is.data.frame(primary)) {
     missing_primary_columns <- setdiff(spec$primary_columns, names(primary))
@@ -338,6 +430,10 @@
         )
       )
     }
+    errors <- c(
+      errors,
+      .sn_result_primary_semantic_errors(primary, analysis_type, spec)
+    )
   }
   list(valid = length(errors) == 0L, errors = errors, warnings = warnings)
 }
@@ -391,6 +487,30 @@ sn_validate_result <- function(result, error = TRUE) {
   misc_data <- methods::slot(object, "misc")
   shennong <- misc_data[["shennong"]] %||% list()
   shennong[["results"]] %||% list()
+}
+
+.sn_stored_result_identity_errors <- function(result, type, result_id) {
+  errors <- character()
+  if (!is.list(result)) return("Stored result must be a list.")
+  if (!identical(result[["analysis_type"]], type)) {
+    errors <- c(
+      errors,
+      paste0(
+        "Stored result analysis type '", result[["analysis_type"]] %||% "<missing>",
+        "' does not match its storage type '", type, "'."
+      )
+    )
+  }
+  if (!identical(result[["result_id"]], result_id)) {
+    errors <- c(
+      errors,
+      paste0(
+        "Stored result ID '", result[["result_id"]] %||% "<missing>",
+        "' does not match its storage key '", result_id, "'."
+      )
+    )
+  }
+  errors
 }
 
 #' Store a Shennong analysis result on a Seurat object
@@ -467,6 +587,14 @@ sn_get_result <- function(object, type, result_id) {
   }
   result <- results[[result_id]]
   sn_validate_result(result)
+  identity_errors <- .sn_stored_result_identity_errors(result, type, result_id)
+  if (length(identity_errors) > 0L) {
+    stop(
+      "Invalid stored Shennong analysis result identity:\n- ",
+      paste(identity_errors, collapse = "\n- "),
+      call. = FALSE
+    )
+  }
   result
 }
 
@@ -645,6 +773,15 @@ sn_audit_results <- function(object, type = NULL, include_artifacts = TRUE) {
       ))
     }
     raw_report <- sn_validate_result(raw, error = FALSE)
+    identity_errors <- .sn_stored_result_identity_errors(
+      raw,
+      entry$type,
+      entry$result_id
+    )
+    if (length(identity_errors) > 0L) {
+      raw_report$valid <- FALSE
+      raw_report$errors <- c(raw_report$errors, identity_errors)
+    }
     upgraded <- tryCatch(
       .sn_prepare_result(raw, type = entry$type, result_id = entry$result_id),
       error = identity
@@ -767,27 +904,35 @@ sn_delete_result <- function(object, type, result_id) {
 #'
 #' Registered artifact collections (for example \code{"clustering_stage_cache"},
 #' \code{"integration_comparison"}, or \code{"label_transfer"}) are removed
-#' either member-by-member or as a whole container. Unknown artifact types fail
-#' closed; unified analysis results must be deleted through
-#' \code{\link{sn_delete_result}} instead.
+#' either member-by-member or as a whole container. Because these historical
+#' collections live at top level in \code{object@misc}, their names alone cannot
+#' prove Shennong ownership; every deletion therefore requires explicit
+#' confirmation. Unknown artifact types fail closed; unified analysis results
+#' must be deleted through \code{\link{sn_delete_result}} instead.
 #'
 #' @param object A Seurat object.
 #' @param artifact_type Registered artifact type, i.e. the collection name or
 #'   its \code{"*_artifact"} alias (for example \code{"integration"} or
 #'   \code{"integration_artifact"}).
 #' @param artifact_id Optional artifact identifier. When omitted, the entire artifact
-#'   collection container is removed.
+#'   collection container is removed only when \code{confirm = TRUE}.
+#' @param confirm Explicit confirmation required before deleting a member or an
+#'   entire top-level artifact collection. This protects user-owned payloads
+#'   that use a legacy collection name also registered by Shennong.
 #'
 #' @return The modified Seurat object.
 #'
 #' @examples
 #' \dontrun{
-#' obj <- sn_delete_artifact(obj, "integration_comparison", "pbmc_grid")
-#' obj <- sn_delete_artifact(obj, "label_transfer")
+#' obj <- sn_delete_artifact(
+#'   obj, "integration_comparison", "pbmc_grid", confirm = TRUE
+#' )
+#' obj <- sn_delete_artifact(obj, "label_transfer", confirm = TRUE)
 #' }
 #'
 #' @export
-sn_delete_artifact <- function(object, artifact_type, artifact_id = NULL) {
+sn_delete_artifact <- function(object, artifact_type, artifact_id = NULL,
+                               confirm = FALSE) {
   .sn_validate_seurat_object(object)
   registry <- .sn_misc_result_registry()
   artifacts <- registry[registry$contract_scope == "artifact", , drop = FALSE]
@@ -808,6 +953,22 @@ sn_delete_artifact <- function(object, artifact_type, artifact_id = NULL) {
   }
   collection <- artifacts$collection[[type_index]]
   misc_data <- methods::slot(object, "misc")
+  if (!isTRUE(confirm)) {
+    target <- if (is_null(artifact_id)) {
+      paste0("the entire top-level artifact collection '", collection, "'")
+    } else {
+      paste0(
+        "artifact '", as.character(artifact_id), "' in the legacy top-level collection '",
+        collection, "'"
+      )
+    }
+    stop(
+      "Deleting ", target,
+      " requires `confirm = TRUE`; a legacy `object@misc` name does not prove ",
+      "that Shennong owns the payload.",
+      call. = FALSE
+    )
+  }
   if (is_null(artifact_id)) {
     if (is_null(misc_data[[collection]])) {
       warning("No '", collection, "' artifact collection was present.", call. = FALSE)

@@ -28,8 +28,7 @@ sn_find_bulk_de(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the returned bulk-DE result.}
 
 \item{backend_control}{Backend options or a custom \code{runner}/precomputed \code{result}.}
 }

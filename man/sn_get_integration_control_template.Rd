@@ -57,7 +57,7 @@ and \code{keep_single_sample_batch}.
 Runtime/pixi fields are \code{runtime_dir}, \code{pixi_project},
 \code{pixi_project_dir}, \code{pixi_home}, \code{run_dir}, \code{pixi}, \code{manifest_path},
 \code{manifest_lines}, \code{overwrite_manifest}, \code{platforms}, \code{install_pixi},
-\code{pixi_version}, \code{pixi_download_url}, \code{mirror},
+\code{pixi_version}, \code{pixi_download_url}, \code{pixi_sha256}, \code{mirror},
 \code{mirror_append_original}, \code{script}, and \code{environment}.
 }
 \examples{

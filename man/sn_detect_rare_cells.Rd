@@ -29,7 +29,8 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon"
+  sca_model = "wilcoxon",
+  max_dense_gb = 2
 )
 }
 \arguments{
@@ -90,6 +91,9 @@ matrix internally.}
 \item{sca_nbhd_size}{Neighborhood size passed to SCA.}
 
 \item{sca_model}{Scoring model passed to SCA.}
+
+\item{max_dense_gb}{Maximum estimated peak GiB allowed before a rare-cell
+backend materializes the complete expression matrix as dense.}
 }
 \value{
 A data frame with one row per cell, including a \code{rare_score}

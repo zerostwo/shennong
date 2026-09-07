@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-- `R/` is organized by durable workflow domains (77 files as of 2026-09-05).
+- `R/` is organized by durable workflow domains (83 files as of 2026-09-07).
   Analysis domains live in one `analysis_<domain>.R` each: preprocessing,
   clustering (`analysis_clustering.R` plus extracted `analysis_label_transfer.R`,
   `analysis_celltypist.R`, `analysis_integration_backends.R`,

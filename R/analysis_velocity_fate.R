@@ -114,6 +114,26 @@
   invisible(path)
 }
 
+.sn_velocity_inference_n_pcs <- function(exported, requested = NULL) {
+  maximum <- min(length(exported$features) - 1L, length(exported$cells) - 1L)
+  if (!is.finite(maximum) || maximum < 2L) {
+    stop(
+      "Velocity inference requires at least three exported features and three exported cells to use two principal components.",
+      call. = FALSE
+    )
+  }
+  requested <- requested %||% min(30L, maximum)
+  if (!is.numeric(requested) || length(requested) != 1L || is.na(requested) ||
+      !is.finite(requested) || requested != as.integer(requested) || requested < 2L) {
+    stop("`backend_control$n_pcs` must be one integer of at least 2.", call. = FALSE)
+  }
+  resolved <- as.integer(min(requested, maximum))
+  if (resolved < 2L) {
+    stop("The resolved velocity `n_pcs` must be at least 2 after input-size clamping.", call. = FALSE)
+  }
+  resolved
+}
+
 .sn_run_velocity_pixi <- function(object,
                                   method,
                                   spliced_assay,
@@ -122,7 +142,32 @@
                                   unspliced_layer,
                                   embedding,
                                   backend_control) {
-  root <- backend_control$run_dir %||% tempfile("shennong-velocity-")
+  run_dir_supplied <- !is_null(backend_control$run_dir)
+  keep_run_dir <- backend_control$keep_run_dir %||% TRUE
+  if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
+  root <- if (isTRUE(keep_run_dir) && !run_dir_supplied) {
+    .sn_create_owned_run_dir(
+      parent = file.path(runtime_dir, "runs"),
+      prefix = paste0("velocity-", method, "_")
+    )
+  } else {
+    .sn_resolve_python_run_directory(
+      path = backend_control$run_dir,
+      method = paste0("velocity-", method),
+      runtime_dir = runtime_dir,
+      keep_run_dir = keep_run_dir,
+      supplied = run_dir_supplied
+    )
+  }
+  run_complete <- FALSE
+  on.exit({
+    if (!run_complete && .sn_is_owned_run_dir(root) && dir.exists(root)) {
+      .sn_sanitize_failed_python_run(root, method = method, stage = "velocity")
+    }
+  }, add = TRUE)
   input_dir <- file.path(root, "input")
   output_dir <- file.path(root, "output")
   exported <- .sn_write_velocity_input(
@@ -141,7 +186,7 @@
     log1p_transform = backend_control$log1p_transform %||% TRUE,
     n_top_genes = backend_control$n_top_genes %||% min(2000L, length(exported$features)),
     n_neighbors = backend_control$n_neighbors %||% min(30L, length(exported$cells) - 1L),
-    n_pcs = backend_control$n_pcs %||% min(30L, ncol(embedding$matrix)),
+    n_pcs = .sn_velocity_inference_n_pcs(exported, backend_control$n_pcs),
     max_graph_edges = backend_control$max_graph_edges %||% 100000L,
     write_h5ad = backend_control$write_h5ad %||% TRUE,
     prior_grn = prior_grn_path,
@@ -170,7 +215,28 @@
   do.call(sn_call_pixi_environment, call)
   cells <- utils::read.csv(file.path(output_dir, "velocity_cells.csv"), check.names = FALSE)
   graph <- if (file.exists(file.path(output_dir, "velocity_graph.csv"))) utils::read.csv(file.path(output_dir, "velocity_graph.csv"), check.names = FALSE) else data.frame()
-  manifest <- jsonlite::read_json(file.path(output_dir, "manifest.json"), simplifyVector = TRUE)
+  manifest <- .sn_read_integration_backend_manifest(
+    output_dir,
+    method = method,
+    n_cells = length(exported$cells)
+  )
+  manifest$output_h5ad <- .sn_integration_manifest_artifact(
+    manifest,
+    field = "output_h5ad",
+    output_dir = output_dir
+  )
+  if (isTRUE(keep_run_dir)) {
+    manifest$run_dir <- normalizePath(root, winslash = "/", mustWork = TRUE)
+    manifest$output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
+    manifest$run_dir_retained <- TRUE
+    manifest$retention_reason <- "Retained because CellRank fate inference consumes the velocity H5AD artifact."
+    unlink(input_dir, recursive = TRUE, force = TRUE)
+    unlink(config_path, force = TRUE)
+  } else {
+    manifest <- .sn_sanitize_python_backend_manifest(manifest, retain_paths = FALSE)
+    .sn_remove_python_run_directory(root, label = paste0(method, " velocity run directory"))
+  }
+  run_complete <- TRUE
   list(cells = cells, graph = graph, artifacts = manifest, expression = list(assay = spliced_assay, layer = spliced_layer))
 }
 
@@ -184,8 +250,21 @@
     stop("Velocity cells require cell, velocity_1/x, and velocity_2/y columns.", call. = FALSE)
   }
   cell_ids <- as.character(cells[[cell_column]])
-  keep <- cell_ids %in% rownames(embedding$matrix)
-  cell_ids <- cell_ids[keep]
+  if (length(cell_ids) == 0L || anyNA(cell_ids) || any(!nzchar(cell_ids))) {
+    stop("Velocity cell identifiers cannot be missing or empty.", call. = FALSE)
+  }
+  if (anyDuplicated(cell_ids)) {
+    stop("Velocity output must contain one unique row per cell.", call. = FALSE)
+  }
+  unknown_cells <- setdiff(cell_ids, rownames(embedding$matrix))
+  if (length(unknown_cells) > 0L) {
+    stop(
+      "Velocity output contains cell(s) absent from the selected embedding: ",
+      paste(utils::head(unknown_cells, 5L), collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  keep <- rep(TRUE, length(cell_ids))
   base <- tibble::tibble(
     cell = cell_ids,
     dimension_1 = as.numeric(embedding$matrix[cell_ids, 1]),
@@ -193,6 +272,14 @@
     velocity_1 = suppressWarnings(as.numeric(cells[[x_column]][keep])),
     velocity_2 = suppressWarnings(as.numeric(cells[[y_column]][keep]))
   )
+  finite_vectors <- is.finite(base$velocity_1) & is.finite(base$velocity_2)
+  partial_vectors <- xor(is.finite(base$velocity_1), is.finite(base$velocity_2))
+  if (any(partial_vectors)) {
+    stop("Velocity vectors must provide both finite components or neither component.", call. = FALSE)
+  }
+  if (!any(finite_vectors)) {
+    stop("Velocity output contains no finite two-dimensional vectors.", call. = FALSE)
+  }
   optional <- list(
     pseudotime = c("pseudotime", "velocity_pseudotime", "latent_time"),
     confidence = c("confidence", "velocity_confidence"),
@@ -214,8 +301,29 @@
       source = as.character(graph[[source]]), target = as.character(graph[[target]]),
       weight = suppressWarnings(as.numeric(graph[[weight]]))
     )
+    if (anyNA(graph$source) || any(!nzchar(graph$source)) ||
+        anyNA(graph$target) || any(!nzchar(graph$target))) {
+      stop("Velocity graph endpoints cannot be missing or empty.", call. = FALSE)
+    }
+    unknown_endpoints <- setdiff(unique(c(graph$source, graph$target)), cell_ids)
+    if (length(unknown_endpoints) > 0L) {
+      stop(
+        "Velocity graph contains endpoint(s) absent from velocity cells: ",
+        paste(utils::head(unknown_endpoints, 5L), collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    if (any(!is.finite(graph$weight)) || any(graph$weight < 0)) {
+      stop("Velocity transition weights must be finite and non-negative.", call. = FALSE)
+    }
+    if (anyDuplicated(paste(graph$source, graph$target, sep = "\r"))) {
+      stop("Velocity graph must contain one unique transition per source-target pair.", call. = FALSE)
+    }
   }
-  list(cells = base, graph = graph, artifacts = output$artifacts %||% list(), warnings = output$warnings %||% character())
+  list(
+    cells = base, graph = graph, artifacts = output$artifacts %||% list(),
+    warnings = output$warnings %||% character(), backend = output$backend %||% NULL
+  )
 }
 
 #' Run RNA velocity with managed scVelo or RegVelo backends
@@ -226,15 +334,17 @@
 #' @param spliced_layer,unspliced_layer Layer names.
 #' @param reduction,dims Embedding and dimensions used for projected vectors.
 #' @param result_id Stored result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param backend_control Backend/pixi controls or an explicit `runner`/`result`.
 #'   RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
 #'   table, a target-by-regulator named matrix, or a CSV path. Shared scVelo
 #'   preprocessing defaults to \code{enforce_normalization = TRUE} so
 #'   non-integer source splicing estimates are normalized before HVG selection;
 #'   \code{log1p_transform = TRUE} prepares the expression matrix for Scanpy's
-#'   Seurat-flavor HVG calculation.
+#'   Seurat-flavor HVG calculation. Managed runs retain their output directory
+#'   by default because \code{sn_run_fate()} consumes the generated H5AD; raw
+#'   export files are removed after successful import. Set
+#'   \code{keep_run_dir = FALSE} when CellRank chaining is not needed, or supply
+#'   an empty \code{run_dir} to choose the retained location explicitly.
 #' @param return_object Return the modified object or unified velocity result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
 #'   \code{backend_control$seed} > task default; the resolved value is stamped
@@ -273,14 +383,23 @@ sn_run_velocity <- function(object,
   spliced_assay <- spliced_assay %||% SeuratObject::DefaultAssay(object)
   unspliced_assay <- unspliced_assay %||% spliced_assay
   embedding <- .sn_velocity_embedding(object, reduction, dims)
-  output <- if (is.function(backend_control$runner)) {
+  custom_runner <- is.function(backend_control$runner)
+  supplied_result <- !is_null(backend_control$result)
+  backend_label <- if (custom_runner) {
+    paste0(method, "-custom-runner")
+  } else if (supplied_result) {
+    paste0(method, "-provided-result")
+  } else {
+    paste0(method, "-pixi")
+  }
+  output <- if (custom_runner) {
     backend_control$runner(
       object = object, method = method, spliced_assay = spliced_assay,
       spliced_layer = spliced_layer, unspliced_assay = unspliced_assay,
       unspliced_layer = unspliced_layer, reduction = embedding$reduction,
       dims = embedding$dims, backend_control = backend_control
     )
-  } else if (!is_null(backend_control$result)) {
+  } else if (supplied_result) {
     backend_control$result
   } else {
     .sn_run_velocity_pixi(
@@ -294,7 +413,7 @@ sn_run_velocity <- function(object,
   object[[paste0(result_id, "_confidence")]] <- stats::setNames(cells$confidence, cells$cell)[colnames(object)]
   result <- list(
     schema_version = .sn_analysis_result_schema_version(), analysis_type = "velocity", result_id = result_id,
-    method = method, backend = paste0(method, "-pixi"),
+    method = method, backend = standardized$backend %||% backend_label,
     input = list(
       cells = nrow(cells), spliced_assay = spliced_assay, spliced_layer = spliced_layer,
       unspliced_assay = unspliced_assay, unspliced_layer = unspliced_layer,
@@ -340,7 +459,36 @@ sn_run_velocity <- function(object,
   if (is_null(h5ad) || !file.exists(h5ad)) {
     stop("CellRank requires the scVelo backend H5AD artifact or `backend_control$h5ad`.", call. = FALSE)
   }
-  root <- backend_control$run_dir %||% tempfile("shennong-fate-")
+  run_dir_supplied <- !is_null(backend_control$run_dir)
+  keep_run_dir <- backend_control$keep_run_dir %||% run_dir_supplied
+  if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  run_parent <- backend_control$run_dir %||% tempdir()
+  if (!dir.exists(run_parent)) {
+    created <- dir.create(run_parent, recursive = TRUE, showWarnings = FALSE)
+    if (!isTRUE(created) && !dir.exists(run_parent)) {
+      stop("Could not create the CellRank run directory: ", run_parent, call. = FALSE)
+    }
+  }
+  if (!isTRUE(keep_run_dir) || !run_dir_supplied) {
+    # An explicit `run_dir` is a user-owned parent when cleanup is requested.
+    # A retained implicit run also needs its own directory rather than using
+    # the process-wide temporary directory itself.
+    if (!isTRUE(keep_run_dir)) {
+      root <- .sn_create_owned_run_dir(run_parent, "shennong-fate-run-")
+    } else {
+      root <- tempfile("shennong-fate-run-", tmpdir = run_parent)
+      if (!dir.create(root, recursive = FALSE, showWarnings = FALSE)) {
+        stop("Could not create a package-owned CellRank run directory.", call. = FALSE)
+      }
+    }
+  } else {
+    root <- run_parent
+  }
+  if (!isTRUE(keep_run_dir)) {
+    on.exit(.sn_cleanup_owned_run_dir(root), add = TRUE)
+  }
   output_dir <- file.path(root, "output")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   config <- list(
@@ -360,12 +508,95 @@ sn_run_velocity <- function(object,
     environment = "trajectory", command = "python",
     args = c(.sn_trajectory_pixi_script(), "--output-dir", output_dir, "--config", config_path)
   ), backend_control$pixi %||% list()))
+  artifacts <- jsonlite::read_json(file.path(output_dir, "manifest.json"), simplifyVector = TRUE)
+  artifacts$run_dir_retained <- isTRUE(keep_run_dir)
+  if (isTRUE(keep_run_dir)) {
+    artifacts$output_dir <- normalizePath(output_dir, winslash = "/", mustWork = TRUE)
+  }
   list(
     probabilities = utils::read.csv(file.path(output_dir, "fate_probabilities.csv"), check.names = FALSE),
     terminal_states = utils::read.csv(file.path(output_dir, "terminal_states.csv"), check.names = FALSE),
     drivers = if (file.exists(file.path(output_dir, "lineage_drivers.csv"))) utils::read.csv(file.path(output_dir, "lineage_drivers.csv"), check.names = FALSE) else data.frame(),
-    artifacts = jsonlite::read_json(file.path(output_dir, "manifest.json"), simplifyVector = TRUE)
+    artifacts = artifacts,
+    backend = "cellrank-pixi"
   )
+}
+
+.sn_fate_state_metadata <- function(object, result_id, probabilities) {
+  states <- unique(probabilities$state)
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
+  safe_states <- gsub("[^[:alnum:]_]+", "_", states)
+  safe_states[!nzchar(safe_states)] <- "state"
+  candidates <- make.unique(paste(prefix, "fate", safe_states, sep = "_"), sep = "_")
+
+  stored_results <- .sn_result_store(object)[["fate"]] %||% list()
+  previous <- stored_results[[result_id]]
+  if (is_null(previous)) {
+    conflicts <- intersect(candidates, colnames(object[[]]))
+    if (length(conflicts) > 0L) {
+      stop(
+        "Fate metadata column(s) already exist but are not owned by this result: ",
+        paste(conflicts, collapse = ", "),
+        ". Choose a different `result_id` or remove/rename the conflicting user metadata.",
+        call. = FALSE
+      )
+    }
+    return(tibble::tibble(state = states, metadata_column = candidates))
+  }
+
+  previous <- sn_get_result(object, "fate", result_id)
+  mapping <- previous$tables$state_metadata
+  if (!is.data.frame(mapping) ||
+      !all(c("state", "metadata_column") %in% colnames(mapping))) {
+    stop(
+      "The existing fate result does not contain a valid `state_metadata` ownership map; use a new `result_id`.",
+      call. = FALSE
+    )
+  }
+  mapping <- tibble::as_tibble(mapping[, c("state", "metadata_column"), drop = FALSE])
+  mapping$state <- as.character(mapping$state)
+  mapping$metadata_column <- as.character(mapping$metadata_column)
+  if (anyNA(mapping$state) || any(!nzchar(mapping$state)) ||
+      anyNA(mapping$metadata_column) || any(!nzchar(mapping$metadata_column)) ||
+      anyDuplicated(mapping$state) || anyDuplicated(mapping$metadata_column)) {
+    stop(
+      "The existing fate result has an ambiguous `state_metadata` ownership map; use a new `result_id`.",
+      call. = FALSE
+    )
+  }
+  if (!setequal(mapping$state, states)) {
+    stop(
+      "Re-running a fate `result_id` with a different state set is ambiguous; use a new `result_id`.",
+      call. = FALSE
+    )
+  }
+  mapping <- mapping[match(states, mapping$state), , drop = FALSE]
+
+  previous_probabilities <- previous$tables$probabilities %||% previous$tables$primary
+  if (!is.data.frame(previous_probabilities) ||
+      !all(c("cell", "state", "probability") %in% colnames(previous_probabilities))) {
+    stop(
+      "The existing fate result cannot prove ownership of its metadata values; use a new `result_id`.",
+      call. = FALSE
+    )
+  }
+  for (index in seq_len(nrow(mapping))) {
+    column <- mapping$metadata_column[[index]]
+    if (!column %in% colnames(object[[]])) next
+    state <- mapping$state[[index]]
+    prior <- previous_probabilities[as.character(previous_probabilities$state) == state, , drop = FALSE]
+    expected <- stats::setNames(as.numeric(prior$probability), as.character(prior$cell))
+    expected <- as.numeric(expected[colnames(object)])
+    observed <- as.numeric(object[[column, drop = TRUE]])
+    if (!isTRUE(all.equal(observed, expected, check.attributes = FALSE))) {
+      stop(
+        "Fate metadata column `", column,
+        "` no longer matches the stored result and may be user-modified; refusing to overwrite it.",
+        call. = FALSE
+      )
+    }
+  }
+  mapping
 }
 
 .sn_trajectory_cellrank <- function(velocity_result, backend_control = list()) {
@@ -383,11 +614,59 @@ sn_run_velocity <- function(object,
     cell = as.character(probabilities[[cell]]), state = as.character(probabilities[[state]]),
     probability = suppressWarnings(as.numeric(probabilities[[probability]]))
   )
-  probabilities <- probabilities[probabilities$cell %in% colnames(object) & is.finite(probabilities$probability), , drop = FALSE]
-  if (nrow(probabilities) == 0L) stop("No finite fate probabilities matched cells in `object`.", call. = FALSE)
+  if (anyNA(probabilities$cell) || any(!nzchar(probabilities$cell)) ||
+      anyNA(probabilities$state) || any(!nzchar(probabilities$state))) {
+    stop("Fate probability cell and state identifiers cannot be missing or empty.", call. = FALSE)
+  }
+  unknown_cells <- setdiff(unique(probabilities$cell), colnames(object))
+  if (length(unknown_cells) > 0L) {
+    stop("Fate probabilities contain cell(s) absent from `object`: ", paste(utils::head(unknown_cells, 5L), collapse = ", "), ".", call. = FALSE)
+  }
+  if (anyDuplicated(paste(probabilities$cell, probabilities$state, sep = "\r"))) {
+    stop("Fate probabilities must contain one unique row per cell and state.", call. = FALSE)
+  }
+  if (any(!is.finite(probabilities$probability)) ||
+      any(probabilities$probability < 0 | probabilities$probability > 1)) {
+    stop("Fate probabilities must be finite values between 0 and 1.", call. = FALSE)
+  }
+  if (nrow(probabilities) == 0L) stop("No fate probabilities were supplied.", call. = FALSE)
+  probability_sums <- tapply(probabilities$probability, probabilities$cell, sum)
+  if (any(abs(probability_sums - 1) > 1e-6)) {
+    stop("Fate probabilities must sum to 1 across states for every cell.", call. = FALSE)
+  }
   terminals <- tibble::as_tibble(output$terminal_states %||% tibble::tibble())
+  if (nrow(terminals) > 0L) {
+    terminal_cell <- intersect(c("cell", "cell_id", "entity"), names(terminals))
+    terminal_state <- intersect(c("state", "lineage", "terminal_state"), names(terminals))
+    if (length(terminal_state) == 0L) {
+      stop("Fate terminal states require a state/lineage column.", call. = FALSE)
+    }
+    states <- as.character(terminals[[terminal_state[[1]]]])
+    keep_terminal <- !is.na(states) & nzchar(states)
+    terminals <- terminals[keep_terminal, , drop = FALSE]
+    states <- states[keep_terminal]
+    unknown_states <- setdiff(unique(states), unique(probabilities$state))
+    if (length(unknown_states) > 0L) {
+      stop(
+        "Fate terminal states are absent from probability states: ",
+        paste(utils::head(unknown_states, 5L), collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+    if (length(terminal_cell) > 0L) {
+      terminal_cells <- as.character(terminals[[terminal_cell[[1]]]])
+      unknown_terminal_cells <- setdiff(unique(terminal_cells), colnames(object))
+      if (anyNA(terminal_cells) || any(!nzchar(terminal_cells)) || length(unknown_terminal_cells) > 0L) {
+        stop("Fate terminal-state cells must be non-empty cells present in `object`.", call. = FALSE)
+      }
+    }
+  }
   drivers <- tibble::as_tibble(output$drivers %||% output$lineage_drivers %||% tibble::tibble())
-  list(probabilities = probabilities, terminal_states = terminals, drivers = drivers, artifacts = output$artifacts %||% list(), warnings = output$warnings %||% character())
+  list(
+    probabilities = probabilities, terminal_states = terminals, drivers = drivers,
+    artifacts = output$artifacts %||% list(), warnings = output$warnings %||% character(),
+    backend = output$backend %||% NULL
+  )
 }
 
 #' Infer terminal states and fate probabilities with CellRank
@@ -397,8 +676,6 @@ sn_run_velocity <- function(object,
 #' @param source_result_id Stored velocity result used by the default pixi backend.
 #' @param reduction,dims Embedding and dimensions used for plots.
 #' @param result_id Stored fate result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param backend_control CellRank/pixi controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or unified fate result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
@@ -431,13 +708,22 @@ sn_run_fate <- function(object,
   }
   embedding <- .sn_velocity_embedding(object, reduction, dims)
   velocity <- tryCatch(sn_get_result(object, "velocity", source_result_id), error = function(e) NULL)
-  output <- if (is.function(backend_control$runner)) {
+  custom_runner <- is.function(backend_control$runner)
+  supplied_result <- !is_null(backend_control$result)
+  backend_label <- if (custom_runner) {
+    "cellrank-custom-runner"
+  } else if (supplied_result) {
+    "cellrank-provided-result"
+  } else {
+    "cellrank-pixi"
+  }
+  output <- if (custom_runner) {
     backend_control$runner(
       object = object, method = method, velocity_result = velocity,
       reduction = embedding$reduction, dims = embedding$dims,
       backend_control = backend_control
     )
-  } else if (!is_null(backend_control$result)) {
+  } else if (supplied_result) {
     backend_control$result
   } else {
     if (is_null(velocity)) stop("Run `sn_run_velocity()` first or supply a CellRank runner/result.", call. = FALSE)
@@ -445,16 +731,18 @@ sn_run_fate <- function(object,
   }
   standardized <- .sn_standardize_fate(output, object)
   probabilities <- standardized$probabilities
-  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
+  states <- unique(probabilities$state)
+  state_metadata <- .sn_fate_state_metadata(object, result_id, probabilities)
   metadata <- data.frame(row.names = colnames(object))
-  for (state in unique(probabilities$state)) {
+  for (state in states) {
     values <- stats::setNames(probabilities$probability[probabilities$state == state], probabilities$cell[probabilities$state == state])
-    metadata[[paste(prefix, "fate", gsub("[^[:alnum:]_]+", "_", state), sep = "_")]] <- as.numeric(values[colnames(object)])
+    column <- state_metadata$metadata_column[state_metadata$state == state][[1]]
+    metadata[[column]] <- as.numeric(values[colnames(object)])
   }
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
   result <- list(
     schema_version = .sn_analysis_result_schema_version(), analysis_type = "fate", result_id = result_id,
-    method = method, backend = "cellrank-pixi",
+    method = method, backend = standardized$backend %||% backend_label,
     input = list(cells = length(unique(probabilities$cell)), source_result_id = source_result_id, reduction = embedding$reduction, dimensions = embedding$dims),
     parameters = list(
       n_states = backend_control$n_states %||% NULL,
@@ -462,7 +750,7 @@ sn_run_fate <- function(object,
       terminal_method = backend_control$terminal_method %||% "stability",
       stability_threshold = backend_control$stability_threshold %||% 0.96
     ),
-    tables = list(primary = probabilities, probabilities = probabilities, terminal_states = standardized$terminal_states, lineage_drivers = standardized$drivers),
+    tables = list(primary = probabilities, probabilities = probabilities, terminal_states = standardized$terminal_states, lineage_drivers = standardized$drivers, state_metadata = state_metadata),
     embeddings = list(reduction = embedding$matrix), graphs = list(),
     models = list(artifacts = standardized$artifacts),
     diagnostics = list(states = length(unique(probabilities$state)), probability_sum_range = range(tapply(probabilities$probability, probabilities$cell, sum), na.rm = TRUE)),

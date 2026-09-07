@@ -71,6 +71,111 @@ test_that("backend label maps make zero-valued groups safe and reversible", {
   )
 })
 
+test_that("communication consensus keeps condition and sample contexts separate", {
+  table <- tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1",
+    score = c(1, 2, 3, 4), p_value = NA_real_, q_value = NA_real_,
+    rank = c(1, 1, 1, 1), method = rep(c("m1", "m2"), 2),
+    condition = rep(c("A", "B"), each = 2), sample = rep(c("S1", "S2"), each = 2),
+    pathway = NA_character_, target_genes = NA_character_,
+    evidence_source = rep(c("m1", "m2"), 2), spatial_distance = NA_real_
+  )
+
+  consensus <- Shennong:::.sn_communication_consensus(
+    table, methods = c("m1", "m2"), min_methods = 2L
+  )
+
+  expect_equal(nrow(consensus), 2L)
+  expect_setequal(consensus$condition, c("A", "B"))
+  expect_setequal(consensus$sample, c("S1", "S2"))
+  expect_false(any(grepl(";", consensus$condition, fixed = TRUE)))
+})
+
+test_that("communication comparisons require direction and support matched units", {
+  evidence <- tidyr::expand_grid(
+    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1",
+    pair = paste0("D", 1:4), condition = c("Ctrl", "Stim")
+  )
+  evidence$sample <- paste(evidence$pair, evidence$condition, sep = "_")
+  evidence$score <- ifelse(evidence$condition == "Stim", 2, 1) +
+    rep(c(0.1, 0.2, 0.3, 0.4), each = 2)
+
+  expect_error(
+    Shennong:::.sn_compare_communication_samples(evidence),
+    "explicit two-level"
+  )
+  expect_error(
+    Shennong:::.sn_compare_communication_samples(evidence, c("Stim", "Stim")),
+    "two distinct"
+  )
+
+  comparison <- Shennong:::.sn_compare_communication_samples(
+    evidence, c("Stim", "Ctrl")
+  )
+  expect_true(comparison$paired)
+  expect_equal(comparison$n_pairs, 4L)
+  expect_equal(comparison$estimate, 1)
+})
+
+test_that("paired communication comparisons require complete selected-condition pairs", {
+  evidence <- tidyr::expand_grid(
+    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1",
+    pair = c("D1", "D2"), condition = c("Ctrl", "Stim", "Other")
+  )
+  evidence$sample <- paste(evidence$pair, evidence$condition, sep = "_")
+  evidence$score <- ifelse(
+    evidence$condition == "Stim", 2,
+    ifelse(evidence$condition == "Ctrl", 1, 100)
+  )
+
+  comparison <- Shennong:::.sn_compare_communication_samples(
+    evidence, c("Stim", "Ctrl")
+  )
+  expect_equal(comparison$n_pairs, 2L)
+  expect_equal(comparison$estimate, 1)
+
+  incomplete <- evidence[!(evidence$pair == "D2" & evidence$condition == "Stim"), ]
+  expect_error(
+    Shennong:::.sn_compare_communication_samples(incomplete, c("Stim", "Ctrl")),
+    "Incomplete pair.*D2"
+  )
+
+  missing_pair <- evidence
+  missing_pair$pair[[1L]] <- NA_character_
+  expect_error(
+    Shennong:::.sn_compare_communication_samples(missing_pair, c("Stim", "Ctrl")),
+    "missing or empty pair labels"
+  )
+})
+
+test_that("communication sample evidence records a stable paired-unit mapping", {
+  object <- make_communication_object()
+  sample_order <- paste0("S", 1:8)
+  donor_map <- stats::setNames(rep(paste0("D", 1:4), 2), sample_order)
+  object$donor <- unname(donor_map[as.character(object$sample)])
+  interactions <- tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1"
+  )
+
+  evidence <- Shennong:::.sn_communication_sample_evidence(
+    object, interactions, "cell_type", "sample", "condition", "donor", "RNA", "data"
+  )
+
+  expect_equal(nrow(evidence), 8L)
+  expect_identical(
+    unique(evidence$pair[evidence$sample %in% c("S1", "S5")]),
+    "D1"
+  )
+
+  object$donor[[1L]] <- " "
+  expect_error(
+    Shennong:::.sn_communication_sample_evidence(
+      object, interactions, "cell_type", "sample", "condition", "donor", "RNA", "data"
+    ),
+    "paired_by.*missing or empty"
+  )
+})
+
 test_that("cell communication results can be stored and retrieved", {
   skip_if_not_installed("Seurat")
   object <- make_communication_object()
@@ -334,11 +439,11 @@ test_that("communication backends standardize to one comparable schema", {
   liana <- Shennong:::.sn_standardize_communication(tibble::tibble(
     source = "Sender", target = "Receiver", ligand_complex = "LIG1",
     receptor_complex = "REC1", magnitude_rank = 0.1, specificity_rank = 0.2
-  ), method = "liana")
+  ), method = "liana", condition = "Stim")
   cellchat <- Shennong:::.sn_standardize_communication(tibble::tibble(
     source = "Sender", target = "Receiver", ligand = "LIG1",
     receptor = "REC1", prob = 0.8, pval = 0.01, pathway_name = "PathwayA"
-  ), method = "cellchat")
+  ), method = "cellchat", condition = "Stim")
   multinichenet <- Shennong:::.sn_standardize_communication(tibble::tibble(
     sender = "Sender", receiver = "Receiver", ligand = "LIG1",
     receptor = "REC1", prioritization_score = 0.7, group = "Stim"
@@ -360,6 +465,61 @@ test_that("communication backends standardize to one comparable schema", {
   expect_equal(nrow(concordance), 3L)
   expect_true(all(concordance$shared_edges == 1L))
   expect_true(all(concordance$complete_edges == 1L))
+})
+
+test_that("communication consensus requires cross-method support and does not mislabel minimum p-values", {
+  shared <- tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "L_shared",
+    receptor = "R_shared", score = 1, p_value = 0.01
+  )
+  singleton <- tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "L_single",
+    receptor = "R_single", score = 100, p_value = 1e-12
+  )
+  table <- dplyr::bind_rows(
+    Shennong:::.sn_standardize_communication(dplyr::bind_rows(shared, singleton), "m1"),
+    Shennong:::.sn_standardize_communication(shared, "m2"),
+    Shennong:::.sn_standardize_communication(shared, "m3")
+  )
+
+  consensus <- Shennong:::.sn_communication_consensus(
+    table, methods = c("m1", "m2", "m3")
+  )
+
+  expect_identical(consensus$ligand, "L_shared")
+  expect_identical(consensus$n_methods, 3L)
+  expect_identical(consensus$available_methods, 3L)
+  expect_equal(consensus$method_support_fraction, 1)
+  expect_true(is.na(consensus$p_value))
+  expect_true(is.na(consensus$q_value))
+  expect_equal(consensus$minimum_method_p_value, 0.01)
+  expect_identical(consensus$p_value_combination, "not_combined_correlated_methods")
+})
+
+test_that("single-backend communication output is not presented as consensus", {
+  table <- Shennong:::.sn_standardize_communication(tibble::tibble(
+    source = "Sender", target = "Receiver", ligand = "L1",
+    receptor = "R1", score = 1
+  ), "m1")
+  consensus <- Shennong:::.sn_communication_consensus(table, methods = "m1")
+  expect_equal(nrow(consensus), 0L)
+})
+
+test_that("LIANA input contains the exact selected assay layer", {
+  skip_if_not_installed("SingleCellExperiment")
+  object <- make_communication_object()
+  selected <- SeuratObject::LayerData(object, assay = "RNA", layer = "data")
+  selected <- selected + 7
+  SeuratObject::LayerData(object, assay = "RNA", layer = "custom_liana") <- selected
+
+  adapted <- Shennong:::.sn_liana_sce_input(
+    object, assay = "RNA", layer = "custom_liana"
+  )
+  observed <- SummarizedExperiment::assay(adapted$object, adapted$assay)
+
+  expect_equal(as.matrix(observed), as.matrix(selected))
+  expect_identical(adapted$source_assay, "RNA")
+  expect_identical(adapted$source_layer, "custom_liana")
 })
 
 test_that("communication concordance tolerates shared edges with missing ranks", {
@@ -435,6 +595,66 @@ test_that("CellPhoneDB output parser retains interaction evidence", {
   expect_equal(standardized$ligand, c("LIG1", "LIG1_LIG2"))
   expect_equal(standardized$source, rep("Sender", 2))
   expect_equal(standardized$q_value, stats::p.adjust(c(0.01, 0.2), "BH"))
+})
+
+test_that("high-level CellPhoneDB consumes imported tables after temporary cleanup", {
+  object <- make_communication_object()
+  pvalues <- data.frame(
+    id_cp_interaction = c("CPI-1", "CPI-2"),
+    gene_a = c("simple:LIG1", "simple:TGFB1"),
+    gene_b = c("simple:REC1", "simple:TGFBR1"),
+    `Sender|Receiver` = c(0.01, 0.2),
+    check.names = FALSE
+  )
+  means <- data.frame(
+    id_cp_interaction = rev(pvalues$id_cp_interaction),
+    gene_a = rev(pvalues$gene_a),
+    gene_b = rev(pvalues$gene_b),
+    `Sender|Receiver` = c(0.4, 1.2),
+    check.names = FALSE
+  )
+
+  stored <- testthat::with_mocked_bindings(
+    sn_run_cell_communication(
+      object,
+      method = "cellphonedb",
+      group_by = "cell_type",
+      return_object = FALSE
+    ),
+    sn_run_cellphonedb = function(...) {
+      list(
+        output_dir = NULL,
+        run_dir_retained = FALSE,
+        imported_tables = list(pvalues = pvalues, means = means)
+      )
+    },
+    .package = "Shennong"
+  )
+
+  expect_identical(stored$analysis_type, "cell_communication")
+  expect_equal(stored$tables$primary$score, c(1.2, 0.4))
+  expect_equal(stored$tables$primary$p_value, c(0.01, 0.2))
+  expect_null(stored$artifacts$cellphonedb$manifest$output_dir)
+})
+
+test_that("CellPhoneDB table pairing fails closed on malformed evidence", {
+  pvalues <- data.frame(
+    id_cp_interaction = "CPI-1", gene_a = "LIG1", gene_b = "REC1",
+    `Sender|Receiver` = 1.5, check.names = FALSE
+  )
+  means <- data.frame(
+    id_cp_interaction = "CPI-other", gene_a = "LIG1", gene_b = "REC1",
+    `Sender|Receiver` = 1, check.names = FALSE
+  )
+  expect_error(
+    Shennong:::.sn_parse_cellphonedb_tables(pvalues, means),
+    "same unique, non-empty interaction identifiers"
+  )
+  means$id_cp_interaction <- "CPI-1"
+  expect_error(
+    Shennong:::.sn_parse_cellphonedb_tables(pvalues, means),
+    "p-values must be numeric values in \\[0, 1\\]"
+  )
 })
 
 test_that("MultiNicheNet backend uses biological samples and conditions", {

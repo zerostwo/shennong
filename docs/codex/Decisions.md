@@ -1729,3 +1729,57 @@ Last updated: 2026-09-06
   edgeR pin from `bulk-de-edger.json`, leaving that contract as the single
   version authority while still failing when CI installation resolves a
   different upstream build.
+
+## 2026-09-06 package-wide correctness and runtime hardening
+
+- Statistical convenience must never obscure the inferential unit or expression
+  scale. Count-model backends require explicitly count-like input, sample-level
+  comparisons retain samples/pairs as replicates, normalized association layers
+  are selected separately from raw backend layers, and unsupported designs fail
+  before an upstream package can reinterpret them silently.
+- Missing, non-finite, incomplete, or identity-mismatched backend evidence is not
+  negative evidence. Annotation confidence, pseudotime, CNV calls, embeddings,
+  graphs, and imported Python tables preserve missingness or fail closed instead
+  of recycling rows, dropping extra cells, or fabricating a default value.
+- A reproducibility seed is scoped state, not global state. Public top-level
+  seeds override stage controls, including every branch of a multi-method run,
+  while helper execution restores the caller's RNG state and records the
+  effective seed in result provenance.
+- User paths are never implicitly owned by Shennong. Cleanup may recursively
+  delete only a unique directory created and marked by the package; an explicit
+  output path is otherwise a parent or a retained artifact. Cleanup success must
+  be checked before provenance can claim that sensitive inputs were removed.
+- Managed Python execution is defined by an exact Pixi binary version, a
+  committed lockfile, exact direct dependency pins, a method-specific result
+  contract, and bounded imports. Mutable installers, unlocked solves, arbitrary
+  manifest paths, and optimistic registry capability flags are rejected.
+- The schema-v2 result identity is the physical `(analysis_type, result_id)`
+  storage key. Read-time migration may repair only unambiguous legacy structure;
+  future schemas, conflicting identifiers, untyped zero-column primary tables,
+  and destructive artifact deletion without confirmation fail closed.
+
+## 2026-09-07 audit repair completion contracts
+
+- A schema version is meaningful only when every package-owned analysis type
+  has a minimum semantic contract. The 33 built-in result types therefore share
+  one exhaustive registry for required identities, keys, value types, numerical
+  bounds, paired missingness, and cross-row scientific invariants. Extension
+  types may retain the generic envelope, but adding a new built-in type without
+  a registry entry is a test failure.
+- A categorical bulk-DE contrast denotes one estimand independent of backend.
+  edgeR, DESeq2, limma, and dream construct the same numerator-minus-denominator
+  model-matrix profile; numeric nuisance covariates are fixed at their median
+  and categorical nuisance covariates at their first declared factor level.
+  Diagnostics retain both profiles and the policy so interaction terms cannot
+  be reinterpreted silently by a backend.
+- Managed backend cleanup follows artifact dependency, not a blanket temporary
+  directory rule. PopV, Scrublet, and CIBERSORTx clean successful temporary runs
+  by default and sanitize failures. Velocity retains its package-owned H5AD by
+  default because CellRank consumes it, while `keep_run_dir = FALSE` performs
+  verified cleanup for velocity-only work. User-supplied paths are parents or
+  retained locations and are never recursively claimed.
+- Backend expression scale is part of the scientific contract. BayesPrism and
+  count-model Python backends require integer-like raw counts; CIBERSORTx accepts
+  matched raw-count or non-log linear inputs; CellPhoneDB and infercnvpy require
+  normalized log-transformed layers. The selected scale and source layer are
+  recorded rather than inferred again during interpretation.

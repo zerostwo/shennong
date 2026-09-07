@@ -10,8 +10,11 @@ make_result_bundle_test_result <- function() {
     input = list(features = 2L, samples = 4L),
     parameters = list(design = ~ condition),
     tables = list(primary = tibble::tibble(
-      feature = c("gene1", "gene2"),
-      estimate = c(1.5, -0.5)
+      gene = c("gene1", "gene2"),
+      log2_fold_change = c(1.5, -0.5),
+      p_value = c(0.01, 0.2),
+      adjusted_p_value = c(0.02, 0.2),
+      method = c("limma", "limma")
     )),
     embeddings = list(),
     graphs = list(),

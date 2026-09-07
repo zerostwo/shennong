@@ -11,7 +11,7 @@
 \alias{sn_run_squidpy}
 \alias{sn_run_spatialdata}
 \alias{sn_run_stlearn}
-\title{Run a Python analysis command through a managed Shennong pixi environment}
+\title{Object-level Python backend entry points}
 \usage{
 sn_run_scarches(
   object,
@@ -25,6 +25,8 @@ sn_run_scarches(
   artifact_id = "scarches",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -40,6 +42,8 @@ sn_run_scpoli(
   artifact_id = "scpoli",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -75,19 +79,23 @@ sn_run_infercnvpy(
   metadata_prefix = "infercnvpy_",
   artifact_id = "infercnvpy",
   return_object = TRUE,
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
 sn_run_cellphonedb(
   object,
   assay = NULL,
-  layer = "counts",
+  layer = "data",
   group_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
   artifact_id = "cellphonedb",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -103,6 +111,8 @@ sn_run_cell2location(
   artifact_id = "cell2location",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -121,6 +131,8 @@ sn_run_tangram(
   artifact_id = "tangram",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -136,6 +148,8 @@ sn_run_squidpy(
   artifact_id = "squidpy",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -150,6 +164,8 @@ sn_run_spatialdata(
   artifact_id = "spatialdata",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -164,6 +180,8 @@ sn_run_stlearn(
   artifact_id = "stlearn",
   return_object = TRUE,
   method_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 }
@@ -174,15 +192,21 @@ supported results.}
 
 \item{assay}{Assay used for object-level infercnvpy input.}
 
-\item{layer}{Assay layer used for object-level Python input. scPoli defaults
-to \code{"counts"}; infercnvpy and the other generic object wrappers
-default to \code{"data"} when present and otherwise \code{"counts"}.}
+\item{layer}{Assay layer used for object-level Python input. Cell2location
+and scPoli require a count-like layer containing finite, non-negative,
+integer-like raw counts, checked independently before export and by the
+Python runner. CellPhoneDB and infercnvpy require normalized,
+log-transformed expression from a Seurat \code{"data"}/\code{"data.*"}
+layer and reject raw-count or ambiguously named layers. Other generic
+object wrappers prefer \code{"data"} and otherwise use \code{"counts"}.}
 
 \item{batch_by, label_by}{Metadata columns used by scArches/scPoli-style
 object workflows.}
 
-\item{output_dir}{Optional run directory. Defaults to
-\code{~/.shennong/runs/infercnvpy_*}.}
+\item{output_dir}{Optional persistent run directory. When omitted, Shennong
+uses an isolated package-owned temporary run and removes it after a
+successful import. With \code{keep_run_dir = FALSE}, an explicit path is
+treated as a parent and is never recursively deleted.}
 
 \item{runtime_dir}{Optional Shennong runtime directory.}
 
@@ -195,6 +219,16 @@ return a run manifest list.}
 
 \item{method_control}{Optional named list of backend-specific settings passed
 to the Python runner config.}
+
+\item{keep_run_dir}{Whether to retain exported inputs and backend outputs.
+\code{NULL} retains an explicitly supplied \code{output_dir} and otherwise
+cleans a package-owned temporary child after success. Failed temporary runs
+retain only sanitized diagnostics.}
+
+\item{max_artifact_import_gb}{Positive import-memory budget in GiB for
+backend metadata, embeddings, and artifact tables. Oversized outputs fail
+before materialization; increase this value only after reviewing the
+expected artifact dimensions.}
 
 \item{...}{Additional arguments passed to \code{sn_call_pixi_environment()}.}
 
@@ -230,8 +264,10 @@ downstream infercnvpy analysis steps.}
 
 \item{group_by}{Metadata column used by CellPhoneDB cell groups.}
 
-\item{reference_signatures}{Optional file path or data frame of reference
-cell-state signatures for cell2location.}
+\item{reference_signatures}{Required CSV path, numeric data frame, or numeric
+matrix of reference cell-state signatures for cell2location. Features are
+rows and cell states are columns; both identifier sets must be unique and
+non-empty, and all values must be finite and non-negative.}
 
 \item{spatial_cols}{Two metadata columns containing spatial coordinates for
 spatial tools.}
@@ -248,7 +284,8 @@ for Tangram projection.}
 \item{cluster_by}{Metadata column used by Squidpy neighborhood enrichment.}
 }
 \value{
-A Seurat object or a run manifest.
+Supported entry points return a Seurat object or run manifest.
+\code{sn_run_scarches()} and \code{sn_run_stlearn()} always fail closed.
 }
 \description{
 These are analysis-oriented wrappers around \code{sn_call_pixi_environment()}.
@@ -257,6 +294,13 @@ requested command. When \code{object} is supplied, method wrappers use a
 Seurat object-level contract: export the object, run the packaged pixi
 runner script, and import method outputs back into the object when the
 backend produces cell-level metadata or embeddings.
+}
+\details{
+\code{sn_run_scarches()} and \code{sn_run_stlearn()} are retained as public
+compatibility entry points, but are intentionally disabled. They fail before
+object serialization or Python execution because Shennong does not currently
+ship an admitted, faithful upstream workflow for either backend. A bundled
+environment name or runner placeholder does not make these methods runnable.
 }
 \examples{
 \dontrun{

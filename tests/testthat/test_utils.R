@@ -462,3 +462,44 @@ test_that("layer alias helpers restore pre-existing target layers", {
   )
   expect_true("data.alt" %in% SeuratObject::Layers(restored[["RNA"]]))
 })
+
+test_that("scoped seeds restore the caller RNG state", {
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) original_seed <- get(".Random.seed", envir = .GlobalEnv)
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", original_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+
+  set.seed(90210)
+  caller_seed <- get(".Random.seed", envir = .GlobalEnv)
+  first <- Shennong:::.sn_with_seed(17, stats::runif(4))
+  expect_identical(get(".Random.seed", envir = .GlobalEnv), caller_seed)
+  second <- Shennong:::.sn_with_seed(17, stats::runif(4))
+  expect_identical(first, second)
+  expect_identical(get(".Random.seed", envir = .GlobalEnv), caller_seed)
+
+  rm(".Random.seed", envir = .GlobalEnv)
+  Shennong:::.sn_with_seed(17, stats::runif(1))
+  expect_false(exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+})
+
+test_that("owned run cleanup never removes a user parent directory", {
+  parent <- withr::local_tempdir()
+  sentinel <- file.path(parent, "keep-me.txt")
+  writeLines("user data", sentinel)
+
+  run_dir <- Shennong:::.sn_create_owned_run_dir(parent, "backend-")
+  writeLines("temporary input", file.path(run_dir, "matrix.csv"))
+  expect_true(dir.exists(run_dir))
+  expect_invisible(Shennong:::.sn_cleanup_owned_run_dir(run_dir))
+  expect_false(dir.exists(run_dir))
+  expect_true(file.exists(sentinel))
+  expect_error(
+    Shennong:::.sn_cleanup_owned_run_dir(parent),
+    "without a Shennong ownership marker"
+  )
+})

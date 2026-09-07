@@ -160,9 +160,9 @@ should group singletons into the nearest cluster.}
 \item{leiden_objective_function}{Leiden objective function passed to
 \code{Seurat::FindClusters()}.}
 
-\item{seed}{Top-level reproducibility seed overriding
-\code{cluster_random_seed} (and any existing \code{integration_control$seed})
-when supplied. Precedence: \code{seed} > \code{cluster_random_seed} > default.}
+\item{seed}{Top-level reproducibility seed overriding clustering, PCA,
+SCTransform, visualization, and backend integration seeds when supplied.
+Precedence: \code{seed} > stage-specific controls > stage defaults.}
 
 \item{verbose}{Top-level progress logging switch forwarded to the clustering
 implementation; a \code{verbose} tail argument keeps precedence over it.}

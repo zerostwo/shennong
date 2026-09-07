@@ -108,6 +108,11 @@ sn_calculate_composition <- function(x,
     c(group_by, variable),
     name = "count"
   )
+  group_totals <- .sn_base_group_count(
+    retained_metadata,
+    group_by,
+    name = "group_total"
+  )
   composition_full <- composition_full[
     composition_full$count >= min_cells,
     ,
@@ -115,11 +120,10 @@ sn_calculate_composition <- function(x,
   ]
   if (nrow(composition_full) > 0L) {
     group_id <- .sn_base_group_id(composition_full, group_by)
-    composition_full$group_total <- stats::ave(
-      composition_full$count,
-      group_id,
-      FUN = sum
-    )
+    total_group_id <- .sn_base_group_id(group_totals, group_by)
+    composition_full$group_total <- group_totals$group_total[
+      match(group_id, total_group_id)
+    ]
     composition_full$proportion <-
       composition_full$count / composition_full$group_total * 100
   } else {
@@ -382,6 +386,15 @@ sn_calculate_roe <- function(x,
 
   merged$count[is.na(merged$count)] <- 0
   merged$proportion[is.na(merged$proportion)] <- 0
+  sample_totals <- tapply(
+    composition$group_total,
+    as.character(composition[[sample_col]]),
+    function(value) max(value, na.rm = TRUE)
+  )
+  missing_totals <- !is.finite(merged$group_total)
+  merged$group_total[missing_totals] <- unname(sample_totals[
+    as.character(merged[[sample_col]][missing_totals])
+  ])
   merged
 }
 
@@ -424,8 +437,10 @@ sn_calculate_roe <- function(x,
 #'   \code{c(case, control)}.
 #' @param min_cells Minimum number of cells required per sample before that
 #'   sample is retained for comparison. Defaults to \code{20}.
-#' @param pseudocount Small value added to group means before computing
-#'   \code{log2_fc}. Defaults to \code{0.5}.
+#' @param pseudocount Cell-count correction used only when either comparison
+#'   group has zero mean abundance. The correction is converted to a
+#'   sample-specific percentage using that sample's total cell count. Defaults
+#'   to the Haldane-Anscombe value of \code{0.5} cells.
 #' @param test Statistical test to apply to sample-level proportions. One of
 #'   \code{"wilcox"} or \code{"none"}. Defaults to \code{"wilcox"}.
 #' @param adjust_method Multiple-testing correction method passed to
@@ -465,7 +480,10 @@ sn_compare_composition <- function(x,
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
   stopifnot(is.character(variable), length(variable) == 1L)
-  stopifnot(is.character(contrast), length(contrast) == 2L)
+  if (!is.character(contrast) || length(contrast) != 2L || anyNA(contrast) ||
+      any(!nzchar(contrast)) || anyDuplicated(contrast)) {
+    stop("`contrast` must contain two distinct, non-missing group labels as `c(case, control)`.", call. = FALSE)
+  }
   stopifnot(is.numeric(min_cells), length(min_cells) == 1L, min_cells >= 0)
   stopifnot(is.numeric(pseudocount), length(pseudocount) == 1L, pseudocount >= 0)
   stopifnot(is.character(adjust_method), length(adjust_method) == 1L)
@@ -499,6 +517,15 @@ sn_compare_composition <- function(x,
   if (nrow(sample_info) == 0L) {
     stop("No samples remaining for the requested contrast.", call. = FALSE)
   }
+  observed_contrast <- unique(as.character(sample_info[[group_by]]))
+  missing_contrast <- setdiff(contrast, observed_contrast)
+  if (length(missing_contrast) > 0L) {
+    stop(
+      "The requested contrast is missing retained sample(s) for: ",
+      paste(missing_contrast, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
 
   composition <- sn_calculate_composition(
     x = metadata[metadata[[sample_by]] %in% sample_info[[sample_by]], , drop = FALSE],
@@ -524,6 +551,7 @@ sn_compare_composition <- function(x,
 
   comparison_levels <- if (is.factor(metadata[[variable]])) levels(metadata[[variable]]) else unique(as.character(composition_complete[[variable]]))
   comparison_levels <- comparison_levels[comparison_levels %in% unique(as.character(composition_complete[[variable]]))]
+  n_comparison_levels <- length(comparison_levels)
 
   summary_tbl <- lapply(comparison_levels, function(current_level) {
     current_data <- composition_complete[as.character(composition_complete[[variable]]) %in% current_level, , drop = FALSE]
@@ -534,6 +562,20 @@ sn_compare_composition <- function(x,
     mean_control <- mean(control_data$proportion, na.rm = TRUE)
     median_case <- stats::median(case_data$proportion, na.rm = TRUE)
     median_control <- stats::median(control_data$proportion, na.rm = TRUE)
+    corrected_case <- (case_data$count + pseudocount) /
+      (case_data$group_total + pseudocount * n_comparison_levels) * 100
+    corrected_control <- (control_data$count + pseudocount) /
+      (control_data$group_total + pseudocount * n_comparison_levels) * 100
+    mean_case_for_fc <- if (mean_case > 0 && mean_control > 0) {
+      mean_case
+    } else {
+      mean(corrected_case, na.rm = TRUE)
+    }
+    mean_control_for_fc <- if (mean_case > 0 && mean_control > 0) {
+      mean_control
+    } else {
+      mean(corrected_control, na.rm = TRUE)
+    }
     p_value <- .sn_run_composition_test(
       values_case = case_data$proportion,
       values_control = control_data$proportion,
@@ -547,7 +589,7 @@ sn_compare_composition <- function(x,
       median_case = median_case,
       median_control = median_control,
       difference = mean_case - mean_control,
-      log2_fc = log2((mean_case + pseudocount) / (mean_control + pseudocount)),
+      log2_fc = log2(mean_case_for_fc / mean_control_for_fc),
       n_case = nrow(case_data),
       n_control = nrow(control_data),
       p_value = p_value,

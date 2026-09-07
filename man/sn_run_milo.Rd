@@ -84,9 +84,8 @@ neighborhoods with \code{miloR::annotateNhoods()}.}
 \item{norm_method}{Normalization method passed to
 \code{miloR::testNhoods()}.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.
-When supplied, the milo result is stored on the Seurat object.}
+\item{result_id}{Optional stable identifier. When supplied, the Milo result
+is stored on the Seurat object.}
 
 \item{return_object}{Logical; when \code{TRUE} and \code{result_id} is
 supplied, return the updated Seurat object.}

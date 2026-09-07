@@ -246,6 +246,33 @@ pbmc_genes <- sn_filter_genes(
 c(before = nrow(pbmc_cells), after = nrow(pbmc_genes))
 ```
 
+## Standardize feature identity before deriving embeddings
+
+Gene-symbol changes alter the feature axis and should happen before
+normalization, PCA, neighbor graphs, or clustering. For a Seurat object,
+`sn_standardize_gene_symbols()` treats the RNA `counts` layer as the identity
+source, applies the same mapping to every RNA layer, and sums duplicate targets
+only for count-like layers. Rows mapping to ambiguous duplicate targets are
+dropped from normalized/scaled layers rather than summed; a layer is omitted
+only when no safely mapped rows remain.
+
+```{r standardize-gene-symbols, eval = FALSE}
+pbmc_genes <- sn_standardize_gene_symbols(
+  pbmc_genes,
+  species = "human",
+  is_gene_id = FALSE
+)
+
+# Recreate normalized layers, variable features, PCA, neighbors, and clusters
+# after any feature-identity change.
+pbmc_genes <- sn_normalize_data(pbmc_genes, assay = "RNA")
+```
+
+The rebuild preserves aligned cells and unaffected assays, but removes RNA-
+derived reductions, graphs, and command records because they refer to the old
+feature identity. This invalidation is intentional: a renamed assay must not
+silently reuse stale PCA or graph state.
+
 ## Normalize and add cell-cycle scores
 
 `sn_normalize_data()` and `sn_score_cell_cycle()` keep preprocessing inside the
@@ -339,6 +366,11 @@ pbmc_scrublet <- sn_find_doublets(
 table(pbmc_scrublet$scrublet.class)
 ```
 
+The default Scrublet run uses a unique package-owned temporary directory and
+removes its raw-count export after import. To retain backend artifacts, supply
+an empty `backend_control$output_dir`; set `keep_run_dir = FALSE` to treat an
+explicit path as a parent whose user-owned contents are preserved.
+
 The ungrouped default call above uses scDblFinder's native automatic clustering
 and can use the ShennongOpt `scdblfinder` patch. Set
 `cluster_backend = "shennong"` only when `sn_run_cluster()` assignments are an
@@ -371,10 +403,13 @@ For ambient RNA, materialize a matching raw-count resource with
 uses the filtered object directly and writes corrected counts to a new layer,
 so the original counts remain inspectable.
 
-When `method = "soupx"`, SoupX runs its plain upstream implementation; there is
-no acceleration patch for this path yet, and Shennong applies SoupX's original
-stochastic integer rounding so the corrected count layer keeps its existing
-integer contract.
+When `method = "soupx"`, the unfiltered droplet matrix supplied through `raw`
+defines SoupX's `tod` and soup profile, while the filtered matrix in `x`
+defines `toc`. The profile is therefore estimated from the raw droplets, not
+from retained cells. The two matrices are aligned on shared genes for fitting,
+then the corrected result is restored to the complete filtered feature axis.
+Shennong applies stochastic integer rounding under the explicit `seed` and
+restores the caller's RNG state after the operation.
 
 ```{r ambient-soupx, eval = FALSE}
 pbmc_soupx <- sn_remove_ambient_contamination(
@@ -382,6 +417,7 @@ pbmc_soupx <- sn_remove_ambient_contamination(
   raw = raw_counts,
   method = "soupx",
   layer = "decontaminated_counts",
+  seed = 717L,
   verbose = FALSE
 )
 ```
@@ -419,6 +455,10 @@ The Seurat command entry shown above records both the requested values and the
 resolved automatic choices, along with method-specific arguments and compact
 input/backend provenance. It intentionally summarizes matrix inputs instead of
 embedding another full count matrix in the Seurat object.
+When a raw/background matrix shares only a subset of features, decontX and
+decontPro fit on that intersection but return the full original filtered
+feature axis: features outside the fitted intersection retain their original
+counts rather than disappearing from the assay.
 `cluster_backend = "native"` is the
 decontX default and avoids an extra Shennong/Seurat clustering workflow. For
 decontPro, supply `cluster` or use the default `"shennong"` backend because

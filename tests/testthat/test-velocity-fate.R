@@ -40,7 +40,81 @@ test_that("scVelo adapter stores projected vectors and diagnostics", {
   expect_equal(result$diagnostics$finite_vectors, ncol(object))
   expect_true(result$parameters$enforce_normalization)
   expect_true(result$parameters$log1p_transform)
+  expect_identical(result$backend, "scvelo-provided-result")
   expect_true(all(c("velocity_pseudotime", "velocity_confidence") %in% colnames(updated[[]])))
+})
+
+test_that("managed velocity runs expose explicit retention and remove raw exports", {
+  object <- make_velocity_test_object()
+  counts <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+  SeuratObject::LayerData(object, assay = "RNA", layer = "spliced") <- counts
+  SeuratObject::LayerData(object, assay = "RNA", layer = "unspliced") <- counts
+  embedding <- Shennong:::.sn_velocity_embedding(object, "umap", 1:2)
+  observed_roots <- character()
+  runner <- function(environment, command, args, ...) {
+    input_dir <- args[[match("--input-dir", args) + 1L]]
+    output_dir <- args[[match("--output-dir", args) + 1L]]
+    observed_roots <<- c(observed_roots, dirname(input_dir))
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    cells <- colnames(object)
+    utils::write.csv(
+      data.frame(
+        cell = cells,
+        velocity_1 = 0.1,
+        velocity_2 = 0.2,
+        pseudotime = seq(0, 1, length.out = length(cells)),
+        confidence = 0.8
+      ),
+      file.path(output_dir, "velocity_cells.csv"),
+      row.names = FALSE
+    )
+    utils::write.csv(
+      data.frame(source = head(cells, -1L), target = tail(cells, -1L), probability = 0.9),
+      file.path(output_dir, "velocity_graph.csv"),
+      row.names = FALSE
+    )
+    h5ad <- file.path(output_dir, "velocity.h5ad")
+    file.create(h5ad)
+    jsonlite::write_json(
+      list(method = "scvelo", output_h5ad = h5ad, n_cells = length(cells)),
+      file.path(output_dir, "manifest.json"),
+      auto_unbox = TRUE
+    )
+  }
+  runtime_dir <- withr::local_tempdir(pattern = "velocity-runtime-")
+
+  retained <- testthat::with_mocked_bindings(
+    Shennong:::.sn_run_velocity_pixi(
+      object, "scvelo", "RNA", "spliced", "RNA", "unspliced", embedding,
+      list(runtime_dir = runtime_dir)
+    ),
+    sn_call_pixi_environment = runner,
+    .package = "Shennong"
+  )
+  retained_root <- retained$artifacts$run_dir
+  withr::defer({
+    if (dir.exists(retained_root)) Shennong:::.sn_cleanup_owned_run_dir(retained_root)
+  })
+  expect_true(retained$artifacts$run_dir_retained)
+  expect_true(file.exists(retained$artifacts$output_h5ad))
+  expect_false(dir.exists(file.path(retained_root, "input")))
+  expect_false(file.exists(file.path(retained_root, "config.json")))
+
+  cleanup_parent <- withr::local_tempdir(pattern = "velocity-clean-parent-")
+  sentinel <- file.path(cleanup_parent, "user-sentinel.txt")
+  writeLines("keep", sentinel)
+  temporary <- testthat::with_mocked_bindings(
+    Shennong:::.sn_run_velocity_pixi(
+      object, "scvelo", "RNA", "spliced", "RNA", "unspliced", embedding,
+      list(run_dir = cleanup_parent, keep_run_dir = FALSE)
+    ),
+    sn_call_pixi_environment = runner,
+    .package = "Shennong"
+  )
+  expect_true(file.exists(sentinel))
+  expect_false(dir.exists(utils::tail(observed_roots, 1L)))
+  expect_false(temporary$artifacts$output_retained)
+  expect_null(temporary$artifacts$output_h5ad)
 })
 
 test_that("CellRank adapter stores probabilities, terminals, and drivers", {
@@ -88,7 +162,7 @@ test_that("RegVelo reuses the velocity result contract", {
 
   expect_true(sn_validate_result(result, error = FALSE)$valid)
   expect_identical(result$method, "regvelo")
-  expect_identical(result$backend, "regvelo-pixi")
+  expect_identical(result$backend, "regvelo-provided-result")
   expect_true(all(result$tables$cells$method == "regvelo"))
   expect_true(all(c("soft_constraint", "lam", "max_epochs", "enforce_normalization", "log1p_transform") %in% names(result$parameters)))
 })
@@ -105,6 +179,188 @@ test_that("managed velocity preprocessing enforces and records normalization", {
   expect_match(script, '"velocity_mode": config.get', fixed = TRUE)
   expect_match(script, '"preprocessing": {', fixed = TRUE)
   expect_match(script, "estimator.compute_eigendecomposition()", fixed = TRUE)
+})
+
+test_that("velocity inference dimensions are independent of the 2D plotting embedding", {
+  exported <- list(features = paste0("G", seq_len(80)), cells = paste0("C", seq_len(50)))
+  expect_identical(Shennong:::.sn_velocity_inference_n_pcs(exported), 30L)
+  expect_identical(Shennong:::.sn_velocity_inference_n_pcs(exported, 40L), 40L)
+  expect_error(Shennong:::.sn_velocity_inference_n_pcs(exported, 1L), "at least 2")
+  expect_error(
+    Shennong:::.sn_velocity_inference_n_pcs(
+      list(features = c("G1", "G2"), cells = paste0("C", 1:5)),
+      30L
+    ),
+    "at least three exported features"
+  )
+})
+
+test_that("fate adapter validates probability contracts", {
+  object <- make_velocity_test_object()
+  valid <- expand.grid(cell = colnames(object), state = c("A", "B"), stringsAsFactors = FALSE)
+  valid$probability <- rep(c(0.7, 0.3), each = ncol(object))
+
+  outside <- valid
+  outside$probability[[1]] <- 1.1
+  expect_error(
+    Shennong:::.sn_standardize_fate(list(probabilities = outside), object),
+    "between 0 and 1"
+  )
+  duplicated <- rbind(valid, valid[1, , drop = FALSE])
+  expect_error(
+    Shennong:::.sn_standardize_fate(list(probabilities = duplicated), object),
+    "unique row"
+  )
+  unnormalized <- valid
+  unnormalized$probability[unnormalized$state == "B"] <- 0.2
+  expect_error(
+    Shennong:::.sn_standardize_fate(list(probabilities = unnormalized), object),
+    "sum to 1"
+  )
+})
+
+test_that("velocity adapter rejects ambiguous cells and invalid transitions", {
+  object <- make_velocity_test_object()
+  embedding <- Shennong:::.sn_velocity_embedding(object, "umap", 1:2)
+  valid <- velocity_adapter_result(object)
+
+  duplicate_cells <- valid
+  duplicate_cells$cells$cell[[2]] <- duplicate_cells$cells$cell[[1]]
+  expect_error(
+    Shennong:::.sn_standardize_velocity(duplicate_cells, object, embedding, "scvelo"),
+    "unique row"
+  )
+
+  unknown_endpoint <- valid
+  unknown_endpoint$graph$target[[1]] <- "not-a-cell"
+  expect_error(
+    Shennong:::.sn_standardize_velocity(unknown_endpoint, object, embedding, "scvelo"),
+    "endpoint"
+  )
+
+  invalid_weight <- valid
+  invalid_weight$graph$probability[[1]] <- -0.1
+  expect_error(
+    Shennong:::.sn_standardize_velocity(invalid_weight, object, embedding, "scvelo"),
+    "non-negative"
+  )
+
+  no_vectors <- valid
+  no_vectors$cells$velocity_x <- NA_real_
+  no_vectors$cells$velocity_y <- NA_real_
+  expect_error(
+    Shennong:::.sn_standardize_velocity(no_vectors, object, embedding, "scvelo"),
+    "no finite"
+  )
+})
+
+test_that("fate terminal states agree with probability states", {
+  object <- make_velocity_test_object()
+  probabilities <- expand.grid(
+    cell = colnames(object), state = c("A", "B"), stringsAsFactors = FALSE
+  )
+  probabilities$probability <- 0.5
+  expect_error(
+    Shennong:::.sn_standardize_fate(
+      list(
+        probabilities = probabilities,
+        terminal_states = tibble::tibble(cell = "cell1", state = "C")
+      ),
+      object
+    ),
+    "absent from probability states"
+  )
+})
+
+test_that("temporary CellRank run directories are cleaned after import", {
+  object <- make_velocity_test_object()
+  h5ad <- tempfile(fileext = ".h5ad")
+  file.create(h5ad)
+  root <- withr::local_tempdir(pattern = "fate-parent-")
+  sentinel <- file.path(root, "user-owned.txt")
+  writeLines("preserve", sentinel)
+  owned_run_dir <- NULL
+  velocity_result <- list(models = list(artifacts = list(output_h5ad = h5ad)))
+
+  output <- testthat::with_mocked_bindings(
+    Shennong:::.sn_run_fate_pixi(
+      velocity_result,
+      list(run_dir = root, keep_run_dir = FALSE)
+    ),
+    sn_call_pixi_environment = function(environment, command, args, ...) {
+      output_dir <- args[[match("--output-dir", args) + 1L]]
+      owned_run_dir <<- dirname(output_dir)
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      utils::write.csv(
+        data.frame(cell = colnames(object), state = "A", probability = 1),
+        file.path(output_dir, "fate_probabilities.csv"), row.names = FALSE
+      )
+      utils::write.csv(
+        data.frame(cell = "cell1", state = "A", probability = 1),
+        file.path(output_dir, "terminal_states.csv"), row.names = FALSE
+      )
+      jsonlite::write_json(
+        list(mode = "fate"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE
+      )
+      invisible(character())
+    },
+    .package = "Shennong"
+  )
+
+  expect_true(dir.exists(root))
+  expect_true(file.exists(sentinel))
+  expect_false(dir.exists(owned_run_dir))
+  expect_false(output$artifacts$run_dir_retained)
+})
+
+test_that("fate metadata ownership is stable across reruns", {
+  object <- make_velocity_test_object()
+  probabilities <- expand.grid(
+    cell = colnames(object), state = c("A-B", "A B"), stringsAsFactors = FALSE
+  )
+  probabilities$probability <- 0.5
+  updated <- sn_run_fate(
+    object, backend_control = list(result = list(probabilities = probabilities))
+  )
+  result <- sn_get_result(updated, "fate", "fate")
+  mapping <- result$tables$state_metadata
+
+  expect_equal(length(unique(mapping$metadata_column)), 2L)
+  expect_true(all(mapping$metadata_column %in% colnames(updated[[]])))
+  rerun <- sn_run_fate(
+    updated, backend_control = list(result = list(probabilities = probabilities))
+  )
+  rerun_mapping <- sn_get_result(rerun, "fate", "fate")$tables$state_metadata
+  expect_identical(rerun_mapping, mapping)
+  expect_equal(
+    sum(grepl("^fate_fate_A_B", colnames(rerun[[]]))),
+    2L
+  )
+
+  modified <- updated
+  modified[[mapping$metadata_column[[1L]]]] <- 0
+  expect_error(
+    sn_run_fate(
+      modified, backend_control = list(result = list(probabilities = probabilities))
+    ),
+    "user-modified"
+  )
+})
+
+test_that("fate metadata never overwrites an unowned user column", {
+  object <- make_velocity_test_object()
+  object[["fate_fate_A_B"]] <- seq_len(ncol(object))
+  probabilities <- expand.grid(
+    cell = colnames(object), state = c("A-B", "A B"), stringsAsFactors = FALSE
+  )
+  probabilities$probability <- 0.5
+
+  expect_error(
+    sn_run_fate(
+      object, backend_control = list(result = list(probabilities = probabilities))
+    ),
+    "not owned"
+  )
 })
 
 test_that("RegVelo prior GRNs are normalized to regulator-target edges", {
@@ -133,7 +389,10 @@ test_that("velocity and fate plots render", {
     object,
     backend_control = list(result = list(probabilities = tibble::tibble(
       cell = rep(colnames(object), 2), state = rep(c("A", "B"), each = ncol(object)),
-      probability = rep(seq(0, 1, length.out = ncol(object)), 2)
+      probability = c(
+        seq(0, 1, length.out = ncol(object)),
+        1 - seq(0, 1, length.out = ncol(object))
+      )
     ))), return_object = FALSE
   )
   for (plot in list(sn_plot_velocity(velocity), sn_plot_fate(fate))) {

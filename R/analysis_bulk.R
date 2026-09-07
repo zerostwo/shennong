@@ -1,5 +1,15 @@
+.sn_name_declares_count_scale <- function(name) {
+  if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) {
+    return(FALSE)
+  }
+  key <- tolower(name)
+  grepl("(^|[._-])(counts?|raw|umi)($|[._-])", key) &&
+    !grepl("log|norm|scale|cpm|tpm|fpkm", key)
+}
+
 .sn_bulk_input <- function(object, metadata = NULL, assay = NULL) {
   source <- "matrix"
+  declared_counts <- NULL
   if (inherits(object, "SummarizedExperiment")) {
     check_installed("SummarizedExperiment", reason = "to read a SummarizedExperiment bulk input.")
     assay_names <- SummarizedExperiment::assayNames(object)
@@ -8,10 +18,23 @@
     expression <- SummarizedExperiment::assay(object, assay)
     metadata <- metadata %||% as.data.frame(SummarizedExperiment::colData(object))
     source <- "SummarizedExperiment"
+    assay_key <- tolower(assay)
+    declared_counts <- if (.sn_name_declares_count_scale(assay)) {
+      TRUE
+    } else if (grepl("log|norm|scale|cpm|tpm|fpkm", assay_key)) {
+      FALSE
+    } else {
+      NULL
+    }
   } else if (is.list(object) && !is.data.frame(object)) {
     expression <- object$counts %||% object$expression %||% object$matrix
     metadata <- metadata %||% object$metadata %||% object$col_data %||% object$samples
     source <- "list"
+    if (!is_null(object$counts)) {
+      declared_counts <- TRUE
+    } else if (!is_null(object$expression)) {
+      declared_counts <- FALSE
+    }
   } else {
     expression <- object
   }
@@ -48,7 +71,14 @@
     metadata <- metadata[colnames(expression), , drop = FALSE]
   }
   metadata$.sn_sample <- rownames(metadata)
-  is_counts <- all(expression >= 0) && all(abs(expression - round(expression)) < 1e-8)
+  integer_like <- all(expression >= 0) && all(abs(expression - round(expression)) < 1e-8)
+  if (isTRUE(declared_counts) && !integer_like) {
+    stop(
+      "An explicitly count-scale bulk assay must contain non-negative integer counts; the input will not be reclassified as normalized expression.",
+      call. = FALSE
+    )
+  }
+  is_counts <- if (isTRUE(declared_counts)) TRUE else if (identical(declared_counts, FALSE)) FALSE else integer_like
   list(matrix = expression, metadata = metadata, source = source, assay = assay, is_counts = is_counts)
 }
 
@@ -92,9 +122,7 @@
 #' @param assay Assay name for `SummarizedExperiment` input.
 #' @param top_variable Number of variable features used for PCA/correlation.
 #' @param outlier_z Robust z-score threshold used for sample flags.
-#' @param result_id Result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
+#' @param result_id Stable identifier for the returned bulk-QC result.
 #' @return A validated Shennong bulk-QC result.
 #' @export
 sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
@@ -150,52 +178,6 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
   )
 }
 
-.sn_bulk_has_random_effect <- function(design) grepl("\\|", paste(deparse(design), collapse = ""), fixed = FALSE)
-
-.sn_bulk_design <- function(metadata, design) {
-  if (!inherits(design, "formula")) stop("`design` must be a formula.", call. = FALSE)
-  variables <- all.vars(design)
-  missing <- setdiff(variables, colnames(metadata))
-  if (length(missing) > 0L) stop("Design variable(s) missing from metadata: ", paste(missing, collapse = ", "), ".", call. = FALSE)
-  if (.sn_bulk_has_random_effect(design)) return(list(formula = design, matrix = NULL, rank = NA_integer_))
-  design_matrix <- stats::model.matrix(design, data = metadata)
-  rank <- qr(design_matrix)$rank
-  if (rank < ncol(design_matrix)) stop("The bulk design matrix is not full rank.", call. = FALSE)
-  list(formula = design, matrix = design_matrix, rank = rank)
-}
-
-.sn_bulk_validate_contrast <- function(metadata, contrast) {
-  if (!is.character(contrast) || length(contrast) != 3L) {
-    stop("`contrast` must be c(variable, numerator, denominator).", call. = FALSE)
-  }
-  variable <- contrast[[1]]
-  if (!variable %in% colnames(metadata)) stop("Contrast variable '", variable, "' was not found.", call. = FALSE)
-  values <- as.character(metadata[[variable]])
-  missing <- setdiff(contrast[2:3], unique(values))
-  if (length(missing) > 0L) stop("Contrast level(s) missing: ", paste(missing, collapse = ", "), ".", call. = FALSE)
-  contrast
-}
-
-.sn_bulk_contrast_vector <- function(metadata, design, contrast) {
-  metadata <- as.data.frame(metadata)
-  for (column in colnames(metadata)) if (is.character(metadata[[column]])) metadata[[column]] <- factor(metadata[[column]])
-  reference <- metadata[1, , drop = FALSE]
-  for (column in colnames(metadata)) {
-    if (is.numeric(metadata[[column]])) reference[[column]] <- stats::median(metadata[[column]], na.rm = TRUE)
-    if (is.factor(metadata[[column]])) reference[[column]] <- factor(levels(metadata[[column]])[[1]], levels = levels(metadata[[column]]))
-  }
-  numerator <- denominator <- reference
-  variable <- contrast[[1]]
-  if (is.factor(metadata[[variable]])) {
-    numerator[[variable]] <- factor(contrast[[2]], levels = levels(metadata[[variable]]))
-    denominator[[variable]] <- factor(contrast[[3]], levels = levels(metadata[[variable]]))
-  } else {
-    numerator[[variable]] <- contrast[[2]]
-    denominator[[variable]] <- contrast[[3]]
-  }
-  drop(stats::model.matrix(design, numerator) - stats::model.matrix(design, denominator))
-}
-
 .sn_bulk_standardize_de <- function(table, method) {
   table <- as.data.frame(table, check.names = FALSE)
   if (!"gene" %in% colnames(table)) table <- tibble::rownames_to_column(table, "gene")
@@ -224,7 +206,7 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 
 .sn_bulk_de_edger <- function(input, design_info, contrast, control) {
   check_installed("edgeR", reason = "to run edgeR bulk differential expression.")
-  y <- edgeR::DGEList(counts = round(input$matrix))
+  y <- edgeR::DGEList(counts = input$matrix)
   keep <- edgeR::filterByExpr(y, design = design_info$matrix)
   y <- .sn_edger_norm_lib_sizes(y[keep, , keep.lib.sizes = FALSE])
   y <- edgeR::estimateDisp(y, design_info$matrix, robust = control$robust %||% TRUE)
@@ -237,21 +219,49 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 
 .sn_bulk_de_deseq2 <- function(input, design_info, contrast, control) {
   check_installed("DESeq2", reason = "to run DESeq2 bulk differential expression.")
-  dataset <- DESeq2::DESeqDataSetFromMatrix(round(input$matrix), input$metadata, design_info$formula)
+  dataset <- DESeq2::DESeqDataSetFromMatrix(input$matrix, input$metadata, design_info$formula)
   keep <- rowSums(DESeq2::counts(dataset) >= (control$min_count %||% 10)) >= (control$min_samples %||% 2L)
   dataset <- dataset[keep, ]
   dataset <- DESeq2::DESeq(dataset, quiet = TRUE)
-  result <- DESeq2::results(dataset, contrast = contrast, independentFiltering = control$independent_filtering %||% TRUE)
+  estimand <- .sn_bulk_contrast_estimand(input$metadata, design_info$formula, contrast)
+  vector <- estimand$vector
+  coefficient_names <- DESeq2::resultsNames(dataset)
+  if (length(vector) != length(coefficient_names)) {
+    stop(
+      "DESeq2 coefficient count does not match the validated bulk contrast vector.",
+      call. = FALSE
+    )
+  }
+  result <- DESeq2::results(
+    dataset,
+    contrast = unname(vector),
+    independentFiltering = control$independent_filtering %||% TRUE
+  )
   shrink_applied <- FALSE
+  shrink_error <- NULL
   if (isTRUE(control$shrink %||% TRUE)) {
     coefficient <- grep(paste0("^", contrast[[1]], "_", contrast[[2]], "_vs_", contrast[[3]], "$"), DESeq2::resultsNames(dataset), value = TRUE)
     shrunken <- tryCatch({
-      if (length(coefficient) == 1L && requireNamespace("apeglm", quietly = TRUE)) {
+      active <- which(abs(vector) > sqrt(.Machine$double.eps))
+      coefficient_index <- match(coefficient, coefficient_names)
+      simple_coefficient <- length(coefficient) == 1L && length(active) == 1L &&
+        !is.na(coefficient_index) && identical(unname(coefficient_index), unname(active)) &&
+        isTRUE(all.equal(unname(vector[[active]]), 1, tolerance = 1e-12))
+      if (simple_coefficient && requireNamespace("apeglm", quietly = TRUE)) {
         DESeq2::lfcShrink(dataset, coef = coefficient, res = result, type = "apeglm")
-      } else {
+      } else if (simple_coefficient) {
+        # For a one-coefficient comparison the canonical DESeq2 character
+        # contrast is exactly the validated numeric estimand.  The normal
+        # shrinker does not consistently accept a full numeric vector across
+        # supported DESeq2 releases, so retain its native representation here.
         DESeq2::lfcShrink(dataset, contrast = contrast, res = result, type = "normal")
+      } else {
+        DESeq2::lfcShrink(dataset, contrast = unname(vector), res = result, type = "normal")
       }
-    }, error = function(error) NULL)
+    }, error = function(error) {
+      shrink_error <<- conditionMessage(error)
+      NULL
+    })
     if (!is_null(shrunken)) {
       result <- shrunken
       shrink_applied <- TRUE
@@ -259,14 +269,20 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
   }
   list(table = as.data.frame(result), model = dataset,
        diagnostics = list(retained_features = sum(keep), filtered_features = sum(!keep),
-                          size_factors = DESeq2::sizeFactors(dataset), shrink_applied = shrink_applied))
+                          size_factors = DESeq2::sizeFactors(dataset),
+                          contrast_vector = vector,
+                          contrast_numerator_profile = estimand$numerator_profile,
+                          contrast_denominator_profile = estimand$denominator_profile,
+                          contrast_covariate_policy = estimand$covariate_policy,
+                          shrink_applied = shrink_applied,
+                          shrink_error = shrink_error))
 }
 
 .sn_bulk_de_limma <- function(input, design_info, contrast, control) {
   check_installed("limma", reason = "to run limma bulk differential expression.")
   if (isTRUE(input$is_counts)) {
     check_installed("edgeR", reason = "to run limma-voom on bulk counts.")
-    y <- .sn_edger_norm_lib_sizes(edgeR::DGEList(counts = round(input$matrix)))
+    y <- .sn_edger_norm_lib_sizes(edgeR::DGEList(counts = input$matrix))
     transformed <- limma::voom(y, design_info$matrix, plot = FALSE)
     fit <- limma::lmFit(transformed, design_info$matrix)
   } else {
@@ -283,17 +299,71 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 .sn_bulk_de_dream <- function(input, design_info, contrast, control) {
   check_installed("variancePartition", reason = "to run dream repeated-measures differential expression.")
   check_installed("edgeR", reason = "to create dream precision weights.")
+  contrast_variable <- contrast[[1]]
+  dream_metadata <- input$metadata
+  contrast_values <- as.character(dream_metadata[[contrast_variable]])
+  dream_metadata[[contrast_variable]] <- factor(
+    contrast_values,
+    levels = c(contrast[[3]], setdiff(unique(contrast_values), contrast[[3]]))
+  )
+  normalization_factors <- NULL
   expression <- if (isTRUE(input$is_counts)) {
-    variancePartition::voomWithDreamWeights(edgeR::DGEList(counts = round(input$matrix)), design_info$formula, input$metadata, plot = FALSE)
+    dge <- .sn_edger_norm_lib_sizes(edgeR::DGEList(counts = input$matrix))
+    normalization_factors <- dge$samples$norm.factors
+    variancePartition::voomWithDreamWeights(
+      dge,
+      design_info$formula,
+      dream_metadata,
+      plot = FALSE
+    )
   } else input$matrix
-  fit <- variancePartition::dream(expression, design_info$formula, input$metadata)
-  fit <- limma::eBayes(fit)
-  coefficient <- grep(paste0("^", contrast[[1]], contrast[[2]], "$"), colnames(fit$coefficients), value = TRUE)
-  if (length(coefficient) != 1L) {
-    stop("dream could not identify a single coefficient for the requested contrast; relevel the denominator explicitly.", call. = FALSE)
+  fixed_formula <- .sn_bulk_fixed_effect_formula(design_info$formula)
+  estimand <- .sn_bulk_contrast_estimand(
+    dream_metadata,
+    fixed_formula,
+    contrast
+  )
+  vector <- estimand$vector
+  active <- which(abs(vector) > sqrt(.Machine$double.eps))
+  template_term <- gsub(":", ".", names(vector)[active[[1L]]], fixed = TRUE)
+  template_expression <- paste0("`", gsub("`", "\\`", template_term, fixed = TRUE), "`")
+  contrast_matrix <- variancePartition::makeContrastsDream(
+    design_info$formula,
+    dream_metadata,
+    contrasts = template_expression,
+    suppressWarnings = TRUE
+  )
+  if (is_null(contrast_matrix) || ncol(contrast_matrix) != 1L) {
+    stop("dream could not construct the requested numerator-versus-denominator contrast.", call. = FALSE)
   }
-  list(table = limma::topTable(fit, coef = coefficient, number = Inf, sort.by = "none"), model = fit,
-       diagnostics = list(retained_features = nrow(input$matrix), coefficient = coefficient), transformed = expression)
+  if (!setequal(rownames(contrast_matrix), names(vector))) {
+    stop("dream fixed-effect coefficients do not align with the validated bulk contrast estimand.", call. = FALSE)
+  }
+  contrast_matrix[, 1L] <- unname(vector[rownames(contrast_matrix)])
+  contrast_name <- paste(contrast[[2]], "vs", contrast[[3]])
+  colnames(contrast_matrix) <- contrast_name
+  fit <- variancePartition::dream(
+    expression,
+    design_info$formula,
+    dream_metadata,
+    L = contrast_matrix
+  )
+  fit <- limma::eBayes(fit)
+  list(
+    table = limma::topTable(fit, coef = 1L, number = Inf, sort.by = "none"),
+    model = fit,
+    diagnostics = list(
+      retained_features = nrow(input$matrix),
+      coefficient = paste(names(vector)[active], collapse = " + "),
+      contrast = contrast_name,
+      contrast_vector = contrast_matrix[, 1L],
+      contrast_numerator_profile = estimand$numerator_profile,
+      contrast_denominator_profile = estimand$denominator_profile,
+      contrast_covariate_policy = estimand$covariate_policy,
+      normalization_factors = normalization_factors
+    ),
+    transformed = expression
+  )
 }
 
 #' Find differential expression in bulk transcriptomics data
@@ -304,10 +374,8 @@ sn_assess_bulk_qc <- function(object, metadata = NULL, assay = NULL,
 #' @param contrast Character triple: variable, numerator, denominator.
 #' @param method One of `auto`, `edger`, `deseq2`, `limma`, or `dream`.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param result_id Result name.
+#' @param result_id Stable identifier for the returned bulk-DE result.
 #' @param backend_control Backend options or a custom `runner`/precomputed `result`.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @return A validated Shennong bulk-DE result.
 #' @export
 sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
@@ -331,11 +399,21 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
                              assay = NULL, result_id = "bulk_de", backend_control = list()) {
   method <- match.arg(method)
   input <- .sn_bulk_input(object, metadata, assay)
-  contrast <- .sn_bulk_validate_contrast(input$metadata, contrast)
   design_info <- .sn_bulk_design(input$metadata, design)
+  contrast <- .sn_bulk_validate_contrast(input$metadata, contrast, design = design)
+  estimand <- if (.sn_bulk_has_random_effect(design)) NULL else {
+    .sn_bulk_contrast_estimand(input$metadata, design, contrast)
+  }
   selected <- method
   if (identical(method, "auto")) {
     selected <- if (.sn_bulk_has_random_effect(design)) "dream" else if (input$is_counts) "edger" else "limma"
+  }
+  if (.sn_bulk_has_random_effect(design) && !identical(selected, "dream")) {
+    stop(
+      "Bulk designs containing random effects are supported only by `method = \"dream\"` ",
+      "(or `method = \"auto\"`, which selects dream).",
+      call. = FALSE
+    )
   }
   if (!input$is_counts && selected %in% c("edger", "deseq2")) stop(selected, " requires non-negative integer counts.", call. = FALSE)
   output <- if (is.function(backend_control$runner)) {
@@ -358,7 +436,18 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
          independent_filtering = backend_control$independent_filtering %||% TRUE, shrink = backend_control$shrink %||% TRUE),
     list(primary = table, differential_expression = table),
     models = list(fit = output$model %||% NULL),
-    diagnostics = c(output$diagnostics %||% list(), list(design_rank = design_info$rank, tested_features = nrow(table)))
+    diagnostics = utils::modifyList(
+      output$diagnostics %||% list(),
+      c(
+        list(design_rank = design_info$rank, tested_features = nrow(table)),
+        if (is.null(estimand)) list() else list(
+          contrast_vector = estimand$vector,
+          contrast_numerator_profile = estimand$numerator_profile,
+          contrast_denominator_profile = estimand$denominator_profile,
+          contrast_covariate_policy = estimand$covariate_policy
+        )
+      )
+    )
   )
 }
 
@@ -370,10 +459,8 @@ sn_find_bulk_de <- function(object, metadata = NULL, design = ~condition,
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
 #' @param min_genes Minimum matched genes per pathway.
-#' @param result_id Result name.
+#' @param result_id Stable identifier for the returned pathway-score result.
 #' @param backend_control Backend-specific controls.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @return A validated bulk pathway-score result.
 #' @export
 sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva", "ssgsea"),
@@ -436,6 +523,87 @@ sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva"
   do.call(runner, list(...))
 }
 
+.sn_encode_wgcna_traits <- function(metadata, traits) {
+  encoded <- lapply(traits, function(trait) {
+    values <- metadata[[trait]]
+    if (is.numeric(values) || is.integer(values) || is.logical(values)) {
+      out <- matrix(
+        as.numeric(values),
+        ncol = 1L,
+        dimnames = list(rownames(metadata), trait)
+      )
+      return(out)
+    }
+
+    values <- factor(values)
+    complete <- !is.na(values)
+    if (!any(complete)) {
+      return(matrix(
+        NA_real_,
+        nrow = nrow(metadata),
+        ncol = 1L,
+        dimnames = list(rownames(metadata), trait)
+      ))
+    }
+    observed <- droplevels(values[complete])
+    design <- if (nlevels(observed) == 1L) {
+      matrix(1, nrow = length(observed), ncol = 1L)
+    } else {
+      stats::model.matrix(~ .sn_trait - 1, data = data.frame(.sn_trait = observed))
+    }
+    level_names <- if (nlevels(observed) == 1L) {
+      levels(observed)
+    } else {
+      sub("^\\.sn_trait", "", colnames(design))
+    }
+    colnames(design) <- paste0(trait, level_names)
+    out <- matrix(
+      NA_real_,
+      nrow = nrow(metadata),
+      ncol = ncol(design),
+      dimnames = list(rownames(metadata), colnames(design))
+    )
+    out[complete, ] <- design
+    out
+  })
+  do.call(cbind, encoded)
+}
+
+.sn_wgcna_trait_associations <- function(module_matrix, encoded_traits) {
+  dplyr::bind_rows(lapply(seq_len(ncol(module_matrix)), function(module_index) {
+    dplyr::bind_rows(lapply(seq_len(ncol(encoded_traits)), function(trait_index) {
+      module_values <- module_matrix[, module_index]
+      trait_values <- encoded_traits[, trait_index]
+      complete <- is.finite(module_values) & is.finite(trait_values)
+      effective_n <- sum(complete)
+      correlation <- if (
+        effective_n >= 3L &&
+          stats::sd(module_values[complete]) > 0 &&
+          stats::sd(trait_values[complete]) > 0
+      ) {
+        stats::cor(module_values[complete], trait_values[complete])
+      } else {
+        NA_real_
+      }
+      p_value <- if (is.finite(correlation) && effective_n > 2L) {
+        statistic <- abs(correlation) * sqrt(
+          (effective_n - 2) / pmax(1 - correlation^2, .Machine$double.eps)
+        )
+        2 * stats::pt(statistic, df = effective_n - 2, lower.tail = FALSE)
+      } else {
+        NA_real_
+      }
+      tibble::tibble(
+        module = colnames(module_matrix)[[module_index]],
+        trait = colnames(encoded_traits)[[trait_index]],
+        correlation = correlation,
+        effective_n = effective_n,
+        p_value = p_value
+      )
+    }))
+  }))
+}
+
 #' Run weighted gene co-expression network analysis
 #'
 #' @param object Bulk input accepted by `sn_assess_bulk_qc()`.
@@ -446,10 +614,8 @@ sn_score_bulk_pathways <- function(object, signatures, method = c("mean", "gsva"
 #' @param min_module_size Minimum module size.
 #' @param merge_cut_height Module merge threshold.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param result_id Result name.
+#' @param result_id Stable identifier for the returned WGCNA result.
 #' @param backend_control Additional `blockwiseModules` arguments or custom output.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @return A validated WGCNA result.
 #' @export
 sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
@@ -495,14 +661,9 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
   associations <- tibble::tibble()
   if (length(traits) > 0L && ncol(eigengenes) > 1L) {
     trait_data <- input$metadata[rownames(eigengenes), traits, drop = FALSE]
-    encoded <- stats::model.matrix(~ . - 1, data = trait_data)
+    encoded <- .sn_encode_wgcna_traits(trait_data, traits)
     module_matrix <- as.matrix(eigengenes[, setdiff(colnames(eigengenes), "sample"), drop = FALSE])
-    correlations <- stats::cor(module_matrix, encoded, use = "pairwise.complete.obs")
-    p_values <- WGCNA::corPvalueStudent(correlations, nrow(module_matrix))
-    associations <- dplyr::bind_rows(lapply(seq_len(nrow(correlations)), function(i) {
-      tibble::tibble(module = rownames(correlations)[i], trait = colnames(correlations),
-                     correlation = as.numeric(correlations[i, ]), p_value = as.numeric(p_values[i, ]))
-    }))
+    associations <- .sn_wgcna_trait_associations(module_matrix, encoded)
     associations$adjusted_p_value <- stats::p.adjust(associations$p_value, method = "BH")
   }
   .sn_bulk_result(
@@ -1046,7 +1207,7 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
 #' @param covariates Optional adjustment variables.
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param result_id Result name.
+#' @param result_id Stable identifier for the returned survival result.
 #' @param group_method Feature grouping used for Kaplan-Meier analysis.
 #' @param group_quantile Quantile used when `group_method = "quantile"`.
 #' @param group_cutpoint Fixed scalar or feature-named cutpoints.
@@ -1054,8 +1215,6 @@ sn_run_wgcna <- function(object, metadata = NULL, traits = NULL, power = NULL,
 #' @param ties Cox partial-likelihood tie method.
 #' @param risk_times Optional non-negative times shown in the risk table. The
 #'   default uses at most eight deterministic pretty breaks per feature.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @return A validated survival result with one adjusted Cox model per feature.
 #' @export
 sn_run_survival <- function(object, time, event, features, covariates = NULL,
@@ -1233,7 +1392,7 @@ sn_run_survival <- function(object, time, event, features, covariates = NULL,
       p_adjust_method = "BH"
     ),
     list(
-      primary = table,
+      primary = table[table$status == "ok", , drop = FALSE],
       survival = table,
       curves = curves,
       risk = risk,
@@ -1272,9 +1431,7 @@ sn_run_survival <- function(object, time, event, features, covariates = NULL,
 #' @param covariates Optional adjustment variables for linear models.
 #' @param metadata Optional sample metadata.
 #' @param assay Assay name for `SummarizedExperiment` input.
-#' @param result_id Result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
+#' @param result_id Stable identifier for the returned clinical-association result.
 #' @return A validated clinical-association result.
 #' @export
 sn_run_clinical_association <- function(object, features, clinical_vars, covariates = NULL,
@@ -1310,10 +1467,16 @@ sn_run_clinical_association <- function(object, features, clinical_vars, covaria
       subset$.clinical <- factor(subset$.clinical)
       formula <- stats::as.formula(paste0(".feature ~ .clinical", if (length(covariates)) paste0(" + ", paste(covariates, collapse = " + ")) else ""))
       fit <- stats::lm(formula, data = subset)
-      anova_table <- stats::anova(fit)[1, , drop = FALSE]
-      coefficient <- if (nlevels(subset$.clinical) == 2L) stats::coef(fit)[[2]] else NA_real_
+      anova_table <- stats::drop1(fit, scope = ~.clinical, test = "F")[".clinical", , drop = FALSE]
+      clinical_coefficients <- grep("^\\.clinical", names(stats::coef(fit)), value = TRUE)
+      coefficient <- if (nlevels(subset$.clinical) == 2L && length(clinical_coefficients) == 1L) {
+        stats::coef(fit)[[clinical_coefficients]]
+      } else {
+        NA_real_
+      }
       rows[[index]] <- tibble::tibble(feature = feature, clinical_variable = clinical,
-        test = "adjusted_anova", estimate = unname(coefficient), statistic = unname(anova_table[["F value"]][[1]]),
+        test = if (length(covariates)) "adjusted_anova" else "anova",
+        estimate = unname(coefficient), statistic = unname(anova_table[["F value"]][[1]]),
         p_value = unname(anova_table[["Pr(>F)"]][[1]]), n = stats::nobs(fit))
     }
   }

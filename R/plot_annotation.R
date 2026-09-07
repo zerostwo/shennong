@@ -33,7 +33,7 @@ sn_plot_annotation_confidence <- function(x, result_id = "annotation", level = c
     ggplot2::geom_col() +
     ggplot2::coord_flip() +
     ggplot2::scale_fill_manual(values = c(`FALSE` = "#3B82F6", `TRUE` = "#D55E00"), name = "Low confidence") +
-    ggplot2::labs(x = NULL, y = "Calibrated confidence") +
+    ggplot2::labs(x = NULL, y = "Backend confidence score") +
     ggplot2::theme_bw()
 }
 

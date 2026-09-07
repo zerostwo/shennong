@@ -62,8 +62,7 @@ required for RareQ phenotype association.}
 
 \item{family}{Scissor phenotype family.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{seed}{Random seed.}
 

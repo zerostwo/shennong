@@ -9,11 +9,12 @@
 sn_check_pixi(pixi = NULL, quiet = FALSE)
 
 sn_install_pixi(
-  version = "latest",
+  version = "0.69.0",
   pixi_home = "~/.pixi",
   bin_dir = NULL,
   no_path_update = TRUE,
   download_url = NULL,
+  sha256 = NULL,
   force = FALSE,
   quiet = FALSE
 )
@@ -21,11 +22,12 @@ sn_install_pixi(
 sn_ensure_pixi(
   pixi = NULL,
   install = TRUE,
-  version = "latest",
+  version = "0.69.0",
   pixi_home = "~/.pixi",
   bin_dir = NULL,
   no_path_update = TRUE,
   download_url = NULL,
+  sha256 = NULL,
   quiet = FALSE
 )
 }
@@ -35,8 +37,9 @@ sn_ensure_pixi(
 
 \item{quiet}{Logical; suppress status messages where possible.}
 
-\item{version}{Pixi version passed to the official installer script.
-Defaults to \code{"latest"}.}
+\item{version}{Explicit Pixi release version downloaded from the official
+GitHub release. Defaults to the package-tested version \code{"0.69.0"};
+mutable \code{"latest"} downloads are rejected.}
 
 \item{pixi_home}{Pixi home directory. The installer defaults to
 \code{"~/.pixi"}; Shennong runtime workflows set \code{PIXI_HOME} to a
@@ -48,13 +51,17 @@ installed.}
 \item{no_path_update}{Logical; when \code{TRUE}, ask the installer not to
 edit shell startup files.}
 
-\item{download_url}{Optional custom pixi binary download URL. This is useful
-for institutional mirrors.}
+\item{download_url}{Optional custom pixi archive or binary URL. This is
+useful for institutional mirrors and requires an explicit \code{sha256}.}
+
+\item{sha256}{Optional expected SHA-256 digest. Official versioned downloads
+obtain the release sidecar digest automatically; custom URLs must supply
+this value.}
 
 \item{force}{Logical; reinstall even if pixi is already available.}
 
-\item{install}{Logical used by \code{sn_ensure_pixi()}; install pixi when it
-is not already available.}
+\item{install}{Logical used by \code{sn_ensure_pixi()}; install pixi when the
+requested exact version is not already available.}
 }
 \value{
 \code{sn_check_pixi()} and \code{sn_ensure_pixi()} return a named

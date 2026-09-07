@@ -111,7 +111,36 @@ test_that("unmapped and unscored cells are flagged low confidence", {
   expect_true(low[[3]])
   expect_false(low[[1]])
   expect_false(low[[2]])
+  expect_identical(result$tables$primary$prediction[[3]], "unassigned")
   expect_identical(result$diagnostics$low_confidence_cells, 1L)
+})
+
+test_that("zero and explicitly sub-threshold backend scores are low confidence", {
+  object <- make_annotation_test_object()
+  scores <- c(0, 0.2, 0.8, 0.9, 0.1, 0.7, NA_real_, 0.95)
+  local_mocked_bindings(
+    .sn_annotation_backend = function(object, method, ...) {
+      result <- mock_annotation_backend(object)
+      result$evidence$score <- scores
+      result
+    },
+    .package = "Shennong"
+  )
+  result <- sn_run_annotation(
+    object,
+    group_by = "cluster",
+    method = "singleR",
+    species = "human",
+    ontology = FALSE,
+    confidence_threshold = 0.5,
+    return_object = FALSE
+  )
+  expect_identical(
+    result$tables$cells$low_confidence,
+    c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE)
+  )
+  expect_true(all(result$tables$clusters$low_confidence))
+  expect_identical(result$parameters$confidence_scale, "backend_specific")
 })
 
 test_that("annotation plots render from the stored result", {
@@ -195,7 +224,7 @@ test_that("unified CellTypist annotation uses count-like input by default", {
   expect_identical(observed_layers, c("counts", "decontaminated_counts"))
   expect_identical(default$input$layer, "counts")
   expect_identical(overridden$input$layer, "decontaminated_counts")
-  expect_identical(default$evidence$score, rep(0, ncol(object)))
+  expect_true(all(is.na(default$evidence$score)))
 })
 
 test_that("Symphony mapping retains confidence and the query embedding", {
@@ -262,5 +291,106 @@ test_that("annotation validation rejects missing clusters and incomplete referen
       ontology = FALSE
     ),
     "reference.*required"
+  )
+})
+
+test_that("PopV exports required metadata and owns temporary run lifecycle", {
+  query <- make_annotation_test_object()
+  reference <- make_annotation_test_object()
+  reference$cell_type <- rep(c("B cells", "T cells"), each = ncol(reference) / 2)
+  captured_runs <- character()
+  captured_reference_columns <- character()
+  runner <- function(input_dir, output_dir, ...) {
+    captured_runs <<- c(captured_runs, dirname(input_dir))
+    query_obs <- utils::read.csv(file.path(input_dir, "query", "obs.csv"), check.names = FALSE)
+    reference_obs <- utils::read.csv(file.path(input_dir, "reference", "obs.csv"), check.names = FALSE)
+    captured_reference_columns <<- colnames(reference_obs)
+    cells <- query_obs$cell_id
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    predictions <- data.frame(
+      popv_prediction = rep("B cells", length(cells)),
+      popv_majority_vote_score = rep(1, length(cells)),
+      Support_Vector = rep("B cells", length(cells)),
+      row.names = cells,
+      check.names = FALSE
+    )
+    utils::write.csv(predictions, file.path(output_dir, "predictions.csv"))
+    jsonlite::write_json(
+      list(method = "popv", n_cells = length(cells)),
+      file.path(output_dir, "manifest.json"),
+      auto_unbox = TRUE
+    )
+  }
+
+  result <- testthat::with_mocked_bindings(
+    sn_run_annotation(
+      query,
+      group_by = "cluster",
+      method = "popv",
+      reference = reference,
+      reference_label_by = "cell_type",
+      species = "human",
+      ontology = FALSE,
+      return_object = FALSE
+    ),
+    .sn_execute_python_object_pixi = runner,
+    .package = "Shennong"
+  )
+
+  expect_true(sn_validate_result(result)$valid)
+  expect_true("cell_type" %in% captured_reference_columns)
+  expect_length(captured_runs, 1L)
+  expect_false(dir.exists(captured_runs[[1L]]))
+
+  failure_parent <- tempfile("popv-failure-parent-")
+  dir.create(failure_parent)
+  writeLines("keep", file.path(failure_parent, "user-sentinel.txt"))
+  withr::defer(unlink(failure_parent, recursive = TRUE, force = TRUE))
+  failed_run <- NULL
+  expect_error(
+    testthat::with_mocked_bindings(
+      sn_run_annotation(
+        query,
+        group_by = "cluster",
+        method = "popv",
+        reference = reference,
+        reference_label_by = "cell_type",
+        species = "human",
+        ontology = FALSE,
+        return_object = FALSE,
+        backend_control = list(popv = list(
+          output_dir = failure_parent,
+          keep_run_dir = FALSE
+        ))
+      ),
+      .sn_execute_python_object_pixi = function(input_dir, ...) {
+        failed_run <<- dirname(input_dir)
+        stop("PopV fixture failure")
+      },
+      .package = "Shennong"
+    ),
+    "PopV fixture failure"
+  )
+  expect_true(file.exists(file.path(failure_parent, "user-sentinel.txt")))
+  expect_true(file.exists(file.path(failed_run, "failure.json")))
+  expect_false(dir.exists(file.path(failed_run, "input")))
+
+  retained_nonempty <- tempfile("popv-retained-nonempty-")
+  dir.create(retained_nonempty)
+  writeLines("stale", file.path(retained_nonempty, "existing.txt"))
+  withr::defer(unlink(retained_nonempty, recursive = TRUE, force = TRUE))
+  expect_error(
+    sn_run_annotation(
+      query,
+      group_by = "cluster",
+      method = "popv",
+      reference = reference,
+      reference_label_by = "cell_type",
+      species = "human",
+      ontology = FALSE,
+      return_object = FALSE,
+      backend_control = list(popv = list(output_dir = retained_nonempty))
+    ),
+    "not empty"
   )
 })

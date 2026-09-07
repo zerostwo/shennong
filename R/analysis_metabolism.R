@@ -207,8 +207,6 @@ sn_get_metabolic_signatures <- function(species = c("human", "mouse")) {
 #' @param species Species used for the curated signatures.
 #' @param min_genes Minimum matched genes per pathway.
 #' @param result_id Stored result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param backend_control Backend options. For scFEA/Compass, provide a
 #'   `runner` function or parsed `result`; this keeps heavyweight
 #'   runtimes outside the default R dependency set.

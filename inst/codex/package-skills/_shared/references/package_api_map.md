@@ -17,7 +17,8 @@ Core object rule:
 ## Result Contract
 
 - `sn_validate_result()`: validate the common envelope and type-specific
-  primary-table columns
+  primary-table columns; schema 2 identity must match the physical type and
+  `result_id` storage keys on retrieval
 - `sn_audit_results()`: report valid, repairable, invalid, registered artifact,
   and unregistered top-level `object@misc` entries without mutating the Seurat
   object
@@ -31,6 +32,9 @@ Core object rule:
   `sn_list_results(include_artifacts = TRUE)` also discovers registered runtime
   and cache artifacts, whose reserved namespaces cannot be used for generic
   analytical results
+- `sn_delete_artifact()`: delete only registered legacy runtime/cache
+  artifacts; member and whole-collection deletion both require
+  `confirm = TRUE`, and unregistered `object@misc` payloads remain untouched
 - `sn_build_result_bundle()`: build the credential-free
   `shennong.dev/analysis-result-bundle/v1` JSON handoff from one validated
   canonical result, immutable input identifier/revision/SHA-256 references,
@@ -65,7 +69,9 @@ Runtime reference datasets:
 - `sn_get_species()`: infer or retrieve species
 - `sn_add_qc_metrics()`: refresh `percent.mt`, `percent.ribo`, and `percent.hb` from a selected count assay/layer; default `suffix = NULL` automatically adds `_corrected` for `decontaminated_counts` (and its dot-separated split layers); explicit suffixes override this, including `""` to overwrite original QC
 - `sn_initialize_seurat_object()`: initialize a Seurat object, including single-path or multi-path 10x import from `sn_list_10x_paths()` and direct BPCells `IterableMatrix` input that remains on disk
-- `sn_standardize_gene_symbols()`: standardize gene symbols
+- `sn_standardize_gene_symbols()`: standardize the complete RNA feature axis,
+  aggregate duplicate count targets, and invalidate RNA-derived reductions,
+  graphs, and commands tied to the old identity
 - `sn_normalize_data()`: normalize with supported workflows
 - `sn_score_cell_cycle()`: cell-cycle scoring from an explicit `assay` and
   `layer`; omitted `assay` preserves the current default-assay behavior and
@@ -78,12 +84,16 @@ Runtime reference datasets:
   The exact default `dgCMatrix` call can use the ShennongOpt scDblFinder fast
   path, while BPCells-backed objects require `group_by` and are
   materialized per sample, with `ncores = 1` providing the lowest peak memory
+  Default Scrublet runs use unique owned temporary directories and remove raw
+  exports after import; an explicit empty output directory opts into retention.
 - `sn_remove_ambient_contamination()`: direct standalone `decontX::decontX()`
   for RNA and `decontX::decontPro()` for CITE-seq/ADT or protein assays.
   `method = "auto"` detects one CITE-seq-like assay; `cluster_backend =
   "shennong"` is required for decontPro when labels are not supplied. SoupX
-  retains its stochastic integer output contract and uses the pinned fork's
-  `soupx` patch when eligible. For a returned Seurat object, inspect
+  derives its soup profile from raw droplets (`tod`), uses filtered cells as
+  `toc`, and applies scoped seeded integer rounding. decontX/decontPro restore
+  the complete filtered feature axis after fitting shared features. For a
+  returned Seurat object, inspect
   `object@commands$sn_remove_ambient_contamination@call.string` and `@params`;
   the latter records requested/resolved automatic choices, supplied and
   effective backend arguments, automatic-clustering controls, input source
@@ -95,6 +105,8 @@ Runtime reference datasets:
 - `sn_get_integration_control_template()`: return complete executable defaults for
   one or every integration backend, including pixi/runtime, accelerator,
   training, graph, and CITE-seq-specific fields.
+- `sn_run_cluster(seed = ...)`: the top-level seed overrides nested integration
+  and clustering seeds, is stored in provenance, and restores caller RNG state
 - `sn_run_multimodal()`: explicit CITE-seq wrapper over `sn_run_cluster()` for
   WNN, totalVI, Coralysis, or MMoCHi; it preserves the clustering return
   contract and forwards all workflow controls.
@@ -108,16 +120,23 @@ Runtime reference datasets:
 ## Python Runtime Helpers
 
 - `sn_check_pixi()`: check whether a pixi executable is available.
-- `sn_install_pixi()` / `sn_ensure_pixi()`: install or ensure the standalone pixi binary when Python backends need it.
+- `sn_install_pixi()` / `sn_ensure_pixi()`: default to the package-tested exact
+  Pixi `0.69.0`; every requested version must be immutable (`latest` is
+  rejected), official assets are SHA-256 verified, and custom download URLs
+  require an explicit digest
 - `sn_get_pixi_paths()`: inspect the `~/.shennong/pixi/` layout for scVI/scANVI and other Python method families.
 - `sn_list_pixi_environments()` / `sn_get_pixi_config_path()`: discover bundled pixi configs under `inst/pixi/`.
 - `sn_prepare_pixi_environment()` / `sn_call_pixi_environment()`: materialize a bundled config into `~/.shennong/pixi/<family>/` and run commands inside it.
 - The environment-specific `sn_call_scvi()`, `sn_call_scanvi()`, `sn_call_mmochi()`, `sn_call_scarches()`, `sn_call_scpoli()`, `sn_call_infercnvpy()`, `sn_call_trajectory()`, `sn_call_cellphonedb()`, `sn_call_cell2location()`, `sn_call_tangram()`, `sn_call_squidpy()`, `sn_call_spatialdata()`, and `sn_call_stlearn()` aliases are deprecated: they only forward to `sn_call_pixi_environment("<environment>", ...)` and will be removed in a future major release. Call `sn_call_pixi_environment()` directly (`scanvi` shares the `scvi` environment; `scpoli` shares the `scarches` environment).
-- `sn_run_scarches(object = ...)`, `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, `sn_run_spatialdata(object = ...)`, `sn_run_stlearn(object = ...)`: object-level Python wrappers. They export Seurat input under `~/.shennong/runs/`, run family-local scripts from `inst/pixi/<family>/scripts/`, import cell-level metadata/reductions when produced, and record manifests under `object@misc`.
+- `sn_run_scpoli(object = ...)`, `sn_run_infercnvpy(object = ...)`, `sn_run_cellphonedb(object = ...)`, `sn_run_cell2location(object = ...)`, `sn_run_tangram(object = ...)`, `sn_run_squidpy(object = ...)`, and `sn_run_spatialdata(object = ...)`: currently enabled object-level Python wrappers. By default they use a unique package-owned temporary run and clean it after successful import; an explicit `output_dir` or `keep_run_dir = TRUE` retains the run. They execute family-local scripts from `inst/pixi/<family>/scripts/`, import supported cell-level metadata/reductions, and record sanitized manifests under `object@misc`. CellPhoneDB and infercnvpy require a normalized `data`/`data.*` layer and never fall back to raw counts.
+- `sn_run_scarches()` and `sn_run_stlearn()` retain public compatibility signatures but are currently unsupported. Both fail closed before object export or Python execution because no admitted, faithful upstream workflow is shipped. Do not infer run support from their exported names, raw pixi environments, or deprecated `sn_call_*()` aliases.
 - Use `sn_call_pixi_environment()` for direct command execution in managed Python environments. Object-level `sn_run_*()` wrappers require a Seurat object and should be used only for package workflows that export/import analysis state.
 - Managed pixi environments execute plain upstream Python implementations; no
   Python acceleration layer is bundled. R-side hot paths are accelerated
   separately by the ShennongOpt package.
+- Package-owned Python run directories are unique and cleaned after successful
+  import unless retention is explicit; failure metadata is sanitized and does
+  not retain complete expression inputs.
 
 ## Optional R Acceleration
 
@@ -207,7 +226,10 @@ Runtime reference datasets:
 - `sn_run_annotation()`: reference annotation mainline with SingleR (default),
   CellTypist, Seurat, Symphony, scmap, scANVI, and PopV backends; stores
   cell/cluster labels, backend scores, low-confidence flags, hierarchy,
-  ontology IDs, raw backend predictions, diagnostics, and provenance
+  ontology IDs, raw backend predictions, diagnostics, and provenance;
+  `confidence_threshold` is backend-specific, while missing/non-finite scores
+  remain low confidence rather than being imputed. PopV exports only required
+  label/batch metadata and cleans its owned raw-count run by default
 - `sn_map_cell_ontology()`: map labels against the bundled versioned Cell
   Ontology snapshot or a project mapping
 - `sn_review_annotation()`: inspect low-confidence cells/clusters and evidence
@@ -223,11 +245,14 @@ Runtime reference datasets:
 - `sn_find_de()`: unified DE entry point; Seurat inputs run markers, contrasts,
   or pseudobulk DE, while matrix/list/`SummarizedExperiment` inputs run
   standalone bulk DE with explicit design and contrast
+- Pseudobulk requires a raw/corrected count-named `layer`; DESeq2 requires
+  integers, while edgeR/limma accept finite non-negative fractional corrected
+  counts. `subset_levels` requires `subset_by` and exact observed labels.
 - `sn_annotate_de_features()`: flag marker/DE genes that encode TFs, surface/plasma-membrane proteins, cytokines, or chemokines
-- `sn_run_enrichment()`: ORA or GSEA from vectors, tables, or stored DE; grouped ORA
-  uses `gene ~ group`, a numeric ranking formula requires explicit
-  `analysis = "gsea"`, ORA should receive the tested `universe`, and upstream
-  p-adjustment/q-value and gene-set-size controls are exposed explicitly
+- `sn_run_enrichment()`: ORA or GSEA from vectors, tables, or stored DE; stored-
+  DE ORA preserves multi-level groups and reconstructs `universe` from the
+  stored assay, while standalone input should provide its tested universe; a
+  numeric ranking formula requires explicit `analysis = "gsea"`
 - `sn_list_signatures()`: list bundled signatures
 - `sn_get_signatures()`: retrieve signatures by path or category
 - `sn_add_signature()`: add a signature to the editable registry
@@ -252,7 +277,9 @@ Runtime reference datasets:
 - `sn_run_trajectory()`: direct Slingshot or Monocle 3 inference and an
   explicit Palantir runner/result adapter, with per-cell pseudotime, lineage
   probabilities, terminal states, and optional tradeSeq dynamic/branch tests
-  plus fitted trends
+  plus fitted trends; multi-lineage output requires weights, positive weights
+  require finite pseudotime, tradeSeq requires integer counts, and direct
+  Monocle 3 uses UMAP while rejecting unsupported end/partition semantics
 - `sn_plot_trajectory()` / `sn_plot_pseudotime()` /
   `sn_plot_lineage_probability()`: embedding views backed by the stored result
 - `sn_plot_dynamic_heatmap()` / `sn_plot_gene_trend()` /
@@ -260,25 +287,31 @@ Runtime reference datasets:
 - `sn_run_velocity()` / `sn_plot_velocity()`: managed scVelo or RegVelo
   inference from spliced/unspliced layers with projected vectors, transition
   evidence, pseudotime, and confidence; RegVelo additionally requires an
-  explicit regulator-target prior GRN and retains its model artifact
+  explicit regulator-target prior GRN and retains its model artifact. Managed
+  velocity outputs are retained for CellRank by default while redundant raw
+  exports are removed; set `keep_run_dir = FALSE` if fate will not be run
 - `sn_run_fate()` / `sn_plot_fate()`: CellRank GPCCA terminal states, fate
-  probabilities, and optional lineage drivers from a stored velocity result
+  probabilities, and optional lineage drivers from a stored velocity result;
+  cells/states/probabilities are validated and temporary runs are cleaned
+  unless retention is explicit
 
 ## Spatial Workflows
 
 - `sn_run_spatial()`: dispatch QC, SVG, domain, neighborhood, deconvolution,
   mapping, integration, or communication tasks
 - `sn_find_spatial_features()`: Moran's I with permutation evidence, nnSVG,
-  or explicit SPARK-X adapters
+  or explicit SPARK-X adapters; `sample_by` bounds graphs/permutations and the
+  two-sided null is centered on the empirical permutation mean
 - `sn_find_spatial_domains()`: optional BANKSY or explicit
   stLearn/BayesSpace/CellCharter adapters
 - `sn_run_spatial_neighborhood()`: memory-bounded KNN graph, permutation
-  enrichment, and distance-bin co-occurrence
+  enrichment, and distance-bin co-occurrence within `sample_by` boundaries
 - `sn_run_spatial_deconvolution()` / `sn_run_spatial_mapping()`: stable aliases
   for the existing cell2location and Tangram object workflows
 - `sn_integrate_spatial()`: explicit STAligner/Harmony/custom result adapter
 - `sn_run_spatial_communication()`: augment a stored communication result with
-  group distance evidence and optional distance filtering
+  group distance evidence and optional non-negative distance filtering;
+  sample-tagged rows join distance by source/target/sample
 - `sn_plot_spatial*()`: result-aware coordinate, SVG, domain, neighborhood,
   deconvolution, and communication figures with fixed spatial aspect
 
@@ -290,7 +323,10 @@ Runtime reference datasets:
   sample correlation, and robust outlier evidence
 - `sn_find_bulk_de()`: compatibility entry point for the same bulk engine now
   selected automatically by `sn_find_de()`; supports fixed/mixed designs and
-  edgeR, DESeq2, limma-voom, limma, and dream backends
+  edgeR, DESeq2, limma-voom, limma, and dream backends. `counts` versus
+  `expression` list keys (or scale-indicating assay names) declare scale;
+  categorical contrasts/full-rank designs are enforced, and count-scale dream
+  applies TMM normalization before voom weights
 - `sn_score_bulk_pathways()`: mean, GSVA, or ssGSEA sample scores with gene-set
   coverage diagnostics
 - `sn_run_wgcna()`: weighted co-expression modules, eigengenes, soft-power
@@ -361,7 +397,9 @@ Runtime reference datasets:
 
 - `sn_run_cnv()`: unified inferCNVpy/CopyKAT analysis with declared normal
   references, malignancy scores/calls, subclones, chromosome evidence, sample
-  summaries, CNV UMAP, and expression association
+  summaries, CNV UMAP, and expression association; scale is estimated from
+  finite references only, and normalized `association_layer` is separate from
+  the backend `layer`
 - `sn_plot_cnv()`: chromosome heatmap, CNV UMAP, malignancy distribution,
   sample summary, or CNV-expression association from a stored result
 - `sn_get_metabolic_signatures()`: curated core metabolic pathway gene sets
@@ -385,7 +423,8 @@ Runtime reference datasets:
 - `sn_get_deconvolution_result()`: retrieve deconvolution results
 - `sn_run_cell_communication()`: run LIANA, CellChat, CellPhoneDB, NicheNet, or
   MultiNicheNet alone or as a cross-method consensus, with optional
-  sample-level condition comparison
+  sample-level condition comparison; `paired_by` requires complete one-sample-
+  per-condition pairs and enables paired tests
 - `sn_store_cell_communication()`: persist communication results
 - `sn_get_cell_communication_result()`: retrieve communication results
 - `sn_plot_communication()`: bubble, heatmap, network, chord, or river view of

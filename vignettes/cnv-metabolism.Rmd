@@ -130,6 +130,16 @@ not imported as a backend result. The runner calls `sn_run_infercnvpy()`
 explicitly once, then hands its real score, chromosome, cluster, and embedding
 outputs to `sn_run_cnv()` for unified summaries and plots.
 
+Malignancy standardization is reference-anchored: its center and spread are
+estimated from at least two finite reference-cell scores only. Query-cell
+variance is never used to rescue an unusable reference, because that would let
+the suspected malignant population define its own decision scale. For
+multi-patient data, `sample_by` is required for sample summaries and a direct
+CopyKAT run requires reference cells within every analyzed sample. The direct
+inferCNVpy adapter fails closed on a multi-sample `sample_by` request; use an
+explicit sample-aware runner, as below, when the project has defined that
+execution boundary.
+
 ```{r infercnvpy, eval=infercnvpy_ready}
 set.seed(717)
 cells_by_call <- split(colnames(melanoma), melanoma$malignant_call)
@@ -221,6 +231,7 @@ cnv_attempt <- tryCatch(
     sample_by = "tumor",
     assay = "RNA",
     layer = "data",
+    association_layer = "data",
     association_features = 30L,
     backend_control = list(
       runner = article_infercnvpy_runner
@@ -245,6 +256,14 @@ if (inherits(cnv_attempt, "error")) {
   print(sn_plot_cnv(cnv, type = "association"))
 }
 ```
+
+`layer` is the backend input, whereas `association_layer` is the normalized
+expression source used only for the CNV-expression association table. Shennong
+does not silently reuse a raw count layer for that correlation. CopyKAT
+requires a raw/count-like integer layer; inferCNVpy requires an explicitly
+selected normalized, log-transformed `data`/`data.*` layer and never falls
+back to counts. The result records both sources so a downstream
+review can distinguish CNV inference from expression association.
 
 scMetabolism, scFEA, and Compass remain optional external computations. The
 pkgdown article does not reinterpret the real mean-score table as output from

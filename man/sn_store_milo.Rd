@@ -23,8 +23,7 @@ sn_store_milo(
 
 \item{result}{A neighborhood-level differential-abundance table.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored Milo result.}
 
 \item{sample_by}{Sample column used for the design.}
 

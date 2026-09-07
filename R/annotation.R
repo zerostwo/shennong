@@ -146,7 +146,7 @@
   scores <- if (score_col %in% colnames(transferred[[]])) {
     as.numeric(transferred[[score_col, drop = TRUE]])
   } else {
-    rep(1, ncol(transferred))
+    rep(NA_real_, ncol(transferred))
   }
   evidence <- tibble::tibble(
     entity = colnames(transferred),
@@ -184,7 +184,6 @@
   } else {
     rep(NA_real_, ncol(annotated))
   }
-  scores[!is.finite(scores)] <- 0
   evidence <- tibble::tibble(
     entity = colnames(annotated), label = labels, score = scores,
     method = "celltypist", reference_coverage = NA_real_
@@ -274,7 +273,7 @@
   list(
     object = object,
     evidence = tibble::tibble(
-      entity = colnames(object), label = labels, score = ifelse(is.na(scores), 1, scores),
+      entity = colnames(object), label = labels, score = scores,
       method = "symphony", reference_coverage = length(intersect(rownames(query$matrix), reference_object$vargenes$symbol)) /
         length(reference_object$vargenes$symbol)
     ),
@@ -399,7 +398,7 @@
   list(
     object = object,
     evidence = tibble::tibble(
-      entity = colnames(object), label = unname(labels), score = ifelse(is.na(scores), 1, scores),
+      entity = colnames(object), label = unname(labels), score = scores,
       method = "scmap", reference_coverage = length(common) /
         length(unique(c(rownames(query$matrix), rownames(reference_input$matrix))))
     ),
@@ -425,7 +424,25 @@
   reference_layer <- backend_control$reference_layer %||% "counts"
   seed <- as.integer(backend_control$seed %||% 0L)
 
-  run_dir <- backend_control$output_dir %||% file.path(tempdir(), paste0("sn_popv_", format(Sys.time(), "%Y%m%d_%H%M%S")))
+  output_supplied <- !is.null(backend_control$output_dir)
+  keep_run_dir <- backend_control$keep_run_dir
+  if (is.null(keep_run_dir)) keep_run_dir <- output_supplied
+  if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+  }
+  run_dir <- .sn_resolve_python_run_directory(
+    path = backend_control$output_dir,
+    method = "popv",
+    runtime_dir = .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL),
+    keep_run_dir = keep_run_dir,
+    supplied = output_supplied
+  )
+  run_complete <- FALSE
+  on.exit({
+    if (!run_complete && !isTRUE(keep_run_dir) && dir.exists(run_dir)) {
+      .sn_sanitize_failed_python_run(run_dir, method = "popv", stage = "annotation")
+    }
+  }, add = TRUE)
   input_dir <- file.path(run_dir, "input")
   result_dir <- file.path(run_dir, "output")
   dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
@@ -435,13 +452,20 @@
     object = object,
     input_dir = file.path(input_dir, "query"),
     assay = effective_assay,
-    layer = effective_layer
+    layer = effective_layer,
+    metadata_columns = backend_control$query_batch_key %||% NULL,
+    require_raw_counts = TRUE
   )
   reference_input <- .sn_write_python_object_input(
     object = reference,
     input_dir = file.path(input_dir, "reference"),
     assay = reference_assay,
-    layer = reference_layer
+    layer = reference_layer,
+    metadata_columns = c(
+      reference_label_by,
+      backend_control$ref_batch_key %||% character()
+    ),
+    require_raw_counts = TRUE
   )
   shared_features <- length(intersect(query_input$features, reference_input$features))
   union_features <- length(unique(c(query_input$features, reference_input$features)))
@@ -476,13 +500,31 @@
     row.names = 1,
     check.names = FALSE
   )
-  missing_cells <- setdiff(colnames(object), rownames(predictions))
+  .sn_validate_exact_python_ids(
+    rownames(predictions),
+    colnames(object),
+    "PopV prediction cell"
+  )
+  required_predictions <- c("popv_prediction", "popv_majority_vote_score")
+  missing_predictions <- setdiff(required_predictions, colnames(predictions))
+  if (length(missing_predictions) > 0L) {
+    stop(
+      "PopV predictions are missing required column(s): ",
+      paste(missing_predictions, collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
   aligned <- predictions[colnames(object), , drop = FALSE]
   labels <- as.character(aligned[["popv_prediction"]])
   scores <- suppressWarnings(as.numeric(aligned[["popv_majority_vote_score"]]))
-  n_algorithms <- max(c(1L, as.integer(scores)), na.rm = TRUE)
+  if (anyNA(labels) || any(!nzchar(labels)) || any(!is.finite(scores)) || any(scores < 0)) {
+    stop("PopV predictions must contain non-empty labels and finite non-negative vote scores.", call. = FALSE)
+  }
   n_methods_run <- length(setdiff(colnames(predictions), c("popv_prediction", "popv_prediction_score", "popv_majority_vote_prediction", "popv_majority_vote_score", "popv_parent")))
   normalized_scores <- scores / pmax(1, n_methods_run)
+  if (any(normalized_scores > 1 + sqrt(.Machine$double.eps))) {
+    stop("PopV majority-vote scores exceed the number of reported prediction methods.", call. = FALSE)
+  }
 
   metadata <- data.frame(row.names = colnames(object))
   metadata$sn_annotation_popv_label <- labels
@@ -496,7 +538,7 @@
     method = "popv",
     reference_coverage = if (union_features == 0) NA_real_ else shared_features / union_features
   )
-  list(
+  backend_result <- list(
     object = object,
     evidence = evidence,
     raw_predictions = tibble::tibble(
@@ -513,10 +555,17 @@
       assay = effective_assay,
       layer = effective_layer,
       prediction_mode = config$prediction_mode,
-      dropped_cells = length(missing_cells),
-      shared_features = shared_features
+      dropped_cells = 0L,
+      shared_features = shared_features,
+      run_dir = if (isTRUE(keep_run_dir)) normalizePath(run_dir, winslash = "/", mustWork = TRUE) else NULL,
+      run_dir_retained = isTRUE(keep_run_dir)
     )
   )
+  if (!isTRUE(keep_run_dir)) {
+    .sn_remove_python_run_directory(run_dir, label = "PopV annotation run directory")
+  }
+  run_complete <- TRUE
+  backend_result
 }
 
 .sn_annotation_backend <- function(object,
@@ -594,10 +643,14 @@
     )
     evidence <- dplyr::bind_rows(evidence, filler)
   }
+  unassigned <- is.na(evidence[["prediction"]]) |
+    !nzchar(trimws(evidence[["prediction"]]))
+  evidence[["prediction"]][unassigned] <- "unassigned"
   evidence[match(cells, evidence[["cell"]]), , drop = FALSE]
 }
 
-.sn_annotation_cluster_table <- function(cells_table, clusters) {
+.sn_annotation_cluster_table <- function(cells_table, clusters,
+                                         confidence_threshold = NULL) {
   table <- dplyr::mutate(
     cells_table,
     cluster = unname(clusters[.data$cell]),
@@ -610,12 +663,23 @@
     members <- !is.na(rows$prediction) & rows$prediction == modal
     scores <- rows$prediction_score[members]
     agreement <- sum(members) / max(1L, nrow(rows))
+    finite_scores <- scores[is.finite(scores)]
+    mean_score <- if (length(finite_scores)) mean(finite_scores) else NA_real_
+    low_confidence_share <- if (any(members)) {
+      mean(rows$low_confidence[members], na.rm = TRUE)
+    } else {
+      1
+    }
+    score_is_low <- !is.finite(mean_score) ||
+      (!is_null(confidence_threshold) && mean_score < confidence_threshold) ||
+      low_confidence_share >= 0.5
     tibble::tibble(
       cluster = rows$cluster[[1]],
       prediction = if (is.na(modal)) NA_character_ else modal,
-      prediction_score = if (length(scores)) mean(scores, na.rm = TRUE) else NA_real_,
+      prediction_score = mean_score,
       agreement_share = agreement,
-      low_confidence = is.na(modal) || agreement < 0.5,
+      low_confidence_share = low_confidence_share,
+      low_confidence = is.na(modal) || agreement < 0.5 || score_is_low,
       method = rows$method[[1]],
       reference_coverage = if (all(is.na(rows$reference_coverage))) {
         NA_real_
@@ -647,14 +711,21 @@
 #' @param species \code{"human"} or \code{"mouse"}; inferred when possible.
 #' @param ontology Map labels to the bundled Cell Ontology snapshot.
 #' @param result_id Stored-result and metadata prefix.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
+#' @param confidence_threshold Optional minimum backend score. Scores are
+#'   backend-specific and are not assumed to be calibrated across methods. By
+#'   default, only missing/non-finite/non-positive scores and explicit
+#'   unassigned labels are flagged from score evidence.
 #' @param assay,layer Query expression source. Most backends read a
 #'   log-normalized `data` layer; CellTypist and PopV independently default to
 #'   raw `counts` because they normalize internally. Override those backends
 #'   only via `backend_control = list(celltypist = list(layer = ...))` or
 #'   `backend_control = list(popv = list(layer = ...))`.
-#' @param backend_control Named backend-specific control lists.
+#' @param backend_control Named backend-specific control lists. PopV exports
+#'   only its required label/batch metadata and verified raw counts. Its
+#'   package-owned temporary run is removed after successful import; supplying
+#'   `popv$output_dir` retains that empty, explicit run location unless
+#'   `popv$keep_run_dir = FALSE`, in which case it is treated as a parent and
+#'   only Shennong's unique child is cleaned or sanitized.
 #' @param return_object If \code{TRUE}, return the annotated object; otherwise
 #'   return the stored result.
 #'
@@ -684,6 +755,7 @@ sn_run_annotation <- function(object,
                               species = NULL,
                               ontology = TRUE,
                               result_id = "annotation",
+                              confidence_threshold = NULL,
                               assay = NULL,
                               layer = "data",
                               backend_control = list(),
@@ -696,6 +768,11 @@ sn_run_annotation <- function(object,
   }
   if (!is.list(backend_control)) {
     stop("`backend_control` must be a named list.", call. = FALSE)
+  }
+  if (!is_null(confidence_threshold) &&
+      (!is.numeric(confidence_threshold) || length(confidence_threshold) != 1L ||
+       !is.finite(confidence_threshold))) {
+    stop("`confidence_threshold` must be NULL or one finite numeric value.", call. = FALSE)
   }
   clusters <- as.character(object[[group_by, drop = TRUE]])
   names(clusters) <- colnames(object)
@@ -728,9 +805,16 @@ sn_run_annotation <- function(object,
     cells_table$ontology_label <- NA_character_
   }
   cells_table$low_confidence <- !is.finite(cells_table$prediction_score) |
+    cells_table$prediction_score <= 0 |
+    (!is_null(confidence_threshold) &
+       cells_table$prediction_score < (confidence_threshold %||% -Inf)) |
     cells_table$prediction %in% c("unassigned", "unknown")
 
-  clusters_table <- .sn_annotation_cluster_table(cells_table, clusters)
+  clusters_table <- .sn_annotation_cluster_table(
+    cells_table,
+    clusters,
+    confidence_threshold = confidence_threshold
+  )
 
   safe_result_id <- gsub("[^[:alnum:]_]+", "_", result_id)
   cell_indices <- match(colnames(object), cells_table$cell)
@@ -762,10 +846,15 @@ sn_run_annotation <- function(object,
         disease = disease,
         reference_label_by = reference_label_by
       ),
-      backend$input[names(backend$input) %in% c("shared_features", "reference_cells", "prediction_mode", "dropped_cells")]
+      backend$input[names(backend$input) %in% c(
+        "shared_features", "reference_cells", "prediction_mode", "dropped_cells",
+        "run_dir", "run_dir_retained"
+      )]
     ),
     parameters = list(
-      ontology = ontology
+      ontology = ontology,
+      confidence_threshold = confidence_threshold,
+      confidence_scale = "backend_specific"
     ),
     tables = list(
       primary = tibble::as_tibble(cells_table),

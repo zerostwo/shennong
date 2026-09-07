@@ -92,7 +92,7 @@ installed or executed.
 | Spatial transcriptomics | `sn_run_spatial()` | Moran's I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony | Native R, managed pixi or adapter |
 | Bulk transcriptomics and clinical analysis | `sn_run_bulk()`, `sn_run_survival()`, `sn_run_bulk_deconvolution()` | edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, adjusted Cox, Kaplan-Meier/log-rank, proportional-hazards diagnostics, BayesPrism and CIBERSORTx | Native R or local container backend |
 | Integration diagnostics | `sn_assess_integration()` | LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE | Native R |
-| Result validation and migration | `sn_validate_result()`, `sn_audit_results()`, `sn_upgrade_results()` | Versioned `1.0.0` analytical-result envelope, canonical primary tables, legacy migration and registered artifact audit | Native R; audit is read-only and migration is explicit |
+| Result validation and migration | `sn_validate_result()`, `sn_audit_results()`, `sn_upgrade_results()` | Versioned `2.0.0` analytical-result envelope, canonical primary tables, explicit legacy migration and registered artifact audit | Native R; audit is read-only and migration is explicit |
 | Optional R acceleration | `sn_check_acceleration()`, `sn_with_acceleration()` | Companion ShennongOpt package with guarded operation-scoped patches for Seurat RunPCA/ScaleData/FindVariableFeatures/FindNeighbors/FindClusters, SeuratObject merge/JoinLayers, scran, decontX, scDblFinder, Coralysis, UCell, LISI and Rogue | Same scientific API with optional acceleration; uncovered hot paths run plain upstream |
 | Local and remote runtime observability | `sn_enable_usage_tracking()`, `sn_summarize_usage()` | Opt-in timing/call counts for all non-control exports, explicit mode, sanitized parameter fingerprints and consent-gated DBI delivery | SQLite outbox first; managed remote sync is explicit and fail-open |
 | Publication figures and reporting | `sn_get_figure_spec()`, `sn_export_figure_bundle()`, `sn_write_results()` | ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation | Native R with optional LLM provider |
@@ -117,8 +117,12 @@ sn_install_dependencies(scope = "recommended")
 sn_prepare_pixi_environment("trajectory", install_environment = TRUE)
 ```
 
-Analytical outputs use `schema_version = "1.0.0"`, with their principal data
-frame in `tables$primary`. Audit older objects before reusing stored evidence:
+Analytical outputs use `schema_version = "2.0.0"`, one canonical
+`(analysis_type, result_id)` identity, and their principal data frame in
+`tables$primary`. All 33 built-in result types have minimum semantic checks for
+their identities and numerical evidence. Future schemas, malformed primary
+tables, and storage-key mismatches fail closed; audit older objects before
+reusing stored evidence:
 
 ```r
 audit <- sn_audit_results(object)

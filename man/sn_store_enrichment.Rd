@@ -24,8 +24,7 @@ sn_store_enrichment(
 \item{result}{An enrichment result object or data frame coercible with
 \code{as.data.frame()}.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored enrichment result.}
 
 \item{analysis}{One of \code{"ora"} or \code{"gsea"}.}
 

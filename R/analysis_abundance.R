@@ -8,8 +8,17 @@
   metadata <- metadata[stats::complete.cases(metadata[, columns, drop = FALSE]), , drop = FALSE]
   if (nrow(metadata) == 0L) stop("No complete cells remain for abundance testing.", call. = FALSE)
   .sn_validate_constant_within_sample(metadata, sample_col = sample_by, group_col = condition_by)
+  sample_covariates <- setdiff(extra_columns, c(sample_by, condition_by))
+  for (column in sample_covariates) {
+    .sn_validate_constant_within_sample(
+      metadata,
+      sample_col = sample_by,
+      group_col = column
+    )
+  }
 
-  sample_info <- unique(metadata[, c(sample_by, condition_by), drop = FALSE])
+  sample_info_columns <- unique(c(sample_by, condition_by, sample_covariates))
+  sample_info <- unique(metadata[, sample_info_columns, drop = FALSE])
   levels <- unique(as.character(sample_info[[condition_by]]))
   if (is_null(contrast)) {
     if (length(levels) != 2L) stop("`contrast` is required unless `condition_by` has exactly two levels.", call. = FALSE)
@@ -19,7 +28,7 @@
     stop("`contrast` must be `c(case, control)` with two distinct condition labels.", call. = FALSE)
   }
   metadata <- metadata[metadata[[condition_by]] %in% contrast, , drop = FALSE]
-  sample_info <- unique(metadata[, c(sample_by, condition_by), drop = FALSE])
+  sample_info <- unique(metadata[, sample_info_columns, drop = FALSE])
   group_counts <- table(factor(sample_info[[condition_by]], levels = contrast))
   if (any(group_counts < 2L)) {
     stop("Abundance testing requires at least two biological samples in each contrast group.", call. = FALSE)
@@ -101,6 +110,9 @@
     stop("`design` must be NULL, a formula, or a character vector of sample-level covariates.", call. = FALSE)
   }
   matrix <- stats::model.matrix(formula, data = design_data)
+  if (qr(matrix)$rank < ncol(matrix)) {
+    stop("The abundance design matrix is not full rank.", call. = FALSE)
+  }
   locate <- function(level) {
     candidates <- c(
       paste0(condition_prefix, level),
@@ -174,7 +186,7 @@
   if (length(permutations) != 1L || is.na(permutations) || permutations < 99L) {
     stop("`permutations` must be a single integer of at least 99.", call. = FALSE)
   }
-  set.seed(seed)
+  .sn_with_seed(seed, {
   wide <- stats::reshape(
     as.data.frame(inputs$sample_data[, c(names(inputs$sample_info)[[1]], condition_by, cell_type_by, "proportion")]),
     idvar = c(names(inputs$sample_info)[[1]], condition_by),
@@ -193,6 +205,10 @@
     null[index, ] <- colMeans(values[shuffled == inputs$contrast[[1]], , drop = FALSE]) -
       colMeans(values[shuffled == inputs$contrast[[2]], , drop = FALSE])
   }
+  null_sd <- apply(null, 2, stats::sd)
+  statistic <- rep(NA_real_, length(observed))
+  estimable <- is.finite(null_sd) & null_sd > sqrt(.Machine$double.eps)
+  statistic[estimable] <- observed[estimable] / null_sd[estimable]
   p <- (1 + colSums(abs(null) >= rep(abs(observed), each = permutations))) / (permutations + 1)
   null_table <- tibble::tibble(
     permutation = rep(seq_len(permutations), times = length(features)),
@@ -202,13 +218,56 @@
   list(
     statistics = tibble::tibble(
       feature = features,
-      statistic = observed / apply(null, 2, stats::sd),
+      statistic = as.numeric(statistic),
       p_value = as.numeric(p),
       adjusted_p_value = stats::p.adjust(as.numeric(p), method = "BH"),
-      null_sd = apply(null, 2, stats::sd)
+      null_sd = as.numeric(null_sd)
     ),
     null = null_table
   )
+  })
+}
+
+.sn_milo_covariates <- function(design,
+                                sample_by,
+                                condition_by,
+                                cell_type_by,
+                                available_columns) {
+  if (is_null(design)) {
+    return(NULL)
+  }
+  if (inherits(design, "formula")) {
+    design_terms <- stats::terms(design)
+    if (attr(design_terms, "response") != 0L) {
+      stop("Milo `design` must be a one-sided additive formula.", call. = FALSE)
+    }
+    term_labels <- attr(design_terms, "term.labels")
+    term_order <- attr(design_terms, "order")
+    if (length(term_labels) > 0L &&
+        (any(term_order != 1L) || !identical(term_labels, all.vars(design)))) {
+      stop(
+        "Milo `design` only supports direct sample-level columns joined by `+`; interactions and transformed terms are not supported.",
+        call. = FALSE
+      )
+    }
+    columns <- term_labels
+  } else if (is.character(design)) {
+    if (length(design) == 0L || anyNA(design) || any(!nzchar(design))) {
+      stop("Milo `design` column names must be non-empty and non-missing.", call. = FALSE)
+    }
+    columns <- unique(design)
+  } else {
+    stop("Milo `design` must be NULL, a simple additive formula, or sample-level column names.", call. = FALSE)
+  }
+  missing <- setdiff(columns, available_columns)
+  if (length(missing) > 0L) {
+    stop("Milo design column(s) were not found: ", paste(missing, collapse = ", "), ".", call. = FALSE)
+  }
+  covariates <- setdiff(
+    unique(columns),
+    c(sample_by, condition_by, cell_type_by)
+  )
+  if (length(covariates) == 0L) NULL else covariates
 }
 
 .sn_standardize_milo_abundance <- function(table, cell_type_by) {
@@ -282,9 +341,7 @@
 #' @param design Optional no-intercept formula or sample-level covariate names
 #'   for Propeller; covariate names are forwarded to Milo.
 #' @param contrast Two condition labels ordered as `c(case, control)`.
-#' @param result_id Stored differential-abundance result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
+#' @param result_id Stable identifier for the stored differential-abundance result.
 #' @param transform Propeller proportion transformation.
 #' @param permutations Number of sample-label permutations.
 #' @param seed Random seed for permutation testing.
@@ -334,6 +391,12 @@ sn_test_abundance <- function(object,
     raw <- backend$raw
     design_table <- tibble::as_tibble(backend$design$sample_data, rownames = sample_by)
   } else if (identical(method, "permutation")) {
+    if (!is_null(design)) {
+      stop(
+        "The permutation abundance backend does not support covariate adjustment; use Propeller, Milo, or scCODA when `design` is supplied.",
+        call. = FALSE
+      )
+    }
     backend <- .sn_test_abundance_permutation(inputs, condition_by, cell_type_by, permutations, seed)
     primary <- dplyr::left_join(summaries$summary, backend$statistics, by = "feature")
     raw <- tibble::tibble()
@@ -355,17 +418,31 @@ sn_test_abundance <- function(object,
     primary <- dplyr::left_join(observed, standardized$table, by = "feature")
     raw <- standardized$raw
   } else {
+    milo_covariates <- .sn_milo_covariates(
+      design = design,
+      sample_by = sample_by,
+      condition_by = condition_by,
+      cell_type_by = cell_type_by,
+      available_columns = colnames(inputs$metadata)
+    )
     milo_args <- utils::modifyList(list(
       x = object,
       sample_by = sample_by,
       group_by = condition_by,
       contrast = inputs$contrast,
-      covariates = if (is.character(design)) design else NULL,
+      covariates = if (length(milo_covariates)) milo_covariates else NULL,
       annotation_by = cell_type_by,
       result_id = NULL,
       return_object = FALSE,
       return_intermediate = FALSE
     ), backend_control$milo %||% list(), keep.null = TRUE)
+    milo_args$covariates <- setdiff(
+      unique(milo_args$covariates %||% character()),
+      c(milo_args$sample_by, milo_args$group_by, cell_type_by)
+    )
+    if (length(milo_args$covariates) == 0L) {
+      milo_args$covariates <- NULL
+    }
     primary <- .sn_standardize_milo_abundance(do.call(sn_run_milo, milo_args), cell_type_by)
     raw <- primary
   }

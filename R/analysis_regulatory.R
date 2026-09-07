@@ -78,8 +78,6 @@
 #' @param minsize Minimum target-set size passed to \code{decoupleR::run_ulm()}.
 #' @param result_id Name used under
 #'   the canonical Shennong result registry.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param ... Additional arguments passed to \code{decoupleR::run_ulm()}.
 #'
@@ -149,8 +147,6 @@ sn_run_regulatory_activity <- function(object,
 #' @param result Regulatory activity table.
 #' @param result_id Name used under
 #'   the canonical Shennong result registry.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param method Inference method.
 #' @param group_by Optional grouping column.
 #' @param species Optional species label.

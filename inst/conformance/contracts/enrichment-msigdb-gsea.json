@@ -174,6 +174,30 @@
       ]
     },
     {
+      "wrapper": "de_p_adjusted_cutoff",
+      "role": "not_applicable",
+      "upstream": "stored-DE filtering is restricted to ORA; GSEA retains the complete ranked list",
+      "scenarios": [
+        0.05
+      ]
+    },
+    {
+      "wrapper": "de_logfc_threshold",
+      "role": "not_applicable",
+      "upstream": "stored-DE filtering is restricted to ORA; GSEA retains the complete ranked list",
+      "scenarios": [
+        0
+      ]
+    },
+    {
+      "wrapper": "de_direction",
+      "role": "not_applicable",
+      "upstream": "stored-DE filtering is restricted to ORA; GSEA retains both ranking directions",
+      "scenarios": [
+        "both"
+      ]
+    },
+    {
       "wrapper": "result_id",
       "role": "wrapper_only",
       "upstream": "explicit stored-result identifier",

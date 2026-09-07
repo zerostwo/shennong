@@ -15,6 +15,7 @@ sn_run_cnv(
   sample_by = NULL,
   assay = NULL,
   layer = NULL,
+  association_layer = NULL,
   malignant_threshold = 2,
   subclones = 2L,
   association_features = 50L,
@@ -32,15 +33,21 @@ sn_run_cnv(
 \item{genome}{Species/genome label. Human and mouse are supported by the
 bundled inferCNVpy positions and CopyKAT adapter.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{reference_by, reference_cat}{Alternative metadata-based reference definition.}
 
 \item{sample_by}{Optional sample/patient metadata column.}
 
-\item{assay, layer}{Expression assay and layer. CopyKAT should use counts;
-inferCNVpy should use normalized data.}
+\item{assay}{Expression assay used by the CNV backend.}
+
+\item{layer}{Backend input layer. CopyKAT requires a raw or corrected count
+layer. inferCNVpy requires a normalized, log-transformed Seurat
+\code{"data"}/\code{"data.*"} layer and fails when one is unavailable.}
+
+\item{association_layer}{Normalized expression layer used only for
+CNV-expression association. When omitted, \code{"data"} is preferred and
+raw counts are never silently reused for this correlation.}
 
 \item{malignant_threshold}{Reference-scaled CNV threshold for malignant calls.}
 
@@ -49,7 +56,9 @@ inferCNVpy should use normalized data.}
 \item{association_features}{Number of variable genes tested for CNV-expression association.}
 
 \item{backend_control}{Named list forwarded to the selected backend. A
-\code{runner} function can provide a custom backend adapter.}
+\code{runner} function can provide a custom backend adapter. CopyKAT dense
+materialization is guarded by \code{max_dense_gb} (default 2 GiB) before each
+sample matrix is converted.}
 
 \item{return_object}{Return the modified object or the unified result.}
 }

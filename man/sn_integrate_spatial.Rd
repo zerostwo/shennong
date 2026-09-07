@@ -20,8 +20,7 @@ sn_integrate_spatial(
 
 \item{spatial_cols}{Coordinate columns.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Required \code{runner} or \code{result} returning an embedding
 table with a \code{cell} column.}

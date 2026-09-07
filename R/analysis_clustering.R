@@ -67,8 +67,9 @@
     overwrite_manifest = FALSE,
     platforms = NULL,
     install_pixi = TRUE,
-    pixi_version = "latest",
+    pixi_version = "0.69.0",
     pixi_download_url = NULL,
+    pixi_sha256 = NULL,
     mirror = "default",
     mirror_append_original = TRUE,
     script = NULL,
@@ -190,7 +191,7 @@
 #'   Runtime/pixi fields are `runtime_dir`, `pixi_project`,
 #'   `pixi_project_dir`, `pixi_home`, `run_dir`, `pixi`, `manifest_path`,
 #'   `manifest_lines`, `overwrite_manifest`, `platforms`, `install_pixi`,
-#'   `pixi_version`, `pixi_download_url`, `mirror`,
+#'   `pixi_version`, `pixi_download_url`, `pixi_sha256`, `mirror`,
 #'   `mirror_append_original`, `script`, and `environment`.
 #'
 #' @param method Optional integration method name or vector. When `NULL`, return
@@ -1018,9 +1019,9 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   to \code{Seurat::FindClusters()}.
 #' @param cluster_random_seed Random seed passed to
 #'   \code{Seurat::FindClusters()}.
-#' @param seed Top-level reproducibility seed overriding
-#'   \code{cluster_random_seed} (and any existing \code{integration_control$seed})
-#'   when supplied. Precedence: \code{seed} > \code{cluster_random_seed} > default.
+#' @param seed Top-level reproducibility seed overriding clustering, PCA,
+#'   SCTransform, visualization, and backend integration seeds when supplied.
+#'   Precedence: \code{seed} > stage-specific controls > stage defaults.
 #' @param verbose Top-level progress logging switch forwarded to the clustering
 #'   implementation; a \code{verbose} tail argument keeps precedence over it.
 #' @param cluster_group_singletons Whether \code{Seurat::FindClusters()}
@@ -1205,11 +1206,18 @@ sn_run_cluster <- function(object,
   cluster_algorithm_supplied <- !missing(cluster_algorithm)
   tail <- .sn_resolve_cluster_tail_args(list(...))
   block_genes_supplied <- "block_genes" %in% tail$supplied
+  workflow_seed <- 717L
   if (!is.null(seed)) {
-    cluster_random_seed <- seed
-    if (!is.null(integration_control$seed)) {
-      integration_control$seed <- seed
+    if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed) ||
+        seed < 0 || seed > .Machine$integer.max || seed != floor(seed)) {
+      stop("`seed` must be one non-negative integer or NULL.", call. = FALSE)
     }
+    workflow_seed <- as.integer(seed)
+    cluster_random_seed <- workflow_seed
+    integration_control <- .sn_override_cluster_integration_seed(
+      integration_control,
+      workflow_seed
+    )
   }
   if (!"verbose" %in% tail$supplied) {
     tail$values$verbose <- verbose
@@ -1231,6 +1239,7 @@ sn_run_cluster <- function(object,
       cluster_n_start = cluster_n_start,
       cluster_n_iter = cluster_n_iter,
       cluster_random_seed = cluster_random_seed,
+      workflow_seed = workflow_seed,
       cluster_group_singletons = cluster_group_singletons,
       leiden_method = leiden_method,
       leiden_objective_function = leiden_objective_function
@@ -1260,9 +1269,42 @@ sn_run_cluster <- function(object,
       logical(1)
     ))
   if (grid_requested) {
-    return(.sn_run_cluster_multi(cluster_args))
+    return(.sn_with_seed(workflow_seed, .sn_run_cluster_multi(cluster_args)))
   }
-  .sn_run_cluster_impl(cluster_args)
+  .sn_with_seed(workflow_seed, .sn_run_cluster_impl(cluster_args))
+}
+
+.sn_override_cluster_integration_seed <- function(integration_control, seed) {
+  if (!is.list(integration_control)) {
+    stop("`integration_control` must be a named list.", call. = FALSE)
+  }
+  override_one <- function(control) {
+    if (!is.list(control)) {
+      stop("Each per-method `integration_control` entry must be a named list.", call. = FALSE)
+    }
+    control$seed <- seed
+    control$icp_args <- control$icp_args %||% list()
+    if (!is.list(control$icp_args)) {
+      stop("`integration_control$icp_args` must be a named list.", call. = FALSE)
+    }
+    control$icp_args$RNGseed <- seed
+    control
+  }
+
+  control_names <- names(integration_control) %||% character(0)
+  mapped <- any(control_names %in% c(.sn_supported_integration_methods(), ".default"))
+  if (!mapped) {
+    return(override_one(integration_control))
+  }
+
+  integration_control$.default <- override_one(
+    integration_control$.default %||% list()
+  )
+  method_names <- intersect(control_names, .sn_supported_integration_methods())
+  for (method in method_names) {
+    integration_control[[method]] <- override_one(integration_control[[method]])
+  }
+  integration_control
 }
 
 .sn_multi_method_control <- function(integration_control, methods, method) {
@@ -1890,6 +1932,7 @@ sn_run_cluster <- function(object,
   cluster_n_start <- args$cluster_n_start
   cluster_n_iter <- args$cluster_n_iter
   cluster_random_seed <- args$cluster_random_seed
+  workflow_seed <- args$workflow_seed %||% 717L
   cluster_group_singletons <- args$cluster_group_singletons
   leiden_method <- args$leiden_method
   leiden_objective_function <- args$leiden_objective_function
@@ -2235,7 +2278,7 @@ sn_run_cluster <- function(object,
         variable.features.n = hvg_candidate_nfeatures,
         vars.to.regress = vars_to_regress,
         verbose = verbose,
-        seed.use = 717
+        seed.use = workflow_seed
       )
       if (length(user_hvg) > 0L) {
         sct_args$return.only.var.genes <- FALSE
@@ -2347,7 +2390,7 @@ sn_run_cluster <- function(object,
             npcs = npcs,
             features = hvg,
             verbose = verbose,
-            seed.use = 717
+            seed.use = workflow_seed
           ),
           object = object,
           assay = "SCT"
@@ -2582,7 +2625,7 @@ sn_run_cluster <- function(object,
             npcs = npcs,
             features = hvg,
             verbose = verbose,
-            seed.use = 717
+            seed.use = workflow_seed
           ),
           object = object,
           assay = assay
@@ -2679,7 +2722,7 @@ sn_run_cluster <- function(object,
             reduction.name = "apca",
             reduction.key = "apca_",
             verbose = verbose,
-            seed.use = 717
+            seed.use = workflow_seed
           ),
           object = object,
           assay = adt_assay
@@ -3226,7 +3269,7 @@ sn_run_cluster <- function(object,
           umap.method = "uwot",
           metric = "cosine",
           verbose = verbose,
-          seed.use = 717
+          seed.use = workflow_seed
         ),
         control = umap_control
       )
@@ -3254,7 +3297,7 @@ sn_run_cluster <- function(object,
           umap.method = "uwot",
           metric = "cosine",
           verbose = verbose,
-          seed.use = 717
+          seed.use = workflow_seed
         ),
         control = umap_control
       )
@@ -3307,7 +3350,7 @@ sn_run_cluster <- function(object,
           reduction.key = "tSNE_",
           perplexity = max(1, min(30, floor((ncol(object) - 1L) / 3L))),
           check_duplicates = FALSE,
-          seed.use = 717
+          seed.use = workflow_seed
         ),
         control = tsne_control
       )
@@ -3345,7 +3388,7 @@ sn_run_cluster <- function(object,
   }
 }
 
-#' Run a Python analysis command through a managed Shennong pixi environment
+#' Object-level Python backend entry points
 #'
 #' These are analysis-oriented wrappers around \code{sn_call_pixi_environment()}.
 #' They prepare the corresponding package-bundled environment and run the
@@ -3354,6 +3397,12 @@ sn_run_cluster <- function(object,
 #' runner script, and import method outputs back into the object when the
 #' backend produces cell-level metadata or embeddings.
 #'
+#' \code{sn_run_scarches()} and \code{sn_run_stlearn()} are retained as public
+#' compatibility entry points, but are intentionally disabled. They fail before
+#' object serialization or Python execution because Shennong does not currently
+#' ship an admitted, faithful upstream workflow for either backend. A bundled
+#' environment name or runner placeholder does not make these methods runnable.
+#'
 #' @param object Seurat object. Shennong writes the object to a Python
 #'   interchange directory, runs the corresponding pixi script, and imports
 #'   supported results.
@@ -3361,8 +3410,10 @@ sn_run_cluster <- function(object,
 #'   a query/spatial object against a single-cell reference, such as Tangram.
 #' @param reference_assay,reference_layer Assay and layer used when exporting
 #'   \code{reference_object}.
-#' @param reference_signatures Optional file path or data frame of reference
-#'   cell-state signatures for cell2location.
+#' @param reference_signatures Required CSV path, numeric data frame, or numeric
+#'   matrix of reference cell-state signatures for cell2location. Features are
+#'   rows and cell states are columns; both identifier sets must be unique and
+#'   non-empty, and all values must be finite and non-negative.
 #' @param group_by Metadata column used by CellPhoneDB cell groups.
 #' @param batch_by,label_by Metadata columns used by scArches/scPoli-style
 #'   object workflows.
@@ -3374,9 +3425,13 @@ sn_run_cluster <- function(object,
 #' @param method_control Optional named list of backend-specific settings passed
 #'   to the Python runner config.
 #' @param assay Assay used for object-level infercnvpy input.
-#' @param layer Assay layer used for object-level Python input. scPoli defaults
-#'   to \code{"counts"}; infercnvpy and the other generic object wrappers
-#'   default to \code{"data"} when present and otherwise \code{"counts"}.
+#' @param layer Assay layer used for object-level Python input. Cell2location
+#'   and scPoli require a count-like layer containing finite, non-negative,
+#'   integer-like raw counts, checked independently before export and by the
+#'   Python runner. CellPhoneDB and infercnvpy require normalized,
+#'   log-transformed expression from a Seurat \code{"data"}/\code{"data.*"}
+#'   layer and reject raw-count or ambiguously named layers. Other generic
+#'   object wrappers prefer \code{"data"} and otherwise use \code{"counts"}.
 #' @param species Species used to match bundled gene positions when
 #'   \code{gene_order} and \code{gtf_file} are not supplied.
 #' @param reference_by Metadata column containing normal/tumor annotations.
@@ -3389,9 +3444,15 @@ sn_run_cluster <- function(object,
 #'   positions instead of Shennong's bundled GENCODE table.
 #' @param gtf_gene_id GTF attribute used by infercnvpy for matching.
 #' @param adata_gene_id Optional AnnData var column used for matching a GTF.
-#' @param output_dir Optional run directory. Defaults to
-#'   \code{~/.shennong/runs/infercnvpy_*}.
+#' @param output_dir Optional persistent run directory. When omitted, Shennong
+#'   uses an isolated package-owned temporary run and removes it after a
+#'   successful import. With \code{keep_run_dir = FALSE}, an explicit path is
+#'   treated as a parent and is never recursively deleted.
 #' @param runtime_dir Optional Shennong runtime directory.
+#' @param keep_run_dir Whether to retain exported inputs and backend outputs.
+#'   \code{NULL} retains an explicitly supplied \code{output_dir} and otherwise
+#'   cleans a package-owned temporary child after success. Failed temporary runs
+#'   retain only sanitized diagnostics.
 #' @param key_added infercnvpy key used for the CNV representation.
 #' @param window_size,step,dynamic_threshold,exclude_chromosomes,chunksize,n_jobs,calculate_gene_values,lfc_clip
 #'   Parameters forwarded to \code{infercnvpy.tl.infercnv()}.
@@ -3403,9 +3464,14 @@ sn_run_cluster <- function(object,
 #' @param artifact_id Identifier used for the stored backend artifact.
 #' @param return_object Whether to return the updated object. If \code{FALSE},
 #'   return a run manifest list.
+#' @param max_artifact_import_gb Positive import-memory budget in GiB for
+#'   backend metadata, embeddings, and artifact tables. Oversized outputs fail
+#'   before materialization; increase this value only after reviewing the
+#'   expected artifact dimensions.
 #' @param ... Additional arguments passed to \code{sn_call_pixi_environment()}.
 #'
-#' @return A Seurat object or a run manifest.
+#' @return Supported entry points return a Seurat object or run manifest.
+#'   \code{sn_run_scarches()} and \code{sn_run_stlearn()} always fail closed.
 #'
 #' @examples
 #' \dontrun{
@@ -3434,6 +3500,8 @@ sn_run_scarches <- function(object,
                             artifact_id = "scarches",
                             return_object = TRUE,
                             method_control = list(),
+                            keep_run_dir = NULL,
+                            max_artifact_import_gb = 0.5,
                             ...) {
   .sn_run_python_object_method(
     object = object,
@@ -3447,6 +3515,8 @@ sn_run_scarches <- function(object,
     metadata_prefix = metadata_prefix,
     result_name = artifact_id,
     return_object = return_object,
+    keep_run_dir = keep_run_dir,
+    max_artifact_import_gb = max_artifact_import_gb,
     config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )
@@ -3465,6 +3535,8 @@ sn_run_scpoli <- function(object,
                           artifact_id = "scpoli",
                           return_object = TRUE,
                           method_control = list(),
+                          keep_run_dir = NULL,
+                          max_artifact_import_gb = 0.5,
                           ...) {
   .sn_run_python_object_method(
     object = object,
@@ -3478,6 +3550,8 @@ sn_run_scpoli <- function(object,
     metadata_prefix = metadata_prefix,
     result_name = artifact_id,
     return_object = return_object,
+    keep_run_dir = keep_run_dir,
+    max_artifact_import_gb = max_artifact_import_gb,
     config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
     ...
   )

@@ -28,8 +28,7 @@ sn_score_bulk_pathways(
 
 \item{min_genes}{Minimum matched genes per pathway.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the returned pathway-score result.}
 
 \item{backend_control}{Backend-specific controls.}
 }

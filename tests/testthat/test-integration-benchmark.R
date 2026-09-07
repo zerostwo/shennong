@@ -244,3 +244,44 @@ test_that("scib-metrics pixi environment is discoverable and GPU-aware", {
   expect_match(sn_get_pixi_config_path("scib_metrics"), "scib-metrics/pixi.toml$")
   expect_true(Shennong:::.sn_pixi_gpu_aware_environment("scib-metrics"))
 })
+
+test_that("scib-metrics forwards paired custom Pixi integrity controls", {
+  object <- make_integration_benchmark_object()
+  captured <- NULL
+  custom_url <- "https://mirror.example/pixi.tar.gz"
+  custom_sha <- strrep("e", 64L)
+
+  result <- testthat::with_mocked_bindings(
+    sn_compare_integrations(
+      object,
+      label_by = "cell_type",
+      accelerator = "cpu",
+      return_object = FALSE,
+      backend_control = list(
+        run_dir = tempfile("shennong-scib-sha-"),
+        pixi_download_url = custom_url,
+        pixi_sha256 = custom_sha
+      ),
+      verbose = FALSE
+    ),
+    .sn_prepare_scvi_pixi_project = function(...) tempfile(fileext = ".toml"),
+    .sn_execute_scvi_pixi = function(input_dir,
+                                     output_dir,
+                                     config_path,
+                                     pixi_download_url = NULL,
+                                     pixi_sha256 = NULL,
+                                     ...) {
+      captured <<- list(
+        pixi_download_url = pixi_download_url,
+        pixi_sha256 = pixi_sha256
+      )
+      config <- jsonlite::read_json(config_path, simplifyVector = TRUE)
+      fake_scib_metrics_runner(input_dir, output_dir, config, config_path)
+    },
+    .package = "Shennong"
+  )
+
+  expect_true(is.list(result))
+  expect_identical(captured$pixi_download_url, custom_url)
+  expect_identical(captured$pixi_sha256, custom_sha)
+})

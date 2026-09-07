@@ -4,7 +4,7 @@
 \alias{sn_delete_artifact}
 \title{Delete a registered workflow artifact}
 \usage{
-sn_delete_artifact(object, artifact_type, artifact_id = NULL)
+sn_delete_artifact(object, artifact_type, artifact_id = NULL, confirm = FALSE)
 }
 \arguments{
 \item{object}{A Seurat object.}
@@ -14,7 +14,11 @@ its \code{"*_artifact"} alias (for example \code{"integration"} or
 \code{"integration_artifact"}).}
 
 \item{artifact_id}{Optional artifact identifier. When omitted, the entire artifact
-collection container is removed.}
+collection container is removed only when \code{confirm = TRUE}.}
+
+\item{confirm}{Explicit confirmation required before deleting a member or an
+entire top-level artifact collection. This protects user-owned payloads
+that use a legacy collection name also registered by Shennong.}
 }
 \value{
 The modified Seurat object.
@@ -22,14 +26,18 @@ The modified Seurat object.
 \description{
 Registered artifact collections (for example \code{"clustering_stage_cache"},
 \code{"integration_comparison"}, or \code{"label_transfer"}) are removed
-either member-by-member or as a whole container. Unknown artifact types fail
-closed; unified analysis results must be deleted through
-\code{\link{sn_delete_result}} instead.
+either member-by-member or as a whole container. Because these historical
+collections live at top level in \code{object@misc}, their names alone cannot
+prove Shennong ownership; every deletion therefore requires explicit
+confirmation. Unknown artifact types fail closed; unified analysis results
+must be deleted through \code{\link{sn_delete_result}} instead.
 }
 \examples{
 \dontrun{
-obj <- sn_delete_artifact(obj, "integration_comparison", "pbmc_grid")
-obj <- sn_delete_artifact(obj, "label_transfer")
+obj <- sn_delete_artifact(
+  obj, "integration_comparison", "pbmc_grid", confirm = TRUE
+)
+obj <- sn_delete_artifact(obj, "label_transfer", confirm = TRUE)
 }
 
 }

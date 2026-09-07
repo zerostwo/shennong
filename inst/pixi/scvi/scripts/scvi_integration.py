@@ -30,33 +30,68 @@ def _drop_none(mapping: dict | None) -> dict:
     return {key: value for key, value in mapping.items() if value is not None}
 
 
+def _read_unique_ids(path: Path, column: str) -> np.ndarray:
+    table = pd.read_csv(path, dtype=str)
+    if list(table.columns) != [column]:
+        raise ValueError(f"{path.name} must contain exactly one {column} column.")
+    values = table[column]
+    if values.isna().any() or (values.str.strip() == "").any():
+        raise ValueError(f"{path.name} contains missing or empty {column} values.")
+    if values.duplicated().any():
+        raise ValueError(f"{path.name} contains duplicate {column} values.")
+    return values.to_numpy()
+
+
+def _validate_raw_counts(matrix: sp.csr_matrix, label: str) -> None:
+    values = matrix.data
+    if values.size and (not np.isfinite(values).all() or np.min(values) < 0):
+        raise ValueError(f"{label} must contain finite, non-negative raw counts.")
+    if values.size and not np.allclose(values, np.rint(values), rtol=0.0, atol=1e-8):
+        raise ValueError(f"{label} must contain integer-like raw counts; values are never rounded silently.")
+
+
 def _read_input(input_dir: Path) -> ad.AnnData:
     counts = scipy.io.mmread(input_dir / "counts.mtx")
     counts = sp.csr_matrix(counts).transpose().tocsr()
 
-    features = pd.read_csv(input_dir / "features.csv")["feature_id"].astype(str).to_numpy()
-    cells = pd.read_csv(input_dir / "cells.csv")["cell_id"].astype(str).to_numpy()
+    features = _read_unique_ids(input_dir / "features.csv", "feature_id")
+    cells = _read_unique_ids(input_dir / "cells.csv", "cell_id")
     obs = pd.read_csv(input_dir / "obs.csv", dtype=str)
     if "cell_id" not in obs.columns:
         raise ValueError("obs.csv must contain a cell_id column.")
-    obs = obs.set_index("cell_id").reindex(cells)
+    if obs["cell_id"].isna().any() or (obs["cell_id"].str.strip() == "").any():
+        raise ValueError("obs.csv contains missing or empty cell identifiers.")
+    if obs["cell_id"].duplicated().any():
+        raise ValueError("obs.csv contains duplicate cell identifiers.")
+    obs_ids = obs["cell_id"].to_numpy()
+    if set(obs_ids) != set(cells) or len(obs_ids) != len(cells):
+        raise ValueError("obs.csv cell identifiers must exactly match cells.csv.")
+    obs = obs.set_index("cell_id").loc[cells]
+
+    if counts.shape != (len(cells), len(features)):
+        raise ValueError("counts.mtx dimensions must equal cells-by-features after transposition.")
+    _validate_raw_counts(counts, "RNA counts")
 
     var = pd.DataFrame(index=features)
     adata = ad.AnnData(X=counts, obs=obs, var=var)
     adata.obs_names = cells
     adata.var_names = features
-    adata.var_names_make_unique()
     if not sp.issparse(adata.X):
         raise MemoryError("The complete RNA expression matrix must remain sparse.")
 
     protein_counts_path = input_dir / "protein_counts.mtx"
     proteins_path = input_dir / "proteins.csv"
+    if protein_counts_path.exists() != proteins_path.exists():
+        raise ValueError("protein_counts.mtx and proteins.csv must either both exist or both be absent.")
     if protein_counts_path.exists() and proteins_path.exists():
         protein_counts = scipy.io.mmread(protein_counts_path)
         protein_counts = sp.csr_matrix(protein_counts).transpose().tocsr()
-        proteins = pd.read_csv(proteins_path)["protein_id"].astype(str).to_numpy()
-        if protein_counts.shape[0] != adata.n_obs:
-            raise ValueError("protein_counts.mtx must have one row per cell after transposition.")
+        proteins = _read_unique_ids(proteins_path, "protein_id")
+        if protein_counts.shape != (adata.n_obs, len(proteins)):
+            raise ValueError(
+                "protein_counts.mtx dimensions must equal cells-by-proteins after transposition."
+            )
+        _validate_raw_counts(protein_counts, "ADT/protein counts")
         adata.obsm["protein_expression"] = protein_counts
         adata.uns["protein_names"] = proteins
         if not sp.issparse(adata.obsm["protein_expression"]):
@@ -65,6 +100,11 @@ def _read_input(input_dir: Path) -> ad.AnnData:
 
 
 def _write_latent(latent: np.ndarray, cells: pd.Index, output_dir: Path, prefix: str) -> Path:
+    latent = np.asarray(latent)
+    if latent.ndim != 2 or latent.shape[0] != len(cells) or latent.shape[1] < 1:
+        raise ValueError("Latent output must be a two-dimensional cell-by-component matrix.")
+    if not np.isfinite(latent).all():
+        raise ValueError("Latent output must contain only finite values.")
     latent_df = pd.DataFrame(
         latent,
         index=cells,
@@ -84,6 +124,8 @@ def _prepare_labels(adata: ad.AnnData, labels_key: str, unlabeled_category: str)
 def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     method = config.get("method", "scvi")
+    if method not in {"scvi", "scanvi", "totalvi"}:
+        raise ValueError("config.method must be scvi, scanvi, or totalvi.")
     batch_key = config.get("batch_key")
     labels_key = config.get("labels_key")
     unlabeled_category = config.get("unlabeled_category", "Unknown")
@@ -94,6 +136,11 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     adata = _read_input(input_dir)
     if batch_key is not None and batch_key not in adata.obs.columns:
         raise ValueError(f"Batch key {batch_key!r} was not found in obs.csv.")
+    if batch_key is not None and (
+        adata.obs[batch_key].isna().any()
+        or (adata.obs[batch_key].astype(str).str.strip() == "").any()
+    ):
+        raise ValueError(f"Batch key {batch_key!r} contains missing or empty values.")
 
     setup_kwargs = {}
     if batch_key is not None:
@@ -122,7 +169,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
         obs_path = output_dir / "obs.csv"
         obs_out.to_csv(obs_path)
         h5ad_path = output_dir / "integrated.h5ad"
-        if bool(config.get("write_h5ad", True)):
+        if bool(config.get("write_h5ad", False)):
             adata.obsm[f"X_{method}"] = latent
             adata.write_h5ad(h5ad_path)
         manifest = {
@@ -178,7 +225,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     obs_out.to_csv(obs_path)
 
     h5ad_path = output_dir / "integrated.h5ad"
-    if bool(config.get("write_h5ad", True)):
+    if bool(config.get("write_h5ad", False)):
         adata.obsm[f"X_{method}"] = latent
         if method == "scanvi" and "scanvi_prediction" in obs_out.columns:
             adata.obs["scanvi_prediction"] = obs_out["scanvi_prediction"]

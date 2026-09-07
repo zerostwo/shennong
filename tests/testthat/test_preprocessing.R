@@ -212,6 +212,41 @@ test_that("sn_filter_genes can use a non-default layer", {
   expect_equal(rownames(filtered), c("gene1", "gene4"))
 })
 
+test_that("sn_filter_genes filters only the selected non-default assay", {
+  skip_if_not_installed("Seurat")
+
+  rna_counts <- Matrix::Matrix(
+    matrix(seq_len(12), nrow = 3, dimnames = list(
+      c("CD3D", "MS4A1", "MALAT1"), paste0("cell", 1:4)
+    )),
+    sparse = TRUE
+  )
+  adt_counts <- Matrix::Matrix(
+    matrix(c(1, 1, 1, 1, 1, 0, 0, 0), nrow = 2, byrow = TRUE,
+      dimnames = list(c("CD3", "CD19"), colnames(rna_counts))),
+    sparse = TRUE
+  )
+  object <- SeuratObject::CreateSeuratObject(rna_counts)
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = adt_counts)
+  rna_before <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+
+  filtered <- sn_filter_genes(
+    object,
+    min_cells = 2,
+    plot = FALSE,
+    assay = "ADT",
+    layer = "counts"
+  )
+
+  expect_identical(rownames(filtered[["ADT"]]), "CD3")
+  expect_identical(rownames(filtered[["RNA"]]), rownames(rna_counts))
+  expect_equal(
+    SeuratObject::LayerData(filtered, assay = "RNA", layer = "counts"),
+    rna_before
+  )
+  expect_identical(SeuratObject::DefaultAssay(filtered), "RNA")
+})
+
 test_that("sn_filter_genes can retain only coding genes from bundled annotations", {
   skip_if_not_installed("Seurat")
 
@@ -553,6 +588,268 @@ test_that("sn_standardize_gene_symbols preserves unresolved symbols without retu
   expect_false(any(!nzchar(rownames(standardized))))
   expect_true("fakegene1" %in% rownames(standardized))
   expect_true("1-Mar" %in% rownames(standardized))
+})
+
+test_that("sn_standardize_gene_symbols targets RNA and preserves a non-default assay", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  rna_counts <- Matrix::Matrix(
+    matrix(seq_len(12), nrow = 3, dimnames = list(
+      c("CD3D", "MS4A1", "MALAT1"), paste0("cell", 1:4)
+    )),
+    sparse = TRUE
+  )
+  adt_counts <- Matrix::Matrix(
+    matrix(seq_len(8), nrow = 2, dimnames = list(
+      c("CD3", "CD19"), colnames(rna_counts)
+    )),
+    sparse = TRUE
+  )
+  object <- SeuratObject::CreateSeuratObject(rna_counts)
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  SeuratObject::VariableFeatures(object[["RNA"]]) <- c("CD3D", "MS4A1")
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = adt_counts)
+  SeuratObject::DefaultAssay(object) <- "ADT"
+  rna_data_before <- SeuratObject::LayerData(object, assay = "RNA", layer = "data")
+  adt_before <- SeuratObject::LayerData(object, assay = "ADT", layer = "counts")
+
+  standardized <- suppressWarnings(sn_standardize_gene_symbols(
+    object,
+    species = "human"
+  ))
+
+  expect_identical(SeuratObject::DefaultAssay(standardized), "ADT")
+  expect_identical(rownames(standardized[["RNA"]]), rownames(rna_counts))
+  expect_equal(
+    SeuratObject::LayerData(standardized, assay = "RNA", layer = "data"),
+    rna_data_before
+  )
+  expect_equal(
+    SeuratObject::LayerData(standardized, assay = "ADT", layer = "counts"),
+    adt_before
+  )
+  expect_identical(
+    SeuratObject::VariableFeatures(standardized[["RNA"]]),
+    c("CD3D", "MS4A1")
+  )
+})
+
+test_that("gene-symbol standardization preserves assay provenance and invalidates RNA-derived state", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("HGNChelper")
+  skip_if_not_installed("dplyr")
+
+  set.seed(817L)
+  counts <- matrix(
+    stats::rpois(20L * 24L, lambda = 4),
+    nrow = 20L,
+    dimnames = list(c("CD3D", "MS4A1", "MALAT1", paste0("GENE", 4:20)), paste0("cell", 1:24))
+  )
+  object <- suppressWarnings(SeuratObject::CreateSeuratObject(counts))
+  object[["RNA"]]@assay.orig <- "source_rna"
+  object[["RNA"]]@misc <- list(source = "retained provenance")
+  object <- Seurat::NormalizeData(object, verbose = FALSE)
+  object <- suppressWarnings(Seurat::FindVariableFeatures(object, nfeatures = 10L, verbose = FALSE))
+  object <- Seurat::ScaleData(object, verbose = FALSE)
+  object <- suppressWarnings(Seurat::RunPCA(object, npcs = 5L, verbose = FALSE))
+  object <- Seurat::FindNeighbors(object, dims = 1:5, verbose = FALSE)
+  old_rna_graphs <- names(object@graphs)
+
+  adt <- Matrix::Matrix(
+    matrix(stats::rpois(2L * ncol(object), 2), nrow = 2L,
+      dimnames = list(c("CD3", "CD19"), colnames(object))),
+    sparse = TRUE
+  )
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = adt)
+  adt_embedding <- matrix(
+    stats::rnorm(ncol(object) * 2L),
+    ncol = 2L,
+    dimnames = list(colnames(object), c("ADT_1", "ADT_2"))
+  )
+  object[["adt_dr"]] <- SeuratObject::CreateDimReducObject(
+    embeddings = adt_embedding,
+    key = "ADT_",
+    assay = "ADT"
+  )
+  object <- Shennong:::.sn_log_seurat_command(
+    object,
+    assay = "ADT",
+    name = "adt_command"
+  )
+
+  standardized <- suppressWarnings(sn_standardize_gene_symbols(
+    object,
+    species = "human"
+  ))
+
+  expect_identical(standardized[["RNA"]]@assay.orig, "source_rna")
+  expect_identical(standardized[["RNA"]]@misc, list(source = "retained provenance"))
+  expect_false("pca" %in% names(standardized@reductions))
+  expect_false(any(old_rna_graphs %in% names(standardized@graphs)))
+  expect_true("adt_dr" %in% names(standardized@reductions))
+  expect_true("adt_command" %in% names(standardized@commands))
+  expect_true("sn_standardize_gene_symbols" %in% names(standardized@commands))
+  expect_false(any(vapply(
+    standardized@commands[setdiff(names(standardized@commands), "sn_standardize_gene_symbols")],
+    function(command) identical(methods::slot(command, "assay.used"), "RNA"),
+    logical(1)
+  )))
+})
+
+test_that("ambient correction writes back to the explicitly selected assay", {
+  skip_if_not_installed("Seurat")
+
+  rna_counts <- Matrix::Matrix(
+    matrix(seq_len(12), nrow = 3, dimnames = list(
+      c("CD3D", "MS4A1", "MALAT1"), paste0("cell", 1:4)
+    )),
+    sparse = TRUE
+  )
+  adt_counts <- Matrix::Matrix(
+    matrix(seq_len(8), nrow = 2, dimnames = list(
+      c("CD3", "CD19"), colnames(rna_counts)
+    )),
+    sparse = TRUE
+  )
+  object <- SeuratObject::CreateSeuratObject(rna_counts)
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = adt_counts)
+  corrected <- adt_counts
+  corrected[] <- pmax(corrected[] - 1, 0)
+
+  updated <- Shennong:::.sn_apply_ambient_result_to_object(
+    object = object,
+    out = list(
+      counts = corrected,
+      metadata = NULL,
+      zero_cells = character(),
+      removed_cells = character()
+    ),
+    assay = "ADT",
+    layer = "decontaminated_counts"
+  )
+
+  expect_true("decontaminated_counts" %in% SeuratObject::Layers(updated[["ADT"]]))
+  expect_false("decontaminated_counts" %in% SeuratObject::Layers(updated[["RNA"]]))
+  expect_equal(
+    SeuratObject::LayerData(updated, assay = "ADT", layer = "decontaminated_counts"),
+    corrected
+  )
+})
+
+test_that("SoupX estimates its soup profile from raw droplets", {
+  skip_if_not_installed("SoupX")
+
+  filtered <- Matrix::Matrix(
+    matrix(c(9, 1, 9, 1), nrow = 2L,
+      dimnames = list(c("G1", "G2"), c("cell1", "cell2"))),
+    sparse = TRUE
+  )
+  raw <- Matrix::Matrix(
+    matrix(c(1, 9, 1, 9), nrow = 2L,
+      dimnames = list(c("G1", "G2"), c("drop1", "drop2"))),
+    sparse = TRUE
+  )
+  captured <- new.env(parent = emptyenv())
+
+  out <- with_mocked_bindings(
+    with_mocked_bindings(
+      Shennong:::.sn_remove_ambient_soupx(
+        x_info = list(object = NULL, counts = filtered),
+        raw_info = list(object = NULL, counts = raw),
+        cluster = c(cell1 = "a", cell2 = "b"),
+        seed = 19L
+      ),
+      SoupChannel = function(tod, toc, ...) list(tod = tod, toc = toc),
+      setSoupProfile = function(sc, soupProfile) {
+        captured$profile <- soupProfile
+        sc
+      },
+      setClusters = function(sc, clusters) sc,
+      autoEstCont = function(sc, ...) sc,
+      .package = "SoupX"
+    ),
+    .sn_adjust_soupx_counts = function(sc, seed) {
+      captured$seed <- seed
+      sc$toc
+    },
+    .package = "Shennong"
+  )
+
+  raw_sums <- Matrix::rowSums(raw)
+  expect_equal(captured$profile$counts, as.numeric(raw_sums))
+  expect_equal(captured$profile$est, as.numeric(raw_sums / sum(raw_sums)))
+  expect_identical(captured$seed, 19L)
+  expect_equal(out$counts, filtered)
+})
+
+test_that("SoupX stochastic rounding is local and reproducible", {
+  expect_identical(eval(formals(sn_remove_ambient_contamination)$seed), 717L)
+  counts <- Matrix::Matrix(
+    matrix(c(0.2, 1.8, 2.5, 3.1), nrow = 2L),
+    sparse = TRUE
+  )
+  set.seed(1201L)
+  rng_before <- .Random.seed
+  first <- Shennong:::.sn_round_soupx_counts(counts, seed = 31L)
+  expect_identical(.Random.seed, rng_before)
+  second <- Shennong:::.sn_round_soupx_counts(counts, seed = 31L)
+  expect_identical(first, second)
+  expect_true(all(first@x == floor(first@x)))
+})
+
+test_that("decontX and decontPro retain filtered-only features", {
+  skip_if_not_installed("decontX")
+
+  filtered <- Matrix::Matrix(
+    matrix(c(5, 4, 7, 5, 4, 7), nrow = 3L,
+      dimnames = list(c("shared1", "shared2", "filtered_only"), c("cell1", "cell2"))),
+    sparse = TRUE
+  )
+  raw <- Matrix::Matrix(
+    matrix(c(9, 8, 3, 9, 8, 3), nrow = 3L,
+      dimnames = list(c("shared1", "shared2", "raw_only"), c("drop1", "drop2"))),
+    sparse = TRUE
+  )
+
+  decontx <- with_mocked_bindings(
+    Shennong:::.sn_remove_ambient_decontx(
+      x_info = list(object = NULL, counts = filtered),
+      raw_info = list(object = NULL, counts = raw),
+      cluster_backend = "native"
+    ),
+    decontX = function(x, background, ...) list(
+      decontXcounts = x - 1,
+      contamination = rep(0.1, ncol(x)),
+      z = rep(1L, ncol(x))
+    ),
+    .package = "decontX"
+  )
+  expect_identical(rownames(decontx$counts), rownames(filtered))
+  expect_equal(
+    as.numeric(decontx$counts["filtered_only", ]),
+    as.numeric(filtered["filtered_only", ])
+  )
+
+  decontpro <- with_mocked_bindings(
+    Shennong:::.sn_remove_ambient_decontpro(
+      x_info = list(object = NULL, counts = filtered),
+      raw_info = list(object = NULL, counts = raw),
+      cluster = c("a", "b")
+    ),
+    decontPro = function(filtered_counts, cell_type, ambient_counts, ...) list(
+      decontaminated_counts = filtered_counts - 1,
+      ambient_counts = filtered_counts * 0,
+      background_counts = filtered_counts * 0
+    ),
+    .package = "decontX"
+  )
+  expect_identical(rownames(decontpro$counts), rownames(filtered))
+  expect_equal(
+    as.numeric(decontpro$counts["filtered_only", ]),
+    as.numeric(filtered["filtered_only", ])
+  )
 })
 
 test_that("sn_score_cell_cycle returns the object unchanged when markers do not overlap", {

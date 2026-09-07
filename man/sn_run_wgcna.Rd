@@ -34,8 +34,7 @@ sn_run_wgcna(
 
 \item{assay}{Assay name for \code{SummarizedExperiment} input.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the returned WGCNA result.}
 
 \item{backend_control}{Additional \code{blockwiseModules} arguments or custom output.}
 }

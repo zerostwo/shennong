@@ -31,8 +31,7 @@ sn_run_velocity(
 
 \item{reduction, dims}{Embedding and dimensions used for projected vectors.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored result name.}
 
 \item{backend_control}{Backend/pixi controls or an explicit \code{runner}/\code{result}.
 RegVelo requires \code{prior_grn}, supplied as a regulator-target edge
@@ -40,7 +39,11 @@ table, a target-by-regulator named matrix, or a CSV path. Shared scVelo
 preprocessing defaults to \code{enforce_normalization = TRUE} so
 non-integer source splicing estimates are normalized before HVG selection;
 \code{log1p_transform = TRUE} prepares the expression matrix for Scanpy's
-Seurat-flavor HVG calculation.}
+Seurat-flavor HVG calculation. Managed runs retain their output directory
+by default because \code{sn_run_fate()} consumes the generated H5AD; raw
+export files are removed after successful import. Set
+\code{keep_run_dir = FALSE} when CellRank chaining is not needed, or supply
+an empty \code{run_dir} to choose the retained location explicitly.}
 
 \item{return_object}{Return the modified object or unified velocity result.}
 

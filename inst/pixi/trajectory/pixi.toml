@@ -1,27 +1,28 @@
 [workspace]
 name = "shennong-trajectory"
 channels = ["conda-forge"]
-platforms = ["{{ platform }}"]
+# win-64 is excluded because the pinned scvi-tools stack has no matching jaxlib build.
+platforms = ["linux-64", "osx-64", "osx-arm64"]
 
 [dependencies]
-python = ">=3.10,<3.13"
-cellrank = ">=2.0.7"
-scvi-tools = ">=1.0,<1.2.1"
+python = "==3.11.16"
+cellrank = "==2.0.7"
+scvi-tools = "==1.2.0"
 scanpy = "==1.11.5"
-anndata = ">=0.10"
-pandas = ">=2"
-numpy = ">=1.26"
-scipy = ">=1.11.1,<1.16"
-scikit-learn = "*"
-python-igraph = "*"
-leidenalg = "*"
-matplotlib-base = "*"
-pip = "*"
-pytorch-cpu = ">=2.2,<2.6"
+anndata = "==0.11.4"
+pandas = "==2.3.3"
+numpy = "==1.26.4"
+scipy = "==1.15.2"
+scikit-learn = "==1.5.2"
+python-igraph = "==0.11.8"
+leidenalg = "==0.10.2"
+matplotlib-base = "==3.9.2"
+pip = "==24.3.1"
+pytorch-cpu = "==2.5.1"
+scvelo = "==0.3.4"
 
 [pypi-dependencies]
-regvelo = ">=0.1.0"
-scvelo = { git = "https://github.com/theislab/scvelo.git", rev = "f63c0e70596ced2f1bee8cf07e8ab66037cf86b2" }
+regvelo = "==0.4.2"
 
 [environments]
 default = []

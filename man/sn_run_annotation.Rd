@@ -15,6 +15,7 @@ sn_run_annotation(
   species = NULL,
   ontology = TRUE,
   result_id = "annotation",
+  confidence_threshold = NULL,
   assay = NULL,
   layer = "data",
   backend_control = list(),
@@ -41,8 +42,12 @@ CellTypist, which uses a pre-trained model instead.}
 
 \item{ontology}{Map labels to the bundled Cell Ontology snapshot.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored-result and metadata prefix.}
+
+\item{confidence_threshold}{Optional minimum backend score. Scores are
+backend-specific and are not assumed to be calibrated across methods. By
+default, only missing/non-finite/non-positive scores and explicit
+unassigned labels are flagged from score evidence.}
 
 \item{assay, layer}{Query expression source. Most backends read a
 log-normalized \code{data} layer; CellTypist and PopV independently default to
@@ -50,7 +55,12 @@ raw \code{counts} because they normalize internally. Override those backends
 only via \code{backend_control = list(celltypist = list(layer = ...))} or
 \code{backend_control = list(popv = list(layer = ...))}.}
 
-\item{backend_control}{Named backend-specific control lists.}
+\item{backend_control}{Named backend-specific control lists. PopV exports
+only its required label/batch metadata and verified raw counts. Its
+package-owned temporary run is removed after successful import; supplying
+\code{popv$output_dir} retains that empty, explicit run location unless
+\code{popv$keep_run_dir = FALSE}, in which case it is treated as a parent and
+only Shennong's unique child is cleaned or sanitized.}
 
 \item{return_object}{If \code{TRUE}, return the annotated object; otherwise
 return the stored result.}

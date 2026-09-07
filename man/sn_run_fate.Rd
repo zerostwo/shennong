@@ -26,8 +26,7 @@ sn_run_fate(
 
 \item{reduction, dims}{Embedding and dimensions used for plots.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stored fate result name.}
 
 \item{backend_control}{CellRank/pixi controls or an explicit \code{runner}/\code{result}.}
 

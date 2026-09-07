@@ -149,11 +149,24 @@
 
 
 .sn_as_enrichment_table <- function(result) {
-  if (is.data.frame(result)) {
-    return(tibble::as_tibble(result))
+  table <- if (is.data.frame(result)) {
+    tibble::as_tibble(result)
+  } else {
+    tibble::as_tibble(as.data.frame(result))
   }
-
-  tibble::as_tibble(as.data.frame(result))
+  if (ncol(table) == 0L) {
+    # A no-hit enrichment run is still a valid analytical result. Preserve a
+    # typed, discoverable zero-row schema instead of an unstructured tibble()
+    # that cannot satisfy the unified result contract.
+    table <- tibble::tibble(
+      ID = character(),
+      Description = character(),
+      pvalue = numeric(),
+      p.adjust = numeric(),
+      qvalue = numeric()
+    )
+  }
+  table
 }
 
 .sn_interpret_elapsed_text <- function(started_at) {
@@ -710,8 +723,6 @@
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -899,8 +910,6 @@ sn_interpret_annotation <- function(object,
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -993,8 +1002,6 @@ sn_interpret_de <- function(object,
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1091,8 +1098,6 @@ sn_interpret_enrichment <- function(object,
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1202,8 +1207,6 @@ sn_write_results <- function(object,
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for
@@ -1306,8 +1309,6 @@ sn_write_figure_legend <- function(object,
 #' @param return_prompt If \code{TRUE}, return the prompt bundle without calling
 #'   the provider.
 #' @param result_id Stable identifier for the stored interpretation result.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param return_object If \code{TRUE}, return the updated Seurat object.
 #' @param show_progress Logical; if \code{TRUE}, emit step-wise progress logs
 #'   and, when \pkg{cli} is available, a console progress bar while waiting for

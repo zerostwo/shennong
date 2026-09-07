@@ -11,12 +11,16 @@ user request to the right Shennong function family quickly.
    registered runtime/cache payloads report `artifact`; and unknown top-level
    `object@misc` payloads report `unregistered` for manual classification.
 2. Require `schema_version = "2.0.0"`, `result_id`, and `tables$primary` for
-   analytical results.
+   analytical results. Retrieval also requires embedded type/ID identity to
+   match the physical store keys.
 3. Review errors before calling `object <- sn_upgrade_results(object)`.
    Upgrading leaves registered artifacts and unregistered payloads untouched
    and records the source schema version in provenance.
 4. Use table-focused getters for primary-table views and `sn_get_result()`
    when diagnostics, models, warnings, or provenance are needed.
+5. Delete canonical analyses with `sn_delete_result()`. Delete a registered
+   legacy artifact only with `sn_delete_artifact(..., confirm = TRUE)`; never
+   treat an unregistered `object@misc` entry as package-owned.
 
 ## Recipe: Export a Result Bundle candidate
 
@@ -121,7 +125,12 @@ canonical envelope with `sn_get_result()`.
    (`sn_prepare_pixi_environment("scrublet", install_environment = TRUE)`)
    and materializes the retained cells in one pass.
 5. Infer or verify species with `sn_get_species()`.
-6. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
+6. Standardize gene identity before derived analysis. A Seurat feature rename
+   invalidates RNA-derived reductions/graphs/commands; normalize and cluster
+   again afterward.
+7. For SoupX, supply raw droplets for `tod`/soup profiling and filtered cells
+   as `toc`; use explicit `seed` for scoped integer rounding.
+8. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
 ## Recipe: Switch Seurat layer storage backends
 
@@ -164,6 +173,7 @@ canonical envelope with `sn_get_result()`.
    Re-run the returned object with a new
    `resolution` to reuse normalization, feature selection, PCA, neighbors, and
    UMAP while recomputing cluster labels.
+   Prefer one top-level `seed`; it overrides nested workflow seeds and is scoped.
 3. `sn_plot_dim()` for clusters and metadata visualization.
 
 ## Recipe: Integrate multiple samples
@@ -211,7 +221,10 @@ canonical envelope with `sn_get_result()`.
    Use `sn_get_pixi_paths()` to
    inspect where Shennong will create the pixi workspace and
    `sn_list_pixi_environments()` / `sn_get_pixi_config_path()` to inspect bundled
-   configs under `inst/pixi/`. Use
+   configs under `inst/pixi/`. Default to the tested exact Pixi `0.69.0`; any
+   override must name an immutable release, `latest` is rejected, and custom
+   download URLs need a reviewed SHA-256. Package-owned temporary run
+   directories are cleaned after import unless retention is explicit. Use
 	   `integration_control = list(accelerator = "auto", mirror = "auto")` when
 	   CPU/CUDA selection and Shennong-level mirror configuration should be handled
 	   automatically. Set
@@ -272,7 +285,9 @@ canonical envelope with `sn_get_result()`.
 1. If enriching stored DE on a Seurat object, use `sn_run_enrichment(x = object, source_de_result_id = ...)`.
 2. For grouped ORA, use `gene_clusters = gene ~ cluster`, set
    `analysis = "ora"`, and pass the genes that were actually tested as
-   `universe`; otherwise clusterProfiler uses every annotated database gene.
+   `universe`. For stored DE, omit both to preserve a multi-level stored group
+   and reconstruct the universe from the stored assay; standalone input cannot
+   reconstruct that background.
 3. For ranked GSEA, use `gene_clusters = gene ~ log2fc` with
    `analysis = "gsea"`. Call `set.seed()` immediately beforehand when the
    validated upstream engine is stochastic. Duplicate gene IDs fail unless an
@@ -285,7 +300,9 @@ canonical envelope with `sn_get_result()`.
 ## Recipe: Analyze standalone bulk transcriptomics
 
 1. Supply a feature-by-sample matrix plus row-named sample metadata, a list
-   containing those objects, or a `SummarizedExperiment`.
+   containing those objects, or a `SummarizedExperiment`. Prefer explicit
+   `list(counts = ...)` or `list(expression = ...)` scale declarations;
+   declared fractional count input fails closed.
 2. Run `sn_assess_bulk_qc()` first and review `tables$samples`,
    `embeddings$pca`, and `tables$correlation`; do not remove a sample solely
    because one automatic outlier flag is true.
@@ -293,17 +310,22 @@ canonical envelope with `sn_get_result()`.
    denominator))`; non-Seurat input selects bulk automatically. Keep
    `method = "auto"` unless the statistical backend is
    prespecified: integer counts choose edgeR, continuous expression chooses
-   limma, and mixed-effects designs choose dream.
-4. Use `sn_score_bulk_pathways()` for sample pathway scores and inspect
+   limma, and mixed-effects designs choose dream. Contrasts must name a
+   categorical variable and observed numerator/denominator; count-scale dream
+   applies TMM before voom weights.
+4. For Seurat pseudobulk, use a raw/corrected count-named layer. DESeq2 requires
+   integers; edgeR/limma allow finite non-negative fractional corrected counts.
+   `subset_levels` requires `subset_by` and observed distinct labels.
+5. Use `sn_score_bulk_pathways()` for sample pathway scores and inspect
    `tables$coverage`. Use `sn_run_wgcna()` for modules/eigengenes and
    sample-level trait associations.
-5. Use `sn_run_survival()` for adjusted Cox models, Kaplan-Meier/log-rank
+6. Use `sn_run_survival()` for adjusted Cox models, Kaplan-Meier/log-rank
    evidence, proportional-hazards checks, concordance, and risk/cumulative
    hazard tables. Define `group_method` and cutpoints before inspecting the
    outcome; use `sn_run_clinical_association()` for other numeric or
    categorical phenotype tests. Retrieve evidence from each returned result's
    named `tables` rather than recomputing statistics inside plotting code.
-6. Use `sn_plot_survival()` with the forest, Kaplan-Meier, risk-table,
+7. Use `sn_plot_survival()` with the forest, Kaplan-Meier, risk-table,
    proportional-hazards, and cumulative-hazard views. A failed feature remains
    in the association table with `status = "error"`; do not silently discard
    it from the analytical report.
@@ -374,6 +396,8 @@ canonical envelope with `sn_get_result()`.
    biological-sample LR expression rather than cell counts. Inspect
    `result$tables$sample_evidence`, `condition_comparison`,
    `method_concordance`, and `ligand_targets`.
+   Add `paired_by` only for complete one-sample-per-condition matched units;
+   this enables paired Wilcoxon tests and reports `n_pairs`.
 3. Use `sn_plot_communication()`, `sn_plot_ligand_target()`, and
    `sn_plot_communication_comparison()` for result-aware figures.
 4. Use `sn_run_regulatory_activity(method = "dorothea")` for TF activity and
@@ -386,9 +410,11 @@ canonical envelope with `sn_get_result()`.
 1. Define trustworthy normal cells explicitly, then run
    `sn_run_cnv(reference_cells = ...)` or use `reference_by` plus
    `reference_cat`; do not infer malignancy without an auditable reference.
+   Malignancy center/spread are reference-only and require finite references.
 2. Supply `sample_by` for multi-patient tumors. Review `tables$primary`,
    `chromosome`, `sample_summary`, and `expression_association` before using a
    malignant call or subclone in downstream figures.
+   Set normalized `association_layer` separately from the backend `layer`.
 3. Use `sn_plot_cnv()` for the chromosome, CNV UMAP, malignancy, sample, and
    expression-association views. Retrieve with
    `sn_get_result(object, "cnv", result_id)`.
@@ -408,12 +434,17 @@ canonical envelope with `sn_get_result()`.
    `sn_prepare_pixi_environment("popv", install_environment = TRUE)` and pass
    `backend_control = list(popv = list(methods = ..., hvg = ...))` to tune the
    upstream algorithm set (default: all current PopV algorithms except OnClass).
+   PopV exports raw counts plus only the requested label/batch metadata into a
+   unique package-owned run, checks exact returned cell IDs and score bounds,
+   and cleans successful temporary runs unless `keep_run_dir = TRUE`.
    Reference methods must not be used with badly mismatched tissue/species.
 2. Discover and retrieve the result with
    `sn_list_results(object, type = "annotation")` and
    `sn_get_result(object, "annotation", result_id)`.
 3. Review `sn_review_annotation()` plus the confidence and marker plots before
-   accepting low-margin labels.
+   accepting low-margin labels. Set `confidence_threshold` only after backend-
+   and reference-specific calibration; missing/non-finite scores remain low
+   confidence, not zero-valued evidence.
 4. Use `sn_prepare_annotation_evidence()` when stored DE/enrichment/QC evidence
    is needed for narrative interpretation.
 5. `sn_interpret_annotation()` may explain or rank evidence, but must not
@@ -432,6 +463,9 @@ canonical envelope with `sn_get_result()`.
 3. Inspect per-lineage pseudotime and probabilities with
    `sn_plot_pseudotime()` and `sn_plot_lineage_probability()` rather than using
    only the primary-lineage metadata shortcut.
+   Multi-lineage adapters require explicit weights, and positive weights require
+   finite pseudotime; direct Monocle 3 uses UMAP and rejects unsupported
+   terminal/partition semantics.
 4. For a formal tradeSeq analysis, supply `dynamic_features`, verify
    `tables$convergence`, and use BH-adjusted values from `dynamic_genes` and
    `branch_genes`.
@@ -448,10 +482,16 @@ canonical envelope with `sn_get_result()`.
    when a versioned regulator-target GRN is part of the model.
 2. Review velocity confidence, projected vectors, and transition edges. A
    visually smooth arrow field is not sufficient evidence by itself.
+   The default managed run intentionally retains its owned H5AD because the
+   downstream CellRank fate workflow consumes it. Set `keep_run_dir = FALSE`
+   only when no fate analysis is needed; an explicit output path is treated as
+   a parent and is never recursively owned or deleted.
 3. Run `sn_run_fate(result_id = ...)` so CellRank consumes the retained
    scVelo or RegVelo H5AD transition evidence. Use the stability terminal-state rule by
    default; set `terminal_method = "top_n"` or `terminal_states` only with a
    documented biological rationale.
+   Fate cells, states, terminal states, and probability sums are validated;
+   package-owned temporary fate runs are cleaned unless retention is explicit.
 4. Retrieve `velocity` and `fate` results separately with `sn_get_result()`;
    plot them with `sn_plot_velocity()` and `sn_plot_fate()`.
 
@@ -485,16 +525,19 @@ canonical envelope with `sn_get_result()`.
 
 ## Recipe: Run a spatial analysis
 
-1. Put two finite coordinate columns in metadata or pass `spatial_cols`.
+1. Put two finite coordinate columns in metadata or pass `spatial_cols`; use
+   `sample_by` so graphs, permutations, and distances cannot cross sections.
 2. Start with `sn_find_spatial_features(method = "morans_i")` and inspect the
-   permutation null; use nnSVG when its Gaussian-process model is required.
+   permutation null centered on its empirical mean; use nnSVG when its
+   Gaussian-process model is required.
 3. Use `sn_find_spatial_domains(method = "banksy")` when BANKSY is installed,
    or pass an explicit result from stLearn, BayesSpace, or CellCharter.
 4. Use `sn_run_spatial_neighborhood(group_by = ...)` to retain the graph,
    permutation enrichment, and distance-bin co-occurrence together.
 5. Run ordinary communication first, then call
    `sn_run_spatial_communication()` to add proximity evidence. Do not interpret
-   proximity as ligand-receptor evidence by itself.
+   proximity as ligand-receptor evidence by itself. Sample-tagged interaction
+   rows are matched by source/target/sample; `max_distance` must be non-negative.
 
 ## Recipe: Reuse stored results
 
@@ -518,10 +561,18 @@ canonical envelope with `sn_get_result()`.
 
 ## Recipe: Bulk deconvolution from single-cell reference
 
-1. Prepare or choose reference labels in the Seurat object.
-2. Run `sn_run_bulk_deconvolution()`.
-3. Store results with `sn_store_deconvolution()`.
-4. Retrieve later with `sn_get_deconvolution_result()`.
+1. Prepare or choose non-empty reference labels in the Seurat object and keep
+   auditable gene identifiers. BayesPrism requires integer-like raw counts for
+   both reference and mixture. CIBERSORTx accepts raw counts or non-log linear
+   expression, but both inputs must use the same detected scale.
+2. Run `sn_run_bulk_deconvolution()`. A supplied `outdir` is a parent: each run
+   gets its own marked child directory, while the default temporary child is
+   cleaned after success. CIBERSORTx credentials are transported through an
+   ephemeral read-only secret file and are never stored in command provenance.
+3. Review `scale_provenance` and the standardized
+   `sample`/`cell_type`/`fraction` primary table before interpretation.
+4. Store externally imported results with `sn_store_deconvolution()` and
+   retrieve later with `sn_get_deconvolution_result()`.
 
 ## Recipe: Initialize a governed project
 

@@ -61,6 +61,76 @@ test_that("external GRN activity is standardized and retained", {
   }
 })
 
+test_that("fallback GRN activity preserves signed edge weights", {
+  expression <- Matrix::Matrix(
+    matrix(
+      c(10, 0, 0, 10),
+      nrow = 2,
+      dimnames = list(c("G2", "G3"), c("cell1", "cell2"))
+    ),
+    sparse = TRUE
+  )
+  regulons <- tibble::tibble(
+    regulon = "G1", regulator = "G1", target = c("G2", "G3"),
+    weight = c(1, -1), rank = 1:2
+  )
+
+  scores <- Shennong:::.sn_score_grn_weighted_mean(expression, regulons)
+
+  expect_equal(as.numeric(scores["G1", ]), c(5, -5))
+})
+
+test_that("GRN backend seeds do not change caller RNG state", {
+  set.seed(102)
+  before <- .Random.seed
+  first <- Shennong:::.sn_with_seed(7, runif(4))
+  second <- Shennong:::.sn_with_seed(7, runif(4))
+  expect_equal(first, second)
+  expect_identical(.Random.seed, before)
+})
+
+test_that("signed GRNs fail clearly for every unweighted scoring fallback", {
+  object <- make_grn_test_object()
+  output <- list(edges = tibble::tibble(
+    regulator = "G1", target_gene = c("G2", "G3"), importance = c(1, -1)
+  ))
+  for (activity_method in c("mean", "ucell")) {
+    expect_error(
+      sn_run_grn(
+        object, backend_control = list(result = output, activity_method = activity_method),
+        return_object = FALSE
+      ),
+      "Signed GRN edges require.*weighted_mean"
+    )
+  }
+})
+
+test_that("GRN metadata names are unique and retain a regulon mapping", {
+  object <- make_grn_test_object()
+  object$collision_A_B <- seq_len(ncol(object))
+  output <- list(
+    edges = tibble::tibble(
+      regulator = c("A-B", "A B"), target_gene = c("G2", "G3"),
+      importance = c(1, 1)
+    ),
+    activity = transform(
+      expand.grid(cell_id = colnames(object), tf = c("A-B", "A B"), stringsAsFactors = FALSE),
+      auc = seq_len(2L * ncol(object)) / 100
+    )
+  )
+  updated <- sn_run_grn(
+    object, method = "pyscenic", result_id = "collision",
+    backend_control = list(result = output)
+  )
+  result <- sn_get_result(updated, "grn", "collision")
+  mapping <- result$tables$regulon_metadata_columns
+
+  expect_setequal(mapping$regulon, c("A-B", "A B"))
+  expect_false(anyDuplicated(mapping$metadata_column) > 0L)
+  expect_false("collision_A_B" %in% mapping$metadata_column)
+  expect_true(all(mapping$metadata_column %in% colnames(updated[[]])))
+})
+
 test_that("GRN runners receive explicit backend context", {
   object <- make_grn_test_object()
   runner <- function(object, method, assay, layer, regulators, group_by, backend_control) {

@@ -63,6 +63,8 @@ test_that("unified CNV workflow stores malignancy, subclones, and sample evidenc
   expect_true(any(result$tables$primary$malignant_call == "malignant"))
   expect_true(all(result$tables$primary$malignant_call[result$tables$primary$is_reference] == "reference"))
   expect_true(all(c("tumor_cnv_cnv_score", "tumor_cnv_malignant_score") %in% colnames(updated[[]])))
+  expect_identical(result$input$layer, "data")
+  expect_identical(result$input$association_layer, "data")
   expect_gt(nrow(result$tables$expression_association), 0L)
 })
 
@@ -74,6 +76,8 @@ test_that("CopyKAT predictions override threshold calls without requiring packag
       ifelse(seq_along(colnames(object)) > 24, "aneuploid", "diploid"),
       colnames(object)
     )
+    result$scores[[13]] <- NA_real_
+    result$prediction[[13]] <- NA_character_
     result
   }
   result <- sn_run_cnv(
@@ -81,7 +85,21 @@ test_that("CopyKAT predictions override threshold calls without requiring packag
     sample_by = "sample", backend_control = list(runner = runner), return_object = FALSE
   )
   expect_true(all(result$tables$primary$malignant_call[25:48] == "malignant"))
-  expect_true(all(result$tables$primary$malignant_call[13:24] == "non_malignant"))
+  expect_identical(result$tables$primary$malignant_call[[13]], "unknown")
+  expect_true(all(result$tables$primary$malignant_call[14:24] == "non_malignant"))
+})
+
+test_that("CNV fallback subclones tolerate incomplete chromosome evidence", {
+  calls <- stats::setNames(c("malignant", "malignant", "reference"), c("c1", "c2", "c3"))
+  chromosomes <- tibble::tibble(cell = "c1", chromosome = "chr1", cnv = 0.5)
+
+  subclones <- Shennong:::.sn_cnv_subclones(chromosomes, calls, k = 2L)
+
+  expect_identical(unname(subclones[c("c1", "c2", "c3")]), c("subclone_1", NA, "reference"))
+  expect_error(
+    Shennong:::.sn_cnv_subclones(chromosomes, calls, k = 0),
+    "positive integer"
+  )
 })
 
 test_that("CNV plots cover chromosome, embedding, score, sample, and expression evidence", {
@@ -102,12 +120,13 @@ test_that("unified CNV entry imports real inferCNVpy adapter artifacts", {
   result <- testthat::with_mocked_bindings(
     sn_run_cnv(
       object, method = "infercnvpy", reference_by = "reference", reference_cat = "normal",
-      sample_by = "sample", layer = "counts", association_features = 8,
+      layer = "data", association_features = 8,
       backend_control = list(runtime_dir = tempfile("unified-infercnvpy-"), install_pixi = FALSE),
       return_object = FALSE
     ),
     .sn_execute_infercnvpy_pixi = function(script, input_dir, output_dir, config_path, ...) {
       obs <- utils::read.csv(file.path(input_dir, "obs.csv"), stringsAsFactors = FALSE)
+      features <- utils::read.csv(file.path(input_dir, "var.csv"), stringsAsFactors = FALSE)$feature_id
       cells <- obs$cell_id
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       metadata <- data.frame(
@@ -122,7 +141,16 @@ test_that("unified CNV entry imports real inferCNVpy adapter artifacts", {
       utils::write.csv(chromosome, file.path(output_dir, "cnv_chromosome.csv"))
       umap <- data.frame(x = seq_along(cells), y = rev(seq_along(cells)), row.names = cells)
       utils::write.csv(umap, file.path(output_dir, "cnv_umap.csv"))
-      jsonlite::write_json(list(method = "infercnvpy"), file.path(output_dir, "manifest.json"), auto_unbox = TRUE)
+      jsonlite::write_json(
+        list(
+          method = "infercnvpy",
+          n_cells = length(cells),
+          input_n_features = length(features),
+          n_features = length(features)
+        ),
+        file.path(output_dir, "manifest.json"),
+        auto_unbox = TRUE
+      )
     },
     .package = "Shennong"
   )
@@ -132,11 +160,126 @@ test_that("unified CNV entry imports real inferCNVpy adapter artifacts", {
   expect_equal(result$diagnostics$finite_scores, ncol(object))
 })
 
+test_that("direct inferCNVpy failures preserve an explicit parent and sanitize only the owned child", {
+  object <- make_cnv_metabolism_object()
+  output_parent <- tempfile("infercnvpy-failure-parent-")
+  dir.create(output_parent)
+  writeLines("keep", file.path(output_parent, "user-sentinel.txt"))
+  withr::defer(unlink(output_parent, recursive = TRUE, force = TRUE))
+  captured_run <- NULL
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      sn_run_infercnvpy(
+        object,
+        layer = "data",
+        reference_by = "reference",
+        reference_cat = "normal",
+        output_dir = output_parent,
+        keep_run_dir = FALSE,
+        install_pixi = FALSE
+      ),
+      .sn_execute_infercnvpy_pixi = function(input_dir, ...) {
+        captured_run <<- dirname(input_dir)
+        stop("infercnvpy backend failed")
+      },
+      .package = "Shennong"
+    ),
+    "infercnvpy backend failed.*Sanitized diagnostics remain"
+  )
+
+  expect_false(identical(normalizePath(captured_run), normalizePath(output_parent)))
+  expect_identical(dirname(normalizePath(captured_run)), normalizePath(output_parent))
+  expect_true(dir.exists(output_parent))
+  expect_identical(readLines(file.path(output_parent, "user-sentinel.txt")), "keep")
+  expect_true(file.exists(file.path(captured_run, "failure.json")))
+  expect_false(dir.exists(file.path(captured_run, "input")))
+})
+
 test_that("CNV reference definitions are validated", {
   object <- make_cnv_metabolism_object()
   expect_error(sn_run_cnv(object, reference_cells = "missing"), "absent")
   expect_error(sn_run_cnv(object, reference_by = "reference"), "reference_cat")
   expect_error(sn_run_cnv(object), "Supply at least one")
+
+  object$sample[[1]] <- NA_character_
+  expect_error(
+    sn_run_cnv(
+      object, reference_cells = colnames(object)[1:12], sample_by = "sample",
+      backend_control = list(runner = mock_cnv_backend)
+    ),
+    "missing or empty"
+  )
+})
+
+test_that("CNV reference scale never borrows variation from query cells", {
+  expect_error(
+    Shennong:::.sn_cnv_malignancy(c(ref = 0.1, query = 2), "ref"),
+    "At least two"
+  )
+  expect_error(
+    Shennong:::.sn_cnv_malignancy(
+      c(ref1 = 0.1, ref2 = 0.1, query = 2), c("ref1", "ref2")
+    ),
+    "query cells are never used"
+  )
+})
+
+test_that("built-in CNV backends fail closed for unsupported sample contracts", {
+  object <- make_cnv_metabolism_object()
+  expect_error(
+    sn_run_cnv(
+      object, method = "infercnvpy", reference_cells = colnames(object)[1:12],
+      sample_by = "sample"
+    ),
+    "one biological sample at a time"
+  )
+  expect_error(
+    sn_run_cnv(
+      object, method = "copykat", reference_cells = colnames(object)[1:6],
+      sample_by = "sample"
+    ),
+    "reference cells within every"
+  )
+})
+
+test_that("non-finite CNV evidence remains unknown rather than non-malignant", {
+  scores <- c(ref1 = 0.1, ref2 = 0.2, query1 = NA_real_, query2 = Inf, query3 = 5)
+  malignancy <- Shennong:::.sn_cnv_malignancy(
+    scores, reference_cells = c("ref1", "ref2"), threshold = 2
+  )
+  calls <- malignancy$call
+
+  expect_identical(unname(calls[c("query1", "query2")]), c("unknown", "unknown"))
+  expect_identical(calls[["query3"]], "malignant")
+  expect_true(all(calls[c("ref1", "ref2")] == "reference"))
+
+  summary <- Shennong:::.sn_cnv_sample_summary(tibble::tibble(
+    sample = rep("S1", length(calls)), cnv_score = unname(scores),
+    malignant_score = unname(malignancy$score),
+    malignant_call = unname(malignancy$call)
+  ))
+  expect_equal(summary$unknown_fraction, 2 / 5)
+  expect_equal(summary$classified_cells, 1L)
+  expect_equal(summary$classified_malignant_fraction, 1)
+})
+
+test_that("CopyKAT dense conversion fails before exceeding its memory budget", {
+  oversized <- Matrix::sparseMatrix(
+    i = integer(), j = integer(), dims = c(20000L, 20000L)
+  )
+  expect_error(
+    Shennong:::.sn_cnv_as_dense_matrix(oversized, max_dense_gb = 2),
+    "exceeding `max_dense_gb"
+  )
+  expect_error(
+    Shennong:::.sn_cnv_as_dense_matrix(Matrix::Matrix(0, 2, 2), max_dense_gb = -1),
+    "positive finite"
+  )
+  expect_equal(
+    Shennong:::.sn_cnv_as_dense_matrix(Matrix::Diagonal(2), max_dense_gb = 0.01),
+    diag(2)
+  )
 })
 
 test_that("curated metabolism workflow preserves samples as inferential units", {

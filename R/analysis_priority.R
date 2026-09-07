@@ -16,13 +16,14 @@
     sample_ids <- unique(as.character(samples))
     return(lapply(sample_ids, function(sample) which(as.character(samples) == sample)))
   }
-  set.seed(seed)
-  assignments <- integer(length(labels))
-  for (level in unique(labels)) {
-    indices <- which(labels == level)
-    assignments[indices] <- sample(rep(seq_len(folds), length.out = length(indices)))
-  }
-  split(seq_along(labels), assignments)
+  .sn_with_seed(seed, {
+    assignments <- integer(length(labels))
+    for (level in unique(labels)) {
+      indices <- which(labels == level)
+      assignments[indices] <- sample(rep(seq_len(folds), length.out = length(indices)))
+    }
+    split(seq_along(labels), assignments)
+  })
 }
 
 .sn_centroid_predictions <- function(expression, labels, folds, positive) {
@@ -89,8 +90,8 @@
   cell_rows <- list()
   sample_rows <- list()
   null_rows <- list()
-  set.seed(seed)
-  for (state in states) {
+  .sn_with_seed(seed, {
+    for (state in states) {
     indices <- which(as.character(metadata[[state_by]]) == state & labels_all %in% contrast)
     if (length(indices) > max_cells_per_state) {
       by_label <- split(indices, labels_all[indices])
@@ -159,17 +160,18 @@
   if (nrow(ranking) == 0L) stop("No state retained enough cells from both phenotype groups.", call. = FALSE)
   ranking$adjusted_p_value <- stats::p.adjust(ranking$p_value, method = "BH")
   ranking <- ranking[order(ranking$priority_score, decreasing = TRUE), , drop = FALSE]
-  list(
-    ranking = ranking,
-    cells = dplyr::bind_rows(cell_rows),
-    samples = dplyr::bind_rows(sample_rows),
-    null = dplyr::bind_rows(null_rows),
-    assay = expression$assay,
-    layer = expression$layer,
-    contrast = contrast,
-    features = features,
-    warnings = character()
-  )
+    list(
+      ranking = ranking,
+      cells = dplyr::bind_rows(cell_rows),
+      samples = dplyr::bind_rows(sample_rows),
+      null = dplyr::bind_rows(null_rows),
+      assay = expression$assay,
+      layer = expression$layer,
+      contrast = contrast,
+      features = features,
+      warnings = character()
+    )
+  })
 }
 
 .sn_priority_rareq <- function(object,
@@ -698,90 +700,91 @@
   fit <- backend_control$result
   if (is_null(fit)) {
     check_installed("Scissor", reason = "to run phenotype-guided Scissor selection.")
-    set.seed(preprocessing_seed)
-    selected_expression <- aligned$expression$matrix
-    placeholder_counts <- Matrix::sparseMatrix(
-      i = integer(),
-      j = integer(),
-      x = numeric(),
-      dims = dim(selected_expression),
-      dimnames = dimnames(selected_expression)
-    )
-    working <- SeuratObject::CreateSeuratObject(
-      counts = placeholder_counts,
-      meta.data = metadata
-    )
-    suppressWarnings(
-      working[["RNA"]] <- SeuratObject::CreateAssayObject(counts = placeholder_counts)
-    )
-    SeuratObject::LayerData(working[["RNA"]], layer = "data") <- selected_expression
-
-    expression_mean <- Matrix::rowMeans(selected_expression)
-    expression_variance <- Matrix::rowMeans(selected_expression ^ 2) - expression_mean ^ 2
-    usable_features <- which(is.finite(expression_variance) &
-      expression_variance > sqrt(.Machine$double.eps))
-    if (length(usable_features) < 2L) {
-      stop(
-        "The selected Scissor expression layer requires at least two variable features.",
-        call. = FALSE
+    fit <- .sn_with_seed(preprocessing_seed, {
+      selected_expression <- aligned$expression$matrix
+      placeholder_counts <- Matrix::sparseMatrix(
+        i = integer(),
+        j = integer(),
+        x = numeric(),
+        dims = dim(selected_expression),
+        dimnames = dimnames(selected_expression)
       )
-    }
-    feature_order <- usable_features[
-      order(expression_variance[usable_features], decreasing = TRUE)
-    ]
-    feature_order <- utils::head(
-      feature_order,
-      min(backend_control$nfeatures %||% 2000L, length(feature_order))
-    )
-    variable_features <- rownames(selected_expression)[feature_order]
-    SeuratObject::VariableFeatures(working) <- variable_features
-    working <- .sn_with_default_seurat_acceleration(
-      Seurat::ScaleData(
-        working,
-        features = variable_features,
-        verbose = FALSE
-      ),
-      object = working,
-      assay = "RNA"
-    )
-    npcs <- min(
-      backend_control$npcs %||% 20L,
-      length(variable_features),
-      ncol(working) - 1L
-    )
-    if (npcs < 2L) stop("Scissor requires at least two usable PCA dimensions.", call. = FALSE)
-    working <- .sn_with_default_seurat_acceleration(
-      suppressWarnings(Seurat::RunPCA(
-        working,
-        features = variable_features,
-        npcs = npcs,
-        verbose = FALSE
-      )),
-      object = working,
-      assay = "RNA"
-    )
-    working <- Seurat::FindNeighbors(
-      working,
-      dims = seq_len(min(10L, npcs)),
-      verbose = FALSE
-    )
-    runner <- backend_control$runner %||% Scissor::Scissor
-    fit <- withCallingHandlers(
-      runner(
-        bulk_dataset = aligned$bulk_expression,
-        sc_dataset = working,
-        phenotype = aligned$phenotype,
-        tag = aligned$tag,
-        alpha = alpha,
-        cutoff = cutoff,
-        family = family,
-        Save_file = save_file
-      ),
-      warning = function(warning) {
-        backend_warnings <<- c(backend_warnings, conditionMessage(warning))
-        invokeRestart("muffleWarning")
+      working <- SeuratObject::CreateSeuratObject(
+        counts = placeholder_counts,
+        meta.data = metadata
+      )
+      suppressWarnings(
+        working[["RNA"]] <- SeuratObject::CreateAssayObject(counts = placeholder_counts)
+      )
+      SeuratObject::LayerData(working[["RNA"]], layer = "data") <- selected_expression
+
+      expression_mean <- Matrix::rowMeans(selected_expression)
+      expression_variance <- Matrix::rowMeans(selected_expression ^ 2) - expression_mean ^ 2
+      usable_features <- which(is.finite(expression_variance) &
+        expression_variance > sqrt(.Machine$double.eps))
+      if (length(usable_features) < 2L) {
+        stop(
+          "The selected Scissor expression layer requires at least two variable features.",
+          call. = FALSE
+        )
       }
-    )
+      feature_order <- usable_features[
+        order(expression_variance[usable_features], decreasing = TRUE)
+      ]
+      feature_order <- utils::head(
+        feature_order,
+        min(backend_control$nfeatures %||% 2000L, length(feature_order))
+      )
+      variable_features <- rownames(selected_expression)[feature_order]
+      SeuratObject::VariableFeatures(working) <- variable_features
+      working <- .sn_with_default_seurat_acceleration(
+        Seurat::ScaleData(
+          working,
+          features = variable_features,
+          verbose = FALSE
+        ),
+        object = working,
+        assay = "RNA"
+      )
+      npcs <- min(
+        backend_control$npcs %||% 20L,
+        length(variable_features),
+        ncol(working) - 1L
+      )
+      if (npcs < 2L) stop("Scissor requires at least two usable PCA dimensions.", call. = FALSE)
+      working <- .sn_with_default_seurat_acceleration(
+        suppressWarnings(Seurat::RunPCA(
+          working,
+          features = variable_features,
+          npcs = npcs,
+          verbose = FALSE
+        )),
+        object = working,
+        assay = "RNA"
+      )
+      working <- Seurat::FindNeighbors(
+        working,
+        dims = seq_len(min(10L, npcs)),
+        verbose = FALSE
+      )
+      runner <- backend_control$runner %||% Scissor::Scissor
+      withCallingHandlers(
+        runner(
+          bulk_dataset = aligned$bulk_expression,
+          sc_dataset = working,
+          phenotype = aligned$phenotype,
+          tag = aligned$tag,
+          alpha = alpha,
+          cutoff = cutoff,
+          family = family,
+          Save_file = save_file
+        ),
+        warning = function(warning) {
+          backend_warnings <<- c(backend_warnings, conditionMessage(warning))
+          invokeRestart("muffleWarning")
+        }
+      )
+    })
   }
   if (!is.list(fit) || is_null(fit$Coefs)) {
     stop("The Scissor backend must return a list containing `Coefs`.", call. = FALSE)
@@ -996,8 +999,6 @@
 #' @param bulk_phenotype Bulk phenotype vector or survival matrix for Scissor.
 #' @param family Scissor phenotype family.
 #' @param result_id Stored result name.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param seed Random seed.
 #' @param backend_control Backend-specific options.
 #' @param return_object Return the updated object instead of the result.
@@ -1139,8 +1140,6 @@ sn_prioritize_states <- function(object,
 #' @param phenotype Descriptive label stored with the result.
 #' @param assay,layer Single-cell expression source.
 #' @param result_id Stored result name under `scissor`.
-#' @param result_id Optional explicit result identifier. Overrides
-#'   \code{result_id} when supplied.
 #' @param seed Random seed recorded in provenance.
 #' @param backend_control Direct Scissor controls, or a list containing a
 #'   `scissor` sub-list. Set `reliability = TRUE` to run bootstrap reliability;

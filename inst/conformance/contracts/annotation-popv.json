@@ -239,6 +239,26 @@
       "outside_envelope": "validated by Shennong"
     },
     {
+      "wrapper": "confidence_threshold",
+      "role": "wrapper_only",
+      "upstream": null,
+      "scenarios": [
+        null,
+        0.5
+      ],
+      "wrapper_default": null,
+      "upstream_default": null,
+      "omission_semantics": "backend-specific score validity rules apply",
+      "mapping": "post-import threshold used only to flag low-confidence cells and clusters; it does not alter PopV training or predictions",
+      "supported": {
+        "type": "finite numeric scalar or NULL"
+      },
+      "interactions": [
+        "group_by"
+      ],
+      "outside_envelope": "validated by Shennong"
+    },
+    {
       "wrapper": "assay",
       "role": "input_adapter",
       "upstream": "query_adata.X source layer",

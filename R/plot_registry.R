@@ -307,7 +307,13 @@ sn_list_plot_methods <- function(analysis_type = NULL) {
   if (identical(analysis_type, "annotation")) {
     if (identical(view, "confidence_cluster")) return(call(sn_plot_annotation_confidence, x = result, level = "cluster"))
     if (identical(view, "confidence_cell")) return(call(sn_plot_annotation_confidence, x = result, level = "cell"))
-    if (identical(view, "confusion")) return(call(sn_plot_annotation_confusion, x = result))
+    if (identical(view, "confusion")) {
+      return(call(
+        sn_plot_annotation_confusion,
+        x = source_object %||% result,
+        result_id = result_id %||% "annotation"
+      ))
+    }
     if (is_null(source_object)) stop("The annotation projection view requires Seurat input.", call. = FALSE)
     return(call(sn_plot_reference_projection, object = source_object, result_id = result_id))
   }
@@ -338,8 +344,9 @@ sn_list_plot_methods <- function(analysis_type = NULL) {
   if (identical(analysis_type, "metabolism")) return(call(sn_plot_metabolism, x = result, type = view))
   if (identical(analysis_type, "program_discovery")) return(call(sn_plot_discovered_programs, x = result, type = view))
   if (identical(analysis_type, "program_scoring")) {
-    if (identical(view, "heatmap")) return(call(sn_plot_program_heatmap, x = result, result_id = result_id %||% "default"))
-    return(call(sn_plot_program_activity, x = result, result_id = result_id %||% "default"))
+    plot_input <- source_object %||% result
+    if (identical(view, "heatmap")) return(call(sn_plot_program_heatmap, x = plot_input, result_id = result_id %||% "default"))
+    return(call(sn_plot_program_activity, x = plot_input, result_id = result_id %||% "default"))
   }
   if (identical(analysis_type, "state_priority")) return(call(sn_plot_state_priority, x = result))
   if (identical(analysis_type, "scissor")) return(call(sn_plot_scissor, x = result, type = view))

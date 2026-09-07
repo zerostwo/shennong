@@ -25,7 +25,10 @@ sn_run_enrichment(
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
   outdir = NULL,
-  object = NULL
+  object = NULL,
+  de_p_adjusted_cutoff = 0.05,
+  de_logfc_threshold = 0,
+  de_direction = c("up", "down", "both")
 )
 }
 \arguments{
@@ -68,8 +71,11 @@ is therefore recorded in the conformance contract.}
 used by GSEA.}
 
 \item{universe}{Optional ORA background gene universe in the same symbol
-namespace as \code{x}. For KEGG it is converted to ENTREZID together with the
-query genes. Supplying a universe for GSEA is an error.}
+namespace as \code{x}. Stored-DE ORA defaults to the source result's recorded
+\code{input$tested_features}; only legacy results without that field fall
+back to the source assay feature space. For KEGG the universe is converted
+to ENTREZID together with the query genes. Supplying a universe for GSEA is
+an error.}
 
 \item{min_gs_size, max_gs_size}{Minimum and maximum tested gene-set sizes.}
 
@@ -81,8 +87,9 @@ GSEA results with clusterProfiler 4.20, call \code{set.seed()} immediately befor
 ranked list. The default, \code{"error"}, avoids silent changes. Explicit
 alternatives are \code{"max_abs"}, \code{"max"}, and \code{"mean"}.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Name used when storing the enrichment result on a Seurat
+object. When multiple databases are requested, the database label is
+appended automatically unless a vector of names is supplied.}
 
 \item{source_de_result_id}{Optional stored DE-result name associated with the
 enrichment input.}
@@ -97,6 +104,12 @@ results.}
 is saved as an \code{.rds} file.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
+
+\item{de_p_adjusted_cutoff, de_logfc_threshold}{Significance and absolute
+effect thresholds applied when ORA consumes a stored DE result.}
+
+\item{de_direction}{Direction retained from a stored DE result for ORA:
+\code{"up"}, \code{"down"}, or an explicit \code{"both"}.}
 }
 \value{
 A single \code{clusterProfiler} result, a named list of results when

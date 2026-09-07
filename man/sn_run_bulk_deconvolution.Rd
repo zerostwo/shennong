@@ -16,7 +16,7 @@ sn_run_bulk_deconvolution(
   layer = "counts",
   bulk_gene_axis = c("auto", "rows", "columns"),
   key = NULL,
-  outdir = tempdir(),
+  outdir = NULL,
   prefix = "deconvolution",
   result_id = "default",
   cibersortx_result = NULL,
@@ -36,6 +36,7 @@ sn_run_bulk_deconvolution(
   opt_control = list(),
   n_cores = 1,
   update_gibbs = TRUE,
+  max_dense_gb = 2,
   return_object = TRUE,
   object = NULL
 )
@@ -76,8 +77,8 @@ the reference genes.}
 
 \item{prefix}{Prefix used for exported files and stored result names.}
 
-\item{result_id}{Optional explicit result identifier. Overrides
-\code{result_id} when supplied.}
+\item{result_id}{Stable identifier for the stored deconvolution result
+when \code{x} is a \code{Seurat} object and a fraction table is available.}
 
 \item{cibersortx_result}{Optional path to a completed CIBERSORTx fractions
 result file to import instead of running the local container.}
@@ -116,6 +117,10 @@ signature matrix.}
 \item{n_cores}{Number of cores passed to BayesPrism.}
 
 \item{update_gibbs}{Whether BayesPrism should run the final Gibbs update.}
+
+\item{max_dense_gb}{Maximum estimated size, in GiB, of any expression matrix
+that may be materialized as a dense double matrix. Large sparse inputs fail
+before allocation unless the caller explicitly raises this budget.}
 
 \item{return_object}{If \code{TRUE} and \code{x} is a \code{Seurat} object,
 return the updated object when a result table is available.}

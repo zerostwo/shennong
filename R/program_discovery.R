@@ -11,36 +11,37 @@
 }
 
 .sn_nmf_fit <- function(matrix, rank, seed, max_iter = 200L, tolerance = 1e-5) {
-  set.seed(seed)
-  matrix <- as.matrix(matrix)
-  matrix[!is.finite(matrix)] <- 0
-  if (any(matrix < 0)) stop("NMF requires non-negative expression values.", call. = FALSE)
-  epsilon <- .Machine$double.eps
-  weights <- matrix(stats::runif(nrow(matrix) * rank, min = 0.01, max = 1), nrow = nrow(matrix), ncol = rank)
-  activity <- matrix(stats::runif(rank * ncol(matrix), min = 0.01, max = 1), nrow = rank, ncol = ncol(matrix))
-  previous <- Inf
-  converged <- FALSE
-  iteration <- 0L
-  for (iteration in seq_len(as.integer(max_iter))) {
-    activity <- activity * (crossprod(weights, matrix) / (crossprod(weights, weights) %*% activity + epsilon))
-    weights <- weights * ((matrix %*% t(activity)) / (weights %*% (activity %*% t(activity)) + epsilon))
-    scale <- sqrt(colSums(weights ^ 2))
-    scale[!is.finite(scale) | scale <= epsilon] <- 1
-    weights <- sweep(weights, 2, scale, "/")
-    activity <- sweep(activity, 1, scale, "*")
-    if (iteration == 1L || iteration %% 10L == 0L || iteration == max_iter) {
-      error <- sqrt(sum((matrix - weights %*% activity) ^ 2)) / max(sqrt(sum(matrix ^ 2)), epsilon)
-      if (is.finite(previous) && abs(previous - error) <= tolerance * max(1, previous)) {
-        converged <- TRUE
-        break
+  .sn_with_seed(seed, {
+    matrix <- as.matrix(matrix)
+    matrix[!is.finite(matrix)] <- 0
+    if (any(matrix < 0)) stop("NMF requires non-negative expression values.", call. = FALSE)
+    epsilon <- .Machine$double.eps
+    weights <- matrix(stats::runif(nrow(matrix) * rank, min = 0.01, max = 1), nrow = nrow(matrix), ncol = rank)
+    activity <- matrix(stats::runif(rank * ncol(matrix), min = 0.01, max = 1), nrow = rank, ncol = ncol(matrix))
+    previous <- Inf
+    converged <- FALSE
+    iteration <- 0L
+    for (iteration in seq_len(as.integer(max_iter))) {
+      activity <- activity * (crossprod(weights, matrix) / (crossprod(weights, weights) %*% activity + epsilon))
+      weights <- weights * ((matrix %*% t(activity)) / (weights %*% (activity %*% t(activity)) + epsilon))
+      scale <- sqrt(colSums(weights ^ 2))
+      scale[!is.finite(scale) | scale <= epsilon] <- 1
+      weights <- sweep(weights, 2, scale, "/")
+      activity <- sweep(activity, 1, scale, "*")
+      if (iteration == 1L || iteration %% 10L == 0L || iteration == max_iter) {
+        error <- sqrt(sum((matrix - weights %*% activity) ^ 2)) / max(sqrt(sum(matrix ^ 2)), epsilon)
+        if (is.finite(previous) && abs(previous - error) <= tolerance * max(1, previous)) {
+          converged <- TRUE
+          break
+        }
+        previous <- error
       }
-      previous <- error
     }
-  }
-  error <- sqrt(sum((matrix - weights %*% activity) ^ 2)) / max(sqrt(sum(matrix ^ 2)), epsilon)
-  rownames(weights) <- rownames(matrix)
-  colnames(activity) <- colnames(matrix)
-  list(weights = weights, activity = activity, error = error, iterations = iteration, converged = converged, seed = seed)
+    error <- sqrt(sum((matrix - weights %*% activity) ^ 2)) / max(sqrt(sum(matrix ^ 2)), epsilon)
+    rownames(weights) <- rownames(matrix)
+    colnames(activity) <- colnames(matrix)
+    list(weights = weights, activity = activity, error = error, iterations = iteration, converged = converged, seed = seed)
+  })
 }
 
 .sn_nmf_stability <- function(best, fits) {

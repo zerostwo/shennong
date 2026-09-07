@@ -1,13 +1,13 @@
 [
   {
-    "name": "morans_i", "task": "spatial_svg", "runtime": "pixi", "package": "Shennong", "environment": "squidpy",
+    "name": "morans_i", "task": "spatial_svg", "runtime": "r", "package": "Shennong",
     "implemented": true, "default": true,
-    "description": "Moran's I spatial-autocorrelation testing through Squidpy.",
+    "description": "Native R Moran's I spatial-autocorrelation testing on the Shennong spatial graph.",
     "input_requirements": ["spatial coordinates", "expression", "spatial graph"],
     "outputs": ["SVG table", "spatial statistics", "graph artifacts"],
     "supports": {"visium": true, "single_cell": true},
-    "cpu_gpu": "CPU", "install": "sn_prepare_pixi_environment('squidpy', install_environment = TRUE)",
-    "citation": "Palla et al. Nature Methods 2022"
+    "cpu_gpu": "CPU", "install": "No additional dependency.",
+    "citation": "Moran. Biometrika 1950"
   },
   {
     "name": "nnsvg", "task": "spatial_svg", "runtime": "r", "package": "nnSVG",
@@ -20,7 +20,7 @@
     "citation": "Weber et al. Nature Communications 2023"
   },
   {
-    "name": "banksy", "task": "spatial_domain", "runtime": "r", "package": "BANKSY",
+    "name": "banksy", "task": "spatial_domain", "runtime": "r", "package": "Banksy",
     "implemented": true, "default": true,
     "description": "Spatial-domain identification with BANKSY neighborhood features.",
     "input_requirements": ["counts", "spatial coordinates"],
@@ -30,13 +30,13 @@
     "citation": "Singhal et al. Nature Genetics 2024"
   },
   {
-    "name": "stlearn", "task": "spatial_domain", "runtime": "pixi", "package": "Shennong", "environment": "stlearn",
-    "implemented": true, "default": false,
-    "description": "Spatial-domain and morphology-aware workflows through stLearn.",
-    "input_requirements": ["expression", "spatial coordinates", "optional image"],
-    "outputs": ["domains", "spatial embedding", "backend artifacts"],
-    "supports": {"image": true},
-    "cpu_gpu": "CPU or GPU", "install": "sn_prepare_pixi_environment('stlearn', install_environment = TRUE)",
+    "name": "stlearn", "task": "spatial_domain", "runtime": "external", "package": "Shennong",
+    "implemented": false, "default": false,
+    "description": "Roadmap entry for a future faithful upstream stLearn spatial-domain workflow.",
+    "input_requirements": ["faithful stLearn workflow not yet admitted"],
+    "outputs": ["none until the backend is implemented and admitted"],
+    "supports": {"image": true, "external_runner": false},
+    "cpu_gpu": "CPU or GPU", "install": "Not available: the public entry point intentionally fails closed.",
     "citation": "Pham et al. bioRxiv 2020"
   },
   {
