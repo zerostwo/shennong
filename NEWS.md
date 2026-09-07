@@ -116,8 +116,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Made publication PDF export independent of Cairo/XQuartz by using base R's
   cross-platform PDF device. Figure bundles now retain the same PDF contract on
-  headless macOS runners, and backend resource-accounting tests fully isolate
-  the process-execution boundary instead of invoking Pixi accidentally.
+  headless macOS runners. SVG export now fails before drawing with an actionable
+  message when the optional `svglite` package is unavailable, and
+  backend resource-accounting tests fully isolate the process-execution
+  boundary instead of invoking Pixi accidentally.
 
 - Closed Windows runtime and test-contract gaps found by the full CI matrix.
   Managed Pixi calls now apply `PIXI_HOME` portably, generated rare-cell Python

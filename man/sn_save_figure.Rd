@@ -42,3 +42,8 @@ The normalized output path, invisibly.
 \description{
 Save a publication figure with deterministic dimensions
 }
+\details{
+SVG export uses the optional \pkg{svglite} package. If it is not
+installed, the function fails before drawing with an actionable dependency
+message instead of relying on a platform-specific X11/Cairo device.
+}

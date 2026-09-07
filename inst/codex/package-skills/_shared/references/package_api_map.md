@@ -352,8 +352,9 @@ Runtime reference datasets:
 - `sn_apply_figure_profile()`: attach profile styling/specification while
   preserving the native ggplot/patchwork class
 - `sn_validate_figure()`: structured preflight checks and suggested actions
-- `sn_save_figure()` / `sn_export_figure()`: deterministic PDF, SVG, TIFF, or
-  PNG output independent of the interactive device
+- `sn_save_figure()` / `sn_export_figure()`: deterministic PDF, SVG (with the
+  optional `svglite` package), TIFF, or PNG output independent of the
+  interactive device
 - `sn_export_figure_bundle()`: figures plus available source data, spec,
   session, checksums, validation, and JSON manifest
 - `sn_list_plot_methods()` / `sn_plot_result()`: canonical discovery and

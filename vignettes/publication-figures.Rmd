@@ -93,7 +93,10 @@ still required.
 ## Deterministic export
 
 `sn_save_figure()` supports PDF, SVG, TIFF, and PNG without depending on the
-current RStudio graphics device. Explicit dimensions override automatic values.
+current RStudio graphics device. PDF uses base R's portable device. SVG uses
+the optional `svglite` package rather than a platform-specific X11/Cairo
+device; when it is unavailable, Shennong stops before drawing with an
+actionable dependency message. Explicit dimensions override automatic values.
 
 ```{r save}
 figure_dir <- file.path(tempdir(), "shennong-real-figures")

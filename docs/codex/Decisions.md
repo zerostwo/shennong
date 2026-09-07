@@ -1791,8 +1791,11 @@ Last updated: 2026-09-06
 - Publication PDF export uses base R's `pdf()` device rather than
   `cairo_pdf()`. The package contract requires a valid vector PDF, while a hard
   Cairo/XQuartz dependency makes that contract fail on otherwise supported
-  headless macOS installations. Tests of process accounting mock both runtime
-  discovery and execution so platform binaries cannot leak into unit tests.
+  headless macOS installations. SVG requires the optional `svglite` package;
+  an installation without it receives an early dependency error instead of
+  falling through to a platform-specific X11/Cairo device and then reporting a
+  missing output file. Tests of process accounting mock both runtime discovery and
+  execution so platform binaries cannot leak into unit tests.
 - Native paths are normalized to forward-slash form at stored-artifact and
   owned-run boundaries. Generated Python source uses JSON string literals, not
   shell quoting, because Windows backslashes are otherwise interpreted as

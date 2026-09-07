@@ -8,11 +8,19 @@
 .sn_figure_device <- function(extension) {
   switch(extension,
     pdf = grDevices::pdf,
-    svg = if (requireNamespace("svglite", quietly = TRUE)) svglite::svglite else grDevices::svg,
+    svg = .sn_figure_svg_device(),
     png = "png",
     tiff = "tiff",
     tif = "tiff",
     stop("Unsupported figure format '.", extension, "'. Use PDF, SVG, TIFF, or PNG.", call. = FALSE)
+  )
+}
+
+.sn_figure_svg_device <- function() {
+  if (requireNamespace("svglite", quietly = TRUE)) return(svglite::svglite)
+  stop(
+    "SVG export requires the optional `svglite` package.",
+    call. = FALSE
   )
 }
 
@@ -21,8 +29,7 @@
   height <- height_mm / 25.4
   if (extension == "pdf") grDevices::pdf(filename, width = width, height = height, bg = background)
   else if (extension == "svg") {
-    if (requireNamespace("svglite", quietly = TRUE)) svglite::svglite(filename, width = width, height = height, bg = background)
-    else grDevices::svg(filename, width = width, height = height, bg = background)
+    .sn_figure_svg_device()(filename, width = width, height = height, bg = background)
   } else if (extension %in% c("tif", "tiff")) grDevices::tiff(filename, width = width, height = height, units = "in", res = dpi, bg = background, compression = "lzw")
   else grDevices::png(filename, width = width, height = height, units = "in", res = dpi, bg = background)
   on.exit(grDevices::dev.off(), add = TRUE)
@@ -91,6 +98,9 @@ print.sn_figure_validation <- function(x, ...) {
 #' @param background Explicit output background.
 #' @param embed_fonts Use Cairo PDF output for embedded/subsettable fonts.
 #' @param validate Run figure QA before saving.
+#' @details SVG export uses the optional \pkg{svglite} package. If it is not
+#'   installed, the function fails before drawing with an actionable dependency
+#'   message instead of relying on a platform-specific X11/Cairo device.
 #' @return The normalized output path, invisibly.
 #' @export
 sn_save_figure <- function(plot, filename, profile = NULL, width = "auto", height = "auto",

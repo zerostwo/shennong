@@ -338,9 +338,9 @@ canonical envelope with `sn_get_result()`.
 2. Run `sn_validate_figure()` and resolve category/legend overload, long labels,
    small panels, pagination, low raster DPI, or dense-network warnings. Treat
    this as preflight evidence, not a substitute for visual review.
-3. Use `sn_save_figure()` for deterministic PDF, SVG, TIFF, or PNG output.
-   Keep automatic dimensions unless a verified author guideline requires an
-   explicit override.
+3. Use `sn_save_figure()` for deterministic PDF, SVG, TIFF, or PNG output. SVG
+   requires the optional `svglite` package. Keep automatic dimensions unless a
+   verified author guideline requires an explicit override.
 4. Use `sn_export_figure_bundle()` for deliverables that need the rendered
    figure, source data, figure spec, session information, file checksums, and a
    JSON manifest together.

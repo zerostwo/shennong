@@ -64,15 +64,23 @@ test_that("figure validation predicts category, label, and network overload", {
   expect_true(any(grepl("1,000 edges", report$warnings, fixed = TRUE)))
 })
 
-test_that("publication export supports vector and raster formats", {
+test_that("publication export supports available vector and raster devices", {
   expect_identical(Shennong:::.sn_figure_device("pdf"), grDevices::pdf)
   plot <- ggplot2::ggplot(mtcars, ggplot2::aes(.data$wt, .data$mpg)) + ggplot2::geom_point()
   plot <- Shennong:::.sn_attach_figure_spec(plot, "embedding", list(n_points = nrow(mtcars)), source_data = mtcars)
   directory <- withr::local_tempdir()
-  files <- file.path(directory, paste0("figure.", c("pdf", "svg", "png", "tiff")))
+  svg_available <- requireNamespace("svglite", quietly = TRUE)
+  formats <- c("pdf", if (svg_available) "svg", "png", "tiff")
+  files <- file.path(directory, paste0("figure.", formats))
   invisible(lapply(files, function(file) sn_save_figure(plot, file, profile = "single_column")))
   expect_true(all(file.exists(files)))
   expect_true(all(file.info(files)$size > 100))
+  if (!svg_available) {
+    expect_error(
+      sn_save_figure(plot, file.path(directory, "unsupported.svg")),
+      "SVG export requires.*svglite"
+    )
+  }
   expect_error(sn_save_figure(plot, file.path(directory, "bad.jpg")), "Unsupported figure format")
 })
 
