@@ -407,7 +407,7 @@ test_that("CIBERSORTx uses owned unique children and cleans default successful r
   run_dir <- retained$artifacts$run_dir
   second_run_dir <- retained_again$artifacts$run_dir
   expect_false(identical(run_dir, second_run_dir))
-  expect_true(startsWith(run_dir, normalizePath(parent)))
+  expect_true(startsWith(run_dir, normalizePath(parent, winslash = "/")))
   expect_true(Shennong:::.sn_is_owned_run_dir(run_dir))
   expect_identical(readLines(sentinel), "keep")
 

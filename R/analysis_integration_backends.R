@@ -939,7 +939,7 @@
   elapsed_start <- proc.time()[["elapsed"]]
 
   status <- tryCatch(
-    system2(command = command, args = command_args, env = env, stdout = TRUE, stderr = TRUE),
+    .sn_system2_capture(command = command, args = command_args, env = env),
     error = function(e) {
       stop(backend_label, " pixi execution failed. ", conditionMessage(e), call. = FALSE)
     }

@@ -8,29 +8,28 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
-- The complete local test suite passes 5,547 assertions with zero failures,
+- The complete local test suite passes 5,559 assertions with zero failures,
   11 warnings, and one skip. The warnings are explicit compatibility or
-  environment boundaries: one BBKNN/Seurat command-log warning, two Scrublet
-  warnings for ignored scDblFinder-only controls, two scmap warnings from a
-  deliberately underspecified small fixture, one local TMB/glmmTMB version
-  warning, and expected workflow warnings exercised by the tests. The sole
-  skip is an unavailable local public-data figure fixture.
+  environment boundaries: one BBKNN/Seurat command-log warning, seven
+  Scrublet warnings for ignored scDblFinder-only controls, two scmap warnings
+  from a deliberately underspecified small fixture, and one local
+  TMB/glmmTMB version warning. The sole skip is an unavailable local
+  public-data figure fixture.
 - Real backend conformance passes 542 assertions with zero failures, two
   explicit Scrublet parameter-boundary warnings, and no skips. This includes
   direct PopV, Scrublet, clustering, enrichment, pilot, registry, and runtime
   comparisons; it does not imply that every optional method has a live
   upstream oracle.
-- Python runtime/resource contracts pass 286 assertions, the public parameter
+- Python runtime/resource contracts pass 288 assertions, the public parameter
   matrix passes 720 assertions, architecture gates pass six assertions, all
   83 R source files parse, and all packaged Python scripts compile.
-- `R CMD build .` succeeds, including vignettes. With unavailable Suggests
-  permitted, `R CMD check --no-manual` completes with zero errors, zero
-  warnings, and one local NOTE caused by the live `.codegraph/daemon.sock`
-  being represented as an empty hidden directory during the build. The
-  repository already excludes `.codegraph`; a clean checkout has no daemon
-  socket. Its installed-package test phase passes 5,101 assertions with zero
-  failures, 11 warnings, and 20 expected skips for repository-only CI,
-  conformance, real-data, and maintainer resources excluded from source
+- A clean staged `R CMD build` succeeds, including vignettes, and excludes
+  live `.codegraph` sockets and generated `.pixi` environments from the source
+  archive. With unavailable Suggests permitted, `R CMD check --no-manual`
+  completes with zero errors, zero warnings, and zero notes. Its
+  installed-package test phase passes 5,111 assertions with zero failures, 11
+  warnings, and 21 expected skips for repository-only CI, conformance,
+  real-data, platform-shell, and maintainer resources excluded from source
   packages.
 - A complete `pkgdown::build_site()` succeeds, including reference pages,
   affected articles, news, sitemap, redirects, and search index.
@@ -67,6 +66,10 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   embedded newlines. PopV and Scrublet use the same owned-run lifecycle as the
   other Python backends. CIBERSORTx and BayesPrism state and validate their
   expression-scale expectations.
+- Package-owned runtime and artifact paths use a cross-platform normalized
+  representation. Pixi environment variables, generated Python string
+  literals, MCP `Rscript` discovery, publication PDF export, and recursive 10x
+  discovery have explicit Windows/macOS/Linux-safe contracts.
 - The method registry is load-bearing: implemented methods must have an
   admitted machine-readable conformance contract or remain explicitly pending.
   Architecture gates pin export, dependency, maintainer-document, and

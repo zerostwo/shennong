@@ -188,7 +188,8 @@ sn_list_10x_paths <- function(path,
     }
   }
 
-  list.dirs(path = path, recursive = TRUE, full.names = TRUE)
+  directories <- list.dirs(path = path, recursive = TRUE, full.names = TRUE)
+  directories[tolower(basename(directories)) == "outs"]
 }
 
 .sn_select_10x_path <- function(info, path_type = c("outs", "filtered", "raw", "filtered_h5", "raw_h5", "metrics")) {

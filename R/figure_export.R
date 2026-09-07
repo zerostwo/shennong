@@ -7,7 +7,7 @@
 
 .sn_figure_device <- function(extension) {
   switch(extension,
-    pdf = grDevices::cairo_pdf,
+    pdf = grDevices::pdf,
     svg = if (requireNamespace("svglite", quietly = TRUE)) svglite::svglite else grDevices::svg,
     png = "png",
     tiff = "tiff",
@@ -19,7 +19,7 @@
 .sn_save_grid_figure <- function(plot, filename, extension, width_mm, height_mm, dpi, background) {
   width <- width_mm / 25.4
   height <- height_mm / 25.4
-  if (extension == "pdf") grDevices::cairo_pdf(filename, width = width, height = height, bg = background)
+  if (extension == "pdf") grDevices::pdf(filename, width = width, height = height, bg = background)
   else if (extension == "svg") {
     if (requireNamespace("svglite", quietly = TRUE)) svglite::svglite(filename, width = width, height = height, bg = background)
     else grDevices::svg(filename, width = width, height = height, bg = background)

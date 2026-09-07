@@ -379,9 +379,9 @@
     "import sys",
     "import numpy as np",
     "import pandas as pd",
-    sprintf("sys.path.insert(0, %s)", shQuote(dirname(script))),
+    sprintf("sys.path.insert(0, %s)", .sn_python_string_literal(dirname(script))),
     sprintf("import %s as sccad_module", tools::file_path_sans_ext(basename(script))),
-    sprintf("expr = pd.read_csv(%s, index_col=0)", shQuote(expr_path)),
+    sprintf("expr = pd.read_csv(%s, index_col=0)", .sn_python_string_literal(expr_path)),
     "data = expr.to_numpy(dtype=float)",
     "cell_names = expr.index.to_numpy()",
     "gene_names = expr.columns.to_numpy()",
@@ -397,7 +397,7 @@
       as.numeric(merge_h),
       as.numeric(overlap_h),
       if (isTRUE(save_full)) "True" else "False",
-      shQuote(workdir)
+      .sn_python_string_literal(workdir)
     ),
     "def _to_str_list(x):",
     "    out = []",
@@ -417,7 +417,7 @@
     "    'sub_clusters': sub_clusters,",
     "    'degs_list': [[str(g) for g in genes] for genes in degs_list]",
     "}",
-    sprintf("with open(%s, 'w') as handle:", shQuote(output_path)),
+    sprintf("with open(%s, 'w') as handle:", .sn_python_string_literal(output_path)),
     "    json.dump(payload, handle)"
   )
   writeLines(runner_lines, con = runner_path, useBytes = TRUE)
@@ -431,7 +431,7 @@
     )),
     error = function(e) {
       stop(
-        "SCA execution failed. Ensure the Python executable and the `shannonca` package are available. ",
+        "scCAD execution failed. Ensure the Python executable and the scCAD package are available. ",
         conditionMessage(e),
         call. = FALSE
       )
@@ -600,17 +600,17 @@
     "import json",
     "import pandas as pd",
     "from shannonca.dimred import reduce",
-    sprintf("expr = pd.read_csv(%s, index_col=0)", shQuote(expr_path)),
+    sprintf("expr = pd.read_csv(%s, index_col=0)", .sn_python_string_literal(expr_path)),
     "reduction = reduce(",
     "    expr.to_numpy(dtype=float),",
     sprintf("    n_comps=%s,", min(as.integer(n_comps), ncol(expr_df) - 1L)),
     sprintf("    iters=%s,", as.integer(iters)),
     sprintf("    nbhd_size=%s,", as.integer(nbhd_size)),
-    sprintf("    model=%s,", shQuote(model)),
+    sprintf("    model=%s,", .sn_python_string_literal(model)),
     sprintf("    seed=%s", as.integer(seed)),
     ")",
     "payload = {'reduction': reduction.tolist()}",
-    sprintf("with open(%s, 'w') as handle:", shQuote(output_path)),
+    sprintf("with open(%s, 'w') as handle:", .sn_python_string_literal(output_path)),
     "    json.dump(payload, handle)"
   )
   writeLines(runner_lines, con = runner_path, useBytes = TRUE)

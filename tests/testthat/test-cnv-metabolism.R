@@ -188,8 +188,14 @@ test_that("direct inferCNVpy failures preserve an explicit parent and sanitize o
     "infercnvpy backend failed.*Sanitized diagnostics remain"
   )
 
-  expect_false(identical(normalizePath(captured_run), normalizePath(output_parent)))
-  expect_identical(dirname(normalizePath(captured_run)), normalizePath(output_parent))
+  expect_false(identical(
+    normalizePath(captured_run, winslash = "/"),
+    normalizePath(output_parent, winslash = "/")
+  ))
+  expect_identical(
+    dirname(normalizePath(captured_run, winslash = "/")),
+    normalizePath(output_parent, winslash = "/")
+  )
   expect_true(dir.exists(output_parent))
   expect_identical(readLines(file.path(output_parent, "user-sentinel.txt")), "keep")
   expect_true(file.exists(file.path(captured_run, "failure.json")))

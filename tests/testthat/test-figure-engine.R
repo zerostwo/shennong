@@ -65,6 +65,7 @@ test_that("figure validation predicts category, label, and network overload", {
 })
 
 test_that("publication export supports vector and raster formats", {
+  expect_identical(Shennong:::.sn_figure_device("pdf"), grDevices::pdf)
   plot <- ggplot2::ggplot(mtcars, ggplot2::aes(.data$wt, .data$mpg)) + ggplot2::geom_point()
   plot <- Shennong:::.sn_attach_figure_spec(plot, "embedding", list(n_points = nrow(mtcars)), source_data = mtcars)
   directory <- withr::local_tempdir()

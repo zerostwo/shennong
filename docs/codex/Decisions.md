@@ -1788,3 +1788,21 @@ Last updated: 2026-09-06
   action's fallback probe asks pak to resolve all dependencies, including
   intentionally unavailable Suggests, before the requested hard-dependency
   policy can take effect.
+- Publication PDF export uses base R's `pdf()` device rather than
+  `cairo_pdf()`. The package contract requires a valid vector PDF, while a hard
+  Cairo/XQuartz dependency makes that contract fail on otherwise supported
+  headless macOS installations. Tests of process accounting mock both runtime
+  discovery and execution so platform binaries cannot leak into unit tests.
+- Native paths are normalized to forward-slash form at stored-artifact and
+  owned-run boundaries. Generated Python source uses JSON string literals, not
+  shell quoting, because Windows backslashes are otherwise interpreted as
+  Python escapes. Since `system2(env=)` maps to inline shell assignments on
+  Unix but not Windows, the shared process wrapper scopes requested environment
+  variables in the parent R process for the duration of a Windows child call
+  and restores the previous values on exit. Tests that intentionally implement
+  fake executables as POSIX shell scripts are skipped only on Windows; portable
+  package behavior remains covered through process mocks and real Python tests.
+- Hydrated `.pixi` directories are runtime caches, even when Pixi creates them
+  beside a bundled manifest during maintainer tests. They are excluded at both
+  Git and R-build boundaries; the distributable package contains only audited
+  manifests, lockfiles, and runner sources, never a local solver environment.

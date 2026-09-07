@@ -114,6 +114,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Fixed
 
+- Made publication PDF export independent of Cairo/XQuartz by using base R's
+  cross-platform PDF device. Figure bundles now retain the same PDF contract on
+  headless macOS runners, and backend resource-accounting tests fully isolate
+  the process-execution boundary instead of invoking Pixi accidentally.
+
+- Closed Windows runtime and test-contract gaps found by the full CI matrix.
+  Managed Pixi calls now apply `PIXI_HOME` portably, generated rare-cell Python
+  scripts escape native paths as JSON literals, explicit missing Pixi paths do
+  not fall through to unrelated installations, MCP discovery resolves the
+  platform's real `Rscript`, and recursive 10x discovery returns only `outs`
+  directories consistently. Path assertions and Unix shell fixtures are now
+  platform-aware without weakening the package-level contracts.
+
+- Excluded local managed `.pixi` environments from both Git discovery and R
+  source builds. Real-backend tests may hydrate multi-gigabyte environments
+  beside bundled manifests, but only manifests, locks, and runner sources can
+  now enter a package tarball. Build-ignore patterns were also normalized so
+  repository-only dot-directories such as `.codegraph` cannot create package
+  check notes.
+
 - Hardened the statistical contracts identified by the package-wide audit.
   SoupX now estimates contamination from the raw droplet profile and performs
   reproducible scoped rounding; decontX/decontPro restore filtered features;

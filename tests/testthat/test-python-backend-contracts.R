@@ -534,7 +534,10 @@ test_that("Tangram and Squidpy imports retain and require their core artifacts",
       reference = if (identical(method, "tangram")) query else NULL,
       return_object = FALSE
     )
-    expect_identical(unname(imported$imported_artifacts[[field]]), normalizePath(artifact))
+    expect_identical(
+      unname(imported$imported_artifacts[[field]]),
+      normalizePath(artifact, winslash = "/")
+    )
   }
 
   exercise("tangram", "mapping_path", "mapping.csv")
@@ -818,6 +821,13 @@ test_that("scCAD runner serializes rare sets without a generated-script NameErro
   expect_equal(output$scores, 0.9)
 })
 
+test_that("generated Python literals preserve Windows-style paths", {
+  path <- "C:\\Users\\runner\\Shennong run\\input.csv"
+  literal <- Shennong:::.sn_python_string_literal(path)
+  expect_identical(jsonlite::fromJSON(literal), path)
+  expect_match(literal, "\\\\Users", fixed = TRUE)
+})
+
 test_that("scVI-family and direct scPoli export use target-assay raw counts", {
   skip_if_not_installed("SeuratObject")
   object <- .make_python_contract_object()
@@ -946,7 +956,7 @@ test_that("CellPhoneDB artifact manifests accept only standard result tables", {
     list(method = "cellphonedb", result_files = result),
     output_dir
   )
-  expect_identical(unname(artifacts), normalizePath(result))
+  expect_identical(unname(artifacts), normalizePath(result, winslash = "/"))
 })
 
 test_that("temporary Python cleanup is verified before reporting success", {

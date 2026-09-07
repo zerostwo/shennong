@@ -261,8 +261,15 @@
 #' sn_get_mcp_server_config()
 #' @export
 sn_get_mcp_server_config <- function() {
+  rscript <- unname(Sys.which("Rscript"))
+  if (!nzchar(rscript)) {
+    rscript <- file.path(
+      R.home("bin"),
+      if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript"
+    )
+  }
   list(
-    command = file.path(R.home("bin"), "Rscript"),
+    command = rscript,
     args = c("-e", "Shennong::sn_run_mcp_server()"),
     transport = "stdio"
   )

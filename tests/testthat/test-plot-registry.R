@@ -78,10 +78,11 @@ test_that("canonical stored-result plots retain Seurat metadata context", {
   object$group <- c("A", "A", "B", "B")
   object$known <- c("T", "T", "B", "B")
 
-  scores <- tidyr::expand_grid(
+  scores <- tibble::as_tibble(expand.grid(
+    program = c("p1", "p2"),
     entity = colnames(object),
-    program = c("p1", "p2")
-  ) |>
+    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE
+  )) |>
     dplyr::mutate(score = seq_len(dplyr::n()), level = "cell")
   program <- Shennong:::.sn_new_analysis_result(
     "program_scoring", "programs", "mean", "Shennong",

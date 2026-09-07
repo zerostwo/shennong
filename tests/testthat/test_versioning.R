@@ -175,7 +175,7 @@ test_that("sn_install_shennong auto installs an explicit local source without re
   result <- Shennong::sn_install_shennong(source = source_dir)
 
   expect_identical(result, "local")
-  expect_equal(captured$path, normalizePath(source_dir))
+  expect_equal(captured$path, normalizePath(source_dir, winslash = "/"))
 })
 
 test_that("sn_install_shennong auto falls back to the current source tree", {
@@ -201,7 +201,7 @@ test_that("sn_install_shennong auto falls back to the current source tree", {
   )
 
   expect_identical(result, "local")
-  expect_equal(captured$path, normalizePath(source_dir))
+  expect_equal(captured$path, normalizePath(source_dir, winslash = "/"))
 })
 
 test_that("sn_install_shennong auto still errors without any available source", {
@@ -396,15 +396,25 @@ test_that("pixi helpers detect executables, expose runtime paths, and write mirr
 
   Sys.setenv(HOME = fake_home, PATH = fake_path, SHENNONG_PIXI = "")
   options(shennong.pixi = NULL)
-  missing_info <- sn_check_pixi(quiet = TRUE)
+  missing_info <- sn_check_pixi(
+    pixi = file.path(fake_path, "missing-pixi-executable"),
+    quiet = TRUE
+  )
   expect_false(missing_info$installed)
   expect_true(is.na(missing_info$path))
 
   fake_dir <- tempfile("pixi-bin-")
   dir.create(fake_dir, recursive = TRUE)
   fake_pixi <- file.path(fake_dir, if (.Platform$OS.type == "windows") "pixi.exe" else "pixi")
-  writeLines(c("#!/bin/sh", "echo 'pixi 0.99.0'"), fake_pixi)
-  Sys.chmod(fake_pixi, mode = "755")
+  expect_true(file.create(fake_pixi))
+  local_mocked_bindings(
+    .sn_system2_capture = function(command, args = character(), ...) {
+      expect_identical(command, fake_pixi)
+      expect_identical(args, "--version")
+      "pixi 0.99.0"
+    },
+    .package = "Shennong"
+  )
 
   info <- sn_check_pixi(pixi = fake_pixi, quiet = TRUE)
   expect_true(info$installed)

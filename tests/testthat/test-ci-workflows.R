@@ -17,6 +17,21 @@ test_that("routine package checks avoid duplicate full tests", {
   )
 })
 
+test_that("managed Pixi environments cannot enter source packages", {
+  buildignore_path <- test_path("..", "..", ".Rbuildignore")
+  gitignore_path <- test_path("..", "..", ".gitignore")
+  skip_if_not(
+    file.exists(buildignore_path) && file.exists(gitignore_path),
+    "Repository-only ignore files are excluded from source packages."
+  )
+  buildignore <- readLines(buildignore_path, warn = FALSE)
+  gitignore <- readLines(gitignore_path, warn = FALSE)
+  expect_true("^inst/pixi/.*/[.]pixi(/|$)" %in% buildignore)
+  expect_true("^[.]codegraph(/|$)" %in% buildignore)
+  expect_true(all(c("^[.]github$", "^README[.]Rmd$") %in% buildignore))
+  expect_true(".pixi/" %in% gitignore)
+})
+
 test_that("coverage CI installs dependencies exercised by enrichment contracts", {
   path <- test_path("..", "..", ".github", "workflows", "test-coverage.yaml")
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")

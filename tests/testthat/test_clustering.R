@@ -97,7 +97,7 @@ make_fake_python_runner <- function(payload_expr) {
   lines <- c(
     "#!/bin/sh",
     "runner=$(printf \"%s\" \"$1\" | sed \"s/^'//; s/'$//\")",
-    "out=$(awk -F\"'\" '/with open\\(/ {print $2}' \"$runner\")",
+    "out=$(awk -F'\"' '/with open\\(/ {print $2}' \"$runner\")",
     "if [ -z \"$out\" ]; then",
     "  echo 'missing output path' >&2",
     "  exit 1",
@@ -317,6 +317,15 @@ test_that("pixi execution records backend process resource usage when available"
     sn_ensure_pixi = function(...) {
       ensure_args <<- list(...)
       list(path = "/bin/true")
+    },
+    .sn_system2_capture = function(command, args, env) {
+      if (identical(command, "/usr/bin/time")) {
+        writeLines(
+          "Maximum resident set size (kbytes): 2048",
+          file.path(output_dir, "resource-usage.txt")
+        )
+      }
+      character()
     },
     .package = "Shennong"
   )
@@ -1408,6 +1417,7 @@ test_that("rare-cell helper functions validate required inputs", {
 
 test_that("python rare-cell backends serialize inputs and parse JSON outputs", {
   skip_if_not_installed("Seurat")
+  skip_on_os("windows")
 
   expr <- Matrix::Matrix(
     matrix(
@@ -4097,6 +4107,15 @@ test_that("scrublet method rejects non-count layers and warns on scDblFinder-onl
   skip_if_not_installed("Seurat")
   object <- make_test_object(seed = 31, prefix = "scrublet-guard", n_genes = 60, n_cells = 12)
   object <- Seurat::NormalizeData(object, verbose = FALSE)
+  local_mocked_bindings(
+    .sn_find_doublets_scrublet = function(object, keep_cells, ...) {
+      list(
+        class = rep("singlet", length(keep_cells)),
+        score = rep(0, length(keep_cells))
+      )
+    },
+    .package = "Shennong"
+  )
 
   expect_error(
     sn_find_doublets(object, method = "scrublet", layer = "data", min_features = 1),
@@ -4340,6 +4359,7 @@ test_that("CellTypist sparse export uses cell-by-gene orientation without transp
 
 test_that("sn_run_celltypist adds predicted labels back onto the Seurat object", {
   skip_if_not_installed("Seurat")
+  skip_on_os("windows")
 
   object <- make_test_object(seed = 52, prefix = "celltypist", n_genes = 80, n_cells = 8)
   object$precluster <- rep(c("c1", "c2"), each = 4)
@@ -4457,6 +4477,7 @@ test_that("sn_run_celltypist adds predicted labels back onto the Seurat object",
 })
 
 test_that("sn_run_celltypist returns prediction tables for path inputs", {
+  skip_on_os("windows")
   checked_packages <- character()
   local_mocked_bindings(
     check_installed = function(packages, ...) {
@@ -4536,6 +4557,7 @@ test_that("sn_run_celltypist returns prediction tables for path inputs", {
 })
 
 test_that("sn_run_celltypist imports the prediction sheet from XLSX output", {
+  skip_on_os("windows")
   input_data <- tempfile(fileext = ".csv")
   utils::write.csv(matrix(1:4, nrow = 2), input_data)
 
@@ -4614,6 +4636,7 @@ test_that("sn_run_celltypist imports the prediction sheet from XLSX output", {
 
 test_that("sn_run_celltypist errors when expected outputs are missing", {
   skip_if_not_installed("Seurat")
+  skip_on_os("windows")
 
   object <- make_test_object(seed = 53, prefix = "celltypist-missing", n_genes = 40, n_cells = 6)
   fake_celltypist <- tempfile("fake-celltypist-missing-")

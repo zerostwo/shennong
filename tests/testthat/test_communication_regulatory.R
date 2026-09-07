@@ -92,10 +92,11 @@ test_that("communication consensus keeps condition and sample contexts separate"
 })
 
 test_that("communication comparisons require direction and support matched units", {
-  evidence <- tidyr::expand_grid(
-    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1",
-    pair = paste0("D", 1:4), condition = c("Ctrl", "Stim")
-  )
+  evidence <- tibble::as_tibble(expand.grid(
+    condition = c("Ctrl", "Stim"), pair = paste0("D", 1:4),
+    receptor = "REC1", ligand = "LIG1", target = "Receiver", source = "Sender",
+    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE
+  ))
   evidence$sample <- paste(evidence$pair, evidence$condition, sep = "_")
   evidence$score <- ifelse(evidence$condition == "Stim", 2, 1) +
     rep(c(0.1, 0.2, 0.3, 0.4), each = 2)
@@ -118,10 +119,11 @@ test_that("communication comparisons require direction and support matched units
 })
 
 test_that("paired communication comparisons require complete selected-condition pairs", {
-  evidence <- tidyr::expand_grid(
-    source = "Sender", target = "Receiver", ligand = "LIG1", receptor = "REC1",
-    pair = c("D1", "D2"), condition = c("Ctrl", "Stim", "Other")
-  )
+  evidence <- tibble::as_tibble(expand.grid(
+    condition = c("Ctrl", "Stim", "Other"), pair = c("D1", "D2"),
+    receptor = "REC1", ligand = "LIG1", target = "Receiver", source = "Sender",
+    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE
+  ))
   evidence$sample <- paste(evidence$pair, evidence$condition, sep = "_")
   evidence$score <- ifelse(
     evidence$condition == "Stim", 2,

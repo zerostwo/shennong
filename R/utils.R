@@ -857,6 +857,51 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
   normalizePath(run_dir, winslash = "/", mustWork = TRUE)
 }
 
+.sn_system2_capture <- function(command,
+                                args = character(),
+                                env = character(),
+                                stdout = TRUE,
+                                stderr = TRUE) {
+  run <- function() {
+    system2(
+      command = command,
+      args = args,
+      stdout = stdout,
+      stderr = stderr
+    )
+  }
+  if (.Platform$OS.type != "windows" || length(env) == 0L) {
+    return(system2(
+      command = command,
+      args = args,
+      env = env,
+      stdout = stdout,
+      stderr = stderr
+    ))
+  }
+
+  separators <- regexpr("=", env, fixed = TRUE)
+  if (any(separators < 2L)) {
+    stop("Process environment entries must use NAME=value syntax.", call. = FALSE)
+  }
+  variables <- substring(env, 1L, separators - 1L)
+  values <- substring(env, separators + 1L)
+  previous <- Sys.getenv(variables, unset = NA_character_)
+  on.exit({
+    present <- !is.na(previous)
+    if (any(present)) {
+      do.call(Sys.setenv, stats::setNames(as.list(previous[present]), variables[present]))
+    }
+    if (any(!present)) Sys.unsetenv(variables[!present])
+  }, add = TRUE)
+  do.call(Sys.setenv, stats::setNames(as.list(values), variables))
+  run()
+}
+
+.sn_python_string_literal <- function(value) {
+  as.character(jsonlite::toJSON(as.character(value)[[1L]], auto_unbox = TRUE))
+}
+
 .sn_is_owned_run_dir <- function(run_dir) {
   if (is.null(run_dir) || length(run_dir) != 1L || is.na(run_dir) || !nzchar(run_dir)) {
     return(FALSE)

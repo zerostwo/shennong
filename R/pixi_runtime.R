@@ -52,7 +52,7 @@ sn_check_pixi <- function(pixi = NULL, quiet = FALSE) {
 
   if (installed) {
     output <- tryCatch(
-      suppressWarnings(system2(pixi_path, "--version", stdout = TRUE, stderr = TRUE)),
+      suppressWarnings(.sn_system2_capture(pixi_path, "--version")),
       error = function(e) character(0)
     )
     status <- attr(output, "status") %||% 0L
@@ -822,12 +822,10 @@ sn_configure_pixi_mirror <- function(mirror = c("default", "auto", "china", "tun
     "--manifest-path", manifest_path,
     if (!is.null(pixi_environment) && nzchar(pixi_environment)) c("--environment", pixi_environment) else character(0)
   )
-  status <- system2(
+  status <- .sn_system2_capture(
     command = pixi,
     args = args,
-    env = .sn_pixi_command_env(pixi_home),
-    stdout = TRUE,
-    stderr = TRUE
+    env = .sn_pixi_command_env(pixi_home)
   )
   exit_code <- attr(status, "status") %||% 0L
   if (!identical(exit_code, 0L)) {
@@ -845,12 +843,10 @@ sn_configure_pixi_mirror <- function(mirror = c("default", "auto", "china", "tun
     command,
     args
   )
-  status <- system2(
+  status <- .sn_system2_capture(
     command = pixi,
     args = pixi_args,
-    env = .sn_pixi_command_env(pixi_home),
-    stdout = TRUE,
-    stderr = TRUE
+    env = .sn_pixi_command_env(pixi_home)
   )
   exit_code <- attr(status, "status") %||% 0L
   if (!identical(exit_code, 0L)) {
@@ -891,8 +887,12 @@ sn_configure_pixi_mirror <- function(mirror = c("default", "auto", "china", "tun
 }
 
 .sn_resolve_pixi_path <- function(pixi = NULL) {
+  if (!is.null(pixi)) {
+    explicit <- path.expand(as.character(pixi)[[1L]])
+    if (!nzchar(explicit) || !file.exists(explicit)) return(NULL)
+    return(explicit)
+  }
   candidates <- c(
-    pixi,
     getOption("shennong.pixi", NULL),
     Sys.getenv("SHENNONG_PIXI", unset = ""),
     Sys.which("pixi")[["pixi"]],
