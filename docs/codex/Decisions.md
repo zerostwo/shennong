@@ -1783,3 +1783,8 @@ Last updated: 2026-09-06
   matched raw-count or non-log linear inputs; CellPhoneDB and infercnvpy require
   normalized log-transformed layers. The selected scale and source layer are
   recorded rather than inferred again during interpretation.
+- Cross-platform check setup must provision Pandoc before
+  `setup-r-dependencies`. On macOS runners without a preinstalled Pandoc, the
+  action's fallback probe asks pak to resolve all dependencies, including
+  intentionally unavailable Suggests, before the requested hard-dependency
+  policy can take effect.

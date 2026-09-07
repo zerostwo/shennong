@@ -16,6 +16,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   the same validated version, and the workflow regression test derives its
   expected pin from the contract instead of duplicating the version literal.
 
+* Fixed macOS `R-CMD-check` setup by provisioning Pandoc before dependency
+  resolution. This prevents the setup action's Pandoc probe from attempting to
+  solve unavailable optional Suggests before the package check begins.
+
 ### Breaking changes
 
 - Removed legacy `.qs` serialization, its exported rio adapters, and its
