@@ -1,6 +1,6 @@
 ---
 name: use-shennong-mcp
-description: Use when an agent needs to discover Shennong analysis methods, inspect exported R function help, retrieve workflow recipes, or configure the bundled read-only Shennong MCP server before writing an omics workflow.
+description: "Configure or query the read-only Shennong MCP server for installed methods, function help, and recipes."
 ---
 
 # Use Shennong MCP

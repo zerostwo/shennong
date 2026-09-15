@@ -1,3 +1,8 @@
+---
+name: create-analysis-run
+description: "Register and execute a formal analysis run with explicit inputs, parameters, and output provenance."
+---
+
 # create-analysis-run
 
 ## Purpose

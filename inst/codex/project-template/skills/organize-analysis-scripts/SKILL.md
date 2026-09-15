@@ -1,3 +1,8 @@
+---
+name: organize-analysis-scripts
+description: "Organize maintained analysis scripts by workflow stage."
+---
+
 # organize-analysis-scripts
 
 ## Purpose

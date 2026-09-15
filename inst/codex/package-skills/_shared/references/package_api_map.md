@@ -517,3 +517,20 @@ Runtime reference datasets:
   use `sn_prepare_*_evidence()` and `sn_interpret_*()`
 - If the task is project bootstrap:
   use `sn_initialize_project()`
+
+
+### Composition plotting: dedicated string interfaces
+
+Use `sn_plot_sankey(data, flow_by = c("level1", "level2"),
+fill_by = "level1", style = "A")` for hierarchies. B is bracketed two-stage
+annotation comparison (default final-label colors); C is vertical two-stage
+composition with source-share pies (default first-stage colors). C pies use the
+same retained weights within each target/facet; cross-facet widths are relative.
+`show_pies = FALSE` omits pies. Factor levels control each stage's order.
+Use `sn_plot_bar`, `sn_plot_sample_bar`, `sn_plot_sample_boxplot`, and
+`sn_plot_histogram` for other composition types. Supply `x_by`, `y_by`,
+`fill_by`, `facet_row_by`, and `facet_col_by` as column-name strings. Sample
+summaries also require `sample_by`. All share `sn_plot_composition` preparation.
+Legacy unquoted mappings remain accepted only by the unified function; never
+mix a legacy mapping with its string replacement. See the composition-analysis
+and visualization articles for runnable examples and styling controls.

@@ -1,3 +1,8 @@
+---
+name: manage-metadata-assets
+description: "Ingest or curate project sample sheets, annotation metadata, and codebooks with provenance."
+---
+
 # manage-metadata-assets
 
 ## Purpose

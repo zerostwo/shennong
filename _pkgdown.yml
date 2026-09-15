@@ -394,6 +394,11 @@ reference:
       - sn_plot_boxplot
       - sn_plot_barplot
       - sn_plot_composition
+      - sn_plot_sankey
+      - sn_plot_bar
+      - sn_plot_sample_bar
+      - sn_plot_sample_boxplot
+      - sn_plot_histogram
       - sn_plot_milo
       - sn_list_palettes
       - sn_get_palette

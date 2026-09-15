@@ -138,6 +138,7 @@ sn_plot_ambient_correction
 sn_plot_annotation_confidence
 sn_plot_annotation_confusion
 sn_plot_association
+sn_plot_bar
 sn_plot_barplot
 sn_plot_boxplot
 sn_plot_branch_comparison
@@ -163,6 +164,7 @@ sn_plot_feature
 sn_plot_gene_trend
 sn_plot_gsea
 sn_plot_heatmap
+sn_plot_histogram
 sn_plot_hvg
 sn_plot_integration
 sn_plot_ligand_target
@@ -178,7 +180,10 @@ sn_plot_reference_projection
 sn_plot_regulon
 sn_plot_resolution_sweep
 sn_plot_result
+sn_plot_sample_bar
+sn_plot_sample_boxplot
 sn_plot_sample_correlation
+sn_plot_sankey
 sn_plot_scissor
 sn_plot_spatial
 sn_plot_spatial_communication
@@ -207,8 +212,8 @@ sn_review_annotation
 sn_run_annotation
 sn_run_bulk
 sn_run_bulk_deconvolution
-sn_run_cell_communication
 sn_run_cell2location
+sn_run_cell_communication
 sn_run_cellphonedb
 sn_run_celltypist
 sn_run_clinical_association

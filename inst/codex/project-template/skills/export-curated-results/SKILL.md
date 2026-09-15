@@ -1,3 +1,8 @@
+---
+name: export-curated-results
+description: "Export validated analysis figures, tables, or reports to the project results directories."
+---
+
 # export-curated-results
 
 ## Purpose

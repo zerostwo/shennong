@@ -1,32 +1,43 @@
 # {{project_name}} Analysis Governance
 
-This repository is a formal bioinformatics analysis project initialized from the
-Shennong package template. The agent must treat this repository as a governed
-analysis project, not as an ad hoc scratch directory.
+Keep raw inputs immutable, derived artifacts traceable to a run, and formal
+analyses reproducible from maintained scripts. Preserve user-owned work.
 
-## Operating Priorities
+## Task-specific context
 
-1. Preserve reproducibility, traceability, and auditability.
-2. Keep raw inputs immutable and derived artifacts attributable to a run.
-3. Prefer formal scripts and recorded runs over notebook-only work.
-4. Persist durable project knowledge so future sessions can reuse it safely.
-5. Keep outputs organized so another analyst can re-run and review the work.
+- Use `docs/standards/BioinformaticsAnalysisConventions.md` when creating runs,
+  placing outputs, organizing scripts, or promoting data.
+- Read relevant `memory/Decisions.md` entries for existing scientific choices;
+  use `memory/Status.md` and `memory/Plan.md` when resuming work.
+- Consult `memory/Prompt.md` for durable operating context and
+  `config/default.yaml` for validated environments and reference locations.
+- Use the matching project skill under `skills/` when its workflow is needed.
+  A small edit does not require reading every governance record.
 
-## Hard Constraints
+## Execution and outputs
 
-- The agent must read the required governance files before starting formal work.
-- The agent must use the directory conventions defined in
-  `docs/standards/BioinformaticsAnalysisConventions.md`.
-- The agent must record durable project decisions in `memory/Decisions.md`.
-- The agent must record current work state in `memory/Status.md`.
-- The agent must update `memory/Plan.md` when scope or sequencing changes.
-- The agent must update `memory/Prompt.md` when the durable operating context
-  changes.
-- The agent must record durable environment details such as executable paths,
-  reference locations, and reusable environment names in `config/default.yaml`
-  and, when they become project assumptions, in `memory/Decisions.md`.
-- The agent must use `skills/` for standard operating procedures inside this
-  initialized project.
+Use explicit run IDs and meaningful stage names. Keep source data, derived data,
+run artifacts, and curated exports separate. Never overwrite `data/raw/` or
+export unchecked intermediates as final results. Notebook output alone is not
+the formal record; retain the script, inputs, parameters, and validation evidence.
+
+Continue authorized analysis through the requested deliverables and relevant
+validation. Reuse existing authorization for ordinary run bookkeeping and local
+repairs. Ask for material scientific scope changes or operations requiring new
+authority. Report incomplete execution and validation accurately.
+
+Update only the project records whose durable information changed: decisions in
+`memory/Decisions.md`, current state in `memory/Status.md`, scope/sequencing in
+`memory/Plan.md`, and operating context in `memory/Prompt.md`. Store reusable
+environment details in `config/default.yaml`. These are project files; any
+separate agent-managed memory system follows its own write authorization.
+
+## Shennong discovery and usage tracking
+
+Install package guidance with `sn_install_codex_skill(type = "package_skills")`
+when needed. `sn_get_mcp_server_config()` provides read-only method/help discovery;
+keep analysis execution in explicit project scripts.
+
 - If Shennong usage tracking is enabled, place its local SQLite database below
   ignored `runs/`, select development/production/test/benchmark mode
   explicitly, and never commit or upload the raw SQLite activity log. Enable
@@ -35,58 +46,24 @@ analysis project, not as an ad hoc scratch directory.
   retain the local outbox and requires explicit versioned research consent and
   a sanitized flush.
 
-## The Agent Must Always Do
 
-- Read governance in the required order before formal analysis work.
-- Keep source data, derived data, runs, and exported results separated.
-- Use explicit names, run identifiers, and dated artifacts.
-- Promote reusable outputs only through documented promotion rules.
-- Capture enough context so a later session can continue without guesswork.
 
-## The Agent Must Never Do
+### Composition plotting: dedicated string interfaces
 
-- Must not overwrite `data/raw/` source files.
-- Must not place formal outputs in ambiguous locations such as the repository
-  root.
-- Must not use ambiguous names such as `final`, `final2`, `new`, or `test`.
-- Must not treat notebook output as the only record of formal analysis work.
-- Must not silently change directory conventions or project rules.
+Use `sn_plot_sankey(data, flow_by = c("level1", "level2"),
+fill_by = "level1", style = "A")` for hierarchies. B is bracketed two-stage
+annotation comparison (default final-label colors); C is vertical two-stage
+composition with source-share pies (default first-stage colors). C pies use the
+same retained weights within each target/facet; cross-facet widths are relative.
+`show_pies = FALSE` omits pies. Factor levels control each stage's order.
+Use `sn_plot_bar`, `sn_plot_sample_bar`, `sn_plot_sample_boxplot`, and
+`sn_plot_histogram` for other composition types. Supply `x_by`, `y_by`,
+`fill_by`, `facet_row_by`, and `facet_col_by` as column-name strings. Sample
+summaries also require `sample_by`. All share `sn_plot_composition` preparation.
+Legacy unquoted mappings remain accepted only by the unified function; never
+mix a legacy mapping with its string replacement. See the composition-analysis
+and visualization articles for runnable examples and styling controls.
 
-## Reading Priority Order
-
-1. `AGENTS.md`
-2. `docs/standards/BioinformaticsAnalysisConventions.md`
-3. `memory/Decisions.md`
-4. `memory/Plan.md`
-5. `memory/Status.md`
-6. `memory/Prompt.md`
-
-## Pointers
-
-- Standards: `docs/standards/BioinformaticsAnalysisConventions.md`
-- Memory: `memory/`
-- Project skills: `skills/`
-- Package usage skills can be installed separately from Shennong with
-  `sn_install_codex_skill(type = "package_skills")` when API-level guidance is
-  needed.
-- An MCP-capable agent can use `sn_get_mcp_server_config()` to discover installed
-  methods, exact function help, and workflow guides through Shennong's
-  read-only stdio server. Keep analysis execution in explicit project scripts.
-- Use `sn_enable_usage_tracking()` only for an explicitly requested local
-  timing/usage audit; summarize optimization targets with
-  `sn_summarize_usage()` and disable the tracker at the end of the session.
-  For managed remote research, use `sn_create_usage_store()`,
-  `sn_confirm_usage_consent()`, and `sn_flush_usage_tracking()`; do not place
-  database credentials in project files or distribute them to desktop users.
-
-## Do / Do Not
-
-Do:
-- use explicit run IDs
-- keep scripts stage-oriented
-- persist durable knowledge after using it successfully
-
-Do not:
-- hide important paths only in transient chat
-- export unchecked intermediates as final results
-- invent new conventions without recording them
+Composition panel sizes use `panel_widths`/`panel_heights` in pt for all five
+entry points. A/B support facet-size vectors; C requires scalars and preserves
+circular pies. These are panel dimensions, not the full export canvas.

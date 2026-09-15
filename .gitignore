@@ -3,8 +3,10 @@
 .codex/
 .codegraph/
 .Rhistory
+/Rplots.pdf
 .Renviron
 docs/*
+!docs/agent-workflows.md
 !docs/codex/
 !docs/codex/**
 site/

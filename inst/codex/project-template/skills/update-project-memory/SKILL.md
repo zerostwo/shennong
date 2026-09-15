@@ -1,3 +1,8 @@
+---
+name: update-project-memory
+description: "Update project-local decisions, status, plans, or environment records when durable project information changes."
+---
+
 # update-project-memory
 
 ## Purpose

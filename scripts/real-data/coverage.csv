@@ -152,3 +152,8 @@ sn_recommend_figure_size,visualization,kotliarov_pbmc,core,Shennong,Size real fi
 sn_save_figure,visualization,kotliarov_pbmc,core,ggplot2,Save real result plots,vignettes/publication-figures.Rmd
 sn_validate_figure,visualization,kotliarov_pbmc,core,Shennong,Validate real result figures,vignettes/publication-figures.Rmd
 sn_add_qc_metrics,analysis,kotliarov_pbmc,core,Seurat,Refresh count-based QC percentages,vignettes/preprocessing-qc.Rmd
+sn_plot_sankey,visualization,kotliarov_pbmc,core,ggplot2,Composition dedicated entry point,vignettes/composition-analysis.Rmd
+sn_plot_bar,visualization,kotliarov_pbmc,core,ggplot2,Composition dedicated entry point,vignettes/composition-analysis.Rmd
+sn_plot_sample_bar,visualization,kotliarov_pbmc,core,ggplot2,Composition dedicated entry point,vignettes/composition-analysis.Rmd
+sn_plot_sample_boxplot,visualization,kotliarov_pbmc,core,ggplot2,Composition dedicated entry point,vignettes/composition-analysis.Rmd
+sn_plot_histogram,visualization,kotliarov_pbmc,core,ggplot2,Composition dedicated entry point,vignettes/composition-analysis.Rmd

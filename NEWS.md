@@ -5,6 +5,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+* Completed physical panel sizing across all composition entry points and
+  Sankey styles A/B/C. Widths and heights use pt and apply without catplot;
+  style C derives a consistent coordinate ratio to retain circular pies.
+
+* Added composition-specific `sn_plot_sankey()`, `sn_plot_bar()`,
+  `sn_plot_sample_bar()`, `sn_plot_sample_boxplot()`, and `sn_plot_histogram()`.
+  New entry points use string column selectors; the unified function now offers
+  `x_by`, `y_by`, `fill_by`, `facet_row_by`, and `facet_col_by`, while retaining
+  legacy mappings. Sankey presets A/B/C cover hierarchies, bracketed annotation
+  comparisons, and vertical composition with weighted source-share pies.
+
+* Improved Sankey defaults with borderless flows, outside labels and independent
+  top-to-bottom factor ordering. Added `sankey_layout`, `stratum_gap`,
+  `show_stratum_boxes`, and `stratum_label_size`; expanded layouts add whitespace
+  without changing count widths. The default fill now follows the first axis.
+  Sankey rendering uses ggplot2 directly without requiring ggalluvial.
+
+* Refined agent guidance and shipped skill discovery: project skills now include
+  YAML metadata, workflow details load by stage, and project governance reads
+  only relevant records. Scientific and stored-result contracts are preserved.
+
 * Restored verified custom Pixi downloads through
   `sn_prepare_pixi_environment()` and `sn_call_pixi_environment()`: callers can
   now pair `pixi_download_url` with the required `pixi_sha256`. Official pinned

@@ -1,60 +1,25 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Package contracts and references
 
-- `R/` is organized by durable workflow domains (83 files as of 2026-09-07).
-  Analysis domains live in one `analysis_<domain>.R` each: preprocessing,
-  clustering (`analysis_clustering.R` plus extracted `analysis_label_transfer.R`,
-  `analysis_celltypist.R`, `analysis_integration_backends.R`,
-  `analysis_rare_cells.R`, and `analysis_integration_benchmark.R`),
-  metrics (`analysis_metrics.R` orchestrators plus extracted
-  `analysis_integration_metrics.R`, `analysis_composition.R`,
-  `analysis_rogue.R`), annotation
-  (`annotation.R`, `annotation_ontology.R`, `feature_annotation.R`),
-  differential expression (`analysis_de.R`), enrichment, bulk, priority,
-  trajectory and velocity/fate, communication/regulatory,
-  spatial, CNV, metabolism/grn/program discovery/scoring, adapters, abundance,
-  registry, result contract (`analysis_result.R`, `result_bundle.R`), and
-  simulation. Presentation lives in per-domain `plot_<domain>.R` files such as
-  `plot_composition.R`, `plot_association.R` (shared numeric geometries), and
-  `plot_registry.R` (canonical result/view dispatch), plus `visualization.R` (orchestrators;
-  theme/palette/density aspects extracted) and
-  `figure_spec.R`/`figure_export.R`. Cross-cutting modules: interpretation
-  (`interpretation.R` orchestration plus `interpretation_evidence.R` and
-  `interpretation_backend.R`), runtime plumbing (`package_tools.R` plus
-  `pixi_runtime.R`, `python_bridge.R`, `codex_project.R`), usage tracking,
-  acceleration, IO (`data_io.R`, `data.R`), signatures, MCP,
-  `utils.R`, and `zzz.R`. Prefer the domain-specific `analysis_*` / `plot_*`
-  file already owning a workflow over adding another generic module; consult
-  the current `R/` inventory because the module set intentionally evolves.
-- Public naming is strictly `sn_verb_noun`. The verb families carry exact
-  contracts: `sn_list_*` enumerates a compact tibble while `sn_get_*`
-  materializes a stored object/result; `sn_check_*` diagnoses environment or
-  readiness without asserting, `sn_validate_*` asserts a schema contract and
-  fails fast, `sn_assess_*` returns a QC analysis, and `sn_calculate_*`
-  returns a metric value. `sn_run_*` executes a workflow that stores a unified
-  result envelope; raw CLI/runtime adapters use `sn_call_*` and never take a
-  Seurat object. `sn_with_*` is reserved for scoped execution helpers.
-  Renames must ship behind `.Deprecated()` forwarding shims registered as
-  `deprecated_alias` exclusions in the runtime-coverage inventory.
-- `man/` contains roxygen2-generated `.Rd` files. Treat it as generated output and keep it synchronized with the roxygen comments in `R/`.
-- `tests/testthat/` currently has a small unit-test surface; add focused tests near the behavior you change.
-- `vignettes/` contains longer workflows. Keep chunks check-safe and avoid unconditional network access or heavyweight setup in examples.
-- `data/` stores package datasets. `docs/codex/` stores package-maintainer Codex docs and modernization memory; it is already excluded from package builds via `.Rbuildignore`. Do not create new files under `docs/codex/` by default: the active-document allowlist is enforced by the architecture-gate test, and historical material belongs in `docs/codex/archive/`. Do not append implementation history to `docs/codex/Status.md`; it describes current state only.
-- `inst/architecture/` holds committed architecture-gate baselines (public API, dependencies, source-file sizes) enforced by `tests/testthat/test-architecture-gates.R`. Intentional growth of exports, dependencies, or oversized files must update the baseline in the same change set with rationale in `docs/codex/Decisions.md`.
-- `inst/codex/project-template/` stores the shipped initialized-project governance template. `inst/codex/package-skills/` stores the shipped package-usage Codex skills. Keep repository-only planning and modernization memory out of those installed user assets.
-- `_pkgdown.yml` and `.github/workflows/` define the package website and CI entry points.
+Use existing domain owners in `R/analysis_*.R` and `R/plot_*.R`.
+[docs/agent-workflows.md](docs/agent-workflows.md) has the detailed map and local
+commands; load the relevant section when locating a workflow or choosing checks.
 
-## Build, Test, and Development Commands
+`man/` and `NAMESPACE` are generated from roxygen. `inst/architecture/` contains
+API/dependency/source-size admission baselines. Intentional growth requires a
+baseline update with rationale in `docs/codex/Decisions.md`.
 
-- `Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'` runs the local test suite.
-- `Rscript -e 'testthat::test_local(filter = "composition", stop_on_failure = TRUE)'` runs the current focused tests while iterating on composition-related changes.
-- `Rscript -e 'testthat::test_local(filter = "backend-conformance", stop_on_failure = TRUE)'` runs the static method-admission gate and current micro-differential backend contracts.
-- `Rscript -e 'if (requireNamespace("devtools", quietly = TRUE)) devtools::document() else stop("devtools not installed")'` regenerates `NAMESPACE` and `man/` after roxygen changes.
-- `R CMD build .` builds the package tarball.
-- `R CMD check --no-manual Shennong_*.tar.gz` is the full package check after a successful build. In local environments without optional Suggests, use `_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual Shennong_*.tar.gz`.
-- `Rscript scripts/check-prepush.R --filter="deconvolution" --quick` runs a fast edit-loop check: targeted tests, source build, and structural `R CMD check` without re-running examples/vignettes/full tests.
-- `Rscript scripts/check-prepush.R --filter="deconvolution"` runs the standard local pre-push path. It avoids re-running tests inside `R CMD check` after `test_local()` unless `--check-tests` is supplied.
+Repository guidance stays out of installed user assets. Shipped skills and
+project governance live in `inst/codex/package-skills/` and
+`inst/codex/project-template/`. `docs/codex/` has an enforced active-file
+allowlist; historical material belongs in its archive. `Status.md` describes
+current state rather than an append-only implementation log.
+
+Public names use `sn_verb_noun`; `sn_run_*` stores unified workflow results,
+while `sn_call_*` is a raw runtime adapter without a Seurat object. Renames need
+`.Deprecated()` forwarding shims registered as `deprecated_alias` exclusions.
+
 
 ## Coding Style & Naming Conventions
 
@@ -77,7 +42,8 @@
 - Any new `implemented: true` analysis method or external backend must include an admitted machine-readable contract under `inst/conformance/contracts/`; do not extend `tests/conformance/legacy-methods.txt`. Follow `docs/codex/BackendConformance.md` and compare the Shennong call with a direct upstream reference using the same inputs, parameters, seed, threads, and dependency version.
 - Every public analysis parameter must appear in its backend contract as pass-through, transformed, wrapper-only, unsupported/fallback, or waived with a reason. A new or changed parameter without an executable case or explicit waiver fails admission.
 - Prefer lightweight tests that do not require external downloads or optional heavyweight packages unless the function contract truly depends on them.
-- Run the narrowest relevant tests first, then rerun the full local suite before closing a milestone.
+- Use affected tests during edits. Run the full suite for package-wide changes
+  or release milestones; broaden checks when evidence identifies additional risk.
 - If roxygen, exports, or package metadata change, regenerate documentation and rerun the relevant validation commands.
 - If you add or change any user-facing function, parameter, stored-result schema, or workflow, you must also update the relevant pkgdown article(s) and the shipped Codex assets under `inst/codex/project-template/` and `inst/codex/package-skills/` in the same change set when they are affected.
 - The same user-facing change set must also update `NEWS.md` so the release notes reflect the shipped behavior.
@@ -86,7 +52,8 @@
 
 ## Commit & Pull Request Guidelines
 
-- Keep each modernization step self-contained: one small change set, one validation pass, and one update to `docs/codex/Status.md` and `docs/codex/Decisions.md`.
+- Keep changes self-contained. Update `docs/codex/Status.md` when milestone
+  state changes and `docs/codex/Decisions.md` when an architectural decision changes.
 - Do not overwrite unrelated working tree changes; this repository may be dirty.
 - Record compatibility notes, validation commands, and rationale for non-obvious changes in `docs/codex/`.
 - Breaking changes require explicit documentation in `docs/codex/Decisions.md` and `NEWS.md`.

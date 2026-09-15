@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 266,
+  "function_count": 271,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -6103,6 +6103,62 @@
       ]
     },
     {
+      "function_name": "sn_plot_bar",
+      "runtime_classified": true,
+      "formal_digest": "a72fc4c2287b96c64b47f1dec09c3e85cb950911ffbafb0582c5501a626d1884",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "x_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "fill_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "y_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_barplot",
       "runtime_classified": true,
       "formal_digest": "570c54583bc7fb920f1b5f198238ec9b1a985d6fa9d2de5fe5f2870f93af65e3",
@@ -6651,7 +6707,7 @@
     {
       "function_name": "sn_plot_composition",
       "runtime_classified": true,
-      "formal_digest": "cfea90aa479e16419305fc907594b8ff85b2c3ca7e9fd04f6c991266fc4c390b",
+      "formal_digest": "d362df97a8c70629657e1c8791c335c5c45024320bb8ba79f600890e08105c24",
       "parameters": [
         {
           "name": "data",
@@ -6879,6 +6935,97 @@
         },
         {
           "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "sankey_layout",
+          "class": "selector",
+          "default": "c(\"parallel\", \"expanded\")",
+          "selector_values": ["parallel", "expanded"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "stratum_gap",
+          "class": "numeric",
+          "default": "0.02",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "show_stratum_boxes",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "stratum_label_size",
+          "class": "numeric",
+          "default": "3.5",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "x_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "y_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "fill_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "facet_row_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "facet_col_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "selector",
+          "default": "c(\"A\", \"B\", \"C\")",
+          "selector_values": ["A", "B", "C"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "show_pies",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "node_palette",
+          "class": "character",
+          "default": "\"Set3\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "axis_labels",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -8420,6 +8567,55 @@
       ]
     },
     {
+      "function_name": "sn_plot_histogram",
+      "runtime_classified": true,
+      "formal_digest": "e0252d717434bfadcda6d3288a286db2051e289a988e113a7ba6451be6aadbf4",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "x_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "fill_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_hvg",
       "runtime_classified": true,
       "formal_digest": "bd3373170ee7e947b3341a656397cf047b1d69d391d99ac9a522af4ba9eb239a",
@@ -9064,6 +9260,118 @@
       ]
     },
     {
+      "function_name": "sn_plot_sample_bar",
+      "runtime_classified": true,
+      "formal_digest": "15ba4cdda3db3f824b9ca6450a116660a46e9f00780567cfd0c1a1c52e59a56e",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "x_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "fill_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "sample_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_sample_boxplot",
+      "runtime_classified": true,
+      "formal_digest": "15ba4cdda3db3f824b9ca6450a116660a46e9f00780567cfd0c1a1c52e59a56e",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "x_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "fill_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "sample_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_sample_correlation",
       "runtime_classified": true,
       "formal_digest": "09ffccd0d51aa122146a8d62ff5c2cdc118694fbd9b356a9c4c844f28b31195c",
@@ -9137,6 +9445,62 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_sankey",
+      "runtime_classified": true,
+      "formal_digest": "a99159141df87bb9e4e6f3567f53d02ebb939abbf36aca264114f7a6dd2c33d5",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "flow_by",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "fill_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "selector",
+          "default": "c(\"A\", \"B\", \"C\")",
+          "selector_values": ["A", "B", "C"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "...",
+          "class": "dots",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },

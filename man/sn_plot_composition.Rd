@@ -37,7 +37,20 @@ sn_plot_composition(
   y_label = NULL,
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  sankey_layout = c("parallel", "expanded"),
+  stratum_gap = 0.02,
+  show_stratum_boxes = FALSE,
+  stratum_label_size = 3.5,
+  x_by = NULL,
+  y_by = NULL,
+  fill_by = NULL,
+  facet_row_by = NULL,
+  facet_col_by = NULL,
+  style = c("A", "B", "C"),
+  show_pies = NULL,
+  node_palette = "Set3",
+  axis_labels = NULL
 )
 }
 \arguments{
@@ -53,7 +66,7 @@ bars and sample-level plots, and \code{count} otherwise.}
 
 \item{fill}{Optional composition category or fill column. It is required for
 stacked and sample-level composition plots. For alluvial plots it defaults
-to the last \code{flow_by} column.}
+to the first \code{flow_by} column for A/C and the last column for B.}
 
 \item{type}{Plot type: \code{"bar"}, \code{"sample_bar"}, \code{"sample_boxplot"},
 \code{"histogram"}, or \code{"alluvial"}. The aliases \code{"stacked_bar"},
@@ -91,7 +104,8 @@ bar or boxplot.}
 
 \item{bins}{Number of bins used by \code{histogram}.}
 
-\item{alluvium_alpha}{Transparency of alluvial flows.}
+\item{alluvium_alpha}{Transparency of alluvial flows (default 0.8 for A/B,
+0.35 for C).}
 
 \item{show_stratum_labels}{Logical; label alluvial strata.}
 
@@ -113,8 +127,52 @@ bar or boxplot.}
 
 \item{aspect_ratio}{Optional panel aspect ratio.}
 
-\item{panel_widths, panel_heights}{Optional panel dimensions forwarded to
-\code{catplot::theme_cat()} when available.}
+\item{panel_widths, panel_heights}{Optional positive numeric panel dimensions
+in points (pt), applied directly through ggplot2 for every composition type.
+Scalars repeat across facets; vectors specify facet column widths or row
+heights. Style C accepts scalars only to preserve circular pies. If only
+one dimension and \code{aspect_ratio} are supplied, the other is derived; C
+derives it from its coordinate ratio even when \code{aspect_ratio} is omitted.
+Explicit width and height take precedence over \code{aspect_ratio}. These sizes
+exclude outer labels/margins; choose a sufficiently large export canvas.}
+
+\item{sankey_layout}{Sankey spacing: \code{"parallel"} (default) gives all axes
+the same total gap budget (single-node axes have no gaps); \code{"expanded"} uses the same gap between nodes, so
+axes with more categories grow taller. Ribbon thickness always retains
+the original count/weight scale; expansion adds whitespace only. Style C
+scales each facet to a common horizontal span; compare proportions within
+facets, not absolute counts between facets.}
+
+\item{stratum_gap}{Gap as a fraction of total flow weight (default 0.02 for
+A/C, 0.008 for B).}
+
+\item{show_stratum_boxes}{Draw outlined Sankey node boxes (default FALSE).
+Boxes are white for A/B; C retains colored bars and adds outlines. Labels
+sit outside the flows in either mode.}
+
+\item{stratum_label_size}{Sankey label size in mm (default 3.5).}
+
+\item{x_by, y_by, fill_by}{Character scalar column names for the x axis,
+summarized values, and color grouping. These are the preferred interface;
+string variables are supported. Do not combine with the corresponding
+legacy \code{x}, \code{y}, or \code{fill} argument.}
+
+\item{facet_row_by, facet_col_by}{Character scalar column names for facets.}
+
+\item{style}{Sankey preset: \code{"A"} separated annotation hierarchy,
+\code{"B"} two-axis horizontal annotation comparison with brackets and
+destination-colored flows, or \code{"C"} two-axis top-to-bottom composition
+with colored node bars and source-composition pies. B/C require two axes.}
+
+\item{show_pies}{Show source-composition pies below style C target nodes;
+NULL enables them only for C. All pies have equal size, with slices computed
+from the same retained weights as the flows within each facet.}
+
+\item{node_palette}{Palette for style C target nodes, separate from the source
+palette used for flows and pies.}
+
+\item{axis_labels}{Optional character vector of axis titles for styles A/B.
+Style C labels source categories directly; use \code{title} for its heading.}
 }
 \value{
 A ggplot object with its plot-ready source table attached to the
@@ -133,6 +191,11 @@ Sample-level plots first calculate each biological sample's composition and
 only then summarize across conditions. This keeps samples, rather than cells,
 as the visual replicate and inserts zeroes for cell types absent from an
 otherwise retained sample.
+
+Sankey axes respect each input column's factor levels independently,
+from top to bottom; character columns use first appearance order. Unused
+levels are omitted. Missing paths are excluded. Sankey plots use a clean
+theme and separated stage panels, and need no optional plotting backend.
 }
 \examples{
 metadata <- data.frame(

@@ -2,6 +2,40 @@
 
 Last updated: 2026-09-06
 
+## 2026-09-15
+
+- Composition panel dimensions are explicit dedicated-entrypoint formals in pt,
+  applied through ggplot2 theme sizing even without catplot. C accepts scalar
+  sizes and derives its coordinate ratio from both physical dimensions; this
+  prevents elliptical pies. Validation inspects rendered gtable panel sizes,
+  facet widths, single-dimension derivation, and physical pie diameters.
+- Include the existing agent-guide split and shipped-skill reference extraction
+  at stage closeout. Track `docs/agent-workflows.md` explicitly so the shortened
+  repository guide remains usable after cloning.
+
+- Admit five composition-specific plotting exports (`sn_plot_sankey`,
+  `sn_plot_bar`, `sn_plot_sample_bar`, `sn_plot_sample_boxplot`,
+  `sn_plot_histogram`) as string-only entry points into the same dispatcher.
+  They share counting/statistical preparation and figure metadata; they are not
+  independent plotting implementations. Existing `sn_plot_barplot` and
+  `sn_plot_boxplot` keep their generic numeric-data semantics. No new dependency.
+- Preferred composition column selectors are `*_by` string arguments, including
+  strings held in variables. Legacy mappings remain supported only by the
+  unified entry point; conflicting legacy/new arguments error rather than
+  silently choose one. Scope is the composition family, not all visualization.
+- Presets A/B/C intentionally represent three common layouts: A hierarchy,
+  B bracketed source/final comparison (destination color by default), C vertical
+  composition (source color; independently colored target nodes). C pies use
+  retained path weights within each target and facet. C panels normalize to a
+  common span; absolute counts should not be compared across those facets.
+
+- Sankey composition rendering uses explicit per-axis coordinates and ggplot2
+  polygons to preserve independent factor orders and support separated panels
+  and variable whitespace. Count widths remain invariant across axes; expanded
+  height is a layout effect, never count growth. Defaults intentionally change
+  to borderless nodes, external labels, and first-axis fill. Existing plot data
+  and figure-spec source tables remain available. No new dependency or export.
+
 ## 2026-09-06
 
 - The object workflow and cheat sheet are generated reference artifacts, not a

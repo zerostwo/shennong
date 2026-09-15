@@ -601,3 +601,25 @@ Use `sn_write(object, "data/processed/object.qs2")` and
 `sn_read("data/processed/object.qs2")`. Shennong no longer reads, writes, or
 installs a serializer for `.qs`; migrate existing files in a compatible older
 environment instead of renaming their extensions.
+
+
+
+### Composition plotting: dedicated string interfaces
+
+Use `sn_plot_sankey(data, flow_by = c("level1", "level2"),
+fill_by = "level1", style = "A")` for hierarchies. B is bracketed two-stage
+annotation comparison (default final-label colors); C is vertical two-stage
+composition with source-share pies (default first-stage colors). C pies use the
+same retained weights within each target/facet; cross-facet widths are relative.
+`show_pies = FALSE` omits pies. Factor levels control each stage's order.
+Use `sn_plot_bar`, `sn_plot_sample_bar`, `sn_plot_sample_boxplot`, and
+`sn_plot_histogram` for other composition types. Supply `x_by`, `y_by`,
+`fill_by`, `facet_row_by`, and `facet_col_by` as column-name strings. Sample
+summaries also require `sample_by`. All share `sn_plot_composition` preparation.
+Legacy unquoted mappings remain accepted only by the unified function; never
+mix a legacy mapping with its string replacement. See the composition-analysis
+and visualization articles for runnable examples and styling controls.
+
+Composition panel sizes use `panel_widths`/`panel_heights` in pt for all five
+entry points. A/B support facet-size vectors; C requires scalars and preserves
+circular pies. These are panel dimensions, not the full export canvas.

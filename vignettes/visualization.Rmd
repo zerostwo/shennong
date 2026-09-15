@@ -370,21 +370,96 @@ sn_plot_composition(
 ```
 
 Alluvial/Sankey-style plots trace counts through two or more metadata levels.
-They require the optional `ggalluvial` package.
+They use ggplot2 directly; no optional Sankey backend is required.
 
 ```{r plot-composition-alluvial}
-if (requireNamespace("ggalluvial", quietly = TRUE)) {
-  sn_plot_composition(
-    pbmc,
-    type = "alluvial",
-    flow_by = c("real_response", "seurat_clusters")
-  )
-}
+sn_plot_sankey(
+  pbmc, flow_by = c("real_response", "seurat_clusters"), style = "A"
+)
 ```
 
 For cohort metadata repeated on every cell, `unit_by` prevents donor counts or
 histograms from counting cells as independent donors, for example
 `sn_plot_composition(seu, x = age, type = "histogram", unit_by = "donor")`.
+
+
+
+## Dedicated composition functions and Sankey presets
+
+Use column-name strings throughout the composition family. Strings held in
+variables work too; no `aes()` or unquoted column expressions are needed.
+
+| Unified `type` | Dedicated entry point |
+| --- | --- |
+| `"sankey"` / `"alluvial"` | `sn_plot_sankey()` |
+| `"bar"` / `"stacked_bar"` | `sn_plot_bar()` |
+| `"sample_bar"` / `"errorbar"` | `sn_plot_sample_bar()` |
+| `"sample_boxplot"` | `sn_plot_sample_boxplot()` |
+| `"histogram"` | `sn_plot_histogram()` |
+
+These entry points share the same counting, replicate-aware summaries and
+figure metadata as `sn_plot_composition()`. The existing `sn_plot_barplot()` and
+`sn_plot_boxplot()` remain generic numeric-data plotters.
+
+```{r dedicated-composition-bars}
+sn_plot_bar(pbmc, x_by = "real_sample", fill_by = "seurat_clusters")
+sn_plot_sample_bar(pbmc, x_by = "real_response", fill_by = "seurat_clusters",
+                   sample_by = "real_sample", errorbar = "se")
+sn_plot_sample_boxplot(pbmc, x_by = "real_response", fill_by = "seurat_clusters",
+                       sample_by = "real_sample")
+sn_plot_histogram(pbmc, x_by = "nCount_RNA", bins = 30)
+```
+
+The unified equivalent accepts the same selectors, e.g.
+`sn_plot_composition(pbmc, x_by = "real_sample", fill_by = "seurat_clusters")`.
+Legacy `x`, `y`, `fill`, and facet mappings remain compatible there, but cannot
+be combined with their `*_by` replacements. Dedicated functions accept only
+string selectors. For summarized weights use `y_by = "count"` (or your numeric
+column name) on a data frame; Seurat inputs count individual cells.
+
+| `style` | Layout | Default flow colors |
+| --- | --- | --- |
+| `"A"` | Separated hierarchy; two or more stages | First stage |
+| `"B"` | Left/right annotation comparison with brackets; two stages | Final stage |
+| `"C"` | Top/bottom composition, colored bars and pies; two stages | First stage |
+
+A retains the `sankey_layout = "expanded"` option: extra node whitespace makes
+axes with more categories taller without changing count widths. B uses tighter
+spacing and external brackets. Both accept `axis_labels = c("Original", "Final")`.
+All styles retain independent factor order: top-to-bottom in A/B, left-to-right
+in C. Character columns retain first appearance order.
+
+```{r dedicated-composition-sankey, fig.width=10, fig.height=7}
+sn_plot_sankey(pbmc, flow_by = c("real_response", "seurat_clusters"),
+               style = "C", show_legend = FALSE)
+```
+
+For annotation comparisons and hierarchies, substitute your metadata columns:
+
+```r
+sn_plot_sankey(seurat_obj,
+  flow_by = c("cell_type_level1", "cell_type_level2"),
+  fill_by = "cell_type_level1", style = "A", sankey_layout = "expanded")
+sn_plot_sankey(seurat_obj,
+  flow_by = c("original_label", "final_annotation"), style = "B",
+  axis_labels = c("Original label", "Final annotation"))
+sn_plot_sankey(seurat_obj,
+  flow_by = c("age_group", "cell_type"), style = "C",
+  palette = c(Young = "#7F8C8D", Aged = "#55A5D8"),
+  facet_row_by = "compartment", show_legend = FALSE)
+```
+
+C pies have equal size and show each target category's source-group proportions,
+computed from the same retained weights as the ribbons within each facet.
+Use `show_pies = FALSE` to omit them and `node_palette` to color target bars
+independently. C requires source-based `fill_by` so ribbon and pie colors agree.
+Each C facet is scaled to the same horizontal span; widths encode relative
+composition within a facet, not comparable absolute counts between facets.
+C uses `aspect_ratio` as the fixed coordinate ratio (default 0.45) so pies remain
+circular. `show_stratum_boxes = TRUE` outlines its colored node bars.
+
+Missing paths are excluded; replace missing annotations with `"Unknown"` to
+retain them. Use a taller/wider export when many or long labels need more room.
 
 ## Standard ggplot2 still fits
 
@@ -416,3 +491,24 @@ if (requireNamespace("catplot", quietly = TRUE)) {
 
 p
 ```
+
+
+### Panel sizing
+
+All five dedicated composition entry points and `sn_plot_composition()` accept
+`panel_widths` and `panel_heights` explicitly, in **points (pt)**. These control
+the drawing panel, excluding outer labels and margins, and do not require
+catplot. For example:
+
+```r
+sn_plot_sankey(seurat_obj,
+  flow_by = c("cell_type_level1", "cell_type_level2"), style = "B",
+  panel_widths = 320, panel_heights = 400, show_legend = FALSE)
+```
+
+Scalars apply to every facet. A/B and the other composition plots also accept
+vectors for facet column widths and row heights. Style C requires scalar sizes
+so all pies remain circular. Supplying both sizes takes precedence over
+`aspect_ratio`. With one size and an aspect ratio the other is derived; C also
+derives a missing size using its default coordinate ratio. Export to a canvas
+large enough to include the panel plus labels, title, legend and margins.

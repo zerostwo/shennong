@@ -1,6 +1,6 @@
 ---
 name: use-shennong-project-init
-description: Use when initializing a governed bioinformatics analysis project from Shennong package assets, including project templates, governance files, and Codex-readable project structure.
+description: "Initialize a governed bioinformatics project from Shennong templates."
 ---
 
 # use-shennong-project-init

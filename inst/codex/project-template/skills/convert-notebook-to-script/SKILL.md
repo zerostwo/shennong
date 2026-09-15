@@ -1,3 +1,8 @@
+---
+name: convert-notebook-to-script
+description: "Convert reusable analysis notebook logic into a reproducible project script."
+---
+
 # convert-notebook-to-script
 
 ## Purpose

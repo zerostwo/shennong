@@ -1,6 +1,6 @@
 ---
 name: manage-shennong-results
-description: Use when discovering methods or auditing, upgrading, storing, validating, listing, retrieving, deleting, and reusing versioned Shennong results on Seurat objects.
+description: "Discover, store, validate, retrieve, or upgrade versioned Shennong results on Seurat objects."
 ---
 
 # manage-shennong-results

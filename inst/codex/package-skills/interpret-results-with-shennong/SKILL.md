@@ -1,6 +1,6 @@
 ---
 name: interpret-results-with-shennong
-description: Use when interpreting stored Shennong analysis outputs, building prompt bundles from Seurat object results, or generating annotation notes, results prose, figure legends, and presentation summaries from packaged evidence helpers.
+description: "Interpret stored Shennong results or build evidence-backed narrative and prompt bundles."
 ---
 
 # interpret-results-with-shennong

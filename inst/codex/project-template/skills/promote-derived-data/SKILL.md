@@ -1,3 +1,8 @@
+---
+name: promote-derived-data
+description: "Promote a validated run artifact into a reusable processed-data asset with provenance."
+---
+
 # promote-derived-data
 
 ## Purpose
