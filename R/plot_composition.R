@@ -55,7 +55,7 @@
 
 .sn_composition_theme <- function(plot, show_legend, angle_x, aspect_ratio,
                                   panel_widths, panel_heights) {
-  .sn_add_catplot_theme(
+  plot <- .sn_add_catplot_theme(
     plot,
     aspect_ratio = aspect_ratio,
     show_title = "both",
@@ -65,6 +65,7 @@
   ) +
     ggplot2::theme(legend.position = if (isTRUE(show_legend)) "right" else "none") +
     .sn_composition_panel_theme(panel_widths, panel_heights, aspect_ratio)
+  plot + .sn_composition_font_theme(plot)
 }
 
 .sn_composition_deduplicate_units <- function(metadata, unit_by, columns) {
@@ -167,7 +168,9 @@
 #' @param show_stratum_boxes Draw outlined Sankey node boxes (default FALSE).
 #'   Boxes are white for A/B; C retains colored bars and adds outlines. Labels
 #'   sit outside the flows in either mode.
-#' @param stratum_label_size Sankey label size in mm (default 3.5).
+#' @param stratum_label_size Sankey label size in mm for compatibility with
+#'   ggplot2 text layers. The default `8 / ggplot2::.pt` renders at 8 pt.
+#'   Composition titles, axes, facet strips, and legends also default to 8 pt.
 #'
 #' @details Sankey axes respect each input column's factor levels independently,
 #'   from top to bottom; character columns use first appearance order. Unused
@@ -249,7 +252,7 @@ sn_plot_composition <- function(data,
                                 sankey_layout = c("parallel", "expanded"),
                                 stratum_gap = 0.02,
                                 show_stratum_boxes = FALSE,
-                                stratum_label_size = 3.5,
+                                stratum_label_size = 8 / ggplot2::.pt,
                                 x_by = NULL, y_by = NULL, fill_by = NULL,
                                 facet_row_by = NULL, facet_col_by = NULL,
                                 style = c("A", "B", "C"),
@@ -361,15 +364,16 @@ sn_plot_composition <- function(data,
     plot <- .sn_add_discrete_palette(plot, palette, n_fill, aesthetic = "fill")
     plot <- .sn_composition_apply_facets(plot, facet_row_name, facet_col_name)
     plot <- plot + ggplot2::labs(title = title, x = x_label, y = y_label, fill = fill_name) +
-      ggplot2::theme_void(base_size = 12) +
+      ggplot2::theme_void(base_size = 8) +
       ggplot2::theme(
-        axis.text.x = ggplot2::element_text(colour = "black", size = 12,
+        axis.text.x = ggplot2::element_text(colour = "black", size = 8,
                                           margin = ggplot2::margin(b = 12)),
         legend.position = if (isTRUE(show_legend)) "right" else "none",
         plot.margin = ggplot2::margin(18, 24, 18, 24),
         aspect.ratio = if (style == "C") NULL else aspect_ratio
       )
-    plot <- plot + .sn_composition_panel_theme(panel_widths, panel_heights, panel_aspect)
+    plot <- plot + .sn_composition_panel_theme(panel_widths, panel_heights, panel_aspect) +
+      .sn_composition_font_theme(plot)
     if (style == "C") plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_blank())
     return(.sn_attach_figure_spec(
       plot, "composition",
@@ -792,7 +796,7 @@ sn_plot_composition <- function(data,
       group = .data$pie, fill = .data$.sn_fill), colour = NA)
   if (labels) {
     plot <- plot + ggplot2::geom_text(data = sources, ggplot2::aes(
-      x = .data$center, label = .data$label), y = 1.12, size = label_size * 1.2) +
+      x = .data$center, label = .data$label), y = 1.12, size = label_size) +
       ggplot2::geom_text(data = targets, ggplot2::aes(
         x = .data$center, label = .data$label), y = if (show_pies) -0.23 else -0.08,
         angle = 90, hjust = 1, size = label_size)
@@ -806,6 +810,8 @@ sn_plot_composition <- function(data,
 #' Dedicated composition entry points use ordinary strings for column names.
 #' They share data preparation, counting, and figure metadata with
 #' [sn_plot_composition()]. They do not duplicate statistical implementations.
+#' Text defaults to 8 pt. For style C, `show_pies = FALSE` hides bottom pies
+#' without changing the ribbons; TRUE shows them (the default for C).
 #'
 #' @param data A Seurat object or metadata/summary data frame.
 #' @param flow_by Character vector of metadata columns in stage order.
@@ -824,10 +830,10 @@ sn_plot_composition <- function(data,
 #' sn_plot_sankey(d, flow_by = c("original", "final"), style = "B")
 #' @export
 sn_plot_sankey <- function(data, flow_by, fill_by = NULL, style = c("A", "B", "C"),
-                           panel_widths = NULL, panel_heights = NULL, ...) {
+                           panel_widths = NULL, panel_heights = NULL, show_pies = NULL, ...) {
   .sn_composition_entry(data, "sankey", list(flow_by = flow_by, fill_by = fill_by,
                                            style = match.arg(style), panel_widths = panel_widths,
-                                           panel_heights = panel_heights), list(...))
+                                           panel_heights = panel_heights, show_pies = show_pies), list(...))
 }
 
 #' Plot composition bars with string column names
@@ -903,5 +909,19 @@ sn_plot_histogram <- function(data, x_by, fill_by = NULL, panel_widths = NULL, p
   if (!is.null(dimensions$panel_widths)) args$panel.widths <- grid::unit(dimensions$panel_widths, "pt")
   if (!is.null(dimensions$panel_heights)) args$panel.heights <- grid::unit(dimensions$panel_heights, "pt")
   if (length(args)) args <- c(args, list(aspect.ratio = NULL))
+  do.call(ggplot2::theme, args)
+}
+
+
+.sn_composition_font_theme <- function(plot) {
+  elements <- c("text", "axis.title", "axis.title.x", "axis.title.y",
+                "axis.text", "axis.text.x", "axis.text.y", "legend.title",
+                "legend.text", "strip.text", "strip.text.x", "strip.text.y",
+                "plot.title", "plot.subtitle", "plot.caption", "plot.tag")
+  resolved <- ggplot2::theme_get() + plot$theme
+  elements <- elements[vapply(elements, function(x) {
+    inherits(ggplot2::calc_element(x, resolved), "element_text")
+  }, logical(1))]
+  args <- stats::setNames(lapply(elements, function(x) ggplot2::element_text(size = 8)), elements)
   do.call(ggplot2::theme, args)
 }

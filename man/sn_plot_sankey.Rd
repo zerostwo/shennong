@@ -11,6 +11,7 @@ sn_plot_sankey(
   style = c("A", "B", "C"),
   panel_widths = NULL,
   panel_heights = NULL,
+  show_pies = NULL,
   ...
 )
 }
@@ -34,6 +35,10 @@ derives it from its coordinate ratio even when \code{aspect_ratio} is omitted.
 Explicit width and height take precedence over \code{aspect_ratio}. These sizes
 exclude outer labels/margins; choose a sufficiently large export canvas.}
 
+\item{show_pies}{Show source-composition pies below style C target nodes;
+NULL enables them only for C. All pies have equal size, with slices computed
+from the same retained weights as the flows within each facet.}
+
 \item{...}{Additional named arguments to \code{\link[=sn_plot_composition]{sn_plot_composition()}}, including
 \code{sankey_layout}, \code{stratum_gap}, \code{show_stratum_boxes}, \code{stratum_label_size},
 \code{show_pies}, \code{node_palette}, \code{axis_labels}, \code{facet_row_by}, \code{facet_col_by},
@@ -46,6 +51,8 @@ A ggplot with Shennong figure metadata and source data attached.
 Dedicated composition entry points use ordinary strings for column names.
 They share data preparation, counting, and figure metadata with
 \code{\link[=sn_plot_composition]{sn_plot_composition()}}. They do not duplicate statistical implementations.
+Text defaults to 8 pt. For style C, \code{show_pies = FALSE} hides bottom pies
+without changing the ribbons; TRUE shows them (the default for C).
 }
 \examples{
 d <- data.frame(original = c("T", "T", "NK"), final = c("T", "NK", "NK"))

@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+* Standardized all composition plot text defaults to 8 pt, including Sankey
+  labels and C-style source headings. `sn_plot_sankey()` now exposes
+  `show_pies` explicitly; TRUE/FALSE includes or omits C-style composition pies.
+
 * Completed physical panel sizing across all composition entry points and
   Sankey styles A/B/C. Widths and heights use pt and apply without catplot;
   style C derives a consistent coordinate ratio to retain circular pies.

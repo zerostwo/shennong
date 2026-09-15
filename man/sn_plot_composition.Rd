@@ -41,7 +41,7 @@ sn_plot_composition(
   sankey_layout = c("parallel", "expanded"),
   stratum_gap = 0.02,
   show_stratum_boxes = FALSE,
-  stratum_label_size = 3.5,
+  stratum_label_size = 8/ggplot2::.pt,
   x_by = NULL,
   y_by = NULL,
   fill_by = NULL,
@@ -150,7 +150,9 @@ A/C, 0.008 for B).}
 Boxes are white for A/B; C retains colored bars and adds outlines. Labels
 sit outside the flows in either mode.}
 
-\item{stratum_label_size}{Sankey label size in mm (default 3.5).}
+\item{stratum_label_size}{Sankey label size in mm for compatibility with
+ggplot2 text layers. The default \code{8 / ggplot2::.pt} renders at 8 pt.
+Composition titles, axes, facet strips, and legends also default to 8 pt.}
 
 \item{x_by, y_by, fill_by}{Character scalar column names for the x axis,
 summarized values, and color grouping. These are the preferred interface;

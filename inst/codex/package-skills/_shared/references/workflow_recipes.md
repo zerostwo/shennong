@@ -623,3 +623,7 @@ and visualization articles for runnable examples and styling controls.
 Composition panel sizes use `panel_widths`/`panel_heights` in pt for all five
 entry points. A/B support facet-size vectors; C requires scalars and preserves
 circular pies. These are panel dimensions, not the full export canvas.
+
+Composition plots default to 8 pt for labels, titles, axes, strips, and legends.
+Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
+`show_pies = TRUE` restores them without changing ribbon counts.

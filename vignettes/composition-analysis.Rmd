@@ -361,3 +361,21 @@ so all pies remain circular. Supplying both sizes takes precedence over
 `aspect_ratio`. With one size and an aspect ratio the other is derived; C also
 derives a missing size using its default coordinate ratio. Export to a canvas
 large enough to include the panel plus labels, title, legend and margins.
+
+### Eight-point text and optional pies
+
+All composition plot text defaults to **8 pt**, including axes, titles, legends,
+facet strips and Sankey node labels. C-style source headings use the same size.
+For backward compatibility `stratum_label_size` still takes millimeters; its
+new default is `8 / ggplot2::.pt` to produce 8 pt text.
+
+C-style bottom pies are optional through an explicit `sn_plot_sankey()` argument:
+
+```r
+sn_plot_sankey(seurat_obj, flow_by = c("age_group", "cell_type"),
+               style = "C", show_pies = FALSE)  # no pies
+sn_plot_sankey(seurat_obj, flow_by = c("age_group", "cell_type"),
+               style = "C", show_pies = TRUE)   # include pies (C default)
+```
+
+Toggling pies preserves the ribbons and their underlying cell counts.

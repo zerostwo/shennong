@@ -6707,7 +6707,7 @@
     {
       "function_name": "sn_plot_composition",
       "runtime_classified": true,
-      "formal_digest": "d362df97a8c70629657e1c8791c335c5c45024320bb8ba79f600890e08105c24",
+      "formal_digest": "94866f9bc22d49feb66cf26846e97cdde79c5864fdcce997407c223576713df4",
       "parameters": [
         {
           "name": "data",
@@ -6963,10 +6963,10 @@
         },
         {
           "name": "stratum_label_size",
-          "class": "numeric",
-          "default": "3.5",
+          "class": "expression",
+          "default": "8/ggplot2::.pt",
           "selector_values": null,
-          "minimum_cases": 4
+          "minimum_cases": 1
         },
         {
           "name": "x_by",
@@ -9451,7 +9451,7 @@
     {
       "function_name": "sn_plot_sankey",
       "runtime_classified": true,
-      "formal_digest": "a99159141df87bb9e4e6f3567f53d02ebb939abbf36aca264114f7a6dd2c33d5",
+      "formal_digest": "be765dcae2b0b8b93e6051ee2e19e0f55b3c5fdaf7b5c7e7d53f5b79a6f5a069",
       "parameters": [
         {
           "name": "data",
@@ -9490,6 +9490,13 @@
         },
         {
           "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "show_pies",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
