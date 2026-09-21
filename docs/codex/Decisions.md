@@ -1,6 +1,17 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-06
+Last updated: 2026-09-20
+
+## 2026-09-20
+
+- BPCells-backed scran normalization uses supplied cluster assignments as the
+  streaming boundary. A scalar character `clusters` value names Seurat
+  metadata; each scran chunk is capped by `max.cluster.size`, and the
+  normalized `data` layer remains a lazy BPCells transform. Automatic
+  `quickCluster()` remains the explicit whole-layer sparse-materialization
+  boundary because upstream scran does not accept iterable matrices. The
+  implementation lives in `preprocessing_scran.R` so the existing
+  preprocessing owner does not exceed its source-size admission limit.
 
 ## 2026-09-15
 

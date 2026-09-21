@@ -277,15 +277,26 @@ silently reuse stale PCA or graph state.
 
 `sn_normalize_data()` and `sn_score_cell_cycle()` keep preprocessing inside the
 same Shennong vocabulary used later by clustering and plotting.
-When `method = "scran"` reads a BPCells-backed layer, Shennong materializes that
-selected layer directly as a sparse matrix for scran compatibility; it does not
-create a dense intermediate, and the returned object's count layer remains
-BPCells-backed.
+For `method = "scran"`, `clusters` can name a Seurat metadata column or
+contain one label per cell. Supplying clusters for a BPCells-backed layer lets
+Shennong compute size factors in sparse chunks of at most
+`max.cluster.size` cells (the scran default is 3,000); both the original counts
+and normalized `data` layer remain BPCells-backed. Without supplied clusters,
+`scran::quickCluster()` still requires one full sparse materialization, though
+the normalized output remains lazy.
+
+```{r scran-bpcells-normalization, eval = FALSE}
+reference <- sn_normalize_data(
+  reference,
+  method = "scran",
+  clusters = "cell_type_level2"
+)
+```
 
 ```{r normalize-cycle}
 pbmc_norm <- sn_normalize_data(
   object = pbmc_genes,
-  normalization_method = "seurat",
+  method = "seurat",
   verbose = FALSE
 )
 

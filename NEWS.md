@@ -5,6 +5,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+* Fixed `sn_normalize_data(method = "scran", clusters = "metadata_column")`
+  so a single string resolves to Seurat metadata instead of being passed as a
+  one-element cluster vector. BPCells-backed inputs with supplied clusters now
+  compute size factors in bounded sparse chunks and retain a lazy BPCells
+  normalized `data` layer, avoiding whole-matrix count and normalized-data
+  materialization.
+
 * Standardized all composition plot text defaults to 8 pt, including Sankey
   labels and C-style source headings. `sn_plot_sankey()` now exposes
   `show_pies` explicitly; TRUE/FALSE includes or omits C-style composition pies.

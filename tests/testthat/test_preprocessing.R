@@ -417,12 +417,97 @@ test_that("sn_normalize_data supports automatic scran clustering from BPCells co
   expect_true(Shennong:::.sn_is_iterable_matrix(
     SeuratObject::LayerData(normalized, assay = "RNA", layer = "counts")
   ))
-  expect_s4_class(
-    SeuratObject::LayerData(normalized, assay = "RNA", layer = "data"),
-    "dgCMatrix"
-  )
+  expect_true(Shennong:::.sn_is_iterable_matrix(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")
+  ))
   expect_true(all(is.finite(normalized$size.factor)))
-  expect_gt(sum(SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")), 0)
+  expect_gt(sum(Matrix::colSums(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")
+  )), 0)
+})
+
+test_that("sn_normalize_data resolves scran cluster metadata and streams BPCells groups", {
+  skip_if_not_installed("BPCells")
+  skip_if_not_installed("scran")
+  skip_if_not_installed("SingleCellExperiment")
+  skip_if_not_installed("SeuratObject")
+
+  set.seed(718)
+  counts <- Matrix::Matrix(
+    matrix(rpois(80 * 120, lambda = 3), nrow = 80),
+    sparse = TRUE
+  )
+  rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  cluster_labels <- rep(c("type_a", "type_b"), each = 60)
+  path <- tempfile("shennong-scran-grouped-bpcells-")
+  on.exit(unlink(path, recursive = TRUE), add = TRUE)
+  BPCells::write_matrix_dir(
+    BPCells::convert_matrix_type(counts, "uint32_t"),
+    dir = path
+  )
+  object <- sn_initialize_seurat_object(
+    x = BPCells::open_matrix_dir(path),
+    project = "scran-grouped-bpcells"
+  )
+  object$cell_type_level2 <- cluster_labels
+
+  normalized <- sn_normalize_data(
+    object = object,
+    method = "scran",
+    clusters = "cell_type_level2",
+    max.cluster.size = 40
+  )
+  reference_sce <- SingleCellExperiment::SingleCellExperiment(
+    assays = list(counts = counts)
+  )
+  reference_sce <- scran::computeSumFactors(
+    reference_sce,
+    clusters = cluster_labels,
+    min.mean = 0.1,
+    max.cluster.size = 40
+  )
+  reference_factors <- SingleCellExperiment::sizeFactors(reference_sce)
+
+  expect_true(Shennong:::.sn_is_iterable_matrix(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "counts")
+  ))
+  expect_true(Shennong:::.sn_is_iterable_matrix(
+    SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")
+  ))
+  expect_true(all(is.finite(normalized$size.factor)))
+  expect_gt(stats::cor(normalized$size.factor, reference_factors), 0.999)
+  expect_lt(max(abs(normalized$size.factor / reference_factors - 1)), 0.005)
+  expect_lte(max(table(Shennong:::.sn_split_scran_clusters(cluster_labels, 40))), 40)
+  expect_equal(
+    unname(normalized$total_counts_normalized),
+    unname(Matrix::colSums(counts) / normalized$size.factor),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    as.matrix(SeuratObject::LayerData(normalized, assay = "RNA", layer = "data")),
+    log1p(t(t(as.matrix(counts)) / normalized$size.factor)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("sn_normalize_data validates scran cluster metadata", {
+  skip_if_not_installed("scran")
+  skip_if_not_installed("SingleCellExperiment")
+
+  counts <- Matrix::Matrix(matrix(rpois(50 * 60, lambda = 3), nrow = 50), sparse = TRUE)
+  rownames(counts) <- paste0("gene", seq_len(nrow(counts)))
+  colnames(counts) <- paste0("cell", seq_len(ncol(counts)))
+  object <- sn_initialize_seurat_object(x = counts, project = "scran-cluster-validation")
+
+  expect_error(
+    sn_normalize_data(object, method = "scran", clusters = "missing_cluster"),
+    "metadata column"
+  )
+  expect_error(
+    sn_normalize_data(object, method = "scran", clusters = rep("a", 59)),
+    "one value per analyzed cell"
+  )
 })
 
 test_that("sn_normalize_data SCTransform restores future globals option", {

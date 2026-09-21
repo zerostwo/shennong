@@ -161,10 +161,11 @@ canonical envelope with `sn_get_result()`.
 
 ## Recipe: Normalize and cluster a single dataset
 
-1. `sn_normalize_data()` when explicit normalization control is needed. The
-   scran method accepts BPCells-backed layers by materializing only the selected
-   layer directly as an in-memory sparse matrix; the returned count layer stays
-   BPCells-backed.
+1. `sn_normalize_data()` when explicit normalization control is needed. For
+   scran on BPCells-backed layers, supply `clusters` as a metadata column name
+   (or one label per cell) to compute size factors in bounded sparse chunks;
+   counts and normalized data then remain BPCells-backed. Omitting clusters
+   invokes `quickCluster()` and still requires one full sparse materialization.
 2. `sn_run_cluster()` for PCA, neighbors, clustering, and embeddings. Add
    `hvg_features = c(...)` when known rare-population markers should be forced
    into the PCA feature set, and use `block_genes = c(...)` when cell-cycle,

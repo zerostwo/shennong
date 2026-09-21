@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-07
+Last updated: 2026-09-20
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
@@ -8,7 +8,7 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
-- The complete local test suite passes 5,559 assertions with zero failures,
+- The complete local test suite passes 5,691 assertions with zero failures,
   11 warnings, and one skip. The warnings are explicit compatibility or
   environment boundaries: one BBKNN/Seurat command-log warning, seven
   Scrublet warnings for ignored scDblFinder-only controls, two scmap warnings
@@ -77,8 +77,10 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Known open boundaries
 
-- Some BPCells-backed operations still materialize an in-memory sparse matrix
-  at O(nnz); a fully streaming writer/algorithm path is not implemented.
+- BPCells-backed scran normalization is bounded by `max.cluster.size` when
+  cluster assignments are supplied and keeps normalized data lazy. Automatic
+  scran clustering still materializes the selected layer at O(nnz), and some
+  other BPCells-backed operations retain similar compatibility boundaries.
 - Live upstream conformance is intentionally strongest for admitted and pilot
   methods. Registry and static parameter gates cover the broader optional
   backend surface, but they are not substitutes for a real oracle run.
