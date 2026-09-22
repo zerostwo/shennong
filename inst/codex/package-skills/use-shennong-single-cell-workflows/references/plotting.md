@@ -37,7 +37,7 @@ reduction to preserve your original two-dimensional map:
 
 ```r
 # Optional packages for this workflow:
-# install.packages(c("misc3d", "ggrastr", "htmlwidgets"))
+# install.packages(c("misc3d", "htmlwidgets", "chromote", "png"))
 obj <- Seurat::RunUMAP(
   obj, reduction = "pca", dims = 1:20, n.components = 3L,
   reduction.name = "umap3d", reduction.key = "UMAP3D_", seed.use = 717
@@ -72,8 +72,13 @@ p_gene <- sn_plot_feature(
 ggplot2::ggsave("NKG7-nebula.pdf", p_gene, width = 6, height = 5, dpi = 600)
 ```
 
-The browser is a self-contained JavaScript Canvas viewer, with no CDN or GPU
-requirement. A standalone browser cannot change a running R variable: the JSON
+The browser is a self-contained WebGL viewer with locally bundled shaders
+and no CDN dependency. Smooth normals, per-pixel rim lighting, soft particles
+and bloom distinguish glass from nebula. The original coordinates and number
+of cells are preserved; no synthetic particles are inserted. Static export
+requires Chrome/Chromium (or `CHROMOTE_CHROME` pointing to its executable),
+`chromote` and `png`. It uses local software WebGL rendering, so no dedicated
+GPU is required. A standalone browser cannot change a running R variable: the JSON
 or copied R list is the explicit return path. `sn_get_plot_camera(viewer)` returns
 its **initial** camera, not subsequent browser interactions. Downloading/copying
 pauses automatic rotation. Preserve the reduction, cell subset and grouping
@@ -83,16 +88,19 @@ Static output is a regular ggplot. Its **entire point/surface layer is rasterize
 at 600 dpi**, including when saved to PDF. Labels and legends remain vector.
 `ggsave(dpi = 600)` alone does not configure a ggplot raster layer; use
 `raster_dpi = 600` as above (also the new styles' default). The actual raster size
-follows the physical panel size at draw time. Browser and PDF share projection
-and depth ordering, but browser antialiasing, point sizing and text layout may
-differ. Saving a widget with `ggsave()` is unsupported; regenerate the static
+follows the physical panel size at draw time. Browser and PDF use the same geometry and WebGL shader code; export renders
+at the requested pixel size instead of upsampling a browser screenshot.
+GPU/CPU antialiasing and vector text layout may differ. Saving a widget with `ggsave()` is unsupported; regenerate the static
 plot with `interactive = FALSE` (the default).
 
 `style_control` accepts `surface_alpha`, `point_alpha`, `glow` (all 0--1),
-`surface_mass` (0.5--0.99, default 0.9), `bandwidth` (0.2--5, default 1),
-`grid_size` (integer 16--64, default 32), `background`, and `auto_rotate`.
+`surface_mass` (0.5--0.99, default 0.95), `bandwidth` (0.2--5, default 0.75),
+`grid_size` (integer 16--64, default 48), `background`, and `auto_rotate`.
 The surface is a Gaussian-smoothed, binned three-dimensional density envelope
-of each group's coordinates. It is a visual aid, **not a measured tissue
+of each group's coordinates. Its smoothing scale is estimated from local
+neighbor distances, so distant islands do not inflate a global covariance
+ellipsoid. At most 128 evenly spaced cells probe distances to all group cells
+for this bandwidth estimate; all selected cells enter the KDE grid. It is a visual aid, **not a measured tissue
 boundary or feature-expression isosurface**. Disconnected components are
 retained when resolved by the grid; smoothing can still merge nearby islands.
 Groups with fewer than five cells or rank-deficient coordinates show points
@@ -102,7 +110,9 @@ and grid size; use an explicit `cells` subset when necessary.
 
 Static plots support multiple features and `split_by`; browser viewing currently
 supports one panel. Three-dimensional styles use a square borderless panel,
-white labels, and numeric feature legends. They reject shape/highlight/repel,
+white labels with dark backplates and colored anchors, and numeric feature legends.
+The default 3D categorical palette uses muted luminous colors; an explicit
+`palette` or `cols` still takes precedence. Default point size is 0.20 mm. They reject shape/highlight/repel,
 expression blending, `mode = "density"`, and extra Seurat arguments in `...`.
 These remain available through `style = "classic"`. `group_by` in feature plots
 is only for the new 3D styles; `keep_scale` controls shared expression limits.

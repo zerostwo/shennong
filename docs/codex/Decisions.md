@@ -1871,3 +1871,23 @@ existing signatures, retaining classic defaults. Three real dimensions are
 required; no implicit UMAP recomputation or fabricated Z coordinate is allowed.
 Static multipanel rendering is supported; interactive mode is single-panel.
 Density surfaces are visualization aids and do not represent tissue boundaries.
+
+## 2026-09-22: Replace flat embedding painter with one WebGL renderer
+
+Visual comparison with both supplied videos rejected the first Canvas/96-bin
+implementation: flat colored faces did not reproduce translucent membranes,
+continuous rim lighting or fine point clouds. This supersedes the earlier
+Canvas export decision. Ship dependency-free local WebGL shaders, interpolate
+shared-vertex normals per fragment, and add soft particle and bloom passes.
+The static grid grob calls the same renderer through local headless Chromium
+at its draw-time physical size times raster_dpi; labels remain vector. Admit
+optional chromote/png dependencies. Export uses SwiftShader without reserving
+a GPU; missing Chromium/WebGL produces an explicit error, never a silent
+approximation or upsampled 512-pixel image. Cache captures by physical pixel
+size on the plot, close browser sessions and remove temporary files on exit.
+
+A 6,288-cell real fixture also exposed global-SD KDE bandwidth inflation across
+separated islands. Use an isotropic local-neighbor scale estimated by up to
+128 deterministic probes against all group cells, with a grid-resolution
+floor. Every cell still enters both the density grid and point buffer. Do not
+add particles to imply measured cells that are not present.

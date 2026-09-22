@@ -27,6 +27,7 @@ Suggests	BiocParallel
 Suggests	BiocSingular
 Suggests	BPCells
 Suggests	catplot
+Suggests	chromote
 Suggests	decontX
 Suggests	CellChat
 Suggests	clusterProfiler
@@ -78,6 +79,7 @@ Suggests	org.Hs.eg.db
 Suggests	org.Mm.eg.db
 Suggests	patchwork
 Suggests	pkgdown
+Suggests	png
 Suggests	progeny
 Suggests	qs2
 Suggests	readr

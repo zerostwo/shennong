@@ -5,6 +5,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- Improve 3D nebula/glass fidelity with smooth per-pixel WebGL rim lighting,
+  soft particles, bloom, distinct material presets and anchored labels. PDF
+  export now uses the same local shader at physical-size-aware 600 dpi through
+  Chrome/Chromium, chromote and png. Local-neighbor KDE bandwidth prevents
+  distant cells from inflating group surfaces into large empty ellipsoids.
+
 - Add `style = "nebula"` / `"glass"` to `sn_plot_dim()` and `sn_plot_feature()`
   for real 3D embeddings. A local JavaScript viewer exports rotation, pan and
   zoom through camera JSON or an R list; `sn_get_plot_camera()` imports the view

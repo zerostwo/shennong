@@ -1,4 +1,4 @@
-# Shared orthographic 3D scene for browser exploration and rasterized ggplot export.
+# Shared 3D geometry for WebGL exploration and identical rasterized ggplot export.
 .sn_embedding_scalar <- function(x, name, lower = -Inf, upper = Inf) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < lower || x > upper) {
     stop("`", name, "` must be a finite number in [", lower, ", ", upper, "].", call. = FALSE)
@@ -43,10 +43,10 @@ sn_get_plot_camera <- function(x = NULL) {
 }
 
 .sn_embedding_control <- function(control, style) {
-  defaults <- list(surface_alpha = if (style == "glass") .18 else .07,
-                   point_alpha = .8, glow = if (style == "glass") .25 else .8,
-                   surface_mass = .9, bandwidth = 1, grid_size = 32L,
-                   background = "#080B18", auto_rotate = FALSE)
+  defaults <- list(surface_alpha = if (style == "glass") .16 else .035,
+                   point_alpha = .85, glow = if (style == "glass") .3 else .85,
+                   surface_mass = .95, bandwidth = .75, grid_size = 48L,
+                   background = if (style == "glass") "#03030C" else "#101322", auto_rotate = FALSE)
   if (!is.list(control) || (length(control) && (is.null(names(control)) || anyDuplicated(names(control))))) {
     stop("`style_control` must be a named list.", call. = FALSE)
   }
@@ -92,8 +92,18 @@ sn_get_plot_camera <- function(x = NULL) {
 .sn_embedding_surface <- function(xyz, control, scale) {
   if (nrow(xyz) < 5L || qr(sweep(xyz, 2, colMeans(xyz)))$rank < 3L) return(matrix(numeric(), 0, 3))
   n <- as.integer(control$grid_size)
-  spread <- apply(xyz, 2, stats::sd)
-  h <- pmax(spread * nrow(xyz)^(-1 / 7), scale / 100) * control$bandwidth
+  # A global per-axis SD inflates shells when one group has separated islands
+  # or a few distant cells. Estimate a local isotropic length scale instead.
+  # Probe at most 128 evenly spaced cells against ALL group cells; no cells are
+  # removed from the density grid or the displayed cloud.
+  probes <- unique(round(seq(1, nrow(xyz), length.out = min(128L, nrow(xyz)))))
+  k <- min(12L, nrow(xyz) - 1L)
+  distances <- vapply(probes, function(i) {
+    d2 <- rowSums(sweep(xyz, 2, xyz[i, ])^2)
+    sqrt(sort(d2, partial = k + 1L)[k + 1L])
+  }, numeric(1))
+  local <- max(stats::median(distances) * control$bandwidth, scale / 300)
+  h <- pmax(rep(local, 3), apply(xyz, 2, function(x) diff(range(x))) / (n - 7) * .8)
   axes <- lapply(seq_len(3), function(k) seq(min(xyz[, k]) - 3 * h[k], max(xyz[, k]) + 3 * h[k], length.out = n))
   index <- vapply(seq_len(3), function(k) pmax(1L, pmin(n, round((xyz[, k] - axes[[k]][1]) / diff(axes[[k]])[1]) + 1L)), numeric(nrow(xyz)))
   bins <- array(tabulate(index[, 1] + n * (index[, 2] - 1L) + n^2 * (index[, 3] - 1L), nbins = n^3), rep(n, 3))
@@ -131,8 +141,8 @@ sn_get_plot_camera <- function(x = NULL) {
   dpi <- max(raster_dpi)
   .sn_embedding_scalar(dpi, "raster_dpi", 72, 2400)
   if (!is.logical(interactive) || length(interactive) != 1L || is.na(interactive)) stop("`interactive` must be TRUE or FALSE.", call. = FALSE)
-  rlang::check_installed(c("misc3d", "ggrastr"), reason = "for 3D embedding surfaces and rasterized PDF output")
-  if (interactive) rlang::check_installed("htmlwidgets", reason = "for the interactive camera viewer")
+  rlang::check_installed(c("misc3d", "htmlwidgets"), reason = "for 3D embedding surfaces and the shared WebGL renderer")
+  if (!interactive) rlang::check_installed(c("chromote", "png"), reason = "for 600 dpi WebGL capture during ggsave()")
   control <- .sn_embedding_control(style_control, style)
   camera <- sn_get_plot_camera(camera)
   reduction <- reduction %||% SeuratObject::DefaultDimReduc(object)
@@ -200,7 +210,7 @@ sn_get_plot_camera <- function(x = NULL) {
       values[[i]] <- pmax(lo, pmin(hi, values[[i]]))
     }
   }
-  pt_size <- pt_size %||% .35
+  pt_size <- pt_size %||% .20
   .sn_embedding_scalar(pt_size, "pt_size", .001, 20)
   scenes <- list()
   for (split in unique(splits)) {
@@ -235,15 +245,7 @@ sn_get_plot_camera <- function(x = NULL) {
   }
   if (interactive) {
     if (length(scenes) != 1L) stop("Interactive 3D viewing currently requires one feature and no split panels; static output supports multiple panels.", call. = FALSE)
-    widget_scene <- scenes[[1]]
-    widget_scene$group_colors <- as.list(widget_scene$group_colors)
-    for (field in c("labels", "cells", "groups", "point_colors", "group_labels", "group_color_values")) {
-      widget_scene[[field]] <- I(widget_scene[[field]])
-    }
-    widget <- htmlwidgets::createWidget("shennongEmbedding", list(scene = widget_scene, camera = camera),
-      package = "Shennong", width = NULL, height = 650,
-      sizingPolicy = htmlwidgets::sizingPolicy(padding = 0, browser.fill = TRUE))
-    return(widget)
+    return(.sn_embedding_widget(scenes[[1]], camera))
   }
   plots <- lapply(scenes, .sn_embedding_static, camera = camera, dpi = dpi)
   if (!combine) return(plots)
@@ -254,82 +256,18 @@ sn_get_plot_camera <- function(x = NULL) {
   p
 }
 
-# Depth slices interleave points and transparent faces. Both renderers use the
-# same 96 bins and face-normal rim lighting (no camera-dependent geometry).
-.sn_embedding_primitives <- function(scene, camera) {
-  points <- .sn_embedding_project(scene$xyz, camera, scene$center, scene$radius)
-  faces <- lapply(scene$surfaces, function(surface) {
-    vertices <- surface$vertices
-    if (!nrow(vertices)) return(NULL)
-    projected <- .sn_embedding_project(vertices, camera, scene$center, scene$radius)
-    a <- projected[seq(1, nrow(projected), 3), , drop = FALSE]
-    b <- projected[seq(2, nrow(projected), 3), , drop = FALSE]
-    c <- projected[seq(3, nrow(projected), 3), , drop = FALSE]
-    # Normals must be measured before zoom/pan, which only affect x/y.
-    u <- sweep(b - a, 2, c(camera$zoom, camera$zoom, 1), "/")
-    v <- sweep(c - a, 2, c(camera$zoom, camera$zoom, 1), "/")
-    normal <- cbind(u[, 2] * v[, 3] - u[, 3] * v[, 2], u[, 3] * v[, 1] - u[, 1] * v[, 3], u[, 1] * v[, 2] - u[, 2] * v[, 1])
-    rim <- (1 - abs(normal[, 3]) / pmax(sqrt(rowSums(normal^2)), 1e-15))^3
-    alpha <- pmin(.85, scene$control$surface_alpha + scene$control$glow * rim * .5)
-    rgb <- as.numeric(grDevices::col2rgb(surface$color)) / 255
-    light <- scene$control$glow * rim * .55
-    fill <- grDevices::rgb(rgb[1] + (1 - rgb[1]) * light, rgb[2] + (1 - rgb[2]) * light, rgb[3] + (1 - rgb[3]) * light, alpha)
-    data.frame(x1 = a[, 1], y1 = a[, 2], x2 = b[, 1], y2 = b[, 2],
-               x3 = c[, 1], y3 = c[, 2], z = (a[, 3] + b[, 3] + c[, 3]) / 3, fill = fill)
-  })
-  list(points = points, faces = do.call(rbind, faces))
-}
-
-.sn_embedding_scene_grob <- function(scene, camera, panel_params, coord) {
-  primitives <- .sn_embedding_primitives(scene, camera)
-  points <- as.data.frame(primitives$points)
-  points$colour <- scene$point_colors
-  points <- coord$transform(points, panel_params)
-  faces <- primitives$faces
-  if (!is.null(faces)) {
-    for (k in 1:3) {
-      xy <- coord$transform(data.frame(x = faces[[paste0("x", k)]], y = faces[[paste0("y", k)]]), panel_params)
-      faces[[paste0("x", k)]] <- xy$x
-      faces[[paste0("y", k)]] <- xy$y
-    }
-  }
-  depth <- range(c(points$z, faces$z))
-  bin <- function(z) if (diff(depth) == 0) rep(1L, length(z)) else pmin(96L, 1L + floor(95 * (z - depth[1]) / diff(depth)))
-  pb <- bin(points$z)
-  fb <- bin(faces$z)
-  children <- list()
-  add <- function(g) children[[length(children) + 1L]] <<- g
-  for (i in seq_len(96)) {
-    f <- if (!is.null(faces)) faces[fb == i, , drop = FALSE] else NULL
-    if (nrow(f %||% data.frame()) > 0L) {
-      f <- f[order(f$z), , drop = FALSE]
-      add(grid::polygonGrob(x = as.vector(t(as.matrix(f[c("x1", "x2", "x3")]))),
-        y = as.vector(t(as.matrix(f[c("y1", "y2", "y3")]))), id.lengths = rep(3L, nrow(f)),
-        default.units = "native", gp = grid::gpar(fill = f$fill, col = NA)))
-    }
-    p <- points[pb == i, , drop = FALSE]
-    if (nrow(p)) {
-      p <- p[order(p$z), , drop = FALSE]
-      if (scene$control$glow > 0) add(grid::pointsGrob(p$x, p$y, pch = 16, default.units = "native",
-        gp = grid::gpar(col = scales::alpha(p$colour, .08 * scene$control$glow), fontsize = scene$pt_size * 2.845276 * 3)))
-      add(grid::pointsGrob(p$x, p$y, pch = 16, default.units = "native",
-        gp = grid::gpar(col = scales::alpha(p$colour, scene$control$point_alpha), fontsize = scene$pt_size * 2.845276)))
-    }
-  }
-  grid::gTree(children = do.call(grid::gList, children))
-}
-
 .sn_embedding_static <- function(scene, camera, dpi) {
+  cache <- new.env(parent = emptyenv())
   geom <- ggplot2::ggproto(NULL, ggplot2::Geom,
     required_aes = c("x", "y"), default_aes = ggplot2::aes(),
     draw_key = ggplot2::draw_key_blank,
-    draw_panel = function(data, panel_params, coord, scene, camera) {
-      .sn_embedding_scene_grob(scene, camera, panel_params, coord)
+    draw_panel = function(data, panel_params, coord, scene, camera, dpi, cache) {
+      grid::gTree(scene = scene, camera = camera, dpi = dpi, cache = cache, cl = "sn_embedding_webgl")
     })
   scene_layer <- ggplot2::layer(geom = geom, stat = "identity", position = "identity",
     data = data.frame(x = 0, y = 0), mapping = ggplot2::aes(x = .data$x, y = .data$y),
-    inherit.aes = FALSE, params = list(scene = scene, camera = camera))
-  p <- ggplot2::ggplot() + ggrastr::rasterise(scene_layer, dpi = dpi) +
+    inherit.aes = FALSE, params = list(scene = scene, camera = camera, dpi = dpi, cache = cache))
+  p <- ggplot2::ggplot() + scene_layer +
     ggplot2::coord_fixed(xlim = c(-1, 1), ylim = c(-1, 1), expand = FALSE) +
     ggplot2::theme_void(base_size = 8) + ggplot2::labs(title = scene$title) +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = scene$control$background, colour = NA),
@@ -339,8 +277,19 @@ sn_get_plot_camera <- function(x = NULL) {
   if (length(scene$labels)) {
     labels <- as.data.frame(.sn_embedding_project(scene$label_xyz, camera, scene$center, scene$radius))
     labels$label <- scene$labels
-    p <- p + ggplot2::geom_text(data = labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label),
-                              colour = "white", size = scene$label_size)
+    labels$colour <- unname(scene$group_colors[labels$label])
+    p <- p + ggplot2::geom_label(data = labels,
+      ggplot2::aes(x = .data$x + .025, y = .data$y, label = .data$label), hjust = 0,
+      colour = "#F1F4FA", fill = "#060914B8", linewidth = 0, size = scene$label_size,
+      label.padding = grid::unit(.12, "lines"))
+    if (scene$style == "nebula") {
+      p <- p + ggplot2::geom_segment(data = labels,
+        ggplot2::aes(x = .data$x, xend = .data$x, y = .data$y - .025, yend = .data$y + .025),
+        colour = labels$colour, linewidth = .5)
+    } else {
+      p <- p + ggplot2::geom_point(data = labels, ggplot2::aes(x = .data$x, y = .data$y),
+        colour = labels$colour, size = 1.2)
+    }
   }
   if (scene$show_legend) {
     keys <- if (is.null(scene$values)) names(scene$group_colors) else scene$limits

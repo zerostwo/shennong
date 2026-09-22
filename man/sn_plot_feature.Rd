@@ -155,23 +155,24 @@ derives the missing panel dimension automatically.}
 \code{"nebula"} and \code{"glass"} use real three-dimensional embeddings (\code{dims = 1:3}).
 Static 3D output is a ggplot with the complete point/surface scene rasterized
 at 600 dpi by default; labels and legends remain vector elements. Set
-\code{raster_dpi = 600} explicitly when exporting. Requires misc3d and ggrastr.}
+\code{raster_dpi = 600} explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.}
 
-\item{style_control}{Named 3D controls: \code{surface_alpha} (glass 0.18, nebula
-0.07), \code{point_alpha} (0.8 for dimension plots), \code{glow} (glass 0.25, nebula
-0.8), \code{surface_mass} (0.9), \code{bandwidth} (1), \code{grid_size} (32, integer
-16--64), \code{background} (\code{"#080B18"}), and \code{auto_rotate} (FALSE, browser only).
+\item{style_control}{Named 3D controls: \code{surface_alpha} (glass 0.16, nebula
+0.035), \code{point_alpha} (0.85 for dimension plots), \code{glow} (glass 0.3, nebula
+0.85), \code{surface_mass} (0.95), \code{bandwidth} (0.75), \code{grid_size} (48, integer
+16--64), \code{background} (glass \code{"#03030C"}, nebula \code{"#101322"}), and
+\code{auto_rotate} (FALSE, browser only).
 Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
 expression contours or biological boundaries. Groups with fewer than five
 cells or rank-deficient coordinates retain points without a surface.}
 
 \item{camera}{Camera list or downloaded JSON accepted by \code{\link[=sn_get_plot_camera]{sn_get_plot_camera()}}.}
 
-\item{interactive}{If TRUE, return a local JavaScript Canvas htmlwidget with
+\item{interactive}{If TRUE, return a local WebGL htmlwidget with
 drag rotation, shift-drag pan, scroll zoom, and camera export controls.
 Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
-compatible with \code{ggsave()}. Browser and R share orthographic projection;
-antialiasing and text layout can differ. 3D styles have a square, borderless
+compatible with \code{ggsave()}. Browser and PDF use the same WebGL shader;
+GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
 panel, white labels and numeric feature legends. Seurat-only shape,
 highlight, repel, blend, density-mode and extra \code{...} options are rejected.}
 

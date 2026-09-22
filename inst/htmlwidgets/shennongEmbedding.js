@@ -1,10 +1,8 @@
-/* Shennong orthographic embedding viewer. No network, GPU or CDN dependency.
- * Projection and 96-bin transparent painter match R/plot_embedding.R.
- */
+/* Local WebGL embedding viewer. The same renderer supplies static PDF rasters. */
 HTMLWidgets.widget({
   name: 'shennongEmbedding', type: 'output',
   factory: function(el, width, height) {
-    let scene, camera, initial, canvas, ctx, stage, fields, output, frame = null;
+    let scene, camera, initial, canvas, labelCanvas, ctx, renderer, stage, fields, output, frame = null;
     let rotate = false, lastTime = 0, disposed = false;
     const rad = Math.PI / 180;
     function project(p) {
@@ -30,63 +28,36 @@ HTMLWidgets.widget({
         ', pan = c(' + camera.pan.map(n).join(', ') + '))';
     }
     function sync() {
-      Object.keys(fields || {}).forEach(k => { fields[k].value = Number(camera[k].toFixed(5)); });
+      Object.keys(fields || {}).forEach(k => {
+        // A pending GPU frame must not overwrite an angle the user is typing.
+        if (document.activeElement !== fields[k]) fields[k].value = Number(camera[k].toFixed(5));
+      });
       if (output) output.value = cameraText();
     }
     function draw() {
-      if (!scene || !canvas) return;
+      if (!scene || !renderer) return;
       const size = Math.max(1, Math.min(stage.clientWidth, stage.clientHeight));
       const dpr = window.devicePixelRatio || 1;
-      if (canvas.width !== Math.round(size * dpr)) {
-        canvas.width = canvas.height = Math.round(size * dpr);
-        canvas.style.width = canvas.style.height = size + 'px';
-      }
+      const pixels = Math.round(size * dpr);
+      canvas.style.width = canvas.style.height = size + 'px';
+      labelCanvas.width = labelCanvas.height = pixels;
+      labelCanvas.style.width = labelCanvas.style.height = size + 'px';
+      renderer.render(camera, pixels, pixels, pixels / 5);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = scene.control.background;
-      ctx.fillRect(0, 0, size, size);
-      const xy = p => [(p[0] + 1) * size / 2, (1 - p[1]) * size / 2];
-      const points = scene.xyz.map((p, i) => ({p: project(p), i: i}));
-      const faces = [];
-      Object.values(scene.surfaces).forEach(surface => {
-        const v = surface.vertices;
-        for (let i = 0; i < v.length; i += 3) {
-          const a = project(v[i]), b = project(v[i + 1]), c = project(v[i + 2]);
-          const u = b.map((x, j) => (x - a[j]) / (j < 2 ? camera.zoom : 1));
-          const w = c.map((x, j) => (x - a[j]) / (j < 2 ? camera.zoom : 1));
-          const norm = [u[1]*w[2]-u[2]*w[1], u[2]*w[0]-u[0]*w[2], u[0]*w[1]-u[1]*w[0]];
-          const rim = Math.pow(1 - Math.abs(norm[2]) / Math.max(Math.hypot(...norm), 1e-15), 3);
-          const alpha = Math.min(.85, scene.control.surface_alpha + scene.control.glow * rim * .5);
-          const light = scene.control.glow * rim * .55;
-          const col = rgb(surface.color).map(x => Math.round(x + (255 - x) * light));
-          faces.push({v: [a, b, c], z: (a[2] + b[2] + c[2])/3,
-            fill: 'rgba(' + col.join(',') + ',' + alpha + ')'});
-        }
+      ctx.clearRect(0, 0, size, size);
+      const textSize = scene.label_size * size / 127;
+      ctx.font = Math.max(10, textSize) + 'px sans-serif';
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      scene.labels.forEach((label, i) => {
+        const q = project(scene.label_xyz[i]), x = (q[0]+1)*size/2, y = (1-q[1])*size/2;
+        const tint = scene.group_color_values[scene.group_labels.indexOf(label)];
+        const w = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(6,9,20,.72)';ctx.fillRect(x+5,y-9,w+10,18);
+        ctx.fillStyle = tint;
+        if(scene.style==='nebula') ctx.fillRect(x,y-9,2,18);
+        else {ctx.shadowColor=tint;ctx.shadowBlur=6;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+        ctx.fillStyle = '#f1f4fa';ctx.fillText(label,x+10,y);
       });
-      let lo = Infinity, hi = -Infinity;
-      points.forEach(p => {lo = Math.min(lo, p.p[2]); hi = Math.max(hi, p.p[2]);});
-      faces.forEach(f => {lo = Math.min(lo, f.z); hi = Math.max(hi, f.z);});
-      const bin = z => hi === lo ? 0 : Math.min(95, Math.floor(95 * (z - lo) / (hi - lo)));
-      const pb = Array.from({length: 96}, () => []), fb = Array.from({length: 96}, () => []);
-      points.forEach(p => pb[bin(p.p[2])].push(p)); faces.forEach(f => fb[bin(f.z)].push(f));
-      // pt_size is millimetres; preview assumes a five-inch square panel.
-      const radius = scene.pt_size / 127 * size * .375;
-      function dot(p, scale, alpha) {
-        const q = xy(p.p); ctx.beginPath();
-        ctx.arc(q[0], q[1], Math.max(.15, radius * scale), 0, Math.PI * 2);
-        ctx.fillStyle = rgba(scene.point_colors[p.i], alpha); ctx.fill();
-      }
-      for (let i = 0; i < 96; i++) {
-        fb[i].sort((a,b) => a.z-b.z).forEach(f => {
-          const v = f.v.map(xy); ctx.beginPath(); ctx.moveTo(...v[0]);
-          ctx.lineTo(...v[1]); ctx.lineTo(...v[2]); ctx.closePath(); ctx.fillStyle = f.fill; ctx.fill();
-        });
-        pb[i].sort((a,b) => a.p[2]-b.p[2]);
-        if (scene.control.glow > 0) pb[i].forEach(p => dot(p, 3, .08 * scene.control.glow));
-        pb[i].forEach(p => dot(p, 1, scene.control.point_alpha));
-      }
-      ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = Math.max(10, scene.label_size / 127 * size) + 'px sans-serif';
-      scene.labels.forEach((label, i) => { const p = xy(project(scene.label_xyz[i])); ctx.fillText(label, ...p); });
       sync();
     }
     function schedule() {
@@ -106,6 +77,7 @@ HTMLWidgets.widget({
     function pause() { rotate = false; if (el.querySelector('[data-rotate]')) el.querySelector('[data-rotate]').checked = false; }
     function render(x) {
       if (frame !== null) cancelAnimationFrame(frame);
+      if (renderer) renderer.dispose();
       frame = null; disposed = false; scene = x.scene; camera = JSON.parse(JSON.stringify(x.camera));
       initial = JSON.parse(JSON.stringify(camera)); rotate = scene.control.auto_rotate;
       el.replaceChildren();
@@ -114,8 +86,18 @@ HTMLWidgets.widget({
       element('div', scene.title || '3D embedding', el).style.cssText = 'padding:10px 12px;font-size:15px;';
       const main = element('div', null, el); main.style.cssText = 'display:flex;flex:1;min-height:220px;overflow:hidden;';
       stage = element('div', null, main); stage.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;';
-      canvas = element('canvas', null, stage); canvas.setAttribute('aria-label', 'Rotate 3D embedding: drag; shift-drag to pan; scroll to zoom');
-      canvas.style.touchAction = 'none'; ctx = canvas.getContext('2d');
+      const canvasBox = element('div', null, stage); canvasBox.style.cssText = 'position:relative;display:flex;';
+      canvas = element('canvas', null, canvasBox); canvas.setAttribute('aria-label', 'Rotate 3D embedding: drag; shift-drag to pan; scroll to zoom');
+      canvas.style.touchAction = 'none';
+      labelCanvas = element('canvas', null, canvasBox); labelCanvas.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;';
+      ctx = labelCanvas.getContext('2d');
+      try {
+        renderer = new ShennongEmbeddingRenderer(canvas, scene);
+      } catch (error) {
+        el.shennongError = error.message;
+        const alert = element('div', error.message, el); alert.setAttribute('role', 'alert');
+        throw error;
+      }
       if (scene.show_legend) {
         const legend = element('div', null, main); legend.style.cssText = 'width:145px;flex-shrink:0;align-self:center;padding:8px;max-height:100%;overflow:auto;';
         element('strong', scene.legend_title, legend);
@@ -137,6 +119,7 @@ HTMLWidgets.widget({
         const label = element('label', k + ' ', controls); label.style.marginRight = '8px';
         const input = element('input', null, label); input.type = 'number'; input.step = k === 'zoom' ? '.05' : '1';
         input.style.width = '70px'; input.setAttribute('aria-label', k); fields[k] = input;
+        input.onfocus = pause;
         input.onchange = () => {const v = Number(input.value); if (Number.isFinite(v) && (k !== 'zoom' || (v >= .01 && v <= 100))) {pause(); camera[k] = v; schedule();}};
       });
       const rotation = element('label', ' Auto rotate ', controls), checkbox = element('input', null, rotation);
@@ -168,6 +151,7 @@ HTMLWidgets.widget({
       };
       canvas.onpointerup = canvas.onpointercancel = () => {drag = null;};
       canvas.onwheel = event => {event.preventDefault(); pause(); camera.zoom = Math.max(.01, Math.min(100, camera.zoom * Math.exp(-event.deltaY*.001))); schedule();};
+      el.shennongCapture = (w,h,dpi) => renderer.capture(camera,w,h,dpi);
       el.shennongCamera = () => JSON.parse(JSON.stringify(camera));
       el.shennongProject = p => project(p);
       sync(); schedule();

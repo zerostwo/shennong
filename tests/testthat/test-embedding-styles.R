@@ -1,7 +1,9 @@
 .embedding_style_fixture <- function() {
   skip_if_not_installed("Seurat")
   suppressWarnings(skip_if_not_installed("misc3d"))
-  skip_if_not_installed("ggrastr")
+  skip_if_not_installed("htmlwidgets")
+  skip_if_not_installed("chromote")
+  skip_if_not_installed("png")
   set.seed(78)
   counts <- matrix(rpois(6 * 90, 3), 6, dimnames = list(paste0("gene", 1:6), paste0("cell", 1:90)))
   obj <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
@@ -28,7 +30,8 @@ test_that("public embedding styles preserve cells and rasterize the complete sce
     expect_gt(sum(vapply(scene$surfaces, function(s) nrow(s$vertices), integer(1))), 0)
     grobs <- p$layers[[1]]$draw_geom(ggplot2::ggplot_build(p)$data[[1]], ggplot2::ggplot_build(p)$layout)
     expect_equal(grobs[[1]]$dpi, 600)
-    expect_s3_class(grobs[[1]], "rasteriser")
+    expect_s3_class(grobs[[1]], "sn_embedding_webgl")
+    if (!nzchar(chromote::find_chrome() %||% "")) next
     file <- tempfile(fileext = ".pdf")
     ggplot2::ggsave(file, p, width = 4, height = 4, dpi = 600)
     expect_gt(file.info(file)$size, 1000)
@@ -100,11 +103,30 @@ test_that("single-group widget vectors stay arrays and missing layers cannot sil
 
 test_that("geometry handles small groups and preserves disconnected islands", {
   set.seed(701)
-  ctl <- .sn_embedding_control(list(grid_size = 24L, bandwidth = .25), "glass")
+  ctl <- .sn_embedding_control(list(grid_size = 32L), "glass")
   expect_equal(nrow(.sn_embedding_surface(matrix(1:12, 4), ctl, 5)), 0)
   xyz <- rbind(matrix(rnorm(150, sd = .1), ncol = 3), matrix(rnorm(150, sd = .1), ncol = 3) + 5)
   vertices <- .sn_embedding_surface(xyz, ctl, 5)
   expect_gt(nrow(vertices), 0)
   # No fabricated bridge across the empty middle of the two clouds.
   expect_false(any(vertices[, 1] > 1.5 & vertices[, 1] < 3.5))
+})
+
+test_that("WebGL export renders real pixels at the requested size and does not upsample", {
+  obj <- .embedding_style_fixture()
+  skip_if(!nzchar(chromote::find_chrome() %||% ""), "Chrome is needed for WebGL capture.")
+  p <- sn_plot_dim(obj, reduction = "umap3d", dims = 1:3, style = "nebula", group_by = "cell_type")
+  scene <- attr(p, "shennong_embedding_scene")
+  raster <- .sn_embedding_capture(scene, sn_get_plot_camera(p), 600L, 600L, 600)
+  expect_equal(dim(raster), c(600, 600))
+  expect_s3_class(raster, "nativeRaster")
+  expect_gt(length(unique(as.integer(raster))), 100)
+  expect_equal(length(scene$cells), ncol(obj))
+  # The browser dependency must ship locally, rather than fetching a CDN.
+  w <- .sn_embedding_widget(scene, sn_get_plot_camera(p))
+  directory <- tempfile("widget-")
+  dir.create(directory)
+  on.exit(unlink(directory, recursive = TRUE))
+  htmlwidgets::saveWidget(w, file.path(directory, "viewer.html"), selfcontained = FALSE)
+  expect_true(length(list.files(directory, "shennong-webgl[.]js", recursive = TRUE)) == 1L)
 })

@@ -8,17 +8,18 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
-- Three-dimensional embedding styles have public-entry regression coverage,
-  local 2,000-cell PBMC dim/feature HTML and PDF examples, and browser-to-R
-  camera projection agreement within 1e-12. PDF readback confirms a single
-  approximately 600-dpi scene image with vector text. The working-tree focused
-  plotting/architecture/parameter run passes 921 assertions without warnings.
-  Source build and structural R CMD check pass with zero errors/warnings;
-  the existing Sankey unqualified `head` NOTE remains.
-  The pkgdown site has been rebuilt locally. These checks are scoped to this
-  feature; the full-suite figures below are the earlier baseline, not a rerun
-  of the complete suite for the embedding change.
-
+- Three-dimensional embedding styles now use a shared local WebGL shader for
+  browser and PDF output. Focused tests cover actual headless captures, exact
+  output pixel dimensions, locally shipped dependencies, camera round-trip,
+  assay/layer values and disconnected density islands. Visual checks include
+  the same 2,000-cell PBMC before/after view and a 6,288-cell Blood2 fixture;
+  no cells are duplicated to increase apparent density. This revision passes
+  913 focused assertions (zero failures/warnings/skips), source build, and
+  structural package check (one existing Sankey `head` NOTE). The local
+  pkgdown site was rebuilt. Browser-downloaded angles were reapplied to a
+  PDF whose raster resolution and vector text were independently read back.
+  The complete-suite
+  figures below are the earlier baseline, not a full rerun for this revision.
 - The complete local test suite passes 5,691 assertions with zero failures,
   11 warnings, and one skip. The warnings are explicit compatibility or
   environment boundaries: one BBKNN/Seurat command-log warning, seven
@@ -51,12 +52,13 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 ## Current architecture state
 
 - `sn_plot_dim()` and `sn_plot_feature()` retain classic rendering and add
-  real-3D nebula/glass scenes. A local Canvas htmlwidget exports an orthographic
-  camera; static ggplots share the geometry and projection and rasterize points
-  plus KDE isosurfaces together at 600 dpi. Labels and legends remain vector.
-  Interactive mode is single-panel; static rendering supports split panels and
-  multiple features. The browser is not a live R-session camera binding.
-
+  real-3D nebula/glass scenes. Local WebGL supplies smooth normals, per-pixel
+  rim lighting, soft points and bloom. ggsave captures that same renderer via
+  chromote/Chrome at draw-time physical size times 600 dpi, with vector labels
+  and legends. Local-neighbor bandwidth replaces global-SD KDE smoothing to
+  avoid inflated empty shells. Export needs Chrome/Chromium; missing WebGL is
+  an explicit error. Interactive mode remains single-panel and returns camera
+  changes through downloaded JSON/copied R, not a live R-session binding.
 - `R/` contains 83 domain-oriented source files. Large mixed modules have been
   split along stable responsibilities, including bulk design, BBKNN,
   result semantics, gene-symbol preparation, Python artifact validation, and

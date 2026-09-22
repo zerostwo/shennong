@@ -83,3 +83,9 @@ ggplots with `raster_dpi = 600` and `ggsave(..., dpi = 600)`: surfaces and point
 are rasterized together, labels and legends remain vector. Feature colors use
 the specified assay/layer; `group_by` controls envelopes only. Envelopes are
 visual density aids, not tissue boundaries. Never invent a third coordinate.
+
+The 3D renderer uses WebGL with local shaders. Static 600 dpi capture requires
+Chrome/Chromium plus chromote and png, and runs through the same shader as the
+viewer. Do not fall back silently to the old flat polygon renderer. Density
+envelopes use local-neighbor bandwidth estimates; do not duplicate cells to
+imitate the apparent point density of a reference image.

@@ -557,20 +557,21 @@ sn_plot_milo <- function(x,
 #'   `"nebula"` and `"glass"` use real three-dimensional embeddings (`dims = 1:3`).
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
 #'   at 600 dpi by default; labels and legends remain vector elements. Set
-#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and ggrastr.
-#' @param style_control Named 3D controls: `surface_alpha` (glass 0.18, nebula
-#'   0.07), `point_alpha` (0.8 for dimension plots), `glow` (glass 0.25, nebula
-#'   0.8), `surface_mass` (0.9), `bandwidth` (1), `grid_size` (32, integer
-#'   16--64), `background` (`"#080B18"`), and `auto_rotate` (FALSE, browser only).
+#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.
+#' @param style_control Named 3D controls: `surface_alpha` (glass 0.16, nebula
+#'   0.035), `point_alpha` (0.85 for dimension plots), `glow` (glass 0.3, nebula
+#'   0.85), `surface_mass` (0.95), `bandwidth` (0.75), `grid_size` (48, integer
+#'   16--64), `background` (glass `"#03030C"`, nebula `"#101322"`), and
+#'   `auto_rotate` (FALSE, browser only).
 #'   Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
 #'   expression contours or biological boundaries. Groups with fewer than five
 #'   cells or rank-deficient coordinates retain points without a surface.
 #' @param camera Camera list or downloaded JSON accepted by [sn_get_plot_camera()].
-#' @param interactive If TRUE, return a local JavaScript Canvas htmlwidget with
+#' @param interactive If TRUE, return a local WebGL htmlwidget with
 #'   drag rotation, shift-drag pan, scroll zoom, and camera export controls.
 #'   Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
-#'   compatible with `ggsave()`. Browser and R share orthographic projection;
-#'   antialiasing and text layout can differ. 3D styles have a square, borderless
+#'   compatible with `ggsave()`. Browser and PDF use the same WebGL shader;
+#'   GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
 #'   panel, white labels and numeric feature legends. Seurat-only shape,
 #'   highlight, repel, blend, density-mode and extra `...` options are rejected.
 #' @param ... Additional parameters to be passed to the DimPlot() function in Seurat.
@@ -638,6 +639,7 @@ sn_plot_dim <- function(
 ) {
   style <- match.arg(style)
   if (style != "classic") {
+    if (missing(palette)) palette <- c("#65CFC0", "#97ACDC", "#D99A78", "#A7C981", "#D78CAE", "#B79BDC", "#DCC570", "#79BFD5", "#BDADA0")
     .sn_embedding_reject(list(shape_by = !is.null(shape_by), order = !is.null(order),
       shuffle = shuffle, cells_highlight = !is.null(cells_highlight), label_box = label_box,
       repel = repel, show_axis = show_axis, panel_widths = !is.null(panel_widths),
@@ -1617,20 +1619,21 @@ sn_plot_dot <- function(x,
 #'   `"nebula"` and `"glass"` use real three-dimensional embeddings (`dims = 1:3`).
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
 #'   at 600 dpi by default; labels and legends remain vector elements. Set
-#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and ggrastr.
-#' @param style_control Named 3D controls: `surface_alpha` (glass 0.18, nebula
-#'   0.07), `point_alpha` (0.8 for dimension plots), `glow` (glass 0.25, nebula
-#'   0.8), `surface_mass` (0.9), `bandwidth` (1), `grid_size` (32, integer
-#'   16--64), `background` (`"#080B18"`), and `auto_rotate` (FALSE, browser only).
+#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.
+#' @param style_control Named 3D controls: `surface_alpha` (glass 0.16, nebula
+#'   0.035), `point_alpha` (0.85 for dimension plots), `glow` (glass 0.3, nebula
+#'   0.85), `surface_mass` (0.95), `bandwidth` (0.75), `grid_size` (48, integer
+#'   16--64), `background` (glass `"#03030C"`, nebula `"#101322"`), and
+#'   `auto_rotate` (FALSE, browser only).
 #'   Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
 #'   expression contours or biological boundaries. Groups with fewer than five
 #'   cells or rank-deficient coordinates retain points without a surface.
 #' @param camera Camera list or downloaded JSON accepted by [sn_get_plot_camera()].
-#' @param interactive If TRUE, return a local JavaScript Canvas htmlwidget with
+#' @param interactive If TRUE, return a local WebGL htmlwidget with
 #'   drag rotation, shift-drag pan, scroll zoom, and camera export controls.
 #'   Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
-#'   compatible with `ggsave()`. Browser and R share orthographic projection;
-#'   antialiasing and text layout can differ. 3D styles have a square, borderless
+#'   compatible with `ggsave()`. Browser and PDF use the same WebGL shader;
+#'   GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
 #'   panel, white labels and numeric feature legends. Seurat-only shape,
 #'   highlight, repel, blend, density-mode and extra `...` options are rejected.
 #' @param group_by For 3D styles, metadata column defining geometry groups and

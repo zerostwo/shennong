@@ -2,7 +2,7 @@
 # Local, immutable-input PBMC demonstration. No downloads; ~2,000 cells.
 devtools::load_all(quiet = TRUE)
 input <- "data-local/pkgdown-real/single-cell/kotliarov_pbmc.qs2"
-out <- "dev/umap/style-demo"
+out <- "dev/umap/style-demo-v2"
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 obj <- qs2::qs_read(input)
 obj <- Seurat::NormalizeData(obj, verbose = FALSE)
