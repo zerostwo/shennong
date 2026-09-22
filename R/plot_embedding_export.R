@@ -56,3 +56,32 @@ makeContent.sn_embedding_webgl <- function(x) {
   grid::setChildren(x, grid::gList(grid::rasterGrob(get(key, envir = x$cache),
     width = grid::unit(1, "npc"), height = grid::unit(1, "npc"), interpolate = FALSE)))
 }
+
+# Planar KDE: triangulate the density grid, then interpolate and clip the contour
+# in the fragment shader. Z remains exactly zero for every vertex and cell.
+.sn_embedding_surface2d <- function(xy, control, scale) {
+  empty <- list(vertices = matrix(numeric(), 0, 3), density = numeric())
+  if (nrow(xy) < 5L || qr(sweep(xy, 2, colMeans(xy)))$rank < 2L) return(empty)
+  n <- as.integer(control$grid_size) * 2L
+  probes <- unique(round(seq(1, nrow(xy), length.out = min(128L, nrow(xy)))))
+  k <- min(12L, nrow(xy) - 1L)
+  distances <- vapply(probes, function(i) {
+    d2 <- rowSums(sweep(xy, 2, xy[i, ])^2)
+    sqrt(sort(d2, partial = k + 1L)[k + 1L])
+  }, numeric(1))
+  h <- max(stats::median(distances) * control$bandwidth, scale / 300,
+           max(apply(xy, 2, function(x) diff(range(x)))) / (n - 7) * .8)
+  axes <- lapply(1:2, function(k) seq(min(xy[, k]) - 3 * h, max(xy[, k]) + 3 * h, length.out = n))
+  index <- vapply(1:2, function(k) pmax(1L, pmin(n, round((xy[, k] - axes[[k]][1]) / diff(axes[[k]])[1]) + 1L)), numeric(nrow(xy)))
+  bins <- matrix(tabulate(index[, 1] + n * (index[, 2] - 1L), nbins = n^2), n)
+  kernels <- lapply(axes, function(a) exp(-outer(a, a, "-")^2 / (2 * h^2)))
+  bins <- kernels[[1]] %*% bins %*% kernels[[2]]
+  ordered <- sort(as.vector(bins), decreasing = TRUE)
+  threshold <- ordered[which(cumsum(ordered) >= sum(ordered) * control$surface_mass)[1]]
+  base <- as.vector(outer(seq_len(n - 1L), n * (0:(n - 2L)), "+"))
+  triangles <- as.vector(rbind(base, base + 1L, base + n + 1L,
+                              base, base + n + 1L, base + n))
+  grid <- as.matrix(expand.grid(axes[[1]], axes[[2]]))
+  list(vertices = cbind(grid[triangles, , drop = FALSE], 0),
+       density = unname(as.vector(bins)[triangles] / threshold))
+}

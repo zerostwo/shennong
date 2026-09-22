@@ -8,16 +8,18 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
-- Three-dimensional embedding styles now use a shared local WebGL shader for
+- Two- and three-dimensional embedding styles now use a shared local WebGL shader for
   browser and PDF output. Focused tests cover actual headless captures, exact
   output pixel dimensions, locally shipped dependencies, camera round-trip,
   assay/layer values and disconnected density islands. Visual checks include
   the same 2,000-cell PBMC before/after view and a 6,288-cell Blood2 fixture;
   no cells are duplicated to increase apparent density. This revision passes
-  913 focused assertions (zero failures/warnings/skips), source build, and
+  807 focused assertions (including 64 embedding-style assertions; zero failures/warnings/skips), source build, and
   structural package check (one existing Sankey `head` NOTE). The local
   pkgdown site was rebuilt. Browser-downloaded angles were reapplied to a
   PDF whose raster resolution and vector text were independently read back.
+  Two-dimensional PBMC dim/feature exports also pass 600 dpi/vector-text
+  readback, with all cells and contours constrained to zero depth.
   The complete-suite
   figures below are the earlier baseline, not a full rerun for this revision.
 - The complete local test suite passes 5,691 assertions with zero failures,
@@ -52,7 +54,8 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 ## Current architecture state
 
 - `sn_plot_dim()` and `sn_plot_feature()` retain classic rendering and add
-  real-3D nebula/glass scenes. Local WebGL supplies smooth normals, per-pixel
+  nebula/glass scenes. Default two-dimensional inputs use planar KDE contours
+  and a front-facing camera; explicit `dims = 1:3` uses real 3D coordinates. Local WebGL supplies smooth normals, per-pixel
   rim lighting, soft points and bloom. ggsave captures that same renderer via
   chromote/Chrome at draw-time physical size times 600 dpi, with vector labels
   and legends. Local-neighbor bandwidth replaces global-SD KDE smoothing to

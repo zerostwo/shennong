@@ -152,7 +152,8 @@ derives the missing panel dimension automatically.}
 \item{x_label, y_label}{Optional axis labels.}
 
 \item{style}{Rendering style: \code{"classic"} preserves the existing 2D plot;
-\code{"nebula"} and \code{"glass"} use real three-dimensional embeddings (\code{dims = 1:3}).
+\code{"nebula"} and \code{"glass"} use planar density contours with the default
+\code{dims = c(1, 2)}, or real three-dimensional embeddings with \code{dims = 1:3}.
 Static 3D output is a ggplot with the complete point/surface scene rasterized
 at 600 dpi by default; labels and legends remain vector elements. Set
 \code{raster_dpi = 600} explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.}

@@ -35,11 +35,17 @@
     const common = 'attribute vec3 position; uniform mat3 rotation; uniform float zoom; uniform vec2 pan;';
     const projection = 'vec3 p=rotation*position; gl_Position=vec4(p.xy*zoom+pan,-p.z*.1,1.);';
     const surfaceProgram = program(common + `
-      attribute vec3 normal; varying vec3 n;
-      void main(){n=rotation*normal; ${projection}}`, `
-      precision highp float; varying vec3 n; uniform vec3 tint;
+      attribute vec3 normal; attribute float density; varying float d; varying vec3 n;
+      void main(){d=density;n=rotation*normal; ${projection}}`, `
+      precision highp float; varying vec3 n; varying float d; uniform float planar; uniform vec3 tint;
       uniform float opacity; uniform float glow; uniform float glass;
       void main(){
+        if(planar>.5){
+          if(d<1.) discard;
+          float edge=exp(-pow((d-1.)/mix(.32,.75,glass),2.));
+          float alpha=opacity*mix(.3,.65,glass)+edge*(opacity+glow*mix(.85,.5,glass));
+          gl_FragColor=vec4(mix(tint,tint+vec3(.06),edge),alpha); return;
+        }
         vec3 norm=normalize(n); float facing=abs(norm.z);
         float rim=pow(1.-facing,mix(2.8,1.5,glass));
         float diffuse=.35+.65*abs(dot(norm,normalize(vec3(-.4,.6,1.))));
@@ -87,7 +93,7 @@
         for(let k=0;k<3;k++){const key=keys[i/3+k], old=sums.get(key)||[0,0,0]; sums.set(key,old.map((x,j)=>x+n[j]));}
       }
       const normals=keys.flatMap(key=>{const n=sums.get(key),len=Math.hypot(...n)||1;return n.map(x=>x/len);});
-      surfaces.push({p:buffer(p),n:buffer(normals),count:p.length/3,color:color(s.color)});
+      surfaces.push({p:buffer(p),n:buffer(normals),d:buffer(s.density || new Array(p.length/3).fill(0)),count:p.length/3,color:color(s.color)});
     });
     function resize(w,h) {
       if(w===width && h===height) return;
@@ -121,10 +127,11 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER,targets[0].f);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
       gl.useProgram(surfaceProgram);view(surfaceProgram,camera);
+      gl.uniform1f(uniform(surfaceProgram,'planar'),scene.dimensions===2?1:0);
       gl.uniform1f(uniform(surfaceProgram,'opacity'),scene.control.surface_alpha);
       gl.uniform1f(uniform(surfaceProgram,'glow'),scene.control.glow);
       gl.uniform1f(uniform(surfaceProgram,'glass'),scene.style==='glass'?1:0);
-      surfaces.forEach(s=>{attr(surfaceProgram,'position',s.p,3);attr(surfaceProgram,'normal',s.n,3);gl.uniform3fv(uniform(surfaceProgram,'tint'),s.color);gl.drawArrays(gl.TRIANGLES,0,s.count);});
+      surfaces.forEach(s=>{attr(surfaceProgram,'position',s.p,3);attr(surfaceProgram,'normal',s.n,3);attr(surfaceProgram,'density',s.d,1);gl.uniform3fv(uniform(surfaceProgram,'tint'),s.color);gl.drawArrays(gl.TRIANGLES,0,s.count);});
       gl.useProgram(pointProgram);view(pointProgram,camera);attr(pointProgram,'position',pointPositions,3);attr(pointProgram,'tint',pointColors,3);
       gl.uniform1f(uniform(pointProgram,'whiten'),scene.values===null?.45:0.);
       const size=scene.pt_size*dpi/25.4;

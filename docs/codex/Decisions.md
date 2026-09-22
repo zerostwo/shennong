@@ -1891,3 +1891,13 @@ separated islands. Use an isotropic local-neighbor scale estimated by up to
 128 deterministic probes against all group cells, with a grid-resolution
 floor. Every cell still enters both the density grid and point buffer. Do not
 add particles to imply measured cells that are not present.
+
+
+### Planar embedding styles
+
+Default `dims = c(1, 2)` now draws 2D KDE contours in the same local WebGL
+renderer. Grid vertices and cells have zero depth; density is a shading
+attribute, never a synthetic coordinate. A front-facing orthographic camera
+preserves both selected coordinates. Explicit `dims = 1:3` retains real 3D
+envelopes. The planar helper lives with the shared export geometry utilities;
+no dependency or public API names are added.

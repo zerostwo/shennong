@@ -554,7 +554,8 @@ sn_plot_milo <- function(x,
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param style Rendering style: `"classic"` preserves the existing 2D plot;
-#'   `"nebula"` and `"glass"` use real three-dimensional embeddings (`dims = 1:3`).
+#'   `"nebula"` and `"glass"` use planar density contours with the default
+#'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
 #'   at 600 dpi by default; labels and legends remain vector elements. Set
 #'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.
@@ -1616,7 +1617,8 @@ sn_plot_dot <- function(x,
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label Optional axis labels.
 #' @param style Rendering style: `"classic"` preserves the existing 2D plot;
-#'   `"nebula"` and `"glass"` use real three-dimensional embeddings (`dims = 1:3`).
+#'   `"nebula"` and `"glass"` use planar density contours with the default
+#'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
 #'   at 600 dpi by default; labels and legends remain vector elements. Set
 #'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.

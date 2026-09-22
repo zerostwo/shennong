@@ -144,19 +144,21 @@ sn_get_plot_camera <- function(x = NULL) {
   rlang::check_installed(c("misc3d", "htmlwidgets"), reason = "for 3D embedding surfaces and the shared WebGL renderer")
   if (!interactive) rlang::check_installed(c("chromote", "png"), reason = "for 600 dpi WebGL capture during ggsave()")
   control <- .sn_embedding_control(style_control, style)
-  camera <- sn_get_plot_camera(camera)
+  camera <- sn_get_plot_camera(if (is.null(camera) && length(dims) == 2L) list(azimuth = 0, elevation = -90) else camera)
   reduction <- reduction %||% SeuratObject::DefaultDimReduc(object)
   if (!reduction %in% SeuratObject::Reductions(object)) stop("Unknown reduction: ", reduction, call. = FALSE)
   xyz <- SeuratObject::Embeddings(object[[reduction]])
-  if (!is.numeric(dims) || length(dims) != 3L || anyNA(dims) || anyDuplicated(dims) ||
+  if (!is.numeric(dims) || !length(dims) %in% c(2L, 3L) || anyNA(dims) || anyDuplicated(dims) ||
       any(dims != as.integer(dims)) || any(dims < 1 | dims > ncol(xyz))) {
-    stop("3D styles require three distinct existing embedding dimensions, e.g. `dims = 1:3`. Compute a 3D reduction first; plotting never recomputes UMAP.", call. = FALSE)
+    stop("Styles require two or three distinct existing embedding dimensions. Use `dims = 1:2` (default) for planar contours or `dims = 1:3` for a real 3D reduction; plotting never recomputes UMAP.", call. = FALSE)
   }
   cells <- cells %||% rownames(xyz)
   if (!is.character(cells) || !length(cells) || anyNA(cells) || anyDuplicated(cells) || any(!cells %in% rownames(xyz))) {
     stop("`cells` must be unique cell names present in the reduction.", call. = FALSE)
   }
   xyz <- unname(xyz[cells, dims, drop = FALSE])
+  planar <- length(dims) == 2L
+  if (planar) xyz <- cbind(xyz, 0)
   if (any(!is.finite(xyz))) stop("Embedding coordinates must be finite.", call. = FALSE)
   center <- (apply(xyz, 2, min) + apply(xyz, 2, max)) / 2
   radius <- max(sqrt(rowSums(sweep(xyz, 2, center)^2))) * 1.25
@@ -215,9 +217,13 @@ sn_get_plot_camera <- function(x = NULL) {
   scenes <- list()
   for (split in unique(splits)) {
     selected <- which(splits == split)
-    surfaces <- lapply(names(colors), function(g) list(
-      vertices = .sn_embedding_surface(xyz[selected[groups[selected] == g], , drop = FALSE], control, radius),
-      color = if (is.null(features)) unname(colors[g]) else "#A8B5CA"))
+    surfaces <- lapply(names(colors), function(g) {
+      coords <- xyz[selected[groups[selected] == g], , drop = FALSE]
+      surface <- if (planar) .sn_embedding_surface2d(coords[, 1:2, drop = FALSE], control, radius) else
+        list(vertices = .sn_embedding_surface(coords, control, radius))
+      surface$color <- if (is.null(features)) unname(colors[g]) else "#A8B5CA"
+      surface
+    })
     names(surfaces) <- names(colors)
     label_groups <- intersect(names(colors), unique(groups[selected]))
     centers <- t(vapply(label_groups, function(g) apply(xyz[selected[groups[selected] == g], , drop = FALSE], 2, stats::median), numeric(3)))
@@ -230,7 +236,7 @@ sn_get_plot_camera <- function(x = NULL) {
         index <- if (diff(limits) == 0) rep(1L, length(expr)) else 1L + round(255 * (expr - limits[1]) / diff(limits))
         ramp[pmax(1L, pmin(256L, index))]
       }
-      scene <- list(xyz = xyz[selected, , drop = FALSE], cells = cells[selected],
+      scene <- list(xyz = xyz[selected, , drop = FALSE], dimensions = length(dims), cells = cells[selected],
                     groups = groups[selected], point_colors = point_colors,
                     surfaces = surfaces, center = center, radius = radius,
                     label_xyz = centers, labels = if (label) label_groups else character(),

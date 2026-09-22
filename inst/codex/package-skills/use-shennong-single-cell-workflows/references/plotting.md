@@ -27,13 +27,22 @@ Prefer `sn_plot_result()` for stored/downstream analysis results; inspect
 Build prompts or stored-result summaries with the interpretation helpers
    when a narrative or report-ready output is needed.
 
-## Three-dimensional nebula and glass maps
+## Two- and three-dimensional nebula and glass maps
 
 `sn_plot_dim()` and `sn_plot_feature()` accept `style = "nebula"` (bright rims)
 or `style = "glass"` (translucent envelopes). `style = "classic"` preserves the
-existing plots. Both new styles require **three real embedding dimensions**;
-plotting never adds a random Z coordinate or recomputes UMAP. Use a separate
-reduction to preserve your original two-dimensional map:
+existing plots. Omitting `dims` uses **UMAP 1 and UMAP 2**, with planar density
+contours and a front-facing camera. Points and contours stay in the same plane;
+there is no inferred depth. For example:
+
+```r
+p <- sn_plot_dim(obj, reduction = "umap", group_by = "cell_type",
+                 style = "nebula", raster_dpi = 600)
+ggplot2::ggsave("umap-2d.pdf", p, width = 6, height = 6, dpi = 600)
+```
+
+An explicit `dims = 1:3` uses three real embedding dimensions. Plotting never
+adds a random Z coordinate or recomputes UMAP. To compute a separate 3D map:
 
 ```r
 # Optional packages for this workflow:
@@ -96,7 +105,7 @@ plot with `interactive = FALSE` (the default).
 `style_control` accepts `surface_alpha`, `point_alpha`, `glow` (all 0--1),
 `surface_mass` (0.5--0.99, default 0.95), `bandwidth` (0.2--5, default 0.75),
 `grid_size` (integer 16--64, default 48), `background`, and `auto_rotate`.
-The surface is a Gaussian-smoothed, binned three-dimensional density envelope
+The surface is a Gaussian-smoothed, binned density contour (2D) or density envelope (3D)
 of each group's coordinates. Its smoothing scale is estimated from local
 neighbor distances, so distant islands do not inflate a global covariance
 ellipsoid. At most 128 evenly spaced cells probe distances to all group cells
@@ -111,8 +120,8 @@ and grid size; use an explicit `cells` subset when necessary.
 Static plots support multiple features and `split_by`; browser viewing currently
 supports one panel. Three-dimensional styles use a square borderless panel,
 white labels with dark backplates and colored anchors, and numeric feature legends.
-The default 3D categorical palette uses muted luminous colors; an explicit
+The default styled categorical palette uses muted luminous colors; an explicit
 `palette` or `cols` still takes precedence. Default point size is 0.20 mm. They reject shape/highlight/repel,
 expression blending, `mode = "density"`, and extra Seurat arguments in `...`.
 These remain available through `style = "classic"`. `group_by` in feature plots
-is only for the new 3D styles; `keep_scale` controls shared expression limits.
+is only for the new styles; `keep_scale` controls shared expression limits.

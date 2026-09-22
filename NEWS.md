@@ -5,6 +5,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- Nebula/glass plots now accept the default two embedding dimensions: planar
+  density contours preserve UMAP_1/UMAP_2 without synthetic depth. Explicit
+  `dims = 1:3` retains the 3D workflow; 600 dpi raster export works in both.
+
+
 - Improve 3D nebula/glass fidelity with smooth per-pixel WebGL rim lighting,
   soft particles, bloom, distinct material presets and anchored labels. PDF
   export now uses the same local shader at physical-size-aware 600 dpi through

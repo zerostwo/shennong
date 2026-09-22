@@ -83,11 +83,11 @@ HTMLWidgets.widget({
       el.replaceChildren();
       Object.assign(el.style, {display: 'flex', flexDirection: 'column', background: scene.control.background,
         color: 'white', font: '12px sans-serif', minHeight: '420px'});
-      element('div', scene.title || '3D embedding', el).style.cssText = 'padding:10px 12px;font-size:15px;';
+      element('div', scene.title || (scene.dimensions === 2 ? '2D embedding' : '3D embedding'), el).style.cssText = 'padding:10px 12px;font-size:15px;';
       const main = element('div', null, el); main.style.cssText = 'display:flex;flex:1;min-height:220px;overflow:hidden;';
       stage = element('div', null, main); stage.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;';
       const canvasBox = element('div', null, stage); canvasBox.style.cssText = 'position:relative;display:flex;';
-      canvas = element('canvas', null, canvasBox); canvas.setAttribute('aria-label', 'Rotate 3D embedding: drag; shift-drag to pan; scroll to zoom');
+      canvas = element('canvas', null, canvasBox); canvas.setAttribute('aria-label', 'Rotate embedding: drag; shift-drag to pan; scroll to zoom');
       canvas.style.touchAction = 'none';
       labelCanvas = element('canvas', null, canvasBox); labelCanvas.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;';
       ctx = labelCanvas.getContext('2d');

@@ -76,7 +76,7 @@ test_that("feature styles honor assay layer, selected cell order, cutoffs and sh
 
 test_that("styles reject missing 3D inputs and incompatible options explicitly", {
   obj <- .embedding_style_fixture()
-  expect_error(sn_plot_dim(obj, reduction = "umap3d", style = "glass"), "three")
+  expect_error(sn_plot_dim(obj, reduction = "umap3d", dims = 1, style = "glass"), "two or three")
   expect_error(sn_plot_dim(obj, reduction = "umap3d", dims = 1:3, style = "glass", raster = FALSE), "raster")
   expect_error(sn_plot_feature(obj, "gene1", reduction = "umap3d", dims = 1:3,
                                style = "glass", mode = "density"), "mode")
@@ -129,4 +129,27 @@ test_that("WebGL export renders real pixels at the requested size and does not u
   on.exit(unlink(directory, recursive = TRUE))
   htmlwidgets::saveWidget(w, file.path(directory, "viewer.html"), selfcontained = FALSE)
   expect_true(length(list.files(directory, "shennong-webgl[.]js", recursive = TRUE)) == 1L)
+})
+
+
+test_that("omitted dimensions use the first two coordinates without synthetic depth", {
+  obj <- .embedding_style_fixture()
+  for (style in c("glass", "nebula")) {
+    p <- sn_plot_dim(obj, reduction = "umap3d", style = style, group_by = "cell_type")
+    scene <- attr(p, "shennong_embedding_scene")
+    expect_equal(scene$dimensions, 2)
+    expect_equal(scene$xyz[, 1:2], unname(SeuratObject::Embeddings(obj[["umap3d"]])[, 1:2]))
+    expect_true(all(scene$xyz[, 3] == 0))
+    expect_equal(sn_get_plot_camera(p)$elevation, -90)
+    expect_true(all(vapply(scene$surfaces, function(s) all(s$vertices[, 3] == 0), logical(1))))
+    expect_true(all(vapply(scene$surfaces, function(s) any(s$density > 1) && any(s$density < 1), logical(1))))
+    w <- sn_plot_feature(obj, "gene2", reduction = "umap3d", style = style, interactive = TRUE)
+    expect_equal(w$x$scene$dimensions, 2)
+    expect_true(all(w$x$scene$xyz[, 3] == 0))
+    if (nzchar(chromote::find_chrome() %||% "")) {
+      raster <- .sn_embedding_capture(scene, sn_get_plot_camera(p), 600L, 600L, 600)
+      expect_equal(dim(raster), c(600L, 600L))
+      expect_gt(length(unique(as.vector(raster))), 100)
+    }
+  }
 })
