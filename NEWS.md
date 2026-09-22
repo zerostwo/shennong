@@ -5,6 +5,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- Add `style = "nebula"` / `"glass"` to `sn_plot_dim()` and `sn_plot_feature()`
+  for real 3D embeddings. A local JavaScript viewer exports rotation, pan and
+  zoom through camera JSON or an R list; `sn_get_plot_camera()` imports the view
+  for ordinary ggplot/`ggsave()` output. Point clouds and group-density surfaces
+  rasterize together at 600 dpi by default, retaining vector labels/legends.
+  Static multi-feature/split plots and exact assay/layer expression colors are
+  supported; `style = "classic"` preserves existing behavior.
+
 * Fixed `sn_normalize_data(method = "scran", clusters = "metadata_column")`
   so a single string resolves to Seurat metadata instead of being passed as a
   one-element cluster vector. BPCells-backed inputs with supplied clusters now

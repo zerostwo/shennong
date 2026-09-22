@@ -387,6 +387,7 @@ reference:
       - sn_plot_enrichment
       - sn_plot_gsea
       - sn_plot_dim
+      - sn_get_plot_camera
       - sn_plot_feature
       - sn_plot_heatmap
       - sn_plot_violin

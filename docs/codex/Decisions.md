@@ -1854,3 +1854,20 @@ Last updated: 2026-09-20
   beside a bundled manifest during maintainer tests. They are excluded at both
   Git and R-build boundaries; the distributable package contains only audited
   manifests, lockfiles, and runner sources, never a local solver environment.
+
+## 2026-09-22: Shared 3D embedding scene and transferable camera
+
+Admit `sn_get_plot_camera`, optional `htmlwidgets` and `misc3d` dependencies.
+The former provides a local JS widget lifecycle; the latter supplies maintained
+marching-cubes geometry, avoiding a bespoke isosurface implementation. KDE uses
+a bounded separable grid and all selected cells. Existing ggrastr handles a
+single combined surface/point grob at physical-size-aware 600 dpi. Canvas and R
+share orthographic azimuth/elevation/roll, zoom and pan, with 96 depth slices.
+This favors reproducible view transfer and no CDN/GPU requirement over a WebGL
+shader-only implementation. Raster antialiasing and text can differ. Browser
+camera changes return explicitly via downloaded JSON or copied R code; reading
+a widget in R returns its initial camera. New style controls are appended to
+existing signatures, retaining classic defaults. Three real dimensions are
+required; no implicit UMAP recomputation or fabricated Z coordinate is allowed.
+Static multipanel rendering is supported; interactive mode is single-panel.
+Density surfaces are visualization aids and do not represent tissue boundaries.

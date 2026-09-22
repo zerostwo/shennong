@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 271,
+  "function_count": 272,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -4292,6 +4292,20 @@
       ]
     },
     {
+      "function_name": "sn_get_plot_camera",
+      "runtime_classified": true,
+      "formal_digest": "baa4ba8c9dba6c0dd507aa0676e0d398b7b4c0320b2fa539ae393fa19be167c4",
+      "parameters": [
+        {
+          "name": "x",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_get_regulatory_activity_result",
       "runtime_classified": true,
       "formal_digest": "1a75a7a68467b0dd9129fb11800f30f0b4ecc6630c695c36828a00d3fba00a80",
@@ -7092,7 +7106,7 @@
     {
       "function_name": "sn_plot_dim",
       "runtime_classified": true,
-      "formal_digest": "007db46afdacb453e240813d8f3dea78e5b3e47566a4012cc3f986f2ee237c48",
+      "formal_digest": "d6269ea0979cdca90208598504187de895217446e7f56031cd59c0ee26e76ba8",
       "parameters": [
         {
           "name": "object",
@@ -7331,6 +7345,34 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "selector",
+          "default": "c(\"classic\", \"nebula\", \"glass\")",
+          "selector_values": ["classic", "nebula", "glass"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "style_control",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "camera",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "interactive",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
         },
         {
           "name": "...",
@@ -7953,7 +7995,7 @@
     {
       "function_name": "sn_plot_feature",
       "runtime_classified": true,
-      "formal_digest": "817f38f5e5c465456e8e0f2ca0a6c1d4d2d2b22ac308559459b0ef173be80b1c",
+      "formal_digest": "dd1fe33524ac87f1e96b8e513c08233f49ab83588723b8570e09565470a39dac",
       "parameters": [
         {
           "name": "object",
@@ -8251,6 +8293,41 @@
         },
         {
           "name": "y_label",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "selector",
+          "default": "c(\"classic\", \"nebula\", \"glass\")",
+          "selector_values": ["classic", "nebula", "glass"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "style_control",
+          "class": "expression",
+          "default": "list()",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "camera",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "interactive",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "group_by",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,

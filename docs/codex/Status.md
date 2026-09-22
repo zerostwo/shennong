@@ -1,12 +1,23 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-20
+Last updated: 2026-09-22
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 `NEWS.md` records user-visible changes.
 
 ## Current validation
+
+- Three-dimensional embedding styles have public-entry regression coverage,
+  local 2,000-cell PBMC dim/feature HTML and PDF examples, and browser-to-R
+  camera projection agreement within 1e-12. PDF readback confirms a single
+  approximately 600-dpi scene image with vector text. The working-tree focused
+  plotting/architecture/parameter run passes 921 assertions without warnings.
+  Source build and structural R CMD check pass with zero errors/warnings;
+  the existing Sankey unqualified `head` NOTE remains.
+  The pkgdown site has been rebuilt locally. These checks are scoped to this
+  feature; the full-suite figures below are the earlier baseline, not a rerun
+  of the complete suite for the embedding change.
 
 - The complete local test suite passes 5,691 assertions with zero failures,
   11 warnings, and one skip. The warnings are explicit compatibility or
@@ -38,6 +49,13 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   exact commit SHA.
 
 ## Current architecture state
+
+- `sn_plot_dim()` and `sn_plot_feature()` retain classic rendering and add
+  real-3D nebula/glass scenes. A local Canvas htmlwidget exports an orthographic
+  camera; static ggplots share the geometry and projection and rasterize points
+  plus KDE isosurfaces together at 600 dpi. Labels and legends remain vector.
+  Interactive mode is single-panel; static rendering supports split panels and
+  multiple features. The browser is not a live R-session camera binding.
 
 - `R/` contains 83 domain-oriented source files. Large mixed modules have been
   split along stable responsibilities, including bulk design, BBKNN,

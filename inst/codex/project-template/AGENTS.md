@@ -71,3 +71,15 @@ circular pies. These are panel dimensions, not the full export canvas.
 Composition plots default to 8 pt for labels, titles, axes, strips, and legends.
 Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
 `show_pies = TRUE` restores them without changing ribbon counts.
+
+## Three-dimensional embedding figures
+
+For `sn_plot_dim()` / `sn_plot_feature(style = "nebula" | "glass")`, use an
+existing three-dimensional reduction and `dims = 1:3`. Preserve original 2D
+reductions. The browser viewer uses `interactive = TRUE`; download its camera
+JSON or copy its R list and pass it as `camera` to a static plot.
+`sn_get_plot_camera(viewer)` retrieves only the initial camera. Export static
+ggplots with `raster_dpi = 600` and `ggsave(..., dpi = 600)`: surfaces and points
+are rasterized together, labels and legends remain vector. Feature colors use
+the specified assay/layer; `group_by` controls envelopes only. Envelopes are
+visual density aids, not tissue boundaries. Never invent a third coordinate.
