@@ -1867,3 +1867,7 @@ Last updated: 2026-09-20
   beside a bundled manifest during maintainer tests. They are excluded at both
   Git and R-build boundaries; the distributable package contains only audited
   manifests, lockfiles, and runner sources, never a local solver environment.
+
+## 2026-09-23: CI backend version refresh
+
+Version provenance tests compare recorded versions with the installed package; the strict backend contract remains the separate exact-version admission gate. Refresh edgeR to 4.10.5 and enrichit to 0.2.4, matching the CI installation, and require the existing numerical parity cases to pass before merging. This avoids confusing a provenance-recording test with a dependency pin.

@@ -28,7 +28,7 @@
     ],
     "repository": "https://git.bioconductor.org/packages/edgeR",
     "versions": [
-      "edgeR 4.10.4"
+      "edgeR 4.10.5"
     ],
     "install_source": "Bioconductor"
   },
@@ -194,7 +194,7 @@
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
     "upstream": [
-      "edgeR 4.10.4"
+      "edgeR 4.10.5"
     ],
     "material_dependencies": [
       "limma",
