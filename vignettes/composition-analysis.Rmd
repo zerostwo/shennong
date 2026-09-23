@@ -214,7 +214,7 @@ Because miloR is optional, these chunks run only in the `all` profile when the
 backend is installed.
 
 ```{r run-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
-milo_tbl <- sn_run_milo(
+milo_result <- sn_run_milo(
   x = pbmc,
   sample_by = "real_sample",
   group_by = "real_response",
@@ -223,27 +223,26 @@ milo_tbl <- sn_run_milo(
   dims = 1:15,
   annotation_by = "seurat_clusters",
   max_cells = 1500,
+  seed = 717,
   return_object = FALSE
 )
 
-head(milo_tbl)
+head(sn_get_milo_result(milo_result))
 ```
+
+`return_object = FALSE` returns a complete result; use `sn_get_milo_result()`
+for its table. Add `keep_model = TRUE` to retain the fitted Milo object in
+`milo_result$models$milo`. The seed controls sampling and neighborhood selection.
 
 The real neighborhood result can be stored and retrieved with the same
 object-level convention used for DE and enrichment.
 
 ```{r store-milo, eval = run_extended && requireNamespace("miloR", quietly = TRUE)}
-pbmc <- sn_store_milo(
-  object = pbmc,
-  result = milo_tbl,
-  result_id = "response_da",
-  sample_by = "real_sample",
-  group_by = "real_response",
-  comparison = "d0_high_vs_d0_low",
-  reduction = "pca",
-  annotation_by = "seurat_clusters",
-  return_object = TRUE
+pbmc <- sn_store_result(
+  object = pbmc, type = "milo",
+  result = milo_result, result_id = "response_da"
 )
+sn_list_results(pbmc, type = "milo")
 
 head(sn_get_milo_result(pbmc, result_id = "response_da"))
 ```

@@ -3,21 +3,24 @@
 \name{sn_run_scvi}
 \alias{sn_run_scvi}
 \alias{sn_run_scanvi}
-\title{Run scVI or scANVI integration through Shennong}
+\alias{sn_run_scpoli}
+\title{Run scVI, scANVI, or scPoli integration through Shennong}
 \usage{
-sn_run_scvi(object, batch = NULL, integration_control = list(), ...)
+sn_run_scvi(object, batch_by = NULL, backend_control = list(), ...)
 
-sn_run_scanvi(object, batch = NULL, integration_control = list(), ...)
+sn_run_scanvi(object, batch_by = NULL, backend_control = list(), ...)
+
+sn_run_scpoli(object, batch_by = NULL, backend_control = list(), ...)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch}{A column name in \code{object@meta.data} specifying the batch
+\item{batch_by}{A column name in \code{object@meta.data} specifying the batch
 labels used for integration. If \code{NULL}, no RNA batch integration is
 performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 internal constant batch key to the Python backend.}
 
-\item{integration_control}{Optional named list of backend-specific
+\item{backend_control}{Optional named list of backend-specific
 parameters. With multiple methods, provide a list keyed by method, for
 example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 an optional \code{.default} entry is merged into every method. For
@@ -53,7 +56,7 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{corrected_layer}, \code{store_corrected_layer},
 \code{single_sample_batch_key}, and \code{keep_single_sample_batch};
 Shennong runs MMoCHi's ADT landmark registration and imports the corrected
-protein matrix as a protein-derived reduction. When \code{batch = NULL},
+protein matrix as a protein-derived reduction. When \code{batch_by = NULL},
 Shennong uses a constant internal backend batch key for single-sample
 registration. When Seurat accepts arbitrary assay layers, the corrected
 matrix is stored as \code{corrected_layer}; otherwise it is kept under
@@ -71,16 +74,17 @@ A Seurat object returned by \code{sn_run_cluster()}.
 \description{
 Convenience wrappers around \code{\link{sn_run_cluster}} for users who want
 an explicit Python-method entry point. The underlying pixi environment is
-prepared from the bundled scVI-family config under \code{inst/pixi/scvi/}
-and materialized under \code{~/.shennong/pixi/scvi/}.
+prepared from \code{inst/pixi/scvi/} for scVI/scANVI or
+\code{inst/pixi/scarches/} for scPoli, and materialized under
+\code{~/.shennong/pixi/} in the corresponding family directory.
 }
 \examples{
 \dontrun{
-obj <- sn_run_scvi(obj, batch = "sample_id")
+obj <- sn_run_scvi(obj, batch_by = "sample_id")
 obj <- sn_run_scanvi(
   obj,
-  batch = "sample_id",
-  integration_control = list(label_by = "cell_type")
+  batch_by = "sample_id",
+  backend_control = list(label_by = "cell_type")
 )
 }
 

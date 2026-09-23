@@ -297,7 +297,7 @@ cellphonedb_attempt <- tryCatch(
     runtime_dir = cellphonedb_paths$runtime_dir,
     artifact_id = "kotliarov_cellphonedb",
     return_object = FALSE,
-    method_control = list(iterations = 1000L),
+    backend_control = list(iterations = 1000L),
     install_pixi = FALSE,
     quiet = TRUE
   ),

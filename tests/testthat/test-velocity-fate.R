@@ -327,8 +327,10 @@ test_that("fate metadata ownership is stable across reruns", {
 
   expect_equal(length(unique(mapping$metadata_column)), 2L)
   expect_true(all(mapping$metadata_column %in% colnames(updated[[]])))
+  expect_error(sn_run_fate(updated, backend_control = list(result = list(probabilities = probabilities))),
+               "already exists")
   rerun <- sn_run_fate(
-    updated, backend_control = list(result = list(probabilities = probabilities))
+    updated, result_id = "fate", overwrite = TRUE, backend_control = list(result = list(probabilities = probabilities))
   )
   rerun_mapping <- sn_get_result(rerun, "fate", "fate")$tables$state_metadata
   expect_identical(rerun_mapping, mapping)
@@ -341,7 +343,7 @@ test_that("fate metadata ownership is stable across reruns", {
   modified[[mapping$metadata_column[[1L]]]] <- 0
   expect_error(
     sn_run_fate(
-      modified, backend_control = list(result = list(probabilities = probabilities))
+      modified, result_id = "fate", overwrite = TRUE, backend_control = list(result = list(probabilities = probabilities))
     ),
     "user-modified"
   )

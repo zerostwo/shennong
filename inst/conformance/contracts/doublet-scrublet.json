@@ -89,7 +89,7 @@
       ]
     },
     {
-      "wrapper": "ncores",
+      "wrapper": "n_workers",
       "role": "not_applicable",
       "upstream": null,
       "scenarios": [

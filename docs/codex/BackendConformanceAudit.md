@@ -37,7 +37,7 @@ Confirmed and repaired in that focused change:
 - A pre-existing lexically earlier `_snn` graph could be selected after
   `FindNeighbors()` overwrote `RNA_snn` in place. The current call's expected
   graph name now wins, and ambiguous fallback fails closed.
-- Seurat CCA/RPCA accepted `integration_control$new.reduction` but returned and
+- Seurat CCA/RPCA accepted `backend_control$new.reduction` but returned and
   recorded a hard-coded reduction name; it now propagates the actual reduction
   and restores the original split count layers.
 - Ordinary clustering no longer requires HGNChelper; only custom blocked gene

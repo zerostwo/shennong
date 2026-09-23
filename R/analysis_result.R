@@ -523,6 +523,8 @@ sn_validate_result <- function(result, error = TRUE) {
 #' @param result_id Stable identifier used to store and retrieve the result.
 #' @param result A result list. Missing contract fields are filled when they can
 #'   be inferred without changing the analytical content.
+#' @param overwrite Replace an existing result with the same type and ID.
+#'   Defaults to \code{FALSE}; choose a new ID to retain both analyses.
 #'
 #' @return The modified \code{Seurat} object.
 #'
@@ -533,13 +535,14 @@ sn_validate_result <- function(result, error = TRUE) {
 #' }
 #'
 #' @export
-sn_store_result <- function(object, type, result_id, result) {
+sn_store_result <- function(object, type, result_id, result, overwrite = FALSE) {
   .sn_validate_seurat_object(object)
   result_id <- .sn_validate_result_id(result_id)
   if (!is.character(type) || length(type) != 1L || !nzchar(type)) {
     stop("`type` must be a non-empty character scalar.", call. = FALSE)
   }
   type <- tolower(type)
+  .sn_resolve_new_result_id(object, type, result_id, result_id, overwrite)
   artifact_types <- .sn_misc_result_registry() |>
     dplyr::filter(.data$contract_scope == "artifact") |>
     dplyr::pull(.data$type)
@@ -561,11 +564,35 @@ sn_store_result <- function(object, type, result_id, result) {
   object
 }
 
+.sn_resolve_new_result_id <- function(object, type, result_id, default, overwrite = FALSE) {
+  if (!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) {
+    stop("`overwrite` must be TRUE or FALSE.", call. = FALSE)
+  }
+  existing <- if (inherits(object, "Seurat")) names(.sn_result_store(object)[[type]]) else character()
+  if (is.null(result_id)) {
+    if (isTRUE(overwrite)) stop("Supply an explicit `result_id` when `overwrite = TRUE`.", call. = FALSE)
+    result_id <- .sn_validate_result_id(default)
+    suffix <- 2L
+    while (result_id %in% existing) {
+      result_id <- paste0(default, ".", suffix)
+      suffix <- suffix + 1L
+    }
+  } else {
+    result_id <- .sn_validate_result_id(result_id)
+    if (result_id %in% existing && !isTRUE(overwrite)) {
+      stop("Result '", result_id, "' already exists for analysis type '", type,
+           "'. Choose a new `result_id` or explicitly request `overwrite = TRUE` when storing the result.", call. = FALSE)
+    }
+  }
+  result_id
+}
+
 #' Retrieve a stored Shennong analysis result
 #'
 #' @param object A \code{Seurat} object.
 #' @param type Analysis type.
-#' @param result_id Stored result identifier.
+#' @param result_id Stored result identifier. Omit only when exactly one result
+#'   of the requested type exists; ambiguous choices are reported as an error.
 #'
 #' @return A validated Shennong analysis-result list.
 #'
@@ -573,10 +600,10 @@ sn_store_result <- function(object, type, result_id, result) {
 #' \dontrun{sn_get_result(obj, "trajectory", "cd8_slingshot")}
 #'
 #' @export
-sn_get_result <- function(object, type, result_id) {
+sn_get_result <- function(object, type, result_id = NULL) {
   .sn_validate_seurat_object(object)
   type <- tolower(as.character(type))
-  result_id <- .sn_validate_result_id(result_id)
+  result_id <- .sn_validate_result_id(.sn_resolve_stored_result_id(object, type, result_id))
   results <- .sn_result_store(object)[[type]] %||% list()
   if (!result_id %in% names(results)) {
     stop(
@@ -842,7 +869,7 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
   entries <- .sn_stored_analysis_result_entries(object, requested_types)
   for (entry in entries) {
     updated <- tryCatch(
-      sn_store_result(object, entry$type, entry$result_id, entry$result),
+      sn_store_result(object, entry$type, entry$result_id, entry$result, overwrite = TRUE),
       error = identity
     )
     if (inherits(updated, "error")) {
@@ -1075,18 +1102,22 @@ sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
     dplyr::arrange(.data$collection, .data$result_id)
 }
 
-#' Retrieve a stored DE result from a Seurat object
+#' Retrieve a DE result table
 #'
-#' @param object A \code{Seurat} object.
-#' @param result_id Identifier of the stored DE result.
+#' @param object A \code{Seurat} object or unified DE result.
+#' @param result_id Identifier of the stored DE result. May be omitted when
+#'   exactly one DE result is stored.
 #' @param top_n Optional number of rows to keep. When supplied together with a
 #'   ranking column, results are reduced to the top rows overall or per group.
 #' @param direction One of \code{"all"}, \code{"up"}, or \code{"down"}.
 #' @param groups Optional subset of group labels to keep.
-#' @param with_metadata If \code{TRUE}, return the full stored result list
-#'   instead of just the result table.
+#' @param top_scope Whether \code{top_n} applies within each group (the default)
+#'   or across all selected rows. An ungrouped table always uses all rows.
+#' @param p_adjusted_cutoff Optional maximum adjusted p-value, from zero to one.
+#' @param logfc_threshold Optional minimum absolute log fold change.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble. Use \code{sn_get_result(object, "de")} to retrieve
+#'   the complete result, including metadata and unfiltered tables.
 #'
 #' @examples
 #' \dontrun{
@@ -1094,39 +1125,44 @@ sn_list_results <- function(object, type = NULL, include_artifacts = FALSE) {
 #' }
 #' @export
 sn_get_de_result <- function(object,
-                             result_id = "default",
+                             result_id = NULL,
                              top_n = NULL,
                              direction = c("all", "up", "down"),
                              groups = NULL,
-                             with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
-
-  stored <- sn_get_result(object, type = "de", result_id = result_id)
-  if (isTRUE(with_metadata)) {
-    return(stored)
-  }
+                             top_scope = c("group", "all"),
+                             p_adjusted_cutoff = NULL,
+                             logfc_threshold = NULL) {
+  stored <- .sn_resolve_result_input(object, type = "de", result_id = result_id)
+  table <- .sn_filter_result_threshold(stored$tables$primary, p_adjusted_cutoff,
+    c("p_val_adj", "padj", "FDR", "adj.P.Val", "adjusted_p_value"), "p_adjusted_cutoff", upper = 1)
+  table <- .sn_filter_result_threshold(table, logfc_threshold,
+    c("avg_log2FC", "avg_logFC", "log2FoldChange", "logFC", "log2_fold_change"),
+    "logfc_threshold", minimum = TRUE)
 
   .sn_subset_ranked_table(
-    table = stored$tables$primary,
-    rank_col = stored$rank_col,
-    group_col = stored$group_col,
+    table = table,
+    rank_col = stored$rank_col %||% .sn_result_first_column(table, c("avg_log2FC", "avg_logFC", "log2FoldChange", "logFC", "log2_fold_change")),
+    group_col = stored$group_col %||% .sn_result_first_column(table, c("cluster", "comparison", "group")),
     top_n = top_n,
     direction = direction,
-    groups = groups
+    groups = groups,
+    top_scope = top_scope
   )
 }
 
-#' Retrieve a stored enrichment result from a Seurat object
+#' Retrieve an enrichment result table
 #'
-#' @param object A \code{Seurat} object.
-#' @param result_id Identifier of the stored enrichment result.
+#' @param object A \code{Seurat} object or unified enrichment result.
+#' @param result_id Identifier of the stored enrichment result. May be omitted
+#'   when exactly one enrichment result is stored.
 #' @param top_n Optional number of top terms to keep.
 #' @param groups Optional subset of cluster/group labels when the stored table
 #'   includes a \code{Cluster} column.
-#' @param with_metadata If \code{TRUE}, return the full stored result list
-#'   instead of just the term table.
+#' @param top_scope Whether to retain the top terms within each group or overall.
+#' @param p_adjusted_cutoff Optional maximum adjusted p-value, from zero to one.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble. Use \code{sn_get_result(object, "enrichment")} for
+#'   the complete result and its metadata.
 #'
 #' @examples
 #' \dontrun{
@@ -1134,40 +1170,52 @@ sn_get_de_result <- function(object,
 #' }
 #' @export
 sn_get_enrichment_result <- function(object,
-                                     result_id = "default",
+                                     result_id = NULL,
                                      top_n = NULL,
                                      groups = NULL,
-                                     with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
-
-  stored <- sn_get_result(object, type = "enrichment", result_id = result_id)
-  if (isTRUE(with_metadata)) {
-    return(stored)
+                                     top_scope = c("group", "all"),
+                                     p_adjusted_cutoff = NULL) {
+  stored <- .sn_resolve_result_input(object, type = "enrichment", result_id = result_id)
+  table <- .sn_filter_result_threshold(stored$tables$primary, p_adjusted_cutoff,
+    c("p.adjust", "padj", "FDR", "adjusted_p_value"), "p_adjusted_cutoff", upper = 1)
+  group_col <- .sn_result_first_column(table, c("Cluster", "cluster", ".sign"))
+  rank_col <- .sn_result_first_column(table, c("NES", "p.adjust", "pvalue", "Count", "GeneRatio"))
+  if (!is.null(top_n) && identical(rank_col, "GeneRatio")) {
+    parts <- strsplit(as.character(table$GeneRatio), "/", fixed = TRUE)
+    ratios <- vapply(parts, function(part) {
+      values <- suppressWarnings(as.numeric(part))
+      if (length(values) == 1L) return(values)
+      if (length(values) == 2L && !is.na(values[[2L]]) && values[[2L]] > 0) return(values[[1L]] / values[[2L]])
+      NA_real_
+    }, numeric(1))
+    if (any(!is.finite(ratios))) stop("`GeneRatio` must contain finite numbers or numerator/denominator ratios.", call. = FALSE)
+    table$..enrichment_rank <- ratios
+    rank_col <- "..enrichment_rank"
   }
+  result <- .sn_subset_ranked_table(table, rank_col = rank_col, group_col = group_col,
+    top_n = top_n, groups = groups, top_scope = top_scope,
+    decreasing = !rank_col %in% c("p.adjust", "pvalue"), absolute = identical(rank_col, "NES"))
+  dplyr::select(result, -dplyr::any_of("..enrichment_rank"))
+}
 
-  table <- tibble::as_tibble(stored$tables$primary)
-  group_col <- c("Cluster", "cluster", ".sign")[
-    c("Cluster", "cluster", ".sign") %in% colnames(table)
-  ][1] %||% NULL
-  rank_col <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")[
-    c("NES", "Count", "GeneRatio", "p.adjust", "pvalue") %in% colnames(table)
-  ][1] %||% NULL
+.sn_result_first_column <- function(table, candidates) {
+  hit <- intersect(candidates, colnames(table))
+  if (length(hit)) hit[[1L]] else NULL
+}
 
-  if (!is_null(groups) && !is_null(group_col)) {
-    table <- dplyr::filter(table, .data[[group_col]] %in% groups)
+.sn_filter_result_threshold <- function(table, cutoff, candidates, name, minimum = FALSE, upper = Inf) {
+  table <- tibble::as_tibble(table)
+  if (is.null(cutoff)) return(table)
+  if (!is.numeric(cutoff) || length(cutoff) != 1L || !is.finite(cutoff) || cutoff < 0 || cutoff > upper) {
+    stop("`", name, "` must be one finite number between 0 and ", upper, ".", call. = FALSE)
   }
-
-  if (is_null(top_n) || is_null(rank_col)) {
-    return(table)
+  column <- .sn_result_first_column(table, candidates)
+  if (is.null(column) || !is.numeric(table[[column]])) {
+    stop("`", name, "` requires a numeric ", paste(candidates, collapse = "/"), " column.", call. = FALSE)
   }
-
-  if (rank_col %in% c("p.adjust", "pvalue")) {
-    table <- table[order(table[[rank_col]], decreasing = FALSE), , drop = FALSE]
-  } else {
-    table <- table[order(abs(table[[rank_col]]), decreasing = TRUE), , drop = FALSE]
-  }
-
-  utils::head(table, top_n)
+  value <- table[[column]]
+  keep <- is.finite(value) & if (minimum) abs(value) >= cutoff else value <= cutoff
+  table[keep, , drop = FALSE]
 }
 
 #' Retrieve a stored interpretation result from a Seurat object
@@ -1182,7 +1230,7 @@ sn_get_enrichment_result <- function(object,
 #' interpretation <- sn_get_interpretation_result(seurat_obj, "annotation_note")
 #' }
 #' @export
-sn_get_interpretation_result <- function(object, result_id = "default") {
+sn_get_interpretation_result <- function(object, result_id = NULL) {
   .sn_validate_seurat_object(object)
 
   sn_get_result(object, type = "interpretation", result_id = result_id)
@@ -1190,9 +1238,6 @@ sn_get_interpretation_result <- function(object, result_id = "default") {
 
 .sn_resolve_result_input <- function(x, type, result_id = NULL) {
   result <- if (inherits(x, "Seurat")) {
-    if (is_null(result_id)) {
-      stop("`result_id` is required when `x` is a Seurat object.", call. = FALSE)
-    }
     sn_get_result(x, type, result_id)
   } else {
     x

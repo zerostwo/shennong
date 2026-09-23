@@ -125,14 +125,14 @@ test_that("sn_run_cluster top-level seed controls every stochastic stage", {
   sn_run_cluster(
     object = NULL,
     integration_method = "unintegrated",
-    integration_control = list(seed = 9L, icp_args = list(RNGseed = 8L)),
+    backend_control = list(seed = 9L, icp_args = list(RNGseed = 8L)),
     seed = 123L,
     verbose = FALSE
   )
   expect_identical(captured$workflow_seed, 123L)
   expect_identical(captured$cluster_random_seed, 123L)
-  expect_identical(captured$integration_control$seed, 123L)
-  expect_identical(captured$integration_control$icp_args$RNGseed, 123L)
+  expect_identical(captured$backend_control$seed, 123L)
+  expect_identical(captured$backend_control$icp_args$RNGseed, 123L)
   expect_identical(.Random.seed, rng_before)
   expect_error(
     sn_run_cluster(NULL, integration_method = "unintegrated", seed = -1),
@@ -150,7 +150,7 @@ test_that("sn_run_cluster top-level seed controls every stochastic stage", {
   sn_run_cluster(
     object = NULL,
     integration_method = c("harmony", "scvi"),
-    integration_control = list(
+    backend_control = list(
       .default = list(seed = 7L),
       harmony = list(theta = 3),
       scvi = list(seed = 9L)
@@ -158,16 +158,16 @@ test_that("sn_run_cluster top-level seed controls every stochastic stage", {
     seed = 123L,
     verbose = FALSE
   )
-  expect_identical(captured_multi$integration_control$.default$seed, 123L)
-  expect_identical(captured_multi$integration_control$harmony$seed, 123L)
-  expect_identical(captured_multi$integration_control$scvi$seed, 123L)
+  expect_identical(captured_multi$backend_control$.default$seed, 123L)
+  expect_identical(captured_multi$backend_control$harmony$seed, 123L)
+  expect_identical(captured_multi$backend_control$scvi$seed, 123L)
   expect_identical(
-    captured_multi$integration_control$harmony$icp_args$RNGseed,
+    captured_multi$backend_control$harmony$icp_args$RNGseed,
     123L
   )
   expect_identical(
     Shennong:::.sn_multi_method_control(
-      captured_multi$integration_control,
+      captured_multi$backend_control,
       c("harmony", "scvi"),
       "scvi"
     )$seed,
@@ -236,10 +236,10 @@ test_that("sn_run_cluster keeps multi-method integration results side by side", 
 
   clustered <- sn_run_cluster(
     object = object,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     integration_method = c("unintegrated", "harmony"),
-    integration_control = list(
+    backend_control = list(
       harmony = list(theta = 3)
     ),
     nfeatures = 50,
@@ -352,7 +352,7 @@ test_that("parameter-grid checkpoints resume completed combinations", {
   run_grid <- function() {
     sn_run_cluster(
       object = object,
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
       integration_method = "unintegrated",
       nfeatures = 35,
@@ -396,7 +396,7 @@ test_that("sn_run_cluster expands scalar parameter axes and reuses embeddings ac
   object$sample <- rep(c("A", "B"), each = 20)
   clustered <- sn_run_cluster(
     object = object,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     integration_method = c("unintegrated", "harmony"),
     nfeatures = c(35, 45),
@@ -429,7 +429,7 @@ test_that("sn_run_cluster expands scalar parameter axes and reuses embeddings ac
 test_that("cluster parameter grids expand Harmony theta conditionally", {
   args <- list(
     integration_method = c("unintegrated", "harmony"),
-    integration_control = list(),
+    backend_control = list(),
     normalization_method = "seurat",
     nfeatures = c(2000, 3000),
     npcs = 30,
@@ -523,7 +523,7 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
         object = object,
         modality = "cite_seq",
         multimodal_method = backend,
-        batch = "sample",
+        batch_by = "sample",
         normalization_method = "seurat",
         nfeatures = 50,
         block_genes = NULL,
@@ -532,7 +532,7 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
         adt_features = paste0("ADT", 1:10),
         adt_npcs = 3,
         adt_dims = 1:3,
-        integration_control = list(example = backend),
+        backend_control = list(example = backend),
         verbose = FALSE
       ),
       .sn_run_batch_integration = function(object,
@@ -546,7 +546,7 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
                                            npcs,
                                            theta,
                                            group_by_vars,
-                                           integration_control = list(),
+                                           backend_control = list(),
                                            verbose = TRUE) {
         captured <<- list(
           method = method,
@@ -556,7 +556,7 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
           assay = assay,
           dims = dims,
           npcs = npcs,
-          integration_control = integration_control
+          backend_control = backend_control
         )
         embeddings <- matrix(
           seq_len(ncol(object) * length(dims)),
@@ -583,7 +583,8 @@ test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {
     expect_null(captured$reduction)
     expect_equal(captured$features, paste0("ADT", 1:10))
     expect_equal(captured$dims, 1:3)
-    expect_equal(captured$integration_control, list(example = backend))
+    expect_equal(captured$backend_control$example, backend)
+    expect_equal(captured$backend_control$seed, 717L)
     expect_true("coralysis" %in% names(clustered@reductions))
     expect_false("pca" %in% names(clustered@reductions))
     expect_false("apca" %in% names(clustered@reductions))
@@ -801,7 +802,7 @@ test_that("cluster fingerprints include analysis values and relevant metadata", 
     rare_feature_group_by = NULL,
     vars_to_regress = "covariate",
     group_by_vars = NULL,
-    integration_control = list(),
+    backend_control = list(),
     checkpoint_dir = NULL,
     resume = TRUE,
     checkpoint_compress = FALSE,
@@ -934,7 +935,7 @@ test_that("sn_run_cluster exposes FindClusters algorithm controls", {
     cluster_name = "leiden_clusters",
     cluster_n_start = 2,
     cluster_n_iter = 2,
-    cluster_random_seed = 717,
+    seed = 717,
     verbose = FALSE
   )
 
@@ -989,7 +990,7 @@ test_that("sn_run_cluster auto-installs Leiden dependencies before clustering", 
   )
 })
 
-test_that("sn_run_cluster treats batch as the primary integration argument", {
+test_that("sn_run_cluster exposes batch_by as the integration argument", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("harmony")
 
@@ -998,7 +999,7 @@ test_that("sn_run_cluster treats batch as the primary integration argument", {
 
   clustered <- sn_run_cluster(
     object = object,
-    batch = "sample",
+    batch_by = "sample",
     integration_method = "harmony",
     normalization_method = "seurat",
     nfeatures = 50,
@@ -1009,11 +1010,11 @@ test_that("sn_run_cluster treats batch as the primary integration argument", {
   )
 
   expect_equal(clustered@misc$integration$batch_by, "sample")
-  expect_false("batch_by" %in% names(formals(sn_run_cluster)))
+  expect_true("batch_by" %in% names(formals(sn_run_cluster)))
 })
 
-test_that("sn_run_cluster resolves compact tail arguments compatibly", {
-  expect_identical(length(formals(sn_run_cluster)), 20L)
+test_that("sn_run_cluster exposes core controls and requires named advanced arguments", {
+  expect_true(all(c("assay", "layer", "npcs", "dims", "hvg_group_by") %in% names(formals(sn_run_cluster))))
   expect_identical(tail(names(formals(sn_run_cluster)), 1L), "...")
   expect_identical(names(formals(.sn_run_cluster_impl)), "args")
 
@@ -1025,9 +1026,8 @@ test_that("sn_run_cluster resolves compact tail arguments compatibly", {
   expect_identical(resolved$values$modality, "cite_seq")
   expect_setequal(resolved$supplied, c("block_genes", "modality"))
 
-  positional <- .sn_resolve_cluster_tail_args(list(list(algorithm = 4), FALSE))
-  expect_identical(positional$values$cluster_control, list(algorithm = 4))
-  expect_false(positional$values$reuse)
+  expect_error(.sn_resolve_cluster_tail_args(list(list(algorithm = 4), FALSE)),
+               "must be named")
 
   expect_error(
     .sn_resolve_cluster_tail_args(list(unknown_control = TRUE)),
@@ -1070,7 +1070,7 @@ test_that("sn_run_cluster can return cluster assignments directly and supports s
     with_mocked_bindings(
       sn_run_cluster(
         object = scran_object,
-        batch = "batch",
+        batch_by = "batch",
         normalization_method = "scran",
         integration_method = "harmony",
         nfeatures = 50,
@@ -1079,7 +1079,7 @@ test_that("sn_run_cluster can return cluster assignments directly and supports s
         species = "human",
         verbose = FALSE
       ),
-      .sn_run_batch_integration = function(object, method, batch, reduction, features, assay, layer, dims, npcs, theta, group_by_vars, integration_control = list(), verbose = TRUE) {
+      .sn_run_batch_integration = function(object, method, batch, reduction, features, assay, layer, dims, npcs, theta, group_by_vars, backend_control = list(), verbose = TRUE) {
         integration_called <<- TRUE
         object@misc$integration <- list(
           method = method,
@@ -1601,7 +1601,7 @@ test_that("sn_run_cluster supports SCTransform followed by Harmony integration",
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "sctransform",
     nfeatures = 50,
     npcs = 10,
@@ -1627,7 +1627,7 @@ test_that("sn_run_cluster integrates batches with harmony", {
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     nfeatures = 50,
     block_genes = NULL,
@@ -1655,10 +1655,10 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
         object = merged,
-        batch = "sample",
+        batch_by = "sample",
         normalization_method = "seurat",
         integration_method = backend,
-        integration_control = list(example = backend),
+        backend_control = list(example = backend),
         nfeatures = 50,
         block_genes = NULL,
         npcs = 10,
@@ -1676,14 +1676,14 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
                                            npcs,
                                            theta,
                                            group_by_vars,
-                                           integration_control = list(),
+                                           backend_control = list(),
                                            verbose = TRUE) {
         captured <<- list(
           method = method,
           batch_by = batch,
           reduction = reduction,
           features = features,
-          integration_control = integration_control
+          backend_control = backend_control
         )
         embeddings <- if (is.null(reduction)) {
           matrix(
@@ -1724,7 +1724,8 @@ test_that("sn_run_cluster dispatches the selected integration backend", {
     } else {
       expect_equal(captured$reduction, "pca")
     }
-    expect_equal(captured$integration_control, list(example = backend))
+    expect_equal(captured$backend_control$example, backend)
+    expect_equal(captured$backend_control$seed, 717L)
     expect_true(switch(
       backend,
       coralysis = "coralysis",
@@ -1791,7 +1792,7 @@ test_that("Seurat CCA and RPCA report an overridden integration reduction", {
       features = features,
       assay = "RNA",
       dims = 1:8,
-      integration_control = list(
+      backend_control = list(
         k.weight = 20,
         new.reduction = reduction
       ),
@@ -1850,10 +1851,10 @@ test_that("sn_run_cluster imports scVI and scANVI pixi backend outputs", {
     clustered <- testthat::with_mocked_bindings(
       sn_run_cluster(
         object = merged,
-        batch = "sample",
+        batch_by = "sample",
         normalization_method = "seurat",
         integration_method = backend,
-        integration_control = control,
+        backend_control = control,
         layer = "decontaminated_counts",
         nfeatures = 50,
         block_genes = NULL,
@@ -1964,11 +1965,11 @@ test_that("sn_run_cluster imports a layer-aware scPoli latent", {
   clustered <- testthat::with_mocked_bindings(
     sn_run_cluster(
       object = merged,
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
       integration_method = "scpoli",
       layer = "decontaminated_counts",
-      integration_control = list(
+      backend_control = list(
         runtime_dir = runtime_dir,
         pixi_project = file.path(runtime_dir, "pixi", "scarches"),
         pixi_download_url = "https://mirror.example/pixi.tar.gz",
@@ -2071,11 +2072,11 @@ test_that("sn_run_cluster clusters and runs UMAP on the imported BBKNN graph", {
   clustered <- testthat::with_mocked_bindings(
     sn_run_cluster(
       object = merged,
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
       integration_method = "bbknn",
       layer = "decontaminated_counts",
-      integration_control = list(
+      backend_control = list(
         runtime_dir = runtime_dir,
         pixi_project = file.path(runtime_dir, "pixi", "bbknn"),
         pixi_download_url = "https://mirror.example/pixi.tar.gz",
@@ -2186,9 +2187,9 @@ test_that("sn_run_cluster writes totalVI RNA and protein inputs", {
       object = object,
       modality = "cite_seq",
       multimodal_method = "totalvi",
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
-      integration_control = control,
+      backend_control = control,
       nfeatures = 40,
       block_genes = NULL,
       npcs = 8,
@@ -2278,9 +2279,9 @@ test_that("sn_run_cluster imports MMoCHi landmark-registered protein outputs", {
       object = object,
       modality = "cite_seq",
       integration_method = "mmochi",
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
-      integration_control = control,
+      backend_control = control,
       nfeatures = 40,
       block_genes = NULL,
       npcs = 8,
@@ -2381,7 +2382,7 @@ test_that("sn_run_cluster runs MMoCHi single-sample CITE-seq without batch", {
       modality = "cite_seq",
       multimodal_method = "mmochi",
       normalization_method = "seurat",
-      integration_control = control,
+      backend_control = control,
       nfeatures = 40,
       block_genes = NULL,
       npcs = 8,
@@ -2567,7 +2568,7 @@ test_that("python method wrappers accept Seurat object inputs", {
   )
 
   calls <- list(
-    scpoli = function() sn_run_scpoli(object = object, batch_by = "sample", label_by = "cell_type", install_pixi = FALSE),
+    scpoli = function() Shennong:::.sn_run_scpoli_object_backend(object = object, batch_by = "sample", label_by = "cell_type", install_pixi = FALSE),
     cellphonedb = function() sn_run_cellphonedb(object = object, group_by = "cell_type", install_pixi = FALSE),
     cell2location = function() sn_run_cell2location(object = object, reference_signatures = signatures, spatial_cols = c("x", "y"), install_pixi = FALSE),
     tangram = function() sn_run_tangram(object = object, reference_object = object, cell_type_by = "cell_type", spatial_cols = c("x", "y"), install_pixi = FALSE),
@@ -2669,7 +2670,7 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
 
   clustered <- suppressWarnings(sn_run_cluster(
     object = object,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     integration_method = "coralysis",
     nfeatures = 40,
@@ -2677,7 +2678,7 @@ test_that("sn_run_cluster runs Coralysis integration end to end", {
     npcs = 5,
     dims = 1:5,
     resolution = 0.2,
-    integration_control = list(
+    backend_control = list(
       icp_args = list(
         k = 2,
         L = 3,
@@ -2734,7 +2735,7 @@ test_that("Coralysis receives BPCells expression as a sparse dgCMatrix", {
   clustered <- testthat::with_mocked_bindings(
     suppressWarnings(sn_run_cluster(
       object = object,
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "seurat",
       integration_method = "coralysis",
       nfeatures = 30,
@@ -2742,7 +2743,7 @@ test_that("Coralysis receives BPCells expression as a sparse dgCMatrix", {
       npcs = 3,
       dims = 1:3,
       resolution = 0.2,
-      integration_control = list(
+      backend_control = list(
         icp_args = list(
           k = 2,
           L = 3,
@@ -2784,7 +2785,7 @@ test_that("sn_run_cluster restricts SCTransform integration to Harmony", {
   expect_error(
     sn_run_cluster(
       object = object,
-      batch = "sample",
+      batch_by = "sample",
       normalization_method = "sctransform",
       integration_method = "coralysis",
       nfeatures = 50,
@@ -2808,7 +2809,7 @@ test_that("sn_run_cluster can select HVGs by metadata group during integration",
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     hvg_group_by = "sample",
     nfeatures = 50,
@@ -2844,7 +2845,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
 
   sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     integration_method = "unintegrated",
     normalization_method = "seurat",
     nfeatures = 30,
@@ -2859,7 +2860,7 @@ test_that("sn_run_cluster defaults hvg_group_by to batch unless overridden", {
   captured <- list()
   sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     integration_method = "unintegrated",
     hvg_group_by = "orig.ident",
     normalization_method = "seurat",
@@ -2938,7 +2939,7 @@ test_that("sn_run_cluster handles merged split layers with differing feature set
 
   clustered <- sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     hvg_group_by = "sample",
     normalization_method = "seurat",
     nfeatures = 50,
@@ -3282,17 +3283,17 @@ test_that("sn_transfer_labels supports scANVI and scArches-style label transfer"
                                           batch,
                                           features,
                                           assay,
-                                          integration_control = list(),
+                                          backend_control = list(),
                                           verbose = TRUE) {
         captured <<- list(
           method = method,
           batch = batch,
           features = features,
-          labels_key = integration_control$label_by,
-          unlabeled_category = integration_control$unlabeled_category
+          labels_key = backend_control$label_by,
+          unlabeled_category = backend_control$unlabeled_category
         )
         transfer_role <- object[[".sn_transfer_role"]][, 1]
-        transfer_label <- object[[integration_control$label_by]][, 1]
+        transfer_label <- object[[backend_control$label_by]][, 1]
         prediction <- ifelse(transfer_role == "query", "T cell", transfer_label)
         object$scanvi_prediction <- prediction
         object@misc$integration <- list(run_dir = tempfile("scanvi-run-"), output_h5ad = tempfile("scanvi-.h5ad"))
@@ -3332,7 +3333,7 @@ test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {
       method = "scdesign3",
       celltype = "cell_type",
       ncell = 6,
-      n_cores = 1,
+      n_workers = 1,
       return = "seurat",
       project = "mock_scdesign3"
     ),
@@ -3363,7 +3364,7 @@ test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {
       method = "scdesign3",
       celltype = "cell_type",
       ncell = 6,
-      n_cores = 1,
+      n_workers = 1,
       return = "counts"
     ),
     .sn_run_scdesign3_backend = function(...) {
@@ -3384,7 +3385,7 @@ test_that("sn_simulate dispatches scDesign3 output into Seurat objects", {
       method = "scdesign3",
       celltype = "cell_type",
       ncell = 6,
-      n_cores = 1,
+      n_workers = 1,
       combine_original = TRUE
     ),
     .sn_run_scdesign3_backend = function(...) {
@@ -3413,7 +3414,7 @@ test_that("sn_run_cluster skips cell-cycle scoring cleanly when markers do not o
   expect_no_error(
     clustered <- suppressWarnings(sn_run_cluster(
       object = merged,
-      batch = "sample",
+      batch_by = "sample",
       integration_method = "unintegrated",
       species = "human",
       normalization_method = "seurat",
@@ -4004,7 +4005,7 @@ test_that("sn_find_doublets can analyze a non-default layer", {
     clusters = "precluster",
     assay = "RNA",
     layer = "decontaminated_counts",
-    ncores = 1
+    n_workers = 1
   ))
 
   expect_true(all(c("scDblFinder.class_corrected", "scDblFinder.score_corrected") %in% colnames(updated[[]])))
@@ -4089,7 +4090,7 @@ test_that("sn_find_doublets skips zero-count cells in corrected layers", {
     assay = "RNA",
     layer = "decontaminated_counts",
     min_features = 1,
-    ncores = 1
+    n_workers = 1
   )
 
   expect_true(all(c("scDblFinder.class_corrected", "scDblFinder.score_corrected") %in% colnames(updated[[]])))
@@ -4285,7 +4286,7 @@ test_that("sn_find_doublets skips low-feature cells before running scDblFinder",
     assay = "RNA",
     layer = "decontaminated_counts",
     min_features = 200,
-    ncores = 1
+    n_workers = 1
   )
 
   expect_identical(as.character(updated$scDblFinder.class_corrected[[1]]), "unresolved")

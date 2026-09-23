@@ -8,48 +8,41 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
-- Audit issues #8–#15 have public-entry regressions and fixes for split-layer
-  communication, per-comparison DE/ORA backgrounds, paired program tests,
-  subset marker IDs, Milo annotation filters, native matrix writers, metadata
-  name collisions, and local scoring seeds. The isolated change set passes
-  365 focused assertions. The real GO reproduction agrees with an explicit
-  tested background across all 225 shared terms. The full suite passes 5,719
-  assertions (zero failures/errors, 11 warnings, one unavailable local-data
-  fixture skip); the final enrichment adjustment passes 47 focused assertions.
-  Source build and structural R CMD check pass with zero errors/warnings and
-  the existing Sankey `head` NOTE. The local pkgdown site has been rebuilt.
-
-- The complete local test suite passes 5,691 assertions with zero failures,
-  11 warnings, and one skip. The warnings are explicit compatibility or
-  environment boundaries: one BBKNN/Seurat command-log warning, seven
-  Scrublet warnings for ignored scDblFinder-only controls, two scmap warnings
-  from a deliberately underspecified small fixture, and one local
-  TMB/glmmTMB version warning. The sole skip is an unavailable local
-  public-data figure fixture.
-- Real backend conformance passes 542 assertions with zero failures, two
-  explicit Scrublet parameter-boundary warnings, and no skips. This includes
-  direct PopV, Scrublet, clustering, enrichment, pilot, registry, and runtime
-  comparisons; it does not imply that every optional method has a live
-  upstream oracle.
-- Python runtime/resource contracts pass 288 assertions, the public parameter
-  matrix passes 720 assertions, architecture gates pass six assertions, all
-  83 R source files parse, and all packaged Python scripts compile.
-- A clean staged `R CMD build` succeeds, including vignettes, and excludes
-  live `.codegraph` sockets and generated `.pixi` environments from the source
-  archive. With unavailable Suggests permitted, `R CMD check --no-manual`
-  completes with zero errors, zero warnings, and zero notes. Its
-  installed-package test phase passes 5,111 assertions with zero failures, 11
-  warnings, and 21 expected skips for repository-only CI, conformance,
-  real-data, platform-shell, and maintainer resources excluded from source
-  packages.
-- A complete `pkgdown::build_site()` succeeds, including reference pages,
-  affected articles, news, sitemap, redirects, and search index.
-- These are local source and installed-package results. Remote CI, publication,
-  deployment, and ecosystem end-to-end status must be reported separately by
-  exact commit SHA.
+- API issues #17–#27 have breaking fixes and public-entry regressions for
+  result selection, independent direction/significance filtering, consistent
+  result envelopes, safe replacement, explicit aggregation, effective seeds,
+  shared controls, and discoverable clustering inputs. The preceding workflow
+  fixes are tracked in #8–#15; PRs #16 and #28 contain the delivery history.
+- CI issue #29 corrects version-provenance assertions and refreshes strict
+  backend records to edgeR 4.10.5 and enrichit 0.2.4. The updated remote
+  conformance job passes numerical parity and exact-version checks; all four
+  R-CMD-check platforms pass on the workflow-fix branch.
+- The full local pkgdown build executes the new bundled-data examples and
+  renders the complete site. All 9,301 internal links across 326 HTML pages
+  resolve; 45 public calls in the introductory recipes pass argument checks.
+  The full source suite passed 5,835 assertions; its sole failure was an
+  obsolete deployment-entry assertion, now updated and covered by a passing
+  104-assertion CI-workflow rerun (17 fixture warnings, one missing local-data
+  skip in the full run). Source build and structural R CMD check pass with zero errors and warnings
+  and the existing Sankey `head` NOTE. Full-suite and remote CI evidence is
+  recorded with the PRs rather than inferred from a structural check.
+- Pkgdown deployment now sets an explicit bot author/committer identity; the
+  previous main workflow built successfully but failed before publishing (#30).
+  Deployment publishes the checked `site/dev` output directly and routes the
+  website root to current development documentation.
+- No dependencies or exports are added by the documentation refresh. The
+  homepage, guide navigation, four introductory/reference articles, related
+  workflow examples, and installed usage assets are synchronized. Unrelated
+  embedding/heatmap changes remain outside this delivery. Publication is
+  verified separately against the merged main commit and pkgdown workflow.
 
 ## Current architecture state
 
+- Shared API controls are `batch_by`, `backend_control`, `n_workers`, and
+  top-level `seed`; DE/enrichment/Milo return unified results or stored objects.
+  Table selection has explicit scope, result IDs resolve only unambiguously,
+  and program aggregation names the order of operations. Fate reruns require
+  explicit overwrite while retaining metadata ownership checks.
 - `R/` contains 83 domain-oriented source files. Large mixed modules have been
   split along stable responsibilities, including bulk design, BBKNN,
   result semantics, gene-symbol preparation, Python artifact validation, and

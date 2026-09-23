@@ -3,7 +3,6 @@
 %   R/analysis_communication.R, R/analysis_spatial.R
 \name{sn_run_scarches}
 \alias{sn_run_scarches}
-\alias{sn_run_scpoli}
 \alias{sn_run_infercnvpy}
 \alias{sn_run_cellphonedb}
 \alias{sn_run_cell2location}
@@ -24,24 +23,7 @@ sn_run_scarches(
   metadata_prefix = "scarches_",
   artifact_id = "scarches",
   return_object = TRUE,
-  method_control = list(),
-  keep_run_dir = NULL,
-  max_artifact_import_gb = 0.5,
-  ...
-)
-
-sn_run_scpoli(
-  object,
-  assay = NULL,
-  layer = NULL,
-  batch_by = NULL,
-  label_by = NULL,
-  output_dir = NULL,
-  runtime_dir = NULL,
-  metadata_prefix = "scpoli_",
-  artifact_id = "scpoli",
-  return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -66,7 +48,7 @@ sn_run_infercnvpy(
   dynamic_threshold = 1.5,
   exclude_chromosomes = c("chrX", "chrY"),
   chunksize = 5000,
-  n_jobs = NULL,
+  n_workers = NULL,
   calculate_gene_values = FALSE,
   lfc_clip = 3,
   run_pca = TRUE,
@@ -93,7 +75,7 @@ sn_run_cellphonedb(
   runtime_dir = NULL,
   artifact_id = "cellphonedb",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -110,7 +92,7 @@ sn_run_cell2location(
   metadata_prefix = "cell2location_",
   artifact_id = "cell2location",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -130,7 +112,7 @@ sn_run_tangram(
   metadata_prefix = "tangram_",
   artifact_id = "tangram",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -147,7 +129,7 @@ sn_run_squidpy(
   metadata_prefix = "squidpy_",
   artifact_id = "squidpy",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -163,7 +145,7 @@ sn_run_spatialdata(
   metadata_prefix = "spatialdata_",
   artifact_id = "spatialdata",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -179,7 +161,7 @@ sn_run_stlearn(
   metadata_prefix = "stlearn_",
   artifact_id = "stlearn",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
   keep_run_dir = NULL,
   max_artifact_import_gb = 0.5,
   ...
@@ -217,7 +199,7 @@ treated as a parent and is never recursively deleted.}
 \item{return_object}{Whether to return the updated object. If \code{FALSE},
 return a run manifest list.}
 
-\item{method_control}{Optional named list of backend-specific settings passed
+\item{backend_control}{Optional named list of backend-specific settings passed
 to the Python runner config.}
 
 \item{keep_run_dir}{Whether to retain exported inputs and backend outputs.
@@ -253,7 +235,7 @@ positions instead of Shennong's bundled GENCODE table.}
 
 \item{key_added}{infercnvpy key used for the CNV representation.}
 
-\item{window_size, step, dynamic_threshold, exclude_chromosomes, chunksize, n_jobs, calculate_gene_values, lfc_clip}{Parameters forwarded to \code{infercnvpy.tl.infercnv()}.}
+\item{window_size, step, dynamic_threshold, exclude_chromosomes, chunksize, n_workers, calculate_gene_values, lfc_clip}{Parameters forwarded to \code{infercnvpy.tl.infercnv()}.}
 
 \item{run_pca, run_neighbors, run_leiden, run_umap, score}{Logical flags for
 downstream infercnvpy analysis steps.}

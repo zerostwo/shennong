@@ -4,14 +4,15 @@
 \alias{sn_get_result}
 \title{Retrieve a stored Shennong analysis result}
 \usage{
-sn_get_result(object, type, result_id)
+sn_get_result(object, type, result_id = NULL)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
 \item{type}{Analysis type.}
 
-\item{result_id}{Stored result identifier.}
+\item{result_id}{Stored result identifier. Omit only when exactly one result
+of the requested type exists; ambiguous choices are reported as an error.}
 }
 \value{
 A validated Shennong analysis-result list.

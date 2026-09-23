@@ -36,7 +36,7 @@
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -118,7 +118,7 @@ sn_calculate_lisi <- function(
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -203,7 +203,7 @@ sn_calculate_silhouette <- function(
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -300,7 +300,7 @@ sn_calculate_graph_connectivity <- function(
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -719,7 +719,7 @@ sn_calculate_clustering_agreement <- function(x,
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )

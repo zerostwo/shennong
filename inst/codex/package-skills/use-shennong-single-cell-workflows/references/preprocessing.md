@@ -13,7 +13,7 @@ Start with data access and preprocessing:
    Preserve BPCells `IterableMatrix` counts by passing them directly to
    `sn_initialize_seurat_object()`. When finding doublets on a BPCells-backed
    object, require a donor/capture `group_by` column and default to
-   `ncores = 1`, which materializes one sample-sized sparse matrix at a time.
+   `n_workers = 1`, which materializes one sample-sized sparse matrix at a time.
    For in-memory `dgCMatrix` input, scDblFinder native clustering is the default
    and supported default-call shapes use the ShennongOpt `scdblfinder` fast
    path; grouped and non-default calls remain on the upstream path. Use

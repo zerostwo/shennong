@@ -17,6 +17,7 @@
     "package": "clusterProfiler",
     "api": [
       "clusterProfiler::GSEA",
+      "clusterProfiler::compareCluster",
       "enrichit::gsea_gson"
     ],
     "repository": "https://git.bioconductor.org/packages/clusterProfiler",
@@ -29,15 +30,17 @@
   },
   "oracle": {
     "type": "direct_public_api",
-    "call": "set.seed(seed); clusterProfiler::GSEA(geneList, exponent, minGSSize, maxGSSize, pvalueCutoff, pAdjustMethod, TERM2GENE, TERM2NAME)",
+    "call": "set.seed(seed); clusterProfiler::GSEA(geneList, ...) for one ranking; clusterProfiler::compareCluster(geneClusters, fun = clusterProfiler::GSEA, ...) for grouped rankings",
     "harness": "tests/testthat/test-backend-conformance-enrichment.R"
   },
   "inputs": {
     "classes": [
-      "named numeric vector"
+      "named numeric vector",
+      "data frame with gene, score, and group columns"
     ],
     "modalities": [
-      "ranked-list GSEA"
+      "ranked-list GSEA",
+      "grouped ranked-list GSEA"
     ],
     "assays_layers": [
       "not applicable"
@@ -47,8 +50,8 @@
     ],
     "requirements": [
       "finite decreasing statistics",
-      "unique non-empty gene identifiers",
-      "explicit analysis"
+      "unique non-empty gene identifiers within each ranking",
+      "optional non-missing grouping columns"
     ]
   },
   "parameters": [
@@ -61,11 +64,21 @@
       ]
     },
     {
-      "wrapper": "gene_clusters",
-      "role": "not_applicable",
-      "upstream": "NULL for named-vector GSEA",
+      "wrapper": "mapping",
+      "role": "input_adapter",
+      "upstream": "builds one geneList or a named geneClusters list",
       "scenarios": [
-        "NULL"
+        "NULL for named-vector GSEA",
+        "gene ~ score | group for grouped GSEA"
+      ]
+    },
+    {
+      "wrapper": "gene_clusters",
+      "role": "wrapper_only",
+      "upstream": "compatibility alias of mapping",
+      "scenarios": [
+        "NULL",
+        "gene ~ score compatibility mapping"
       ]
     },
     {
@@ -202,7 +215,7 @@
       "role": "wrapper_only",
       "upstream": "explicit stored-result identifier",
       "scenarios": [
-        "enrichment",
+        "automatic source.analysis.database identifier",
         "custom identifier"
       ]
     },
@@ -257,7 +270,8 @@
       "q values",
       "rank",
       "leading edge",
-      "core enrichment"
+      "core enrichment",
+      "group labels for compareCluster output"
     ],
     "wrapper": [
       "rank validation, optional explicit duplicate collapse, and optional storage"
@@ -269,11 +283,12 @@
   "equivalence": {
     "class": "standardized_numeric",
     "projection": [
-      "complete as.data.frame(gseaResult) aligned by ID"
+      "complete as.data.frame(gseaResult) aligned by ID",
+      "complete as.data.frame(compareClusterResult) aligned by Cluster and ID"
     ],
     "absolute_tolerance": 1e-12,
     "relative_tolerance": 1e-12,
-    "ordering": "align by term ID",
+    "ordering": "align by group and term ID",
     "reason": "The wrapper and oracle use identical ranks, term mappings, enrichit backend arguments, and seed."
   },
   "execution": {
@@ -302,7 +317,7 @@
     "expected": [
       "none in validated case"
     ],
-    "outside_envelope": "GO, KEGG, grouped GSEA, duplicate-collapse alternatives, default RNG consumption, real terms, and alternate enrichit methods require more scenarios."
+    "outside_envelope": "GO, KEGG, duplicate-collapse alternatives, default RNG consumption, real terms, and alternate enrichit methods require more scenarios."
   },
   "versions": {
     "R": "recorded at runtime",
@@ -329,13 +344,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-enrichment.R",
-    "date": "2026-08-21",
+    "date": "2026-09-21",
     "verdict": "pilot",
-    "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, grouped, intrinsic-noise, and warning/error tiers remain pending."
+    "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, intrinsic-noise, and warning/error tiers remain pending."
   },
   "owner": {
     "subsystem": "enrichment",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-21"
+    "last_reviewed": "2026-09-21"
   }
 }

@@ -114,7 +114,7 @@ Use `sn_run_cnv()` only with explicit normal references; include
   older candidate-only DE records or provide an explicit `universe`.
 - `sn_test_programs(sample_by = "donor")` detects complete donor pairs and
   reports `paired`; mixed paired/unpaired profiles are rejected.
-- Use `backend_control = list(seed = 777)` to seed program scoring locally.
+- Use `seed = 777` to seed program scoring locally.
   Discover scores with `sn_list_results(object, type = "program_scoring")`,
   then retrieve `sn_get_result(object, "program_scoring", id)$tables$metadata_columns`
   for the program-to-metadata mapping. Do not reconstruct sanitized names.
@@ -123,3 +123,25 @@ Use `sn_run_cnv()` only with explicit normal references; include
   `annotation_by` field recorded by `sn_store_milo()`.
 - RDS/RData/QS2 preserve matrix classes; BPCells/10x HDF5 writers accept dense
   and sparse matrices. Tabular writers retain table conversion.
+
+## Explicit selection, aggregation, and return values
+
+`sn_find_de`, `sn_score_programs`, `sn_run_milo`, and `sn_run_enrichment` return
+unified results with `return_object = FALSE`. Read `tables$primary` or a typed
+getter for rows; use `sn_get_result()` for complete metadata. Discover stored
+IDs with `sn_list_results()`; omitted IDs only work for a unique candidate.
+DE selection thresholds are `sn_get_de_result(p_adjusted_cutoff = ...,
+logfc_threshold = ...)`, independent of the backend's testing filters.
+DE/enrichment `top_n` is per group unless `top_scope = "all"`.
+
+Scoring uses top-level `seed`. A supplied `group_by` requires `aggregate =
+"expression"` or `"scores"`; this chooses averaging before or after scoring.
+Repeated default calls preserve separate runs. Explicit scoring replacement
+requires `overwrite = TRUE` and reconciles only columns owned by that result.
+Milo applies `seed` to sampling and uses `keep_model` for `models$milo`.
+
+For intentional fate reruns, use `sn_run_fate(..., result_id = "fate",
+overwrite = TRUE)`; metadata ownership checks remain active. Use a new ID
+to retain the previous fate result.
+
+For runnable marker examples and complete ORA/GSEA recipes, use the [DE and enrichment guide](https://songqi.org/shennong/dev/articles/differential-expression.html). Common result-return and filtering rules are demonstrated in [Parameters and results](https://songqi.org/shennong/dev/articles/parameters-and-results.html).

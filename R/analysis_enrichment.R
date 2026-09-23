@@ -102,23 +102,67 @@
   gsub("[^[:alnum:]_.-]+", "_", toupper(database))
 }
 
-.sn_enrich_parse_formula <- function(gene_clusters) {
-  if (is_null(gene_clusters)) {
+.sn_enrich_id_label <- function(value) {
+  gsub("[^[:alnum:]_.-]+", "_", as.character(value))
+}
+
+.sn_enrich_parse_mapping <- function(mapping) {
+  if (is_null(mapping)) {
     return(NULL)
   }
-  if (!inherits(gene_clusters, "formula")) {
-    stop("`gene_clusters` must be a two-sided formula such as `gene ~ cluster` or `gene ~ log2fc`.", call. = FALSE)
+  if (!inherits(mapping, "formula") || length(mapping) != 3L) {
+    stop(
+      "`mapping` must be a two-sided formula such as `gene ~ cluster`, ",
+      "`gene ~ score`, or `gene ~ score | group`.",
+      call. = FALSE
+    )
   }
 
-  vars <- all.vars(gene_clusters)
-  if (length(vars) != 2) {
-    stop("`gene_clusters` must be a two-sided formula with one gene column and one grouping or ranking column.", call. = FALSE)
+  gene_vars <- all.vars(mapping[[2L]])
+  if (length(gene_vars) != 1L) {
+    stop("The left-hand side of `mapping` must contain exactly one gene column.", call. = FALSE)
   }
 
+  rhs <- mapping[[3L]]
+  grouped_gsea <- is.call(rhs) && identical(rhs[[1L]], as.name("|"))
+  if (grouped_gsea) {
+    score_vars <- all.vars(rhs[[2L]])
+    group_vars <- all.vars(rhs[[3L]])
+    if (length(score_vars) != 1L || length(group_vars) == 0L) {
+      stop(
+        "Grouped GSEA mapping must use `gene ~ score | group` with one score ",
+        "column and one or more grouping columns.",
+        call. = FALSE
+      )
+    }
+    return(list(
+      gene_col = gene_vars[[1L]],
+      value_col = score_vars[[1L]],
+      group_cols = group_vars,
+      grouped_gsea = TRUE,
+      formula = mapping
+    ))
+  }
+
+  rhs_vars <- all.vars(rhs)
+  if (length(rhs_vars) == 0L) {
+    stop("The right-hand side of `mapping` must contain at least one column.", call. = FALSE)
+  }
   list(
-    gene_col = vars[[1]],
-    value_col = vars[[2]]
+    gene_col = gene_vars[[1L]],
+    value_col = if (length(rhs_vars) == 1L) rhs_vars[[1L]] else NULL,
+    group_cols = rhs_vars,
+    grouped_gsea = FALSE,
+    formula = mapping
   )
+}
+
+.sn_enrich_resolve_mapping <- function(mapping = NULL,
+                                       gene_clusters = NULL) {
+  if (!is_null(mapping) && !is_null(gene_clusters)) {
+    stop("Supply only one of `mapping` and compatibility alias `gene_clusters`.", call. = FALSE)
+  }
+  .sn_enrich_parse_mapping(mapping %||% gene_clusters)
 }
 
 .sn_enrich_resolve_input <- function(x,
@@ -331,7 +375,11 @@
                                         mapping = NULL,
                                         analysis = NULL) {
   if (!is_null(analysis)) {
-    return(match.arg(analysis, c("ora", "gsea")))
+    analysis <- match.arg(analysis, c("ora", "gsea"))
+    if (isTRUE(mapping$grouped_gsea) && identical(analysis, "ora")) {
+      stop("A `gene ~ score | group` mapping requires `analysis = \"gsea\"`.", call. = FALSE)
+    }
+    return(analysis)
   }
 
   if (is.numeric(input) && !is.null(names(input))) {
@@ -344,13 +392,15 @@
 
   if (is.data.frame(input)) {
     if (!is_null(mapping)) {
+      if (isTRUE(mapping$grouped_gsea)) {
+        return("gsea")
+      }
+      if (length(mapping$group_cols) > 1L) {
+        return("ora")
+      }
       value <- input[[mapping$value_col]]
       if (is.numeric(value)) {
-        stop(
-          "`analysis` must be supplied when the formula RHS is numeric; ",
-          "numeric group codes and GSEA ranking statistics are ambiguous.",
-          call. = FALSE
-        )
+        return("gsea")
       }
       return("ora")
     }
@@ -438,7 +488,8 @@
 
   if (is_null(mapping)) {
     stop(
-      "For GSEA with data-frame input, `gene_clusters` must be supplied as `gene ~ ranking_column`.",
+      "For GSEA with data-frame input, `mapping` must be supplied as ",
+      "`gene ~ ranking_column` or `gene ~ ranking_column | group`.",
       call. = FALSE
     )
   }
@@ -460,6 +511,54 @@
   .sn_enrich_collapse_gene_list(gene_list, duplicate_gene_method)
 }
 
+.sn_enrich_resolve_grouped_gene_lists <- function(
+    input,
+    mapping,
+    duplicate_gene_method = c("error", "max_abs", "max", "mean")) {
+  duplicate_gene_method <- match.arg(duplicate_gene_method)
+  if (!is.data.frame(input) || !isTRUE(mapping$grouped_gsea)) {
+    stop("Grouped GSEA requires data-frame input and `gene ~ score | group` mapping.", call. = FALSE)
+  }
+
+  required <- c(mapping$gene_col, mapping$value_col, mapping$group_cols)
+  missing <- setdiff(required, colnames(input))
+  if (length(missing) > 0L) {
+    stop("Column(s) not found in `x`: ", paste(missing, collapse = ", "), ".", call. = FALSE)
+  }
+  invalid_group <- vapply(mapping$group_cols, function(column) {
+    values <- input[[column]]
+    anyNA(values) || any(!nzchar(trimws(as.character(values))))
+  }, logical(1))
+  if (any(invalid_group)) {
+    stop(
+      "Grouped GSEA grouping columns cannot contain missing or empty values: ",
+      paste(mapping$group_cols[invalid_group], collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+
+  group_values <- lapply(
+    mapping$group_cols,
+    function(column) as.character(input[[column]])
+  )
+  groups <- do.call(
+    interaction,
+    c(group_values, list(drop = TRUE, lex.order = TRUE, sep = "."))
+  )
+  indices <- split(seq_len(nrow(input)), groups, drop = TRUE)
+  gene_lists <- lapply(indices, function(index) {
+    .sn_enrich_resolve_gene_list(
+      input = input[index, , drop = FALSE],
+      mapping = mapping,
+      duplicate_gene_method = duplicate_gene_method
+    )
+  })
+  if (length(gene_lists) == 0L) {
+    stop("Grouped GSEA mapping produced no non-empty groups.", call. = FALSE)
+  }
+  gene_lists
+}
+
 .sn_enrich_muffle_empty_warning <- function(expr) {
   withCallingHandlers(
     expr,
@@ -475,7 +574,26 @@
   )
 }
 
-.sn_enrich_result_ids <- function(result_id, databases) {
+.sn_enrich_result_ids <- function(result_id,
+                                  databases,
+                                  source_de_result_id = NULL,
+                                  analysis = NULL) {
+  if (is_null(result_id)) {
+    source_label <- source_de_result_id %||% "enrichment"
+    analysis_label <- analysis %||% "analysis"
+    generated <- paste(
+      .sn_enrich_id_label(source_label),
+      tolower(.sn_enrich_id_label(analysis_label)),
+      .sn_enrich_output_label(databases),
+      sep = "."
+    )
+    return(stats::setNames(generated, databases))
+  }
+
+  if (!is.character(result_id) || length(result_id) == 0L) {
+    stop("`result_id` must be NULL or contain one or more result names.", call. = FALSE)
+  }
+  result_id <- vapply(result_id, .sn_validate_result_id, character(1))
   if (length(databases) == 1) {
     return(result_id[[1]])
   }
@@ -533,15 +651,14 @@
 #'
 #' @param x A character vector of genes, a named numeric vector for GSEA, a
 #'   data frame, or a \code{Seurat} object when enriching a stored DE result.
-#' @param gene_clusters Optional two-sided formula describing the gene column
-#'   and the grouping/ranking column. Examples include \code{gene ~ cluster} for
-#'   grouped ORA and \code{gene ~ log2fc} for one global GSEA ranking. The
-#'   clusterProfiler grouped-GSEA formula \code{gene | score ~ group} is not yet
-#'   supported and fails explicitly rather than being treated as global GSEA.
-#' @param analysis Optional explicit analysis mode. Named numeric vectors infer
-#'   GSEA and character/categorical inputs infer ORA. Supply `analysis`
-#'   explicitly for a numeric formula RHS because numeric group codes and GSEA
-#'   ranking statistics are otherwise ambiguous.
+#' @param mapping Optional formula mapping input columns to enrichment roles.
+#'   Use \code{gene ~ group} for grouped ORA, \code{gene ~ score} for one
+#'   global GSEA ranking, and \code{gene ~ score | group} for grouped GSEA.
+#'   Multiple ORA or GSEA grouping columns can be joined with "+".
+#' @param analysis Optional explicit analysis mode. Named numeric vectors and
+#'   numeric formula RHS values infer GSEA, while character/categorical inputs
+#'   infer ORA. Supply \code{analysis = "ora"} explicitly when numeric formula
+#'   RHS values are intended as group codes rather than ranking statistics.
 #' @param species One of \code{"human"} or \code{"mouse"}.
 #' @param database One or more databases. Supported values include GO/KEGG
 #'   databases such as \code{"GOBP"} and MSigDB collections such as
@@ -572,26 +689,33 @@
 #' @param duplicate_gene_method Policy for duplicate identifiers in a GSEA
 #'   ranked list. The default, `"error"`, avoids silent changes. Explicit
 #'   alternatives are `"max_abs"`, `"max"`, and `"mean"`.
-#' @param result_id Name used when storing the enrichment result on a Seurat
-#'   object. When multiple databases are requested, the database label is
-#'   appended automatically unless a vector of names is supplied.
+#' @param result_id Optional name used when storing the enrichment result on a
+#'   Seurat object. When omitted, Shennong combines the source DE result,
+#'   analysis mode, and database, for example \code{bulk.gsea.H}. When multiple
+#'   databases are requested, one name is generated per database. Automatic
+#'   IDs receive a numeric suffix when a previous result already uses the name.
+#'   An explicit scalar name receives database suffixes for a multi-database
+#'   request; a vector can instead name every result directly.
 #' @param source_de_result_id Optional stored DE-result name associated with the
 #'   enrichment input.
 #' @param de_p_adjusted_cutoff,de_logfc_threshold Significance and absolute
 #'   effect thresholds applied when ORA consumes a stored DE result.
 #' @param de_direction Direction retained from a stored DE result for ORA:
 #'   `"up"`, `"down"`, or an explicit `"both"`.
-#' @param return_object Logical; when \code{TRUE} and a Seurat object is
-#'   available, return the updated Seurat object instead of raw enrichment
-#'   results.
+#' @param return_object Return the updated Seurat object when \code{TRUE}; this
+#'   requires Seurat input. Otherwise return one unified analysis result.
 #' @param prefix Optional filename prefix when writing results.
 #' @param outdir Optional output directory. If supplied, each enrichment result
 #'   is saved as an `.rds` file.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
+#' @param gene_clusters Compatibility alias for \code{mapping}. New code should
+#'   use \code{mapping}; supply only one of the two arguments.
 #'
-#' @return A single `clusterProfiler` result, a named list of results when
-#'   multiple databases are requested, or a \code{Seurat} object when
-#'   \code{return_object = TRUE}.
+#' @return A Seurat object or one unified enrichment result. For multiple
+#'   databases, \code{tables$primary} includes a \code{database} column and
+#'   \code{models$database_results} contains per-database envelopes. Native
+#'   clusterProfiler objects are available under \code{models$backend_results}.
+#'   Use \code{sn_get_enrichment_result()} to select a table.
 #'
 #' @examples
 #' \dontrun{
@@ -600,12 +724,18 @@
 #'   species = "human",
 #'   database = c("GOBP", "H")
 #' )
+#' sn_run_enrichment(
+#'   x = marker_table,
+#'   mapping = gene ~ avg_log2FC | cell_type,
+#'   species = "human",
+#'   database = "H"
+#' )
 #' }
 #'
 #' @export
 sn_run_enrichment <- function(
   x,
-  gene_clusters = NULL,
+  mapping = NULL,
   analysis = NULL,
   species = NULL,
   database = "GOBP",
@@ -619,7 +749,7 @@ sn_run_enrichment <- function(
   max_gs_size = 500,
   gsea_exponent = 1,
   duplicate_gene_method = c("error", "max_abs", "max", "mean"),
-  result_id = "default",
+  result_id = NULL,
   source_de_result_id = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
@@ -627,8 +757,8 @@ sn_run_enrichment <- function(
   object = NULL,
   de_p_adjusted_cutoff = 0.05,
   de_logfc_threshold = 0,
-  de_direction = c("up", "down", "both")) {
-  result_id <- .sn_validate_result_id(result_id)
+  de_direction = c("up", "down", "both"),
+  gene_clusters = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
   resolved <- .sn_enrich_resolve_input(
     x = x,
@@ -636,6 +766,9 @@ sn_run_enrichment <- function(
   )
   input <- resolved$input
   object <- resolved$object
+  if (isTRUE(return_object) && is.null(object)) {
+    stop("`return_object = TRUE` requires a Seurat input.", call. = FALSE)
+  }
   source_de_result_id <- resolved$source_de_result_id %||% source_de_result_id
 
   species <- species %||% if (!is_null(object)) tryCatch(sn_get_species(object), error = function(...) NULL) else NULL
@@ -667,7 +800,10 @@ sn_run_enrichment <- function(
     "mouse" = "mmu"
   )
 
-  mapping <- .sn_enrich_parse_formula(gene_clusters)
+  mapping <- .sn_enrich_resolve_mapping(
+    mapping = mapping,
+    gene_clusters = gene_clusters
+  )
   gene_col <- mapping$gene_col %||% "gene"
   analysis <- .sn_enrich_resolve_analysis(
     input = input,
@@ -758,8 +894,9 @@ sn_run_enrichment <- function(
       }, logical(1))]
       group_col <- if (length(group_hits) > 0L) group_hits[[1]] else NULL
       if (!is.null(group_col)) {
-        gene_clusters <- stats::reformulate(group_col, response = gene_col)
-        mapping <- .sn_enrich_parse_formula(gene_clusters)
+        mapping <- .sn_enrich_parse_mapping(
+          stats::reformulate(group_col, response = gene_col)
+        )
         de_ora_selection$group_column <- group_col
       }
     }
@@ -767,14 +904,24 @@ sn_run_enrichment <- function(
     de_ora_selection$universe_size <- length(universe)
   }
 
-  if (identical(analysis, "gsea")) {
+  grouped_gsea <- identical(analysis, "gsea") && isTRUE(mapping$grouped_gsea)
+  if (grouped_gsea) {
+    gene_lists <- .sn_enrich_resolve_grouped_gene_lists(
+      input = input,
+      mapping = mapping,
+      duplicate_gene_method = duplicate_gene_method
+    )
+    gene_list <- NULL
+  } else if (identical(analysis, "gsea")) {
     gene_list <- .sn_enrich_resolve_gene_list(
       input = input,
       mapping = mapping,
       duplicate_gene_method = duplicate_gene_method
     )
+    gene_lists <- NULL
   } else {
     gene_list <- NULL
+    gene_lists <- NULL
   }
 
   run_one <- function(current_database) {
@@ -798,7 +945,24 @@ sn_run_enrichment <- function(
         "GOCC" = "CC"
       )
 
-      if (identical(analysis, "gsea")) {
+      if (grouped_gsea) {
+        result <- .sn_enrich_muffle_empty_warning(
+          with_enrichment_acceleration(
+            clusterProfiler::compareCluster(
+              geneClusters = gene_lists,
+              fun = "gseGO",
+              ont = ont,
+              OrgDb = org_db,
+              keyType = "SYMBOL",
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method
+            )
+          )
+        )
+      } else if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_acceleration(
             clusterProfiler::gseGO(
@@ -835,7 +999,7 @@ sn_run_enrichment <- function(
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_acceleration(
             clusterProfiler::compareCluster(
-              geneClusters = gene_clusters,
+              geneClusters = mapping$formula,
               fun = "enrichGO",
               ont = ont,
               data = input,
@@ -856,7 +1020,34 @@ sn_run_enrichment <- function(
     }
 
     if (identical(current_database, "KEGG")) {
-      if (identical(analysis, "gsea")) {
+      if (grouped_gsea) {
+        kegg_gene_lists <- lapply(gene_lists, function(current_gene_list) {
+          gid <- .sn_enrich_symbol_to_entrez(
+            genes = names(current_gene_list),
+            org_db = org_db
+          )
+          converted <- current_gene_list[gid$SYMBOL]
+          names(converted) <- gid$ENTREZID
+          .sn_enrich_collapse_gene_list(
+            converted,
+            duplicate_gene_method = duplicate_gene_method
+          )
+        })
+        result <- .sn_enrich_muffle_empty_warning(
+          with_enrichment_acceleration(
+            clusterProfiler::compareCluster(
+              geneClusters = kegg_gene_lists,
+              fun = "gseKEGG",
+              organism = organism,
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method
+            )
+          )
+        )
+      } else if (identical(analysis, "gsea")) {
         gid <- .sn_enrich_symbol_to_entrez(
           genes = names(gene_list),
           org_db = org_db
@@ -926,7 +1117,7 @@ sn_run_enrichment <- function(
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_acceleration(
             clusterProfiler::compareCluster(
-              geneClusters = stats::as.formula(glue("{mapping$gene_col} ~ {mapping$value_col}")),
+              geneClusters = mapping$formula,
               data = kegg_input,
               fun = "enrichKEGG",
               pvalueCutoff = pvalue_cutoff,
@@ -961,7 +1152,23 @@ sn_run_enrichment <- function(
         dplyr::select("term", "description") |>
         dplyr::distinct()
 
-      if (identical(analysis, "gsea")) {
+      if (grouped_gsea) {
+        result <- .sn_enrich_muffle_empty_warning(
+          with_enrichment_acceleration(
+            clusterProfiler::compareCluster(
+              geneClusters = gene_lists,
+              fun = clusterProfiler::GSEA,
+              exponent = gsea_exponent,
+              minGSSize = min_gs_size,
+              maxGSSize = max_gs_size,
+              pvalueCutoff = pvalue_cutoff,
+              pAdjustMethod = p_adjust_method,
+              TERM2GENE = term2gene,
+              TERM2NAME = term2name
+            )
+          )
+        )
+      } else if (identical(analysis, "gsea")) {
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_acceleration(
             clusterProfiler::GSEA(
@@ -996,7 +1203,7 @@ sn_run_enrichment <- function(
         result <- .sn_enrich_muffle_empty_warning(
           with_enrichment_acceleration(
             clusterProfiler::compareCluster(
-              geneClusters = gene_clusters,
+              geneClusters = mapping$formula,
               data = input,
               fun = clusterProfiler::enricher,
               TERM2GENE = term2gene,
@@ -1033,16 +1240,25 @@ sn_run_enrichment <- function(
       }
     }
 
-    if (!is_null(object)) {
-      result_ids <- .sn_enrich_result_ids(result_id = result_id, databases = names(results))
+    {
+      result_ids <- .sn_enrich_result_ids(
+        result_id = result_id,
+        databases = names(results),
+        source_de_result_id = source_de_result_id,
+        analysis = analysis
+      )
+      stored_results <- stats::setNames(vector("list", length(results)), names(results))
       for (current_database in names(results)) {
         current_result_id <- if (length(databases) == 1) {
-          result_ids
+          unname(result_ids[[1L]])
         } else {
-          result_ids[[current_database]]
+          unname(result_ids[[current_database]])
         }
-        object <- sn_store_enrichment(
-          object = object,
+        current_result_id <- .sn_resolve_new_result_id(
+          object, "enrichment", if (is.null(result_id)) NULL else current_result_id,
+          current_result_id
+        )
+        stored_results[[current_database]] <- .sn_build_enrichment_result(
           result = results[[current_database]],
           result_id = current_result_id,
           analysis = analysis,
@@ -1079,10 +1295,13 @@ sn_run_enrichment <- function(
             max_gs_size = max_gs_size,
             gsea_exponent = if (identical(analysis, "gsea")) gsea_exponent else NULL,
             duplicate_gene_method = if (identical(analysis, "gsea")) duplicate_gene_method else NULL,
+            group_columns = if (grouped_gsea) mapping$group_cols else NULL,
             de_ora_selection = if (identical(analysis, "ora")) de_ora_selection else NULL
-          ),
-          return_object = TRUE
+          )
         )
+        if (isTRUE(return_object)) {
+          object <- sn_store_result(object, "enrichment", current_result_id, stored_results[[current_database]])
+        }
       }
 
       if (isTRUE(return_object)) {
@@ -1090,11 +1309,20 @@ sn_run_enrichment <- function(
       }
     }
 
-    if (length(results) == 1) {
-      return(results[[1]])
-    }
-
-    results
+    if (length(stored_results) == 1L) return(stored_results[[1L]])
+    combined <- dplyr::bind_rows(lapply(names(stored_results), function(database) {
+      table <- stored_results[[database]]$tables$primary
+      table$database <- rep(database, nrow(table))
+      table
+    }))
+    ids <- vapply(stored_results, function(result) result$result_id, character(1))
+    .sn_prepare_result(list(
+      table = combined, analysis = analysis, method = analysis, backend = "clusterProfiler",
+      database = names(results), species = species, source_de_result_id = source_de_result_id,
+      parameters = list(by_database = lapply(stored_results, function(result) result$parameters)),
+      models = list(backend_results = results, database_results = stored_results),
+      diagnostics = list(result_ids = ids), provenance = .sn_contextual_analysis_provenance()
+    ), type = "enrichment", result_id = paste(unname(ids), collapse = "+"))
   }, patches = "clusterprofiler")
 }
 #' Store an enrichment result on a Seurat object
@@ -1161,19 +1389,9 @@ sn_store_enrichment <- function(object,
         (is.null(names(parameters)) || any(!nzchar(names(parameters)))))) {
     stop("`parameters` must be a named list.", call. = FALSE)
   }
-  stored_result <- list(
-    schema_version = .sn_analysis_result_schema_version(),
-    package_version = as.character(utils::packageVersion("Shennong")),
-    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
-    table = .sn_as_enrichment_table(result),
-    analysis = analysis,
-    database = database,
-    species = species,
-    source_de_result_id = source_de_result_id,
-    gene_col = gene_col,
-    score_col = score_col,
-    parameters = parameters,
-    provenance = .sn_contextual_analysis_provenance()
+  stored_result <- .sn_build_enrichment_result(
+    result, result_id, analysis, database, species, source_de_result_id,
+    gene_col, score_col, parameters
   )
 
   object <- sn_store_result(
@@ -1192,6 +1410,28 @@ sn_store_enrichment <- function(object,
     type = "enrichment",
     result_id = result_id
   )
+}
+
+.sn_build_enrichment_result <- function(result, result_id, analysis, database, species,
+                                        source_de_result_id, gene_col, score_col, parameters) {
+  stored_result <- list(
+    schema_version = .sn_analysis_result_schema_version(),
+    package_version = as.character(utils::packageVersion("Shennong")),
+    created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
+    table = .sn_as_enrichment_table(result),
+    method = analysis,
+    backend = "clusterProfiler",
+    models = list(backend_results = stats::setNames(list(result), database)),
+    analysis = analysis,
+    database = database,
+    species = species,
+    source_de_result_id = source_de_result_id,
+    gene_col = gene_col,
+    score_col = score_col,
+    parameters = parameters,
+    provenance = .sn_contextual_analysis_provenance()
+  )
+  .sn_prepare_result(stored_result, type = "enrichment", result_id = result_id)
 }
 
 #' Deprecated alias of `sn_run_enrichment()`

@@ -655,20 +655,20 @@
 #' @param only_pos Whether to return only positive markers. Defaults to
 #'   \code{TRUE} for \code{"markers"} and \code{FALSE} otherwise.
 #' @param logfc_threshold,min_pct Standard Seurat marker filtering arguments.
-#' @param p_val_cutoff Adjusted p-value threshold used when storing result
-#'   metadata.
-#' @param de_logfc Absolute log fold-change threshold used when storing result
-#'   metadata.
+#' @details Testing retains the complete backend result. Select significant
+#'   genes afterward with \code{sn_get_de_result(p_adjusted_cutoff = ...,
+#'   logfc_threshold = ...)}.
 #' @param min_cells_per_sample Minimum cells required for a sample/group
 #'   pseudobulk profile to be retained.
 #' @param result_id Stable identifier used as the stored-result key and canonical
 #'   result name.
 #' @param return_object If \code{TRUE}, return the updated Seurat object with
-#'   stored DE results. Otherwise return the result table.
+#'   stored DE results. Otherwise return the unified result; retrieve its table
+#'   with \code{sn_get_de_result()} or \code{result$tables$primary}.
 #' @param verbose Whether to emit progress information.
 #' @param ... Additional arguments passed through to the selected DE method.
 #'
-#' @return For single-cell input, either a DE result table or an updated
+#' @return For single-cell input, either a unified DE result or an updated
 #'   \code{Seurat} object. For bulk input, a validated Shennong bulk-DE result.
 #'
 #' @examples
@@ -689,7 +689,7 @@
 #'   Seurat::Idents(obj) <- obj$cell_type
 #'   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 #'
-#'   marker_tbl <- sn_find_de(
+#'   marker_result <- sn_find_de(
 #'     obj,
 #'     analysis = "markers",
 #'     group_by = "cell_type",
@@ -699,7 +699,7 @@
 #'     return_object = FALSE,
 #'     verbose = FALSE
 #'   )
-#'   head(marker_tbl)
+#'   head(sn_get_de_result(marker_result))
 #'
 #'   obj <- sn_find_de(
 #'     obj,
@@ -750,8 +750,6 @@ sn_find_de <- function(
   only_pos = NULL,
   logfc_threshold = 0.1,
   min_pct = 0.25,
-  p_val_cutoff = 0.05,
-  de_logfc = 0.25,
   min_cells_per_sample = 10,
   result_id = "default",
   return_object = TRUE,
@@ -763,6 +761,11 @@ sn_find_de <- function(
   backend_control = list(),
   ...
 ) {
+  retired <- intersect(names(list(...)), c("p_val_cutoff", "de_logfc"))
+  if (length(retired)) {
+    stop("Removed DE argument(s): ", paste(retired, collapse = ", "),
+         ". Use `sn_get_de_result(p_adjusted_cutoff = ..., logfc_threshold = ...)` to filter results.", call. = FALSE)
+  }
   result_id <- .sn_validate_result_id(result_id)
   assay_missing <- missing(assay)
   design_missing <- missing(design)
@@ -1009,8 +1012,6 @@ sn_find_de <- function(
     layer = layer,
     rank_col = rank_col,
     p_col = p_col,
-    p_val_cutoff = p_val_cutoff,
-    de_logfc = de_logfc,
     min_pct = min_pct,
     logfc_threshold = logfc_threshold,
     n_genes = nrow(result),
@@ -1027,7 +1028,7 @@ sn_find_de <- function(
   if (return_object) {
     .sn_log_seurat_command(object = object, assay = assay, name = "sn_find_de")
   } else {
-    tibble::as_tibble(result)
+    sn_get_result(object, "de", result_id)
   }
   }, patches = de_acceleration_patches)
 }

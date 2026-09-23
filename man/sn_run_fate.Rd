@@ -14,7 +14,8 @@ sn_run_fate(
   backend_control = list(),
   return_object = TRUE,
   seed = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ sn_run_fate(
 
 \item{verbose}{Top-level progress switch forwarded through
 \code{backend_control$verbose} when explicitly supplied.}
+
+\item{overwrite}{Explicitly replace an existing fate result. Metadata ownership
+checks still prevent overwriting user-modified columns.}
 }
 \value{
 A Seurat object or fate result.

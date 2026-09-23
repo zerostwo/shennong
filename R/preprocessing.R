@@ -1146,7 +1146,7 @@ sn_filter_cells <- function(
   clusters = NULL,
   samples,
   dbr_sd = NULL,
-  ncores = 1L
+  n_workers = 1L
 ) {
   samples <- as.character(samples)
   if (length(samples) != ncol(sce) || anyNA(samples) || any(!nzchar(samples))) {
@@ -1157,7 +1157,7 @@ sn_filter_cells <- function(
   }
 
   sample_indices <- split(seq_len(ncol(sce)), samples, drop = TRUE)
-  workers <- min(as.integer(ncores), length(sample_indices))
+  workers <- min(as.integer(n_workers), length(sample_indices))
 
   run_sample <- function(sample_name) {
     indices <- sample_indices[[sample_name]]
@@ -1387,10 +1387,10 @@ sn_filter_cells <- function(
 #'   scDblFinder-specific; ignored by scrublet.
 #' @param dbr_sd A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
 #'   scDblFinder-specific; ignored by scrublet.
-#' @param ncores Number of sample groups to process concurrently. For a BPCells
-#'   backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
+#' @param n_workers Number of sample groups to process concurrently. For a BPCells
+#'   backend, \code{n_workers = 1} materializes one sample-sized sparse matrix at a
 #'   time and gives the lowest peak memory use. Higher values can hold up to
-#'   \code{ncores} sample matrices in memory concurrently.
+#'   \code{n_workers} sample matrices in memory concurrently.
 #'   scDblFinder-specific; ignored by scrublet.
 #' @param assay Assay used for doublet detection. Defaults to \code{"RNA"}.
 #' @param layer Layer used as the input count matrix. Defaults to \code{"counts"}.
@@ -1424,7 +1424,7 @@ sn_filter_cells <- function(
 #'   `sc.pp.scrublet()` wrapper.
 #' @examples
 #' \dontrun{
-#' seurat_obj <- sn_find_doublets(seurat_obj, ncores = 4)
+#' seurat_obj <- sn_find_doublets(seurat_obj, n_workers = 4)
 #'
 #' # Scrublet through the managed pixi environment:
 #' sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
@@ -1442,7 +1442,7 @@ sn_find_doublets <- function(
   cluster_backend = c("native", "shennong"),
   group_by = NULL,
   dbr_sd = NULL,
-  ncores = 1,
+  n_workers = 1,
   assay = "RNA",
   layer = "counts",
   min_features = 200,
@@ -1465,7 +1465,7 @@ sn_find_doublets <- function(
     )
     if (length(legacy_args) > 0L || !identical(cluster_backend, "native")) {
       warning(
-        "`clusters`, `cluster_backend`, `group_by`, `dbr_sd`, and `ncores` ",
+        "`clusters`, `cluster_backend`, `group_by`, `dbr_sd`, and `n_workers` ",
         "are scDblFinder-specific and are ignored by `method = \"scrublet\"`.",
         call. = FALSE
       )
@@ -1476,10 +1476,10 @@ sn_find_doublets <- function(
     check_installed("SingleCellExperiment")
   }
   stopifnot(is.numeric(min_features), length(min_features) == 1, min_features >= 0)
-  if (!is.numeric(ncores) || length(ncores) != 1L || is.na(ncores) || ncores < 1 || ncores %% 1 != 0) {
-    stop("`ncores` must be one positive integer.", call. = FALSE)
+  if (!is.numeric(n_workers) || length(n_workers) != 1L || is.na(n_workers) || n_workers < 1 || n_workers %% 1 != 0) {
+    stop("`n_workers` must be one positive integer.", call. = FALSE)
   }
-  ncores <- as.integer(ncores)
+  n_workers <- as.integer(n_workers)
   cluster_backend <- match.arg(cluster_backend)
 
   if (!is_null(group_by)) {
@@ -1498,7 +1498,7 @@ sn_find_doublets <- function(
       paste(
         "BPCells-backed doublet detection requires `group_by` so counts can be",
         "materialized one sample at a time. Supply a donor/sample metadata column;",
-        "use `ncores = 1` for the lowest peak memory use."
+        "use `n_workers = 1` for the lowest peak memory use."
       ),
       call. = FALSE
     )
@@ -1589,14 +1589,14 @@ sn_find_doublets <- function(
   if (bpcells_backed) {
     .sn_log_info(
       "Running BPCells-backed `scDblFinder()` in {length(unique(metadata[[group_by]]))} ",
-      "sample chunk(s), with up to {ncores} concurrent chunk(s)."
+      "sample chunk(s), with up to {n_workers} concurrent chunk(s)."
     )
     sce <- .sn_run_grouped_bpcells_scDblFinder(
       sce = sce,
       clusters = clusters,
       samples = metadata[[group_by]],
       dbr_sd = dbr_sd,
-      ncores = ncores
+      n_workers = n_workers
     )
   } else if (is_null(group_by)) {
     .sn_log_info("Running `scDblFinder()` without donor grouping.")
@@ -1606,12 +1606,12 @@ sn_find_doublets <- function(
       dbr.sd    = dbr_sd
     )
   } else {
-    .sn_log_info("Running `scDblFinder()` with donor grouping (parallel with {ncores} cores).")
+    .sn_log_info("Running `scDblFinder()` with donor grouping (parallel with {n_workers} cores).")
     sce <- .sn_run_scDblFinder(
       sce = sce,
       samples  = group_by,
       dbr.sd   = dbr_sd,
-      BPPARAM  = BiocParallel::MulticoreParam(ncores)
+      BPPARAM  = BiocParallel::MulticoreParam(n_workers)
     )
   }
 

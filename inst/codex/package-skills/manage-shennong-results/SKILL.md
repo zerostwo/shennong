@@ -55,7 +55,13 @@ package API.
   `object@misc` payload through Shennong
 - prefer `sn_list_results()` for discovery and use its `result_id` column as
   the canonical lookup key
-- prefer `sn_get_*_result()` helpers for retrieval
+- use `sn_get_*_result()` for filtered tables and `sn_get_result()` for complete
+  results; table getters have no metadata-return switch
+- omit a result ID only when exactly one result of that type exists
+- choose a new ID for a new analysis; `sn_store_result()` rejects replacement
+  unless `overwrite = TRUE` is explicit
+- use `top_scope = "group"` or `"all"` for DE/enrichment top-N selection;
+  direction and significance filters work independently of `top_n`
 - use `sn_build_result_bundle()` only after retrieving and validating the exact
   stored result; bind immutable inputs by resource/artifact identifier,
   revision, and SHA-256 digest
@@ -149,7 +155,7 @@ package API.
 - `sn_get_deconvolution_result(object, result_id = "bulk_mix")`
 - `sn_store_cell_communication(object, result, result_id = "cellchat")`
 - `sn_get_cell_communication_result(object, result_id = "cellchat")`
-- `sn_get_cell_communication_result(object, result_id = "cellchat", with_metadata = TRUE)$tables$consensus`
+- `sn_get_result(object, result_id = "cellchat", type = "cell_communication")$tables$consensus`
 - `sn_store_regulatory_activity(object, result, result_id = "dorothea")`
 - `sn_get_regulatory_activity_result(object, result_id = "dorothea")`
 - `sn_get_interpretation_result(object, result_id = "annotation_note")`

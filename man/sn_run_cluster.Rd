@@ -6,11 +6,11 @@
 \usage{
 sn_run_cluster(
   object,
-  batch = NULL,
+  batch_by = NULL,
   normalization_method = c("seurat", "scran", "sctransform"),
   integration_method = c("harmony", "unintegrated", "coralysis", "seurat_cca",
     "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
-  integration_control = list(),
+  backend_control = list(),
   nfeatures = 3000,
   hvg_features = NULL,
   vars_to_regress = NULL,
@@ -19,11 +19,15 @@ sn_run_cluster(
   cluster_name = NULL,
   cluster_n_start = 10,
   cluster_n_iter = 10,
-  cluster_random_seed = 717,
   cluster_group_singletons = TRUE,
   leiden_method = c("leidenbase", "igraph"),
   leiden_objective_function = c("modularity", "CPM"),
-  seed = NULL,
+  assay = "RNA",
+  layer = "counts",
+  npcs = 50,
+  dims = NULL,
+  hvg_group_by = NULL,
+  seed = 717,
   verbose = TRUE,
   ...
 )
@@ -31,20 +35,20 @@ sn_run_cluster(
 \arguments{
 \item{object}{A \code{Seurat} object.}
 
-\item{batch}{A column name in \code{object@meta.data} specifying the batch
+\item{batch_by}{A column name in \code{object@meta.data} specifying the batch
 labels used for integration. If \code{NULL}, no RNA batch integration is
 performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 internal constant batch key to the Python backend.}
 
 \item{normalization_method}{One of \code{"seurat"}, \code{"scran"}, or
 \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
-be followed by any supported \code{integration_method} when \code{batch}
+be followed by any supported \code{integration_method} when \code{batch_by}
 is supplied. The SCTransform workflow can currently be
 combined with \code{integration_method = "harmony"} by supplying
-\code{batch}.}
+\code{batch_by}.}
 
 \item{integration_method}{One or more batch-analysis methods used when
-\code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
+\code{batch_by} is supplied. \code{"unintegrated"} keeps the PCA baseline;
 multiple values run against the same normalized/HVG/PCA preparation and
 retain method-specific reductions, graphs, cluster columns, UMAP, and
 optional t-SNE results in one object. Scalar analysis parameters supplied
@@ -74,7 +78,7 @@ Python expression/protein inputs remain sparse; learned backends may create
 bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
 low-dimensional dense outputs.}
 
-\item{integration_control}{Optional named list of backend-specific
+\item{backend_control}{Optional named list of backend-specific
 parameters. With multiple methods, provide a list keyed by method, for
 example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 an optional \code{.default} entry is merged into every method. For
@@ -110,7 +114,7 @@ to \code{Seurat::IntegrateLayers()}. For \code{"scvi"} and
 \code{corrected_layer}, \code{store_corrected_layer},
 \code{single_sample_batch_key}, and \code{keep_single_sample_batch};
 Shennong runs MMoCHi's ADT landmark registration and imports the corrected
-protein matrix as a protein-derived reduction. When \code{batch = NULL},
+protein matrix as a protein-derived reduction. When \code{batch_by = NULL},
 Shennong uses a constant internal backend batch key for single-sample
 registration. When Seurat accepts arbitrary assay layers, the corrected
 matrix is stored as \code{corrected_layer}; otherwise it is kept under
@@ -148,9 +152,6 @@ Defaults to Seurat's \code{"seurat_clusters"} behavior.}
 \item{cluster_n_start, cluster_n_iter}{Number of starts and iterations passed
 to \code{Seurat::FindClusters()}.}
 
-\item{cluster_random_seed}{Random seed passed to
-\code{Seurat::FindClusters()}.}
-
 \item{cluster_group_singletons}{Whether \code{Seurat::FindClusters()}
 should group singletons into the nearest cluster.}
 
@@ -160,14 +161,25 @@ should group singletons into the nearest cluster.}
 \item{leiden_objective_function}{Leiden objective function passed to
 \code{Seurat::FindClusters()}.}
 
-\item{seed}{Top-level reproducibility seed overriding clustering, PCA,
-SCTransform, visualization, and backend integration seeds when supplied.
-Precedence: \code{seed} > stage-specific controls > stage defaults.}
+\item{assay}{Assay used consistently by all clustering stages; default RNA.}
 
-\item{verbose}{Top-level progress logging switch forwarded to the clustering
-implementation; a \code{verbose} tail argument keeps precedence over it.}
+\item{layer}{Input expression layer, including corrected count layers.}
 
-\item{...}{Additional clustering controls. Supported names include
+\item{npcs}{Number of PCs to compute. Multiple values create a parameter grid.}
+
+\item{dims}{PC indices used for neighbors, clustering, and UMAP.}
+
+\item{hvg_group_by}{Metadata column for grouped HVG discovery. Defaults to
+\code{batch_by} when batches are supplied, or pooled discovery otherwise.}
+
+\item{seed}{Reproducibility seed (default 717) controlling clustering, PCA,
+SCTransform, visualization, and backend integration. A non-NULL value
+takes precedence over backend controls; \code{NULL} leaves backend defaults
+and the caller's workflow random state in effect.}
+
+\item{verbose}{Whether to emit workflow progress messages.}
+
+\item{...}{Additional named clustering controls. Supported names include
 \code{cluster_control}, an optional named list of additional
 \code{Seurat::FindClusters()} arguments. Values here override Shennong's
 generated defaults.
@@ -188,10 +200,6 @@ installs CRAN packages.
 \code{install_ask}: passed to \code{BiocManager::install()} when
 \code{auto_install} installs Bioconductor packages through
 \code{sn_install_dependencies()}.
-\code{hvg_group_by}: optional metadata column used to compute highly variable
-genes within groups before merging and ranking them. When \code{NULL} and
-\code{batch} is supplied, Shennong reuses \code{batch} by default. Use
-\code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
 \code{rare_feature_method}: optional rare-cell-aware feature methods appended
 to the base HVG set before PCA/clustering. Supported values are
 \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
@@ -219,18 +227,10 @@ diversity preservation vs. correction. Used only when
 \code{integration_method = "harmony"}. Multiple values expand only the
 Harmony branch and do not duplicate other integration methods.
 \code{group_by_vars}: optional column name or character vector passed to
-\code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
+\code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch_by}
 and is used only when \code{integration_method = "harmony"}.
-\code{npcs}: number of PCs to compute in \code{RunPCA}. Multiple values
-form a parameter-grid axis.
-\code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
-clustering, and UMAP.
 \code{species}: optional species label. Used when block genes must be resolved
 from built-in signatures.
-\code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
-\code{layer}: layer used as the input matrix. Defaults to \code{"counts"}.
-scVI, scANVI, scPoli, and the PCA upstream of BBKNN all honor this value,
-so a layer such as \code{"decontaminated_counts"} is used consistently.
 \code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
 \code{multimodal_method}.
@@ -242,7 +242,7 @@ as a log-normalized protein matrix. \code{"totalvi"} runs scvi-tools
 totalVI on RNA counts plus ADT counts and clusters on the imported totalVI
 latent representation.
 \code{"mmochi"} runs MMoCHi ADT landmark registration across batches, or
-in single-sample mode when \code{batch = NULL}, stores the corrected
+in single-sample mode when \code{batch_by = NULL}, stores the corrected
 protein matrix when supported, computes a protein PCA reduction, and
 clusters on that reduction. When
 \code{NULL}, Shennong keeps the historical CITE-seq default
@@ -298,7 +298,7 @@ not include GPU device memory.
 }
 \description{
 This function is the main clustering entry point in \code{Shennong}.
-When \code{batch = NULL}, it performs single-dataset clustering with either the
+When \code{batch_by = NULL}, it performs single-dataset clustering with either the
 standard Seurat workflow, an SCTransform workflow, or a single-sample
 CITE-seq workflow. When \code{batch} is supplied, it performs batch integration
 followed by clustering and UMAP.
@@ -314,7 +314,7 @@ seurat_obj <- sn_run_cluster(
 
 seurat_obj <- sn_run_cluster(
   object = seurat_obj,
-  batch = "sample_id",
+  batch_by = "sample_id",
   integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "sample_id",

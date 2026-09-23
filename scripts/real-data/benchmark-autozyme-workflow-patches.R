@@ -426,7 +426,7 @@ output <- .absolute_path(.option(
     obj = object,
     features = context$signatures,
     name = "",
-    ncores = 1L,
+    n_workers = 1L,
     BPPARAM = NULL,
     storeRanks = FALSE,
     slot = "counts"
@@ -541,7 +541,7 @@ output <- .absolute_path(.option(
       result_id = "autozyme_benchmark_ucell",
       backend_control = list(ucell = list(
         name = "",
-        ncores = 1L,
+        n_workers = 1L,
         storeRanks = FALSE,
         slot = "counts"
       )),
@@ -553,7 +553,7 @@ output <- .absolute_path(.option(
       cluster_backend = "native",
       group_by = NULL,
       dbr_sd = NULL,
-      ncores = 1L,
+      n_workers = 1L,
       assay = context$assay,
       layer = "counts",
       min_features = 0L

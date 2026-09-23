@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+For your first runnable analysis, use [Get started](get-started.html). Use this map to choose a larger study workflow after you know the core API.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -185,7 +187,7 @@ pbmc <- sn_run_cluster(
   pbmc,
   normalization_method = "seurat",
   integration_method = "harmony",
-  batch = "real_batch",
+  batch_by = "real_batch",
   resolution = 0.6
 )
 

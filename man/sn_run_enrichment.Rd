@@ -6,7 +6,7 @@
 \usage{
 sn_run_enrichment(
   x,
-  gene_clusters = NULL,
+  mapping = NULL,
   analysis = NULL,
   species = NULL,
   database = "GOBP",
@@ -20,7 +20,7 @@ sn_run_enrichment(
   max_gs_size = 500,
   gsea_exponent = 1,
   duplicate_gene_method = c("error", "max_abs", "max", "mean"),
-  result_id = "default",
+  result_id = NULL,
   source_de_result_id = NULL,
   return_object = inherits(x, "Seurat"),
   prefix = NULL,
@@ -28,23 +28,23 @@ sn_run_enrichment(
   object = NULL,
   de_p_adjusted_cutoff = 0.05,
   de_logfc_threshold = 0,
-  de_direction = c("up", "down", "both")
+  de_direction = c("up", "down", "both"),
+  gene_clusters = NULL
 )
 }
 \arguments{
 \item{x}{A character vector of genes, a named numeric vector for GSEA, a
 data frame, or a \code{Seurat} object when enriching a stored DE result.}
 
-\item{gene_clusters}{Optional two-sided formula describing the gene column
-and the grouping/ranking column. Examples include \code{gene ~ cluster} for
-grouped ORA and \code{gene ~ log2fc} for one global GSEA ranking. The
-clusterProfiler grouped-GSEA formula \code{gene | score ~ group} is not yet
-supported and fails explicitly rather than being treated as global GSEA.}
+\item{mapping}{Optional formula mapping input columns to enrichment roles.
+Use \code{gene ~ group} for grouped ORA, \code{gene ~ score} for one
+global GSEA ranking, and \code{gene ~ score | group} for grouped GSEA.
+Multiple ORA or GSEA grouping columns can be joined with "+".}
 
-\item{analysis}{Optional explicit analysis mode. Named numeric vectors infer
-GSEA and character/categorical inputs infer ORA. Supply \code{analysis}
-explicitly for a numeric formula RHS because numeric group codes and GSEA
-ranking statistics are otherwise ambiguous.}
+\item{analysis}{Optional explicit analysis mode. Named numeric vectors and
+numeric formula RHS values infer GSEA, while character/categorical inputs
+infer ORA. Supply \code{analysis = "ora"} explicitly when numeric formula
+RHS values are intended as group codes rather than ranking statistics.}
 
 \item{species}{One of \code{"human"} or \code{"mouse"}.}
 
@@ -87,16 +87,19 @@ GSEA results with clusterProfiler 4.20, call \code{set.seed()} immediately befor
 ranked list. The default, \code{"error"}, avoids silent changes. Explicit
 alternatives are \code{"max_abs"}, \code{"max"}, and \code{"mean"}.}
 
-\item{result_id}{Name used when storing the enrichment result on a Seurat
-object. When multiple databases are requested, the database label is
-appended automatically unless a vector of names is supplied.}
+\item{result_id}{Optional name used when storing the enrichment result on a
+Seurat object. When omitted, Shennong combines the source DE result,
+analysis mode, and database, for example \code{bulk.gsea.H}. When multiple
+databases are requested, one name is generated per database. Automatic
+IDs receive a numeric suffix when a previous result already uses the name.
+An explicit scalar name receives database suffixes for a multi-database
+request; a vector can instead name every result directly.}
 
 \item{source_de_result_id}{Optional stored DE-result name associated with the
 enrichment input.}
 
-\item{return_object}{Logical; when \code{TRUE} and a Seurat object is
-available, return the updated Seurat object instead of raw enrichment
-results.}
+\item{return_object}{Return the updated Seurat object when \code{TRUE}; this
+requires Seurat input. Otherwise return one unified analysis result.}
 
 \item{prefix}{Optional filename prefix when writing results.}
 
@@ -110,11 +113,16 @@ effect thresholds applied when ORA consumes a stored DE result.}
 
 \item{de_direction}{Direction retained from a stored DE result for ORA:
 \code{"up"}, \code{"down"}, or an explicit \code{"both"}.}
+
+\item{gene_clusters}{Compatibility alias for \code{mapping}. New code should
+use \code{mapping}; supply only one of the two arguments.}
 }
 \value{
-A single \code{clusterProfiler} result, a named list of results when
-multiple databases are requested, or a \code{Seurat} object when
-\code{return_object = TRUE}.
+A Seurat object or one unified enrichment result. For multiple
+databases, \code{tables$primary} includes a \code{database} column and
+\code{models$database_results} contains per-database envelopes. Native
+clusterProfiler objects are available under \code{models$backend_results}.
+Use \code{sn_get_enrichment_result()} to select a table.
 }
 \description{
 Runs GO, KEGG, or MSigDB enrichment using \pkg{clusterProfiler}. It supports
@@ -128,6 +136,12 @@ sn_run_enrichment(
   x = c("CD3D", "IL7R", "LTB"),
   species = "human",
   database = c("GOBP", "H")
+)
+sn_run_enrichment(
+  x = marker_table,
+  mapping = gene ~ avg_log2FC | cell_type,
+  species = "human",
+  database = "H"
 )
 }
 

@@ -11,7 +11,7 @@ sn_find_doublets(
   cluster_backend = c("native", "shennong"),
   group_by = NULL,
   dbr_sd = NULL,
-  ncores = 1,
+  n_workers = 1,
   assay = "RNA",
   layer = "counts",
   min_features = 200,
@@ -40,10 +40,10 @@ scDblFinder-specific; ignored by scrublet.}
 \item{dbr_sd}{A numeric value for adjusting the doublet rate; see \code{scDblFinder} documentation.
 scDblFinder-specific; ignored by scrublet.}
 
-\item{ncores}{Number of sample groups to process concurrently. For a BPCells
-backend, \code{ncores = 1} materializes one sample-sized sparse matrix at a
+\item{n_workers}{Number of sample groups to process concurrently. For a BPCells
+backend, \code{n_workers = 1} materializes one sample-sized sparse matrix at a
 time and gives the lowest peak memory use. Higher values can hold up to
-\code{ncores} sample matrices in memory concurrently.
+\code{n_workers} sample matrices in memory concurrently.
 scDblFinder-specific; ignored by scrublet.}
 
 \item{assay}{Assay used for doublet detection. Defaults to \code{"RNA"}.}
@@ -95,7 +95,7 @@ consumes raw counts.
 }
 \examples{
 \dontrun{
-seurat_obj <- sn_find_doublets(seurat_obj, ncores = 4)
+seurat_obj <- sn_find_doublets(seurat_obj, n_workers = 4)
 
 # Scrublet through the managed pixi environment:
 sn_prepare_pixi_environment("scrublet", install_environment = TRUE)

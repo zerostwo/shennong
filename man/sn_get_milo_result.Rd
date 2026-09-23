@@ -6,26 +6,27 @@
 \usage{
 sn_get_milo_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   annotation = NULL,
-  spatial_fdr = NULL,
-  with_metadata = FALSE
+  spatial_fdr = NULL
 )
 }
 \arguments{
-\item{object}{A \code{Seurat} object.}
+\item{object}{A \code{Seurat} object or a unified result of this analysis type.}
 
 \item{result_id}{Name of the stored milo result.}
 
 \item{annotation}{Optional subset of annotation labels to keep.}
 
 \item{spatial_fdr}{Optional maximum \code{SpatialFDR} threshold.}
-
-\item{with_metadata}{If \code{TRUE}, return the full stored-result list.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble.
 }
 \description{
 Retrieve a stored miloR result from a Seurat object
+}
+\details{
+This getter always returns the selected table. Use \code{sn_get_result()}
+for the complete stored result and metadata.
 }

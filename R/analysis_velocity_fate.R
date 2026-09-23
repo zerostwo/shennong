@@ -676,6 +676,8 @@ sn_run_velocity <- function(object,
 #' @param source_result_id Stored velocity result used by the default pixi backend.
 #' @param reduction,dims Embedding and dimensions used for plots.
 #' @param result_id Stored fate result name.
+#' @param overwrite Explicitly replace an existing fate result. Metadata ownership
+#'   checks still prevent overwriting user-modified columns.
 #' @param backend_control CellRank/pixi controls or an explicit `runner`/`result`.
 #' @param return_object Return the modified object or unified fate result.
 #' @param seed Top-level reproducibility seed. Precedence: \code{seed} >
@@ -698,8 +700,9 @@ sn_run_fate <- function(object,
                         backend_control = list(),
                         return_object = TRUE,
                         seed = NULL,
-                        verbose = TRUE) {
-  result_id <- .sn_validate_result_id(result_id)
+                        verbose = TRUE,
+                        overwrite = FALSE) {
+  result_id <- .sn_resolve_new_result_id(object, "fate", result_id, "fate", overwrite)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
   backend_control$seed <- seed %||% backend_control$seed
@@ -758,7 +761,7 @@ sn_run_fate <- function(object,
     provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% 717L)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "fate", result_id, result)
+  object <- sn_store_result(object, "fate", result_id, result, overwrite = overwrite)
   object <- .sn_log_seurat_command(object, assay = SeuratObject::DefaultAssay(object), name = "sn_run_fate")
   if (isTRUE(return_object)) object else sn_get_result(object, "fate", result_id)
 }

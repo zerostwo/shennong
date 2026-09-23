@@ -797,7 +797,7 @@ sn_run_cell2location <- function(object,
                                  metadata_prefix = "cell2location_",
                                  artifact_id = "cell2location",
                                  return_object = TRUE,
-                                 method_control = list(),
+                                 backend_control = list(),
                                  keep_run_dir = NULL,
                                  max_artifact_import_gb = 0.5,
                                  ...) {
@@ -816,7 +816,7 @@ sn_run_cell2location <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(reference_signatures = reference_signatures), method_control),
+    config = c(list(reference_signatures = reference_signatures), backend_control),
     ...
   )
 }
@@ -836,7 +836,7 @@ sn_run_tangram <- function(object,
                            metadata_prefix = "tangram_",
                            artifact_id = "tangram",
                            return_object = TRUE,
-                           method_control = list(),
+                           backend_control = list(),
                            keep_run_dir = NULL,
                            max_artifact_import_gb = 0.5,
                            ...) {
@@ -861,7 +861,7 @@ sn_run_tangram <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(cell_type_key = cell_type_by), method_control),
+    config = c(list(cell_type_key = cell_type_by), backend_control),
     ...
   )
 }
@@ -878,7 +878,7 @@ sn_run_squidpy <- function(object,
                            metadata_prefix = "squidpy_",
                            artifact_id = "squidpy",
                            return_object = TRUE,
-                           method_control = list(),
+                           backend_control = list(),
                            keep_run_dir = NULL,
                            max_artifact_import_gb = 0.5,
                            ...) {
@@ -897,7 +897,7 @@ sn_run_squidpy <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(cluster_key = cluster_by), method_control),
+    config = c(list(cluster_key = cluster_by), backend_control),
     ...
   )
 }
@@ -913,7 +913,7 @@ sn_run_spatialdata <- function(object,
                                metadata_prefix = "spatialdata_",
                                artifact_id = "spatialdata",
                                return_object = TRUE,
-                               method_control = list(),
+                               backend_control = list(),
                                keep_run_dir = NULL,
                                max_artifact_import_gb = 0.5,
                                ...) {
@@ -932,7 +932,7 @@ sn_run_spatialdata <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = method_control,
+    config = backend_control,
     ...
   )
 }
@@ -948,7 +948,7 @@ sn_run_stlearn <- function(object,
                            metadata_prefix = "stlearn_",
                            artifact_id = "stlearn",
                            return_object = TRUE,
-                           method_control = list(),
+                           backend_control = list(),
                            keep_run_dir = NULL,
                            max_artifact_import_gb = 0.5,
                            ...) {
@@ -967,7 +967,7 @@ sn_run_stlearn <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = method_control,
+    config = backend_control,
     ...
   )
 }

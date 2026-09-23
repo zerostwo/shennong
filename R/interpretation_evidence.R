@@ -884,7 +884,7 @@
 
   working <- tibble::as_tibble(marker_table)
   if (!is_null(p_col) && p_col %in% colnames(working)) {
-    working <- working[working[[p_col]] <= de_result$p_val_cutoff, , drop = FALSE]
+    working <- working[working[[p_col]] <= 0.05, , drop = FALSE]
   }
   if (nrow(working) == 0) {
     working <- tibble::as_tibble(marker_table)

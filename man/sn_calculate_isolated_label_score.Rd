@@ -65,7 +65,7 @@ pbmc <- qs2::qs_read(file.path(
 ))
 pbmc <- sn_run_cluster(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )

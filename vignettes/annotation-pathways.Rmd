@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+For a small, complete marker and enrichment walkthrough, start with [Differential expression and enrichment](differential-expression.html). This guide adds real-data annotation, feature classes, and pathway interpretation.
+
 ```{r, include = FALSE}
 real_data_file <- file.path(
   Sys.getenv("SHENNONG_REAL_DATA_DIR"),
@@ -415,7 +417,7 @@ used directly as a label-transfer reference.
 ```{r coralysis-label-transfer, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
 reference <- sn_run_cluster(
   reference,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
   verbose = FALSE
@@ -657,11 +659,9 @@ pathways <- sn_get_enrichment_result(
 
 head(pathways)
 
-stored_pathways <- sn_get_enrichment_result(
+stored_pathways <- sn_get_result(
   pbmc,
-  result_id = "cluster_gobp",
-  with_metadata = TRUE
-)
+  result_id = "cluster_gobp", type = "enrichment")
 stored_pathways$parameters[c(
   "backend_versions", "pvalue_cutoff", "p_adjust_method",
   "qvalue_cutoff", "universe_source", "universe_size",
@@ -670,10 +670,37 @@ stored_pathways$parameters[c(
 stored_pathways$parameters$de_ora_selection
 ```
 
-Pass `gene_clusters = gene ~ cluster` and `universe = ...` when overriding
+Pass `mapping = gene ~ cluster` and `universe = ...` when overriding
 those stored-DE defaults deliberately. Standalone gene vectors and data frames
 cannot reconstruct an assay background, so their confirmatory ORA should
 supply the tested/detectable universe explicitly.
+
+For ranked GSEA across one or several DE groups, map the ranking statistic and
+optional grouping columns explicitly. A numeric score without `|` produces one
+global ranking; adding `| cell_type` creates one independently validated ranking
+per cell type. The source result, analysis mode, and database form the automatic
+result ID, so this example is stored as `cluster.gsea.H`.
+
+```{r grouped-gsea, eval = FALSE}
+pbmc <- sn_run_enrichment(
+  x = pbmc,
+  source_de_result_id = "cluster",
+  mapping = gene ~ avg_log2FC | cell_type,
+  species = "human",
+  database = "H"
+)
+
+grouped_gsea <- sn_get_result(
+  pbmc,
+  result_id = "cluster.gsea.H", type = "enrichment")
+head(grouped_gsea$tables$primary)
+grouped_gsea$parameters$group_columns
+```
+
+GSEA should receive the broad signed ranking from each comparison, not only
+adjusted-P-significant genes. When creating the source DE result, use permissive
+feature filters such as `logfc_threshold = 0` and `min_pct = 0` when the DE
+backend supports them, then let the enrichment method evaluate the ranking.
 
 If you already have a real enrichment table from another stage or tool, store
 it with `sn_store_enrichment()` so the interpretation layer can find it. Here
@@ -846,8 +873,8 @@ computed and stored before automated or LLM-assisted annotation consumes them.
 ## Audit scoring columns and DE backgrounds
 
 Score metadata names remain readable but receive unique suffixes when program
-names normalize to the same text or collide with existing metadata. Repeating
-the same stored scoring result reuses its registered columns. Retrieve the
+names normalize to the same text or collide with existing metadata. An explicit rerun with the same `result_id` and `overwrite = TRUE` reuses its
+registered columns; an accidental duplicate ID is rejected. Retrieve the
 mapping instead of reconstructing sanitized names:
 
 ```{r audit-score-columns, eval=FALSE}
@@ -858,8 +885,8 @@ pbmc[[]][, scoring$tables$metadata_columns$column, drop = FALSE]
 
 # A seed controls AUCell ranking ties without changing the caller's RNG.
 pbmc <- sn_score_programs(pbmc, immune_programs, method = "aucell",
-                         backend_control = list(seed = 777), result_id = "aucell_seeded")
-sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$backend_control
+                         seed = 777, result_id = "aucell_seeded")
+sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$seed
 
 sn_list_results(pbmc, type = "de")
 de <- sn_get_result(pbmc, "de", "cluster_markers")

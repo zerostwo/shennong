@@ -49,7 +49,7 @@
     method <- info$method %||% run_id
     reduction <- info$integration_reduction %||% if (identical(method, "unintegrated")) "pca" else method
     graph_only <- identical(method, "bbknn") || is.null(reduction) || !reduction %in% names(object@reductions)
-    label_by <- info$integration_control$label_by %||% info$integration$label_by %||% NA_character_
+    label_by <- info$backend_control$label_by %||% info[["integration"]]$label_by %||% NA_character_
     workflow_performance <- info$performance$workflow %||% list()
     integration_performance <- info$performance$integration %||% list()
     data.frame(
@@ -269,7 +269,7 @@
 #' @param features Optional common features. Defaults to variable features.
 #' @param max_cells Optional shared stratified cell cap.
 #' @param accelerator One of `"auto"`, `"cpu"`, or `"gpu"`.
-#' @param n_jobs Neighbor-search workers.
+#' @param n_workers Number of parallel neighbor-search workers.
 #' @param result_id Stable identifier for the stored benchmark result.
 #' @param return_object Return the updated Seurat object when `TRUE`, otherwise
 #'   return the analysis-result object.
@@ -288,7 +288,7 @@ sn_compare_integrations <- function(object,
                                     features = NULL,
                                     max_cells = 100000L,
                                     accelerator = c("auto", "cpu", "gpu"),
-                                    n_jobs = 1L,
+                                    n_workers = 1L,
                                     result_id = "integration_benchmark",
                                     return_object = TRUE,
                                     backend_control = list(),
@@ -350,7 +350,7 @@ sn_compare_integrations <- function(object,
       batch_key = "batch", label_key = "label",
       embedding_methods = input$embedding_methods,
       baseline_method = baseline_method,
-      n_jobs = as.integer(n_jobs), progress_bar = isTRUE(verbose),
+      n_jobs = as.integer(n_workers), progress_bar = isTRUE(verbose),
       min_max_scale = backend_control$min_max_scale %||% FALSE,
       solver = backend_control$solver %||% "arpack",
       bio_conservation_metrics = backend_control$bio_conservation_metrics %||% list(),
@@ -388,7 +388,7 @@ sn_compare_integrations <- function(object,
       batch_by = batch_by, label_by = label_by, methods = group_table$method,
       assay = assay, normalized_layer = group_layer, max_cells = max_cells,
       accelerator = selected$requested, pixi_environment = pixi_environment,
-      n_jobs = as.integer(n_jobs), seed = as.integer(seed), run_dir = group_dir,
+      n_workers = as.integer(n_workers), seed = as.integer(seed), run_dir = group_dir,
       preprocess_id = preprocess_id, baseline_run_id = baseline_run_id,
       selected_cells = input$cells, selected_features = input$features
     )
@@ -426,7 +426,7 @@ sn_compare_integrations <- function(object,
     run_ids = method_table$run_id, preprocess_ids = preprocess_ids,
     assay = assay, normalized_layer = normalized_layer, max_cells = max_cells,
     accelerator = selected$requested, pixi_environment = pixi_environment,
-    n_jobs = as.integer(n_jobs), seed = as.integer(seed), run_dir = run_dir,
+    n_workers = as.integer(n_workers), seed = as.integer(seed), run_dir = run_dir,
     selected_cells = shared_cells,
     selected_features = if (length(selected_features) == 1L) selected_features[[1L]] else selected_features
   )

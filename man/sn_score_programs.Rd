@@ -11,11 +11,14 @@ sn_score_programs(
   assay = NULL,
   layer = "data",
   group_by = NULL,
+  aggregate = NULL,
   species = NULL,
   min_genes = 1L,
   backend_control = list(),
+  seed = 717,
   return_object = TRUE,
-  result_id = NULL
+  result_id = NULL,
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -28,21 +31,28 @@ bundled signature query vector.}
 
 \item{assay, layer}{Expression source.}
 
-\item{group_by}{Optional metadata column used to average expression before
-GSVA/ssGSEA or other group-level scoring.}
+\item{group_by}{Optional metadata column identifying groups to aggregate.}
+
+\item{aggregate}{Required with \code{group_by}: \code{"expression"} averages
+expression before scoring, while \code{"scores"} averages per-cell scores
+after scoring. These differ for nonlinear scoring methods.}
 
 \item{species}{Species required for bundled signature queries.}
 
 \item{min_genes}{Minimum matched features required per signature.}
 
-\item{backend_control}{Named backend-specific control list. Supply
-\code{seed} to seed stochastic scoring locally without changing the caller's
-random state. Effective controls are retained in the stored result.}
+\item{backend_control}{Named backend-specific control list, keyed by method.}
+
+\item{seed}{Random seed applied locally during scoring. Use \code{NULL} to
+use the caller's random state. Effective seeds are recorded in provenance.}
 
 \item{return_object}{Return the updated object or the unified result.}
 
 \item{result_id}{Stable identifier for the stored program-scoring result and
-its metadata prefix. A method-derived identifier is used when omitted.}
+its metadata prefix. When omitted, a unique method-derived ID is allocated.}
+
+\item{overwrite}{Explicitly replace an existing result. Requires an explicit
+\code{result_id}; obsolete score columns owned by that result are removed.}
 }
 \value{
 A Seurat object or unified program-scoring result.

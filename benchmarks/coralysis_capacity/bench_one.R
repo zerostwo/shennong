@@ -141,7 +141,7 @@ run_result <- tryCatch(
       resolution = resolution,
       block_genes = NULL,
       reuse = FALSE,
-      integration_control = control,
+      backend_control = control,
       verbose = FALSE
     )
     list(status = "ok", object = out, error = NA_character_)

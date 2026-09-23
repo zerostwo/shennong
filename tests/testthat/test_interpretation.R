@@ -114,7 +114,7 @@ test_that("stored-result helpers list and retrieve DE, enrichment, and interpret
   expect_true(nrow(marker_top) > 0)
 
   enrich_top <- sn_get_enrichment_result(object, result_id = "celltype_gsea", top_n = 1)
-  expect_equal(nrow(enrich_top), 1)
+  expect_equal(nrow(enrich_top), 2)
 
   interpretation <- sn_get_interpretation_result(object, result_id = "annotation_note")
   expect_match(interpretation$response$text, "mock response")
@@ -678,17 +678,16 @@ test_that("canonical result helpers store and report missing interpretation resu
   )
 })
 
-test_that("annotation default DE-name resolution prefers the default stored result", {
+test_that("annotation requires an explicit DE result when several exist", {
   skip_if_not_installed("Seurat")
 
   object <- make_interpretation_object()
   object@misc$shennong$results$de$default <-
     object@misc$shennong$results$de$celltype_markers
 
+  expect_error(Shennong:::.sn_resolve_stored_result_id(object, "de"), "Multiple")
   resolved <- Shennong:::.sn_resolve_stored_result_id(
-    object = object,
-    type = "de",
-    preferred_analysis = "markers"
+    object = object, type = "de", result_id = "default"
   )
 
   expect_equal(resolved, "default")
@@ -719,22 +718,18 @@ test_that("stored-result retrieval supports filtering, ranking, and metadata ret
     direction = "up",
     groups = "Tcell"
   )
-  de_metadata <- sn_get_de_result(
+  de_metadata <- sn_get_result(
     object = object,
-    result_id = "celltype_markers",
-    with_metadata = TRUE
-  )
+    result_id = "celltype_markers", type = "de")
   top_b_terms <- sn_get_enrichment_result(
     object = object,
     result_id = "cluster_ora",
     top_n = 1,
     groups = "Bcell"
   )
-  enrichment_metadata <- sn_get_enrichment_result(
+  enrichment_metadata <- sn_get_result(
     object = object,
-    result_id = "cluster_ora",
-    with_metadata = TRUE
-  )
+    result_id = "cluster_ora", type = "enrichment")
 
   expect_true(all(top_tcell_markers$cluster == "Tcell"))
   expect_lte(nrow(top_tcell_markers), 2)
@@ -779,11 +774,9 @@ test_that("cluster, marker, and prediction summaries keep object-derived structu
   object$celltypist_predicted_labels <- ifelse(object$cell_type == "Tcell", "T lineage", "B lineage")
   object$ref_majority_voting <- ifelse(object$cell_type == "Tcell", "T consensus", "B consensus")
 
-  de_result <- sn_get_de_result(
+  de_result <- sn_get_result(
     object = object,
-    result_id = "celltype_markers",
-    with_metadata = TRUE
-  )
+    result_id = "celltype_markers", type = "de")
   cluster_summary <- Shennong:::.sn_prepare_cluster_summary(object, cluster_col = "cell_type")
   marker_summary <- Shennong:::.sn_prepare_marker_summary(de_result, n_markers = 3)
   marker_table <- Shennong:::.sn_prepare_marker_table(de_result, n_markers = 2)

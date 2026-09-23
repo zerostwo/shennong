@@ -2,34 +2,38 @@
 % Please edit documentation in R/analysis_result.R
 \name{sn_get_enrichment_result}
 \alias{sn_get_enrichment_result}
-\title{Retrieve a stored enrichment result from a Seurat object}
+\title{Retrieve an enrichment result table}
 \usage{
 sn_get_enrichment_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   top_n = NULL,
   groups = NULL,
-  with_metadata = FALSE
+  top_scope = c("group", "all"),
+  p_adjusted_cutoff = NULL
 )
 }
 \arguments{
-\item{object}{A \code{Seurat} object.}
+\item{object}{A \code{Seurat} object or unified enrichment result.}
 
-\item{result_id}{Identifier of the stored enrichment result.}
+\item{result_id}{Identifier of the stored enrichment result. May be omitted
+when exactly one enrichment result is stored.}
 
 \item{top_n}{Optional number of top terms to keep.}
 
 \item{groups}{Optional subset of cluster/group labels when the stored table
 includes a \code{Cluster} column.}
 
-\item{with_metadata}{If \code{TRUE}, return the full stored result list
-instead of just the term table.}
+\item{top_scope}{Whether to retain the top terms within each group or overall.}
+
+\item{p_adjusted_cutoff}{Optional maximum adjusted p-value, from zero to one.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble. Use \code{sn_get_result(object, "enrichment")} for
+the complete result and its metadata.
 }
 \description{
-Retrieve a stored enrichment result from a Seurat object
+Retrieve an enrichment result table
 }
 \examples{
 \dontrun{

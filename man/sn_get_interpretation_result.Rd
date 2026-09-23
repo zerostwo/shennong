@@ -4,7 +4,7 @@
 \alias{sn_get_interpretation_result}
 \title{Retrieve a stored interpretation result from a Seurat object}
 \usage{
-sn_get_interpretation_result(object, result_id = "default")
+sn_get_interpretation_result(object, result_id = NULL)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}

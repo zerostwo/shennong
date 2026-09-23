@@ -14,7 +14,7 @@ sn_compare_integrations(
   features = NULL,
   max_cells = 100000L,
   accelerator = c("auto", "cpu", "gpu"),
-  n_jobs = 1L,
+  n_workers = 1L,
   result_id = "integration_benchmark",
   return_object = TRUE,
   backend_control = list(),
@@ -43,7 +43,7 @@ scib-metrics for its baseline preparation.}
 
 \item{accelerator}{One of \code{"auto"}, \code{"cpu"}, or \code{"gpu"}.}
 
-\item{n_jobs}{Neighbor-search workers.}
+\item{n_workers}{Number of parallel neighbor-search workers.}
 
 \item{result_id}{Stable identifier for the stored benchmark result.}
 

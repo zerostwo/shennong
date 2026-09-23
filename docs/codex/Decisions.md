@@ -1,8 +1,33 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-20
+Last updated: 2026-09-23
 
 ## 2026-09-23
+
+- The development-stage API cleanup (#17–#27) intentionally breaks unsuitable
+  signatures without compatibility aliases, as explicitly requested. Analysis
+  functions return objects or unified results; table getters only select
+  tables, and `sn_get_result()` retrieves complete metadata. Multi-database
+  enrichment returns one envelope with a database-tagged primary table and
+  per-database results, while object mode retains separate discoverable IDs.
+- Result-ID inference is unique-only, never latest/default guessing. Writers
+  reject collisions unless replacement is explicit. Scoring creates distinct
+  default runs and reconciles only its owned metadata on intentional updates.
+- DE selection thresholds belong in getters, independently of testing-stage
+  filters. DE/enrichment top-N scope is explicit and defaults to each group.
+  Program aggregation must name the order: expression-before-scoring or
+  scores-after-scoring. Computational seeds are top-level controls and must
+  affect the computation whose provenance records them.
+- Common public selectors/controls use `batch_by`, `backend_control`, and
+  `n_workers`; backend-native Python/R parameter names stay at the boundary.
+  scPoli's public convenience function now shares the scVI/scANVI clustering
+  path; the older object/runtime bridge is internal. Core clustering input and
+  dimension selectors are visible formals, while advanced tail controls must
+  be named. Result and backend artifact IDs remain distinct concepts.
+- Existing enrichment mapping and automatic-ID work is included as a required
+  foundation of the reviewed writer/getter contract. Unrelated embedding and
+  heatmap work remains outside this change set. No exports or dependencies are
+  added; source sizes remain within the existing architecture admission limits.
 
 - Audit fixes #8–#15 retain domain ownership and add no public parameters or
   dependencies. DE distinguishes available candidates from valid backend
@@ -547,7 +572,7 @@ Last updated: 2026-09-20
 - Graph and reduction ownership must be explicit. Clustering uses the SNN graph
   named by the current `FindNeighbors()` call even when same-named graphs were
   overwritten in place; CCA/RPCA propagate the actual `new.reduction` selected
-  by `integration_control`. Temporary joined analysis layers are restored to
+  by `backend_control`. Temporary joined analysis layers are restored to
   the original split-layer topology and payload after integration.
 
 ## 2026-08-20
@@ -587,7 +612,7 @@ Last updated: 2026-09-20
   package version, cell/feature identity, batch labels, grid, and analysis
   arguments. Runtime provenance distinguishes R heap peak from Linux backend
   process-tree RSS and does not claim GPU-memory coverage.
-- `integration_control` discoverability is an executable API: the exported
+- `backend_control` discoverability is an executable API: the exported
   `sn_integration_control_template()` is the canonical complete list of fields
   consumed by each backend. Static help and the clustering article describe the
   same templates; Seurat CCA/RPCA remain intentionally open to extra
@@ -767,7 +792,7 @@ Last updated: 2026-09-20
   direct sparse coercion rather than `as.matrix()`.
 - `scDblFinder` currently requires `CsparseMatrix` counts. For BPCells-backed
   objects, `sn_find_doublets()` therefore requires an explicit donor/capture
-  `group_by` and materializes each group independently. `ncores = 1` is the
+  `group_by` and materializes each group independently. `n_workers = 1` is the
   memory-minimizing default; higher concurrency intentionally trades memory
   for throughput. Ungrouped BPCells input fails before materialization instead
   of silently loading the full dataset.
@@ -1689,7 +1714,7 @@ Last updated: 2026-09-20
   inferred safely from a Seurat object.
 - Single-sample CITE-seq is a valid MMoCHi use case even though the Python
   landmark-registration API expects a `batch_key`. When users call
-  `sn_run_cluster(multimodal_method = "mmochi", batch = NULL)`, Shennong should
+  `sn_run_cluster(multimodal_method = "mmochi", batch_by = NULL)`, Shennong should
   pass a constant internal backend batch key rather than requiring users to
   create artificial batch labels or derive a pseudo batch from biological
   annotations.
@@ -1871,3 +1896,11 @@ Last updated: 2026-09-20
 ## 2026-09-23: CI backend version refresh
 
 Version provenance tests compare recorded versions with the installed package; the strict backend contract remains the separate exact-version admission gate. Refresh edgeR to 4.10.5 and enrichit to 0.2.4, matching the CI installation, and require the existing numerical parity cases to pass before merging. This avoids confusing a provenance-recording test with a dependency pin.
+
+## 2026-09-23: documentation entry points
+
+The homepage leads to a complete bundled-data workflow rather than the backend inventory. Four guides separate first use, common parameter/result patterns, differential analysis/enrichment, and backend choice. Introductory chunks execute during ordinary pkgdown builds without local fixtures; optional analyses identify their inputs and runtime requirements. Larger real-data narratives remain available from the guide index. API migration guidance lives in the shared patterns article; the result-management article focuses on validation, export, and auditing instead of duplicating basic recipes.
+
+## 2026-09-23: publish the validated pkgdown output
+
+Deployment copies the successful `site/dev` build to the `gh-pages` worktree instead of asking pkgdown to rebuild a second time. This preserves the removal of repository-only pages and makes the published bytes match the checked artifact. A root redirect leads users to current development documentation; older root paths remain available for existing links. Git identity is scoped to the workflow deployment step, and publication uses a normal fast-forward push.

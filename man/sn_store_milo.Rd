@@ -15,7 +15,8 @@ sn_store_milo(
   dims = NULL,
   annotation_by = NULL,
   random_seed = NULL,
-  return_object = TRUE
+  return_object = TRUE,
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ sn_store_milo(
 \item{random_seed}{Optional random seed recorded in the result provenance.}
 
 \item{return_object}{If \code{TRUE}, return the updated object.}
+
+\item{overwrite}{Explicitly replace a stored result with the same ID.}
 }
 \value{
 A \code{Seurat} object or stored-result list.

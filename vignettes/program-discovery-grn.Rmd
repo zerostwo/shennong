@@ -128,7 +128,7 @@ genie3_attempt <- tryCatch(
     backend_control = list(
       n_features = 300L,
       n_trees = 200L,
-      n_cores = 2L,
+      n_workers = 2L,
       max_edges = 1000L,
       top_targets = 30L,
       seed = 717L

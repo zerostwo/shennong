@@ -1,33 +1,27 @@
 ---
-title: "Analysis methods and stored-result contracts"
+title: "Manage stored results and backend availability"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Analysis methods and stored-result contracts}
+  %\VignetteIndexEntry{Manage stored results and backend availability}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
-pbmc_fixture <- if (nzchar(real_data_root)) {
-  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
-} else {
-  ""
-}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
-  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
-
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  eval = run_vignette
+  eval = TRUE
 )
 ```
+
+This guide covers backend discovery, result validation, storage, export, and
+migration. For a first analysis, use [Get started](get-started.html).
 
 Shennong separates method discovery from method execution. The registry shows
 the preferred backend, its requirements, whether the adapter has been
@@ -52,25 +46,25 @@ entry. Use `available` to determine whether its optional R package, executable,
 or pixi runtime is present in the current environment. Installation is always
 explicit; discovery never installs software.
 
-## The common result shape on real data
+## Inspect the complete result
 
 New workflows store results with one versioned contract. This example runs QC
-assessment on the public Kotliarov PBMC CITE-seq cohort, stores the result on
-the Seurat object, and then validates the actual stored envelope. Tables,
+assessment on the bundled PBMC example, stores the result on a Seurat object,
+and validates the stored envelope. No local fixture is required. Tables,
 embeddings, graphs, models, diagnostics, warnings, parameters, input summaries,
 and provenance have stable locations.
 
 ```{r result-contract}
-object <- qs2::qs_read(pbmc_fixture)
+data("pbmc_small", package = "SeuratObject")
+object <- pbmc_small
 object <- sn_assess_qc(
   object,
-  sample_by = "real_sample",
-  result_id = "kotliarov_qc",
+  result_id = "example_qc",
   return_object = TRUE,
   verbose = FALSE
 )
 
-result <- sn_get_result(object, "qc_assessment", "kotliarov_qc")
+result <- sn_get_result(object, "qc_assessment", "example_qc")
 sn_validate_result(result, error = FALSE)
 result[c("schema_version", "analysis_type", "result_id")]
 result$tables$primary |> head()
@@ -90,12 +84,10 @@ therefore fails closed instead of being returned under the wrong name.
 
 ## Store, discover, and retrieve from Seurat
 
-The generic functions support new result types while table-focused helpers such
-as `sn_get_de_result()` remain available.
-
-Every public result writer accepts `result_id` as its stable identifier. The
-same ID is used to store, list, retrieve, plot, interpret, and delete the
-result. Runtime and backend artifacts use `artifact_id` instead.
+For return flags, table filtering, ID selection, and intentional replacement,
+start with [Parameters and results](parameters-and-results.html). The example
+below copies one validated result under a new ID, retrieves it, then deletes
+the copy. It leaves the original analysis in place.
 
 ```{r stored-results}
 object <- sn_store_result(
@@ -147,14 +139,14 @@ sn_list_results(object, type = "qc_assessment")
 qc_result <- sn_get_result(
   object,
   type = "qc_assessment",
-  result_id = "kotliarov_qc"
+  result_id = "example_qc"
 )
 
 bundle <- sn_build_result_bundle(
   qc_result,
   inputs = list(list(
     role = "expression",
-    resource_id = "kotliarov-pbmc",
+    resource_id = "bundled-pbmc-example",
     revision = "replace-with-immutable-revision",
     digest = list(
       algorithm = "sha256",

@@ -122,7 +122,7 @@ test_that("program metadata names do not overwrite programs or user columns (#14
     expect_equal(unname(object[[mapping$column[i], drop = TRUE]]), expected)
   }
   again <- sn_score_programs(object, list(`T-cell` = "g1", T_cell = "g2"),
-    method = "mean", layer = "counts", result_id = "score")
+    method = "mean", layer = "counts", result_id = "score", overwrite = TRUE)
   expect_identical(sn_get_result(again, "program_scoring", "score")$tables$metadata_columns, mapping)
   other <- sn_score_programs(again, list(cell = "g3"), method = "mean", layer = "counts", result_id = "score-T")
   other <- sn_score_programs(other, list(cell = "g4"), method = "mean", layer = "counts", result_id = "score_T")
@@ -141,11 +141,11 @@ test_that("AUCell applies the recorded seed and preserves caller RNG (#15)", {
   signatures <- list(P = paste0("g", 1:20), Q = paste0("g", 21:40))
   before <- .Random.seed
   a <- sn_score_programs(object, signatures, method = "aucell", layer = "counts",
-    backend_control = list(seed = 777), return_object = FALSE)
+    seed = 777, return_object = FALSE)
   expect_identical(.Random.seed, before)
   runif(5)
   b <- sn_score_programs(object, signatures, method = "aucell", layer = "counts",
-    backend_control = list(seed = 777), return_object = FALSE)
+    seed = 777, return_object = FALSE)
   expect_identical(a$tables$scores, b$tables$scores)
   set.seed(777)
   rankings <- AUCell::AUCell_buildRankings(SeuratObject::LayerData(object, layer = "counts"),

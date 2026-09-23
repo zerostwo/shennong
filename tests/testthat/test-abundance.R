@@ -118,12 +118,14 @@ test_that("Milo designs accept only simple additive sample covariates", {
     ),
     sn_run_milo = function(...) {
       captured <<- list(...)
-      data.frame(
+      Shennong:::.sn_new_analysis_result(analysis_type = "milo", result_id = "milo", method = "miloR",
+        tables = list(primary = data.frame(
+        Nhood = 1,
         logFC = 0,
         PValue = 1,
         SpatialFDR = 1,
         row.names = "Nhood1"
-      )
+      )))
     },
     .package = "Shennong"
   )

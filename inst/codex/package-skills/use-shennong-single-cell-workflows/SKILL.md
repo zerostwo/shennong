@@ -48,7 +48,7 @@ assay/layer semantics, biological replicates, and stored-result provenance.
   `cluster_col`, `label_col`, `labels_key`, `groupby`, `cnv_score_groupby`,
   scalar rare-feature threshold aliases, `slot`, `angle`, `query`, `github_repo`,
   `github_ref`, or `local_path`
-- use `batch` for `sn_run_cluster()`, `sn_run_scvi()`, and `sn_run_scanvi()`;
+- use `batch_by` for `sn_run_cluster()`, `sn_run_scvi()`, `sn_run_scanvi()`, and `sn_run_scpoli()`;
   use the documented `*_by` selectors for functions whose current formals use
   them, such as composition, metrics, scArches, scPoli, and label transfer
 - use `layer` for Shennong expression-layer selectors; only internal calls to

@@ -97,7 +97,7 @@ test_that("sn_find_doublets materializes BPCells counts one sample at a time", {
     object,
     group_by = "sample",
     min_features = 1,
-    ncores = 1
+    n_workers = 1
   )
 
   expect_length(seen_cells, 2L)

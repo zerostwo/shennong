@@ -38,7 +38,7 @@
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
@@ -230,13 +230,13 @@ sn_identify_challenging_groups <- function(
 #' ))
 #' pbmc <- sn_run_cluster(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   species = "human",
 #'   verbose = FALSE
 #' )
 #' metrics <- sn_assess_integration(
 #'   pbmc,
-#'   batch = "sample",
+#'   batch_by = "sample",
 #'   cluster_by = "seurat_clusters",
 #'   reduction = "harmony",
 #'   baseline_reduction = "pca"
@@ -990,24 +990,23 @@ sn_sweep_cluster_resolution <- function(
 #'   \code{miloR::testNhoods()}.
 #' @param norm_method Normalization method passed to
 #'   \code{miloR::testNhoods()}.
-#' @param result_id Optional stable identifier. When supplied, the Milo result
-#'   is stored on the Seurat object.
-#' @param return_object Logical; when \code{TRUE} and \code{result_id} is
-#'   supplied, return the updated Seurat object.
-#' @param return_intermediate Logical; if \code{TRUE}, return a list with the
-#'   DA table, design data, and milo object.
+#' @param result_id Optional stable identifier. A unique \code{milo} ID is
+#'   allocated when omitted.
+#' @param return_object Return the updated Seurat object (default), or the
+#'   unified analysis result when \code{FALSE}.
+#' @param keep_model Retain the fitted Milo object in \code{models$milo}.
+#' @param overwrite Explicitly replace an existing result; requires an explicit ID.
 #' @param verbose Logical; if \code{TRUE}, emit progress logs.
-#' @param seed Optional random seed recorded in the stored result provenance.
+#' @param seed Random seed used for cell and neighborhood sampling, applied
+#'   locally without changing the caller's RNG state. \code{NULL} uses the
+#'   caller's state; an effective numeric seed is recorded in provenance.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
-#' @return By default, a data frame of neighborhood-level DA statistics. When
-#'   \code{result_id} is supplied, return the unified stored-result list, or
-#'   the updated Seurat object when \code{return_object = TRUE}. When
-#'   \code{return_intermediate = TRUE}, return a list with \code{table},
-#'   \code{design_df}, and \code{milo}.
+#' @return A Seurat object or unified result. Retrieve neighborhood statistics
+#'   with \code{sn_get_milo_result()}; design data are in \code{tables$design}.
 #'
 #' @examples
 #' \dontrun{
-#' da_tbl <- sn_run_milo(
+#' seu <- sn_run_milo(
 #'   seu,
 #'   sample_by = "sample",
 #'   group_by = "condition",
@@ -1037,15 +1036,15 @@ sn_run_milo <- function(x,
                         min_mean = 0,
                         norm_method = c("TMM", "RLE", "logMS"),
                         result_id = NULL,
-                        return_object = FALSE,
-                        return_intermediate = FALSE,
+                        return_object = TRUE,
+                        keep_model = FALSE,
                         verbose = TRUE,
-                        seed = NULL,
+                        seed = 717,
+                        overwrite = FALSE,
                         object = NULL) {
   x <- .sn_resolve_object_alias(x, object, missing(x))
-  if (!is_null(result_id)) {
-    result_id <- .sn_validate_result_id(result_id)
-  }
+  result_id <- .sn_resolve_new_result_id(x, "milo", result_id, "milo", overwrite)
+  .sn_with_seed(seed, {
   check_installed(c("Seurat", "SingleCellExperiment", "miloR"))
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
   stopifnot(is.character(group_by), length(group_by) == 1L)
@@ -1054,11 +1053,8 @@ sn_run_milo <- function(x,
   stopifnot(is.null(annotation_by) || (is.character(annotation_by) && length(annotation_by) == 1L))
   stopifnot(is.null(result_id) || (is.character(result_id) && length(result_id) == 1L))
   stopifnot(is.logical(return_object), length(return_object) == 1L)
-  stopifnot(is.logical(return_intermediate), length(return_intermediate) == 1L)
+  stopifnot(is.logical(keep_model), length(keep_model) == 1L)
   stopifnot(is.logical(verbose), length(verbose) == 1L)
-  if (isTRUE(return_intermediate) && !is.null(result_id)) {
-    stop("`return_intermediate = TRUE` cannot be combined with `result_id`.", call. = FALSE)
-  }
 
   fdr_weighting <- match.arg(fdr_weighting)
   norm_method <- match.arg(norm_method)
@@ -1071,6 +1067,7 @@ sn_run_milo <- function(x,
     cells = cells,
     max_cells = max_cells,
     stratify_by = stratify_by %||% sample_by,
+    seed = seed,
     required_cols = required_cols
   )
 
@@ -1127,7 +1124,7 @@ sn_run_milo <- function(x,
   if (isTRUE(verbose)) {
     .sn_log_info("Sampling and refining neighborhoods with prop = {prop}.")
   }
-  milo_obj <- miloR::makeNhoods(
+  milo_obj <- .sn_with_seed(seed, miloR::makeNhoods(
     milo_obj,
     prop = prop,
     k = k,
@@ -1135,7 +1132,7 @@ sn_run_milo <- function(x,
     refined = refined,
     reduced_dims = "shennong_milo",
     refinement_scheme = refinement_scheme
-  )
+  ))
 
   if (isTRUE(verbose)) {
     .sn_log_info("Counting cells per sample across miloR neighborhoods.")
@@ -1179,43 +1176,24 @@ sn_run_milo <- function(x,
   da_table$group_col <- group_by
   da_table$reduction <- reduction
 
-  if (!is.null(result_id)) {
-    stored_result <- sn_store_milo(
-      object = x,
-      result = da_table,
-      result_id = result_id,
-      sample_by = sample_by,
-      group_by = group_by,
-      comparison = da_table$comparison[[1]],
-      reduction = reduction,
-      dims = colnames(metric_input$embeddings),
-      annotation_by = annotation_by,
-      random_seed = seed,
-      return_object = FALSE
-    )
-
-    if (isTRUE(return_object)) {
-      object <- sn_store_result(
-        object = x,
-        type = "milo",
-        result_id = result_id,
-        result = stored_result
-      )
-      return(.sn_log_seurat_command(object = object, name = "sn_run_milo"))
-    }
-
-    return(stored_result)
-  }
-
-  if (isTRUE(return_intermediate)) {
-    return(list(
-      table = da_table,
-      design_df = design_df,
-      milo = milo_obj
-    ))
-  }
-
-  da_table
+  stored_result <- sn_store_milo(
+    object = x, result = da_table, result_id = result_id,
+    sample_by = sample_by, group_by = group_by,
+    comparison = paste(levels(design_df[[group_by]])[[2]], "vs", levels(design_df[[group_by]])[[1]]),
+    reduction = reduction, dims = colnames(metric_input$embeddings),
+    annotation_by = annotation_by, random_seed = seed,
+    return_object = FALSE, overwrite = overwrite
+  )
+  stored_result$tables$design <- tibble::as_tibble(design_df)
+  stored_result$parameters <- list(k = k, d = d, prop = prop, refined = refined,
+    refinement_scheme = refinement_scheme, fdr_weighting = fdr_weighting,
+    min_mean = min_mean, norm_method = norm_method, seed = seed)
+  if (isTRUE(keep_model)) stored_result$models$milo <- milo_obj
+  sn_validate_result(stored_result)
+  if (!isTRUE(return_object)) return(stored_result)
+  object <- sn_store_result(x, "milo", result_id, stored_result, overwrite = overwrite)
+  .sn_log_seurat_command(object = object, name = "sn_run_milo")
+  })
 }
 
 #' Store a miloR differential-abundance result on a Seurat object
@@ -1231,6 +1209,7 @@ sn_run_milo <- function(x,
 #' @param annotation_by Optional neighborhood annotation column.
 #' @param random_seed Optional random seed recorded in the result provenance.
 #' @param return_object If \code{TRUE}, return the updated object.
+#' @param overwrite Explicitly replace a stored result with the same ID.
 #'
 #' @return A \code{Seurat} object or stored-result list.
 #' @export
@@ -1244,7 +1223,8 @@ sn_store_milo <- function(object,
                           dims = NULL,
                           annotation_by = NULL,
                           random_seed = NULL,
-                          return_object = TRUE) {
+                          return_object = TRUE,
+                          overwrite = FALSE) {
   result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   stopifnot(is.character(sample_by), length(sample_by) == 1L)
@@ -1270,7 +1250,8 @@ sn_store_milo <- function(object,
     object = object,
     type = "milo",
     result_id = result_id,
-    result = stored_result
+    result = stored_result,
+    overwrite = overwrite
   )
 
   if (isTRUE(return_object)) {
@@ -1286,29 +1267,25 @@ sn_store_milo <- function(object,
 
 #' Retrieve a stored miloR result from a Seurat object
 #'
-#' @param object A \code{Seurat} object.
+#' @param object A \code{Seurat} object or a unified result of this analysis type.
 #' @param result_id Name of the stored milo result.
 #' @param annotation Optional subset of annotation labels to keep.
 #' @param spatial_fdr Optional maximum \code{SpatialFDR} threshold.
-#' @param with_metadata If \code{TRUE}, return the full stored-result list.
+#' @details This getter always returns the selected table. Use \code{sn_get_result()}
+#'   for the complete stored result and metadata.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble.
 #' @export
 sn_get_milo_result <- function(object,
-                               result_id = "default",
+                               result_id = NULL,
                                annotation = NULL,
-                               spatial_fdr = NULL,
-                               with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
+                               spatial_fdr = NULL) {
 
-  stored <- sn_get_result(
-    object = object,
+  stored <- .sn_resolve_result_input(
+    x = object,
     type = "milo",
     result_id = result_id
   )
-  if (isTRUE(with_metadata)) {
-    return(stored)
-  }
 
   table <- tibble::as_tibble(stored$tables$primary)
   annotation_by <- stored$annotation_by %||% stored$annotation_col %||% NULL

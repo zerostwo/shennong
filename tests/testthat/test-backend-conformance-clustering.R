@@ -98,7 +98,7 @@ test_that("sn_run_cluster matches the declared no-batch Seurat pipeline stage by
   )
   candidate <- .conformance_without_acceleration(sn_run_cluster(
     object = object,
-    batch = NULL,
+    batch_by = NULL,
     normalization_method = "seurat",
     integration_method = "unintegrated",
     nfeatures = 40L,
@@ -107,7 +107,7 @@ test_that("sn_run_cluster matches the declared no-batch Seurat pipeline stage by
     cluster_name = "conformance_clusters",
     cluster_n_start = 10L,
     cluster_n_iter = 10L,
-    cluster_random_seed = 717L,
+    seed = 717L,
     cluster_group_singletons = TRUE,
     block_genes = NULL,
     rare_feature_method = "none",

@@ -69,14 +69,14 @@ test_that("method registry separates adapter implementation, run readiness, and 
 
 test_that("object-level Python wrappers expose cleanup and import budgets", {
   wrappers <- c(
-    "sn_run_scarches", "sn_run_scpoli", "sn_run_cellphonedb",
+    "sn_run_scarches", ".sn_run_scpoli_object_backend", "sn_run_cellphonedb",
     "sn_run_cell2location", "sn_run_tangram", "sn_run_squidpy",
     "sn_run_spatialdata", "sn_run_stlearn", "sn_run_infercnvpy"
   )
   for (wrapper in wrappers) {
     expect_true(
       all(c("keep_run_dir", "max_artifact_import_gb") %in%
-            names(formals(getExportedValue("Shennong", wrapper)))),
+            names(formals(getFromNamespace(wrapper, "Shennong")))),
       info = wrapper
     )
   }
@@ -233,7 +233,7 @@ test_that("integration Python runs clean successes and sanitize failures by defa
   successful_run <- NULL
   value <- Shennong:::.sn_with_integration_python_run(
     method = "scvi",
-    integration_control = list(run_dir = success_parent, keep_run_dir = FALSE),
+    backend_control = list(run_dir = success_parent, keep_run_dir = FALSE),
     code = function(control) {
       successful_run <<- control$run_dir
       dir.create(file.path(control$run_dir, "input"), recursive = TRUE)
@@ -254,7 +254,7 @@ test_that("integration Python runs clean successes and sanitize failures by defa
   expect_error(
     Shennong:::.sn_with_integration_python_run(
       method = "scvi",
-      integration_control = list(run_dir = failure_parent, keep_run_dir = FALSE),
+      backend_control = list(run_dir = failure_parent, keep_run_dir = FALSE),
       code = function(control) {
         failed_run <<- control$run_dir
         dir.create(file.path(control$run_dir, "input"), recursive = TRUE)
@@ -279,7 +279,7 @@ test_that("explicit integration run directories are retained", {
   run_dir <- tempfile("retained-integration-run-")
   value <- Shennong:::.sn_with_integration_python_run(
     method = "bbknn",
-    integration_control = list(run_dir = run_dir),
+    backend_control = list(run_dir = run_dir),
     code = function(control) {
       writeLines("retained", file.path(control$run_dir, "marker.txt"))
       list(value = TRUE)
@@ -465,7 +465,7 @@ test_that("direct scPoli requires integer-like raw counts before Python executio
   object$batch <- rep(c("a", "b", "a"), length.out = ncol(object))
 
   expect_error(
-    sn_run_scpoli(
+    Shennong:::.sn_run_scpoli_object_backend(
       object,
       layer = "data",
       batch_by = "batch",
@@ -478,7 +478,7 @@ test_that("direct scPoli requires integer-like raw counts before Python executio
   fractional@x[[1L]] <- fractional@x[[1L]] + 0.25
   SeuratObject::LayerData(object, assay = "RNA", layer = "fractional_counts") <- fractional
   expect_error(
-    sn_run_scpoli(
+    Shennong:::.sn_run_scpoli_object_backend(
       object,
       layer = "fractional_counts",
       batch_by = "batch",

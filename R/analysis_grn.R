@@ -166,7 +166,7 @@
   weight_matrix <- .sn_with_seed(control$seed %||% 717L, GENIE3::GENIE3(
     exprMatrix = as.matrix(current), regulators = regulators,
     nTrees = as.integer(control$n_trees %||% 1000L),
-    nCores = as.integer(control$n_cores %||% 1L), verbose = FALSE
+    nCores = as.integer(control$n_workers %||% 1L), verbose = FALSE
   ))
   edges <- GENIE3::getLinkList(weight_matrix, reportMax = as.integer(control$max_edges %||% 10000L))
   list(edges = edges, expression = expression, model = weight_matrix)

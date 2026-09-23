@@ -4,7 +4,7 @@
 \alias{sn_store_result}
 \title{Store a Shennong analysis result on a Seurat object}
 \usage{
-sn_store_result(object, type, result_id, result)
+sn_store_result(object, type, result_id, result, overwrite = FALSE)
 }
 \arguments{
 \item{object}{A \code{Seurat} object.}
@@ -15,6 +15,9 @@ sn_store_result(object, type, result_id, result)
 
 \item{result}{A result list. Missing contract fields are filled when they can
 be inferred without changing the analytical content.}
+
+\item{overwrite}{Replace an existing result with the same type and ID.
+Defaults to \code{FALSE}; choose a new ID to retain both analyses.}
 }
 \value{
 The modified \code{Seurat} object.

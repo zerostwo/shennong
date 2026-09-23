@@ -60,9 +60,18 @@
       ]
     },
     {
+      "wrapper": "mapping",
+      "role": "input_adapter",
+      "upstream": "optional compareCluster grouping formula",
+      "scenarios": [
+        "NULL for ungrouped ORA",
+        "gene ~ group for grouped ORA"
+      ]
+    },
+    {
       "wrapper": "gene_clusters",
-      "role": "not_applicable",
-      "upstream": "NULL for ungrouped ORA",
+      "role": "wrapper_only",
+      "upstream": "compatibility alias of mapping",
       "scenarios": [
         "NULL"
       ]

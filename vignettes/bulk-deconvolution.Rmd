@@ -166,7 +166,7 @@ bayesprism_attempt <- tryCatch(
     cell_type_by = "cell_state",
     cell_state_by = "cell_state",
     layer = "counts",
-    n_cores = 2,
+    n_workers = 2,
     update_gibbs = FALSE,
     return_object = FALSE
   ),
