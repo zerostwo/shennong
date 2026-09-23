@@ -54,7 +54,7 @@ test_that("pkgdown CI deploys only after a successful main build", {
   expect_match(workflow_text, "contents: write", fixed = TRUE)
   expect_match(workflow_text, "Deploy successful main build", fixed = TRUE)
   expect_match(workflow_text, "github.ref == 'refs/heads/main'", fixed = TRUE)
-  expect_match(workflow_text, "pkgdown::deploy_to_branch", fixed = TRUE)
+  expect_match(workflow_text, "bash scripts/deploy-pkgdown.sh", fixed = TRUE)
   expect_match(workflow_text, "Rscript scripts/build-pkgdown.R --full", fixed = TRUE)
   expect_match(workflow_text, "Rscript scripts/build-pkgdown.R", fixed = TRUE)
   expect_match(workflow_text, "PKGDOWN_FULL", fixed = TRUE)

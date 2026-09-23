@@ -19,8 +19,11 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   R-CMD-check platforms pass on the workflow-fix branch.
 - The full local pkgdown build executes the new bundled-data examples and
   renders the complete site. All 9,301 internal links across 326 HTML pages
-  resolve; 32 public calls in the introductory recipes pass argument checks.
-  Source build and structural R CMD check pass with zero errors and warnings
+  resolve; 45 public calls in the introductory recipes pass argument checks.
+  The full source suite passed 5,835 assertions; its sole failure was an
+  obsolete deployment-entry assertion, now updated and covered by a passing
+  104-assertion CI-workflow rerun (17 fixture warnings, one missing local-data
+  skip in the full run). Source build and structural R CMD check pass with zero errors and warnings
   and the existing Sankey `head` NOTE. Full-suite and remote CI evidence is
   recorded with the PRs rather than inferred from a structural check.
 - Pkgdown deployment now sets an explicit bot author/committer identity; the
