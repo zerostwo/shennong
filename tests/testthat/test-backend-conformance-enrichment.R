@@ -255,5 +255,8 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
   expect_null(stored$provenance$acceleration)
   expect_identical(stored$parameters$universe, paste0("G", 1:35))
   expect_identical(stored$parameters$min_gs_size, 3L)
-  expect_identical(stored$parameters$backend_versions[["enrichit"]], "0.2.1")
+  expect_identical(
+    stored$parameters$backend_versions[["enrichit"]],
+    as.character(utils::packageVersion("enrichit"))
+  )
 })
