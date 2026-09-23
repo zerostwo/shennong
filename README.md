@@ -17,10 +17,10 @@ keeps analytical results with their inputs and parameters on a Seurat
 object.
 
 **New here?** Follow [Get
-started](https://songqi.org/shennong/dev/articles/get-started.html) for
-a complete example using bundled data. No data download or Python setup
-is needed. The package is in development, and documented API changes may
-be breaking.
+started](https://zerostwo.github.io/shennong/dev/articles/get-started.html)
+for a complete example using bundled data. No data download or Python
+setup is needed. The package is in development, and documented API
+changes may be breaking.
 
 ## Install
 
@@ -33,7 +33,7 @@ library(Shennong)
 Install optional backends only for the workflows you need. Use
 `sn_list_methods()` and `sn_get_method_status()` to inspect
 availability; [Choose a
-backend](https://songqi.org/shennong/dev/articles/method-catalog.html)
+backend](https://zerostwo.github.io/shennong/dev/articles/method-catalog.html)
 lists methods and their execution requirements.
 
 ## A first analysis
@@ -75,32 +75,33 @@ saveRDS(pbmc, "pbmc-analysed.rds")
 Assign an object-returning workflow back to `pbmc` to retain its result.
 Use `return_object = FALSE` on DE, enrichment, scoring, or Milo to
 receive a unified result directly. See [Parameters and
-results](https://songqi.org/shennong/dev/articles/parameters-and-results.html)
+results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html)
 for return values, result IDs, filters, and safe reruns.
 
 ## Find the right guide
 
 | I want to… | Guide |
 |----|----|
-| Learn the core workflow with runnable examples | [Get started](https://songqi.org/shennong/dev/articles/get-started.html) |
-| Understand parameters, grouping, and stored results | [Parameters and results](https://songqi.org/shennong/dev/articles/parameters-and-results.html) |
-| Import data, filter cells, and normalize | [Data IO](https://songqi.org/shennong/dev/articles/data-io-projects.html) · [Preprocessing](https://songqi.org/shennong/dev/articles/preprocessing-qc.html) |
-| Cluster cells or integrate batches | [Clustering and integration](https://songqi.org/shennong/dev/articles/clustering.html) |
-| Find markers, compare conditions, and enrich pathways | [Differential expression and enrichment](https://songqi.org/shennong/dev/articles/differential-expression.html) |
-| Score signatures or annotate cells | [Annotation and pathways](https://songqi.org/shennong/dev/articles/annotation-pathways.html) |
-| Compare composition or neighborhood abundance | [Composition and Milo](https://songqi.org/shennong/dev/articles/composition-analysis.html) |
-| Plot expression and analytical results | [Visualization](https://songqi.org/shennong/dev/articles/visualization.html) |
-| Work with spatial, bulk, or cell dynamics data | [All workflows](https://songqi.org/shennong/dev/articles/index.html) |
-| Look up a specific function or backend | [Function reference](https://songqi.org/shennong/dev/reference/index.html) · [Backend catalog](https://songqi.org/shennong/dev/articles/method-catalog.html) |
+| Learn the core workflow with runnable examples | [Get started](https://zerostwo.github.io/shennong/dev/articles/get-started.html) |
+| Understand parameters, grouping, and stored results | [Parameters and results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html) |
+| Import data, filter cells, and normalize | [Data IO](https://zerostwo.github.io/shennong/dev/articles/data-io-projects.html) · [Preprocessing](https://zerostwo.github.io/shennong/dev/articles/preprocessing-qc.html) |
+| Cluster cells or integrate batches | [Clustering and integration](https://zerostwo.github.io/shennong/dev/articles/clustering.html) |
+| Find markers, compare conditions, and enrich pathways | [Differential expression and enrichment](https://zerostwo.github.io/shennong/dev/articles/differential-expression.html) |
+| Score signatures or annotate cells | [Annotation and pathways](https://zerostwo.github.io/shennong/dev/articles/annotation-pathways.html) |
+| Compare composition or neighborhood abundance | [Composition and Milo](https://zerostwo.github.io/shennong/dev/articles/composition-analysis.html) |
+| Plot expression and analytical results | [Visualization](https://zerostwo.github.io/shennong/dev/articles/visualization.html) |
+| Work with spatial, bulk, or cell dynamics data | [All workflows](https://zerostwo.github.io/shennong/dev/articles/index.html) |
+| Look up a specific function or backend | [Function reference](https://zerostwo.github.io/shennong/dev/reference/index.html) · [Backend catalog](https://zerostwo.github.io/shennong/dev/articles/method-catalog.html) |
 
 The introductory examples run on bundled data. The larger real-data
 workflows state their required files and optional dependencies; they do
 not download study data during a normal website build. Use your own data
 with the documented input structure, or follow the [research workflow
-map](https://songqi.org/shennong/dev/articles/research-workflow-map.html)
+map](https://zerostwo.github.io/shennong/dev/articles/research-workflow-map.html)
 for the public-data narratives. Dataset discovery and materialization
 live in [ShennongData](https://github.com/zerostwo/shennong-data).
 
-See the [release notes](https://songqi.org/shennong/dev/news/index.html)
-for breaking changes. Report reproducible problems in the [issue
+See the [release
+notes](https://zerostwo.github.io/shennong/dev/news/index.html) for
+breaking changes. Report reproducible problems in the [issue
 tracker](https://github.com/zerostwo/shennong/issues).

@@ -1908,3 +1908,7 @@ Deployment copies the successful `site/dev` build to the `gh-pages` worktree ins
 ## 2026-09-23: verify Pages hosting after branch publication
 
 GitHub Actions token pushes do not automatically trigger legacy Pages builds. The pkgdown job therefore requests a Pages build explicitly with `pages: write` after publishing the static branch. It waits for a successful build of that exact gh-pages commit and fails on a hosting error or timeout. This retains the existing Pages source configuration while making workflow success cover both static publication and hosting.
+
+## 2026-09-23: canonical documentation URL
+
+The documentation canonical URL is `https://zerostwo.github.io/shennong`. The previous `songqi.org` host currently has no A/AAAA address records, while the configured GitHub Pages endpoint is reachable. Package metadata, README, pkgdown canonical/search links, and shipped guide links use the same working address. This does not change personal author URLs or DNS configuration.
