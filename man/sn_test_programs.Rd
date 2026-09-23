@@ -43,6 +43,9 @@ A Seurat object or unified program-comparison result.
 Aggregates cell-level scores to the sample level before inference when
 \code{sample_by} is supplied. This prevents cells from being treated as
 independent biological replicates.
+Complete pairs sharing the same sample ID across conditions use a paired
+Wilcoxon test or a sample-adjusted limma model. A mixture of paired and
+unpaired samples is rejected. The result table records \code{paired}.
 }
 \examples{
 \dontrun{

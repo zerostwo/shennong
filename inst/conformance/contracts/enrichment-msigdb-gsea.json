@@ -22,7 +22,7 @@
     "repository": "https://git.bioconductor.org/packages/clusterProfiler",
     "versions": [
       "clusterProfiler 4.20.0",
-      "enrichit 0.2.1",
+      "enrichit 0.2.4",
       "msigdbr 26.1.1"
     ],
     "install_source": "Bioconductor plus CRAN msigdbr/enrichit"
@@ -309,7 +309,7 @@
     "Shennong": "0.3.0.9000",
     "upstream": [
       "clusterProfiler 4.20.0",
-      "enrichit 0.2.1",
+      "enrichit 0.2.4",
       "msigdbr 26.1.1"
     ],
     "material_dependencies": [

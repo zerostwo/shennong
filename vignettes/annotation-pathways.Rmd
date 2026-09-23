@@ -595,7 +595,11 @@ sn_plot_program_heatmap(
 For comparative studies, preserve the sample or patient as the inferential
 unit. `sn_test_programs()` first averages cell scores within each
 sample/condition/stratum, then runs the selected test; omitting `sample_by` is
-explicitly marked as exploratory cell-level inference.
+explicitly marked as exploratory cell-level inference. Complete donor pairs
+sharing the same `sample_by` ID across both conditions use paired Wilcoxon
+tests or donor-adjusted limma models. The primary table records `paired`.
+Partially paired designs raise an error; select complete donor pairs or use
+independent biological sample IDs.
 
 ```{r test-programs, eval = run_vignette}
 pbmc <- sn_test_programs(
@@ -623,9 +627,12 @@ Seurat object with stored DE results. For cluster markers, the Seurat-object
 path is the most reproducible because the enrichment knows which DE result it
 came from. When the stored DE table contains multiple clusters/comparisons,
 Shennong preserves those groups automatically rather than pooling their genes.
-`sn_find_de()` records the full `input$tested_features` hypothesis space, even
-when filtering leaves only a smaller result table. If `universe` is omitted,
-stored-DE ORA reuses that exact tested set. Only legacy DE results without the
+`sn_find_de()` records available candidates separately from features with
+finite backend statistics before marker significance filtering. The union is
+`input$tested_features`; `input$tested_features_by_comparison` retains the
+cluster/subset-specific backgrounds. If `universe` is omitted, stored-DE ORA
+uses each comparison's own background. Known older candidate-only records
+require rerunning DE or supplying an explicit universe. Only legacy DE results without the
 field fall back to the source assay feature space; that fallback is labeled
 explicitly, and an unavailable assay causes a fail-closed request for an
 explicit universe. The upstream `pvalueCutoff`, multiple-testing adjustment,
@@ -835,3 +842,32 @@ grep("celltypist", colnames(pbmc[[]]), value = TRUE, ignore.case = TRUE)
 
 The intended pattern is evidence first, label second: markers and pathways are
 computed and stored before automated or LLM-assisted annotation consumes them.
+
+## Audit scoring columns and DE backgrounds
+
+Score metadata names remain readable but receive unique suffixes when program
+names normalize to the same text or collide with existing metadata. Repeating
+the same stored scoring result reuses its registered columns. Retrieve the
+mapping instead of reconstructing sanitized names:
+
+```{r audit-score-columns, eval=FALSE}
+sn_list_results(pbmc, type = "program_scoring")
+scoring <- sn_get_result(pbmc, "program_scoring", "immune_programs")
+scoring$tables$metadata_columns
+pbmc[[]][, scoring$tables$metadata_columns$column, drop = FALSE]
+
+# A seed controls AUCell ranking ties without changing the caller's RNG.
+pbmc <- sn_score_programs(pbmc, immune_programs, method = "aucell",
+                         backend_control = list(seed = 777), result_id = "aucell_seeded")
+sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$backend_control
+
+sn_list_results(pbmc, type = "de")
+de <- sn_get_result(pbmc, "de", "cluster_markers")
+de$input$candidate_features
+head(de$input$tested_features_by_comparison)
+```
+
+`sn_find_de(analysis = "markers", subset_by = "cell_type")` preserves the
+backend's gene IDs and records each subset and cluster in that background
+inventory. Changing an ORA mapping must preserve these comparison columns,
+unless an explicit common `universe` is supplied.

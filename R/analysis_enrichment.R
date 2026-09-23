@@ -152,6 +152,9 @@
     stop("The stored DE result must be a list.", call. = FALSE)
   }
   de_input <- de_result$input
+  if (isTRUE(de_input$tested_features_source %in% c("assay_layer", "requested_features", "assay_layer_full_test_then_result_filter"))) {
+    stop("This stored DE result records candidate features rather than verified backend tests; rerun DE or supply `universe` explicitly.", call. = FALSE)
+  }
   has_input_universe <- is.list(de_input) &&
     "tested_features" %in% names(de_input)
   has_top_level_universe <- "tested_features" %in% names(de_result)
@@ -190,6 +193,71 @@
     universe = rownames(object[[universe_assay]]),
     source = paste0("stored_de_assay_fallback:", universe_assay)
   )
+}
+
+.sn_enrich_comparison_backgrounds <- function(input, de_result, mapping = NULL) {
+  backgrounds <- de_result$input$tested_features_by_comparison
+  columns <- de_result$input$tested_feature_groups
+  if (is.null(backgrounds) || length(columns) == 0L) return(NULL)
+  if (!all(c("gene", columns) %in% names(backgrounds)) || !all(columns %in% names(input))) {
+    stop("Stored DE comparison backgrounds are incomplete; rerun DE or supply `universe` explicitly.", call. = FALSE)
+  }
+  comparisons <- unique(as.data.frame(input[, columns, drop = FALSE]))
+  if (!is.null(mapping)) {
+    # A shared background cannot silently pool distinct hypothesis families.
+    varying <- columns[vapply(comparisons, function(x) length(unique(x)) > 1L, logical(1))]
+    mapped <- if (!is.null(mapping$formula)) all.vars(mapping$formula)[-1L] else mapping$value_col
+    if (!all(varying %in% mapped)) {
+      stop("The ORA mapping must retain all DE comparison columns: ",
+           paste(varying, collapse = ", "), "; or supply `universe` explicitly.", call. = FALSE)
+    }
+  }
+  key_columns <- unique(c(columns, if (!is.null(mapping)) mapped else character()))
+  if (!all(key_columns %in% names(input))) stop("ORA grouping columns are absent from the DE table.", call. = FALSE)
+  comparisons <- unique(as.data.frame(input[, key_columns, drop = FALSE]))
+  lapply(seq_len(nrow(comparisons)), function(i) {
+    key <- comparisons[i, , drop = FALSE]
+    matches <- function(table, keys = columns) {
+      Reduce(`&`, lapply(keys, function(column) as.character(table[[column]]) == as.character(key[[column]])))
+    }
+    universe <- unique(as.character(backgrounds$gene[matches(backgrounds)]))
+    if (!length(universe)) {
+      stop("A stored DE comparison has no verified background; rerun DE or supply `universe` explicitly.", call. = FALSE)
+    }
+    list(key = key, input = input[matches(input, key_columns), , drop = FALSE], universe = universe)
+  })
+}
+
+.sn_enrich_run_comparisons <- function(run_one, database, comparisons, gene_col, grouped = FALSE) {
+  results <- lapply(comparisons, function(comparison) {
+    # Reuse the single-comparison backend with its exact hypothesis universe.
+    run <- run_one
+    environment(run) <- list2env(list(input = comparison$input,
+      universe = comparison$universe, mapping = NULL), parent = environment(run_one))
+    run(database)
+  })
+  if (length(results) == 1L && !grouped) {
+    return(results[[1L]] %||% data.frame(ID = character(), Description = character()))
+  }
+  labels <- make.unique(vapply(comparisons, function(x) paste(x$key[1, ], collapse = "."), character(1)))
+  tables <- lapply(seq_along(results), function(i) {
+    table <- as.data.frame(.sn_as_enrichment_table(results[[i]]))
+    if (ncol(table) == 0L) table <- data.frame(ID = character(), Description = character())
+    table$Cluster <- rep(labels[[i]], nrow(table))
+    for (column in names(comparisons[[i]]$key)) {
+      table[[column]] <- rep(comparisons[[i]]$key[[column]], nrow(table))
+    }
+    table
+  })
+  table <- as.data.frame(dplyr::bind_rows(tables))
+  is_go <- database %in% c("GO", "GOBP", "GOMF", "GOCC")
+  methods::new("compareClusterResult", compareClusterResult = table,
+    geneClusters = stats::setNames(lapply(seq_along(comparisons), function(i) {
+      if (identical(database, "KEGG") && methods::is(results[[i]], "enrichResult")) return(results[[i]]@gene)
+      unique(comparisons[[i]]$input[[gene_col]])
+    }), labels),
+    fun = if (is_go) "enrichGO" else if (identical(database, "KEGG")) "enrichKEGG" else "enricher",
+    keytype = if (is_go) "SYMBOL" else "UNKNOWN", readable = FALSE, .call = match.call())
 }
 
 .sn_enrich_filter_stored_de_ora <- function(input,
@@ -642,6 +710,8 @@ sn_run_enrichment <- function(
     stop("`gsea_exponent` must be one finite non-negative number.", call. = FALSE)
   }
   universe_source <- if (is.null(universe)) NULL else "user"
+  automatic_background <- identical(analysis, "ora") && is.null(universe)
+  comparison_backgrounds <- NULL
   if (identical(analysis, "ora") && is.null(universe) &&
       !is.null(resolved$de_result) && !is.null(object)) {
     stored_universe <- .sn_enrich_stored_de_universe(
@@ -671,6 +741,9 @@ sn_run_enrichment <- function(
       logfc_threshold = de_logfc_threshold
     )
     de_ora_selection <- attr(input, "sn_de_ora_selection")
+    if (automatic_background) {
+      comparison_backgrounds <- .sn_enrich_comparison_backgrounds(input, resolved$de_result, mapping)
+    }
     if (is_null(mapping)) {
       group_candidates <- unique(c(
         resolved$de_result$group_col %||% character(),
@@ -946,7 +1019,10 @@ sn_run_enrichment <- function(
   }
 
   .sn_with_acceleration_provenance_context({
-    results <- stats::setNames(lapply(databases, run_one), databases)
+    results <- stats::setNames(lapply(databases, function(database) {
+      if (is.null(comparison_backgrounds)) return(run_one(database))
+      .sn_enrich_run_comparisons(run_one, database, comparison_backgrounds, gene_col, grouped = !is.null(mapping))
+    }), databases)
 
     if (!is_null(outdir)) {
       outdir <- sn_set_path(path = outdir)
@@ -996,6 +1072,9 @@ sn_run_enrichment <- function(
             universe = if (identical(analysis, "ora")) universe else NULL,
             universe_source = if (identical(analysis, "ora")) universe_source else NULL,
             universe_size = if (identical(analysis, "ora")) length(universe) else NULL,
+            comparison_backgrounds = if (is.null(comparison_backgrounds)) NULL else lapply(
+              comparison_backgrounds, function(x) x[c("key", "universe")]
+            ),
             min_gs_size = min_gs_size,
             max_gs_size = max_gs_size,
             gsea_exponent = if (identical(analysis, "gsea")) gsea_exponent else NULL,

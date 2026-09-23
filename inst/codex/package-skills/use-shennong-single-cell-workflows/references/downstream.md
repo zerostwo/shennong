@@ -105,3 +105,21 @@ Use `sn_run_cnv()` only with explicit normal references; include
    or the explicit feature/domain/neighborhood functions. Run communication
    inference before adding distance constraints; proximity is supporting
    evidence, not a substitute interaction score.
+
+## Statistical and storage contracts
+
+- Use `sn_get_result(object, "de", id)$input$tested_features_by_comparison`
+  to inspect backend-test backgrounds, and `candidate_features` for available
+  inputs. Stored-DE ORA uses each comparison's own background. Rerun known
+  older candidate-only DE records or provide an explicit `universe`.
+- `sn_test_programs(sample_by = "donor")` detects complete donor pairs and
+  reports `paired`; mixed paired/unpaired profiles are rejected.
+- Use `backend_control = list(seed = 777)` to seed program scoring locally.
+  Discover scores with `sn_list_results(object, type = "program_scoring")`,
+  then retrieve `sn_get_result(object, "program_scoring", id)$tables$metadata_columns`
+  for the program-to-metadata mapping. Do not reconstruct sanitized names.
+- Communication workflows read matching split expression layers. Subset marker
+  discovery retains backend gene IDs. Milo annotation-only filtering uses the
+  `annotation_by` field recorded by `sn_store_milo()`.
+- RDS/RData/QS2 preserve matrix classes; BPCells/10x HDF5 writers accept dense
+  and sparse matrices. Tabular writers retain table conversion.

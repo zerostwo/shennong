@@ -2,6 +2,19 @@
 
 Last updated: 2026-09-20
 
+## 2026-09-23
+
+- Audit fixes #8–#15 retain domain ownership and add no public parameters or
+  dependencies. DE distinguishes available candidates from valid backend
+  statistics before significance selection, retaining comparison-specific
+  backgrounds. A private copy of the upstream FindAllMarkers function captures
+  each FindMarkers result without changing Seurat namespace bindings, backend
+  parameters, or marker output. Direct-upstream regressions guard this seam.
+- Program comparison detects complete donor pairs from sample IDs; mixed
+  paired/unpaired designs fail explicitly. Metadata column ownership is
+  recorded in a result table so score-name collisions cannot overwrite user
+  metadata. Native serialization bypasses rio's unconditional matrix coercion.
+
 ## 2026-09-20
 
 - BPCells-backed scran normalization uses supplied cluster assignments as the
@@ -1854,3 +1867,7 @@ Last updated: 2026-09-20
   beside a bundled manifest during maintainer tests. They are excluded at both
   Git and R-build boundaries; the distributable package contains only audited
   manifests, lockfiles, and runner sources, never a local solver environment.
+
+## 2026-09-23: CI backend version refresh
+
+Version provenance tests compare recorded versions with the installed package; the strict backend contract remains the separate exact-version admission gate. Refresh edgeR to 4.10.5 and enrichit to 0.2.4, matching the CI installation, and require the existing numerical parity cases to pass before merging. This avoids confusing a provenance-recording test with a dependency pin.

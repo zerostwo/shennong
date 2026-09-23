@@ -450,6 +450,9 @@ sn_list_10x_paths <- function(path,
 #'
 #' A Shennong wrapper around `rio::export()` with support for common
 #' single-cell formats such as BPCells, `.h5ad`, and 10x `.h5`.
+#' Native RDS, RData, and QS2 serialization preserves matrix classes and
+#' dimnames. Tabular formats convert base matrices to data frames. Dense and
+#' sparse matrices are converted to BPCells iterable matrices for matrix writers.
 #'
 #' @param x Object to write.
 #' @param path Output path. Missing parent directories are created
@@ -504,7 +507,17 @@ sn_write <- function(x,
   }
   .sn_ensure_output_parent(path)
 
-  if (is.matrix(x) || inherits(x, "ArrowTabular")) {
+  if (identical(format, "rds")) {
+    saveRDS(x, file = path, ...)
+    return(invisible(path))
+  }
+  if (identical(format, "rdata") && is.matrix(x)) {
+    save(x, file = path, ...)
+    return(invisible(path))
+  }
+
+  if ((is.matrix(x) && !format %in% c("rds", "rdata", "qs2", "h5", "bpcells")) ||
+      inherits(x, "ArrowTabular")) {
     x <- as.data.frame(x)
   }
   if (!is.data.frame(x) && is.list(x) && length(x) == 1 && is.data.frame(x[[1]]) &&
@@ -1068,6 +1081,9 @@ sn_convert_bpcells <- function(object,
     repo = "bnprks/BPCells/r",
     reason = "to write BPCells format files."
   )
+  if (!inherits(x, "IterableMatrix")) {
+    x <- methods::as(.sn_as_sparse_matrix(x), "IterableMatrix")
+  }
   BPCells::write_matrix_dir(mat = x, dir = file, overwrite = overwrite, ...)
 }
 
@@ -1096,6 +1112,9 @@ sn_convert_bpcells <- function(object,
     repo = "bnprks/BPCells/r",
     reason = "to write 10x h5 files."
   )
+  if (!inherits(x, "IterableMatrix")) {
+    x <- methods::as(.sn_as_sparse_matrix(x), "IterableMatrix")
+  }
   BPCells::write_matrix_10x_hdf5(
     mat = x, path = file, ...
   )

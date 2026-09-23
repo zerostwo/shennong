@@ -68,7 +68,7 @@ test_that("sn_find_de stores marker results on the Seurat object", {
   expect_identical(stored$result_id, "celltype_markers")
   expect_setequal(stored$input$tested_features, rownames(object[["RNA"]]))
   expect_equal(stored$input$tested_features_count, nrow(object[["RNA"]]))
-  expect_identical(stored$input$tested_features_source, "assay_layer")
+  expect_identical(stored$input$tested_features_source, "backend_statistics")
 })
 
 test_that("stored-DE ORA passes the exact tested feature subset to enrichment backends", {
@@ -81,11 +81,13 @@ test_that("stored-DE ORA passes the exact tested feature subset to enrichment ba
   tested_features <- c("CD3D", "CD3E", "TRAC", "LCK")
   local_mocked_bindings(
     .sn_run_seurat_de = function(...) {
-      data.frame(
+      result <- data.frame(
         avg_log2FC = c(1.5, 1),
         p_val_adj = c(0.001, 0.002),
         row.names = c("CD3D", "CD3E")
       )
+      attr(result, "shennong_tested_features") <- tibble::tibble(gene = tested_features)
+      result
     },
     .sn_enrich_get_msigdb_terms = function(...) {
       tibble::tibble(
@@ -109,7 +111,7 @@ test_that("stored-DE ORA passes the exact tested feature subset to enrichment ba
   stored_de <- sn_get_result(object, "de", "feature_subset")
   expect_identical(stored_de$input$tested_features, tested_features)
   expect_equal(stored_de$input$tested_features_count, length(tested_features))
-  expect_identical(stored_de$input$tested_features_source, "requested_features")
+  expect_identical(stored_de$input$tested_features_source, "backend_statistics")
 
   go_universe <- NULL
   msigdb_universe <- NULL

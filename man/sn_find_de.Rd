@@ -62,9 +62,11 @@ Defaults to all observed values in \code{subset_by}.}
 marker and contrast analyses and to \code{"counts"} for pseudobulk
 analyses.}
 
-\item{features}{Optional feature subset to test. The resolved feature set is
-retained as \code{input$tested_features} in stored single-cell DE results,
-so downstream stored-DE ORA can reuse the actual hypothesis universe.}
+\item{features}{Optional feature subset to test. Requested and available
+candidates are stored separately from \code{input$tested_features}, the
+features with finite backend statistics before marker significance
+filtering. \code{input$tested_features_by_comparison} retains each
+comparison's background for downstream ORA. COSG records scored features.}
 
 \item{method}{Statistical method. For \code{"markers"} and
 \code{"contrast"}, this can be any Seurat \code{test.use} value or

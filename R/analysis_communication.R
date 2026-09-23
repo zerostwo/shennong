@@ -4,7 +4,7 @@
                                   features = NULL,
                                   cells = NULL) {
   assay <- assay %||% SeuratObject::DefaultAssay(object)
-  mat <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)
+  mat <- .sn_get_seurat_layer_data(object = object, assay = assay, layer = layer)
   if (!is.null(features)) {
     features <- intersect(features, rownames(mat))
     mat <- mat[features, , drop = FALSE]
