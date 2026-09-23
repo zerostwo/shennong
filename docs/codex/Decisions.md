@@ -1900,3 +1900,7 @@ Version provenance tests compare recorded versions with the installed package; t
 ## 2026-09-23: documentation entry points
 
 The homepage leads to a complete bundled-data workflow rather than the backend inventory. Four guides separate first use, common parameter/result patterns, differential analysis/enrichment, and backend choice. Introductory chunks execute during ordinary pkgdown builds without local fixtures; optional analyses identify their inputs and runtime requirements. Larger real-data narratives remain available from the guide index. API migration guidance lives in the shared patterns article; the result-management article focuses on validation, export, and auditing instead of duplicating basic recipes.
+
+## 2026-09-23: publish the validated pkgdown output
+
+Deployment copies the successful `site/dev` build to the `gh-pages` worktree instead of asking pkgdown to rebuild a second time. This preserves the removal of repository-only pages and makes the published bytes match the checked artifact. A root redirect leads users to current development documentation; older root paths remain available for existing links. Git identity is scoped to the workflow deployment step, and publication uses a normal fast-forward push.

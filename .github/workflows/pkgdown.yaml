@@ -113,10 +113,5 @@ jobs:
           GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-        run: |
-          pkgdown::deploy_to_branch(
-            new_process = FALSE,
-            install = FALSE,
-            clean = TRUE
-          )
-        shell: Rscript {0}
+        run: bash scripts/deploy-pkgdown.sh
+        shell: bash
