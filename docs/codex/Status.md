@@ -23,6 +23,8 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   Source build and structural R CMD check pass with zero errors and warnings
   and the existing Sankey `head` NOTE. Full-suite and remote CI evidence is
   recorded with the PRs rather than inferred from a structural check.
+- Pkgdown deployment now sets an explicit bot author/committer identity; the
+  previous main workflow built successfully but failed before publishing (#30).
 - No dependencies or exports are added by the documentation refresh. The
   homepage, guide navigation, four introductory/reference articles, related
   workflow examples, and installed usage assets are synchronized. Unrelated

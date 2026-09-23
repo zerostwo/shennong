@@ -1,5 +1,7 @@
 All notable changes to this project will be documented in this file.
 
+- Fix pkgdown publication by supplying an explicit Git author and committer identity for automated site commits.
+
 - Reorganize the documentation around a runnable start page, shared parameter/result patterns, and a complete DE-to-enrichment guide. Add bundled-data examples, explicit optional-backend requirements, a development API migration table, and a separate backend catalog; simplify the homepage and navigation.
 
 - Fix CI version-provenance assertions and refresh the edgeR/enrichit conformance versions to the installed upstream releases. Strict conformance still checks exact versions and numerical parity.
