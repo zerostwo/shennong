@@ -1904,3 +1904,7 @@ The homepage leads to a complete bundled-data workflow rather than the backend i
 ## 2026-09-23: publish the validated pkgdown output
 
 Deployment copies the successful `site/dev` build to the `gh-pages` worktree instead of asking pkgdown to rebuild a second time. This preserves the removal of repository-only pages and makes the published bytes match the checked artifact. A root redirect leads users to current development documentation; older root paths remain available for existing links. Git identity is scoped to the workflow deployment step, and publication uses a normal fast-forward push.
+
+## 2026-09-23: verify Pages hosting after branch publication
+
+GitHub Actions token pushes do not automatically trigger legacy Pages builds. The pkgdown job therefore requests a Pages build explicitly with `pages: write` after publishing the static branch. It waits for a successful build of that exact gh-pages commit and fails on a hosting error or timeout. This retains the existing Pages source configuration while making workflow success cover both static publication and hosting.

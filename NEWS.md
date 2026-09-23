@@ -1,5 +1,7 @@
 All notable changes to this project will be documented in this file.
 
+- Explicitly trigger GitHub Pages after the documentation push and wait for the matching published commit, so a successful pkgdown action also verifies hosting.
+
 - Fix pkgdown publication by supplying an explicit Git identity, publishing the validated build without rebuilding it, and directing the website root to the current development docs.
 
 - Reorganize the documentation around a runnable start page, shared parameter/result patterns, and a complete DE-to-enrichment guide. Add bundled-data examples, explicit optional-backend requirements, a development API migration table, and a separate backend catalog; simplify the homepage and navigation.

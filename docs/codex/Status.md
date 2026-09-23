@@ -29,7 +29,8 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 - Pkgdown deployment now sets an explicit bot author/committer identity; the
   previous main workflow built successfully but failed before publishing (#30).
   Deployment publishes the checked `site/dev` output directly and routes the
-  website root to current development documentation.
+  website root to current development documentation. It then explicitly requests
+  and verifies a Pages build of the published commit (#31).
 - No dependencies or exports are added by the documentation refresh. The
   homepage, guide navigation, four introductory/reference articles, related
   workflow examples, and installed usage assets are synchronized. Unrelated
