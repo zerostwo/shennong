@@ -1,33 +1,27 @@
 ---
-title: "Analysis methods and stored-result contracts"
+title: "Manage stored results and backend availability"
 author:
 - name: Songqi Duan
   email: duan@songqi.org
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Analysis methods and stored-result contracts}
+  %\VignetteIndexEntry{Manage stored results and backend availability}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-real_data_root <- Sys.getenv("SHENNONG_REAL_DATA_DIR", unset = "")
-pbmc_fixture <- if (nzchar(real_data_root)) {
-  file.path(real_data_root, "single-cell", "kotliarov_pbmc.qs2")
-} else {
-  ""
-}
-run_vignette <- identical(Sys.getenv("SHENNONG_RUN_VIGNETTES"), "true") &&
-  nzchar(pbmc_fixture) && file.exists(pbmc_fixture)
-
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   warning = FALSE,
   message = FALSE,
-  eval = run_vignette
+  eval = TRUE
 )
 ```
+
+This guide covers backend discovery, result validation, storage, export, and
+migration. For a first analysis, use [Get started](get-started.html).
 
 Shennong separates method discovery from method execution. The registry shows
 the preferred backend, its requirements, whether the adapter has been
@@ -52,25 +46,25 @@ entry. Use `available` to determine whether its optional R package, executable,
 or pixi runtime is present in the current environment. Installation is always
 explicit; discovery never installs software.
 
-## The common result shape on real data
+## Inspect the complete result
 
 New workflows store results with one versioned contract. This example runs QC
-assessment on the public Kotliarov PBMC CITE-seq cohort, stores the result on
-the Seurat object, and then validates the actual stored envelope. Tables,
+assessment on the bundled PBMC example, stores the result on a Seurat object,
+and validates the stored envelope. No local fixture is required. Tables,
 embeddings, graphs, models, diagnostics, warnings, parameters, input summaries,
 and provenance have stable locations.
 
 ```{r result-contract}
-object <- qs2::qs_read(pbmc_fixture)
+data("pbmc_small", package = "SeuratObject")
+object <- pbmc_small
 object <- sn_assess_qc(
   object,
-  sample_by = "real_sample",
-  result_id = "kotliarov_qc",
+  result_id = "example_qc",
   return_object = TRUE,
   verbose = FALSE
 )
 
-result <- sn_get_result(object, "qc_assessment", "kotliarov_qc")
+result <- sn_get_result(object, "qc_assessment", "example_qc")
 sn_validate_result(result, error = FALSE)
 result[c("schema_version", "analysis_type", "result_id")]
 result$tables$primary |> head()
@@ -90,81 +84,10 @@ therefore fails closed instead of being returned under the wrong name.
 
 ## Store, discover, and retrieve from Seurat
 
-Analysis execution and table selection have separate interfaces. DE, program
-scoring, Milo, and enrichment return an updated Seurat object when
-`return_object = TRUE`, and a unified result when it is `FALSE`. A result's
-complete table is `result$tables$primary`; table getters apply explicit filters.
-For multiple enrichment databases, a returned result combines rows with a
-`database` column and retains the individual results in
-`models$database_results`. Object-returning calls store one discoverable result
-per database. Native enrichment objects live in `models$backend_results`.
-
-```{r explicit-result-selection, eval=FALSE}
-object <- sn_find_de(object, analysis = "contrast", group_by = "condition",
-                     ident_1 = "treated", ident_2 = "control",
-                     min_pct = 0, logfc_threshold = 0, result_id = "treated_vs_control")
-sn_list_results(object, type = "de")
-complete <- sn_get_result(object, "de", "treated_vs_control")
-up <- sn_get_de_result(object, "treated_vs_control", direction = "up",
-                      p_adjusted_cutoff = 0.05, logfc_threshold = 0.25,
-                      top_n = 20, top_scope = "group")
-
-object <- sn_run_enrichment(object, source_de_result_id = "treated_vs_control",
-                           mapping = gene ~ avg_log2FC, database = "H")
-ids <- sn_list_results(object, type = "enrichment")$result_id
-terms <- sn_get_enrichment_result(object, result_id = ids[[1]],
-                                 p_adjusted_cutoff = 0.05, top_n = 10)
-full_enrichment <- sn_get_result(object, "enrichment", ids[[1]])
-```
-
-Both DE and enrichment getters use `top_scope = "group"` by default; choose
-`"all"` for a single top-N across selected groups. Direction and significance
-filters apply even without `top_n`. Omitting a result ID is allowed only when
-one result of that type exists; multiple candidates produce an error listing
-their IDs. Full result retrieval uses `sn_get_result()`, so table filters cannot
-be silently bypassed by a metadata-return flag.
-
-The retired `sn_find_de()` parameters `p_val_cutoff` and `de_logfc` did not filter
-the result. Use getter thresholds as shown above. The existing `min_pct` and
-`logfc_threshold` on `sn_find_de()` are backend testing filters; they determine
-which hypotheses are evaluated rather than selecting a reported view.
-
-Results are protected against accidental replacement. `sn_store_result()`
-requires `overwrite = TRUE` to replace an existing type/ID pair. Scoring and
-Milo allocate unique IDs for repeated default calls, and automatic enrichment
-IDs receive a suffix when necessary. For deliberate scoring updates, pass an
-explicit ID and `overwrite = TRUE`; score columns owned by the previous result
-are reconciled, while unrelated metadata is preserved.
-
-```{r explicit-program-aggregation, eval=FALSE}
-signatures <- list(T_cell = c("CD3D", "CD3E", "TRAC"))
-object <- sn_score_programs(object, signatures, seed = 717, result_id = "cell_scores")
-sn_list_results(object, type = "program_scoring")
-sn_get_result(object, "program_scoring", "cell_scores")$tables$metadata_columns
-
-# Two distinct analytical questions: aggregation must be explicit.
-mean_scores <- sn_score_programs(object, signatures, group_by = "sample",
-                                aggregate = "scores", return_object = FALSE)
-profile_scores <- sn_score_programs(object, signatures, group_by = "sample",
-                                   aggregate = "expression", return_object = FALSE)
-```
-
-`aggregate = "scores"` averages scores calculated for individual cells;
-`"expression"` first averages expression and then scores the group profiles.
-These generally differ for UCell, AUCell, GSVA, and ssGSEA. Neither grouping nor
-aggregation substitutes for a biological replicate in a downstream test.
-
-Use the top-level `seed` for scoring and Milo reproducibility. Milo applies it
-to cell selection and neighborhood sampling and preserves the caller's random
-state. `keep_model = TRUE` retains the fitted object in `models$milo`; it does
-not change the return shape. The sample design is in `tables$design`.
-
-The generic functions support new result types while table-focused helpers such
-as `sn_get_de_result()` remain available.
-
-Every public result writer accepts `result_id` as its stable identifier. The
-same ID is used to store, list, retrieve, plot, interpret, and delete the
-result. Runtime and backend artifacts use `artifact_id` instead.
+For return flags, table filtering, ID selection, and intentional replacement,
+start with [Parameters and results](parameters-and-results.html). The example
+below copies one validated result under a new ID, retrieves it, then deletes
+the copy. It leaves the original analysis in place.
 
 ```{r stored-results}
 object <- sn_store_result(
@@ -216,14 +139,14 @@ sn_list_results(object, type = "qc_assessment")
 qc_result <- sn_get_result(
   object,
   type = "qc_assessment",
-  result_id = "kotliarov_qc"
+  result_id = "example_qc"
 )
 
 bundle <- sn_build_result_bundle(
   qc_result,
   inputs = list(list(
     role = "expression",
-    resource_id = "kotliarov-pbmc",
+    resource_id = "bundled-pbmc-example",
     revision = "replace-with-immutable-revision",
     digest = list(
       algorithm = "sha256",

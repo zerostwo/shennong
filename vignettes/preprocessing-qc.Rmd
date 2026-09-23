@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+New to Shennong? Start with the [bundled-data example](get-started.html), then return here for QC decisions, count correction, and normalization options.
+
 ```{r, include = FALSE}
 real_data_file <- file.path(
   Sys.getenv("SHENNONG_REAL_DATA_DIR"),

@@ -9,28 +9,25 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 ## Current validation
 
 - API issues #17–#27 have breaking fixes and public-entry regressions for
-  unique result selection, independent direction/significance filtering,
-  consistent result envelopes and top-N scope, safe result replacement,
-  explicit program aggregation, effective Milo seeds, common controls, and
-  discoverable clustering inputs. English issues track each finding.
-- The complete source-suite review exposed isolated-checkout enrichment
-  normalization, an outdated Milo fixture, empty-ID validation, and implicit
-  fate replacement failures (10 failures, 14 warnings, one missing local-data
-  fixture skip). The failure limit was reached in the final test file. These
-  failures are repaired and all affected files are rerun. Final focused checks pass 246 enrichment/API assertions,
-  426 retrieval/interpretation/abundance assertions, 307 fate/result assertions,
-  822 API/inventory/architecture assertions, and 1,217 final parameter/backend
-  admission assertions, with no failures. The six warnings in the API
-  fixture are an empty Seurat scale layer and q-value estimation on tiny sets.
-- Final source build and structural R CMD check pass with zero errors and
-  zero warnings and the existing Sankey `head` NOTE. Full pkgdown generation,
-  including examples, succeeded and final help/article changes were rebuilt.
-  Installed-package full-suite and remote CI completion are not claimed here.
-- No dependencies or exports are added. Generated documentation, backend
-  contracts, parameter inventories, README, articles, and installed usage
-  assets use the current API. Unrelated embedding/heatmap work is excluded
-  from this change set. Remote CI, publication, and deployment remain separate
-  states and must be reported by exact commit.
+  result selection, independent direction/significance filtering, consistent
+  result envelopes, safe replacement, explicit aggregation, effective seeds,
+  shared controls, and discoverable clustering inputs. The preceding workflow
+  fixes are tracked in #8–#15; PRs #16 and #28 contain the delivery history.
+- CI issue #29 corrects version-provenance assertions and refreshes strict
+  backend records to edgeR 4.10.5 and enrichit 0.2.4. The updated remote
+  conformance job passes numerical parity and exact-version checks; all four
+  R-CMD-check platforms pass on the workflow-fix branch.
+- The full local pkgdown build executes the new bundled-data examples and
+  renders the complete site. All 9,301 internal links across 326 HTML pages
+  resolve; 32 public calls in the introductory recipes pass argument checks.
+  Source build and structural R CMD check pass with zero errors and warnings
+  and the existing Sankey `head` NOTE. Full-suite and remote CI evidence is
+  recorded with the PRs rather than inferred from a structural check.
+- No dependencies or exports are added by the documentation refresh. The
+  homepage, guide navigation, four introductory/reference articles, related
+  workflow examples, and installed usage assets are synchronized. Unrelated
+  embedding/heatmap changes remain outside this delivery. Publication is
+  verified separately against the merged main commit and pkgdown workflow.
 
 ## Current architecture state
 

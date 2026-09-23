@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+For a runnable example without local files, start with [Get started](get-started.html). This guide covers larger datasets, batch integration, and optional backends. See [Parameters and results](parameters-and-results.html) for shared control names.
+
 ```{r, include = FALSE}
 real_data_file <- file.path(
   Sys.getenv("SHENNONG_REAL_DATA_DIR"),

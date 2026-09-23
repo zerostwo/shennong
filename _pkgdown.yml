@@ -40,51 +40,57 @@ navbar:
     right: [search, github, lightswitch]
   components:
     intro:
-      text: Overview
-      href: index.html
+      text: Get started
+      href: articles/get-started.html
     articles:
-      text: Research workflows
+      text: Guides
       menu:
-        - text: Start here
-        - text: From samples to evidence
-          href: articles/research-workflow-map.html
+        - text: Core usage
+        - text: Parameters and results
+          href: articles/parameters-and-results.html
+        - text: Differential expression and enrichment
+          href: articles/differential-expression.html
         - text: -------
-        - text: Build a single-cell study
+        - text: Single-cell workflows
+        - text: Data input and output
+          href: articles/data-io-projects.html
         - text: Preprocessing and QC
           href: articles/preprocessing-qc.html
         - text: Clustering and integration
           href: articles/clustering.html
         - text: Annotation and pathways
           href: articles/annotation-pathways.html
+        - text: Composition and Milo
+          href: articles/composition-analysis.html
+        - text: Visualization
+          href: articles/visualization.html
         - text: -------
-        - text: Extend the biological question
-        - text: Trajectory and dynamics
-          href: articles/trajectory-dynamics.html
-        - text: Spatial workflows
-          href: articles/spatial-workflows.html
-        - text: Bulk transcriptomics
-          href: articles/bulk-transcriptomics.html
-        - text: -------
-        - text: Make the analysis auditable
-        - text: Results and method contracts
+        - text: More workflows and reference
+        - text: All guides (spatial, bulk, dynamics, and more)
+          href: articles/index.html
+        - text: Choose a backend
+          href: articles/method-catalog.html
+        - text: Manage stored results
           href: articles/analysis-results-and-methods.html
-        - text: Runtime observability
-          href: articles/runtime-observability.html
     reference:
-      text: Function reference
+      text: Functions
       href: reference/index.html
     news:
       text: Changes
       href: news/index.html
 
 articles:
-  - title: Choose a research path
-    navbar: Articles
-    desc: Start with the biological question, then follow the linked real-data workflow.
+  - title: Start here
+    navbar: Guides
+    desc: Run a complete example, learn the shared controls, then choose an analysis.
     contents:
+      - get-started
+      - parameters-and-results
+      - differential-expression
+      - method-catalog
       - research-workflow-map
-  - title: Build and validate a single-cell study
-    desc: Move from materialized observations through QC, integration, annotation, and figures.
+  - title: Prepare and explore single-cell data
+    desc: Import data, select layers, filter cells, cluster, integrate, and make figures.
     contents:
       - data-io-projects
       - preprocessing-qc
@@ -94,25 +100,25 @@ articles:
       - annotation-pathways
       - visualization
       - publication-figures
-  - title: Compare states and explain mechanisms
-    desc: Test sample-level changes, model cell-state mechanisms, and follow biological dynamics.
+  - title: Compare cell states and samples
+    desc: Analyse composition, abundance, communication, and gene programs with explicit sampling units.
     contents:
       - composition-analysis
       - abundance-priority
       - communication-consensus
       - program-discovery-grn
+      - cnv-metabolism
+  - title: Dynamics, spatial, and bulk data
+    desc: Follow the input requirements for trajectories, tissue coordinates, bulk cohorts, and reference mapping.
+    contents:
       - trajectory-dynamics
       - velocity-fate
-      - cnv-metabolism
       - spatial-workflows
-  - title: Translate across assays and cohorts
-    desc: Connect single-cell references to bulk cohorts, clinical endpoints, and interpretation-ready evidence.
-    contents:
       - bulk-deconvolution
       - bulk-transcriptomics
       - interpretation-workflows
-  - title: Reproducibility, performance, and governance
-    desc: Discover backend status, retain versioned results, inspect runtime, and interpret acceleration safely.
+  - title: Manage results and runtime
+    desc: Discover, validate, export, and audit results or inspect runtime usage.
     contents:
       - analysis-results-and-methods
       - runtime-observability

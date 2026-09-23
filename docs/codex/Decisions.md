@@ -1896,3 +1896,7 @@ Last updated: 2026-09-23
 ## 2026-09-23: CI backend version refresh
 
 Version provenance tests compare recorded versions with the installed package; the strict backend contract remains the separate exact-version admission gate. Refresh edgeR to 4.10.5 and enrichit to 0.2.4, matching the CI installation, and require the existing numerical parity cases to pass before merging. This avoids confusing a provenance-recording test with a dependency pin.
+
+## 2026-09-23: documentation entry points
+
+The homepage leads to a complete bundled-data workflow rather than the backend inventory. Four guides separate first use, common parameter/result patterns, differential analysis/enrichment, and backend choice. Introductory chunks execute during ordinary pkgdown builds without local fixtures; optional analyses identify their inputs and runtime requirements. Larger real-data narratives remain available from the guide index. API migration guidance lives in the shared patterns article; the result-management article focuses on validation, export, and auditing instead of duplicating basic recipes.

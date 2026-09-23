@@ -114,7 +114,7 @@ Use `sn_run_cnv()` only with explicit normal references; include
   older candidate-only DE records or provide an explicit `universe`.
 - `sn_test_programs(sample_by = "donor")` detects complete donor pairs and
   reports `paired`; mixed paired/unpaired profiles are rejected.
-- Use `backend_control = list(seed = 777)` to seed program scoring locally.
+- Use `seed = 777` to seed program scoring locally.
   Discover scores with `sn_list_results(object, type = "program_scoring")`,
   then retrieve `sn_get_result(object, "program_scoring", id)$tables$metadata_columns`
   for the program-to-metadata mapping. Do not reconstruct sanitized names.
@@ -143,3 +143,5 @@ Milo applies `seed` to sampling and uses `keep_model` for `models$milo`.
 For intentional fate reruns, use `sn_run_fate(..., result_id = "fate",
 overwrite = TRUE)`; metadata ownership checks remain active. Use a new ID
 to retain the previous fate result.
+
+For runnable marker examples and complete ORA/GSEA recipes, use the [DE and enrichment guide](https://songqi.org/shennong/dev/articles/differential-expression.html). Common result-return and filtering rules are demonstrated in [Parameters and results](https://songqi.org/shennong/dev/articles/parameters-and-results.html).

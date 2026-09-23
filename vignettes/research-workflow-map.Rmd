@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+For your first runnable analysis, use [Get started](get-started.html). Use this map to choose a larger study workflow after you know the core API.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,

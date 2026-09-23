@@ -10,6 +10,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+For a small, complete marker and enrichment walkthrough, start with [Differential expression and enrichment](differential-expression.html). This guide adds real-data annotation, feature classes, and pathway interpretation.
+
 ```{r, include = FALSE}
 real_data_file <- file.path(
   Sys.getenv("SHENNONG_REAL_DATA_DIR"),
@@ -871,8 +873,8 @@ computed and stored before automated or LLM-assisted annotation consumes them.
 ## Audit scoring columns and DE backgrounds
 
 Score metadata names remain readable but receive unique suffixes when program
-names normalize to the same text or collide with existing metadata. Repeating
-the same stored scoring result reuses its registered columns. Retrieve the
+names normalize to the same text or collide with existing metadata. An explicit rerun with the same `result_id` and `overwrite = TRUE` reuses its
+registered columns; an accidental duplicate ID is rejected. Retrieve the
 mapping instead of reconstructing sanitized names:
 
 ```{r audit-score-columns, eval=FALSE}
@@ -883,8 +885,8 @@ pbmc[[]][, scoring$tables$metadata_columns$column, drop = FALSE]
 
 # A seed controls AUCell ranking ties without changing the caller's RNG.
 pbmc <- sn_score_programs(pbmc, immune_programs, method = "aucell",
-                         backend_control = list(seed = 777), result_id = "aucell_seeded")
-sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$backend_control
+                         seed = 777, result_id = "aucell_seeded")
+sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$seed
 
 sn_list_results(pbmc, type = "de")
 de <- sn_get_result(pbmc, "de", "cluster_markers")

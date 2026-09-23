@@ -67,7 +67,7 @@ Run clustering or batch integration with `sn_run_cluster()`. Use
 	   Use `umap_control = list(n.neighbors = ..., min.dist = ..., spread = ...)`
 	   with `rerun_from = "umap"` when only the two-dimensional embedding needs
 	   retuning.
-	   Use `normalization_method = "sctransform"` with `batch = ...` only when an
+	   Use `normalization_method = "sctransform"` with `batch_by = ...` only when an
 	   SCTransform-normalized Harmony integration is requested.
 	   For CITE-seq objects with paired RNA and ADT assays, use
 	   `modality = "cite_seq"` plus `multimodal_method = "wnn"` for Seurat
