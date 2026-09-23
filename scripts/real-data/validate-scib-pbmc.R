@@ -32,10 +32,10 @@ counts_before <- Matrix::colSums(SeuratObject::LayerData(object, assay = "RNA", 
 
 object <- sn_run_cluster(
   object,
-  batch = "dataset",
+  batch_by = "dataset",
   species = "human",
   integration_method = c("unintegrated", "harmony", "coralysis"),
-  integration_control = list(
+  backend_control = list(
     harmony = list(theta = 2),
     coralysis = list(
       icp_args = list(L = 5L, threads = 1L),
@@ -104,7 +104,7 @@ object <- sn_compare_integrations(
   label_by = "benchmark_label",
   methods = c("unintegrated", "harmony", "coralysis"),
   accelerator = "cpu",
-  n_jobs = 4,
+  n_workers = 4,
   max_cells = NULL,
   name = "pbmc_1k_3k_4k_scib",
   backend_control = list(

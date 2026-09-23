@@ -364,7 +364,7 @@ sn_plot_doublets(pbmc_doublets, reduction = "umap")
 Scrublet runs through scanpy's native `sc.pp.scrublet()` wrapper inside a
 managed pixi environment. Prepare it once, then select the backend; raw counts
 are required and scDblFinder-specific arguments (`clusters`,
-`cluster_backend`, `group_by`, `dbr_sd`, `ncores`) are ignored:
+`cluster_backend`, `group_by`, `dbr_sd`, `n_workers`) are ignored:
 
 ```{r scrublet-doublets, eval = FALSE}
 sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
@@ -393,7 +393,7 @@ Set `options(shennong.acceleration = FALSE)` to disable automatic acceleration.
 For a BPCells-backed object, provide a donor or capture column through
 `group_by`. `scDblFinder` requires an in-memory sparse matrix internally, so
 Shennong materializes one sample at a time rather than the full on-disk matrix.
-Keep `ncores = 1` for the lowest peak memory; increasing it processes sample
+Keep `n_workers = 1` for the lowest peak memory; increasing it processes sample
 chunks concurrently and can hold that many sample matrices in memory.
 These grouped calls intentionally retain upstream scDblFinder because they are
 outside the patch's validated default-call contract.
@@ -403,7 +403,7 @@ pbmc_doublets <- sn_find_doublets(
   pbmc_bpcells,
   group_by = "sample",
   min_features = 200,
-  ncores = 1
+  n_workers = 1
 )
 
 table(pbmc_doublets$sample, pbmc_doublets$scDblFinder.class)

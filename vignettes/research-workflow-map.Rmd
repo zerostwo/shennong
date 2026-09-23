@@ -185,7 +185,7 @@ pbmc <- sn_run_cluster(
   pbmc,
   normalization_method = "seurat",
   integration_method = "harmony",
-  batch = "real_batch",
+  batch_by = "real_batch",
   resolution = 0.6
 )
 

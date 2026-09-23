@@ -434,7 +434,8 @@ sn_test_abundance <- function(object,
       annotation_by = cell_type_by,
       result_id = NULL,
       return_object = FALSE,
-      return_intermediate = FALSE
+      keep_model = FALSE,
+      seed = seed
     ), backend_control$milo %||% list(), keep.null = TRUE)
     milo_args$covariates <- setdiff(
       unique(milo_args$covariates %||% character()),
@@ -443,7 +444,7 @@ sn_test_abundance <- function(object,
     if (length(milo_args$covariates) == 0L) {
       milo_args$covariates <- NULL
     }
-    primary <- .sn_standardize_milo_abundance(do.call(sn_run_milo, milo_args), cell_type_by)
+    primary <- .sn_standardize_milo_abundance(sn_get_milo_result(do.call(sn_run_milo, milo_args)), cell_type_by)
     raw <- primary
   }
 

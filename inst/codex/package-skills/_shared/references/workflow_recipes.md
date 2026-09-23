@@ -117,8 +117,8 @@ canonical envelope with `sn_get_result()`.
    samples at once as a named list of Seurat objects.
 4. A BPCells `IterableMatrix` can be passed directly as `x`; the initialized
    Seurat counts layer remains on disk. For doublet detection on that object,
-   call `sn_find_doublets(group_by = "sample", ncores = 1)` so only one sample
-   count matrix is materialized at a time. Increase `ncores` only when memory
+   call `sn_find_doublets(group_by = "sample", n_workers = 1)` so only one sample
+   count matrix is materialized at a time. Increase `n_workers` only when memory
    can hold the corresponding number of sample chunks. Prefer the default
    scDblFinder backend for BPCells inputs; `method = "scrublet"` requires
    preparing its pixi environment once
@@ -180,13 +180,13 @@ canonical envelope with `sn_get_result()`.
 ## Recipe: Integrate multiple samples
 
 1. Ensure batch metadata are present.
-2. Run `sn_run_cluster(batch = ..., integration_method = "harmony")` for the
+2. Run `sn_run_cluster(batch_by = ..., integration_method = "harmony")` for the
    default fast workflow. Use `integration_method = "coralysis"` for
    Coralysis multi-level integration on imbalanced datasets, or
    `"seurat_cca"` / `"seurat_rpca"` to compare Seurat layer-integration
    backends. Use `"scvi"`, `"scanvi"`, or `"scpoli"` for learned latent
    integration through pixi-managed environments under `~/.shennong/pixi/`;
-   scANVI requires `integration_control = list(label_by = ...)`, while scPoli
+   scANVI requires `backend_control = list(label_by = ...)`, while scPoli
    accepts an optional `label_by` for prototype supervision. Use `"bbknn"` to
    compute a batch-balanced graph from the selected-layer PCA and use that graph
    directly for clustering and UMAP. For layer-consistent comparisons, pass the
@@ -201,11 +201,11 @@ canonical envelope with `sn_get_result()`.
    For BPCells-backed Coralysis runs, the complete normalized layer stays on
    disk and only the selected integration features are materialized as a sparse
    `dgCMatrix` for `Coralysis::PrepareData()`. The default is one Coralysis
-   worker; increase `integration_control$icp_args$threads` only when RAM can
+   worker; increase `backend_control$icp_args$threads` only when RAM can
    hold one materialized copy per worker.
    To compare methods without rebuilding preprocessing, pass a vector such as
    `integration_method = c("unintegrated", "harmony", "coralysis")` and key
-   backend parameters by method under `integration_control`. Read
+   backend parameters by method under `backend_control`. Read
    `object@misc$integration_comparison$grid` and `$results` to discover each
    run's preprocessing/embedding identity, native reduction, graphs, cluster
    column, UMAP, and optional t-SNE. Explicit vectors for scalar controls such
@@ -226,7 +226,7 @@ canonical envelope with `sn_get_result()`.
    override must name an immutable release, `latest` is rejected, and custom
    download URLs need a reviewed SHA-256. Package-owned temporary run
    directories are cleaned after import unless retention is explicit. Use
-	   `integration_control = list(accelerator = "auto", mirror = "auto")` when
+	   `backend_control = list(accelerator = "auto", mirror = "auto")` when
 	   CPU/CUDA selection and Shennong-level mirror configuration should be handled
 	   automatically. Set
 	   `normalization_method = "sctransform"` only with Harmony when that
@@ -236,7 +236,7 @@ canonical envelope with `sn_get_result()`.
 	   depending on whether the protein signal should enter through Seurat WNN,
 	   scvi-tools totalVI, Coralysis on the ADT assay, or MMoCHi landmark
 	   registration on the ADT assay. MMoCHi can run as a single-sample CITE-seq
-	   workflow with `batch = NULL`.
+	   workflow with `batch_by = NULL`.
 3. Evaluate with `sn_assess_integration()` and metric helpers.
    For a multi-method object with independent biological labels, use
    `sn_compare_integrations(object, batch_by = ..., label_by = ...)` to run the
@@ -284,13 +284,14 @@ canonical envelope with `sn_get_result()`.
 ## Recipe: Run pathway analysis
 
 1. If enriching stored DE on a Seurat object, use `sn_run_enrichment(x = object, source_de_result_id = ...)`.
-2. For grouped ORA, use `gene_clusters = gene ~ cluster`, set
+2. For grouped ORA, use `mapping = gene ~ cluster`, set
    `analysis = "ora"`, and pass the genes that were actually tested as
    `universe`. For stored DE, omit both to preserve a multi-level stored group
    and reconstruct the universe from the stored assay; standalone input cannot
    reconstruct that background.
-3. For ranked GSEA, use `gene_clusters = gene ~ log2fc` with
-   `analysis = "gsea"`. Call `set.seed()` immediately beforehand when the
+3. For ranked GSEA, use `mapping = gene ~ log2fc`, or
+   `mapping = gene ~ log2fc | cluster` for separate group rankings. A numeric
+   ranking selects GSEA automatically. Call `set.seed()` immediately beforehand when the
    validated upstream engine is stochastic. Duplicate gene IDs fail unless an
    explicit `duplicate_gene_method` is selected.
 4. Use `pvalue_cutoff`, `p_adjust_method`, `qvalue_cutoff`, and
@@ -628,3 +629,19 @@ circular pies. These are panel dimensions, not the full export canvas.
 Composition plots default to 8 pt for labels, titles, axes, strips, and legends.
 Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
 `show_pies = TRUE` restores them without changing ribbon counts.
+
+## Select a result without discarding the analysis
+
+1. Run DE, enrichment, scoring, or Milo with object return to keep provenance.
+   With `return_object = FALSE`, these workflows return a unified result;
+   read `result$tables$primary` for the complete table.
+2. Discover IDs with `sn_list_results(object, type = "de")`.
+3. Retrieve metadata with `sn_get_result(object, "de", id)` and a selected view
+   with `sn_get_de_result(object, id, direction = "up",
+   p_adjusted_cutoff = 0.05, logfc_threshold = 0.25, top_n = 10,
+   top_scope = "group")`. The stored table stays complete.
+4. Use a new ID for a new analysis. Scoring/Milo allocate unique default IDs;
+   explicit replacement uses `overwrite = TRUE` and an explicit ID.
+5. For group program scores, choose `aggregate = "expression"` before scoring
+   or `aggregate = "scores"` after cell scoring. Do not treat the two as
+   interchangeable, and do not treat pooled cell groups as biological replicas.

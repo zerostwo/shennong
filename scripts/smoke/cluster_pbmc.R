@@ -95,7 +95,7 @@ merged$study <- "pbmc_demo"
 integrated <- suppressWarnings(
   sn_run_cluster(
     object = merged,
-    batch = "sample",
+    batch_by = "sample",
     normalization_method = "seurat",
     hvg_group_by = "sample",
     species = "human",

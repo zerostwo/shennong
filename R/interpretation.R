@@ -48,7 +48,8 @@
                                          preferred_analysis = NULL) {
   collection_data <- .sn_result_store(object)[[type]] %||% list()
 
-  if (!is_null(result_id) && nzchar(result_id)) {
+  if (!is.null(result_id)) {
+    result_id <- .sn_validate_result_id(result_id)
     if (!result_id %in% names(collection_data)) {
       stop(glue("No result with `result_id = \"{result_id}\"` was found for analysis type '{type}'."))
     }
@@ -60,40 +61,12 @@
   }
 
   available_names <- names(collection_data)
-  latest_name <- function(candidates) {
-    if (length(candidates) == 0L) {
-      return(NULL)
-    }
-    created_at <- vapply(
-      candidates,
-      function(candidate) {
-        collection_data[[candidate]]$provenance$timestamp %||% ""
-      },
-      character(1)
-    )
-    candidates[[order(created_at, decreasing = TRUE, na.last = TRUE)[[1]]]]
+  if (length(available_names) != 1L) {
+    stop("Multiple stored results exist for analysis type '", type,
+         "'. Supply `result_id`. Available IDs: ", paste(available_names, collapse = ", "),
+         ".", call. = FALSE)
   }
-
-  preferred_names <- if (is_null(preferred_analysis)) {
-    character()
-  } else {
-    available_names[vapply(
-      available_names,
-      function(candidate) identical(collection_data[[candidate]]$analysis %||% NULL, preferred_analysis),
-      logical(1)
-    )]
-  }
-
-  resolved_name <- if ("default" %in% available_names) {
-    "default"
-  } else if (length(available_names) == 1L) {
-    available_names[[1]]
-  } else {
-    latest_name(preferred_names) %||% latest_name(available_names)
-  }
-
-  .sn_log_info("`result_id` was not supplied; using '{resolved_name}' for analysis type '{type}'.")
-  resolved_name
+  available_names[[1L]]
 }
 
 .sn_result_n_rows <- function(result) {
@@ -109,40 +82,50 @@
                                     group_col = NULL,
                                     top_n = NULL,
                                     direction = c("all", "up", "down"),
-                                    groups = NULL) {
+                                    groups = NULL,
+                                    top_scope = c("group", "all"),
+                                    decreasing = TRUE,
+                                    absolute = TRUE) {
   direction <- match.arg(direction)
+  top_scope <- match.arg(top_scope)
   table <- tibble::as_tibble(table)
 
-  if (!is_null(groups) && !is_null(group_col) && group_col %in% colnames(table)) {
+  if (!is_null(groups)) {
+    if (is_null(group_col) || !group_col %in% colnames(table)) {
+      stop("Group filtering requires a grouping column in the result table.", call. = FALSE)
+    }
     table <- dplyr::filter(table, .data[[group_col]] %in% groups)
   }
 
-  if (is_null(top_n) || is_null(rank_col) || !rank_col %in% colnames(table)) {
+  if (is_null(top_n) && identical(direction, "all")) {
     return(table)
+  }
+  if (!is_null(top_n) && (!is.numeric(top_n) || length(top_n) != 1L ||
+      is.na(top_n) || !is.finite(top_n) || top_n < 0 || top_n != floor(top_n))) {
+    stop("`top_n` must be one non-negative integer or NULL.", call. = FALSE)
+  }
+  if (is_null(rank_col) || !rank_col %in% colnames(table) || !is.numeric(table[[rank_col]])) {
+    stop("Direction filtering and top-N selection require a numeric ranking column.", call. = FALSE)
   }
 
   ranking <- table[[rank_col]]
   if (direction == "up") {
-    table <- table[ranking > 0, , drop = FALSE]
-    ordering <- ranking[ranking > 0]
+    table <- table[!is.na(ranking) & ranking > 0, , drop = FALSE]
   } else if (direction == "down") {
-    table <- table[ranking < 0, , drop = FALSE]
-    ordering <- abs(ranking[ranking < 0])
-  } else {
-    ordering <- abs(ranking)
+    table <- table[!is.na(ranking) & ranking < 0, , drop = FALSE]
   }
+  if (is_null(top_n)) return(table)
 
-  table$..ranking_value <- ordering
-
-  out <- if (!is_null(group_col) && group_col %in% colnames(table)) {
-    table |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(group_col))) |>
-      dplyr::slice_max(order_by = .data$..ranking_value, n = top_n, with_ties = FALSE) |>
-      dplyr::ungroup()
-  } else {
-    table |>
-      dplyr::slice_max(order_by = .data$..ranking_value, n = top_n, with_ties = FALSE)
+  table$..ranking_value <- if (isTRUE(absolute)) abs(table[[rank_col]]) else table[[rank_col]]
+  if (identical(top_scope, "group") && !is_null(group_col) && group_col %in% colnames(table)) {
+    table <- dplyr::group_by(table, dplyr::across(dplyr::all_of(group_col)))
   }
+  out <- if (isTRUE(decreasing)) {
+    dplyr::slice_max(table, order_by = .data$..ranking_value, n = top_n, with_ties = FALSE, na_rm = TRUE)
+  } else {
+    dplyr::slice_min(table, order_by = .data$..ranking_value, n = top_n, with_ties = FALSE, na_rm = TRUE)
+  }
+  out <- dplyr::ungroup(out)
 
   dplyr::select(out, -dplyr::any_of("..ranking_value"))
 }
@@ -165,6 +148,9 @@
       p.adjust = numeric(),
       qvalue = numeric()
     )
+  }
+  if ("Cluster" %in% colnames(table) && is.factor(table$Cluster)) {
+    table$Cluster <- as.character(table$Cluster)
   }
   table
 }

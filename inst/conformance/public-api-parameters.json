@@ -2112,7 +2112,7 @@
     {
       "function_name": "sn_compare_integrations",
       "runtime_classified": true,
-      "formal_digest": "ef1727d1af501db309426262da79e4f4e465ad617a596d96b1bd4e859c1444af",
+      "formal_digest": "9086afc69efdd2b53c8a41c1d08ee4cc987286fa450ab1ef513a7d51d419279e",
       "parameters": [
         {
           "name": "object",
@@ -2178,7 +2178,7 @@
           "minimum_cases": 3
         },
         {
-          "name": "n_jobs",
+          "name": "n_workers",
           "class": "numeric",
           "default": "1L",
           "selector_values": null,
@@ -3385,7 +3385,7 @@
     {
       "function_name": "sn_find_de",
       "runtime_classified": true,
-      "formal_digest": "e9af1a4b80e6db4d29a4dd4fb27828d0bac651a7a7119a01ed0e30b8b63c2cf1",
+      "formal_digest": "90490f928cc58ed7bc1fba424eaf2729fb99ee5a0eb156ee374dea6443cf2678",
       "parameters": [
         {
           "name": "object",
@@ -3493,20 +3493,6 @@
           "minimum_cases": 4
         },
         {
-          "name": "p_val_cutoff",
-          "class": "numeric",
-          "default": "0.05",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
-          "name": "de_logfc",
-          "class": "numeric",
-          "default": "0.25",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
           "name": "min_cells_per_sample",
           "class": "numeric",
           "default": "10",
@@ -3581,7 +3567,7 @@
     {
       "function_name": "sn_find_doublets",
       "runtime_classified": true,
-      "formal_digest": "a8137dcecff4910d21d3fde4d5d9b2715f513c85d669cbabd138ed5af90449dc",
+      "formal_digest": "017fb3c6869b8a9798f279c0dffc5321417943a5427b4a0d1b590fa5b8f17474",
       "parameters": [
         {
           "name": "object",
@@ -3626,7 +3612,7 @@
           "minimum_cases": 3
         },
         {
-          "name": "ncores",
+          "name": "n_workers",
           "class": "numeric",
           "default": "1",
           "selector_values": null,
@@ -3875,7 +3861,7 @@
     {
       "function_name": "sn_get_cell_communication_result",
       "runtime_classified": true,
-      "formal_digest": "cbbad606991baec6d05e84e32a9b72274c0bbcc5edc3dfc315c45d437e7a6acd",
+      "formal_digest": "b0cd9c89bfef62918ef64b544de575d9d96a8e7cfaac070411263da14a3e8c23",
       "parameters": [
         {
           "name": "object",
@@ -3886,10 +3872,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "sources",
@@ -3904,13 +3890,6 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
-        },
-        {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
         }
       ]
     },
@@ -3931,7 +3910,7 @@
     {
       "function_name": "sn_get_de_result",
       "runtime_classified": true,
-      "formal_digest": "240b126b56ccf5863b0676eaf5eb774af8c1b4834a0b002665a52f1ffbe07cf4",
+      "formal_digest": "a98d2a80021b0f4df7a452a53e1a6fa6c11173ac260082e0c732cc333dadc644",
       "parameters": [
         {
           "name": "object",
@@ -3942,10 +3921,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "top_n",
@@ -3969,18 +3948,32 @@
           "minimum_cases": 3
         },
         {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
+          "name": "top_scope",
+          "class": "selector",
+          "default": "c(\"group\", \"all\")",
+          "selector_values": ["group", "all"],
           "minimum_cases": 2
+        },
+        {
+          "name": "p_adjusted_cutoff",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "logfc_threshold",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_get_deconvolution_result",
       "runtime_classified": true,
-      "formal_digest": "d58d4fb5513ea208cf73df19ba15763719bc341dca2c24381a2f40bfdd825020",
+      "formal_digest": "ded90f66dabae3d67d4ffa724e31b85c0e0764d78caa544a8e232a6e79cbd18c",
       "parameters": [
         {
           "name": "object",
@@ -3991,10 +3984,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "samples",
@@ -4009,20 +4002,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
-        },
-        {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
         }
       ]
     },
     {
       "function_name": "sn_get_enrichment_result",
       "runtime_classified": true,
-      "formal_digest": "4ccc3836b9b29e177d76a1409d5b4b5fd87a2390dda1c87539c6c227a1b9a6ce",
+      "formal_digest": "5415b7eb4390e86e57bc3dcedadfebdca0ab8f09d7fa398801c51e07ae7d7624",
       "parameters": [
         {
           "name": "object",
@@ -4033,10 +4019,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "top_n",
@@ -4053,11 +4039,18 @@
           "minimum_cases": 3
         },
         {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
+          "name": "top_scope",
+          "class": "selector",
+          "default": "c(\"group\", \"all\")",
+          "selector_values": ["group", "all"],
           "minimum_cases": 2
+        },
+        {
+          "name": "p_adjusted_cutoff",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
@@ -4120,7 +4113,7 @@
     {
       "function_name": "sn_get_interpretation_result",
       "runtime_classified": true,
-      "formal_digest": "6696fdc716387fd57d1ae7089ada95c5e123aeac34e1358deb860ba9419f0b69",
+      "formal_digest": "d3321b0248f553c70e31dee209bfd250f37f1dd594a47ddeab0a628c33d62c4d",
       "parameters": [
         {
           "name": "object",
@@ -4131,10 +4124,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         }
       ]
     },
@@ -4182,7 +4175,7 @@
     {
       "function_name": "sn_get_milo_result",
       "runtime_classified": true,
-      "formal_digest": "d19cdb28c5c7055f878b4650fea3cbb16037f60708f2296b89489458947c6b26",
+      "formal_digest": "0692e48e1b542e53f7382cf5b6c303fc5b98d472c307cf15b94776081b345d98",
       "parameters": [
         {
           "name": "object",
@@ -4193,10 +4186,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "annotation",
@@ -4211,13 +4204,6 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
-        },
-        {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
         }
       ]
     },
@@ -4294,7 +4280,7 @@
     {
       "function_name": "sn_get_regulatory_activity_result",
       "runtime_classified": true,
-      "formal_digest": "1a75a7a68467b0dd9129fb11800f30f0b4ecc6630c695c36828a00d3fba00a80",
+      "formal_digest": "c2f7a0c17b3321483a166ee93bc34f70cd751213d72537be689ef252c05be3bd",
       "parameters": [
         {
           "name": "object",
@@ -4305,10 +4291,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "sources",
@@ -4323,20 +4309,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
-        },
-        {
-          "name": "with_metadata",
-          "class": "boolean",
-          "default": "FALSE",
-          "selector_values": null,
-          "minimum_cases": 2
         }
       ]
     },
     {
       "function_name": "sn_get_result",
       "runtime_classified": true,
-      "formal_digest": "a916de18245b3f73b1e5509926a8db71be7bfff259847135748127ebc1fd79b0",
+      "formal_digest": "75f05ade5e8255f8e3f1c689947f0a7d0c56a1a4e6154f8d8d509d63ea38912d",
       "parameters": [
         {
           "name": "object",
@@ -4354,10 +4333,10 @@
         },
         {
           "name": "result_id",
-          "class": "required",
-          "default": "<required>",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 2
+          "minimum_cases": 3
         }
       ]
     },
@@ -11061,7 +11040,7 @@
     {
       "function_name": "sn_run_bulk_deconvolution",
       "runtime_classified": true,
-      "formal_digest": "c28dcddb88effadb98e59b4a7dfe996271057d59b509dd962737b9b47225e423",
+      "formal_digest": "2ff1560dd27bab1434f96d399c890969b20b08cad74925e7c681c877c307d3ef",
       "parameters": [
         {
           "name": "x",
@@ -11267,7 +11246,7 @@
           "minimum_cases": 1
         },
         {
-          "name": "n_cores",
+          "name": "n_workers",
           "class": "numeric",
           "default": "1",
           "selector_values": null,
@@ -11306,7 +11285,7 @@
     {
       "function_name": "sn_run_cell2location",
       "runtime_classified": true,
-      "formal_digest": "44e9813afd83b489d9847dd8abfa936c01f5497ab4e5c1e5bd101cfc5cf71c69",
+      "formal_digest": "5dbe9bd1fe2a1d73ac803aa9418ccd5c60edf1f5e3702a01910abca53fbb8ff5",
       "parameters": [
         {
           "name": "object",
@@ -11379,7 +11358,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -11628,7 +11607,7 @@
     {
       "function_name": "sn_run_cellphonedb",
       "runtime_classified": true,
-      "formal_digest": "acce0d30e1ddae6ee624e58a53e0b56ec9d5a60f6e6ab2bcacdaccb5a1af3ade",
+      "formal_digest": "72bf9f0ec6b8dda02b5136a23309914b7a4409e72546d88149af87cf9ce14e2c",
       "parameters": [
         {
           "name": "object",
@@ -11687,7 +11666,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -11915,7 +11894,7 @@
     {
       "function_name": "sn_run_cluster",
       "runtime_classified": true,
-      "formal_digest": "73580869bf74a5632f0c9309578bda773bbf38d264317f296b456f087b98a663",
+      "formal_digest": "c9b26e06d5dc830aadbd2b19f88ae8aa2aa6c1f2fce849270cfcb8a7f345d029",
       "parameters": [
         {
           "name": "object",
@@ -11925,7 +11904,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "batch",
+          "name": "batch_by",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -11946,7 +11925,7 @@
           "minimum_cases": 11
         },
         {
-          "name": "integration_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -12009,13 +11988,6 @@
           "minimum_cases": 4
         },
         {
-          "name": "cluster_random_seed",
-          "class": "numeric",
-          "default": "717",
-          "selector_values": null,
-          "minimum_cases": 4
-        },
-        {
           "name": "cluster_group_singletons",
           "class": "boolean",
           "default": "TRUE",
@@ -12037,11 +12009,46 @@
           "minimum_cases": 2
         },
         {
-          "name": "seed",
+          "name": "assay",
+          "class": "character",
+          "default": "\"RNA\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "layer",
+          "class": "character",
+          "default": "\"counts\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "npcs",
+          "class": "numeric",
+          "default": "50",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "dims",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "hvg_group_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "seed",
+          "class": "numeric",
+          "default": "717",
+          "selector_values": null,
+          "minimum_cases": 4
         },
         {
           "name": "verbose",
@@ -12181,7 +12188,7 @@
     {
       "function_name": "sn_run_enrichment",
       "runtime_classified": true,
-      "formal_digest": "2e8b793cf4321fb085fc0578590d6e0983e77d828fd1eee42398701cb9ac097a",
+      "formal_digest": "2a3f5ab5532a58fa0932180328cef3a2a5af2724c9d9961bef23aee6bca762a5",
       "parameters": [
         {
           "name": "x",
@@ -12191,7 +12198,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "gene_clusters",
+          "name": "mapping",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -12290,10 +12297,10 @@
         },
         {
           "name": "result_id",
-          "class": "character",
-          "default": "\"default\"",
+          "class": "nullable",
+          "default": "NULL",
           "selector_values": null,
-          "minimum_cases": 1
+          "minimum_cases": 3
         },
         {
           "name": "source_de_result_id",
@@ -12350,13 +12357,20 @@
           "default": "c(\"up\", \"down\", \"both\")",
           "selector_values": ["up", "down", "both"],
           "minimum_cases": 3
+        },
+        {
+          "name": "gene_clusters",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_run_fate",
       "runtime_classified": true,
-      "formal_digest": "b2bd3f7b56e0350b73bdf0d05a5a9690b41928216c0d202612ccf696caa40d88",
+      "formal_digest": "118c34f5a8d423d1d2ee8f427e4b516d4760f65e8c9e5a19664e9804595111f6",
       "parameters": [
         {
           "name": "object",
@@ -12425,6 +12439,13 @@
           "name": "verbose",
           "class": "boolean",
           "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "overwrite",
+          "class": "boolean",
+          "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
         }
@@ -12503,7 +12524,7 @@
     {
       "function_name": "sn_run_infercnvpy",
       "runtime_classified": true,
-      "formal_digest": "e6fee346f6aa3c0661536aef79a0051377ec066a320750706a8269e8fb3b4e85",
+      "formal_digest": "b3158bd7989c319ec69e6cbb9b5bf7a5c4b4b7c05ebd13cbeff26876af6c83f0",
       "parameters": [
         {
           "name": "object",
@@ -12632,7 +12653,7 @@
           "minimum_cases": 4
         },
         {
-          "name": "n_jobs",
+          "name": "n_workers",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -12930,7 +12951,7 @@
     {
       "function_name": "sn_run_milo",
       "runtime_classified": true,
-      "formal_digest": "2ce6fb562fc92ccb8034bfa48b8c741b8b63f05d4d25b14a5655e8e63e672599",
+      "formal_digest": "6be2d41b5151919cec0e6b99b54a029aa3ad7ef13d772394c8bc11de009173cc",
       "parameters": [
         {
           "name": "x",
@@ -13075,12 +13096,12 @@
         {
           "name": "return_object",
           "class": "boolean",
-          "default": "FALSE",
+          "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
         },
         {
-          "name": "return_intermediate",
+          "name": "keep_model",
           "class": "boolean",
           "default": "FALSE",
           "selector_values": null,
@@ -13095,10 +13116,17 @@
         },
         {
           "name": "seed",
-          "class": "nullable",
-          "default": "NULL",
+          "class": "numeric",
+          "default": "717",
           "selector_values": null,
-          "minimum_cases": 3
+          "minimum_cases": 4
+        },
+        {
+          "name": "overwrite",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
         },
         {
           "name": "object",
@@ -13245,7 +13273,7 @@
     {
       "function_name": "sn_run_scanvi",
       "runtime_classified": true,
-      "formal_digest": "bb50589e7b0151849c26ec01f40727fb28b1808d1917b70da9fe0a13aeff912e",
+      "formal_digest": "a48a487fafb3fda60a457e44495669f35a88db604c189ab2dbf5ff61fcaeeec4",
       "parameters": [
         {
           "name": "object",
@@ -13255,14 +13283,14 @@
           "minimum_cases": 2
         },
         {
-          "name": "batch",
+          "name": "batch_by",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
         },
         {
-          "name": "integration_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -13280,7 +13308,7 @@
     {
       "function_name": "sn_run_scarches",
       "runtime_classified": true,
-      "formal_digest": "5c4bb555ea9464cc062cb0532822ee3ab8b6638d7a7f4e2d0a3eddca5c7ef377",
+      "formal_digest": "647bca48a984409a93d7d0cfcd7a016ae73460875f33e8a85532b1c4f071f53a",
       "parameters": [
         {
           "name": "object",
@@ -13353,7 +13381,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -13483,7 +13511,7 @@
     {
       "function_name": "sn_run_scpoli",
       "runtime_classified": true,
-      "formal_digest": "3fb58e1fc5167ede5a5c92d74583b76ee5858547070839e9a6128d3b098b72dc",
+      "formal_digest": "a48a487fafb3fda60a457e44495669f35a88db604c189ab2dbf5ff61fcaeeec4",
       "parameters": [
         {
           "name": "object",
@@ -13493,20 +13521,6 @@
           "minimum_cases": 2
         },
         {
-          "name": "assay",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "layer",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
           "name": "batch_by",
           "class": "nullable",
           "default": "NULL",
@@ -13514,67 +13528,11 @@
           "minimum_cases": 3
         },
         {
-          "name": "label_by",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "output_dir",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "runtime_dir",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "metadata_prefix",
-          "class": "character",
-          "default": "\"scpoli_\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "artifact_id",
-          "class": "character",
-          "default": "\"scpoli\"",
-          "selector_values": null,
-          "minimum_cases": 1
-        },
-        {
-          "name": "return_object",
-          "class": "boolean",
-          "default": "TRUE",
-          "selector_values": null,
-          "minimum_cases": 2
-        },
-        {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
           "minimum_cases": 1
-        },
-        {
-          "name": "keep_run_dir",
-          "class": "nullable",
-          "default": "NULL",
-          "selector_values": null,
-          "minimum_cases": 3
-        },
-        {
-          "name": "max_artifact_import_gb",
-          "class": "numeric",
-          "default": "0.5",
-          "selector_values": null,
-          "minimum_cases": 4
         },
         {
           "name": "...",
@@ -13588,7 +13546,7 @@
     {
       "function_name": "sn_run_scvi",
       "runtime_classified": true,
-      "formal_digest": "bb50589e7b0151849c26ec01f40727fb28b1808d1917b70da9fe0a13aeff912e",
+      "formal_digest": "a48a487fafb3fda60a457e44495669f35a88db604c189ab2dbf5ff61fcaeeec4",
       "parameters": [
         {
           "name": "object",
@@ -13598,14 +13556,14 @@
           "minimum_cases": 2
         },
         {
-          "name": "batch",
+          "name": "batch_by",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
         },
         {
-          "name": "integration_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -13819,7 +13777,7 @@
     {
       "function_name": "sn_run_spatialdata",
       "runtime_classified": true,
-      "formal_digest": "fc0594c860a9deb5fd362fdd712f135a425197cc686f4e34d2bb04af6b19c48d",
+      "formal_digest": "29f52a7b230d2795659dd04993d51a9228c2d35fd560114c93da2cfe933839ca",
       "parameters": [
         {
           "name": "object",
@@ -13885,7 +13843,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -13917,7 +13875,7 @@
     {
       "function_name": "sn_run_squidpy",
       "runtime_classified": true,
-      "formal_digest": "0613aebd61152dcdae53e8c3c42da65887ece9a1b83c5f154cfa1a0fcc706989",
+      "formal_digest": "56af3a67c898d6296cf28839a619f809e38218d51e163d542e3238f4f66314e4",
       "parameters": [
         {
           "name": "object",
@@ -13990,7 +13948,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -14022,7 +13980,7 @@
     {
       "function_name": "sn_run_stlearn",
       "runtime_classified": true,
-      "formal_digest": "50248124bf35474b718ecfbe96029727f19b894c433c1c297febb90ba9a6139e",
+      "formal_digest": "91c19f61bc71c04da511ee56b7c688a3c305e6520ad5c28e3a853cbb5a9d2f66",
       "parameters": [
         {
           "name": "object",
@@ -14088,7 +14046,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -14225,7 +14183,7 @@
     {
       "function_name": "sn_run_tangram",
       "runtime_classified": true,
-      "formal_digest": "48ad7dc1bf86f7c3c19b7a48e46e0f84047ecdbe412fe7bc134d9581a82232ce",
+      "formal_digest": "76653e721b28842f4693734a498cfc2822d13cc9e7d6f9fbd181a81b8016e0a4",
       "parameters": [
         {
           "name": "object",
@@ -14319,7 +14277,7 @@
           "minimum_cases": 2
         },
         {
-          "name": "method_control",
+          "name": "backend_control",
           "class": "expression",
           "default": "list()",
           "selector_values": null,
@@ -14855,7 +14813,7 @@
     {
       "function_name": "sn_score_programs",
       "runtime_classified": true,
-      "formal_digest": "6951ad5141e95de5e52cd4aba84199e881cf47c18e5dee94c577b7951e37fe1c",
+      "formal_digest": "e2e80153b42d56e6cee4e6138d906b3126422cd565b1b3a99907e09e629caf5f",
       "parameters": [
         {
           "name": "object",
@@ -14900,6 +14858,13 @@
           "minimum_cases": 3
         },
         {
+          "name": "aggregate",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
           "name": "species",
           "class": "nullable",
           "default": "NULL",
@@ -14921,6 +14886,13 @@
           "minimum_cases": 1
         },
         {
+          "name": "seed",
+          "class": "numeric",
+          "default": "717",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
           "name": "return_object",
           "class": "boolean",
           "default": "TRUE",
@@ -14933,6 +14905,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "overwrite",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
         }
       ]
     },
@@ -15422,7 +15401,7 @@
     {
       "function_name": "sn_store_milo",
       "runtime_classified": true,
-      "formal_digest": "90bb7265d5568af2f5a6394ed8b68275280f2c4a04aa66bfceaf5fe3cba53a46",
+      "formal_digest": "7121abbbef0e05655b6df7ef5887d866ea17c71d89cd39603d8873abd8ec7aba",
       "parameters": [
         {
           "name": "object",
@@ -15498,6 +15477,13 @@
           "name": "return_object",
           "class": "boolean",
           "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "overwrite",
+          "class": "boolean",
+          "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
         }
@@ -15576,7 +15562,7 @@
     {
       "function_name": "sn_store_result",
       "runtime_classified": true,
-      "formal_digest": "395c3ac8cb4c9cc2708d7fc213a23ba1d041683a344666a39ad99f0acf5dc844",
+      "formal_digest": "ff8c46858f51468764ef0015689613a1f080e723de9fc1e40a8c630f5d18d5c6",
       "parameters": [
         {
           "name": "object",
@@ -15603,6 +15589,13 @@
           "name": "result",
           "class": "required",
           "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "overwrite",
+          "class": "boolean",
+          "default": "FALSE",
           "selector_values": null,
           "minimum_cases": 2
         }

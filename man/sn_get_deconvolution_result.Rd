@@ -6,26 +6,27 @@
 \usage{
 sn_get_deconvolution_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   samples = NULL,
-  cell_types = NULL,
-  with_metadata = FALSE
+  cell_types = NULL
 )
 }
 \arguments{
-\item{object}{A \code{Seurat} object.}
+\item{object}{A \code{Seurat} object or a unified result of this analysis type.}
 
 \item{result_id}{Name of the stored result.}
 
 \item{samples}{Optional subset of bulk samples to keep.}
 
 \item{cell_types}{Optional subset of cell types to keep.}
-
-\item{with_metadata}{If \code{TRUE}, return the full stored-result list.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble.
 }
 \description{
 Retrieve a stored deconvolution result from a Seurat object
+}
+\details{
+This getter always returns the selected table. Use \code{sn_get_result()}
+for the complete stored result and metadata.
 }

@@ -58,7 +58,7 @@ if ("A" %in% stages) {
     if (!isTRUE(loaded$ok)) next
     object <- loaded$value
     doubled <- log_step(paste0("doublets:", name), {
-      result <- sn_find_doublets(object, ncores = 4)
+      result <- sn_find_doublets(object, n_workers = 4)
       if (inherits(result, "Seurat")) result else object
     })
     object <- doubled$value
@@ -110,7 +110,7 @@ if ("D" %in% stages) {
         merged <- merge(objects[[1]], y = list(objects[[2]], objects[[3]]),
                         add.cell.ids = c("pbmc1k", "pbmc3k", "pbmc4k"))
         merged$batch <- merged$dataset
-        sn_run_cluster(merged, batch = "batch", integration_method = m,
+        sn_run_cluster(merged, batch_by = "batch", integration_method = m,
                        cluster_name = paste0("c_", m))
       }
     )
@@ -138,7 +138,7 @@ if ("E" %in% stages) {
       if (!isTRUE(loaded$ok)) next
       object <- loaded$value
       doubled <- log_step(paste0("doublets:", name), {
-        result <- sn_find_doublets(object, ncores = 4)
+        result <- sn_find_doublets(object, n_workers = 4)
         if (inherits(result, "Seurat")) result else object
       })
       object <- doubled$value
@@ -189,7 +189,7 @@ if ("E" %in% stages) {
       for (sm in c("ucell", "aucell", "gsva", "ssgsea", "mean")) {
         log_step(paste0("programs:", sm),
                  sn_score_programs(big, signatures, method = sm,
-                                   group_by = "seurat_clusters", return_object = FALSE))
+                                   group_by = "seurat_clusters", return_object = FALSE, aggregate = "expression"))
       }
     }
 

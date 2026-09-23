@@ -18,7 +18,7 @@ Run clustering or batch integration with `sn_run_cluster()`. Use
 	   specific batch-integration backend is requested.
 	   Pass a vector such as `c("unintegrated", "harmony", "coralysis")` when
 	   methods should share preprocessing and coexist in one object. Key
-	   `integration_control` by method, then inspect
+	   `backend_control` by method, then inspect
 	   `object@misc$integration_comparison$grid` and `$results` for the stored
 	   preprocessing/embedding IDs, reduction, graph, cluster, UMAP, and optional
 	   t-SNE names. Multiple values for scalar controls such as `nfeatures`,
@@ -39,20 +39,20 @@ Run clustering or batch integration with `sn_run_cluster()`. Use
 	   shared pixi scverse project under `~/.shennong/pixi/scvi/`, uses a unique
 	   package-owned temporary run directory unless an explicit directory is
 	   supplied, and imports the latent reduction back
-	   into Seurat; scANVI requires `integration_control = list(label_by = ...)`.
+	   into Seurat; scANVI requires `backend_control = list(label_by = ...)`.
 	   For object-level Python wrappers, use the explicit `keep_run_dir` and
 	   `max_artifact_import_gb` arguments to control retained diagnostics and the
 	   bounded validation/materialization budget. With cleanup requested, a
 	   supplied output path is only a parent for a marked child and is preserved.
    scPoli uses the shared `scarches` pixi family and accepts optional
-   `integration_control = list(label_by = ...)` for prototype supervision.
+   `backend_control = list(label_by = ...)` for prototype supervision.
    Coralysis stores the trained reference SingleCellExperiment by default for
-   label transfer; use `integration_control = list(store_sce = FALSE)` only for
+   label transfer; use `backend_control = list(store_sce = FALSE)` only for
    clustering-only runs.
    Use `sn_get_pixi_paths()` when users ask where Python environments live, use
    `sn_list_pixi_environments()` and `sn_get_pixi_config_path()` to inspect bundled
    configs under `inst/pixi/`, and pass
-   `integration_control = list(accelerator = "auto", mirror = "auto")` when
+   `backend_control = list(accelerator = "auto", mirror = "auto")` when
    GPU/CPU selection and China-friendly mirror configuration should be handled
    by Shennong.
    Default to tested exact Pixi `0.69.0`; overrides must name an immutable
@@ -76,7 +76,7 @@ Run clustering or batch integration with `sn_run_cluster()`. Use
 	   integration, or `multimodal_method = "coralysis"` to run native
 	   Coralysis on the ADT protein assay. Use `multimodal_method = "mmochi"`
 	   when ADT alignment should be driven by MMoCHi landmark registration
-	   before protein-only clustering; it can run with `batch = NULL` for a
+	   before protein-only clustering; it can run with `batch_by = NULL` for a
 	   single CITE-seq sample.
 
 ## 3
@@ -90,3 +90,14 @@ Assess integration quality or cluster_by structure with
    `sn_calculate_isolated_label_score()`, or
    `sn_identify_challenging_groups()` when sample mixing, rare groups,
    isolated labels, or difficult-to-separate populations matter.
+
+## Common clustering interface
+
+Use `batch_by` for the batch metadata selector and `backend_control` for
+backend-specific options. `sn_run_scvi`, `sn_run_scanvi`, and `sn_run_scpoli`
+all delegate to `sn_run_cluster` with their respective integration method.
+The scPoli label column belongs in `backend_control$label_by`.
+`assay`, `layer`, `npcs`, `dims`, and `hvg_group_by` are explicit clustering
+parameters. Use the top-level `seed` to control workflow randomness; advanced
+`...` arguments must be named. Use `sn_get_integration_control_template()` to
+discover the available backend options.

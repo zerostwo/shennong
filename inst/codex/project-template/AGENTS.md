@@ -77,7 +77,7 @@ Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
 For program comparisons, use biological `sample_by` IDs. Complete donor pairs
 are modeled as paired; partially paired profiles require explicit input
 selection. Inspect the stored comparison's `paired` flag. For program scoring,
-set `backend_control$seed` for reproducibility and retrieve
+set the top-level `seed` for reproducibility and retrieve
 `tables$metadata_columns` from `sn_get_result(object, "program_scoring", id)`
 instead of guessing sanitized metadata names. Discover IDs with
 `sn_list_results(object, type = "program_scoring")`.
@@ -88,3 +88,24 @@ recorded in `input$tested_features_by_comparison`; available
 DE records or provide a justified explicit universe. Communication reads
 matching split layers, Milo annotation filters use stored `annotation_by`,
 and native RDS/RData/QS2 serialization preserves matrix classes.
+
+## Analysis API contracts
+
+Use `batch_by` for clustering batch metadata, `backend_control` for optional
+backend settings, and `n_workers` for the common parallel-worker control.
+`sn_run_scvi`, `sn_run_scanvi`, and `sn_run_scpoli` are clustering shortcuts.
+Core clustering `assay`, `layer`, `npcs`, `dims`, and `hvg_group_by` are explicit
+parameters; advanced `...` controls must be named.
+
+DE, enrichment, scoring, and Milo use `return_object = FALSE` for a unified
+result. Read complete metadata with `sn_get_result()` and filtered tables with
+typed getters. DE/enrichment getters accept `top_scope = "group"` or `"all"`,
+`p_adjusted_cutoff`, and independent direction/effect filters for DE. An omitted
+ID resolves only a unique result. Discover ambiguous choices with
+`sn_list_results()`. Never assume a default write overwrites a prior analysis:
+explicit storage replacement requires `overwrite = TRUE`.
+
+Pass computational `seed` at the top level. Group program scoring requires
+`aggregate = "expression"` (average expression, then score) or `"scores"`
+(score cells, then average); record which question the analysis answers.
+Milo's `keep_model` retains `models$milo` without changing its return shape.

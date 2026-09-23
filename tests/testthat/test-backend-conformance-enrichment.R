@@ -19,11 +19,15 @@
 }
 
 .canonical_enrichment_table <- function(result) {
-  table <- as.data.frame(result)
+  table <- if (is.list(result) && is.data.frame(result$tables$primary)) as.data.frame(result$tables$primary) else as.data.frame(result)
   if (nrow(table) == 0L) {
     return(table)
   }
-  table <- table[order(table$ID), , drop = FALSE]
+  order_columns <- intersect(c("Cluster", "ID"), colnames(table))
+  table <- table[do.call(order, unname(table[order_columns])), , drop = FALSE]
+  if ("Cluster" %in% colnames(table)) {
+    table$Cluster <- as.character(table$Cluster)
+  }
   rownames(table) <- NULL
   table
 }
@@ -71,7 +75,7 @@ test_that("sn_run_enrichment ORA matches clusterProfiler::enricher including its
     .canonical_enrichment_table(upstream),
     tolerance = 1e-12
   )
-  expect_false("OUTSIDE_HEAVY" %in% as.data.frame(candidate)$ID)
+  expect_false("OUTSIDE_HEAVY" %in% candidate$tables$primary$ID)
   .conformance_expect_unchanged(
     list(genes = genes, universe = universe),
     before,
@@ -127,8 +131,71 @@ test_that("sn_run_enrichment GSEA matches clusterProfiler::GSEA with a controlle
     .canonical_enrichment_table(upstream),
     tolerance = 1e-12
   )
-  expect_false("OUTSIDE_HEAVY" %in% as.data.frame(candidate)$ID)
+  expect_false("OUTSIDE_HEAVY" %in% candidate$tables$primary$ID)
   .conformance_expect_unchanged(scores, before, "GSEA ranked list")
+})
+
+test_that("sn_run_enrichment grouped GSEA matches clusterProfiler::compareCluster", {
+  .conformance_require_package("clusterProfiler")
+  terms <- .make_conformance_enrichment_terms()
+  term2gene <- unique(terms[, c("term", "gene")])
+  term2name <- unique(terms[, c("term", "description")])
+  genes <- paste0("G", seq_len(40L))
+  input <- dplyr::bind_rows(lapply(c("A", "B"), function(group) {
+    tibble::tibble(
+      gene = genes,
+      score = if (identical(group, "A")) {
+        c(seq(4, 0.1, length.out = 20L), seq(-0.1, -4, length.out = 20L))
+      } else {
+        c(seq(-4, -0.1, length.out = 20L), seq(0.1, 4, length.out = 20L))
+      },
+      group = group
+    )
+  }))
+  gene_lists <- lapply(split(input, input$group), function(table) {
+    sort(stats::setNames(table$score, table$gene), decreasing = TRUE)
+  })
+  before <- .conformance_fingerprint(input)
+
+  set.seed(717L)
+  upstream <- .conformance_without_acceleration(clusterProfiler::compareCluster(
+    geneClusters = gene_lists,
+    fun = clusterProfiler::GSEA,
+    exponent = 1,
+    minGSSize = 3L,
+    maxGSSize = 20L,
+    pvalueCutoff = 1,
+    pAdjustMethod = "BH",
+    TERM2GENE = term2gene,
+    TERM2NAME = term2name,
+    verbose = FALSE
+  ))
+
+  local_mocked_bindings(
+    .sn_enrich_get_msigdb_terms = function(...) terms,
+    .package = "Shennong"
+  )
+  set.seed(717L)
+  candidate <- .conformance_without_acceleration(sn_run_enrichment(
+    x = input,
+    mapping = gene ~ score | group,
+    analysis = "gsea",
+    species = "human",
+    database = "H",
+    pvalue_cutoff = 1,
+    p_adjust_method = "BH",
+    min_gs_size = 3L,
+    max_gs_size = 20L,
+    gsea_exponent = 1,
+    duplicate_gene_method = "error"
+  ))
+
+  expect_equal(
+    .canonical_enrichment_table(candidate),
+    .canonical_enrichment_table(upstream),
+    tolerance = 1e-12
+  )
+  .conformance_expect_unchanged(input, before, "grouped GSEA input")
 })
 
 test_that("sn_run_enrichment retains parameters without false MSigDB patch usage", {
@@ -181,11 +248,9 @@ test_that("sn_run_enrichment retains parameters without false MSigDB patch usage
     result_id = "conformance_ora",
     return_object = TRUE
   )
-  stored <- sn_get_enrichment_result(
+  stored <- sn_get_result(
     object,
-    result_id = "conformance_ora",
-    with_metadata = TRUE
-  )
+    result_id = "conformance_ora", type = "enrichment")
 
   expect_null(stored$provenance$acceleration)
   expect_identical(stored$parameters$universe, paste0("G", 1:35))

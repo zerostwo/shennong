@@ -43,6 +43,24 @@ from 20 biological samples, two acquisition batches, and aligned RNA and ADT
 assays. A real-data pkgdown build executes the core chunks. Ordinary package
 checks safely leave them unevaluated when the local fixture is absent.
 
+## Shared workflow controls
+
+`sn_run_cluster()`, `sn_run_scvi()`, `sn_run_scanvi()`, and `sn_run_scpoli()`
+run the same clustering workflow. Select metadata with `batch_by`, backend
+options with `backend_control`, and reproducibility with the top-level `seed`.
+Core data and dimension controls (`assay`, `layer`, `npcs`, `dims`, and
+`hvg_group_by`) are explicit arguments; advanced arguments in `...` must be named.
+The shortcuts select an integration method and then run the usual downstream
+graph, clustering, and projection stages.
+
+```{r common-clustering-controls, eval = FALSE}
+object <- sn_run_scvi(
+  object, batch_by = "sample", assay = "RNA", layer = "counts",
+  npcs = 30, dims = 1:30, seed = 717,
+  backend_control = list(max_epochs = 100)
+)
+```
+
 ## One function for the standard clustering path
 
 The minimal clustering call is intentionally short. The arguments that usually
@@ -277,7 +295,7 @@ For batch-aware CITE-seq integration, choose a multimodal backend explicitly.
 counts. `multimodal_method = "coralysis"` runs native Coralysis on the ADT
 assay as a log-normalized protein matrix.
 `multimodal_method = "mmochi"` runs MMoCHi ADT landmark registration across
-the supplied `batch` column, or in single-sample mode when `batch = NULL`.
+the supplied `batch` column, or in single-sample mode when `batch_by = NULL`.
 It stores the corrected protein matrix as an assay layer when the local Seurat
 object supports arbitrary layers and otherwise under
 `object@misc$mmochi$corrected_protein`, computes a protein-derived `mmochi`
@@ -296,13 +314,13 @@ pbmc_totalvi <- sn_run_cluster(
   object = pbmc_totalvi,
   modality = "cite_seq",
   multimodal_method = "totalvi",
-  batch = "real_batch",
+  batch_by = "real_batch",
   assay = "RNA",
   adt_assay = "ADT",
   normalization_method = "seurat",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(max_epochs = 100),
+  backend_control = list(max_epochs = 100),
   verbose = FALSE
 )
 
@@ -316,7 +334,7 @@ pbmc_adt_coral <- sn_run_cluster(
   object = pbmc_adt_coral,
   modality = "cite_seq",
   multimodal_method = "coralysis",
-  batch = "real_batch",
+  batch_by = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
   verbose = FALSE
@@ -331,10 +349,10 @@ pbmc_adt_mmochi <- sn_run_cluster(
   object = pbmc_adt_mmochi,
   modality = "cite_seq",
   multimodal_method = "mmochi",
-  batch = "real_batch",
+  batch_by = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
-  integration_control = list(
+  backend_control = list(
     protein_layer = "data",
     store_corrected_layer = TRUE
   ),
@@ -392,7 +410,7 @@ sample-level inference.
 
 pbmc_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "harmony",
   normalization_method = "seurat",
   hvg_group_by = "real_batch",
@@ -434,9 +452,9 @@ explicitly when t-SNE is also required.
 ```{r multi-integration, eval = run_extended && requireNamespace("harmony", quietly = TRUE) && requireNamespace("Coralysis", quietly = TRUE)}
 pbmc_comparison <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = c("unintegrated", "harmony", "coralysis"),
-  integration_control = list(
+  backend_control = list(
     harmony = list(theta = 3),
     coralysis = list(
       icp_args = list(L = 25, threads = 1),
@@ -531,7 +549,7 @@ pbmc_comparison <- sn_compare_integrations(
   batch_by = "real_batch",
   label_by = "cell_type",
   accelerator = "auto",
-  n_jobs = 4
+  n_workers = 4
 )
 
 # Discover and retrieve the stored benchmark.
@@ -562,7 +580,7 @@ heavier optional backend runs in the `all` profile when both Harmony and
 ```{r sctransform-integration, eval = run_extended && requireNamespace("harmony", quietly = TRUE) && requireNamespace("glmGamPoi", quietly = TRUE)}
 pbmc_sct_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "harmony",
   normalization_method = "sctransform",
   hvg_features = c("IL7R", "CCR7", "NKG7"),
@@ -581,25 +599,25 @@ stores the integrated embedding as the `coralysis` reduction. The trained
 Coralysis SingleCellExperiment is stored by default under
 `object@misc$coralysis`, so the returned object can be used later as a native
 Coralysis label-transfer reference. Set
-`integration_control = list(store_sce = FALSE)` only for clustering-only runs.
+`backend_control = list(store_sce = FALSE)` only for clustering-only runs.
 For BPCells-backed assays, Shennong keeps the complete normalized layer on disk
 and materializes only the selected integration features as a sparse
 `dgCMatrix`, which is the input class required by Coralysis. Coralysis defaults
 to one worker because forked workers can each copy this in-memory matrix; set
-`integration_control = list(icp_args = list(threads = ...))` only after sizing
+`backend_control = list(icp_args = list(threads = ...))` only after sizing
 the aggregate worker memory against the host.
 
 ```{r coralysis-integration, eval = run_extended && requireNamespace("Coralysis", quietly = TRUE)}
 pbmc_coral <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
   hvg_group_by = "real_batch",
   nfeatures = 2000,
   dims = 1:20,
   resolution = 0.6,
-  integration_control = list(
+  backend_control = list(
     icp_args = list(L = 25, threads = 2),
     pca_args = list(p = 20)
   ),
@@ -619,7 +637,7 @@ against familiar anchor-based workflows:
 ```{r seurat-layer-integration, eval = run_vignette}
 pbmc_cca <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "seurat_cca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -629,7 +647,7 @@ pbmc_cca <- sn_run_cluster(
 
 pbmc_rpca <- sn_run_cluster(
   object = pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   integration_method = "seurat_rpca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -742,11 +760,11 @@ integrated <- lapply(methods, function(method) {
   control <- if (method == "scanvi") list(label_by = "cell_type") else list()
   sn_run_cluster(
     object = pbmc,
-    batch = "real_batch",
+    batch_by = "real_batch",
     assay = "RNA",
     layer = "decontaminated_counts",
     integration_method = method,
-    integration_control = control,
+    backend_control = control,
     normalization_method = "seurat",
     dims = 1:30,
     verbose = FALSE
@@ -765,13 +783,13 @@ sn_get_pixi_paths("scvi")
 pbmc_scvi <- qs2::qs_read(real_data_file)
 pbmc_scvi <- sn_run_scvi(
   object = pbmc_scvi,
-  batch = "real_batch",
+  batch_by = "real_batch",
   layer = "counts",
   normalization_method = "seurat",
   hvg_group_by = "real_batch",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(
+  backend_control = list(
     accelerator = "auto",
     mirror = "auto",
     n_latent = 30,
@@ -790,12 +808,12 @@ scanvi_input$scanvi_label[scanvi_input$real_sample %in% held_out_samples] <- "Un
 
 pbmc_scanvi <- sn_run_scanvi(
   object = scanvi_input,
-  batch = "real_batch",
+  batch_by = "real_batch",
   layer = "counts",
   normalization_method = "seurat",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(
+  backend_control = list(
     label_by = "scanvi_label",
     unlabeled_category = "Unknown",
     accelerator = "auto",
@@ -809,7 +827,7 @@ pbmc_scanvi <- sn_run_scanvi(
 table(pbmc_scanvi$scanvi_prediction, pbmc_scanvi$real_response)
 ```
 
-The scPoli object wrapper trains the same real scPoli model used by
+The scPoli shortcut runs the same complete clustering workflow as
 `integration_method = "scpoli"`; it uses the real batch column as its condition
 and can use RNA clusters as prototype labels. The selected `layer` must be a
 count-like raw-count layer rather than normalized expression. `sn_run_scarches()` is retained
@@ -823,8 +841,7 @@ pbmc_scpoli <- sn_run_scpoli(
   assay = "RNA",
   layer = "counts",
   batch_by = "real_batch",
-  label_by = "seurat_clusters",
-  method_control = list(max_epochs = 100)
+  backend_control = list(label_by = "seurat_clusters", max_epochs = 100)
 )
 
 data.frame(

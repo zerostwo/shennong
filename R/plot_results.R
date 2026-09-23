@@ -34,9 +34,9 @@
     stop("`object` must be a Seurat object.", call. = FALSE)
   }
   if (identical(kind, "de")) {
-    sn_get_de_result(object, result_id = result_id, with_metadata = TRUE)
+    sn_get_result(object, result_id = result_id, type = "de")
   } else {
-    sn_get_enrichment_result(object, result_id = result_id, with_metadata = TRUE)
+    sn_get_result(object, result_id = result_id, type = "enrichment")
   }
 }
 

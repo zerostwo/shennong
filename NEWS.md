@@ -5,13 +5,41 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- **Breaking API cleanup (#17–#27):** DE, Milo, and enrichment now return
+  unified results with `return_object = FALSE`; table selection is explicit.
+  Specialized table getters no longer accept `with_metadata`: use
+  `sn_get_result()` for complete results. Omitted IDs resolve only a unique
+  result, and DE/enrichment share `top_scope = "group"` or `"all"`.
+  Direction filtering works without top-N selection; enrichment handles
+  absent grouping columns and ratio-valued rankings deliberately.
+- Enrichment infers ORA/GSEA from mapped column types, supports grouped GSEA
+  with `mapping = gene ~ score | group`, and generates source/mode/database IDs.
+- Remove inert DE metadata thresholds `p_val_cutoff` and `de_logfc`.
+  Select reported genes with `sn_get_de_result(p_adjusted_cutoff = ...,
+  logfc_threshold = ...)`, retaining the full backend result for reuse.
+- Protect stored result IDs against accidental replacement. Repeated default
+  scoring/Milo/enrichment calls allocate unique IDs; intentional scoring
+  replacement requires `overwrite = TRUE` and reconciles owned metadata.
+  `sn_store_result()` also requires explicit overwrite permission; fate reruns
+  expose `overwrite` while retaining metadata ownership checks.
+- Program scoring exposes top-level `seed`; group scoring requires an explicit
+  `aggregate = "expression"` or `"scores"`. Milo applies its seed to actual
+  sampling, returns the requested object without requiring an ID, and uses
+  `keep_model` instead of changing return shape for intermediate output.
+- Standardize common controls as `batch_by`, `backend_control`, and
+  `n_workers`, preserving native backend wire names internally. scVI, scANVI,
+  and scPoli shortcuts now share the clustering workflow. Clustering exposes
+  `assay`, `layer`, `npcs`, `dims`, and `hvg_group_by` directly and uses the
+  common `seed` instead of `cluster_random_seed`. Advanced `...` controls must
+  be named. These development-stage changes add no compatibility aliases.
+
 - Fix eight audited defects (#8–#15): communication reads all matching split
   layers; DE stores valid backend-test backgrounds per comparison for ORA;
   program comparisons recognize complete donor pairs; subset marker discovery
   preserves existing gene columns; Milo annotation filters use the stored
   annotation field; native matrix serialization preserves class; program
   metadata columns avoid name collisions with a stored mapping; and scoring
-  applies `backend_control$seed` while preserving the caller RNG. Known older
+  applies the scoring seed while preserving the caller RNG. Known older
   DE records containing candidate-only backgrounds require rerunning DE or
   an explicit ORA universe. Partially paired program designs are rejected.
 

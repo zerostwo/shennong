@@ -1305,7 +1305,7 @@ sn_plot_heatmap <- function(object,
   }
 
   if (!is.null(de_result$p_col) && de_result$p_col %in% colnames(marker_table)) {
-    marker_table <- marker_table[marker_table[[de_result$p_col]] <= de_result$p_val_cutoff, , drop = FALSE]
+    marker_table <- marker_table[marker_table[[de_result$p_col]] <= 0.05, , drop = FALSE]
   }
 
   ranking_values <- marker_table[[rank_col]]

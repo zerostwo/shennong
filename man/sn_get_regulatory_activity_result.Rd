@@ -6,10 +6,9 @@
 \usage{
 sn_get_regulatory_activity_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   sources = NULL,
-  conditions = NULL,
-  with_metadata = FALSE
+  conditions = NULL
 )
 }
 \arguments{
@@ -20,12 +19,14 @@ sn_get_regulatory_activity_result(
 \item{sources}{Optional TF or pathway names to keep.}
 
 \item{conditions}{Optional cell or group names to keep.}
-
-\item{with_metadata}{If \code{TRUE}, return the full stored-result list.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble.
 }
 \description{
 Retrieve stored regulatory activity results
+}
+\details{
+This getter always returns the selected table. Use \code{sn_get_result()}
+for the complete stored result and metadata.
 }

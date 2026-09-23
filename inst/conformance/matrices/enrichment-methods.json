@@ -143,43 +143,38 @@
       "analysis": "gsea",
       "database": "GO",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pending"
     },
     {
       "analysis": "gsea",
       "database": "GOBP",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pending"
     },
     {
       "analysis": "gsea",
       "database": "GOMF",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pending"
     },
     {
       "analysis": "gsea",
       "database": "GOCC",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pending"
     },
     {
       "analysis": "gsea",
       "database": "KEGG",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pending"
     },
     {
       "analysis": "gsea",
       "database": "MSIGDB_COLLECTION",
       "input_mode": "grouped",
-      "status": "unsupported",
-      "reason": "Grouped GSEA is not implemented; a two-variable formula defines one global ranking, not per-group GSEA."
+      "status": "pilot",
+      "contract_id": "enrichment::msigdb_gsea"
     }
   ],
   "parameter_axes": [
@@ -261,7 +256,7 @@
     "symbol_to_entrez_mapping",
     "MSigDB_collection_and_subcollection",
     "grouped_ORA",
-    "grouped_GSEA_rejection",
+    "grouped_GSEA_dispatch",
     "duplicate_rank_collapse",
     "empty_result",
     "seed_replay",

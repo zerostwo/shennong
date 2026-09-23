@@ -35,9 +35,8 @@
     cells <- which(groups == level)
     Matrix::rowMeans(mat[, cells, drop = FALSE])
   }, numeric(nrow(mat)))
-  rownames(out) <- rownames(mat)
-  colnames(out) <- group_levels
-  out
+  matrix(out, nrow = nrow(mat), ncol = length(group_levels),
+         dimnames = list(rownames(mat), group_levels))
 }
 
 .sn_expressed_genes <- function(mat, cells, min_pct = 0.1) {
@@ -492,8 +491,8 @@
         group_by = group_by,
         artifact_id = paste0("communication_", format(Sys.time(), "%Y%m%d%H%M%S")),
         return_object = FALSE,
-        method_control = controls$method_control %||% list()
-      ), controls[setdiff(names(controls), "method_control")], keep.null = TRUE))
+        backend_control = controls$backend_control %||% list()
+      ), controls[setdiff(names(controls), "backend_control")], keep.null = TRUE))
       imported <- manifest$imported_tables %||% list()
       parsed <- if (all(c("pvalues", "means") %in% names(imported))) {
         .sn_parse_cellphonedb_tables(imported$pvalues, imported$means)
@@ -827,24 +826,20 @@ sn_store_cell_communication <- function(object,
 #' @param object A Seurat object.
 #' @param result_id Name of the stored result.
 #' @param sources,targets Optional source/target labels to keep.
-#' @param with_metadata If \code{TRUE}, return the full stored-result list.
+#' @details This getter always returns the selected table. Use \code{sn_get_result()}
+#'   for the complete stored result and metadata.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble.
 #' @export
 sn_get_cell_communication_result <- function(object,
-                                             result_id = "default",
+                                             result_id = NULL,
                                              sources = NULL,
-                                             targets = NULL,
-                                             with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
-  stored <- sn_get_result(
-    object = object,
+                                             targets = NULL) {
+  stored <- .sn_resolve_result_input(
+    x = object,
     type = "cell_communication",
     result_id = result_id
   )
-  if (isTRUE(with_metadata)) {
-    return(stored)
-  }
   table <- tibble::as_tibble(stored$tables$primary)
   source_col <- .sn_communication_column(table, c("source", "sender", "source_cell", "cell_type1"))
   target_col <- .sn_communication_column(table, c("target", "receiver", "target_cell", "cell_type2"))
@@ -866,7 +861,7 @@ sn_run_cellphonedb <- function(object,
                                runtime_dir = NULL,
                                artifact_id = "cellphonedb",
                                return_object = TRUE,
-                               method_control = list(),
+                               backend_control = list(),
                                keep_run_dir = NULL,
                                max_artifact_import_gb = 0.5,
                                ...) {
@@ -894,7 +889,7 @@ sn_run_cellphonedb <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(groupby = group_by), method_control),
+    config = c(list(groupby = group_by), backend_control),
     ...
   )
 }

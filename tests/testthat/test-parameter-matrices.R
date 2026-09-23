@@ -86,7 +86,7 @@ test_that("clustering selector matrix covers every current backend", {
     logical(1)
   )))
   expect_true(all(c(
-    "normalization_method", "integration_method", "batch"
+    "normalization_method", "integration_method", "batch_by"
   ) %in% unlist(matrix$pairwise_axes)))
   expect_true(all(c(
     "split_layers", "bpcells", "checkpoint_resume", "multi_method_grid"
@@ -125,9 +125,15 @@ test_that("enrichment matrix inventories dispatch without overstating evidence",
     identical(case$analysis, "gsea") && identical(case$input_mode, "grouped")
   }, cases)
   expect_length(grouped_gsea, length(databases))
-  expect_true(all(vapply(grouped_gsea, function(case) {
-    identical(case$status, "unsupported") && nzchar(case$reason)
+  expect_false(any(vapply(grouped_gsea, function(case) {
+    identical(case$status, "unsupported")
   }, logical(1))))
+  grouped_msigdb <- Filter(function(case) {
+    identical(case$database, "MSIGDB_COLLECTION")
+  }, grouped_gsea)
+  expect_length(grouped_msigdb, 1L)
+  expect_identical(grouped_msigdb[[1]]$status, "pilot")
+  expect_identical(grouped_msigdb[[1]]$contract_id, "enrichment::msigdb_gsea")
 
   pilots <- Filter(function(case) identical(case$status, "pilot"), cases)
   expect_setequal(

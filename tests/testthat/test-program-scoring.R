@@ -175,6 +175,7 @@ test_that("GSVA and ssGSEA score aggregated sample expression", {
       signatures = program_test_signatures(),
       method = method,
       group_by = "sample",
+      aggregate = "expression",
       result_id = paste0("sample_", method),
       return_object = FALSE,
       backend_control = stats::setNames(list(list(parameters = list(kcdf = "Gaussian"))), method)

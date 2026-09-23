@@ -211,7 +211,7 @@ if (length(missing)) {
       clusters = NULL,
       group_by = NULL,
       dbr_sd = NULL,
-      ncores = 1L,
+      n_workers = 1L,
       assay = "RNA",
       layer = "counts",
       min_features = 200L

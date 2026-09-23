@@ -151,7 +151,7 @@
 
 #' Inspect complete integration-control templates
 #'
-#' Returns the Shennong-supported `integration_control` fields and their
+#' Returns the Shennong-supported `backend_control` fields and their
 #' defaults for each integration backend. Values that depend on the input data,
 #' such as Coralysis PCA rank or Seurat integration features, are illustrative
 #' defaults and are resolved against the object by [sn_run_cluster()]. Extra
@@ -275,7 +275,7 @@ sn_get_integration_control_template <- function(method = NULL) {
 
 .sn_cluster_requires_adt_data <- function(modality,
                                           multimodal_method = NULL,
-                                          integration_control = list()) {
+                                          backend_control = list()) {
   if (!identical(modality, "cite_seq")) {
     return(FALSE)
   }
@@ -283,7 +283,7 @@ sn_get_integration_control_template <- function(method = NULL) {
     return(TRUE)
   }
   if (identical(multimodal_method, "mmochi")) {
-    protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+    protein_layer <- backend_control$protein_layer %||% backend_control$adt_layer %||% "data"
     return(identical(protein_layer, "data"))
   }
   FALSE
@@ -293,8 +293,8 @@ sn_get_integration_control_template <- function(method = NULL) {
   identical(modality, "cite_seq") && identical(multimodal_method, "wnn")
 }
 
-.sn_coralysis_store_sce <- function(integration_control = list()) {
-  !identical(integration_control$store_sce, FALSE)
+.sn_coralysis_store_sce <- function(backend_control = list()) {
+  !identical(backend_control$store_sce, FALSE)
 }
 
 .sn_resolve_find_clusters_algorithm <- function(cluster_algorithm = c("louvain", "louvain_multilevel", "slm", "leiden")) {
@@ -883,17 +883,8 @@ sn_get_integration_control_template <- function(method = NULL) {
     stop("Clustering argument(s) supplied more than once: ", paste(duplicated_names, collapse = ", "), ".", call. = FALSE)
   }
 
-  unnamed <- which(!named)
-  available <- setdiff(names(defaults), dot_names[named])
-  if (length(unnamed) > length(available)) {
-    stop("Too many positional clustering arguments were supplied after `leiden_objective_function`.", call. = FALSE)
-  }
-  if (length(unnamed) > 0L) {
-    dot_names[unnamed] <- utils::head(available, length(unnamed))
-  }
-  if (anyDuplicated(dot_names)) {
-    duplicated_names <- unique(dot_names[duplicated(dot_names)])
-    stop("Clustering argument(s) supplied more than once: ", paste(duplicated_names, collapse = ", "), ".", call. = FALSE)
+  if (any(!named)) {
+    stop("Advanced clustering arguments in `...` must be named.", call. = FALSE)
   }
 
   for (index in seq_along(dots)) {
@@ -905,24 +896,24 @@ sn_get_integration_control_template <- function(method = NULL) {
 #' Run clustering for a single dataset or batch integration workflow
 #'
 #' This function is the main clustering entry point in `Shennong`.
-#' When `batch = NULL`, it performs single-dataset clustering with either the
+#' When `batch_by = NULL`, it performs single-dataset clustering with either the
 #' standard Seurat workflow, an SCTransform workflow, or a single-sample
 #' CITE-seq workflow. When `batch` is supplied, it performs batch integration
 #' followed by clustering and UMAP.
 #'
 #' @param object A \code{Seurat} object.
-#' @param batch A column name in \code{object@meta.data} specifying the batch
+#' @param batch_by A column name in \code{object@meta.data} specifying the batch
 #'   labels used for integration. If \code{NULL}, no RNA batch integration is
 #'   performed. CITE-seq MMoCHi runs in single-sample mode by passing an
 #'   internal constant batch key to the Python backend.
 #' @param normalization_method One of \code{"seurat"}, \code{"scran"}, or
 #'   \code{"sctransform"}. The \code{"seurat"} and \code{"scran"} workflows can
-#'   be followed by any supported \code{integration_method} when \code{batch}
+#'   be followed by any supported \code{integration_method} when \code{batch_by}
 #'   is supplied. The SCTransform workflow can currently be
 #'   combined with \code{integration_method = "harmony"} by supplying
-#'   \code{batch}.
+#'   \code{batch_by}.
 #' @param integration_method One or more batch-analysis methods used when
-#'   \code{batch} is supplied. \code{"unintegrated"} keeps the PCA baseline;
+#'   \code{batch_by} is supplied. \code{"unintegrated"} keeps the PCA baseline;
 #'   multiple values run against the same normalized/HVG/PCA preparation and
 #'   retain method-specific reductions, graphs, cluster columns, UMAP, and
 #'   optional t-SNE results in one object. Scalar analysis parameters supplied
@@ -951,7 +942,7 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   Python expression/protein inputs remain sparse; learned backends may create
 #'   bounded dense minibatch tensors, while imported latent/PCA/UMAP results are
 #'   low-dimensional dense outputs.
-#' @param integration_control Optional named list of backend-specific
+#' @param backend_control Optional named list of backend-specific
 #'   parameters. With multiple methods, provide a list keyed by method, for
 #'   example \code{list(harmony = list(theta = 3), coralysis = list(...))};
 #'   an optional \code{.default} entry is merged into every method. For
@@ -987,7 +978,7 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   \code{corrected_layer}, \code{store_corrected_layer},
 #'   \code{single_sample_batch_key}, and \code{keep_single_sample_batch};
 #'   Shennong runs MMoCHi's ADT landmark registration and imports the corrected
-#'   protein matrix as a protein-derived reduction. When \code{batch = NULL},
+#'   protein matrix as a protein-derived reduction. When \code{batch_by = NULL},
 #'   Shennong uses a constant internal backend batch key for single-sample
 #'   registration. When Seurat accepts arbitrary assay layers, the corrected
 #'   matrix is stored as \code{corrected_layer}; otherwise it is kept under
@@ -1017,20 +1008,24 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   Defaults to Seurat's \code{"seurat_clusters"} behavior.
 #' @param cluster_n_start,cluster_n_iter Number of starts and iterations passed
 #'   to \code{Seurat::FindClusters()}.
-#' @param cluster_random_seed Random seed passed to
-#'   \code{Seurat::FindClusters()}.
-#' @param seed Top-level reproducibility seed overriding clustering, PCA,
-#'   SCTransform, visualization, and backend integration seeds when supplied.
-#'   Precedence: \code{seed} > stage-specific controls > stage defaults.
-#' @param verbose Top-level progress logging switch forwarded to the clustering
-#'   implementation; a \code{verbose} tail argument keeps precedence over it.
+#' @param seed Reproducibility seed (default 717) controlling clustering, PCA,
+#'   SCTransform, visualization, and backend integration. A non-NULL value
+#'   takes precedence over backend controls; \code{NULL} leaves backend defaults
+#'   and the caller's workflow random state in effect.
+#' @param verbose Whether to emit workflow progress messages.
 #' @param cluster_group_singletons Whether \code{Seurat::FindClusters()}
 #'   should group singletons into the nearest cluster.
 #' @param leiden_method Leiden implementation passed to
 #'   \code{Seurat::FindClusters()} when \code{cluster_algorithm = "leiden"}.
 #' @param leiden_objective_function Leiden objective function passed to
 #'   \code{Seurat::FindClusters()}.
-#' @param ... Additional clustering controls. Supported names include
+#' @param assay Assay used consistently by all clustering stages; default RNA.
+#' @param layer Input expression layer, including corrected count layers.
+#' @param npcs Number of PCs to compute. Multiple values create a parameter grid.
+#' @param dims PC indices used for neighbors, clustering, and UMAP.
+#' @param hvg_group_by Metadata column for grouped HVG discovery. Defaults to
+#'   \code{batch_by} when batches are supplied, or pooled discovery otherwise.
+#' @param ... Additional named clustering controls. Supported names include
 #'   \code{cluster_control}, an optional named list of additional
 #'   \code{Seurat::FindClusters()} arguments. Values here override Shennong's
 #'   generated defaults.
@@ -1051,10 +1046,6 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   \code{install_ask}: passed to \code{BiocManager::install()} when
 #'   \code{auto_install} installs Bioconductor packages through
 #'   \code{sn_install_dependencies()}.
-#'   \code{hvg_group_by}: optional metadata column used to compute highly variable
-#'   genes within groups before merging and ranking them. When \code{NULL} and
-#'   \code{batch} is supplied, Shennong reuses \code{batch} by default. Use
-#'   \code{NULL} with \code{batch = NULL} to compute HVGs on the full object.
 #'   \code{rare_feature_method}: optional rare-cell-aware feature methods appended
 #'   to the base HVG set before PCA/clustering. Supported values are
 #'   \code{"none"}, \code{"gini"}, and \code{"local_markers"}.
@@ -1082,18 +1073,10 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   \code{integration_method = "harmony"}. Multiple values expand only the
 #'   Harmony branch and do not duplicate other integration methods.
 #'   \code{group_by_vars}: optional column name or character vector passed to
-#'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch}
+#'   \code{harmony::RunHarmony(group.by.vars = ...)}. Defaults to \code{batch_by}
 #'   and is used only when \code{integration_method = "harmony"}.
-#'   \code{npcs}: number of PCs to compute in \code{RunPCA}. Multiple values
-#'   form a parameter-grid axis.
-#'   \code{dims}: a numeric vector of PCs (dimensions) to use for neighbor search,
-#'   clustering, and UMAP.
 #'   \code{species}: optional species label. Used when block genes must be resolved
 #'   from built-in signatures.
-#'   \code{assay}: assay used for clustering. Defaults to \code{"RNA"}.
-#'   \code{layer}: layer used as the input matrix. Defaults to \code{"counts"}.
-#'   scVI, scANVI, scPoli, and the PCA upstream of BBKNN all honor this value,
-#'   so a layer such as \code{"decontaminated_counts"} is used consistently.
 #'   \code{modality}: workflow modality. \code{"rna"} runs the standard RNA-only
 #'   workflow. \code{"cite_seq"} enables paired RNA+ADT workflows selected by
 #'   \code{multimodal_method}.
@@ -1105,7 +1088,7 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   totalVI on RNA counts plus ADT counts and clusters on the imported totalVI
 #'   latent representation.
 #'   \code{"mmochi"} runs MMoCHi ADT landmark registration across batches, or
-#'   in single-sample mode when \code{batch = NULL}, stores the corrected
+#'   in single-sample mode when \code{batch_by = NULL}, stores the corrected
 #'   protein matrix when supported, computes a protein PCA reduction, and
 #'   clusters on that reduction. When
 #'   \code{NULL}, Shennong keeps the historical CITE-seq default
@@ -1169,7 +1152,7 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'
 #' seurat_obj <- sn_run_cluster(
 #'   object = seurat_obj,
-#'   batch = "sample_id",
+#'   batch_by = "sample_id",
 #'   integration_method = "harmony",
 #'   normalization_method = "seurat",
 #'   hvg_group_by = "sample_id",
@@ -1180,10 +1163,10 @@ sn_get_integration_control_template <- function(method = NULL) {
 #' }
 #' @export
 sn_run_cluster <- function(object,
-                           batch = NULL,
+                           batch_by = NULL,
                            normalization_method = c("seurat", "scran", "sctransform"),
                            integration_method = c("harmony", "unintegrated", "coralysis", "seurat_cca", "seurat_rpca", "scvi", "scanvi", "scpoli", "bbknn", "totalvi", "mmochi"),
-                           integration_control = list(),
+                           backend_control = list(),
                            nfeatures = 3000,
                            hvg_features = NULL,
                            vars_to_regress = NULL,
@@ -1192,11 +1175,15 @@ sn_run_cluster <- function(object,
                            cluster_name = NULL,
                            cluster_n_start = 10,
                            cluster_n_iter = 10,
-                           cluster_random_seed = 717,
                            cluster_group_singletons = TRUE,
                            leiden_method = c("leidenbase", "igraph"),
                            leiden_objective_function = c("modularity", "CPM"),
-                           seed = NULL,
+                           assay = "RNA",
+                           layer = "counts",
+                           npcs = 50,
+                           dims = NULL,
+                           hvg_group_by = NULL,
+                           seed = 717,
                            verbose = TRUE,
                            ...) {
   integration_method_supplied <- !missing(integration_method)
@@ -1206,7 +1193,13 @@ sn_run_cluster <- function(object,
   cluster_algorithm_supplied <- !missing(cluster_algorithm)
   tail <- .sn_resolve_cluster_tail_args(list(...))
   block_genes_supplied <- "block_genes" %in% tail$supplied
-  workflow_seed <- 717L
+  promoted <- list(assay = assay, layer = layer, npcs = npcs, dims = dims, hvg_group_by = hvg_group_by)
+  supplied <- c(assay = !missing(assay), layer = !missing(layer), npcs = !missing(npcs),
+                dims = !missing(dims), hvg_group_by = !missing(hvg_group_by))
+  tail$values[names(promoted)] <- promoted
+  tail$supplied <- union(tail$supplied, names(supplied)[supplied])
+  workflow_seed <- seed
+  cluster_random_seed <- seed %||% 717L
   if (!is.null(seed)) {
     if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed) ||
         seed < 0 || seed > .Machine$integer.max || seed != floor(seed)) {
@@ -1214,8 +1207,8 @@ sn_run_cluster <- function(object,
     }
     workflow_seed <- as.integer(seed)
     cluster_random_seed <- workflow_seed
-    integration_control <- .sn_override_cluster_integration_seed(
-      integration_control,
+    backend_control <- .sn_override_cluster_integration_seed(
+      backend_control,
       workflow_seed
     )
   }
@@ -1226,10 +1219,10 @@ sn_run_cluster <- function(object,
   cluster_args <- c(
     list(
       object = object,
-      batch = batch,
+      batch = batch_by,
       normalization_method = normalization_method,
       integration_method = integration_method,
-      integration_control = integration_control,
+      backend_control = backend_control,
       nfeatures = nfeatures,
       hvg_features = hvg_features,
       vars_to_regress = vars_to_regress,
@@ -1274,60 +1267,60 @@ sn_run_cluster <- function(object,
   .sn_with_seed(workflow_seed, .sn_run_cluster_impl(cluster_args))
 }
 
-.sn_override_cluster_integration_seed <- function(integration_control, seed) {
-  if (!is.list(integration_control)) {
-    stop("`integration_control` must be a named list.", call. = FALSE)
+.sn_override_cluster_integration_seed <- function(backend_control, seed) {
+  if (!is.list(backend_control)) {
+    stop("`backend_control` must be a named list.", call. = FALSE)
   }
   override_one <- function(control) {
     if (!is.list(control)) {
-      stop("Each per-method `integration_control` entry must be a named list.", call. = FALSE)
+      stop("Each per-method `backend_control` entry must be a named list.", call. = FALSE)
     }
     control$seed <- seed
     control$icp_args <- control$icp_args %||% list()
     if (!is.list(control$icp_args)) {
-      stop("`integration_control$icp_args` must be a named list.", call. = FALSE)
+      stop("`backend_control$icp_args` must be a named list.", call. = FALSE)
     }
     control$icp_args$RNGseed <- seed
     control
   }
 
-  control_names <- names(integration_control) %||% character(0)
+  control_names <- names(backend_control) %||% character(0)
   mapped <- any(control_names %in% c(.sn_supported_integration_methods(), ".default"))
   if (!mapped) {
-    return(override_one(integration_control))
+    return(override_one(backend_control))
   }
 
-  integration_control$.default <- override_one(
-    integration_control$.default %||% list()
+  backend_control$.default <- override_one(
+    backend_control$.default %||% list()
   )
   method_names <- intersect(control_names, .sn_supported_integration_methods())
   for (method in method_names) {
-    integration_control[[method]] <- override_one(integration_control[[method]])
+    backend_control[[method]] <- override_one(backend_control[[method]])
   }
-  integration_control
+  backend_control
 }
 
-.sn_multi_method_control <- function(integration_control, methods, method) {
-  if (!is.list(integration_control)) {
-    stop("`integration_control` must be a named list.", call. = FALSE)
+.sn_multi_method_control <- function(backend_control, methods, method) {
+  if (!is.list(backend_control)) {
+    stop("`backend_control` must be a named list.", call. = FALSE)
   }
-  control_names <- names(integration_control) %||% character(0)
+  control_names <- names(backend_control) %||% character(0)
   mapped <- any(control_names %in% c(.sn_supported_integration_methods(), ".default"))
   if (!mapped) {
-    return(integration_control)
+    return(backend_control)
   }
   unknown <- setdiff(control_names, c(methods, ".default"))
   if (length(unknown) > 0L) {
     stop(
-      "Unknown multi-method `integration_control` name(s): ",
+      "Unknown multi-method `backend_control` name(s): ",
       paste(unknown, collapse = ", "), ".",
       call. = FALSE
     )
   }
-  default <- integration_control[[".default"]] %||% list()
-  specific <- integration_control[[method]] %||% list()
+  default <- backend_control[[".default"]] %||% list()
+  specific <- backend_control[[method]] %||% list()
   if (!is.list(default) || !is.list(specific)) {
-    stop("Each per-method `integration_control` entry must be a named list.", call. = FALSE)
+    stop("Each per-method `backend_control` entry must be a named list.", call. = FALSE)
   }
   utils::modifyList(default, specific, keep.null = TRUE)
 }
@@ -1380,13 +1373,13 @@ sn_run_cluster <- function(object,
   rows <- list()
   index <- 0L
   for (method in methods) {
-    method_control <- .sn_multi_method_control(
-      integration_control = args$integration_control,
+    backend_control <- .sn_multi_method_control(
+      backend_control = args$backend_control,
       methods = methods,
       method = method
     )
     theta_values <- if (identical(method, "harmony")) {
-      unique(method_control$theta %||% if (theta_supplied) args$theta else args$theta[[1L]])
+      unique(backend_control$theta %||% if (theta_supplied) args$theta else args$theta[[1L]])
     } else {
       args$theta[[1L]]
     }
@@ -1394,7 +1387,7 @@ sn_run_cluster <- function(object,
       part <- base_grid
       part$method <- method
       part$theta <- theta
-      part$.method_control <- I(rep(list(method_control), nrow(part)))
+      part$.backend_control <- I(rep(list(backend_control), nrow(part)))
       index <- index + 1L
       rows[[index]] <- part
     }
@@ -1532,7 +1525,7 @@ sn_run_cluster <- function(object,
         args$rare_feature_group_by,
         args$vars_to_regress,
         args$group_by_vars,
-        .sn_cluster_control_metadata_columns(args$integration_control)
+        .sn_cluster_control_metadata_columns(args$backend_control)
       )
     )
   )
@@ -1542,7 +1535,7 @@ sn_run_cluster <- function(object,
       package_version = as.character(utils::packageVersion("Shennong")),
       object = object_signature,
       arguments = signature_args,
-      grid = grid[, setdiff(colnames(grid), ".method_control"), drop = FALSE]
+      grid = grid[, setdiff(colnames(grid), ".backend_control"), drop = FALSE]
     ),
     algo = "sha256",
     serialize = TRUE
@@ -1661,7 +1654,7 @@ sn_run_cluster <- function(object,
     batch_by = args$batch,
     assay = args$assay,
     layer = args$layer,
-    grid = grid[, setdiff(colnames(grid), ".method_control"), drop = FALSE],
+    grid = grid[, setdiff(colnames(grid), ".backend_control"), drop = FALSE],
     results = stats::setNames(vector("list", nrow(grid)), grid$run_id),
     performance = data.frame(),
     checkpoint = list(
@@ -1725,23 +1718,23 @@ sn_run_cluster <- function(object,
       }
     }
     method_args <- args
-    method_control <- row$.method_control[[1L]]
+    backend_control <- row$.backend_control[[1L]]
     method_args$object <- current
     method_args$normalization_method <- row$normalization_method[[1L]]
     method_args$integration_method <- method
-    method_args$integration_control <- method_control
+    method_args$backend_control <- backend_control
     method_args$nfeatures <- row$nfeatures[[1L]]
     method_args$npcs <- row$npcs[[1L]]
     method_args$resolution <- row$resolution[[1L]]
     method_args$cluster_algorithm <- row$cluster_algorithm[[1L]]
     method_args$rare_feature_n <- row$rare_feature_n[[1L]]
     method_args$theta <- row$theta[[1L]]
-    method_args$group_by_vars <- method_control$group_by_vars %||% args$group_by_vars
-    method_args$integration_control$theta <- NULL
-    method_args$integration_control$group_by_vars <- NULL
+    method_args$group_by_vars <- backend_control$group_by_vars %||% args$group_by_vars
+    method_args$backend_control$theta <- NULL
+    method_args$backend_control$group_by_vars <- NULL
     if (identical(method, "bbknn")) {
-      method_args$integration_control$graph_name <- paste0(embedding_id, "_snn")
-      method_args$integration_control$umap_reduction <- paste0("umap.", embedding_id)
+      method_args$backend_control$graph_name <- paste0(embedding_id, "_snn")
+      method_args$backend_control$umap_reduction <- paste0("umap.", embedding_id)
     }
     method_args$cluster_name <- if (is.null(base_cluster_name)) {
       paste0(run_id, "_clusters")
@@ -1794,7 +1787,7 @@ sn_run_cluster <- function(object,
         list(
           run_id = run_id,
           cluster_column = method_args$cluster_name,
-          parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
+          parameters = as.list(row[, setdiff(colnames(row), c(".backend_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
           performance = list(
             workflow = profiled_run$performance,
             integration = existing$performance$integration %||% list(),
@@ -1864,7 +1857,7 @@ sn_run_cluster <- function(object,
       embedding_id = embedding_id,
       preprocess_id = preprocess_id,
       method = method,
-      parameters = as.list(row[, setdiff(colnames(row), c(".method_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
+      parameters = as.list(row[, setdiff(colnames(row), c(".backend_control", "run_id", "embedding_id", "preprocess_id", "method")), drop = FALSE]),
       integration_reduction = stored_reduction,
       cluster_column = method_args$cluster_name,
       graph_names = stages$neighbors$graph_names %||% character(0),
@@ -1876,7 +1869,7 @@ sn_run_cluster <- function(object,
       },
       input_features = selected_features,
       normalized_layer = normalized_layer,
-      integration_control = method_control,
+      backend_control = backend_control,
       integration = current@misc$integration %||% NULL,
       performance = list(
         workflow = profiled_run$performance,
@@ -1922,7 +1915,7 @@ sn_run_cluster <- function(object,
   batch <- args$batch
   normalization_method <- args$normalization_method
   integration_method <- args$integration_method
-  integration_control <- args$integration_control
+  backend_control <- args$backend_control
   nfeatures <- args$nfeatures
   hvg_features <- args$hvg_features
   vars_to_regress <- args$vars_to_regress
@@ -2024,12 +2017,12 @@ sn_run_cluster <- function(object,
     c("modularity", "CPM")
   )
   rerun_from <- .sn_resolve_cluster_rerun_from(rerun_from)
-  if (!is.list(integration_control)) {
-    stop("`integration_control` must be a named list.", call. = FALSE)
+  if (!is.list(backend_control)) {
+    stop("`backend_control` must be a named list.", call. = FALSE)
   }
   if (identical(integration_method, "harmony")) {
-    theta <- integration_control$theta %||% theta
-    group_by_vars <- integration_control$group_by_vars %||% group_by_vars
+    theta <- backend_control$theta %||% theta
+    group_by_vars <- backend_control$group_by_vars %||% group_by_vars
   }
   if (!is.list(cluster_control)) {
     stop("`cluster_control` must be a named list.", call. = FALSE)
@@ -2110,7 +2103,7 @@ sn_run_cluster <- function(object,
   needs_adt_data <- .sn_cluster_requires_adt_data(
     modality = modality,
     multimodal_method = multimodal_method,
-    integration_control = integration_control
+    backend_control = backend_control
   )
   needs_adt_pca <- .sn_cluster_requires_adt_pca(
     modality = modality,
@@ -2738,13 +2731,13 @@ sn_run_cluster <- function(object,
   integration_graph <- NULL
   integration_umap <- NULL
   integration_performance <- NULL
-  backend_integration_control <- integration_control
+  backend_integration_control <- backend_control
   integration_metadata_signature <- .sn_cluster_metadata_signature(
     object = object,
     columns = c(
       batch,
       group_by_vars,
-      .sn_cluster_control_metadata_columns(integration_control)
+      .sn_cluster_control_metadata_columns(backend_control)
     )
   )
   if (identical(integration_method, "bbknn")) {
@@ -2771,8 +2764,8 @@ sn_run_cluster <- function(object,
       protein_features = adt_feature_set,
       dims = adt_dims,
       npcs = adt_npcs,
-      integration_control = integration_control,
-      store_sce = .sn_coralysis_store_sce(integration_control),
+      backend_control = backend_control,
+      store_sce = .sn_coralysis_store_sce(backend_control),
       adt = adt_signature
     )
     if (.sn_can_reuse_cluster_stage(
@@ -2801,7 +2794,7 @@ sn_run_cluster <- function(object,
         npcs = adt_npcs,
         theta = theta,
         group_by_vars = group_by_vars,
-        integration_control = integration_control,
+        backend_control = backend_control,
         verbose = verbose
       ))
       integration <- profiled_integration$value
@@ -2823,9 +2816,9 @@ sn_run_cluster <- function(object,
     reduction_signature <- integration_signature
   } else if (identical(modality, "cite_seq") && identical(multimodal_method, "mmochi")) {
     mmochi_control <- utils::modifyList(
-      integration_control,
+      backend_control,
       list(
-        protein_layer = integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+        protein_layer = backend_control$protein_layer %||% backend_control$adt_layer %||% "data"
       ),
       keep.null = TRUE
     )
@@ -2837,7 +2830,7 @@ sn_run_cluster <- function(object,
       protein_features = adt_feature_set,
       dims = adt_dims,
       npcs = adt_npcs,
-      integration_control = mmochi_control,
+      backend_control = mmochi_control,
       adt = adt_signature
     )
     if (.sn_can_reuse_cluster_stage(
@@ -2862,7 +2855,7 @@ sn_run_cluster <- function(object,
         protein_features = adt_feature_set,
         dims = adt_dims,
         npcs = adt_npcs,
-        integration_control = mmochi_control,
+        backend_control = mmochi_control,
         verbose = verbose
       ))
       integration <- profiled_integration$value
@@ -2884,7 +2877,7 @@ sn_run_cluster <- function(object,
     reduction_signature <- integration_signature
   } else if (identical(modality, "cite_seq") && identical(multimodal_method, "totalvi")) {
     totalvi_control <- utils::modifyList(
-      integration_control,
+      backend_control,
       list(
         adt_assay = adt_assay,
         adt_layer = adt_layer,
@@ -2899,7 +2892,7 @@ sn_run_cluster <- function(object,
       protein_assay = adt_assay,
       protein_layer = adt_layer,
       protein_features = adt_feature_set,
-      integration_control = totalvi_control,
+      backend_control = totalvi_control,
       pca = pca_signature
     )
     if (.sn_can_reuse_cluster_stage(
@@ -2923,7 +2916,7 @@ sn_run_cluster <- function(object,
         features = hvg,
         assay = assay,
         layer = layer,
-        integration_control = totalvi_control,
+        backend_control = totalvi_control,
         verbose = verbose
       ))
       integration <- profiled_integration$value
@@ -2955,9 +2948,9 @@ sn_run_cluster <- function(object,
       theta = theta,
       group_by_vars = group_by_vars,
       integration_metadata = integration_metadata_signature,
-      integration_control = backend_integration_control,
+      backend_control = backend_integration_control,
       store_sce = if (identical(integration_method, "coralysis")) {
-        .sn_coralysis_store_sce(integration_control)
+        .sn_coralysis_store_sce(backend_control)
       } else {
         NULL
       },
@@ -3023,7 +3016,7 @@ sn_run_cluster <- function(object,
         npcs = npcs,
         theta = theta,
         group_by_vars = group_by_vars,
-        integration_control = backend_integration_control,
+        backend_control = backend_integration_control,
         verbose = verbose
       ))
       integration <- profiled_integration$value
@@ -3422,7 +3415,7 @@ sn_run_cluster <- function(object,
 #' @param cell_type_by Reference metadata column containing cell-type labels
 #'   for Tangram projection.
 #' @param cluster_by Metadata column used by Squidpy neighborhood enrichment.
-#' @param method_control Optional named list of backend-specific settings passed
+#' @param backend_control Optional named list of backend-specific settings passed
 #'   to the Python runner config.
 #' @param assay Assay used for object-level infercnvpy input.
 #' @param layer Assay layer used for object-level Python input. Cell2location
@@ -3454,7 +3447,7 @@ sn_run_cluster <- function(object,
 #'   cleans a package-owned temporary child after success. Failed temporary runs
 #'   retain only sanitized diagnostics.
 #' @param key_added infercnvpy key used for the CNV representation.
-#' @param window_size,step,dynamic_threshold,exclude_chromosomes,chunksize,n_jobs,calculate_gene_values,lfc_clip
+#' @param window_size,step,dynamic_threshold,exclude_chromosomes,chunksize,n_workers,calculate_gene_values,lfc_clip
 #'   Parameters forwarded to \code{infercnvpy.tl.infercnv()}.
 #' @param run_pca,run_neighbors,run_leiden,run_umap,score Logical flags for
 #'   downstream infercnvpy analysis steps.
@@ -3499,7 +3492,7 @@ sn_run_scarches <- function(object,
                             metadata_prefix = "scarches_",
                             artifact_id = "scarches",
                             return_object = TRUE,
-                            method_control = list(),
+                            backend_control = list(),
                             keep_run_dir = NULL,
                             max_artifact_import_gb = 0.5,
                             ...) {
@@ -3517,14 +3510,12 @@ sn_run_scarches <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
+    config = c(list(batch_key = batch_by, labels_key = label_by), backend_control),
     ...
   )
 }
 
-#' @rdname sn_run_scarches
-#' @export
-sn_run_scpoli <- function(object,
+.sn_run_scpoli_object_backend <- function(object,
                           assay = NULL,
                           layer = NULL,
                           batch_by = NULL,
@@ -3534,7 +3525,7 @@ sn_run_scpoli <- function(object,
                           metadata_prefix = "scpoli_",
                           artifact_id = "scpoli",
                           return_object = TRUE,
-                          method_control = list(),
+                          backend_control = list(),
                           keep_run_dir = NULL,
                           max_artifact_import_gb = 0.5,
                           ...) {
@@ -3552,7 +3543,7 @@ sn_run_scpoli <- function(object,
     return_object = return_object,
     keep_run_dir = keep_run_dir,
     max_artifact_import_gb = max_artifact_import_gb,
-    config = c(list(batch_key = batch_by, labels_key = label_by), method_control),
+    config = c(list(batch_key = batch_by, labels_key = label_by), backend_control),
     ...
   )
 }

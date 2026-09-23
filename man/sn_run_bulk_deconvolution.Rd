@@ -34,7 +34,7 @@ sn_run_bulk_deconvolution(
   cibersortx_k_max = 999,
   gibbs_control = list(),
   opt_control = list(),
-  n_cores = 1,
+  n_workers = 1,
   update_gibbs = TRUE,
   max_dense_gb = 2,
   return_object = TRUE,
@@ -114,7 +114,7 @@ signature matrix.}
 
 \item{opt_control}{Optional BayesPrism optimization control list.}
 
-\item{n_cores}{Number of cores passed to BayesPrism.}
+\item{n_workers}{Number of cores passed to BayesPrism.}
 
 \item{update_gibbs}{Whether BayesPrism should run the final Gibbs update.}
 

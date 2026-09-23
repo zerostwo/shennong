@@ -201,24 +201,20 @@ sn_store_regulatory_activity <- function(object,
 #' @param result_id Name of the stored result.
 #' @param sources Optional TF or pathway names to keep.
 #' @param conditions Optional cell or group names to keep.
-#' @param with_metadata If \code{TRUE}, return the full stored-result list.
+#' @details This getter always returns the selected table. Use \code{sn_get_result()}
+#'   for the complete stored result and metadata.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble.
 #' @export
 sn_get_regulatory_activity_result <- function(object,
-                                              result_id = "default",
+                                              result_id = NULL,
                                               sources = NULL,
-                                              conditions = NULL,
-                                              with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
-  stored <- sn_get_result(
-    object = object,
+                                              conditions = NULL) {
+  stored <- .sn_resolve_result_input(
+    x = object,
     type = "regulatory_activity",
     result_id = result_id
   )
-  if (isTRUE(with_metadata)) {
-    return(stored)
-  }
   table <- tibble::as_tibble(stored$tables$primary)
   if (!is.null(sources) && "source" %in% colnames(table)) {
     table <- dplyr::filter(table, .data$source %in% sources)

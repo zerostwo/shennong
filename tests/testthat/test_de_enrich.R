@@ -270,11 +270,9 @@ test_that("sn_find_de preserves scoped Seurat acceleration provenance", {
     return_object = TRUE,
     verbose = FALSE
   )
-  stored <- sn_get_de_result(
+  stored <- sn_get_result(
     object,
-    result_id = "accelerated_markers",
-    with_metadata = TRUE
-  )
+    result_id = "accelerated_markers", type = "de")
 
   expect_identical(
     stored$provenance$acceleration$active_patches,
@@ -326,7 +324,7 @@ test_that("sn_find_de supports contrasts within each subset", {
     logfc_threshold = 0,
     return_object = FALSE,
     verbose = FALSE
-  )
+  )$tables$primary
 
   expect_true(all(c("gene", "cell_type", "comparison") %in% colnames(result)))
   expect_setequal(unique(result$cell_type), c("Tcell", "Bcell"))
@@ -349,7 +347,7 @@ test_that("sn_find_de supports pseudobulk contrasts", {
     min_cells_per_sample = 5,
     return_object = FALSE,
     verbose = FALSE
-  )
+  )$tables$primary
 
   expect_true(nrow(result) > 0)
   expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
@@ -373,7 +371,7 @@ test_that("sn_find_de supports limma pseudobulk contrasts", {
     min_cells_per_sample = 5,
     return_object = FALSE,
     verbose = FALSE
-  )
+  )$tables$primary
 
   expect_true(nrow(result) > 0)
   expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
@@ -397,7 +395,7 @@ test_that("pseudobulk rejects normalized layers and applies method-specific inte
       min_cells_per_sample = 5,
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "requires a raw or corrected count layer"
   )
 
@@ -428,7 +426,7 @@ test_that("pseudobulk rejects normalized layers and applies method-specific inte
     min_cells_per_sample = 5,
     return_object = FALSE,
     verbose = FALSE
-  )
+  )$tables$primary
   expect_gt(nrow(result), 0L)
 
   expect_no_error(Shennong:::.sn_validate_pseudobulk_count_layer(
@@ -460,7 +458,7 @@ test_that("subset_levels is explicit, unique, and observed", {
       subset_levels = "T",
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "only be supplied together"
   )
   expect_error(
@@ -472,7 +470,7 @@ test_that("subset_levels is explicit, unique, and observed", {
       subset_levels = c("T", "T"),
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "distinct"
   )
   expect_error(
@@ -484,7 +482,7 @@ test_that("subset_levels is explicit, unique, and observed", {
       subset_levels = "not_observed",
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "not observed"
   )
 })
@@ -516,7 +514,7 @@ test_that("pseudobulk supports explicit paired designs and validates sample sema
     contrast = c("condition", "treated", "control"),
     return_object = FALSE,
     verbose = FALSE
-  )
+  )$tables$primary
   expect_gt(nrow(result), 0L)
   expect_true(all(result$comparison == "treated vs control"))
 
@@ -534,7 +532,7 @@ test_that("pseudobulk supports explicit paired designs and validates sample sema
       contrast = c("condition", "treated", "control"),
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "must include `sample_by`"
   )
 
@@ -552,7 +550,7 @@ test_that("pseudobulk supports explicit paired designs and validates sample sema
       min_cells_per_sample = 5,
       return_object = FALSE,
       verbose = FALSE
-    ),
+    )$tables$primary,
     "mixture of paired and unpaired"
   )
 })
@@ -656,6 +654,7 @@ test_that("sn_annotate_de_features stores annotated DE results on Seurat objects
 })
 
 test_that("sn_run_enrichment supports GSEA from ranked marker tables", {
+  skip_if_not_installed("Seurat")
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("org.Hs.eg.db")
 
@@ -667,8 +666,7 @@ test_that("sn_run_enrichment supports GSEA from ranked marker tables", {
   expect_no_error({
     result <- suppressWarnings(sn_run_enrichment(
       ranked_markers,
-      gene_clusters = gene ~ avg_log2FC,
-      analysis = "gsea",
+      mapping = gene ~ avg_log2FC,
       species = "human",
       database = "GOBP",
       min_gs_size = 2,
@@ -676,7 +674,91 @@ test_that("sn_run_enrichment supports GSEA from ranked marker tables", {
     ))
   })
 
-  expect_true(inherits(result, "gseaResult"))
+  expect_true(inherits(result$models$backend_results[[1L]], "gseaResult"))
+
+  object <- make_de_test_object()
+  bulk_result <- Shennong:::.sn_new_analysis_result(
+    analysis_type = "de",
+    result_id = "bulk",
+    method = "test",
+    tables = list(primary = ranked_markers)
+  )
+  object <- sn_store_result(object, "de", "bulk", bulk_result)
+
+  expect_no_error({
+    object <- suppressWarnings(object |>
+      sn_run_enrichment(
+        mapping = gene ~ avg_log2FC,
+        species = "human",
+        database = "GOBP",
+        result_id = "automatic_gsea",
+        min_gs_size = 2,
+        pvalue_cutoff = 1
+      ))
+  })
+
+  stored <- sn_get_result(object, "enrichment", "automatic_gsea")
+  expect_identical(stored$analysis, "gsea")
+  expect_identical(stored$source_de_result_id, "bulk")
+  expect_identical(stored$score_col, "avg_log2FC")
+})
+
+test_that("sn_run_enrichment runs grouped GSEA from a stored multi-group DE result", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("clusterProfiler")
+  skip_if_not_installed("msigdbr")
+
+  genes <- paste0("G", seq_len(40L))
+  terms <- dplyr::bind_rows(
+    tibble::tibble(term = "UP", description = "up pathway", gene = genes[1:12]),
+    tibble::tibble(term = "DOWN", description = "down pathway", gene = genes[29:40]),
+    tibble::tibble(term = "MIXED", description = "mixed pathway", gene = genes[15:26])
+  )
+  ranked_groups <- dplyr::bind_rows(lapply(c("Astrocyte", "Neuron"), function(group) {
+    tibble::tibble(
+      gene = genes,
+      avg_log2FC = if (identical(group, "Astrocyte")) {
+        seq(4, -4, length.out = length(genes))
+      } else {
+        seq(-4, 4, length.out = length(genes))
+      },
+      cell_type = group,
+      comparison = "LNP siPP2Ac_vs_LNP control siRNA"
+    )
+  }))
+
+  object <- make_de_test_object()
+  de_result <- Shennong:::.sn_new_analysis_result(
+    analysis_type = "de",
+    result_id = "cluster",
+    method = "wilcox",
+    tables = list(primary = ranked_groups)
+  )
+  object <- sn_store_result(object, "de", "cluster", de_result)
+  local_mocked_bindings(
+    .sn_enrich_get_msigdb_terms = function(...) terms,
+    .package = "Shennong"
+  )
+
+  set.seed(717L)
+  object <- suppressWarnings(object |>
+    sn_run_enrichment(
+      mapping = gene ~ avg_log2FC | cell_type,
+      species = "human",
+      database = "H",
+      source_de_result_id = "cluster",
+      min_gs_size = 3,
+      max_gs_size = 20,
+      pvalue_cutoff = 1
+    ))
+
+  expect_true("cluster.gsea.H" %in% names(object@misc$shennong$results$enrichment))
+  stored <- sn_get_result(object, "enrichment", "cluster.gsea.H")
+  expect_identical(stored$analysis, "gsea")
+  expect_identical(stored$source_de_result_id, "cluster")
+  expect_identical(stored$score_col, "avg_log2FC")
+  expect_identical(stored$parameters$group_columns, "cell_type")
+  expect_setequal(as.character(stored$tables$primary$Cluster), c("Astrocyte", "Neuron"))
 })
 
 test_that("sn_run_enrichment stores enrichment results on the Seurat object by default", {
@@ -700,7 +782,7 @@ test_that("sn_run_enrichment stores enrichment results on the Seurat object by d
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
     source_de_result_id = "celltype_markers",
-    gene_clusters = gene ~ cluster,
+    mapping = gene ~ cluster,
     species = "human",
     database = "GOBP",
     result_id = "demo_gsea"
@@ -708,11 +790,9 @@ test_that("sn_run_enrichment stores enrichment results on the Seurat object by d
 
   expect_s4_class(object, "Seurat")
   expect_true("demo_gsea" %in% names(object@misc$shennong$results$enrichment))
-  stored <- sn_get_enrichment_result(
+  stored <- sn_get_result(
     object,
-    result_id = "demo_gsea",
-    with_metadata = TRUE
-  )
+    result_id = "demo_gsea", type = "enrichment")
   expect_identical(stored$parameters$p_adjust_method, "BH")
   expect_identical(stored$parameters$min_gs_size, 10L)
   expect_identical(stored$parameters$max_gs_size, 500L)
@@ -744,7 +824,7 @@ test_that("sn_run_enrichment validates object type and GSEA input contracts", {
       species = "human",
       database = "GOBP"
     ),
-    "gene_clusters"
+    "mapping"
   )
 
   expect_error(
@@ -754,7 +834,7 @@ test_that("sn_run_enrichment validates object type and GSEA input contracts", {
       species = "human",
       database = "GOBP"
     ),
-    "gene_clusters"
+    "mapping"
   )
 
   expect_error(
@@ -780,7 +860,7 @@ test_that("sn_run_enrichment can write GSEA results to disk and compare grouped 
 
   gsea_result <- suppressWarnings(sn_run_enrichment(
     x = ranked_df,
-    gene_clusters = gene ~ avg_logFC,
+    mapping = gene ~ avg_logFC,
     analysis = "gsea",
     species = "human",
     database = "GOBP",
@@ -796,7 +876,7 @@ test_that("sn_run_enrichment can write GSEA results to disk and compare grouped 
   )
   compare_result <- sn_run_enrichment(
     x = grouped_genes,
-    gene_clusters = gene ~ cluster,
+    mapping = gene ~ cluster,
     analysis = "ora",
     species = "human",
     database = "GOBP",
@@ -804,12 +884,12 @@ test_that("sn_run_enrichment can write GSEA results to disk and compare grouped 
     pvalue_cutoff = 1
   )
 
-  expect_true(inherits(gsea_result, "gseaResult"))
+  expect_true(inherits(gsea_result$models$backend_results[[1L]], "gseaResult"))
   expect_true(file.exists(file.path(outdir, "demo.enrichment.GOBP.rds")))
-  expect_true(inherits(compare_result, "compareClusterResult"))
+  expect_true(inherits(compare_result$models$backend_results[[1L]], "compareClusterResult"))
 })
 
-test_that("sn_run_enrichment auto-detects categorical ORA and requires explicit numeric GSEA", {
+test_that("sn_run_enrichment infers categorical ORA and numeric GSEA", {
   skip_if_not_installed("clusterProfiler")
   skip_if_not_installed("org.Hs.eg.db")
 
@@ -824,7 +904,7 @@ test_that("sn_run_enrichment auto-detects categorical ORA and requires explicit 
 
   ora_result <- sn_run_enrichment(
     ora_input,
-    gene_clusters = gene ~ cell_type,
+    mapping = gene ~ cell_type,
     species = "human",
     database = "GOBP",
     min_gs_size = 2,
@@ -832,16 +912,24 @@ test_that("sn_run_enrichment auto-detects categorical ORA and requires explicit 
   )
   gsea_result <- suppressWarnings(sn_run_enrichment(
     gsea_input,
-    gene_clusters = gene ~ log2fc,
-    analysis = "gsea",
+    mapping = gene ~ log2fc,
     species = "human",
     database = "GOBP",
     min_gs_size = 2,
     pvalue_cutoff = 1
   ))
 
-  expect_true(inherits(ora_result, "compareClusterResult"))
-  expect_true(inherits(gsea_result, "gseaResult"))
+  expect_true(inherits(ora_result$models$backend_results[[1L]], "compareClusterResult"))
+  expect_true(inherits(gsea_result$models$backend_results[[1L]], "gseaResult"))
+
+  expect_equal(
+    Shennong:::.sn_enrich_resolve_analysis(
+      input = tibble::tibble(gene = c("A", "B"), group = c(1, 2)),
+      mapping = list(gene_col = "gene", value_col = "group"),
+      analysis = "ora"
+    ),
+    "ora"
+  )
 })
 
 test_that("sn_run_enrichment supports multi-database requests and database-specific storage names", {
@@ -867,7 +955,7 @@ test_that("sn_run_enrichment supports multi-database requests and database-speci
   object <- suppressWarnings(sn_run_enrichment(
     x = object,
     source_de_result_id = "celltype_markers",
-    gene_clusters = gene ~ cluster,
+    mapping = gene ~ cluster,
     species = "human",
     database = c("GOBP", "H"),
     result_id = "combined",
@@ -935,16 +1023,33 @@ test_that("sn_run_enrichment helper parsers validate formulas and msigdb inputs"
   )
 
   expect_equal(
-    Shennong:::.sn_enrich_parse_formula(gene ~ cluster),
-    list(gene_col = "gene", value_col = "cluster")
+    Shennong:::.sn_enrich_parse_mapping(gene ~ cluster),
+    list(
+      gene_col = "gene", value_col = "cluster", group_cols = "cluster",
+      grouped_gsea = FALSE, formula = gene ~ cluster
+    )
   )
   expect_error(
-    Shennong:::.sn_enrich_parse_formula(~ cluster),
+    Shennong:::.sn_enrich_parse_mapping(~ cluster),
     "two-sided formula"
   )
   expect_error(
-    Shennong:::.sn_enrich_parse_formula("gene ~ cluster"),
-    "`gene_clusters` must be a two-sided formula"
+    Shennong:::.sn_enrich_parse_mapping("gene ~ cluster"),
+    "`mapping` must be a two-sided formula"
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_parse_mapping(gene ~ score | group),
+    list(
+      gene_col = "gene", value_col = "score", group_cols = "group",
+      grouped_gsea = TRUE, formula = gene ~ score | group
+    )
+  )
+  expect_error(
+    Shennong:::.sn_enrich_resolve_mapping(
+      mapping = gene ~ score,
+      gene_clusters = gene ~ score
+    ),
+    "only one"
   )
 })
 
@@ -952,6 +1057,15 @@ test_that("sn_run_enrichment helper resolution covers store names and analysis i
   expect_equal(
     Shennong:::.sn_enrich_result_ids("default", c("GOBP", "H")),
     stats::setNames(c("default.GOBP", "default.H"), c("GOBP", "H"))
+  )
+  expect_equal(
+    Shennong:::.sn_enrich_result_ids(
+      NULL,
+      c("GOBP", "H"),
+      source_de_result_id = "cluster",
+      analysis = "gsea"
+    ),
+    stats::setNames(c("cluster.gsea.GOBP", "cluster.gsea.H"), c("GOBP", "H"))
   )
   expect_error(
     Shennong:::.sn_enrich_result_ids(c("only", "two"), c("GOBP", "H", "KEGG")),
@@ -965,12 +1079,12 @@ test_that("sn_run_enrichment helper resolution covers store names and analysis i
     ),
     "ora"
   )
-  expect_error(
+  expect_equal(
     Shennong:::.sn_enrich_resolve_analysis(
       input = tibble::tibble(gene = c("A", "B"), score = c(1, -1)),
       mapping = list(gene_col = "gene", value_col = "score")
     ),
-    "must be supplied"
+    "gsea"
   )
   expect_equal(
     Shennong:::.sn_enrich_resolve_analysis(stats::setNames(c(1, -1), c("A", "B"))),
@@ -1054,7 +1168,7 @@ test_that("sn_run_enrichment helper utilities normalize labels and resolve input
   )
 })
 
-test_that("sn_run_enrichment prefers stored default DE results on Seurat objects", {
+test_that("sn_run_enrichment requires an explicit DE result when several exist", {
   skip_if_not_installed("Seurat")
 
   object <- make_de_test_object()
@@ -1079,7 +1193,8 @@ test_that("sn_run_enrichment prefers stored default DE results on Seurat objects
     )
   )
 
-  resolved <- Shennong:::.sn_enrich_resolve_input(object)
+  expect_error(Shennong:::.sn_enrich_resolve_input(object), "Multiple")
+  resolved <- Shennong:::.sn_enrich_resolve_input(object, source_de_result_id = "default")
 
   expect_equal(resolved$source_de_result_id, "default")
   expect_equal(resolved$input$gene, c("CD3D", "MS4A1"))
@@ -1240,7 +1355,7 @@ test_that("sn_run_enrichment supports Hallmark ORA with grouped marker tables", 
   expect_no_error({
     result <- sn_run_enrichment(
       grouped_genes,
-      gene_clusters = gene ~ cluster,
+      mapping = gene ~ cluster,
       analysis = "ora",
       species = "human",
       database = "H",
@@ -1249,7 +1364,7 @@ test_that("sn_run_enrichment supports Hallmark ORA with grouped marker tables", 
     )
   })
 
-  expect_true(inherits(result, "compareClusterResult"))
+  expect_true(inherits(result$models$backend_results[[1L]], "compareClusterResult"))
 })
 
 test_that("sn_run_enrichment supports msigdbr subcollections via database strings", {
@@ -1270,5 +1385,5 @@ test_that("sn_run_enrichment supports msigdbr subcollections via database string
     )
   })
 
-  expect_true(inherits(result, "enrichResult"))
+  expect_true(inherits(result$models$backend_results[[1L]], "enrichResult"))
 })

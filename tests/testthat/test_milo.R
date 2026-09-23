@@ -42,6 +42,7 @@ test_that("sn_run_milo returns neighborhood DA results and can annotate neighbor
     annotation_by = "cell_type"
   )
 
+  result <- sn_get_milo_result(result)
   expect_s3_class(result, "data.frame")
   expect_true(all(c("logFC", "PValue", "FDR", "Nhood", "comparison", "cell_type") %in% colnames(result)))
   expect_true(all(result$comparison == "PPP2R1A vs WT"))
@@ -85,14 +86,15 @@ test_that("sn_run_milo can return intermediate milo objects", {
       dims = 1:4,
       k = 4,
       prop = 0.5,
-      return_intermediate = TRUE,
+      keep_model = TRUE,
+      return_object = FALSE,
       verbose = FALSE
     )
   )
 
-  expect_true(all(c("table", "design_df", "milo") %in% names(result)))
-  expect_s3_class(result$table, "data.frame")
-  expect_true(inherits(result$milo, "Milo"))
+  expect_true(all(c("primary", "design") %in% names(result$tables)))
+  expect_s3_class(result$tables$primary, "data.frame")
+  expect_true(inherits(result$models$milo, "Milo"))
 })
 
 test_that("milo results can be stored, retrieved, and plotted", {

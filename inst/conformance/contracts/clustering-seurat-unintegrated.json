@@ -7,7 +7,7 @@
     "selector": {
       "normalization_method": "seurat",
       "integration_method": "unintegrated",
-      "batch": null
+      "batch_by": null
     },
     "version": "0.3.0.9000",
     "registry_key": null
@@ -67,7 +67,7 @@
       ]
     },
     {
-      "wrapper": "batch",
+      "wrapper": "batch_by",
       "role": "backend_selector",
       "upstream": "NULL selects the unintegrated pipeline",
       "scenarios": [
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "wrapper": "integration_control",
+      "wrapper": "backend_control",
       "role": "not_applicable",
       "upstream": "no integration backend in this subject",
       "scenarios": [
@@ -163,14 +163,6 @@
       ]
     },
     {
-      "wrapper": "cluster_random_seed",
-      "role": "reproducibility",
-      "upstream": "FindClusters(random.seed)",
-      "scenarios": [
-        717
-      ]
-    },
-    {
       "wrapper": "cluster_group_singletons",
       "role": "pass_through",
       "upstream": "FindClusters(group.singletons)",
@@ -197,7 +189,7 @@
     {
       "wrapper": "...",
       "role": "parameter_map",
-      "upstream": "block_genes, rare features, PCA/dims, reuse, install, UMAP, t-SNE, assay/layer, and runtime controls",
+      "upstream": "Named advanced controls: block_genes, rare-feature selection, reuse, install, UMAP, t-SNE and runtime settings",
       "scenarios": [
         "block_genes NULL",
         "rare features disabled",
@@ -209,7 +201,7 @@
     {
       "wrapper": "seed",
       "role": "reproducibility",
-      "upstream": "Shennong-side override of cluster_random_seed and integration_control$seed",
+      "upstream": "RunPCA, FindClusters(random.seed), and RunUMAP use the effective workflow seed",
       "scenarios": [
         "default 717",
         "explicit override"
@@ -221,6 +213,46 @@
       "upstream": "Shennong-side progress logging forwarded to the clustering tail",
       "scenarios": [
         "TRUE"
+      ]
+    },
+    {
+      "wrapper": "assay",
+      "role": "input_adapter",
+      "upstream": "Seurat assay used consistently by every stage",
+      "scenarios": [
+        "RNA"
+      ]
+    },
+    {
+      "wrapper": "layer",
+      "role": "input_adapter",
+      "upstream": "Source expression layer selected before normalization",
+      "scenarios": [
+        "counts"
+      ]
+    },
+    {
+      "wrapper": "npcs",
+      "role": "pass_through",
+      "upstream": "RunPCA(npcs)",
+      "scenarios": [
+        8
+      ]
+    },
+    {
+      "wrapper": "dims",
+      "role": "pass_through",
+      "upstream": "FindNeighbors(dims), RunUMAP(dims)",
+      "scenarios": [
+        "1:8"
+      ]
+    },
+    {
+      "wrapper": "hvg_group_by",
+      "role": "wrapper_control",
+      "upstream": "Metadata selector for grouped HVG discovery; NULL in this ungrouped pilot",
+      "scenarios": [
+        "NULL"
       ]
     }
   ],

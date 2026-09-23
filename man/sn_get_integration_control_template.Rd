@@ -15,7 +15,7 @@ A named list keyed by integration method, or one named control list
 when a single \code{method} is requested.
 }
 \description{
-Returns the Shennong-supported \code{integration_control} fields and their
+Returns the Shennong-supported \code{backend_control} fields and their
 defaults for each integration backend. Values that depend on the input data,
 such as Coralysis PCA rank or Seurat integration features, are illustrative
 defaults and are resolved against the object by \code{\link[=sn_run_cluster]{sn_run_cluster()}}. Extra

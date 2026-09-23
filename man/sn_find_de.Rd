@@ -20,8 +20,6 @@ sn_find_de(
   only_pos = NULL,
   logfc_threshold = 0.1,
   min_pct = 0.25,
-  p_val_cutoff = 0.05,
-  de_logfc = 0.25,
   min_cells_per_sample = 10,
   result_id = "default",
   return_object = TRUE,
@@ -80,12 +78,6 @@ or \code{"dream"}.}
 
 \item{logfc_threshold, min_pct}{Standard Seurat marker filtering arguments.}
 
-\item{p_val_cutoff}{Adjusted p-value threshold used when storing result
-metadata.}
-
-\item{de_logfc}{Absolute log fold-change threshold used when storing result
-metadata.}
-
 \item{min_cells_per_sample}{Minimum cells required for a sample/group
 pseudobulk profile to be retained.}
 
@@ -93,7 +85,8 @@ pseudobulk profile to be retained.}
 result name.}
 
 \item{return_object}{If \code{TRUE}, return the updated Seurat object with
-stored DE results. Otherwise return the result table.}
+stored DE results. Otherwise return the unified result; retrieve its table
+with \code{sn_get_de_result()} or \code{result$tables$primary}.}
 
 \item{verbose}{Whether to emit progress information.}
 
@@ -119,7 +112,7 @@ and denominator. For pseudobulk analysis this must agree with
 \item{...}{Additional arguments passed through to the selected DE method.}
 }
 \value{
-For single-cell input, either a DE result table or an updated
+For single-cell input, either a unified DE result or an updated
 \code{Seurat} object. For bulk input, a validated Shennong bulk-DE result.
 }
 \description{
@@ -133,6 +126,10 @@ This function provides a single entry point for:
 \details{
 Results are stored in the canonical Shennong result registry, so
 downstream helpers such as \code{sn_plot_dot()} can reuse the same marker table.
+
+Testing retains the complete backend result. Select significant
+genes afterward with \code{sn_get_de_result(p_adjusted_cutoff = ...,
+  logfc_threshold = ...)}.
 }
 \examples{
 if (requireNamespace("Seurat", quietly = TRUE)) {
@@ -152,7 +149,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   Seurat::Idents(obj) <- obj$cell_type
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 
-  marker_tbl <- sn_find_de(
+  marker_result <- sn_find_de(
     obj,
     analysis = "markers",
     group_by = "cell_type",
@@ -162,7 +159,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     return_object = FALSE,
     verbose = FALSE
   )
-  head(marker_tbl)
+  head(sn_get_de_result(marker_result))
 
   obj <- sn_find_de(
     obj,

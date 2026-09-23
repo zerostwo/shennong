@@ -196,7 +196,7 @@ test_that("cell communication results can be stored and retrieved", {
   )
 
   retrieved <- sn_get_cell_communication_result(object, "manual", sources = "Sender", targets = "Receiver")
-  metadata <- sn_get_cell_communication_result(object, "manual", with_metadata = TRUE)
+  metadata <- sn_get_result(object, "manual", type = "cell_communication")
   listed <- sn_list_results(object)
 
   expect_equal(nrow(retrieved), 1)

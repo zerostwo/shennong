@@ -284,3 +284,14 @@ sn_plot_velocity(regvelo, color_by = "pseudotime")
 The prior GRN is a modeling assumption and must be versioned with the analysis.
 The stored result records the actual prior-edge and model artifacts returned by
 the backend; this article never substitutes fabricated adapter output.
+
+
+To intentionally replace an existing fate result, pass its ID and explicit
+`overwrite = TRUE`. Metadata ownership checks still reject user-modified
+columns; choose a new ID to retain both analyses.
+
+```{r replace-fate-result, eval=FALSE}
+sn_list_results(object, type = "fate")
+object <- sn_run_fate(object, result_id = "fate", overwrite = TRUE)
+sn_get_result(object, "fate", "fate")$tables$probabilities
+```

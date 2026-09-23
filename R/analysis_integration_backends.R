@@ -15,7 +15,7 @@
                                       npcs,
                                       theta,
                                       group_by_vars,
-                                      integration_control = list(),
+                                      backend_control = list(),
                                       verbose = TRUE) {
   switch(
     method,
@@ -34,7 +34,7 @@
       features = features,
       dims = dims,
       npcs = npcs,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     seurat_cca = .sn_run_seurat_layer_integration(
@@ -45,7 +45,7 @@
       features = features,
       assay = assay,
       dims = dims,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     seurat_rpca = .sn_run_seurat_layer_integration(
@@ -56,7 +56,7 @@
       features = features,
       assay = assay,
       dims = dims,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     scvi = .sn_run_scvi_integration(
@@ -66,7 +66,7 @@
       features = features,
       assay = assay,
       layer = layer,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     totalvi = .sn_run_scvi_integration(
@@ -76,7 +76,7 @@
       features = features,
       assay = assay,
       layer = layer,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     scanvi = .sn_run_scvi_integration(
@@ -86,7 +86,7 @@
       features = features,
       assay = assay,
       layer = layer,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     scpoli = .sn_run_scpoli_integration(
@@ -95,7 +95,7 @@
       features = features,
       assay = assay,
       layer = layer,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     bbknn = .sn_run_bbknn_integration(
@@ -105,7 +105,7 @@
       assay = assay,
       layer = layer,
       dims = dims,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     )
   )
@@ -152,7 +152,7 @@
   if (!is.null(script) && nzchar(script)) {
     script <- path.expand(script)
     if (!file.exists(script)) {
-      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+      stop("`backend_control$script` does not exist: ", script, call. = FALSE)
     }
     return(normalizePath(script, winslash = "/", mustWork = TRUE))
   }
@@ -172,7 +172,7 @@
 
 .sn_unique_mmochi_batch_key <- function(object, base = ".sn_mmochi_single_sample") {
   if (!is.character(base) || length(base) != 1L || !nzchar(base)) {
-    stop("`integration_control$single_sample_batch_key` must be a non-empty string.", call. = FALSE)
+    stop("`backend_control$single_sample_batch_key` must be a non-empty string.", call. = FALSE)
   }
   metadata_columns <- colnames(object[[]])
   key <- base
@@ -336,11 +336,11 @@
                                        protein_features,
                                        dims,
                                        npcs,
-                                       integration_control = list(),
+                                       backend_control = list(),
                                        verbose = TRUE) {
   .sn_with_integration_python_run(
     method = "mmochi",
-    integration_control = integration_control,
+    backend_control = backend_control,
     code = function(control) {
       .sn_run_mmochi_integration_impl(
         object = object,
@@ -350,7 +350,7 @@
         protein_features = protein_features,
         dims = dims,
         npcs = npcs,
-        integration_control = control,
+        backend_control = control,
         verbose = verbose
       )
     }
@@ -364,7 +364,7 @@
                                        protein_features,
                                        dims,
                                        npcs,
-                                       integration_control = list(),
+                                       backend_control = list(),
                                        verbose = TRUE) {
   user_batch <- batch
   backend_batch <- batch
@@ -372,7 +372,7 @@
   if (single_sample_batch) {
     backend_batch <- .sn_unique_mmochi_batch_key(
       object = object,
-      base = integration_control$single_sample_batch_key %||% ".sn_mmochi_single_sample"
+      base = backend_control$single_sample_batch_key %||% ".sn_mmochi_single_sample"
     )
     object[[backend_batch]] <- rep("single_sample", ncol(object))
     if (verbose) {
@@ -382,24 +382,24 @@
     stop("MMoCHi landmark registration requires `batch` to name a metadata column.", call. = FALSE)
   }
 
-  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
   pixi_paths <- sn_get_pixi_paths(environment = "mmochi", runtime_dir = runtime_dir)
-  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
-  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  pixi_home <- backend_control$pixi_home %||% pixi_paths$pixi_home
+  mirror <- match.arg(backend_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
   if (!identical(resolved_mirror, "default")) {
     sn_configure_pixi_mirror(
       mirror = mirror,
       pixi_home = pixi_home,
       runtime_dir = runtime_dir,
-      append_original = integration_control$mirror_append_original %||% TRUE
+      append_original = backend_control$mirror_append_original %||% TRUE
     )
   }
 
-  pixi_project <- integration_control$pixi_project %||%
-    integration_control$pixi_project_dir %||%
+  pixi_project <- backend_control$pixi_project %||%
+    backend_control$pixi_project_dir %||%
     pixi_paths$project_dir
-  run_dir <- integration_control$run_dir %||% .sn_default_python_run_dir(method = "mmochi", runtime_dir = runtime_dir)
+  run_dir <- backend_control$run_dir %||% .sn_default_python_run_dir(method = "mmochi", runtime_dir = runtime_dir)
   input_dir <- file.path(run_dir, "input")
   output_dir <- file.path(run_dir, "output")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -407,12 +407,12 @@
   manifest_path <- .sn_prepare_scvi_pixi_project(
     project_dir = pixi_project,
     environment = "mmochi",
-    manifest_path = integration_control$manifest_path %||% NULL,
-    manifest_lines = integration_control$manifest_lines %||% NULL,
-    overwrite = isTRUE(integration_control$overwrite_manifest),
-    platforms = integration_control$platforms %||% NULL
+    manifest_path = backend_control$manifest_path %||% NULL,
+    manifest_lines = backend_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(backend_control$overwrite_manifest),
+    platforms = backend_control$platforms %||% NULL
   )
-  protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "data"
+  protein_layer <- backend_control$protein_layer %||% backend_control$adt_layer %||% "data"
   input <- .sn_write_mmochi_input(
     object = object,
     input_dir = input_dir,
@@ -420,40 +420,40 @@
     protein_assay = protein_assay,
     protein_layer = protein_layer,
     protein_features = protein_features,
-    max_dense_gb = integration_control$max_dense_gb %||% 2
+    max_dense_gb = backend_control$max_dense_gb %||% 2
   )
 
   config <- list(
     method = "mmochi",
     batch_key = backend_batch,
-    data_key = integration_control$data_key %||% "protein",
-    key_added = integration_control$key_added %||% "landmark_protein",
-    single_peaks = integration_control$single_peaks %||% list(),
-    marker_bandwidths = integration_control$marker_bandwidths %||% list(),
-    peak_overrides = integration_control$peak_overrides %||% list(),
-    inclusion_mask = integration_control$inclusion_mask %||% NULL,
-    landmark_args = integration_control$landmark_args %||% list(),
-    show = integration_control$show %||% FALSE,
+    data_key = backend_control$data_key %||% "protein",
+    key_added = backend_control$key_added %||% "landmark_protein",
+    single_peaks = backend_control$single_peaks %||% list(),
+    marker_bandwidths = backend_control$marker_bandwidths %||% list(),
+    peak_overrides = backend_control$peak_overrides %||% list(),
+    inclusion_mask = backend_control$inclusion_mask %||% NULL,
+    landmark_args = backend_control$landmark_args %||% list(),
+    show = backend_control$show %||% FALSE,
     protein_assay = protein_assay,
     protein_layer = protein_layer,
     protein_features = input$protein_features
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
-  script <- .sn_mmochi_script_path(integration_control$script %||% NULL)
+  script <- .sn_mmochi_script_path(backend_control$script %||% NULL)
 
   backend_run <- .sn_execute_scvi_pixi(
-    pixi = integration_control$pixi %||% NULL,
+    pixi = backend_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = script,
     input_dir = input$input_dir,
     output_dir = output_dir,
     config_path = config_path,
-    environment = integration_control$environment %||% "default",
+    environment = backend_control$environment %||% "default",
     pixi_home = pixi_home,
-    install_pixi = integration_control$install_pixi %||% TRUE,
-    pixi_version = integration_control$pixi_version %||% "0.69.0",
-    pixi_download_url = integration_control$pixi_download_url %||% NULL,
-    pixi_sha256 = integration_control$pixi_sha256 %||% NULL,
+    install_pixi = backend_control$install_pixi %||% TRUE,
+    pixi_version = backend_control$pixi_version %||% "0.69.0",
+    pixi_download_url = backend_control$pixi_download_url %||% NULL,
+    pixi_sha256 = backend_control$pixi_sha256 %||% NULL,
     verbose = verbose,
     backend_label = "MMoCHi"
   )
@@ -470,13 +470,13 @@
     protein_features = input$protein_features,
     dims = dims,
     npcs = npcs,
-    reduction = integration_control$reduction %||% "mmochi",
-    corrected_layer = integration_control$corrected_layer %||% "mmochi.data",
-    store_corrected_layer = integration_control$store_corrected_layer %||% TRUE,
-    max_artifact_import_gb = integration_control$max_artifact_import_gb %||% 0.5
+    reduction = backend_control$reduction %||% "mmochi",
+    corrected_layer = backend_control$corrected_layer %||% "mmochi.data",
+    store_corrected_layer = backend_control$store_corrected_layer %||% TRUE,
+    max_artifact_import_gb = backend_control$max_artifact_import_gb %||% 0.5
   )
 
-  if (single_sample_batch && !isTRUE(integration_control$keep_single_sample_batch)) {
+  if (single_sample_batch && !isTRUE(backend_control$keep_single_sample_batch)) {
     result$object@meta.data[[backend_batch]] <- NULL
   }
   result$object@misc$integration$backend_performance <- backend_run$performance
@@ -489,7 +489,7 @@
                                           features,
                                           dims,
                                           npcs,
-                                          integration_control = list(),
+                                          backend_control = list(),
                                           verbose = TRUE) {
   .sn_with_explicit_acceleration_or_disabled(
     .sn_run_coralysis_integration_impl(
@@ -499,7 +499,7 @@
       features = features,
       dims = dims,
       npcs = npcs,
-      integration_control = integration_control,
+      backend_control = backend_control,
       verbose = verbose
     ),
     patches = "coralysis"
@@ -512,7 +512,7 @@
                                                features,
                                                dims,
                                                npcs,
-                                               integration_control = list(),
+                                               backend_control = list(),
                                                verbose = TRUE) {
   backend <- "Coralysis"
   method <- "coralysis"
@@ -568,7 +568,7 @@
       )
       defaults
     },
-    control = integration_control$icp_args
+    control = backend_control$icp_args
   )
   if (verbose) .sn_log_info("[sn_run_cluster] Running {backend} multi-level integration.")
   sce <- do.call(run_icp, icp_args)
@@ -583,7 +583,7 @@
       dimred.name = default_dimred_name,
       return.model = TRUE
     ),
-    control = integration_control$pca_args
+    control = backend_control$pca_args
   )
   if (verbose) .sn_log_info("[sn_run_cluster] Running PCA on {backend} joint probabilities.")
   sce <- do.call(run_pca, pca_args)
@@ -601,7 +601,7 @@
     key = reduction_key,
     assay = assay
   )
-  store_sce <- .sn_coralysis_store_sce(integration_control)
+  store_sce <- .sn_coralysis_store_sce(backend_control)
   integration_metadata <- list(
     method = method,
     batch_by = batch,
@@ -629,7 +629,7 @@
                                              features,
                                              assay,
                                              dims,
-                                             integration_control = list(),
+                                             backend_control = list(),
                                              verbose = TRUE) {
   if (!exists("IntegrateLayers", envir = asNamespace("Seurat"), inherits = FALSE)) {
     stop("Seurat layer integration requires Seurat >= 5 with `IntegrateLayers()`.", call. = FALSE)
@@ -665,14 +665,14 @@
       new.reduction = new_reduction,
       verbose = verbose
     ),
-    control = integration_control
+    control = backend_control
   )
   resolved_new_reduction <- args$new.reduction %||% new_reduction
   if (!is.character(resolved_new_reduction) ||
       length(resolved_new_reduction) != 1L ||
       is.na(resolved_new_reduction) ||
       !nzchar(resolved_new_reduction)) {
-    stop("`integration_control$new.reduction` must be one non-empty reduction name.", call. = FALSE)
+    stop("`backend_control$new.reduction` must be one non-empty reduction name.", call. = FALSE)
   }
   args$new.reduction <- resolved_new_reduction
   if (verbose) .sn_log_info("[sn_run_cluster] Running Seurat layer integration with method = {method}.")
@@ -748,7 +748,7 @@
   if (!is.null(script) && nzchar(script)) {
     script <- path.expand(script)
     if (!file.exists(script)) {
-      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+      stop("`backend_control$script` does not exist: ", script, call. = FALSE)
     }
     return(normalizePath(script, winslash = "/", mustWork = TRUE))
   }
@@ -1098,11 +1098,11 @@
                                      features,
                                      assay,
                                      layer = "counts",
-                                     integration_control = list(),
+                                     backend_control = list(),
                                      verbose = TRUE) {
   .sn_with_integration_python_run(
     method = method,
-    integration_control = integration_control,
+    backend_control = backend_control,
     code = function(control) {
       .sn_run_scvi_integration_impl(
         object = object,
@@ -1111,7 +1111,7 @@
         features = features,
         assay = assay,
         layer = layer,
-        integration_control = control,
+        backend_control = control,
         verbose = verbose
       )
     }
@@ -1124,52 +1124,52 @@
                                      features,
                                      assay,
                                      layer = "counts",
-                                     integration_control = list(),
+                                     backend_control = list(),
                                      verbose = TRUE) {
   protein_assay <- NULL
   protein_layer <- NULL
   protein_features <- NULL
   if (identical(method, "totalvi")) {
-    protein_assay <- integration_control$protein_assay %||% integration_control$adt_assay %||% NULL
+    protein_assay <- backend_control$protein_assay %||% backend_control$adt_assay %||% NULL
     if (is.null(protein_assay) || !nzchar(protein_assay)) {
-      stop("totalVI integration requires `integration_control$adt_assay` or `protein_assay`.", call. = FALSE)
+      stop("totalVI integration requires `backend_control$adt_assay` or `protein_assay`.", call. = FALSE)
     }
-    protein_layer <- integration_control$protein_layer %||% integration_control$adt_layer %||% "counts"
-    protein_features <- integration_control$protein_features %||% integration_control$adt_features %||% NULL
+    protein_layer <- backend_control$protein_layer %||% backend_control$adt_layer %||% "counts"
+    protein_features <- backend_control$protein_features %||% backend_control$adt_features %||% NULL
   }
 
   if (identical(method, "scanvi")) {
-    labels_key <- integration_control$label_by %||% NULL
+    labels_key <- backend_control$label_by %||% NULL
     if (is.null(labels_key) || !nzchar(labels_key) || !labels_key %in% colnames(object[[]])) {
       stop(
-        "`integration_control$label_by` must name a metadata column when ",
+        "`backend_control$label_by` must name a metadata column when ",
         "`integration_method = \"scanvi\"`.",
         call. = FALSE
       )
     }
   } else {
-    labels_key <- integration_control$label_by %||% NULL
+    labels_key <- backend_control$label_by %||% NULL
   }
 
-  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
   pixi_paths <- sn_get_pixi_paths(environment = method, runtime_dir = runtime_dir)
-  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
-  accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
-  pixi_environment <- integration_control$environment %||% accelerator$environment
-  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  pixi_home <- backend_control$pixi_home %||% pixi_paths$pixi_home
+  accelerator <- .sn_resolve_scvi_accelerator(backend_control$accelerator %||% "auto")
+  pixi_environment <- backend_control$environment %||% accelerator$environment
+  mirror <- match.arg(backend_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
   if (!identical(resolved_mirror, "default")) {
     sn_configure_pixi_mirror(
       mirror = mirror,
       pixi_home = pixi_home,
       runtime_dir = runtime_dir,
-      append_original = integration_control$mirror_append_original %||% TRUE
+      append_original = backend_control$mirror_append_original %||% TRUE
     )
   }
-  pixi_project <- integration_control$pixi_project %||%
-    integration_control$pixi_project_dir %||%
+  pixi_project <- backend_control$pixi_project %||%
+    backend_control$pixi_project_dir %||%
     pixi_paths$project_dir
-  run_dir <- integration_control$run_dir %||% .sn_default_python_run_dir(method = method, runtime_dir = runtime_dir)
+  run_dir <- backend_control$run_dir %||% .sn_default_python_run_dir(method = method, runtime_dir = runtime_dir)
   input_dir <- file.path(run_dir, "input")
   output_dir <- file.path(run_dir, "output")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -1177,11 +1177,11 @@
   manifest_path <- .sn_prepare_scvi_pixi_project(
     project_dir = pixi_project,
     environment = method,
-    manifest_path = integration_control$manifest_path %||% NULL,
-    manifest_lines = integration_control$manifest_lines %||% NULL,
-    overwrite = isTRUE(integration_control$overwrite_manifest),
-    cuda_version = integration_control$cuda_version %||% accelerator$cuda_version,
-    platforms = integration_control$platforms %||% NULL
+    manifest_path = backend_control$manifest_path %||% NULL,
+    manifest_lines = backend_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(backend_control$overwrite_manifest),
+    cuda_version = backend_control$cuda_version %||% accelerator$cuda_version,
+    platforms = backend_control$platforms %||% NULL
   )
   input <- .sn_write_scvi_input(
     object = object,
@@ -1201,31 +1201,31 @@
     batch_key = batch,
     source_layer = layer,
     labels_key = labels_key,
-    unlabeled_category = integration_control$unlabeled_category %||% "Unknown",
-    reduction = integration_control$reduction %||% method,
-    n_latent = integration_control$n_latent %||% 30L,
-    seed = integration_control$seed %||% 717L,
-    max_epochs = integration_control$max_epochs %||% NULL,
-    scanvi_max_epochs = integration_control$scanvi_max_epochs %||% integration_control$max_epochs %||% NULL,
-    model_args = integration_control$model_args %||% list(),
-    train_args = integration_control$train_args %||% list(),
-    scanvi_model_args = integration_control$scanvi_model_args %||% list(),
-    scanvi_train_args = integration_control$scanvi_train_args %||% list(),
-    totalvi_model_args = integration_control$totalvi_model_args %||% integration_control$model_args %||% list(),
-    totalvi_train_args = integration_control$totalvi_train_args %||% integration_control$train_args %||% list(),
-    protein_obsm_key = integration_control$protein_obsm_key %||% "protein_expression",
+    unlabeled_category = backend_control$unlabeled_category %||% "Unknown",
+    reduction = backend_control$reduction %||% method,
+    n_latent = backend_control$n_latent %||% 30L,
+    seed = backend_control$seed %||% 717L,
+    max_epochs = backend_control$max_epochs %||% NULL,
+    scanvi_max_epochs = backend_control$scanvi_max_epochs %||% backend_control$max_epochs %||% NULL,
+    model_args = backend_control$model_args %||% list(),
+    train_args = backend_control$train_args %||% list(),
+    scanvi_model_args = backend_control$scanvi_model_args %||% list(),
+    scanvi_train_args = backend_control$scanvi_train_args %||% list(),
+    totalvi_model_args = backend_control$totalvi_model_args %||% backend_control$model_args %||% list(),
+    totalvi_train_args = backend_control$totalvi_train_args %||% backend_control$train_args %||% list(),
+    protein_obsm_key = backend_control$protein_obsm_key %||% "protein_expression",
     protein_assay = protein_assay,
     protein_layer = protein_layer,
     protein_features = input$protein_features,
-    write_h5ad = integration_control$write_h5ad %||% FALSE,
+    write_h5ad = backend_control$write_h5ad %||% FALSE,
     accelerator = accelerator$requested,
     pixi_environment = pixi_environment
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
-  script <- .sn_scvi_script_path(integration_control$script %||% NULL)
+  script <- .sn_scvi_script_path(backend_control$script %||% NULL)
 
   backend_run <- .sn_execute_scvi_pixi(
-    pixi = integration_control$pixi %||% NULL,
+    pixi = backend_control$pixi %||% NULL,
     manifest_path = manifest_path,
     script = script,
     input_dir = input$input_dir,
@@ -1233,10 +1233,10 @@
     config_path = config_path,
     environment = pixi_environment,
     pixi_home = pixi_home,
-    install_pixi = integration_control$install_pixi %||% TRUE,
-    pixi_version = integration_control$pixi_version %||% "0.69.0",
-    pixi_download_url = integration_control$pixi_download_url %||% NULL,
-    pixi_sha256 = integration_control$pixi_sha256 %||% NULL,
+    install_pixi = backend_control$install_pixi %||% TRUE,
+    pixi_version = backend_control$pixi_version %||% "0.69.0",
+    pixi_download_url = backend_control$pixi_download_url %||% NULL,
+    pixi_sha256 = backend_control$pixi_sha256 %||% NULL,
     verbose = verbose
   )
 
@@ -1250,7 +1250,7 @@
     features = input$features,
     protein_features = input$protein_features,
     reduction = config$reduction,
-    max_artifact_import_gb = integration_control$max_artifact_import_gb %||% 0.5
+    max_artifact_import_gb = backend_control$max_artifact_import_gb %||% 0.5
   )
   result$object@misc$integration$backend_performance <- backend_run$performance
   result
@@ -1260,7 +1260,7 @@
   if (!is.null(script) && nzchar(script)) {
     script <- path.expand(script)
     if (!file.exists(script)) {
-      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+      stop("`backend_control$script` does not exist: ", script, call. = FALSE)
     }
     return(normalizePath(script, winslash = "/", mustWork = TRUE))
   }
@@ -1281,11 +1281,11 @@
                                        features,
                                        assay,
                                        layer = "counts",
-                                       integration_control = list(),
+                                       backend_control = list(),
                                        verbose = TRUE) {
   .sn_with_integration_python_run(
     method = "scpoli",
-    integration_control = integration_control,
+    backend_control = backend_control,
     code = function(control) {
       .sn_run_scpoli_integration_impl(
         object = object,
@@ -1293,7 +1293,7 @@
         features = features,
         assay = assay,
         layer = layer,
-        integration_control = control,
+        backend_control = control,
         verbose = verbose
       )
     }
@@ -1305,32 +1305,32 @@
                                        features,
                                        assay,
                                        layer = "counts",
-                                       integration_control = list(),
+                                       backend_control = list(),
                                        verbose = TRUE) {
-  labels_key <- integration_control$label_by %||% NULL
+  labels_key <- backend_control$label_by %||% NULL
   if (!is.null(labels_key) && (!nzchar(labels_key) || !labels_key %in% colnames(object[[]]))) {
-    stop("`integration_control$label_by` must name a metadata column when supplied for scPoli.", call. = FALSE)
+    stop("`backend_control$label_by` must name a metadata column when supplied for scPoli.", call. = FALSE)
   }
 
-  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
   pixi_paths <- sn_get_pixi_paths(environment = "scpoli", runtime_dir = runtime_dir)
-  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
-  accelerator <- .sn_resolve_scvi_accelerator(integration_control$accelerator %||% "auto")
-  pixi_environment <- integration_control$environment %||% accelerator$environment
-  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  pixi_home <- backend_control$pixi_home %||% pixi_paths$pixi_home
+  accelerator <- .sn_resolve_scvi_accelerator(backend_control$accelerator %||% "auto")
+  pixi_environment <- backend_control$environment %||% accelerator$environment
+  mirror <- match.arg(backend_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
   if (!identical(resolved_mirror, "default")) {
     sn_configure_pixi_mirror(
       mirror = mirror,
       pixi_home = pixi_home,
       runtime_dir = runtime_dir,
-      append_original = integration_control$mirror_append_original %||% TRUE
+      append_original = backend_control$mirror_append_original %||% TRUE
     )
   }
-  pixi_project <- integration_control$pixi_project %||%
-    integration_control$pixi_project_dir %||%
+  pixi_project <- backend_control$pixi_project %||%
+    backend_control$pixi_project_dir %||%
     pixi_paths$project_dir
-  run_dir <- integration_control$run_dir %||% .sn_default_python_run_dir(method = "scpoli", runtime_dir = runtime_dir)
+  run_dir <- backend_control$run_dir %||% .sn_default_python_run_dir(method = "scpoli", runtime_dir = runtime_dir)
   input_dir <- file.path(run_dir, "input")
   output_dir <- file.path(run_dir, "output")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -1338,11 +1338,11 @@
   manifest_path <- .sn_prepare_scvi_pixi_project(
     project_dir = pixi_project,
     environment = "scpoli",
-    manifest_path = integration_control$manifest_path %||% NULL,
-    manifest_lines = integration_control$manifest_lines %||% NULL,
-    overwrite = isTRUE(integration_control$overwrite_manifest),
-    cuda_version = integration_control$cuda_version %||% accelerator$cuda_version,
-    platforms = integration_control$platforms %||% NULL
+    manifest_path = backend_control$manifest_path %||% NULL,
+    manifest_lines = backend_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(backend_control$overwrite_manifest),
+    cuda_version = backend_control$cuda_version %||% accelerator$cuda_version,
+    platforms = backend_control$platforms %||% NULL
   )
   input <- .sn_write_scvi_input(
     object = object,
@@ -1353,40 +1353,40 @@
     batch = batch,
     labels_key = labels_key
   )
-  n_epochs <- as.integer(integration_control$n_epochs %||% integration_control$max_epochs %||% 100L)
+  n_epochs <- as.integer(backend_control$n_epochs %||% backend_control$max_epochs %||% 100L)
   config <- list(
     method = "scpoli",
     batch_key = batch,
     labels_key = labels_key,
     source_layer = layer,
-    reduction = integration_control$reduction %||% "scpoli",
-    n_latent = integration_control$n_latent %||% 10L,
-    embedding_dims = integration_control$embedding_dims %||% 5L,
-    latent_batch_size = integration_control$latent_batch_size %||% 2048L,
-    seed = integration_control$seed %||% 717L,
+    reduction = backend_control$reduction %||% "scpoli",
+    n_latent = backend_control$n_latent %||% 10L,
+    embedding_dims = backend_control$embedding_dims %||% 5L,
+    latent_batch_size = backend_control$latent_batch_size %||% 2048L,
+    seed = backend_control$seed %||% 717L,
     n_epochs = n_epochs,
-    pretraining_epochs = integration_control$pretraining_epochs %||% floor(n_epochs * 0.9),
-    model_args = integration_control$model_args %||% list(),
-    train_args = integration_control$train_args %||% list(),
-    write_h5ad = integration_control$write_h5ad %||% FALSE,
-    save_model = integration_control$save_model %||% FALSE,
+    pretraining_epochs = backend_control$pretraining_epochs %||% floor(n_epochs * 0.9),
+    model_args = backend_control$model_args %||% list(),
+    train_args = backend_control$train_args %||% list(),
+    write_h5ad = backend_control$write_h5ad %||% FALSE,
+    save_model = backend_control$save_model %||% FALSE,
     accelerator = accelerator$requested,
     pixi_environment = pixi_environment
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
   backend_run <- .sn_execute_scvi_pixi(
-    pixi = integration_control$pixi %||% NULL,
+    pixi = backend_control$pixi %||% NULL,
     manifest_path = manifest_path,
-    script = .sn_scpoli_script_path(integration_control$script %||% NULL),
+    script = .sn_scpoli_script_path(backend_control$script %||% NULL),
     input_dir = input$input_dir,
     output_dir = output_dir,
     config_path = config_path,
     environment = pixi_environment,
     pixi_home = pixi_home,
-    install_pixi = integration_control$install_pixi %||% TRUE,
-    pixi_version = integration_control$pixi_version %||% "0.69.0",
-    pixi_download_url = integration_control$pixi_download_url %||% NULL,
-    pixi_sha256 = integration_control$pixi_sha256 %||% NULL,
+    install_pixi = backend_control$install_pixi %||% TRUE,
+    pixi_version = backend_control$pixi_version %||% "0.69.0",
+    pixi_download_url = backend_control$pixi_download_url %||% NULL,
+    pixi_sha256 = backend_control$pixi_sha256 %||% NULL,
     verbose = verbose,
     backend_label = "scPoli"
   )
@@ -1399,18 +1399,19 @@
     batch = batch,
     features = input$features,
     reduction = config$reduction,
-    max_artifact_import_gb = integration_control$max_artifact_import_gb %||% 0.5
+    max_artifact_import_gb = backend_control$max_artifact_import_gb %||% 0.5
   )
   result$object@misc$integration$backend_performance <- backend_run$performance
   result
 }
 
-#' Run scVI or scANVI integration through Shennong
+#' Run scVI, scANVI, or scPoli integration through Shennong
 #'
 #' Convenience wrappers around \code{\link{sn_run_cluster}} for users who want
 #' an explicit Python-method entry point. The underlying pixi environment is
-#' prepared from the bundled scVI-family config under \code{inst/pixi/scvi/}
-#' and materialized under \code{~/.shennong/pixi/scvi/}.
+#' prepared from \code{inst/pixi/scvi/} for scVI/scANVI or
+#' \code{inst/pixi/scarches/} for scPoli, and materialized under
+#' \code{~/.shennong/pixi/} in the corresponding family directory.
 #'
 #' @inheritParams sn_run_cluster
 #' @param ... Additional arguments passed to \code{sn_run_cluster()}.
@@ -1419,24 +1420,24 @@
 #'
 #' @examples
 #' \dontrun{
-#' obj <- sn_run_scvi(obj, batch = "sample_id")
+#' obj <- sn_run_scvi(obj, batch_by = "sample_id")
 #' obj <- sn_run_scanvi(
 #'   obj,
-#'   batch = "sample_id",
-#'   integration_control = list(label_by = "cell_type")
+#'   batch_by = "sample_id",
+#'   backend_control = list(label_by = "cell_type")
 #' )
 #' }
 #'
 #' @export
 sn_run_scvi <- function(object,
-                        batch = NULL,
-                        integration_control = list(),
+                        batch_by = NULL,
+                        backend_control = list(),
                         ...) {
   sn_run_cluster(
     object = object,
-    batch = batch,
+    batch_by = batch_by,
     integration_method = "scvi",
-    integration_control = integration_control,
+    backend_control = backend_control,
     ...
   )
 }
@@ -1444,14 +1445,21 @@ sn_run_scvi <- function(object,
 #' @rdname sn_run_scvi
 #' @export
 sn_run_scanvi <- function(object,
-                          batch = NULL,
-                          integration_control = list(),
+                          batch_by = NULL,
+                          backend_control = list(),
                           ...) {
   sn_run_cluster(
     object = object,
-    batch = batch,
+    batch_by = batch_by,
     integration_method = "scanvi",
-    integration_control = integration_control,
+    backend_control = backend_control,
     ...
   )
+}
+
+#' @rdname sn_run_scvi
+#' @export
+sn_run_scpoli <- function(object, batch_by = NULL, backend_control = list(), ...) {
+  sn_run_cluster(object = object, batch_by = batch_by, integration_method = "scpoli",
+                 backend_control = backend_control, ...)
 }

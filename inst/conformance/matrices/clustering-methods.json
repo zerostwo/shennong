@@ -8,7 +8,7 @@
       "method": "unintegrated",
       "contract_kind": "reference_pipeline",
       "status": "pilot",
-      "required_cases": ["no_batch", "batch", "seurat", "scran", "sctransform"]
+      "required_cases": ["no_batch", "batch_by", "seurat", "scran", "sctransform"]
     },
     {
       "method": "harmony",
@@ -68,11 +68,11 @@
       "method": "mmochi",
       "contract_kind": "adapter_schema",
       "status": "adapter_tested_backend_pending",
-      "required_cases": ["single_sample", "batch", "corrected_protein"]
+      "required_cases": ["single_sample", "batch_by", "corrected_protein"]
     }
   ],
   "pairwise_axes": [
-    ["normalization_method", "integration_method", "batch"],
+    ["normalization_method", "integration_method", "batch_by"],
     ["assay", "layer", "storage_backend"],
     ["hvg_group_by", "block_genes", "hvg_features"],
     ["cluster_algorithm", "resolution", "cluster_random_seed"],

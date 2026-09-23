@@ -224,16 +224,20 @@
 #'   bundled signature query vector.
 #' @param method Scoring backend. UCell is the default for per-cell data.
 #' @param assay,layer Expression source.
-#' @param group_by Optional metadata column used to average expression before
-#'   GSVA/ssGSEA or other group-level scoring.
+#' @param group_by Optional metadata column identifying groups to aggregate.
+#' @param aggregate Required with \code{group_by}: \code{"expression"} averages
+#'   expression before scoring, while \code{"scores"} averages per-cell scores
+#'   after scoring. These differ for nonlinear scoring methods.
 #' @param species Species required for bundled signature queries.
 #' @param min_genes Minimum matched features required per signature.
-#' @param backend_control Named backend-specific control list. Supply
-#'   \code{seed} to seed stochastic scoring locally without changing the caller's
-#'   random state. Effective controls are retained in the stored result.
+#' @param backend_control Named backend-specific control list, keyed by method.
+#' @param seed Random seed applied locally during scoring. Use \code{NULL} to
+#'   use the caller's random state. Effective seeds are recorded in provenance.
 #' @param return_object Return the updated object or the unified result.
 #' @param result_id Stable identifier for the stored program-scoring result and
-#'   its metadata prefix. A method-derived identifier is used when omitted.
+#'   its metadata prefix. When omitted, a unique method-derived ID is allocated.
+#' @param overwrite Explicitly replace an existing result. Requires an explicit
+#'   \code{result_id}; obsolete score columns owned by that result are removed.
 #'
 #' @return A Seurat object or unified program-scoring result.
 #'
@@ -255,14 +259,24 @@ sn_score_programs <- function(object,
                               assay = NULL,
                               layer = "data",
                               group_by = NULL,
+                              aggregate = NULL,
                               species = NULL,
                               min_genes = 1L,
                               backend_control = list(),
+                              seed = 717,
                               return_object = TRUE,
-                              result_id = NULL) {
+                              result_id = NULL,
+                              overwrite = FALSE) {
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  result_id <- .sn_validate_result_id(result_id %||% paste0("programs_", method))
+  result_id <- .sn_resolve_new_result_id(object, "program_scoring", result_id, paste0("programs_", method), overwrite)
+  if (!is.null(backend_control$seed)) stop("Use the top-level `seed` argument, not `backend_control$seed`.", call. = FALSE)
+  if (is.null(group_by) && !is.null(aggregate)) stop("`aggregate` requires `group_by`.", call. = FALSE)
+  if (!is.null(group_by) && is.null(aggregate)) {
+    stop("Supply `aggregate = 'expression'` or `aggregate = 'scores'` with `group_by`.", call. = FALSE)
+  }
+  if (!is.null(aggregate)) aggregate <- match.arg(aggregate, c("expression", "scores"))
+  previous <- if (isTRUE(overwrite)) .sn_result_store(object)[["program_scoring"]][[result_id]] else NULL
   species <- species %||% tryCatch(sn_get_species(object), error = function(e) NULL)
   signatures <- .sn_normalize_program_signatures(signatures, species = species)
   expression <- .sn_annotation_expression(object, assay = assay, layer = layer)
@@ -275,18 +289,19 @@ sn_score_programs <- function(object,
     }
     groups <- as.character(object[[group_by, drop = TRUE]])
     names(groups) <- colnames(object)
-    matrix <- .sn_group_average_matrix(matrix, groups[colnames(matrix)])
+    if (anyNA(groups) || any(!nzchar(groups))) stop("`group_by` must not contain missing or empty labels.", call. = FALSE)
+    if (identical(aggregate, "expression")) matrix <- .sn_group_average_matrix(matrix, groups[colnames(matrix)])
     level <- "group"
   }
-  if (method %in% c("gsva", "ssgsea") && is_null(group_by) && inherits(matrix, "sparseMatrix") && ncol(matrix) > 5000L) {
+  if (method %in% c("gsva", "ssgsea") && !identical(aggregate, "expression") && inherits(matrix, "sparseMatrix") && ncol(matrix) > 5000L) {
     stop(
       "Per-cell ", method, " scoring of more than 5,000 sparse columns is disabled to avoid accidental densification; ",
-      "supply `group_by` or use UCell.",
+      "supply `group_by` with `aggregate = 'expression'` or use UCell.",
       call. = FALSE
     )
   }
 
-  scores <- .sn_with_seed(backend_control$seed, switch(
+  scores <- .sn_with_seed(seed, switch(
     method,
     mean = .sn_score_programs_mean(matrix, matched$signatures),
     ucell = .sn_score_programs_ucell(matrix, matched$signatures, backend_control$ucell %||% list()),
@@ -297,6 +312,7 @@ sn_score_programs <- function(object,
   scores <- as.matrix(scores)
   scores <- scores[names(matched$signatures), , drop = FALSE]
   if (is.null(colnames(scores))) colnames(scores) <- colnames(matrix)
+  if (identical(aggregate, "scores")) scores <- .sn_group_average_matrix(scores, groups[colnames(scores)])
   score_table <- .sn_program_score_table(scores, level = level, group_by = group_by)
   metadata_columns <- tibble::tibble(program = character(), column = character())
   if (identical(level, "cell")) {
@@ -304,6 +320,8 @@ sn_score_programs <- function(object,
     object <- added$object
     metadata_columns <- added$mapping
   }
+  obsolete <- setdiff(previous$tables$metadata_columns$column, metadata_columns$column)
+  for (column in intersect(obsolete, colnames(object[[]]))) object[[column]] <- NULL
 
   result <- list(
     schema_version = .sn_analysis_result_schema_version(),
@@ -319,7 +337,8 @@ sn_score_programs <- function(object,
       group_by = group_by,
       species = species
     ),
-    parameters = list(min_genes = min_genes, level = level, backend_control = backend_control),
+    parameters = list(min_genes = min_genes, level = level, aggregate = aggregate,
+                      seed = seed, backend_control = backend_control),
     tables = list(primary = score_table, scores = score_table, coverage = matched$coverage,
                   metadata_columns = metadata_columns),
     embeddings = list(),
@@ -331,10 +350,10 @@ sn_score_programs <- function(object,
       minimum_coverage = min(matched$coverage$coverage[matched$coverage$program %in% names(matched$signatures)])
     ),
     warnings = character(),
-    provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
+    provenance = .sn_analysis_provenance(random_seed = seed %||% NA_integer_)
   )
   sn_validate_result(result)
-  object <- sn_store_result(object, "program_scoring", result_id, result)
+  object <- sn_store_result(object, "program_scoring", result_id, result, overwrite = overwrite)
   object <- .sn_log_seurat_command(object = object, assay = expression$assay, name = "sn_score_programs")
   if (isTRUE(return_object)) object else sn_get_result(object, "program_scoring", result_id)
 }

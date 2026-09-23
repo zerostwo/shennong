@@ -6,10 +6,9 @@
 \usage{
 sn_get_cell_communication_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   sources = NULL,
-  targets = NULL,
-  with_metadata = FALSE
+  targets = NULL
 )
 }
 \arguments{
@@ -18,12 +17,14 @@ sn_get_cell_communication_result(
 \item{result_id}{Name of the stored result.}
 
 \item{sources, targets}{Optional source/target labels to keep.}
-
-\item{with_metadata}{If \code{TRUE}, return the full stored-result list.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble.
 }
 \description{
 Retrieve a stored cell-cell communication result
+}
+\details{
+This getter always returns the selected table. Use \code{sn_get_result()}
+for the complete stored result and metadata.
 }

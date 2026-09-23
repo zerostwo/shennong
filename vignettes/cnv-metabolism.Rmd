@@ -164,7 +164,7 @@ article_infercnvpy_runner <- function(object, reference_cells, genome,
     artifact_id = result_id,
     metadata_prefix = "infercnvpy_",
     run_umap = TRUE,
-    n_jobs = 2,
+    n_workers = 2,
     return_object = TRUE,
     install_pixi = FALSE,
     quiet = TRUE

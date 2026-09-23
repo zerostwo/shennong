@@ -365,28 +365,28 @@
 }
 
 .sn_with_integration_python_run <- function(method,
-                                            integration_control,
+                                            backend_control,
                                             code) {
-  if (!is.list(integration_control)) {
-    stop("`integration_control` must be a list.", call. = FALSE)
+  if (!is.list(backend_control)) {
+    stop("`backend_control` must be a list.", call. = FALSE)
   }
-  supplied_run_dir <- !is.null(integration_control$run_dir)
-  keep_run_dir <- integration_control$keep_run_dir
+  supplied_run_dir <- !is.null(backend_control$run_dir)
+  keep_run_dir <- backend_control$keep_run_dir
   if (is.null(keep_run_dir)) keep_run_dir <- supplied_run_dir
   if (!is.logical(keep_run_dir) || length(keep_run_dir) != 1L || is.na(keep_run_dir)) {
-    stop("`integration_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
+    stop("`backend_control$keep_run_dir` must be TRUE or FALSE.", call. = FALSE)
   }
 
-  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
   run_dir <- .sn_resolve_python_run_directory(
-    path = integration_control$run_dir,
+    path = backend_control$run_dir,
     method = method,
     runtime_dir = runtime_dir,
     keep_run_dir = keep_run_dir,
     supplied = supplied_run_dir
   )
-  integration_control$run_dir <- run_dir
-  integration_control$keep_run_dir <- keep_run_dir
+  backend_control$run_dir <- run_dir
+  backend_control$keep_run_dir <- keep_run_dir
 
   complete <- FALSE
   on.exit({
@@ -395,7 +395,7 @@
     }
   }, add = TRUE)
 
-  result <- tryCatch(code(integration_control), error = identity)
+  result <- tryCatch(code(backend_control), error = identity)
   if (inherits(result, "error")) {
     sanitization_complete <- NA
     if (!isTRUE(keep_run_dir)) {

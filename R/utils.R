@@ -999,7 +999,7 @@ check_installed_github <- function(pkg, repo, reason = NULL) {
 .sn_merge_control_args <- function(defaults, control) {
   control <- control %||% list()
   if (!is.list(control)) {
-    stop("`integration_control` must be a named list.", call. = FALSE)
+    stop("`backend_control` must be a named list.", call. = FALSE)
   }
   utils::modifyList(defaults, control, keep.null = TRUE)
 }

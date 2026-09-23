@@ -61,7 +61,7 @@ sn_enable_usage_tracking(
 
 object <- sn_run_cluster(
   object,
-  batch = "sample",
+  batch_by = "sample",
   normalization_method = "seurat",
   integration_method = "harmony",
   nfeatures = 3000,

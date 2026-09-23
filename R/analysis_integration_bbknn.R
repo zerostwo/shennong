@@ -7,7 +7,7 @@
   if (!is.null(script) && nzchar(script)) {
     script <- path.expand(script)
     if (!file.exists(script)) {
-      stop("`integration_control$script` does not exist: ", script, call. = FALSE)
+      stop("`backend_control$script` does not exist: ", script, call. = FALSE)
     }
     return(normalizePath(script, winslash = "/", mustWork = TRUE))
   }
@@ -28,11 +28,11 @@
                                       assay,
                                       layer = "counts",
                                       dims,
-                                      integration_control = list(),
+                                      backend_control = list(),
                                       verbose = TRUE) {
   .sn_with_integration_python_run(
     method = "bbknn",
-    integration_control = integration_control,
+    backend_control = backend_control,
     code = function(control) {
       .sn_run_bbknn_integration_impl(
         object = object,
@@ -41,7 +41,7 @@
         assay = assay,
         layer = layer,
         dims = dims,
-        integration_control = control,
+        backend_control = control,
         verbose = verbose
       )
     }
@@ -54,30 +54,30 @@
                                       assay,
                                       layer = "counts",
                                       dims,
-                                      integration_control = list(),
+                                      backend_control = list(),
                                       verbose = TRUE) {
   if (is.null(batch) || !nzchar(batch) || !batch %in% colnames(object[[]])) {
     stop("BBKNN integration requires `batch` to name a metadata column.", call. = FALSE)
   }
   dims <- .sn_valid_reduction_dims(object = object, reduction = reduction, dims = dims)
   embedding <- Seurat::Embeddings(object = object, reduction = reduction)[, dims, drop = FALSE]
-  runtime_dir <- .sn_shennong_runtime_dir(integration_control$runtime_dir %||% NULL)
+  runtime_dir <- .sn_shennong_runtime_dir(backend_control$runtime_dir %||% NULL)
   pixi_paths <- sn_get_pixi_paths(environment = "bbknn", runtime_dir = runtime_dir)
-  pixi_home <- integration_control$pixi_home %||% pixi_paths$pixi_home
-  mirror <- match.arg(integration_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
+  pixi_home <- backend_control$pixi_home %||% pixi_paths$pixi_home
+  mirror <- match.arg(backend_control$mirror %||% "default", c("default", "auto", "china", "tuna", "ustc", "bfsu"))
   resolved_mirror <- .sn_resolve_pixi_mirror(mirror)
   if (!identical(resolved_mirror, "default")) {
     sn_configure_pixi_mirror(
       mirror = mirror,
       pixi_home = pixi_home,
       runtime_dir = runtime_dir,
-      append_original = integration_control$mirror_append_original %||% TRUE
+      append_original = backend_control$mirror_append_original %||% TRUE
     )
   }
-  pixi_project <- integration_control$pixi_project %||%
-    integration_control$pixi_project_dir %||%
+  pixi_project <- backend_control$pixi_project %||%
+    backend_control$pixi_project_dir %||%
     pixi_paths$project_dir
-  run_dir <- integration_control$run_dir %||% .sn_default_python_run_dir(method = "bbknn", runtime_dir = runtime_dir)
+  run_dir <- backend_control$run_dir %||% .sn_default_python_run_dir(method = "bbknn", runtime_dir = runtime_dir)
   input_dir <- file.path(run_dir, "input")
   output_dir <- file.path(run_dir, "output")
   dir.create(input_dir, recursive = TRUE, showWarnings = FALSE)
@@ -92,35 +92,35 @@
   manifest_path <- .sn_prepare_scvi_pixi_project(
     project_dir = pixi_project,
     environment = "bbknn",
-    manifest_path = integration_control$manifest_path %||% NULL,
-    manifest_lines = integration_control$manifest_lines %||% NULL,
-    overwrite = isTRUE(integration_control$overwrite_manifest),
-    platforms = integration_control$platforms %||% NULL
+    manifest_path = backend_control$manifest_path %||% NULL,
+    manifest_lines = backend_control$manifest_lines %||% NULL,
+    overwrite = isTRUE(backend_control$overwrite_manifest),
+    platforms = backend_control$platforms %||% NULL
   )
-  graph_name <- integration_control$graph_name %||% "bbknn_snn"
+  graph_name <- backend_control$graph_name %||% "bbknn_snn"
   config <- list(
     method = "bbknn",
     batch_key = "batch",
     source_layer = layer,
     graph_name = graph_name,
-    seed = integration_control$seed %||% 717L,
-    bbknn_args = integration_control$bbknn_args %||% list(),
-    umap_args = integration_control$umap_args %||% list()
+    seed = backend_control$seed %||% 717L,
+    bbknn_args = backend_control$bbknn_args %||% list(),
+    umap_args = backend_control$umap_args %||% list()
   )
   config_path <- .sn_write_json_file(config, file.path(run_dir, "config.json"))
   backend_run <- .sn_execute_scvi_pixi(
-    pixi = integration_control$pixi %||% NULL,
+    pixi = backend_control$pixi %||% NULL,
     manifest_path = manifest_path,
-    script = .sn_bbknn_script_path(integration_control$script %||% NULL),
+    script = .sn_bbknn_script_path(backend_control$script %||% NULL),
     input_dir = normalizePath(input_dir, winslash = "/", mustWork = TRUE),
     output_dir = output_dir,
     config_path = config_path,
-    environment = integration_control$environment %||% "default",
+    environment = backend_control$environment %||% "default",
     pixi_home = pixi_home,
-    install_pixi = integration_control$install_pixi %||% TRUE,
-    pixi_version = integration_control$pixi_version %||% "0.69.0",
-    pixi_download_url = integration_control$pixi_download_url %||% NULL,
-    pixi_sha256 = integration_control$pixi_sha256 %||% NULL,
+    install_pixi = backend_control$install_pixi %||% TRUE,
+    pixi_version = backend_control$pixi_version %||% "0.69.0",
+    pixi_download_url = backend_control$pixi_download_url %||% NULL,
+    pixi_sha256 = backend_control$pixi_sha256 %||% NULL,
     verbose = verbose,
     backend_label = "BBKNN"
   )
@@ -135,7 +135,7 @@
       call. = FALSE
     )
   }
-  max_import_gb <- integration_control$max_artifact_import_gb %||% 0.5
+  max_import_gb <- backend_control$max_artifact_import_gb %||% 0.5
   .sn_assert_python_artifact_budget(
     required_paths,
     max_import_gb,
@@ -179,7 +179,7 @@
   }
   .sn_assert_python_artifact_budget(umap_path, max_import_gb, "BBKNN UMAP output")
   umap <- .sn_read_embedding_csv(umap_path, cells = colnames(object))
-  umap_reduction <- integration_control$umap_reduction %||% "umap"
+  umap_reduction <- backend_control$umap_reduction %||% "umap"
   colnames(umap) <- paste0("UMAP_", seq_len(ncol(umap)))
   object[[umap_reduction]] <- Seurat::CreateDimReducObject(
     embeddings = umap,

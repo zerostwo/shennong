@@ -42,7 +42,7 @@ prepare_blocked <- function(name, n_samples) {
   if (!isTRUE(loaded$ok)) return(NULL)
   object <- loaded$value
   doubled <- log_step(paste0("doublets:", name), {
-    result <- sn_find_doublets(object, ncores = 4)
+    result <- sn_find_doublets(object, n_workers = 4)
     if (inherits(result, "Seurat")) result else object
   })
   object <- doubled$value
@@ -89,7 +89,7 @@ if (!is.null(big)) {
     for (sm in c("ucell", "aucell", "gsva", "ssgsea", "mean")) {
       log_step(paste0("programs:", sm),
                sn_score_programs(big, signatures, method = sm,
-                                 group_by = "seurat_clusters", return_object = FALSE))
+                                 group_by = "seurat_clusters", return_object = FALSE, aggregate = "expression"))
     }
     log_step("enrich:ora-gobp",
              sn_enrich(big, analysis = stored_analysis, database = "GOBP"))

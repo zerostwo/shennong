@@ -85,11 +85,11 @@
   )
   combined_assay <- SeuratObject::DefaultAssay(combined)
 
-  integration_control <- transfer_control
-  integration_control$label_by <- transfer_label_by
-  integration_control$label_by <- transfer_label_by
-  integration_control$unlabeled_category <- unlabeled_category
-  integration_control$reduction <- integration_control$reduction %||% method_name
+  backend_control <- transfer_control
+  backend_control$label_by <- transfer_label_by
+  backend_control$label_by <- transfer_label_by
+  backend_control$unlabeled_category <- unlabeled_category
+  backend_control$reduction <- backend_control$reduction %||% method_name
 
   fit <- .sn_run_scvi_integration(
     object = combined,
@@ -97,7 +97,7 @@
     batch = batch_by,
     features = feature_set,
     assay = combined_assay,
-    integration_control = integration_control,
+    backend_control = backend_control,
     verbose = verbose
   )
   combined <- fit$object
@@ -262,8 +262,8 @@
   }
   stop(
     "Coralysis label_by transfer requires a native Coralysis-trained reference stored under `reference@misc$coralysis`.\n",
-    "Run `sn_run_cluster(reference, batch = ..., integration_method = \"coralysis\")` first, ",
-    "or avoid `integration_control = list(store_sce = FALSE)` if the object should be used as a reference.",
+    "Run `sn_run_cluster(reference, batch_by = ..., integration_method = \"coralysis\")` first, ",
+    "or avoid `backend_control = list(store_sce = FALSE)` if the object should be used as a reference.",
     call. = FALSE
   )
 }

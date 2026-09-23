@@ -168,7 +168,7 @@ sn_enable_usage_tracking(
 
 object <- sn_run_cluster(
   object,
-  batch = "sample",
+  batch_by = "sample",
   integration_method = "harmony",
   resolution = 0.6
 )
@@ -271,7 +271,7 @@ The same public PBMC fixture can be used for batch-aware integration:
 ``` r
 pbmc_integrated <- sn_run_cluster(
   pbmc,
-  batch = "real_batch",
+  batch_by = "real_batch",
   normalization_method = "seurat",
   resolution = 0.6
 )

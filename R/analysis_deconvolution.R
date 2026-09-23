@@ -52,7 +52,7 @@
 #'   signature matrix.
 #' @param gibbs_control Optional BayesPrism Gibbs-sampler control list.
 #' @param opt_control Optional BayesPrism optimization control list.
-#' @param n_cores Number of cores passed to BayesPrism.
+#' @param n_workers Number of cores passed to BayesPrism.
 #' @param update_gibbs Whether BayesPrism should run the final Gibbs update.
 #' @param max_dense_gb Maximum estimated size, in GiB, of any expression matrix
 #'   that may be materialized as a dense double matrix. Large sparse inputs fail
@@ -120,7 +120,7 @@ sn_run_bulk_deconvolution <- function(x,
                                cibersortx_k_max = 999,
                                gibbs_control = list(),
                                opt_control = list(),
-                               n_cores = 1,
+                               n_workers = 1,
                                update_gibbs = TRUE,
                                max_dense_gb = 2,
                                return_object = TRUE,
@@ -177,7 +177,7 @@ sn_run_bulk_deconvolution <- function(x,
       key = key,
       gibbs_control = gibbs_control,
       opt_control = opt_control,
-      n_cores = n_cores,
+      n_workers = n_workers,
       update_gibbs = update_gibbs,
       max_dense_gb = max_dense_gb
     )
@@ -509,7 +509,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
                                key = NULL,
                                gibbs_control = list(),
                                opt_control = list(),
-                               n_cores = 1,
+                               n_workers = 1,
                                update_gibbs = TRUE,
                                max_dense_gb = 2) {
   reference_scale <- .sn_validate_deconvolution_expression(
@@ -566,7 +566,7 @@ sn_set_cibersortx_credentials <- function(email, token) {
     session_tempdir,
     BayesPrism::run.prism(
       prism = prism,
-      n.cores = n_cores,
+      n.cores = n_workers,
       update.gibbs = update_gibbs,
       gibbs.control = gibbs_control,
       opt.control = opt_control
@@ -1225,29 +1225,25 @@ sn_store_deconvolution <- function(object,
 
 #' Retrieve a stored deconvolution result from a Seurat object
 #'
-#' @param object A \code{Seurat} object.
+#' @param object A \code{Seurat} object or a unified result of this analysis type.
 #' @param result_id Name of the stored result.
 #' @param samples Optional subset of bulk samples to keep.
 #' @param cell_types Optional subset of cell types to keep.
-#' @param with_metadata If \code{TRUE}, return the full stored-result list.
+#' @details This getter always returns the selected table. Use \code{sn_get_result()}
+#'   for the complete stored result and metadata.
 #'
-#' @return A tibble or stored-result list.
+#' @return A filtered tibble.
 #' @export
 sn_get_deconvolution_result <- function(object,
-                                        result_id = "default",
+                                        result_id = NULL,
                                         samples = NULL,
-                                        cell_types = NULL,
-                                        with_metadata = FALSE) {
-  .sn_validate_seurat_object(object)
+                                        cell_types = NULL) {
 
-  stored <- sn_get_result(
-    object = object,
+  stored <- .sn_resolve_result_input(
+    x = object,
     type = "deconvolution",
     result_id = result_id
   )
-  if (isTRUE(with_metadata)) {
-    return(stored)
-  }
 
   table <- tibble::as_tibble(stored$tables$primary)
   if (!is.null(samples) && "sample" %in% colnames(table)) {

@@ -22,7 +22,7 @@ make_integration_benchmark_object <- function() {
     method = method,
     integration_reduction = reduction,
     graph_names = paste0(method, "_snn"),
-    integration_control = if (is.null(label_by)) list() else list(label_by = label_by),
+    backend_control = if (is.null(label_by)) list() else list(label_by = label_by),
     performance = list(
       workflow = list(elapsed_seconds = 12, peak_memory_mb = 256),
       integration = list(
@@ -155,7 +155,7 @@ test_that("sn_compare_integrations benchmarks unique embeddings within preproces
       integration_reduction = reduction,
       input_features = features,
       normalized_layer = "data",
-      integration_control = list()
+      backend_control = list()
     )
   }
   object@misc$integration_comparison <- list(

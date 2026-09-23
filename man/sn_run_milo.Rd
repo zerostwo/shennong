@@ -25,10 +25,11 @@ sn_run_milo(
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
   result_id = NULL,
-  return_object = FALSE,
-  return_intermediate = FALSE,
+  return_object = TRUE,
+  keep_model = FALSE,
   verbose = TRUE,
-  seed = NULL,
+  seed = 717,
+  overwrite = FALSE,
   object = NULL
 )
 }
@@ -84,27 +85,27 @@ neighborhoods with \code{miloR::annotateNhoods()}.}
 \item{norm_method}{Normalization method passed to
 \code{miloR::testNhoods()}.}
 
-\item{result_id}{Optional stable identifier. When supplied, the Milo result
-is stored on the Seurat object.}
+\item{result_id}{Optional stable identifier. A unique \code{milo} ID is
+allocated when omitted.}
 
-\item{return_object}{Logical; when \code{TRUE} and \code{result_id} is
-supplied, return the updated Seurat object.}
+\item{return_object}{Return the updated Seurat object (default), or the
+unified analysis result when \code{FALSE}.}
 
-\item{return_intermediate}{Logical; if \code{TRUE}, return a list with the
-DA table, design data, and milo object.}
+\item{keep_model}{Retain the fitted Milo object in \code{models$milo}.}
 
 \item{verbose}{Logical; if \code{TRUE}, emit progress logs.}
 
-\item{seed}{Optional random seed recorded in the stored result provenance.}
+\item{seed}{Random seed used for cell and neighborhood sampling, applied
+locally without changing the caller's RNG state. \code{NULL} uses the
+caller's state; an effective numeric seed is recorded in provenance.}
+
+\item{overwrite}{Explicitly replace an existing result; requires an explicit ID.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
 }
 \value{
-By default, a data frame of neighborhood-level DA statistics. When
-\code{result_id} is supplied, return the unified stored-result list, or
-the updated Seurat object when \code{return_object = TRUE}. When
-\code{return_intermediate = TRUE}, return a list with \code{table},
-\code{design_df}, and \code{milo}.
+A Seurat object or unified result. Retrieve neighborhood statistics
+with \code{sn_get_milo_result()}; design data are in \code{tables$design}.
 }
 \description{
 This wrapper runs the standard miloR neighborhood differential abundance
@@ -114,7 +115,7 @@ tested for differential abundance between the two sample groups.
 }
 \examples{
 \dontrun{
-da_tbl <- sn_run_milo(
+seu <- sn_run_milo(
   seu,
   sample_by = "sample",
   group_by = "condition",

@@ -104,13 +104,13 @@ pbmc <- qs2::qs_read(file.path(
 ))
 pbmc <- sn_run_cluster(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"

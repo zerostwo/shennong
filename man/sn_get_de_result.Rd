@@ -2,21 +2,24 @@
 % Please edit documentation in R/analysis_result.R
 \name{sn_get_de_result}
 \alias{sn_get_de_result}
-\title{Retrieve a stored DE result from a Seurat object}
+\title{Retrieve a DE result table}
 \usage{
 sn_get_de_result(
   object,
-  result_id = "default",
+  result_id = NULL,
   top_n = NULL,
   direction = c("all", "up", "down"),
   groups = NULL,
-  with_metadata = FALSE
+  top_scope = c("group", "all"),
+  p_adjusted_cutoff = NULL,
+  logfc_threshold = NULL
 )
 }
 \arguments{
-\item{object}{A \code{Seurat} object.}
+\item{object}{A \code{Seurat} object or unified DE result.}
 
-\item{result_id}{Identifier of the stored DE result.}
+\item{result_id}{Identifier of the stored DE result. May be omitted when
+exactly one DE result is stored.}
 
 \item{top_n}{Optional number of rows to keep. When supplied together with a
 ranking column, results are reduced to the top rows overall or per group.}
@@ -25,14 +28,19 @@ ranking column, results are reduced to the top rows overall or per group.}
 
 \item{groups}{Optional subset of group labels to keep.}
 
-\item{with_metadata}{If \code{TRUE}, return the full stored result list
-instead of just the result table.}
+\item{top_scope}{Whether \code{top_n} applies within each group (the default)
+or across all selected rows. An ungrouped table always uses all rows.}
+
+\item{p_adjusted_cutoff}{Optional maximum adjusted p-value, from zero to one.}
+
+\item{logfc_threshold}{Optional minimum absolute log fold change.}
 }
 \value{
-A tibble or stored-result list.
+A filtered tibble. Use \code{sn_get_result(object, "de")} to retrieve
+the complete result, including metadata and unfiltered tables.
 }
 \description{
-Retrieve a stored DE result from a Seurat object
+Retrieve a DE result table
 }
 \examples{
 \dontrun{
