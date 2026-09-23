@@ -6,10 +6,10 @@ analyses reproducible from maintained scripts. Preserve user-owned work.
 
 ## Documentation entry points
 
-- [Get started](https://songqi.org/shennong/dev/articles/get-started.html): bundled-data counts, clustering, markers, scoring, and result retrieval.
-- [Parameters and results](https://songqi.org/shennong/dev/articles/parameters-and-results.html): common controls, return values, result IDs, safe reruns, group aggregation, and API migration.
-- [Differential expression and enrichment](https://songqi.org/shennong/dev/articles/differential-expression.html): markers versus replicated contrasts, tested-gene backgrounds, ORA/GSEA formulas, and multiple databases.
-- [Choose a backend](https://songqi.org/shennong/dev/articles/method-catalog.html): method catalog and optional runtime requirements.
+- [Get started](https://zerostwo.github.io/shennong/dev/articles/get-started.html): bundled-data counts, clustering, markers, scoring, and result retrieval.
+- [Parameters and results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html): common controls, return values, result IDs, safe reruns, group aggregation, and API migration.
+- [Differential expression and enrichment](https://zerostwo.github.io/shennong/dev/articles/differential-expression.html): markers versus replicated contrasts, tested-gene backgrounds, ORA/GSEA formulas, and multiple databases.
+- [Choose a backend](https://zerostwo.github.io/shennong/dev/articles/method-catalog.html): method catalog and optional runtime requirements.
 
 Start with the bundled-data examples for basic usage; real-data articles require their stated input files. Do not assume displayed optional-backend recipes executed during an ordinary website build.
 

@@ -144,4 +144,4 @@ For intentional fate reruns, use `sn_run_fate(..., result_id = "fate",
 overwrite = TRUE)`; metadata ownership checks remain active. Use a new ID
 to retain the previous fate result.
 
-For runnable marker examples and complete ORA/GSEA recipes, use the [DE and enrichment guide](https://songqi.org/shennong/dev/articles/differential-expression.html). Common result-return and filtering rules are demonstrated in [Parameters and results](https://songqi.org/shennong/dev/articles/parameters-and-results.html).
+For runnable marker examples and complete ORA/GSEA recipes, use the [DE and enrichment guide](https://zerostwo.github.io/shennong/dev/articles/differential-expression.html). Common result-return and filtering rules are demonstrated in [Parameters and results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html).

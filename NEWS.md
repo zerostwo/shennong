@@ -1,5 +1,7 @@
 All notable changes to this project will be documented in this file.
 
+- Use the reachable GitHub Pages URL consistently in package metadata, the website, and installed usage guides.
+
 - Explicitly trigger GitHub Pages after the documentation push and wait for the matching published commit, so a successful pkgdown action also verifies hosting.
 
 - Fix pkgdown publication by supplying an explicit Git identity, publishing the validated build without rebuilding it, and directing the website root to the current development docs.

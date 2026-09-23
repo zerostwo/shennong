@@ -11,7 +11,7 @@ The Shennong package provides a comprehensive toolkit for interpreting omics dat
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://songqi.org/shennong}
+  \item \url{https://zerostwo.github.io/shennong}
   \item \url{https://github.com/zerostwo/shennong}
   \item Report bugs at \url{https://github.com/zerostwo/shennong/issues}
 }
