@@ -2,6 +2,19 @@
 
 Last updated: 2026-09-20
 
+## 2026-09-23
+
+- Audit fixes #8–#15 retain domain ownership and add no public parameters or
+  dependencies. DE distinguishes available candidates from valid backend
+  statistics before significance selection, retaining comparison-specific
+  backgrounds. A private copy of the upstream FindAllMarkers function captures
+  each FindMarkers result without changing Seurat namespace bindings, backend
+  parameters, or marker output. Direct-upstream regressions guard this seam.
+- Program comparison detects complete donor pairs from sample IDs; mixed
+  paired/unpaired designs fail explicitly. Metadata column ownership is
+  recorded in a result table so score-name collisions cannot overwrite user
+  metadata. Native serialization bypasses rio's unconditional matrix coercion.
+
 ## 2026-09-20
 
 - BPCells-backed scran normalization uses supplied cluster assignments as the

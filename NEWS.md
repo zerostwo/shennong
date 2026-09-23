@@ -5,6 +5,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- Fix eight audited defects (#8–#15): communication reads all matching split
+  layers; DE stores valid backend-test backgrounds per comparison for ORA;
+  program comparisons recognize complete donor pairs; subset marker discovery
+  preserves existing gene columns; Milo annotation filters use the stored
+  annotation field; native matrix serialization preserves class; program
+  metadata columns avoid name collisions with a stored mapping; and scoring
+  applies `backend_control$seed` while preserving the caller RNG. Known older
+  DE records containing candidate-only backgrounds require rerunning DE or
+  an explicit ORA universe. Partially paired program designs are rejected.
+
 * Fixed `sn_normalize_data(method = "scran", clusters = "metadata_column")`
   so a single string resolves to Seurat metadata instead of being passed as a
   one-element cluster vector. BPCells-backed inputs with supplied clusters now

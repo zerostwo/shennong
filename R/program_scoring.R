@@ -20,6 +20,9 @@
   if (!is.list(signatures) || length(signatures) == 0L || is.null(names(signatures)) || any(!nzchar(names(signatures)))) {
     stop("`signatures` must resolve to a non-empty named list of gene vectors.", call. = FALSE)
   }
+  if (anyNA(names(signatures)) || anyDuplicated(names(signatures))) {
+    stop("Signature names must be distinct and non-missing.", call. = FALSE)
+  }
   signatures <- lapply(signatures, function(genes) {
     genes <- unique(as.character(unlist(genes, use.names = FALSE)))
     genes[!is.na(genes) & nzchar(genes)]
@@ -187,11 +190,25 @@
 .sn_add_program_metadata <- function(object, scores, result_id) {
   metadata <- data.frame(row.names = colnames(object))
   prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
-  for (program in rownames(scores)) {
-    suffix <- gsub("[^[:alnum:]_]+", "_", program)
-    metadata[[paste(prefix, suffix, sep = "_")]] <- as.numeric(scores[program, colnames(object)])
+  previous <- tryCatch(sn_get_result(object, "program_scoring", result_id), error = function(e) NULL)
+  previous <- previous$tables$metadata_columns
+  columns <- character(nrow(scores))
+  occupied <- colnames(object[[]])
+  for (i in seq_len(nrow(scores))) {
+    program <- rownames(scores)[[i]]
+    old <- previous$column[match(program, previous$program)]
+    if (length(old) == 1L && !is.na(old) && old %in% occupied && !old %in% columns) {
+      column <- old
+    } else {
+      candidate <- paste(prefix, gsub("[^[:alnum:]_]+", "_", program), sep = "_")
+      column <- utils::tail(make.unique(c(occupied, candidate)), 1L)
+    }
+    columns[[i]] <- column
+    occupied <- c(occupied, column)
+    metadata[[column]] <- as.numeric(scores[i, colnames(object)])
   }
-  SeuratObject::AddMetaData(object, metadata = metadata)
+  list(object = SeuratObject::AddMetaData(object, metadata = metadata),
+       mapping = tibble::tibble(program = rownames(scores), column = columns))
 }
 
 #' Score gene programs in cells or aggregated samples
@@ -199,6 +216,8 @@
 #' Provides one stable interface for sparse-aware UCell, AUCell, GSVA, ssGSEA,
 #' and dependency-free mean-expression scoring. Per-cell scores are added to
 #' Seurat metadata; aggregated scores remain in the stored result.
+#' Metadata names are unique across programs and existing columns. The stored
+#' \code{tables$metadata_columns} maps each program to its metadata column.
 #'
 #' @param object A \code{Seurat} object.
 #' @param signatures Named list, program/gene data frame, named gene vector, or
@@ -209,7 +228,9 @@
 #'   GSVA/ssGSEA or other group-level scoring.
 #' @param species Species required for bundled signature queries.
 #' @param min_genes Minimum matched features required per signature.
-#' @param backend_control Named backend-specific control list.
+#' @param backend_control Named backend-specific control list. Supply
+#'   \code{seed} to seed stochastic scoring locally without changing the caller's
+#'   random state. Effective controls are retained in the stored result.
 #' @param return_object Return the updated object or the unified result.
 #' @param result_id Stable identifier for the stored program-scoring result and
 #'   its metadata prefix. A method-derived identifier is used when omitted.
@@ -265,20 +286,23 @@ sn_score_programs <- function(object,
     )
   }
 
-  scores <- switch(
+  scores <- .sn_with_seed(backend_control$seed, switch(
     method,
     mean = .sn_score_programs_mean(matrix, matched$signatures),
     ucell = .sn_score_programs_ucell(matrix, matched$signatures, backend_control$ucell %||% list()),
     aucell = .sn_score_programs_aucell(matrix, matched$signatures, backend_control$aucell %||% list()),
     gsva = .sn_score_programs_gsva(matrix, matched$signatures, "gsva", backend_control$gsva %||% list()),
     ssgsea = .sn_score_programs_gsva(matrix, matched$signatures, "ssgsea", backend_control$ssgsea %||% list())
-  )
+  ))
   scores <- as.matrix(scores)
   scores <- scores[names(matched$signatures), , drop = FALSE]
   if (is.null(colnames(scores))) colnames(scores) <- colnames(matrix)
   score_table <- .sn_program_score_table(scores, level = level, group_by = group_by)
+  metadata_columns <- tibble::tibble(program = character(), column = character())
   if (identical(level, "cell")) {
-    object <- .sn_add_program_metadata(object, scores, result_id = result_id)
+    added <- .sn_add_program_metadata(object, scores, result_id = result_id)
+    object <- added$object
+    metadata_columns <- added$mapping
   }
 
   result <- list(
@@ -295,8 +319,9 @@ sn_score_programs <- function(object,
       group_by = group_by,
       species = species
     ),
-    parameters = list(min_genes = min_genes, level = level),
-    tables = list(primary = score_table, scores = score_table, coverage = matched$coverage),
+    parameters = list(min_genes = min_genes, level = level, backend_control = backend_control),
+    tables = list(primary = score_table, scores = score_table, coverage = matched$coverage,
+                  metadata_columns = metadata_columns),
     embeddings = list(),
     graphs = list(),
     models = list(),
@@ -319,6 +344,9 @@ sn_score_programs <- function(object,
 #' Aggregates cell-level scores to the sample level before inference when
 #' \code{sample_by} is supplied. This prevents cells from being treated as
 #' independent biological replicates.
+#' Complete pairs sharing the same sample ID across conditions use a paired
+#' Wilcoxon test or a sample-adjusted limma model. A mixture of paired and
+#' unpaired samples is rejected. The result table records \code{paired}.
 #'
 #' @param object A Seurat object containing a stored program-scoring result.
 #' @param source_result_id Stored scoring result identifier.
@@ -367,10 +395,15 @@ sn_test_programs <- function(object,
     stop("`sn_test_programs()` currently requires cell-level stored scores.", call. = FALSE)
   }
   metadata <- object[[]]
+  scores <- scores[scores$entity %in% rownames(metadata), , drop = FALSE]
   indices <- match(scores$entity, rownames(metadata))
   scores$condition <- as.character(metadata[[condition_by]][indices])
   scores$sample <- if (is_null(sample_by)) scores$entity else as.character(metadata[[sample_by]][indices])
   scores$group <- if (is_null(group_by)) "all" else as.character(metadata[[group_by]][indices])
+  if (anyNA(scores[, c("sample", "condition", "group")]) ||
+      any(!nzchar(scores$sample)) || any(!nzchar(scores$condition)) || any(!nzchar(scores$group))) {
+    stop("Sample, condition, and group metadata must be complete and non-empty.", call. = FALSE)
+  }
   if (is_null(sample_by)) {
     .sn_log_warn("`sample_by` was not supplied; cells are exploratory units, not biological replicates.")
   }
@@ -387,38 +420,50 @@ sn_test_programs <- function(object,
   }))
   conditions <- unique(aggregated$condition)
   contrast <- contrast %||% conditions[seq_len(min(2L, length(conditions)))]
-  if (length(contrast) != 2L || any(!contrast %in% conditions)) {
+  if (length(contrast) != 2L || anyDuplicated(contrast) || any(!contrast %in% conditions)) {
     stop("`contrast` must contain two observed condition levels.", call. = FALSE)
   }
   comparison <- paste(contrast[[1]], "vs", contrast[[2]])
   test_groups <- split(aggregated, interaction(aggregated$group, aggregated$program, drop = TRUE, lex.order = TRUE))
   tests <- dplyr::bind_rows(lapply(test_groups, function(table) {
+    group <- table$group[[1]]
+    program <- table$program[[1]]
     table <- table[table$condition %in% contrast, , drop = FALSE]
-    x <- table$score[table$condition == contrast[[1]]]
-    y <- table$score[table$condition == contrast[[2]]]
+    left <- table[table$condition == contrast[[1]], , drop = FALSE]
+    right <- table[table$condition == contrast[[2]], , drop = FALSE]
+    paired <- length(intersect(left$sample, right$sample)) > 0L
+    if (paired && !setequal(left$sample, right$sample)) {
+      stop("Program comparison contains a mixture of paired and unpaired samples; select complete donor pairs or independent sample IDs.", call. = FALSE)
+    }
+    if (paired) right <- right[match(left$sample, right$sample), , drop = FALSE]
+    x <- left$score
+    y <- right$score
     estimate <- mean(x, na.rm = TRUE) - mean(y, na.rm = TRUE)
     if (length(x) == 0L || length(y) == 0L) {
       p_value <- NA_real_
     } else if (method == "wilcox") {
-      p_value <- suppressWarnings(stats::wilcox.test(x, y, exact = FALSE)$p.value)
+      p_value <- suppressWarnings(stats::wilcox.test(x, y, paired = paired, exact = FALSE)$p.value)
     } else {
       check_installed("limma", reason = "to test program scores with limma.")
       response <- c(x, y)
-      design <- stats::model.matrix(~0 + factor(c(rep(contrast[[1]], length(x)), rep(contrast[[2]], length(y))), levels = contrast))
+      condition <- factor(c(rep(contrast[[1]], length(x)), rep(contrast[[2]], length(y))), levels = contrast)
+      sample <- factor(c(left$sample, right$sample))
+      design <- stats::model.matrix(if (paired) ~0 + condition + sample else ~0 + condition)
       fit <- limma::lmFit(matrix(response, nrow = 1), design)
-      contrast_matrix <- matrix(c(1, -1), ncol = 1)
+      contrast_matrix <- matrix(c(1, -1, rep(0, ncol(design) - 2L)), ncol = 1)
       fit <- limma::eBayes(limma::contrasts.fit(fit, contrast_matrix))
       p_value <- fit$p.value[[1]]
     }
     tibble::tibble(
-      group = table$group[[1]],
-      program = table$program[[1]],
+      group = group,
+      program = program,
       comparison = comparison,
       estimate = estimate,
       mean_1 = mean(x, na.rm = TRUE),
       mean_2 = mean(y, na.rm = TRUE),
       n_1 = length(x),
       n_2 = length(y),
+      paired = paired,
       p_value = p_value
     )
   }))

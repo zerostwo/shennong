@@ -294,3 +294,17 @@ package directory manually.
 sn_get_codex_skill_path()
 sn_install_codex_skill(destination = ".codex/skills")
 ```
+
+## Preserve matrix objects during handoff
+
+`sn_write()` preserves matrix classes and dimnames in RDS, RData, and QS2.
+CSV and other tabular formats continue to write tables. Dense numeric and
+sparse matrices can be written directly to BPCells directories or 10x HDF5:
+
+```{r matrix-handoff, eval=FALSE}
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+sn_write(counts, "counts.rds", auto_install = FALSE)
+stopifnot(identical(readRDS("counts.rds"), counts))
+sn_write(counts, "counts.h5", auto_install = FALSE)
+sn_write(counts, "counts.bpcells", auto_install = FALSE)
+```

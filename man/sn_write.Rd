@@ -59,6 +59,9 @@ Invisibly returns the output path.
 \description{
 A Shennong wrapper around \code{rio::export()} with support for common
 single-cell formats such as BPCells, \code{.h5ad}, and 10x \code{.h5}.
+Native RDS, RData, and QS2 serialization preserves matrix classes and
+dimnames. Tabular formats convert base matrices to data frames. Dense and
+sparse matrices are converted to BPCells iterable matrices for matrix writers.
 
 This adapter is exported so \code{rio} can dispatch to it.
 }

@@ -1311,8 +1311,11 @@ sn_get_milo_result <- function(object,
   }
 
   table <- tibble::as_tibble(stored$tables$primary)
-  annotation_by <- stored$annotation_col %||% NULL
-  if (!is.null(annotation) && !is.null(annotation_by) && annotation_by %in% colnames(table)) {
+  annotation_by <- stored$annotation_by %||% stored$annotation_col %||% NULL
+  if (!is.null(annotation)) {
+    if (is.null(annotation_by) || !annotation_by %in% colnames(table)) {
+      stop("Annotation filtering requires a stored `annotation_by` column.", call. = FALSE)
+    }
     table <- dplyr::filter(table, .data[[annotation_by]] %in% annotation)
   }
   if (!is.null(spatial_fdr) && "SpatialFDR" %in% colnames(table)) {

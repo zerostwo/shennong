@@ -1,12 +1,23 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-20
+Last updated: 2026-09-23
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 `NEWS.md` records user-visible changes.
 
 ## Current validation
+
+- Audit issues #8–#15 have public-entry regressions and fixes for split-layer
+  communication, per-comparison DE/ORA backgrounds, paired program tests,
+  subset marker IDs, Milo annotation filters, native matrix writers, metadata
+  name collisions, and local scoring seeds. The isolated change set passes
+  365 focused assertions. The real GO reproduction agrees with an explicit
+  tested background across all 225 shared terms. The full suite passes 5,719
+  assertions (zero failures/errors, 11 warnings, one unavailable local-data
+  fixture skip); the final enrichment adjustment passes 47 focused assertions.
+  Source build and structural R CMD check pass with zero errors/warnings and
+  the existing Sankey `head` NOTE. The local pkgdown site has been rebuilt.
 
 - The complete local test suite passes 5,691 assertions with zero failures,
   11 warnings, and one skip. The warnings are explicit compatibility or

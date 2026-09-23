@@ -323,3 +323,10 @@ if (inherits(cellphonedb_attempt, "error")) {
 CellPhoneDB needs a prepared Python runtime, while MultiNicheNet and NicheNet
 need explicit prior networks. Neither is silently installed or replaced with a
 handwritten interaction table during pkgdown rendering.
+
+## Split assay layers
+
+Communication workflows read every matching Seurat v5 split expression layer
+(e.g. `data.batch1` and `data.batch2`) through the shared layer reader. Cell IDs
+are aligned with metadata without joining or modifying the input assay. An
+exact requested layer still takes precedence over prefix-matched split layers.

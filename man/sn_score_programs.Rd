@@ -35,7 +35,9 @@ GSVA/ssGSEA or other group-level scoring.}
 
 \item{min_genes}{Minimum matched features required per signature.}
 
-\item{backend_control}{Named backend-specific control list.}
+\item{backend_control}{Named backend-specific control list. Supply
+\code{seed} to seed stochastic scoring locally without changing the caller's
+random state. Effective controls are retained in the stored result.}
 
 \item{return_object}{Return the updated object or the unified result.}
 
@@ -49,6 +51,8 @@ A Seurat object or unified program-scoring result.
 Provides one stable interface for sparse-aware UCell, AUCell, GSVA, ssGSEA,
 and dependency-free mean-expression scoring. Per-cell scores are added to
 Seurat metadata; aggregated scores remain in the stored result.
+Metadata names are unique across programs and existing columns. The stored
+\code{tables$metadata_columns} maps each program to its metadata column.
 }
 \examples{
 \dontrun{

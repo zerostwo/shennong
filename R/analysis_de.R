@@ -82,7 +82,7 @@
   tested <- if (is_null(requested) || cosgr_full_layer_test) available else requested
   list(
     requested_features = requested,
-    tested_features = tested,
+    candidate_features = tested,
     tested_features_source = if (cosgr_full_layer_test && !is_null(requested)) {
       "assay_layer_full_test_then_result_filter"
     } else if (is_null(requested)) {
@@ -91,6 +91,17 @@
       "requested_features"
     }
   )
+}
+
+.sn_de_tested_table <- function(result) {
+  p_col <- intersect(c("p_val", "pvalue", "PValue", "P.Value", "myAUC"), names(result))
+  genes <- if ("gene" %in% names(result)) as.character(result$gene) else rownames(result)
+  keep <- if (length(p_col)) is.finite(result[[p_col[[1L]]]]) else rep(FALSE, nrow(result))
+  table <- tibble::tibble(gene = genes[keep])
+  for (column in intersect(c("cluster", "comparison"), names(result))) {
+    table[[column]] <- result[[column]][keep]
+  }
+  table
 }
 
 .sn_run_seurat_de <- function(object,
@@ -154,14 +165,31 @@
     if (!is_null(features)) {
       result <- dplyr::filter(result, .data$gene %in% features)
     }
-
+    attr(result, "shennong_tested_features") <- dplyr::bind_rows(lapply(
+      colnames(cosg_result$names), function(group) {
+        tibble::tibble(gene = rownames(object[[assay]]), cluster = group)
+      }
+    ))
     return(result)
   }
 
   if (analysis == "markers") {
     only_pos <- only_pos %||% TRUE
+    tested <- list()
+    # Capture each backend result before FindAllMarkers applies return.thresh.
+    # A private function environment leaves Seurat's namespace unchanged.
+    find_all <- Seurat::FindAllMarkers
+    capture_env <- new.env(parent = environment(find_all))
+    capture_env$FindMarkers <- function(object, ident.1, ident.2 = NULL, ...) {
+      result <- Seurat::FindMarkers(object = object, ident.1 = ident.1, ident.2 = ident.2, ...)
+      table <- .sn_de_tested_table(result)
+      table$cluster <- rep(as.character(if (length(ident.1) == 1L) ident.1 else ident.2), nrow(table))
+      tested[[length(tested) + 1L]] <<- table
+      result
+    }
+    environment(find_all) <- capture_env
     result <- .sn_with_default_seurat_acceleration(
-      Seurat::FindAllMarkers(
+      find_all(
         object = object,
         assay = assay,
         slot = target_layer,
@@ -177,11 +205,12 @@
       object = object,
       assay = assay
     )
+    attr(result, "shennong_tested_features") <- dplyr::bind_rows(tested)
     return(result)
   }
 
   only_pos <- only_pos %||% FALSE
-  .sn_with_default_seurat_acceleration(
+  result <- .sn_with_default_seurat_acceleration(
     Seurat::FindMarkers(
       object = object,
       ident.1 = ident_1,
@@ -200,6 +229,8 @@
     object = object,
     assay = assay
   )
+  attr(result, "shennong_tested_features") <- .sn_de_tested_table(result)
+  result
 }
 
 .sn_validate_pseudobulk_count_layer <- function(counts,
@@ -596,9 +627,11 @@
 #' @param layer Assay layer used for DE analysis. Defaults to \code{"data"} for
 #'   marker and contrast analyses and to \code{"counts"} for pseudobulk
 #'   analyses.
-#' @param features Optional feature subset to test. The resolved feature set is
-#'   retained as \code{input$tested_features} in stored single-cell DE results,
-#'   so downstream stored-DE ORA can reuse the actual hypothesis universe.
+#' @param features Optional feature subset to test. Requested and available
+#'   candidates are stored separately from \code{input$tested_features}, the
+#'   features with finite backend statistics before marker significance
+#'   filtering. \code{input$tested_features_by_comparison} retains each
+#'   comparison's background for downstream ORA. COSG records scored features.
 #' @param modality Input modality. \code{"auto"} selects single-cell analysis
 #'   for Seurat objects and bulk analysis for matrices, lists, and
 #'   \code{SummarizedExperiment} objects.
@@ -801,6 +834,7 @@ sn_find_de <- function(
   .sn_with_acceleration_provenance_context({
   result <- NULL
   pseudobulk_estimands <- NULL
+  tested_tables <- list()
 
   if (analysis == "pseudobulk") {
     if (is_null(sample_by)) {
@@ -829,6 +863,11 @@ sn_find_de <- function(
       verbose = verbose
     )
     pseudobulk_estimands <- attr(result, "shennong_contrast_estimands", exact = TRUE)
+    tested <- .sn_de_tested_table(result)
+    if (!is_null(subset_by)) {
+      tested[[subset_by]] <- result[[subset_by]][is.finite(result$pvalue)]
+    }
+    tested_tables <- list(tested)
   } else {
     prepared <- .sn_prepare_seurat_layer_alias(
       object = object,
@@ -856,6 +895,7 @@ sn_find_de <- function(
         verbose = verbose,
         ...
       )
+      tested_tables <- list(attr(result, "shennong_tested_features", exact = TRUE) %||% .sn_de_tested_table(result))
     } else {
       subset_values <- subset_levels %||% unique(as.character(analysis_object[[subset_by]][, 1]))
       subset_results <- vector("list", length(subset_values))
@@ -880,8 +920,14 @@ sn_find_de <- function(
           verbose = verbose,
           ...
         )
+        tested <- attr(current_result, "shennong_tested_features", exact = TRUE) %||% .sn_de_tested_table(current_result)
+        tested[[subset_by]] <- rep(current_subset, nrow(tested))
+        tested_tables[[current_subset]] <- tested
 
-        current_result <- tibble::rownames_to_column(as.data.frame(current_result), var = "gene")
+        current_result <- as.data.frame(current_result)
+        if (!"gene" %in% colnames(current_result)) {
+          current_result <- tibble::rownames_to_column(current_result, var = "gene")
+        }
         current_result[[subset_by]] <- current_subset
         current_result$comparison <- if (analysis == "contrast") {
           paste(ident_1, "vs", ident_2)
@@ -896,6 +942,13 @@ sn_find_de <- function(
 
     object <- .sn_restore_seurat_layer_alias(object = analysis_object, context = restore_context)
   }
+
+  tested_table <- dplyr::distinct(dplyr::bind_rows(tested_tables))
+  tested_features <- de_feature_universe$candidate_features[
+    de_feature_universe$candidate_features %in% tested_table$gene
+  ]
+  tested_group_columns <- setdiff(colnames(tested_table), "gene")
+  attr(result, "shennong_tested_features") <- NULL
 
   if (!is.data.frame(result)) {
     result <- tibble::rownames_to_column(as.data.frame(result), var = "gene")
@@ -945,9 +998,12 @@ sn_find_de <- function(
       assay = assay,
       layer = layer,
       requested_features = de_feature_universe$requested_features,
-      tested_features = de_feature_universe$tested_features,
-      tested_features_count = length(de_feature_universe$tested_features),
-      tested_features_source = de_feature_universe$tested_features_source
+      candidate_features = de_feature_universe$candidate_features,
+      tested_features = tested_features,
+      tested_features_count = length(tested_features),
+      tested_features_source = if (identical(method, "COSGR")) "cosg_scored_features" else "backend_statistics",
+      tested_feature_groups = tested_group_columns,
+      tested_features_by_comparison = tested_table
     ),
     assay = assay,
     layer = layer,

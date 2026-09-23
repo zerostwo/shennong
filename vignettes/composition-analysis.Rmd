@@ -379,3 +379,15 @@ sn_plot_sankey(seurat_obj, flow_by = c("age_group", "cell_type"),
 ```
 
 Toggling pies preserves the ribbons and their underlying cell counts.
+
+## Retrieve one Milo annotation
+
+The column supplied to `sn_store_milo(annotation_by = "cell_type")` also
+controls annotation filtering during retrieval. Annotation and spatial FDR
+filters can be used independently. Missing stored annotation columns cause
+an explicit error when annotation filtering is requested.
+
+```{r retrieve-milo-annotation, eval=FALSE}
+sn_list_results(pbmc, type = "milo")
+sn_get_milo_result(pbmc, "response_da", annotation = "Tcell")
+```

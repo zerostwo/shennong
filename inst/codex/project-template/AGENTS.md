@@ -71,3 +71,20 @@ circular pies. These are panel dimensions, not the full export canvas.
 Composition plots default to 8 pt for labels, titles, axes, strips, and legends.
 Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
 `show_pies = TRUE` restores them without changing ribbon counts.
+
+## Verify statistical units and stored mappings
+
+For program comparisons, use biological `sample_by` IDs. Complete donor pairs
+are modeled as paired; partially paired profiles require explicit input
+selection. Inspect the stored comparison's `paired` flag. For program scoring,
+set `backend_control$seed` for reproducibility and retrieve
+`tables$metadata_columns` from `sn_get_result(object, "program_scoring", id)`
+instead of guessing sanitized metadata names. Discover IDs with
+`sn_list_results(object, type = "program_scoring")`.
+
+Stored-DE ORA uses the finite backend-test background of each comparison,
+recorded in `input$tested_features_by_comparison`; available
+`input$candidate_features` are not an ORA background. Rerun older candidate-only
+DE records or provide a justified explicit universe. Communication reads
+matching split layers, Milo annotation filters use stored `annotation_by`,
+and native RDS/RData/QS2 serialization preserves matrix classes.
