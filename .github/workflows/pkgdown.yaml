@@ -20,6 +20,7 @@ concurrency:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   pkgdown:
@@ -114,4 +115,28 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: bash scripts/deploy-pkgdown.sh
+        shell: bash
+
+      - name: Build and verify GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        timeout-minutes: 12
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          published_commit="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/gh-pages" --jq .object.sha)"
+          build_url="$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" --jq .url)"
+          for attempt in {1..60}; do
+            read -r status commit < <(gh api "$build_url" --jq '[.status, .commit] | @tsv')
+            if [ "$status" = "built" ] && [ "$commit" = "$published_commit" ]; then
+              echo "GitHub Pages published $commit"
+              exit 0
+            fi
+            if [ "$status" = "errored" ]; then
+              gh api "$build_url"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "GitHub Pages did not publish $published_commit within ten minutes."
+          exit 1
         shell: bash
