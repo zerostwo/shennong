@@ -2,6 +2,34 @@
 
 ## Shennong (development version)
 
+- Verify the latest GitHub Pages build against the expected commit,
+  allowing a cancelled build to be replaced without falsely failing
+  publication.
+
+- Use the reachable GitHub Pages URL consistently in package metadata,
+  the website, and installed usage guides.
+
+- Explicitly trigger GitHub Pages after the documentation push and wait
+  for the matching published commit, so a successful pkgdown action also
+  verifies hosting.
+
+- Fix pkgdown publication by supplying an explicit Git identity,
+  publishing the validated build without rebuilding it, and directing
+  the website root to the current development docs.
+
+- Reorganize the documentation around a runnable start page, shared
+  parameter/result patterns, and a complete DE-to-enrichment guide. Add
+  bundled-data examples, explicit optional-backend requirements, a
+  development API migration table, and a separate backend catalog;
+  simplify the homepage and navigation.
+
+- Fix CI version-provenance assertions and refresh the edgeR/enrichit
+  conformance versions to the installed upstream releases. Strict
+  conformance still checks exact versions and numerical parity.
+
+- Keep the release-note link usable from installed R vignettes as well
+  as the website.
+
 - **Breaking API cleanup
   ([\#17](https://github.com/zerostwo/shennong/issues/17)–#27):** DE,
   Milo, and enrichment now return unified results with

@@ -321,5 +321,5 @@ If a call fails, first check its current signature with
 [`args()`](https://rdrr.io/r/base/args.html), list the object metadata
 with `colnames(object[[]])`, and discover stored analyses with
 `sn_list_results(object)`. See [release
-notes](https://zerostwo.github.io/shennong/dev/news/index.md) for the
+notes](https://zerostwo.github.io/shennong/dev/news/index.html) for the
 full set of breaking changes.
