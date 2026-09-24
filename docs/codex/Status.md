@@ -30,7 +30,8 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   previous main workflow built successfully but failed before publishing (#30).
   Deployment publishes the checked `site/dev` output directly and routes the
   website root to current development documentation. It then explicitly requests
-  and verifies a Pages build of the published commit (#31).
+  and verifies the latest Pages build of the published commit (#31, #37),
+  tolerating a superseded build only while awaiting the exact expected commit.
 - Documentation links and package metadata use the reachable GitHub Pages URL
   instead of the previous host without address records.
 - No dependencies or exports are added by the documentation refresh. The

@@ -5,6 +5,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- Verify the latest GitHub Pages build against the expected commit, allowing a cancelled build to be replaced without falsely failing publication.
+
 - Use the reachable GitHub Pages URL consistently in package metadata, the website, and installed usage guides.
 
 - Explicitly trigger GitHub Pages after the documentation push and wait for the matching published commit, so a successful pkgdown action also verifies hosting.
