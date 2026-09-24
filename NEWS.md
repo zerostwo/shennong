@@ -56,6 +56,25 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   DE records containing candidate-only backgrounds require rerunning DE or
   an explicit ORA universe. Partially paired program designs are rejected.
 
+- Nebula/glass plots now accept the default two embedding dimensions: planar
+  density contours preserve UMAP_1/UMAP_2 without synthetic depth. Explicit
+  `dims = 1:3` retains the 3D workflow; 600 dpi raster export works in both.
+
+
+- Improve 3D nebula/glass fidelity with smooth per-pixel WebGL rim lighting,
+  soft particles, bloom, distinct material presets and anchored labels. PDF
+  export now uses the same local shader at physical-size-aware 600 dpi through
+  Chrome/Chromium, chromote and png. Local-neighbor KDE bandwidth prevents
+  distant cells from inflating group surfaces into large empty ellipsoids.
+
+- Add `style = "nebula"` / `"glass"` to `sn_plot_dim()` and `sn_plot_feature()`
+  for real 3D embeddings. A local JavaScript viewer exports rotation, pan and
+  zoom through camera JSON or an R list; `sn_get_plot_camera()` imports the view
+  for ordinary ggplot/`ggsave()` output. Point clouds and group-density surfaces
+  rasterize together at 600 dpi by default, retaining vector labels/legends.
+  Static multi-feature/split plots and exact assay/layer expression colors are
+  supported; `style = "classic"` preserves existing behavior.
+
 * Fixed `sn_normalize_data(method = "scran", clusters = "metadata_column")`
   so a single string resolves to Seurat metadata instead of being passed as a
   one-element cluster vector. BPCells-backed inputs with supplied clusters now

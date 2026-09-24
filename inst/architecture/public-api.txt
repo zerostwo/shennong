@@ -98,6 +98,7 @@ sn_get_milo_result
 sn_get_palette
 sn_get_pixi_config_path
 sn_get_pixi_paths
+sn_get_plot_camera
 sn_get_regulatory_activity_result
 sn_get_result
 sn_get_signatures

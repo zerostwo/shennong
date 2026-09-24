@@ -113,3 +113,4 @@ sn_pixi_config_path,deprecated_alias,Deprecated forwarding shim over sn_get_pixi
 sn_pixi_paths,deprecated_alias,Deprecated forwarding shim over sn_get_pixi_paths
 sn_delete_artifact,runtime_admin,Stored-artifact deletion rather than analysis execution
 sn_simulate_scdesign3,deprecated_alias,Deprecated forwarding shim over sn_simulate(method = 'scdesign3')
+sn_get_plot_camera,visualization_utility,Camera serialization utility validated by embedding style tests and browser round-trip smoke checks

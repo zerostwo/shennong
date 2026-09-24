@@ -1922,3 +1922,60 @@ The verifier now polls the latest build within its existing ten-minute bound
 and succeeds only when both the built status and expected commit match. A
 transient errored/cancelled record may be replaced; timeout still fails and
 prints the final build diagnostic. This changes deployment verification only.
+
+## 2026-09-22: Shared 3D embedding scene and transferable camera
+
+Admit `sn_get_plot_camera`, optional `htmlwidgets` and `misc3d` dependencies.
+The former provides a local JS widget lifecycle; the latter supplies maintained
+marching-cubes geometry, avoiding a bespoke isosurface implementation. KDE uses
+a bounded separable grid and all selected cells. Existing ggrastr handles a
+single combined surface/point grob at physical-size-aware 600 dpi. Canvas and R
+share orthographic azimuth/elevation/roll, zoom and pan, with 96 depth slices.
+This favors reproducible view transfer and no CDN/GPU requirement over a WebGL
+shader-only implementation. Raster antialiasing and text can differ. Browser
+camera changes return explicitly via downloaded JSON or copied R code; reading
+a widget in R returns its initial camera. New style controls are appended to
+existing signatures, retaining classic defaults. Three real dimensions are
+required; no implicit UMAP recomputation or fabricated Z coordinate is allowed.
+Static multipanel rendering is supported; interactive mode is single-panel.
+Density surfaces are visualization aids and do not represent tissue boundaries.
+
+## 2026-09-22: Replace flat embedding painter with one WebGL renderer
+
+Visual comparison with both supplied videos rejected the first Canvas/96-bin
+implementation: flat colored faces did not reproduce translucent membranes,
+continuous rim lighting or fine point clouds. This supersedes the earlier
+Canvas export decision. Ship dependency-free local WebGL shaders, interpolate
+shared-vertex normals per fragment, and add soft particle and bloom passes.
+The static grid grob calls the same renderer through local headless Chromium
+at its draw-time physical size times raster_dpi; labels remain vector. Admit
+optional chromote/png dependencies. Export uses SwiftShader without reserving
+a GPU; missing Chromium/WebGL produces an explicit error, never a silent
+approximation or upsampled 512-pixel image. Cache captures by physical pixel
+size on the plot, close browser sessions and remove temporary files on exit.
+
+A 6,288-cell real fixture also exposed global-SD KDE bandwidth inflation across
+separated islands. Use an isotropic local-neighbor scale estimated by up to
+128 deterministic probes against all group cells, with a grid-resolution
+floor. Every cell still enters both the density grid and point buffer. Do not
+add particles to imply measured cells that are not present.
+
+
+### Planar embedding styles
+
+Default `dims = c(1, 2)` now draws 2D KDE contours in the same local WebGL
+renderer. Grid vertices and cells have zero depth; density is a shading
+attribute, never a synthetic coordinate. A front-facing orthographic camera
+preserves both selected coordinates. Explicit `dims = 1:3` retains real 3D
+envelopes. The planar helper lives with the shared export geometry utilities;
+no dependency or public API names are added.
+
+## 2026-09-23: Consolidate the remaining embedding branch
+
+Merge the three embedding-style commits into the current main history while
+retaining the unified analysis controls, canonical documentation URL and Pages
+verification fixes. Resolve concurrent documentation additions by retaining
+both sets of guidance, and regenerate API parameter metadata from the merged
+namespace. Clean up merged development branches after their commits are
+reachable from main; retain gh-pages as the publication branch. Uncommitted
+work in the original checkout is outside this merge.

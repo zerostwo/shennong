@@ -48,6 +48,11 @@ sn_plot_feature(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
+  style = c("classic", "nebula", "glass"),
+  style_control = list(),
+  camera = NULL,
+  interactive = FALSE,
+  group_by = NULL,
   ...
 )
 }
@@ -146,10 +151,41 @@ derives the missing panel dimension automatically.}
 
 \item{x_label, y_label}{Optional axis labels.}
 
+\item{style}{Rendering style: \code{"classic"} preserves the existing 2D plot;
+\code{"nebula"} and \code{"glass"} use planar density contours with the default
+\code{dims = c(1, 2)}, or real three-dimensional embeddings with \code{dims = 1:3}.
+Static 3D output is a ggplot with the complete point/surface scene rasterized
+at 600 dpi by default; labels and legends remain vector elements. Set
+\code{raster_dpi = 600} explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.}
+
+\item{style_control}{Named 3D controls: \code{surface_alpha} (glass 0.16, nebula
+0.035), \code{point_alpha} (0.85 for dimension plots), \code{glow} (glass 0.3, nebula
+0.85), \code{surface_mass} (0.95), \code{bandwidth} (0.75), \code{grid_size} (48, integer
+16--64), \code{background} (glass \code{"#03030C"}, nebula \code{"#101322"}), and
+\code{auto_rotate} (FALSE, browser only).
+Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
+expression contours or biological boundaries. Groups with fewer than five
+cells or rank-deficient coordinates retain points without a surface.}
+
+\item{camera}{Camera list or downloaded JSON accepted by \code{\link[=sn_get_plot_camera]{sn_get_plot_camera()}}.}
+
+\item{interactive}{If TRUE, return a local WebGL htmlwidget with
+drag rotation, shift-drag pan, scroll zoom, and camera export controls.
+Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
+compatible with \code{ggsave()}. Browser and PDF use the same WebGL shader;
+GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
+panel, white labels and numeric feature legends. Seurat-only shape,
+highlight, repel, blend, density-mode and extra \code{...} options are rejected.}
+
+\item{group_by}{For 3D styles, metadata column defining geometry groups and
+labels; defaults to active identities. Expression colors still represent
+the requested feature and assay layer, not the geometry group.}
+
 \item{...}{Additional parameters to pass to FeaturePlot.}
 }
 \value{
-A ggplot2 object.
+A ggplot2/patchwork object, or an htmlwidget when a 3D style
+uses \code{interactive = TRUE}.
 }
 \description{
 This function plots feature expression in reduced dimensions using the FeaturePlot function from the Seurat package.
