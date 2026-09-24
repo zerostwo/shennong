@@ -36,7 +36,7 @@ sn_list_results(pbmc, type = "de")
 #> # A tibble: 1 × 8
 #>   collection       type  result_id analysis method created_at      n_rows source
 #>   <chr>            <chr> <chr>     <chr>    <chr>  <chr>            <int> <chr> 
-#> 1 shennong.results de    markers   de       wilcox 2026-09-24 00:…    134 NA
+#> 1 shennong.results de    markers   de       wilcox 2026-09-24 01:…    134 NA
 ```
 
 Each cluster is compared with the remaining cells. Keep the full result

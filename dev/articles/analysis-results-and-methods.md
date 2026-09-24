@@ -244,7 +244,7 @@ qc_copy$provenance
 #> [1] NA
 #> 
 #> $timestamp
-#> [1] "2026-09-24 00:57:51 UTC"
+#> [1] "2026-09-24 01:17:23 UTC"
 #> 
 #> $result_id
 #> [1] "qc_copy"
@@ -331,7 +331,7 @@ handoff[c("size_bytes", "digest")]
 #> [1] "sha256"
 #> 
 #> $digest$value
-#> [1] "717d0b0815d56a806a23e956a229f069e46e9c90c3cab45b41fb949765efcd8d"
+#> [1] "089dfd5ec43eb26aba7e2385f455f28d0022b52c02c7a878dd3f03b41d7d7394"
 unlink(bundle_path)
 ```
 
