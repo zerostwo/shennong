@@ -55,8 +55,10 @@ sn_compare_composition(
 
 - pseudocount:
 
-  Small value added to group means before computing `log2_fc`. Defaults
-  to `0.5`.
+  Cell-count correction used only when either comparison group has zero
+  mean abundance. The correction is converted to a sample-specific
+  percentage using that sample's total cell count. Defaults to the
+  Haldane-Anscombe value of `0.5` cells.
 
 - test:
 

@@ -32,8 +32,6 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 
 .import.rio_h5(file, ...)
 
-.import.rio_qs(file, ...)
-
 .import.rio_qs2(file, ...)
 
 .import.rio_gmt(file, ...)
@@ -85,7 +83,7 @@ https://github.com/YuLab-SMU/clusterProfiler
 
 ## See also
 
-[`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
 
 The original `read.gmt()` implementation in the `clusterProfiler`
 package.
@@ -100,8 +98,4 @@ Yu Guangchuang (original implementation)
 tmp <- tempfile(fileext = ".csv")
 write.csv(mtcars[1:3, 1:3], tmp, row.names = FALSE)
 sn_read(tmp)
-#>    mpg cyl disp
-#> 1 21.0   6  160
-#> 2 21.0   6  160
-#> 3 22.8   4  108
 ```

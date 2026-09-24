@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Interpretation and reporting • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Interpretation and reporting">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Interpretation and reporting">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -98,20 +99,28 @@ Duan</h4>
 analysis. It does not replace markers, enrichment, QC, or clustering; it
 packages those results into structured evidence, then builds prompts or
 calls a provider only when the user asks.</p>
-<p>This article uses PBMC3k markers as the evidence source. Provider
-calls are shown but not executed by default.</p>
+<p>This article uses a deterministic subset of the public Kotliarov PBMC
+CITE-seq cohort as the evidence source. The local fixture retains real
+donor, batch, response, RNA, and ADT information. Provider calls remain
+opt-in because they require credentials and create external state.</p>
 <div class="section level2">
 <h2 id="create-analysis-evidence-first">Create analysis evidence first<a class="anchor" aria-label="anchor" href="#create-analysis-evidence-first"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:05:19] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:05:19] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:05:19] Seurat object initialization complete.</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">pbmc_fixture</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  source <span class="op">=</span> <span class="st">"Kotliarov PBMC CITE-seq"</span>,</span>
+<span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>,</span>
+<span>  genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>,</span>
+<span>  samples <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/n_distinct.html" class="external-link">n_distinct</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span>,</span>
+<span>  batches <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/n_distinct.html" class="external-link">n_distinct</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span>,</span>
+<span>  assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -128,7 +137,7 @@ calls are shown but not executed by default.</p>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -136,11 +145,7 @@ calls are shown but not executed by default.</p>
 prompts reproducible: a report can say which DE result, enrichment
 result, and cluster column were used.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
-<span><span class="co">#&gt;   collection type  name        analysis method created_at n_rows source</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> de_results de    cluster_ma… markers  wilcox 2026-07-2…   <span style="text-decoration: underline;">5</span>049 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="prepare-evidence-before-building-prompts">Prepare evidence before building prompts<a class="anchor" aria-label="anchor" href="#prepare-evidence-before-building-prompts"></a>
@@ -151,7 +156,7 @@ transparent.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">annotation_evidence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prepare_annotation_evidence.html">sn_prepare_annotation_evidence</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  n_markers <span class="op">=</span> <span class="fl">8</span>,</span>
 <span>  include_qc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -160,57 +165,33 @@ transparent.</p>
 <span></span>
 <span><span class="va">de_evidence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prepare_de_evidence.html">sn_prepare_de_evidence</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  n_genes <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">results_evidence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prepare_results_evidence.html">sn_prepare_results_evidence</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  cluster_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  cluster_de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  n_markers <span class="op">=</span> <span class="fl">5</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">annotation_evidence</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "task"                      "cluster_col"              </span></span>
-<span><span class="co">#&gt;  [3] "source_de_name"            "source_enrichment_name"   </span></span>
-<span><span class="co">#&gt;  [5] "analysis_method"           "species"                  </span></span>
-<span><span class="co">#&gt;  [7] "marker_selection"          "enrichment_selection"     </span></span>
-<span><span class="co">#&gt;  [9] "geometry_reduction"        "cluster_summary"          </span></span>
-<span><span class="co">#&gt; [11] "top_marker_table"          "enrichment_summary"       </span></span>
-<span><span class="co">#&gt; [13] "qc_summary"                "lineage_hints"            </span></span>
-<span><span class="co">#&gt; [15] "canonical_marker_snapshot" "geometry_summary"         </span></span>
-<span><span class="co">#&gt; [17] "caveats"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation_evidence</span><span class="op">$</span><span class="va">cluster_summary</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 15</span></span></span>
-<span><span class="co">#&gt;   cluster n_cells fraction sample_distribution top_markers             </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0           590   0.214  pbmc3k (590)        AQP3, CD40LG, LMNA, TRA…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 1           563   0.205  pbmc3k (563)        CCR7, APBA2, TRABD2A, T…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2           479   0.174  pbmc3k (479)        FOLR3, S100A12, S100A8,…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 3           360   0.131  pbmc3k (360)        IGLC3, FCRLA, IGHD, TCL…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 4           345   0.125  pbmc3k (345)        GZMK, TRGC2, CD8A, KLRG…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 5           171   0.062<span style="text-decoration: underline;">1</span> pbmc3k (171)        CKB, CDKN1C, RDUR, MS4A…</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 10 more variables: median_nFeature_RNA &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   median_nCount_RNA &lt;dbl&gt;, median_percent.mt &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   median_percent.ribo &lt;dbl&gt;, median_percent.hb &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   doublet_fraction &lt;dbl&gt;, heuristic_hint &lt;chr&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   heuristic_rationale &lt;chr&gt;, heuristic_top_signatures &lt;chr&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   nearest_clusters &lt;chr&gt;</span></span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation_evidence</span><span class="op">$</span><span class="va">cluster_summary</span><span class="op">)</span></span></code></pre></div>
 <p>If enrichment has been run, add pathway evidence the same way.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_enrichment.html">sn_run_enrichment</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  source_de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  database <span class="op">=</span> <span class="st">"GOBP"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">enrichment_evidence</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prepare_enrichment_evidence.html">sn_prepare_enrichment_evidence</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  enrichment_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
+<span>  enrichment_result_id <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
 <span>  n_terms <span class="op">=</span> <span class="fl">8</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -226,33 +207,25 @@ representation of the exact evidence bundle.</p>
 <span>  task <span class="op">=</span> <span class="st">"annotation"</span>,</span>
 <span>  audience <span class="op">=</span> <span class="st">"scientist"</span>,</span>
 <span>  language <span class="op">=</span> <span class="st">"en"</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"PBMC3k single-cell RNA-seq clustered with Shennong."</span>,</span>
+<span>  background <span class="op">=</span> <span class="st">"Kotliarov PBMC CITE-seq response cohort clustered with Shennong."</span>,</span>
 <span>  output_format <span class="op">=</span> <span class="st">"llm"</span>,</span>
 <span>  include_json_schema <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">annotation_prompt</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "output_format" "task"          "system"        "user"         </span></span>
-<span><span class="co">#&gt; [5] "messages"      "evidence"</span></span>
-<span><span class="va">annotation_prompt</span><span class="op">$</span><span class="va">task</span></span>
-<span><span class="co">#&gt; [1] "annotation"</span></span></code></pre></div>
+<span><span class="va">annotation_prompt</span><span class="op">$</span><span class="va">task</span></span></code></pre></div>
 <p>The high-level helper can return the same prompt directly.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">annotation_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_interpret_annotation.html">sn_interpret_annotation</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  output_format <span class="op">=</span> <span class="st">"llm"</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"Annotate PBMC3k clusters conservatively."</span></span>
+<span>  background <span class="op">=</span> <span class="st">"Annotate Kotliarov PBMC clusters conservatively."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:02] [sn_interpret_annotation] Starting interpretation workflow.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:02] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.3s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_annotation] Prompt prepared (total elapsed 0.3s).</span></span>
 <span></span>
-<span><span class="va">annotation_prompt</span><span class="op">$</span><span class="va">task</span></span>
-<span><span class="co">#&gt; [1] "annotation"</span></span></code></pre></div>
+<span><span class="va">annotation_prompt</span><span class="op">$</span><span class="va">task</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="provider-calls-are-opt-in">Provider calls are opt-in<a class="anchor" aria-label="anchor" href="#provider-calls-are-opt-in"></a>
@@ -282,22 +255,17 @@ by default for review, or pass a provider to store a response.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">de_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_interpret_de.html">sn_interpret_de</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  n_genes <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"Summarize PBMC3k cluster marker programs."</span></span>
+<span>  background <span class="op">=</span> <span class="st">"Summarize Kotliarov PBMC cluster marker programs."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_de] Starting interpretation workflow.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.1s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_interpret_de] Prompt prepared (total elapsed 0.1s).</span></span>
 <span></span>
-<span><span class="va">de_prompt</span><span class="op">$</span><span class="va">task</span></span>
-<span><span class="co">#&gt; [1] "de"</span></span></code></pre></div>
+<span><span class="va">de_prompt</span><span class="op">$</span><span class="va">task</span></span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">enrichment_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_interpret_enrichment.html">sn_interpret_enrichment</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  enrichment_name <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
+<span>  enrichment_result_id <span class="op">=</span> <span class="st">"cluster_gobp"</span>,</span>
 <span>  n_terms <span class="op">=</span> <span class="fl">8</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  background <span class="op">=</span> <span class="st">"Summarize pathway programs by cluster."</span></span>
@@ -308,61 +276,46 @@ by default for review, or pass a provider to store a response.</p>
 </h2>
 <p>The reporting helpers assemble multiple evidence sources into
 audience-specific outputs. They can return prompts for manual review or
-store generated responses under
-<code>object@misc$interpretation_results</code>.</p>
+store generated responses in the canonical Shennong result registry.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_write_results.html">sn_write_results</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  cluster_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  cluster_de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"Write a concise Results paragraph for PBMC3k clustering."</span></span>
+<span>  background <span class="op">=</span> <span class="st">"Write a concise Results paragraph for Kotliarov PBMC clustering."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_results] Starting interpretation workflow.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_results] Step 1/4: Preparing results evidence (elapsed 0.0s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_results] Step 2/4: Building writing prompt (elapsed 0.3s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_results] Prompt prepared (total elapsed 0.3s).</span></span>
 <span></span>
 <span><span class="va">legend_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_write_figure_legend.html">sn_write_figure_legend</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  cluster_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  cluster_de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  background <span class="op">=</span> <span class="st">"Describe a UMAP and marker dot plot."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_figure_legend] Starting interpretation workflow.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:03] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.3s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_figure_legend] Prompt prepared (total elapsed 0.3s).</span></span>
 <span></span>
 <span><span class="va">summary_prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_write_presentation_summary.html">sn_write_presentation_summary</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  cluster_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  cluster_de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  return_prompt <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  background <span class="op">=</span> <span class="st">"Prepare a short collaborator-facing PBMC3k summary."</span></span>
+<span>  background <span class="op">=</span> <span class="st">"Prepare a short collaborator-facing Kotliarov PBMC summary."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_presentation_summary] Starting interpretation workflow.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.3s).</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:04] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.3s).</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">results_prompt</span><span class="op">$</span><span class="va">task</span>, <span class="va">legend_prompt</span><span class="op">$</span><span class="va">task</span>, <span class="va">summary_prompt</span><span class="op">$</span><span class="va">task</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "results"              "figure_legend"       </span></span>
-<span><span class="co">#&gt; [3] "presentation_summary"</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">results_prompt</span><span class="op">$</span><span class="va">task</span>, <span class="va">legend_prompt</span><span class="op">$</span><span class="va">task</span>, <span class="va">summary_prompt</span><span class="op">$</span><span class="va">task</span><span class="op">)</span></span></code></pre></div>
 <p>When a provider is used, retrieve stored outputs by name.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_interpret_de.html">sn_interpret_de</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  de_result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  provider <span class="op">=</span> <span class="va">provider</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_marker_summary"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_marker_summary"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_get_interpretation_result.html">sn_get_interpretation_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
-<span>  interpretation_name <span class="op">=</span> <span class="st">"cluster_marker_summary"</span></span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_marker_summary"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The practical workflow is: compute evidence, inspect evidence, build
 a prompt, then call a provider only when the prompt is good enough to
@@ -374,9 +327,7 @@ send.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -384,6 +335,12 @@ send.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

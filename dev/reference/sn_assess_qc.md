@@ -14,7 +14,7 @@ sn_assess_qc(
   object,
   reference = NULL,
   sample_by = NULL,
-  store_name = "default",
+  result_id = "default",
   return_object = FALSE,
   verbose = TRUE
 )
@@ -38,7 +38,7 @@ sn_assess_qc(
   uses `sample` or `orig.ident` when available and otherwise treats the
   object as one sample.
 
-- store_name:
+- result_id:
 
   Name used when storing the assessment under
   `object@misc$qc_assessments`.
@@ -61,13 +61,11 @@ stored assessment.
 ## Examples
 
 ``` r
-if (requireNamespace("Seurat", quietly = TRUE)) {
-  data("pbmc_small", package = "Shennong")
-  qc_report <- sn_assess_qc(pbmc_small, verbose = FALSE)
-  qc_report$overall
-}
-#>   n_samples n_cells qc_score qc_label retention_fraction
-#> 1         2     200 78.06004     good                 NA
-#>   low_quality_removed_fraction doublet_removed_fraction
-#> 1                           NA                       NA
+if (FALSE) { # \dontrun{
+  pbmc <- qs2::qs_read(file.path(
+    Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+  ))
+  qc_report <- sn_assess_qc(pbmc, verbose = FALSE)
+  qc_report$tables$overall
+} # }
 ```

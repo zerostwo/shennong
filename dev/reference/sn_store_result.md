@@ -1,13 +1,12 @@
 # Store a Shennong analysis result on a Seurat object
 
-Registered legacy result types are stored in their established
-`object@misc` collection. New result types use the generic
-`object@misc$analysis_results` collection.
+Every result is stored at
+`object@misc$shennong$results[[analysis_type]][[result_id]]`.
 
 ## Usage
 
 ``` r
-sn_store_result(object, type, name, result)
+sn_store_result(object, type, result_id, result, overwrite = FALSE)
 ```
 
 ## Arguments
@@ -20,14 +19,19 @@ sn_store_result(object, type, name, result)
 
   Analysis type, for example `"trajectory"` or `"de"`.
 
-- name:
+- result_id:
 
-  Stable name used to retrieve the result.
+  Stable identifier used to store and retrieve the result.
 
 - result:
 
   A result list. Missing contract fields are filled when they can be
   inferred without changing the analytical content.
+
+- overwrite:
+
+  Replace an existing result with the same type and ID. Defaults to
+  `FALSE`; choose a new ID to retain both analyses.
 
 ## Value
 

@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Visualization with Shennong • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Visualization with Shennong">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Visualization with Shennong">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -99,25 +100,25 @@ wrap the common Seurat and ggplot2 patterns used in single-cell reports:
 automatic point sizing, stable palettes, compact panel sizing,
 rasterized scatter plots for large objects, and direct support for
 stored Shennong results.</p>
-<p>This article uses PBMC3k as the running example. The chunks are
-displayed by default and are evaluated only with
-<code>SHENNONG_RUN_VIGNETTES=true</code>.</p>
+<p>This article uses the public Kotliarov PBMC CITE-seq subset as the
+running example. Its RNA and ADT values, 20 biological samples, response
+groups, and acquisition batches are all retained from the source study.
+The chunks execute in real-data builds and remain safe during ordinary
+package checks when the local fixture is unavailable.</p>
 <div class="section level2">
 <h2 id="prepare-one-clustered-object">Prepare one clustered object<a class="anchor" aria-label="anchor" href="#prepare-one-clustered-object"></a>
 </h2>
 <p>The plot wrappers expect the same Seurat object produced by the
-analysis workflow. For a fast demonstration, this example clusters
-PBMC3k with fewer PCs and variable features than a full analysis.</p>
+analysis workflow. For a fast demonstration, this example clusters the
+real PBMC subset with fewer PCs and variable features than a full
+analysis.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:07:10] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:07:11] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:07:11] Seurat object initialization complete.</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -128,7 +129,9 @@ PBMC3k with fewer PCs and variable features than a full analysis.</p>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">real_response</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="dimensional-maps-labels-palettes-and-rasterization">Dimensional maps: labels, palettes, and rasterization<a class="anchor" aria-label="anchor" href="#dimensional-maps-labels-palettes-and-rasterization"></a>
@@ -145,25 +148,20 @@ requiring every script to hand-code colors.</p>
 <span>  label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_halo <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"Paired"</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"PBMC3k clusters"</span></span>
+<span>  title <span class="op">=</span> <span class="st">"Kotliarov PBMC clusters"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-dim-1.png" class="r-plt" alt="" width="672"></p>
 <p>When you need colors programmatically, use the same registry
 directly.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_palettes.html">sn_list_palettes</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/palette-api-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_palettes.html">sn_list_palettes</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">cluster_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_palette.html">sn_get_palette</a></span><span class="op">(</span></span>
 <span>  palette <span class="op">=</span> <span class="st">"Paired"</span>,</span>
 <span>  n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  palette_type <span class="op">=</span> <span class="st">"discrete"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cluster_cols</span></span>
-<span><span class="co">#&gt;  [1] "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C"</span></span>
-<span><span class="co">#&gt;  [7] "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A"</span></span></code></pre></div>
+<span><span class="va">cluster_cols</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="feature-maps-expression-and-density-modes">Feature maps: expression and density modes<a class="anchor" aria-label="anchor" href="#feature-maps-expression-and-density-modes"></a>
@@ -176,7 +174,7 @@ after the regular ggplot point size is applied, so small values such as
 <code>pt_size = 0.01</code> behave like ordinary
 <code><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point()</a></code> sizes. When <code>ggrastr</code> is
 unavailable, the plot remains usable through the vector point layer.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_feature.html">sn_plot_feature</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span><span class="op">)</span>,</span>
@@ -185,10 +183,9 @@ unavailable, the plot remains usable through the vector point layer.</p>
 <span>  palette <span class="op">=</span> <span class="st">"YlOrRd"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Canonical PBMC markers"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-feature-expression-1.png" class="r-plt" alt="" width="672"></p>
 <p>Density mode is useful when expression is sparse and you want to
 emphasize where a marker-defined state sits in the embedding.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_feature.html">sn_plot_feature</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"IL7R"</span>,</span>
@@ -196,6 +193,32 @@ emphasize where a marker-defined state sits in the embedding.</p>
 <span>  mode <span class="op">=</span> <span class="st">"density"</span>,</span>
 <span>  density_style <span class="op">=</span> <span class="st">"galaxy"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"IL7R density"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The matched ADT assay can be shown on the WNN embedding after the
+real protein counts have been CLR-normalized by the multimodal
+workflow.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_cite</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_multimodal.html">sn_run_multimodal</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"wnn"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_feature.html">sn_plot_feature</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3-PROT"</span>, <span class="st">"CD19-PROT"</span>, <span class="st">"CD14-PROT"</span><span class="op">)</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"wnn.umap"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="st">"YlOrRd"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Measured ADT proteins"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -216,7 +239,6 @@ palette.</p>
 <span>  palette <span class="op">=</span> <span class="st">"RdBu"</span>,</span>
 <span>  label_angle <span class="op">=</span> <span class="fl">45</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-heatmap-1.png" class="r-plt" alt="" width="672"></p>
 <p>Use <code>mode = "average"</code> when the comparison is about the
 group-level pattern rather than every individual cell. This averages
 expression within each group and then z-scores each gene by default,
@@ -229,7 +251,6 @@ giving a compact marker-panel summary.</p>
 <span>  mode <span class="op">=</span> <span class="st">"average"</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"RdBu"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-heatmap-average-1.png" class="r-plt" alt="" width="672"></p>
 <p>Use <code>split_by</code> when the same marker panel should be
 inspected separately across samples, conditions, or batches.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -237,7 +258,7 @@ inspected separately across samples, conditions, or batches.</p>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>  split_by <span class="op">=</span> <span class="st">"sample"</span></span>
+<span>  split_by <span class="op">=</span> <span class="st">"real_response"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -247,51 +268,65 @@ inspected separately across samples, conditions, or batches.</p>
 cell-level maps to sample-level summaries without switching visual
 grammar.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pbmc</span><span class="op">$</span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">sample</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span>, <span class="st">"control"</span>, <span class="st">"stim"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/sn_plot_violin.html">sn_plot_violin</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_violin.html">sn_plot_violin</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"pctMT"</span><span class="op">)</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_response"</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"Set2"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-violin-box-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">qc_summary</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">condition</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">real_sample</span>, <span class="va">real_response</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
 <span>    median_features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">nFeature_RNA</span><span class="op">)</span>,</span>
-<span>    median_mito <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">percent.mt</span><span class="op">)</span>,</span>
+<span>    median_mito <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">pctMT</span><span class="op">)</span>,</span>
 <span>    .groups <span class="op">=</span> <span class="st">"drop"</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">qc_summary</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">qc_summary</span>,</span>
-<span>  x <span class="op">=</span> <span class="va">condition</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">real_response</span>,</span>
 <span>  y <span class="op">=</span> <span class="va">median_features</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="st">"Median detected genes"</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="fl">80</span>,</span>
 <span>  panel_heights <span class="op">=</span> <span class="fl">70</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># The canonical distribution entry handles tables or Seurat metadata/features.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_distribution.html">sn_plot_distribution</a></span><span class="op">(</span></span>
+<span>  <span class="va">qc_summary</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median_features"</span>, <span class="st">"median_mito"</span><span class="op">)</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_response"</span>,</span>
+<span>  view <span class="op">=</span> <span class="st">"box"</span>,</span>
+<span>  show_points <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Each point is now one biological sample, not one cell.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_association.html">sn_plot_association</a></span><span class="op">(</span></span>
+<span>  <span class="va">qc_summary</span>,</span>
+<span>  x <span class="op">=</span> <span class="st">"median_features"</span>,</span>
+<span>  y <span class="op">=</span> <span class="st">"median_mito"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_response"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"spearman"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-violin-box-2.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="marker-dot-plots-from-stored-de-results">Marker dot plots from stored DE results<a class="anchor" aria-label="anchor" href="#marker-dot-plots-from-stored-de-results"></a>
 </h2>
-<p>The DE workflow can store markers under
-<code>object@misc$de_results</code>. Once stored,
+<p>The DE workflow stores markers in the canonical Shennong result
+registry. Once stored,
 <code>sn_plot_dot(features = "top_markers")</code> can reuse that result
 directly instead of asking users to manually copy marker lists between
 scripts.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -299,12 +334,30 @@ scripts.</p>
 <span><span class="fu"><a href="../reference/sn_plot_dot.html">sn_plot_dot</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"top_markers"</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  n <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"Purples"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-dot-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="one-result-aware-plotting-interface">One result-aware plotting interface<a class="anchor" aria-label="anchor" href="#one-result-aware-plotting-interface"></a>
+</h2>
+<p>Analysis-specific plotters remain available, but new code can use one
+stable contract: <code>object</code>, <code>analysis_type</code>,
+<code>result_id</code>, and <code>view</code>. Direct result objects
+carry their own analysis type. For a Seurat object, omitted identifiers
+are inferred only when the stored choice is unambiguous.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_plot_methods.html">sn_list_plot_methods</a></span><span class="op">(</span><span class="st">"de"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_result.html">sn_plot_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  analysis_type <span class="op">=</span> <span class="st">"de"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  view <span class="op">=</span> <span class="st">"volcano"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>For a curated marker panel, pass a named list. Each list element
 becomes a free-width facet, so marker families remain visually separated
 even when the groups contain different numbers of genes.</p>
@@ -320,32 +373,182 @@ even when the groups contain different numbers of genes.</p>
 <span>  features <span class="op">=</span> <span class="va">level1_markers</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-dot-groups-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="composition-plots-for-sample-level-summaries">Composition plots for sample-level summaries<a class="anchor" aria-label="anchor" href="#composition-plots-for-sample-level-summaries"></a>
+<h2 id="metadata-driven-composition-plots">Metadata-driven composition plots<a class="anchor" aria-label="anchor" href="#metadata-driven-composition-plots"></a>
 </h2>
-<p><code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> creates the table;
-<code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code> displays it. Keeping those steps
-separate makes the denominator and grouping explicit.</p>
+<p><code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code> can calculate the plot-ready
+composition directly from a Seurat object’s metadata. The explicit
+two-step route through <code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> remains
+useful when you want to inspect or export the denominator table before
+plotting.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">composition</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_composition.html">sn_calculate_composition</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"sample"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
 <span>  variable <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  measure <span class="op">=</span> <span class="st">"both"</span>,</span>
 <span>  min_cells <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
-<span>  <span class="va">composition</span>,</span>
-<span>  x <span class="op">=</span> <span class="va">sample</span>,</span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">real_sample</span>,</span>
 <span>  fill <span class="op">=</span> <span class="va">seurat_clusters</span>,</span>
-<span>  y <span class="op">=</span> <span class="va">proportion</span>,</span>
 <span>  position <span class="op">=</span> <span class="st">"stack"</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"Paired"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/plot-composition-1.png" class="r-plt" alt="" width="672"></p>
+<p>For condition-level inference, each biological sample should
+contribute one proportion. <code>sample_boxplot</code> shows those
+observations directly; <code>sample_bar</code> shows their mean or
+median with SD/SE error bars. Cell types absent from a retained sample
+are represented as zero rather than silently dropped.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  x <span class="op">=</span> <span class="va">real_response</span>,</span>
+<span>  fill <span class="op">=</span> <span class="va">seurat_clusters</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"sample_boxplot"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
+<span>  show_points <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Alluvial/Sankey-style plots trace counts through two or more metadata
+levels. They use ggplot2 directly; no optional Sankey backend is
+required.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"A"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>For cohort metadata repeated on every cell, <code>unit_by</code>
+prevents donor counts or histograms from counting cells as independent
+donors, for example
+<code>sn_plot_composition(seu, x = age, type = "histogram", unit_by = "donor")</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="dedicated-composition-functions-and-sankey-presets">Dedicated composition functions and Sankey presets<a class="anchor" aria-label="anchor" href="#dedicated-composition-functions-and-sankey-presets"></a>
+</h2>
+<p>Use column-name strings throughout the composition family. Strings
+held in variables work too; no <code><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes()</a></code> or unquoted column
+expressions are needed.</p>
+<table class="table">
+<thead><tr class="header">
+<th>Unified <code>type</code>
+</th>
+<th>Dedicated entry point</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>"sankey"</code> / <code>"alluvial"</code>
+</td>
+<td><code><a href="../reference/sn_plot_sankey.html">sn_plot_sankey()</a></code></td>
+</tr>
+<tr class="even">
+<td>
+<code>"bar"</code> / <code>"stacked_bar"</code>
+</td>
+<td><code><a href="../reference/sn_plot_bar.html">sn_plot_bar()</a></code></td>
+</tr>
+<tr class="odd">
+<td>
+<code>"sample_bar"</code> / <code>"errorbar"</code>
+</td>
+<td><code><a href="../reference/sn_plot_sample_bar.html">sn_plot_sample_bar()</a></code></td>
+</tr>
+<tr class="even">
+<td><code>"sample_boxplot"</code></td>
+<td><code><a href="../reference/sn_plot_sample_boxplot.html">sn_plot_sample_boxplot()</a></code></td>
+</tr>
+<tr class="odd">
+<td><code>"histogram"</code></td>
+<td><code><a href="../reference/sn_plot_histogram.html">sn_plot_histogram()</a></code></td>
+</tr>
+</tbody>
+</table>
+<p>These entry points share the same counting, replicate-aware summaries
+and figure metadata as <code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code>. The existing
+<code><a href="../reference/sn_plot_barplot.html">sn_plot_barplot()</a></code> and <code><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot()</a></code> remain
+generic numeric-data plotters.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_bar.html">sn_plot_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_sample"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_sample_bar.html">sn_plot_sample_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_response"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>                   sample_by <span class="op">=</span> <span class="st">"real_sample"</span>, errorbar <span class="op">=</span> <span class="st">"se"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_sample_boxplot.html">sn_plot_sample_boxplot</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_response"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>                       sample_by <span class="op">=</span> <span class="st">"real_sample"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_histogram.html">sn_plot_histogram</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"nCount_RNA"</span>, bins <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span></code></pre></div>
+<p>The unified equivalent accepts the same selectors, e.g.
+<code>sn_plot_composition(pbmc, x_by = "real_sample", fill_by = "seurat_clusters")</code>.
+Legacy <code>x</code>, <code>y</code>, <code>fill</code>, and facet
+mappings remain compatible there, but cannot be combined with their
+<code>*_by</code> replacements. Dedicated functions accept only string
+selectors. For summarized weights use <code>y_by = "count"</code> (or
+your numeric column name) on a data frame; Seurat inputs count
+individual cells.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th><code>style</code></th>
+<th>Layout</th>
+<th>Default flow colors</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>"A"</code></td>
+<td>Separated hierarchy; two or more stages</td>
+<td>First stage</td>
+</tr>
+<tr class="even">
+<td><code>"B"</code></td>
+<td>Left/right annotation comparison with brackets; two stages</td>
+<td>Final stage</td>
+</tr>
+<tr class="odd">
+<td><code>"C"</code></td>
+<td>Top/bottom composition, colored bars and pies; two stages</td>
+<td>First stage</td>
+</tr>
+</tbody>
+</table>
+<p>A retains the <code>sankey_layout = "expanded"</code> option: extra
+node whitespace makes axes with more categories taller without changing
+count widths. B uses tighter spacing and external brackets. Both accept
+<code>axis_labels = c("Original", "Final")</code>. All styles retain
+independent factor order: top-to-bottom in A/B, left-to-right in C.
+Character columns retain first appearance order.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>,</span>
+<span>               style <span class="op">=</span> <span class="st">"C"</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>For annotation comparisons and hierarchies, substitute your metadata
+columns:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
+<span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>,</span>
+<span>  fill_by <span class="op">=</span> <span class="st">"cell_type_level1"</span>, style <span class="op">=</span> <span class="st">"A"</span>, sankey_layout <span class="op">=</span> <span class="st">"expanded"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
+<span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"original_label"</span>, <span class="st">"final_annotation"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"B"</span>,</span>
+<span>  axis_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Original label"</span>, <span class="st">"Final annotation"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
+<span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age_group"</span>, <span class="st">"cell_type"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"C"</span>,</span>
+<span>  palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Young <span class="op">=</span> <span class="st">"#7F8C8D"</span>, Aged <span class="op">=</span> <span class="st">"#55A5D8"</span><span class="op">)</span>,</span>
+<span>  facet_row_by <span class="op">=</span> <span class="st">"compartment"</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>C pies have equal size and show each target category’s source-group
+proportions, computed from the same retained weights as the ribbons
+within each facet. Use <code>show_pies = FALSE</code> to omit them and
+<code>node_palette</code> to color target bars independently. C requires
+source-based <code>fill_by</code> so ribbon and pie colors agree. Each C
+facet is scaled to the same horizontal span; widths encode relative
+composition within a facet, not comparable absolute counts between
+facets. C uses <code>aspect_ratio</code> as the fixed coordinate ratio
+(default 0.45) so pies remain circular.
+<code>show_stratum_boxes = TRUE</code> outlines its colored node
+bars.</p>
+<p>Missing paths are excluded; replace missing annotations with
+<code>"Unknown"</code> to retain them. Use a taller/wider export when
+many or long labels need more room.</p>
 </div>
 <div class="section level2">
 <h2 id="standard-ggplot2-still-fits">Standard ggplot2 still fits<a class="anchor" aria-label="anchor" href="#standard-ggplot2-still-fits"></a>
@@ -354,21 +557,49 @@ separate makes the denominator and grouping explicit.</p>
 use plain ggplot2 and resolve colors through Shennong. If
 <code>catplot</code> is installed, its compact theme is a good final
 layer for manuscript-style figures.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">condition_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_palette.html">sn_get_palette</a></span><span class="op">(</span><span class="st">"Set2"</span>, n <span class="op">=</span> <span class="fl">2</span>, palette_type <span class="op">=</span> <span class="st">"discrete"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">condition_cols</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"stim"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">response_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">qc_summary</span><span class="op">$</span><span class="va">real_response</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">response_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_palette.html">sn_get_palette</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Set2"</span>,</span>
+<span>  n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">response_levels</span><span class="op">)</span>,</span>
+<span>  palette_type <span class="op">=</span> <span class="st">"discrete"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">response_cols</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">response_levels</span></span>
 <span></span>
-<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">qc_summary</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">condition</span>, y <span class="op">=</span> <span class="va">median_mito</span>, fill <span class="op">=</span> <span class="va">condition</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">condition_cols</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="st">"Median mitochondrial percent"</span><span class="op">)</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">qc_summary</span>,</span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">real_response</span>, y <span class="op">=</span> <span class="va">median_mito</span>, colour <span class="op">=</span> <span class="va">real_response</span><span class="op">)</span></span>
+<span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_boxplot.html" class="external-link">geom_boxplot</a></span><span class="op">(</span>outlier.shape <span class="op">=</span> <span class="cn">NA</span>, colour <span class="op">=</span> <span class="st">"grey35"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_jitter.html" class="external-link">geom_jitter</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">0.08</span>, height <span class="op">=</span> <span class="fl">0</span>, size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">response_cols</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="st">"Per-sample median mitochondrial percent"</span>, colour <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"catplot"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">+</span> <span class="fu">catplot</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/catplot/man/theme_cat.html" class="external-link">theme_cat</a></span><span class="op">(</span>panel_widths <span class="op">=</span> <span class="fl">80</span>, panel_heights <span class="op">=</span> <span class="fl">70</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">p</span></span></code></pre></div>
-<p><img src="visualization_files/figure-html/custom-ggplot-1.png" class="r-plt" alt="" width="672"></p>
+<div class="section level3">
+<h3 id="panel-sizing">Panel sizing<a class="anchor" aria-label="anchor" href="#panel-sizing"></a>
+</h3>
+<p>All five dedicated composition entry points and
+<code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code> accept <code>panel_widths</code> and
+<code>panel_heights</code> explicitly, in <strong>points (pt)</strong>.
+These control the drawing panel, excluding outer labels and margins, and
+do not require catplot. For example:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
+<span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"B"</span>,</span>
+<span>  panel_widths <span class="op">=</span> <span class="fl">320</span>, panel_heights <span class="op">=</span> <span class="fl">400</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>Scalars apply to every facet. A/B and the other composition plots
+also accept vectors for facet column widths and row heights. Style C
+requires scalar sizes so all pies remain circular. Supplying both sizes
+takes precedence over <code>aspect_ratio</code>. With one size and an
+aspect ratio the other is derived; C also derives a missing size using
+its default coordinate ratio. Export to a canvas large enough to include
+the panel plus labels, title, legend and margins.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -376,9 +607,7 @@ layer for manuscript-style figures.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -386,6 +615,12 @@ layer for manuscript-style figures.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

@@ -1,9 +1,9 @@
 # Convert Seurat assay layers to BPCells-backed matrices
 
-`sn_convert_bpcells()` writes selected Seurat assay layers to BPCells
-matrix directories and rebinds those layers in the returned Seurat
-object. This keeps large count or normalized-expression layers on disk
-while preserving the usual Seurat object interface.
+`sn_convert_bpcells()` is the compatibility wrapper for
+`sn_set_layer_backend(backend = "bpcells")`. New code can use
+[`sn_set_layer_backend()`](https://zerostwo.github.io/shennong/dev/reference/sn_set_layer_backend.md)
+when layers need to move in either direction.
 
 ## Usage
 
@@ -14,7 +14,8 @@ sn_convert_bpcells(
   assays = NULL,
   layers = "counts",
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  matrix_type = c("auto", "uint32_t", "double", "float")
 )
 ```
 
@@ -26,8 +27,9 @@ sn_convert_bpcells(
 
 - directory:
 
-  Output directory that will contain one BPCells matrix directory per
-  selected assay/layer.
+  Output directory containing one BPCells matrix directory per selected
+  assay/layer. Required for `backend = "bpcells"` and ignored for
+  `backend = "memory"`.
 
 - assays:
 
@@ -40,33 +42,23 @@ sn_convert_bpcells(
 
 - overwrite:
 
-  Logical; overwrite existing BPCells matrix directories.
+  Logical; replace existing BPCells matrix directories.
 
 - verbose:
 
   Whether to print progress messages.
 
+- matrix_type:
+
+  BPCells storage type. `"auto"` stores compatible count-like layers as
+  `"uint32_t"` and otherwise preserves their numeric representation.
+  Explicit alternatives are `"uint32_t"`, `"double"`, and `"float"`.
+  Used only for `backend = "bpcells"`.
+
 ## Value
 
 A Seurat object with selected layers backed by BPCells matrices.
 
-## Details
+## See also
 
-BPCells stores matrix directories outside the serialized Seurat object.
-If the object is moved to another machine, move the BPCells directory
-alongside it and rebind the layers with `BPCells::open_matrix_dir()`
-when needed.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-pbmc <- sn_convert_bpcells(
-  pbmc,
-  directory = "data/processed/pbmc_bpcells",
-  layers = c("counts", "data"),
-  overwrite = TRUE
-)
-sn_write(pbmc, "data/processed/pbmc_bpcells_bound.qs2")
-} # }
-```
+[`sn_set_layer_backend()`](https://zerostwo.github.io/shennong/dev/reference/sn_set_layer_backend.md)

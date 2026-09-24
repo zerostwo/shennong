@@ -5,26 +5,24 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Analysis methods and stored-result contracts • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Manage stored results and backend availability • Shennong</title>
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Analysis methods and stored-result contracts">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Manage stored results and backend availability">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -81,7 +82,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Analysis methods and stored-result contracts</h1>
+      <h1>Manage stored results and backend availability</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -94,6 +95,8 @@ Duan</h4>
 
     
     
+<p>This guide covers backend discovery, result validation, storage,
+export, and migration. For a first analysis, use <a href="get-started.html">Get started</a>.</p>
 <p>Shennong separates method discovery from method execution. The
 registry shows the preferred backend, its requirements, whether the
 adapter has been implemented, and whether the current machine can run
@@ -103,19 +106,51 @@ misrepresented as available.</p>
 <h2 id="discover-methods-before-running-a-workflow">Discover methods before running a workflow<a class="anchor" aria-label="anchor" href="#discover-methods-before-running-a-workflow"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span><span class="st">"trajectory"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span><span class="va">method_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span><span class="st">"trajectory"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"name"</span>, <span class="st">"default"</span>, <span class="st">"implemented"</span>, <span class="st">"available"</span>, <span class="st">"runtime"</span>, <span class="st">"package"</span></span>
 <span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
-<span><span class="co">#&gt;   name      default implemented available runtime package  </span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> slingshot TRUE    TRUE        FALSE     r       slingshot</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> monocle3  FALSE   TRUE        FALSE     r       monocle3 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> palantir  FALSE   TRUE        FALSE     pixi    Shennong</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/sn_method_status.html">sn_method_status</a></span><span class="op">(</span><span class="st">"slingshot"</span>, task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">method_table</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">name</th>
+<th align="left">default</th>
+<th align="left">implemented</th>
+<th align="left">available</th>
+<th align="left">runtime</th>
+<th align="left">package</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">slingshot</td>
+<td align="left">TRUE</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
+<td align="left">r</td>
+<td align="left">slingshot</td>
+</tr>
+<tr class="even">
+<td align="left">monocle3</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
+<td align="left">r</td>
+<td align="left">monocle3</td>
+</tr>
+<tr class="odd">
+<td align="left">palantir</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+<td align="left">FALSE</td>
+<td align="left">pixi</td>
+<td align="left">Shennong</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="fu"><a href="../reference/sn_get_method_status.html">sn_get_method_status</a></span><span class="op">(</span><span class="st">"slingshot"</span>, task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $method</span></span>
 <span><span class="co">#&gt; [1] "slingshot"</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -125,8 +160,14 @@ misrepresented as available.</p>
 <span><span class="co">#&gt; $available</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $runnable</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $implemented</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $conformance_status</span></span>
+<span><span class="co">#&gt; [1] "unassessed"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $reason</span></span>
 <span><span class="co">#&gt; [1] "Optional R package 'slingshot' is not installed."</span></span>
@@ -191,38 +232,24 @@ in the current environment. Installation is always explicit; discovery
 never installs software.</p>
 </div>
 <div class="section level2">
-<h2 id="the-common-result-shape">The common result shape<a class="anchor" aria-label="anchor" href="#the-common-result-shape"></a>
+<h2 id="inspect-the-complete-result">Inspect the complete result<a class="anchor" aria-label="anchor" href="#inspect-the-complete-result"></a>
 </h2>
-<p>New workflows store results with one versioned contract. Tables,
-embeddings, graphs, models, diagnostics, warnings, parameters, input
-summaries, and provenance have stable locations.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  schema_version <span class="op">=</span> <span class="st">"1.0"</span>,</span>
-<span>  analysis_type <span class="op">=</span> <span class="st">"trajectory"</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"cd8_slingshot"</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"slingshot"</span>,</span>
-<span>  backend <span class="op">=</span> <span class="st">"slingshot"</span>,</span>
-<span>  input <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="st">"pca"</span>, cells <span class="op">=</span> <span class="fl">4L</span>, features <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span>,</span>
-<span>  parameters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>start <span class="op">=</span> <span class="st">"naive"</span><span class="op">)</span>,</span>
-<span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    primary <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>      cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>,</span>
-<span>      pseudotime <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span>, <span class="fl">0.7</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  embeddings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  graphs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  models <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>converged <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  warnings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  provenance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    package_versions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Shennong <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"Shennong"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    random_seed <span class="op">=</span> <span class="fl">1L</span>,</span>
-<span>    timestamp <span class="op">=</span> <span class="st">"2026-07-15 UTC"</span></span>
-<span>  <span class="op">)</span></span>
+<p>New workflows store results with one versioned contract. This example
+runs QC assessment on the bundled PBMC example, stores the result on a
+Seurat object, and validates the stored envelope. No local fixture is
+required. Tables, embeddings, graphs, models, diagnostics, warnings,
+parameters, input summaries, and provenance have stable locations.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"SeuratObject"</span><span class="op">)</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="va">pbmc_small</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_qc.html">sn_assess_qc</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"example_qc"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"qc_assessment"</span>, <span class="st">"example_qc"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_validate_result.html">sn_validate_result</a></span><span class="op">(</span><span class="va">result</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $valid</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -234,65 +261,324 @@ summaries, and provenance have stable locations.</p>
 <span><span class="co">#&gt; character(0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; attr(,"class")</span></span>
-<span><span class="co">#&gt; [1] "sn_result_validation" "list"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "sn_result_validation" "list"</span></span>
+<span><span class="va">result</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"schema_version"</span>, <span class="st">"analysis_type"</span>, <span class="st">"result_id"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; $schema_version</span></span>
+<span><span class="co">#&gt; [1] "2.0.0"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $analysis_type</span></span>
+<span><span class="co">#&gt; [1] "qc_assessment"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $result_id</span></span>
+<span><span class="co">#&gt; [1] "example_qc"</span></span>
+<span><span class="va">result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          sample n_cells median_nCount median_nFeature median_percent_mt</span></span>
+<span><span class="co">#&gt; 1 SeuratProject      80           180            51.5                NA</span></span>
+<span><span class="co">#&gt;   failed_qc_fraction doublet_fraction zero_count_fraction library_score</span></span>
+<span><span class="co">#&gt; 1                 NA               NA                  NA             0</span></span>
+<span><span class="co">#&gt;   stress_score qc_score qc_label</span></span>
+<span><span class="co">#&gt; 1           NA        0     poor</span></span>
+<span><span class="va">result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">overall</span></span>
+<span><span class="co">#&gt;   n_samples n_cells qc_score qc_label retention_fraction</span></span>
+<span><span class="co">#&gt; 1         1      80        0     poor                 NA</span></span>
+<span><span class="co">#&gt;   low_quality_removed_fraction doublet_removed_fraction</span></span>
+<span><span class="co">#&gt; 1                           NA                       NA</span></span></code></pre></div>
+<p>For schema 2, <code>schema_version</code>,
+<code>analysis_type</code>, and <code>result_id</code> are part of the
+result’s identity rather than descriptive labels.
+<code><a href="../reference/sn_get_result.html">sn_get_result()</a></code> checks that the embedded type and ID agree
+with the physical keys under which the result is stored. The canonical
+<code>tables$primary</code> must also be a data frame with at least one
+column and no duplicate column names. All 33 built-in analysis types
+register their own minimum primary-table semantics: identity columns,
+keys, data types, finite/range checks, and relevant cross-row rules such
+as fate probabilities summing to one. A copied or hand-edited payload
+whose identity, table shape, or scientific invariants no longer match
+its storage location therefore fails closed instead of being returned
+under the wrong name.</p>
 </div>
 <div class="section level2">
 <h2 id="store-discover-and-retrieve-from-seurat">Store, discover, and retrieve from Seurat<a class="anchor" aria-label="anchor" href="#store-discover-and-retrieve-from-seurat"></a>
 </h2>
-<p>The generic functions support new result types while existing helpers
-such as <code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code> remain available. Registered
-legacy result writers are upgraded to the same contract on write and
-read.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>For return flags, table filtering, ID selection, and intentional
+replacement, start with <a href="parameters-and-results.html">Parameters
+and results</a>. The example below copies one validated result under a
+new ID, retrieves it, then deletes the copy. It leaves the original
+analysis in place.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_store_result.html">sn_store_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"trajectory"</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"cd8_slingshot"</span>,</span>
-<span>  result <span class="op">=</span> <span class="va">result</span></span>
+<span>  type <span class="op">=</span> <span class="st">"qc_assessment"</span>,</span>
+<span>  result <span class="op">=</span> <span class="va">result</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"qc_copy"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results qc_assess… example_… qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"qc_assessment"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results qc_assess… example_… qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, include_artifacts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results qc_assess… example_… qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span></span></span>
 <span></span>
-<span><span class="va">trajectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span><span class="va">qc_copy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"trajectory"</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"cd8_slingshot"</span></span>
+<span>  type <span class="op">=</span> <span class="st">"qc_assessment"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"qc_copy"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">trajectory</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span>
-<span><span class="va">trajectory</span><span class="op">$</span><span class="va">provenance</span></span>
+<span><span class="va">qc_copy</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          sample n_cells median_nCount median_nFeature median_percent_mt</span></span>
+<span><span class="co">#&gt; 1 SeuratProject      80           180            51.5                NA</span></span>
+<span><span class="co">#&gt;   failed_qc_fraction doublet_fraction zero_count_fraction library_score</span></span>
+<span><span class="co">#&gt; 1                 NA               NA                  NA             0</span></span>
+<span><span class="co">#&gt;   stress_score qc_score qc_label</span></span>
+<span><span class="co">#&gt; 1           NA        0     poor</span></span>
+<span><span class="va">qc_copy</span><span class="op">$</span><span class="va">provenance</span></span>
+<span><span class="co">#&gt; $package_versions</span></span>
+<span><span class="co">#&gt; $package_versions$Shennong</span></span>
+<span><span class="co">#&gt; [1] "0.3.0.9000"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $package_versions$R</span></span>
+<span><span class="co">#&gt; [1] "4.6.1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $random_seed</span></span>
+<span><span class="co">#&gt; [1] NA</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $timestamp</span></span>
+<span><span class="co">#&gt; [1] "2026-09-24 00:01:28 UTC"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $result_id</span></span>
+<span><span class="co">#&gt; [1] "qc_copy"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $analysis_type</span></span>
+<span><span class="co">#&gt; [1] "qc_assessment"</span></span>
 <span></span>
 <span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_delete_result.html">sn_delete_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"trajectory"</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"cd8_slingshot"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span>  type <span class="op">=</span> <span class="st">"qc_assessment"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"qc_copy"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results qc_assess… example_… qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p>Prefer these APIs over direct <code>object@misc</code> access. Stable
-names and explicit provenance make stored results discoverable by
+result IDs and explicit provenance make stored results discoverable by
 scripts, reports, and future agent integrations without allowing an LLM
 to overwrite computational output.</p>
+</div>
+<div class="section level2">
+<h2 id="export-a-service-neutral-result-bundle">Export a service-neutral Result Bundle<a class="anchor" aria-label="anchor" href="#export-a-service-neutral-result-bundle"></a>
+</h2>
+<p><code><a href="../reference/result_bundle.html">sn_build_result_bundle()</a></code> turns one retrieved canonical
+result into the package-owned JSON handoff contract
+<code>shennong.dev/analysis-result-bundle/v1</code>. The bundle may
+reference immutable inputs and candidate output artifacts, but it never
+connects to ShennongDB, calls an orchestrator, or carries credentials.
+An authorized external service must independently verify the referenced
+digests before promoting output bytes.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Discover and retrieve the exact stored result first.</span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"qc_assessment"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results qc_assess… example_… qc_asse… unkno… 2026-09-2…      1 <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="va">qc_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"qc_assessment"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"example_qc"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">bundle</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/result_bundle.html">sn_build_result_bundle</a></span><span class="op">(</span></span>
+<span>  <span class="va">qc_result</span>,</span>
+<span>  inputs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    role <span class="op">=</span> <span class="st">"expression"</span>,</span>
+<span>    resource_id <span class="op">=</span> <span class="st">"bundled-pbmc-example"</span>,</span>
+<span>    revision <span class="op">=</span> <span class="st">"replace-with-immutable-revision"</span>,</span>
+<span>    digest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      algorithm <span class="op">=</span> <span class="st">"sha256"</span>,</span>
+<span>      value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"0"</span>, <span class="fl">64L</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span><span class="op">)</span>,</span>
+<span>  execution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>runtime <span class="op">=</span> <span class="st">"interactive-r"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/result_bundle.html">sn_validate_result_bundle</a></span><span class="op">(</span><span class="va">bundle</span>, error <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $valid</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $errors</span></span>
+<span><span class="co">#&gt; character(0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $warnings</span></span>
+<span><span class="co">#&gt; character(0)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attr(,"class")</span></span>
+<span><span class="co">#&gt; [1] "sn_result_bundle_validation" "list"</span></span>
+<span><span class="va">bundle_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".json"</span><span class="op">)</span></span>
+<span><span class="va">handoff</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/result_bundle.html">sn_export_result_bundle</a></span><span class="op">(</span><span class="va">bundle</span>, <span class="va">bundle_path</span><span class="op">)</span></span>
+<span><span class="va">handoff</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"size_bytes"</span>, <span class="st">"digest"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; $size_bytes</span></span>
+<span><span class="co">#&gt; [1] 2799</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $digest</span></span>
+<span><span class="co">#&gt; $digest$algorithm</span></span>
+<span><span class="co">#&gt; [1] "sha256"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $digest$value</span></span>
+<span><span class="co">#&gt; [1] "b15e79faa0c4531966f47fa039ebe35fa378c3486b5a966fddd813f959bee5b5"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">bundle_path</span><span class="op">)</span></span></code></pre></div>
+<p>Replace the placeholder revision and digest with the exact values
+supplied by the data owner. Artifact paths, when present, must be
+bundle-relative. The export return value includes the JSON file’s
+SHA-256 digest for the next trusted boundary to verify.</p>
+</div>
+<div class="section level2">
+<h2 id="audit-and-upgrade-existing-objects">Audit and upgrade existing objects<a class="anchor" aria-label="anchor" href="#audit-and-upgrade-existing-objects"></a>
+</h2>
+<p><code><a href="../reference/sn_audit_results.html">sn_audit_results()</a></code> checks the canonical result store and
+every other populated top-level <code>object@misc</code> entry without
+changing the object. Canonical results report <code>valid</code>,
+normalizable malformed envelopes report <code>repairable</code>,
+runtime/cache payloads report <code>artifact</code>, and unknown
+payloads report <code>unregistered</code> rather than being silently
+omitted or misclassified as analysis results. Every analytical result
+uses <code>schema_version = "2.0.0"</code> and a canonical
+<code>tables$primary</code>; additional named tables carry
+analysis-specific outputs. Legacy analytical envelopes with a supported
+older schema are upgraded only when their identity and primary table can
+be reconstructed unambiguously. Malformed payloads and unknown future
+schema versions are reported for manual review rather than guessed into
+the current contract.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">audit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_audit_results.html">sn_audit_results</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span><span class="va">audit</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"type"</span>, <span class="st">"result_id"</span>, <span class="st">"contract_scope"</span>, <span class="st">"status"</span>, <span class="st">"schema_version"</span>,</span>
+<span>  <span class="st">"primary_rows"</span>, <span class="st">"errors"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
+<span><span class="co">#&gt;   type        result_id contract_scope status schema_version primary_rows errors</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qc_assessm… example_… analysis_resu… valid  2.0.0                     1 <span style="color: #949494;">""</span></span></span>
+<span></span>
+<span><span class="co"># Normalize only analytical results. Artifacts and unregistered</span></span>
+<span><span class="co"># payloads are left untouched.</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_upgrade_results.html">sn_upgrade_results</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/sn_audit_results.html">sn_audit_results</a></span><span class="op">(</span><span class="va">object</span>, include_artifacts <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">$</span><span class="va">status</span> <span class="op">==</span> <span class="st">"valid"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_audit_results.html">sn_audit_results</a></span><span class="op">(</span><span class="va">object</span>, include_artifacts <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 14</span></span></span>
+<span><span class="co">#&gt;   collection type  result_id contract_scope schema_version target_schema_version</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.… qc_a… example_… analysis_resu… 2.0.0          2.0.0                </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 8 more variables: status &lt;chr&gt;, unified &lt;lgl&gt;, valid &lt;lgl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   repairable &lt;lgl&gt;, primary_rows &lt;int&gt;, errors &lt;chr&gt;, upgrade_errors &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   warnings &lt;chr&gt;</span></span></span></code></pre></div>
+<p>Analytical results and legacy runtime/cache artifacts have different
+deletion APIs. <code><a href="../reference/sn_delete_result.html">sn_delete_result()</a></code> removes one exact
+<code>(type, result_id)</code> entry from the canonical store. A
+registered artifact may still live in a historical top-level
+<code>object@misc</code> collection whose name alone does not prove
+ownership, so <code><a href="../reference/sn_delete_artifact.html">sn_delete_artifact()</a></code> always requires explicit
+confirmation—even when an <code>artifact_id</code> is supplied:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, include_artifacts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_delete_artifact.html">sn_delete_artifact</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  artifact_type <span class="op">=</span> <span class="st">"integration_comparison"</span>,</span>
+<span>  artifact_id <span class="op">=</span> <span class="st">"pbmc_grid"</span>,</span>
+<span>  confirm <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Omitting artifact_id deletes the whole registered collection and still</span></span>
+<span><span class="co"># requires confirm = TRUE.</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_delete_artifact.html">sn_delete_artifact</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  artifact_type <span class="op">=</span> <span class="st">"label_transfer"</span>,</span>
+<span>  confirm <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Unknown artifact types fail closed, and unregistered
+<code>object@misc</code> payloads are never deletion targets for this
+API.</p>
+<p>Table-returning helpers such as <code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code>
+expose the same canonical primary table. Use
+<code><a href="../reference/sn_get_result.html">sn_get_result()</a></code> when the full envelope, diagnostics, or
+provenance is required.</p>
+</div>
+<div class="section level2">
+<h2 id="use-optional-shennongopt-acceleration">Use optional ShennongOpt acceleration<a class="anchor" aria-label="anchor" href="#use-optional-shennongopt-acceleration"></a>
+</h2>
+<p>Shennong never patches another package during loading. Selected hot
+paths are accelerated by the companion R package
+<strong>ShennongOpt</strong>, which registers guarded fast replacements
+(Seurat <code>RunPCA</code>/<code>ScaleData</code>, scran, decontX,
+scDblFinder, Coralysis, UCell, LISI, and Rogue) and rebinds them only
+while a compatible Shennong workflow call runs. Unsupported inputs fall
+back to the captured upstream implementation, so results stay bit-exact
+by construction.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_check_acceleration.html">sn_check_acceleration</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; named character(0)</span></span></code></pre></div>
+<p>Automatic workflow scopes can be disabled per session:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Prevent automatic workflow scopes in this R session.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>shennong.acceleration <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Explicit helpers intentionally ignore the automatic opt-out.</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_with_acceleration.html">sn_with_acceleration</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span><span class="va">object</span>, resolution <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"seurat"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Keep a patch active for direct upstream calls until it is disabled again.</span></span>
+<span><span class="fu"><a href="../reference/sn_enable_acceleration.html">sn_enable_acceleration</a></span><span class="op">(</span><span class="st">"seurat"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_disable_acceleration.html">sn_disable_acceleration</a></span><span class="op">(</span><span class="st">"seurat"</span><span class="op">)</span></span></code></pre></div>
+<p><code>options(shennong.acceleration = FALSE)</code> or
+<code>SHENNONG_ACCELERATION_DISABLED=true</code> block automatic scopes;
+neither deactivates a patch that was activated manually. Set
+<code>shennong.opt.threads</code> (or <code>SHENNONG_OPT_THREADS</code>)
+to cap the thread budget used by accelerated parallel sections.
+Accelerated paths never change scientific output; conformance contracts
+compare candidate calls against direct upstream oracles with
+acceleration disabled.</p>
+<p>Hot paths without a ShennongOpt counterpart (for example CellChat,
+NicheNetR, SoupX, clusterProfiler caches, tradeSeq, WGCNA, and Seurat
+merge/JoinLayers) currently execute their plain upstream
+implementations. They will gain accelerations as new ShennongOpt patches
+become available; provenance records which patches each run used and
+which were requested but unavailable.</p>
 </div>
 <div class="section level2">
 <h2 id="give-agents-a-read-only-discovery-surface">Give agents a read-only discovery surface<a class="anchor" aria-label="anchor" href="#give-agents-a-read-only-discovery-surface"></a>
 </h2>
 <p>Install the packaged Shennong Agent Skills and register the bundled
 stdio MCP server with an MCP-capable client:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"~/.agents/skills"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"package_skills"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_mcp_server_config.html">sn_mcp_server_config</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $command</span></span>
-<span><span class="co">#&gt; [1] "/opt/R/4.6.1/lib/R/bin/Rscript"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $args</span></span>
-<span><span class="co">#&gt; [1] "-e"                        "Shennong::sn_mcp_server()"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $transport</span></span>
-<span><span class="co">#&gt; [1] "stdio"</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/sn_get_mcp_server_config.html">sn_get_mcp_server_config</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The MCP server exposes <code>list_methods</code>,
 <code>method_status</code>, <code>function_help</code>,
 <code>workflow_guide</code>, and <code>package_info</code>. These tools
@@ -306,9 +592,7 @@ arbitrary-code or file-mutation tool.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -316,6 +600,12 @@ arbitrary-code or file-mutation tool.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

@@ -28,5 +28,4 @@ version when available.
 ``` r
 accel <- sn_detect_accelerator(quiet = TRUE)
 accel$backend
-#> [1] "cpu"
 ```

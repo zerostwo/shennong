@@ -1,16 +1,17 @@
-# Retrieve a stored enrichment result from a Seurat object
+# Retrieve an enrichment result table
 
-Retrieve a stored enrichment result from a Seurat object
+Retrieve an enrichment result table
 
 ## Usage
 
 ``` r
 sn_get_enrichment_result(
   object,
-  enrichment_name = "default",
+  result_id = NULL,
   top_n = NULL,
   groups = NULL,
-  with_metadata = FALSE
+  top_scope = c("group", "all"),
+  p_adjusted_cutoff = NULL
 )
 ```
 
@@ -18,11 +19,12 @@ sn_get_enrichment_result(
 
 - object:
 
-  A `Seurat` object.
+  A `Seurat` object or unified enrichment result.
 
-- enrichment_name:
+- result_id:
 
-  Name of the stored enrichment result.
+  Identifier of the stored enrichment result. May be omitted when
+  exactly one enrichment result is stored.
 
 - top_n:
 
@@ -33,19 +35,23 @@ sn_get_enrichment_result(
   Optional subset of cluster/group labels when the stored table includes
   a `Cluster` column.
 
-- with_metadata:
+- top_scope:
 
-  If `TRUE`, return the full stored result list instead of just the term
-  table.
+  Whether to retain the top terms within each group or overall.
+
+- p_adjusted_cutoff:
+
+  Optional maximum adjusted p-value, from zero to one.
 
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble. Use `sn_get_result(object, "enrichment")` for the
+complete result and its metadata.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-terms <- sn_get_enrichment_result(seurat_obj, enrichment_name = "cluster_gsea", top_n = 10)
+terms <- sn_get_enrichment_result(seurat_obj, result_id = "cluster_gsea", top_n = 10)
 } # }
 ```

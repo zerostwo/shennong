@@ -4,7 +4,7 @@ This helper scans a root directory for typical 10x Genomics `outs/`
 layouts and returns one selected path per detected sample. By default it
 returns the `outs/` directory itself so the output can be passed
 directly to
-[`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md).
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md).
 The `path_type` argument can instead return the filtered matrix path,
 raw matrix path, H5 files, or `metrics_summary.csv` file.
 
@@ -54,11 +54,6 @@ sample_dir <- file.path(root, "sample1", "outs")
 dir.create(file.path(sample_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
 dir.create(file.path(sample_dir, "raw_feature_bc_matrix"), recursive = TRUE)
 file.create(file.path(sample_dir, "metrics_summary.csv"))
-#> [1] TRUE
 sn_list_10x_paths(root)
-#>                                               sample1 
-#> "/tmp/RtmpUtYuZs/tenx-root-1c61563f3fb9/sample1/outs" 
 sn_list_10x_paths(root, path_type = "filtered")
-#>                                                                          sample1 
-#> "/tmp/RtmpUtYuZs/tenx-root-1c61563f3fb9/sample1/outs/filtered_feature_bc_matrix" 
 ```

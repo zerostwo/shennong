@@ -7,7 +7,12 @@ indicates stronger within-cluster batch mixing.
 ## Usage
 
 ``` r
-sn_calculate_cluster_entropy(x, cluster_by = NULL, label_by = NULL)
+sn_calculate_cluster_entropy(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -25,6 +30,10 @@ sn_calculate_cluster_entropy(x, cluster_by = NULL, label_by = NULL)
   Metadata/data-frame column containing the label_by to evaluate within
   each cluster.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A data frame with one row per cluster, including raw entropy and a
@@ -38,7 +47,4 @@ meta <- data.frame(
   batch = c("a", "b", "a", "b")
 )
 sn_calculate_cluster_entropy(meta, cluster_by = "cluster", label_by = "batch")
-#>   cluster n_cells n_labels dominant_label   entropy normalized_entropy
-#> 1       0       2        2              a 0.6931472                  1
-#> 2       1       2        2              a 0.6931472                  1
 ```

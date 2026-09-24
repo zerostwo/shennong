@@ -7,9 +7,10 @@ Plot branch-specific dynamic-gene evidence
 ``` r
 sn_plot_branch_comparison(
   x,
-  name = NULL,
+  result_id = NULL,
   test = c("pattern", "differential_end"),
-  n = 20L
+  n = 20L,
+  object = NULL
 )
 ```
 
@@ -19,9 +20,9 @@ sn_plot_branch_comparison(
 
   A Seurat object or trajectory result.
 
-- name:
+- result_id:
 
-  Stored trajectory name.
+  Stored trajectory result_id.
 
 - test:
 
@@ -30,6 +31,10 @@ sn_plot_branch_comparison(
 - n:
 
   Maximum number of features.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

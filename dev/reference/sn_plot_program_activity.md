@@ -5,7 +5,13 @@ Plot program activity distributions
 ## Usage
 
 ``` r
-sn_plot_program_activity(x, name, programs = NULL, group_by = NULL)
+sn_plot_program_activity(
+  x,
+  result_id,
+  programs = NULL,
+  group_by = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -14,9 +20,9 @@ sn_plot_program_activity(x, name, programs = NULL, group_by = NULL)
 
   A Seurat object or program-scoring result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - programs:
 
@@ -25,6 +31,10 @@ sn_plot_program_activity(x, name, programs = NULL, group_by = NULL)
 - group_by:
 
   Optional Seurat metadata column used on the x-axis.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

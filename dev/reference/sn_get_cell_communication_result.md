@@ -7,10 +7,9 @@ Retrieve a stored cell-cell communication result
 ``` r
 sn_get_cell_communication_result(
   object,
-  communication_name = "default",
+  result_id = NULL,
   sources = NULL,
-  targets = NULL,
-  with_metadata = FALSE
+  targets = NULL
 )
 ```
 
@@ -20,7 +19,7 @@ sn_get_cell_communication_result(
 
   A Seurat object.
 
-- communication_name:
+- result_id:
 
   Name of the stored result.
 
@@ -28,10 +27,12 @@ sn_get_cell_communication_result(
 
   Optional source/target labels to keep.
 
-- with_metadata:
-
-  If `TRUE`, return the full stored-result list.
-
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble.
+
+## Details
+
+This getter always returns the selected table. Use
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md)
+for the complete stored result and metadata.

@@ -17,7 +17,7 @@ sn_run_bulk(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - workflow:
 

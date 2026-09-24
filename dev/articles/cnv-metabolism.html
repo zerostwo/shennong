@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>CNV, Malignancy, and Metabolism • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="CNV, Malignancy, and Metabolism">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="CNV, Malignancy, and Metabolism">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -90,75 +91,273 @@
 
     
     
-<p>CNV and metabolic activity answer different questions, but both
-require an explicit evidence boundary. CNV malignancy calls need trusted
-normal cells; condition-level metabolism needs biological samples rather
-than treating cells as replicates. Shennong stores both analyses through
-the common result contract.</p>
-<div class="section level2">
-<h2 id="reference-aware-cnv">Reference-aware CNV<a class="anchor" aria-label="anchor" href="#reference-aware-cnv"></a>
-</h2>
-<p>Use cell names directly or a metadata column to declare normal
-references. inferCNVpy is the default pixi backend. CopyKAT is also
-available and is run sample by sample when <code>sample_by</code> is
-supplied.</p>
+<p>The revised GSE72056 matrix contains author-normalized expression and
+an author-provided malignancy class derived from inferred CNV. It does
+not contain raw UMI counts, so this article never passes those values to
+CopyKAT as if they were counts. Curated gene-set metabolism can run
+directly on the normalized layer; inferCNVpy runs only when an
+already-installed audited environment is present.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cnv.html">sn_run_cnv</a></span><span class="op">(</span></span>
-<span>  <span class="va">tumor</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"infercnvpy"</span>,</span>
-<span>  reference_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  reference_cat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T cell"</span>, <span class="st">"Myeloid"</span><span class="op">)</span>,</span>
-<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"tumor_cnv"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Discover and retrieve the durable result without reading
-<code>object@misc</code> directly. The primary table contains per-cell
-CNV, malignancy, call, reference, and subclone fields. The other tables
-retain chromosome, sample, and CNV-expression evidence.</p>
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  workflow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"author malignancy evidence"</span>, <span class="st">"curated metabolism"</span>,</span>
+<span>    <span class="st">"inferCNVpy"</span>, <span class="st">"CopyKAT"</span>, <span class="st">"scMetabolism / scFEA / Compass"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"core source evidence"</span>, <span class="st">"core"</span>, <span class="st">"extended"</span>, <span class="st">"extended"</span>, <span class="st">"extended"</span><span class="op">)</span>,</span>
+<span>  status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">core_ready</span><span class="op">)</span> <span class="st">"displayed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">run_vignette</span><span class="op">)</span> <span class="st">"disabled: set SHENNONG_RUN_VIGNETTES=true"</span> <span class="kw">else</span> <span class="st">"fixture missing"</span>,</span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">core_ready</span><span class="op">)</span> <span class="st">"executed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">run_vignette</span><span class="op">)</span> <span class="st">"disabled: set SHENNONG_RUN_VIGNETTES=true"</span> <span class="kw">else</span> <span class="st">"fixture missing"</span>,</span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">infercnvpy_ready</span><span class="op">)</span> <span class="st">"executed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">real_profile</span>, <span class="st">"all"</span><span class="op">)</span><span class="op">)</span> <span class="st">"disabled: requires SHENNONG_REAL_PROFILE=all"</span> <span class="kw">else</span> <span class="st">"not run: pre-existing inferCNVpy pixi environment absent"</span>,</span>
+<span>    <span class="st">"not run: source has normalized expression rather than raw counts"</span>,</span>
+<span>    <span class="st">"not run: optional backend/result not supplied"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="26%">
+<col width="17%">
+<col width="55%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">workflow</th>
+<th align="left">mode</th>
+<th align="left">status</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">author malignancy evidence</td>
+<td align="left">core source evidence</td>
+<td align="left">disabled: set SHENNONG_RUN_VIGNETTES=true</td>
+</tr>
+<tr class="even">
+<td align="left">curated metabolism</td>
+<td align="left">core</td>
+<td align="left">disabled: set SHENNONG_RUN_VIGNETTES=true</td>
+</tr>
+<tr class="odd">
+<td align="left">inferCNVpy</td>
+<td align="left">extended</td>
+<td align="left">disabled: requires SHENNONG_REAL_PROFILE=all</td>
+</tr>
+<tr class="even">
+<td align="left">CopyKAT</td>
+<td align="left">extended</td>
+<td align="left">not run: source has normalized expression rather than
+raw counts</td>
+</tr>
+<tr class="odd">
+<td align="left">scMetabolism / scFEA / Compass</td>
+<td align="left">extended</td>
+<td align="left">not run: optional backend/result not supplied</td>
+</tr>
+</tbody>
+</table>
+<div class="section level2">
+<h2 id="inspect-real-malignancy-evidence">Inspect real malignancy evidence<a class="anchor" aria-label="anchor" href="#inspect-real-malignancy-evidence"></a>
+</h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">tumor</span>, type <span class="op">=</span> <span class="st">"cnv"</span><span class="op">)</span></span>
-<span><span class="va">cnv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"cnv"</span>, <span class="st">"tumor_cnv"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cnv</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">)</span></span>
-<span><span class="va">cnv</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_summary</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"tumor_cnv"</span>, type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"tumor_cnv"</span>, type <span class="op">=</span> <span class="st">"umap"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"tumor_cnv"</span>, type <span class="op">=</span> <span class="st">"association"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">melanoma</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">melanoma_path</span><span class="op">)</span></span>
+<span><span class="va">malignancy_evidence</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span></span>
+<span>  malignant_call <span class="op">=</span> <span class="va">melanoma</span><span class="op">$</span><span class="va">malignant_call</span>,</span>
+<span>  cell_type <span class="op">=</span> <span class="va">melanoma</span><span class="op">$</span><span class="va">cell_type</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">malignancy_evidence</span> <span class="op">&lt;-</span> <span class="va">malignancy_evidence</span><span class="op">[</span></span>
+<span>  <span class="va">malignancy_evidence</span><span class="op">$</span><span class="va">Freq</span> <span class="op">&gt;</span> <span class="fl">0</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
+<span><span class="va">malignancy_evidence</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  tumors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">melanoma</span><span class="op">$</span><span class="va">tumor</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">melanoma</span><span class="op">)</span>,</span>
+<span>  normalized_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">melanoma</span><span class="op">)</span>,</span>
+<span>  expression_layer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">melanoma</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="curated-metabolic-activity">Curated metabolic activity<a class="anchor" aria-label="anchor" href="#curated-metabolic-activity"></a>
+<h2 id="curated-metabolic-activity-with-biological-sample-summaries">Curated metabolic activity with biological-sample summaries<a class="anchor" aria-label="anchor" href="#curated-metabolic-activity-with-biological-sample-summaries"></a>
 </h2>
-<p>The lightweight default uses curated pathways with UCell. GSVA,
-ssGSEA, and a sparse-aware mean score are alternatives. Always supply
-<code>sample_by</code> before a condition comparison;
-<code>group_by</code> optionally stratifies by cell type or state.</p>
+<p>The core path uses a sparse-aware mean score to avoid an optional
+scoring dependency. Tumor is the sample unit and the study’s malignancy
+class is a descriptive stratum. No condition p-value is computed because
+primary versus metastatic is not a sample-level field in GSE72056.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_metabolic_signatures.html">sn_metabolic_signatures</a></span><span class="op">(</span><span class="st">"human"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">metabolic_signatures</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_metabolic_signatures.html">sn_get_metabolic_signatures</a></span><span class="op">(</span><span class="st">"human"</span><span class="op">)</span></span>
+<span><span class="va">metabolic_signatures</span> <span class="op">&lt;-</span> <span class="va">metabolic_signatures</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"glycolysis"</span>, <span class="st">"tca_cycle"</span>, <span class="st">"oxidative_phosphorylation"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_metabolism.html">sn_run_metabolism</a></span><span class="op">(</span></span>
-<span>  <span class="va">tumor</span>,</span>
+<span><span class="va">metabolism</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_metabolism.html">sn_run_metabolism</a></span><span class="op">(</span></span>
+<span>  <span class="va">melanoma</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"geneset"</span>,</span>
-<span>  scoring_method <span class="op">=</span> <span class="st">"ucell"</span>,</span>
-<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  condition_by <span class="op">=</span> <span class="st">"response"</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"metabolism_response"</span></span>
+<span>  signatures <span class="op">=</span> <span class="va">metabolic_signatures</span>,</span>
+<span>  scoring_method <span class="op">=</span> <span class="st">"mean"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"tumor"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"malignant_call"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  min_genes <span class="op">=</span> <span class="fl">3L</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">tumor</span>, type <span class="op">=</span> <span class="st">"metabolism"</span><span class="op">)</span></span>
-<span><span class="va">metabolism</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"metabolism"</span>, <span class="st">"metabolism_response"</span><span class="op">)</span></span>
 <span><span class="va">metabolism</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">coverage</span></span>
-<span><span class="va">metabolism</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_scores</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metabolism</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_scores</span>, <span class="fl">30</span><span class="op">)</span></span>
 <span><span class="va">metabolism</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">differential</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_metabolism.html">sn_plot_metabolism</a></span><span class="op">(</span><span class="va">metabolism</span>, type <span class="op">=</span> <span class="st">"activity"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_metabolism.html">sn_plot_metabolism</a></span><span class="op">(</span><span class="va">metabolism</span>, type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_metabolism.html">sn_plot_metabolism</a></span><span class="op">(</span><span class="va">metabolism</span>, type <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="extended-reference-aware-infercnvpy">Extended: reference-aware inferCNVpy<a class="anchor" aria-label="anchor" href="#extended-reference-aware-infercnvpy"></a>
+</h2>
+<p>This chunk can execute only when
+<code>SHENNONG_REAL_PROFILE=all</code> and the inferCNVpy pixi
+environment already exists. <code>install_pixi = FALSE</code> prevents
+the article from downloading software. Non-malignant immune and stromal
+cells are the reference; the author malignancy class is retained for
+comparison but is not imported as a backend result. The runner calls
+<code><a href="../reference/sn_run_scarches.html">sn_run_infercnvpy()</a></code> explicitly once, then hands its real
+score, chromosome, cluster, and embedding outputs to
+<code><a href="../reference/sn_run_cnv.html">sn_run_cnv()</a></code> for unified summaries and plots.</p>
+<p>Malignancy standardization is reference-anchored: its center and
+spread are estimated from at least two finite reference-cell scores
+only. Query-cell variance is never used to rescue an unusable reference,
+because that would let the suspected malignant population define its own
+decision scale. For multi-patient data, <code>sample_by</code> is
+required for sample summaries and a direct CopyKAT run requires
+reference cells within every analyzed sample. The direct inferCNVpy
+adapter fails closed on a multi-sample <code>sample_by</code> request;
+use an explicit sample-aware runner, as below, when the project has
+defined that execution boundary.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">717</span><span class="op">)</span></span>
+<span><span class="va">cells_by_call</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">melanoma</span><span class="op">)</span>, <span class="va">melanoma</span><span class="op">$</span><span class="va">malignant_call</span><span class="op">)</span></span>
+<span><span class="va">cnv_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">cells_by_call</span>, <span class="kw">function</span><span class="op">(</span><span class="va">cells</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cells</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="fl">400</span><span class="op">)</span> <span class="va">cells</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">cells</span>, <span class="fl">400</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">cnv_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">melanoma</span>, cells <span class="op">=</span> <span class="va">cnv_cells</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_plot_metabolism.html">sn_plot_metabolism</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"metabolism_response"</span>, type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_metabolism.html">sn_plot_metabolism</a></span><span class="op">(</span><span class="va">tumor</span>, <span class="st">"metabolism_response"</span>, type <span class="op">=</span> <span class="st">"differential"</span><span class="op">)</span></span></code></pre></div>
-<p>scMetabolism is an optional R backend. scFEA and Compass remain
-heavyweight external runtimes: pass a pathway-by-cell result or an
-explicit runner through <code>backend_control</code>, after which
-Shennong applies the same sample-level storage, comparison, and plotting
-contract.</p>
+<span><span class="va">article_infercnvpy_runner</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">object</span>, <span class="va">reference_cells</span>, <span class="va">genome</span>,</span>
+<span>                                      <span class="va">result_id</span>, <span class="va">assay</span>, <span class="va">layer</span>, <span class="va">sample_by</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">object</span><span class="op">$</span><span class="va">.article_cnv_reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">reference_cells</span>, <span class="st">"reference"</span>, <span class="st">"query"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">updated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_infercnvpy</a></span><span class="op">(</span></span>
+<span>    <span class="va">object</span>,</span>
+<span>    assay <span class="op">=</span> <span class="va">assay</span>,</span>
+<span>    layer <span class="op">=</span> <span class="va">layer</span>,</span>
+<span>    species <span class="op">=</span> <span class="va">genome</span>,</span>
+<span>    reference_by <span class="op">=</span> <span class="st">".article_cnv_reference"</span>,</span>
+<span>    reference_cat <span class="op">=</span> <span class="st">"reference"</span>,</span>
+<span>    runtime_dir <span class="op">=</span> <span class="va">infercnvpy_paths</span><span class="op">$</span><span class="va">runtime_dir</span>,</span>
+<span>    artifact_id <span class="op">=</span> <span class="va">result_id</span>,</span>
+<span>    metadata_prefix <span class="op">=</span> <span class="st">"infercnvpy_"</span>,</span>
+<span>    run_umap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    n_workers <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>    return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    install_pixi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">updated</span><span class="op">$</span><span class="va">.article_cnv_reference</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
+<span></span>
+<span>  <span class="va">metadata</span> <span class="op">&lt;-</span> <span class="va">updated</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="va">score_column</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"infercnvpy_cnv_score"</span>, <span class="st">"infercnvpy_score"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">score_column</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"inferCNVpy completed without an imported CNV score column."</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">cluster_column</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"infercnvpy_cnv_leiden"</span>, <span class="st">"infercnvpy_leiden"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">manifest</span> <span class="op">&lt;-</span> <span class="va">updated</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">infercnvpy</span><span class="op">[[</span><span class="va">result_id</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span>  <span class="va">chromosome_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">manifest</span><span class="op">$</span><span class="va">output_dir</span>, <span class="st">"cnv_chromosome.csv"</span><span class="op">)</span></span>
+<span>  <span class="va">chromosomes</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">chromosome_path</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">chromosome_wide</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
+<span>      <span class="va">chromosome_path</span>, row.names <span class="op">=</span> <span class="fl">1</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="va">chromosome_wide</span><span class="op">$</span><span class="va">cell</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">chromosome_wide</span><span class="op">)</span></span>
+<span>    <span class="va">chromosomes</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">chromosome_wide</span><span class="op">)</span>, <span class="st">"cell"</span><span class="op">)</span>,</span>
+<span>      <span class="kw">function</span><span class="op">(</span><span class="va">chromosome</span><span class="op">)</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>        cell <span class="op">=</span> <span class="va">chromosome_wide</span><span class="op">$</span><span class="va">cell</span>,</span>
+<span>        chromosome <span class="op">=</span> <span class="va">chromosome</span>,</span>
+<span>        cnv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">chromosome_wide</span><span class="op">[[</span><span class="va">chromosome</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="op">)</span></span>
+<span>    <span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">embedding_name</span> <span class="op">&lt;-</span> <span class="st">"infercnvpy_cnv_umap"</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    object <span class="op">=</span> <span class="va">updated</span>,</span>
+<span>    scores <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">[[</span><span class="va">score_column</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    chromosomes <span class="op">=</span> <span class="va">chromosomes</span>,</span>
+<span>    subclone <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cluster_column</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">[[</span><span class="va">cluster_column</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>      <span class="cn">NULL</span></span>
+<span>    <span class="op">}</span>,</span>
+<span>    prediction <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    embedding <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">embedding_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">updated</span><span class="op">@</span><span class="va">reductions</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">updated</span><span class="op">[[</span><span class="va">embedding_name</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>      <span class="cn">NULL</span></span>
+<span>    <span class="op">}</span>,</span>
+<span>    artifacts <span class="op">=</span> <span class="va">manifest</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">cnv_attempt</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/sn_run_cnv.html">sn_run_cnv</a></span><span class="op">(</span></span>
+<span>    <span class="va">cnv_object</span>,</span>
+<span>    method <span class="op">=</span> <span class="st">"infercnvpy"</span>,</span>
+<span>    reference_by <span class="op">=</span> <span class="st">"malignant_call"</span>,</span>
+<span>    reference_cat <span class="op">=</span> <span class="st">"non_malignant"</span>,</span>
+<span>    sample_by <span class="op">=</span> <span class="st">"tumor"</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>    association_layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>    association_features <span class="op">=</span> <span class="fl">30L</span>,</span>
+<span>    backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      runner <span class="op">=</span> <span class="va">article_infercnvpy_runner</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="va">identity</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">cnv_attempt</span>, <span class="st">"error"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    backend <span class="op">=</span> <span class="st">"inferCNVpy"</span>, status <span class="op">=</span> <span class="st">"failed"</span>,</span>
+<span>    detail <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">cnv_attempt</span><span class="op">)</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">cnv</span> <span class="op">&lt;-</span> <span class="va">cnv_attempt</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cnv</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cnv</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_summary</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cnv</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">expression_association</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">cnv</span>, type <span class="op">=</span> <span class="st">"heatmap"</span>, n <span class="op">=</span> <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">cnv</span>, type <span class="op">=</span> <span class="st">"score"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_plot_cnv.html">sn_plot_cnv</a></span><span class="op">(</span><span class="va">cnv</span>, type <span class="op">=</span> <span class="st">"association"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p><code>layer</code> is the backend input, whereas
+<code>association_layer</code> is the normalized expression source used
+only for the CNV-expression association table. Shennong does not
+silently reuse a raw count layer for that correlation. CopyKAT requires
+a raw/count-like integer layer; inferCNVpy requires an explicitly
+selected normalized, log-transformed
+<code>data</code>/<code>data.*</code> layer and never falls back to
+counts. The result records both sources so a downstream review can
+distinguish CNV inference from expression association.</p>
+<p>scMetabolism, scFEA, and Compass remain optional external
+computations. The pkgdown article does not reinterpret the real
+mean-score table as output from those backends.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -166,9 +365,7 @@ contract.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -176,6 +373,12 @@ contract.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

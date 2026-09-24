@@ -8,11 +8,12 @@ Store regulatory activity results on a Seurat object
 sn_store_regulatory_activity(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   method = "dorothea",
   group_by = NULL,
   species = NULL,
   network = NULL,
+  random_seed = NULL,
   return_object = TRUE
 )
 ```
@@ -27,9 +28,9 @@ sn_store_regulatory_activity(
 
   Regulatory activity table.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$regulatory_activity_results`.
+  Name used under the canonical Shennong result registry.
 
 - method:
 
@@ -46,6 +47,10 @@ sn_store_regulatory_activity(
 - network:
 
   Optional regulatory network used for inference.
+
+- random_seed:
+
+  Optional random seed recorded in the result provenance.
 
 - return_object:
 

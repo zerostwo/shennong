@@ -8,13 +8,13 @@ Infer and summarize a gene regulatory network
 sn_run_grn(
   object,
   method = c("genie3", "pyscenic", "scenic", "grnboost2"),
-  name = NULL,
   assay = NULL,
   layer = "data",
   regulators = NULL,
   group_by = NULL,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  result_id = NULL
 )
 ```
 
@@ -30,10 +30,6 @@ sn_run_grn(
   explicit runner/result adapters so their external motif databases and
   runtimes remain visible.
 
-- name:
-
-  Stored result name.
-
 - assay, layer:
 
   Expression assay and layer.
@@ -48,16 +44,21 @@ sn_run_grn(
 
 - backend_control:
 
-  Backend controls or an external `runner`/`result`.
+  Backend controls or an external `runner`/`result`. Signed edges
+  require `activity_method = "weighted_mean"`.
 
 - return_object:
 
   Return the modified object or unified result.
 
+- result_id:
+
+  Stable identifier for the stored GRN result.
+
 ## Value
 
-A Seurat object or unified GRN result with edge, regulon, activity, and
-specificity tables.
+A Seurat object or unified GRN result with edge, regulon, activity,
+specificity tables, and a regulon-to-metadata-column mapping.
 
 ## Examples
 

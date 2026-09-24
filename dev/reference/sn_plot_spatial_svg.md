@@ -5,7 +5,7 @@ Plot spatial-feature statistics
 ## Usage
 
 ``` r
-sn_plot_spatial_svg(x, name = NULL, n = 30L)
+sn_plot_spatial_svg(x, result_id = NULL, n = 30L, object = NULL)
 ```
 
 ## Arguments
@@ -14,13 +14,17 @@ sn_plot_spatial_svg(x, name = NULL, n = 30L)
 
   A Seurat object or spatial-feature result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - n:
 
   Number of features.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

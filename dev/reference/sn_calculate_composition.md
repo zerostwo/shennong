@@ -15,7 +15,8 @@ sn_calculate_composition(
   additional_cols = NULL,
   sort_by = NULL,
   sort_value = NULL,
-  sort_desc = FALSE
+  sort_desc = FALSE,
+  object = NULL
 )
 ```
 
@@ -62,6 +63,10 @@ sn_calculate_composition(
 - sort_desc:
 
   Logical; if `TRUE`, sort in descending order.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

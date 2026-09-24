@@ -7,10 +7,11 @@ Plot discovered gene programs
 ``` r
 sn_plot_discovered_programs(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("weights", "activity", "stability"),
   programs = NULL,
-  n = 20L
+  n = 20L,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_discovered_programs(
 
   A Seurat object or program-discovery result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - type:
 
@@ -35,6 +36,10 @@ sn_plot_discovered_programs(
 - n:
 
   Maximum genes per program.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

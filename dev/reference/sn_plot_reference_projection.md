@@ -7,7 +7,7 @@ Plot reference annotation projection
 ``` r
 sn_plot_reference_projection(
   object,
-  store_name = "annotation",
+  result_id = "annotation",
   reduction = NULL,
   color_by = c("prediction", "prediction_score")
 )
@@ -19,7 +19,7 @@ sn_plot_reference_projection(
 
   A Seurat object with a stored annotation result.
 
-- store_name:
+- result_id:
 
   Annotation result name.
 

@@ -6,7 +6,7 @@ using S and G2M phase marker genes.
 ## Usage
 
 ``` r
-sn_score_cell_cycle(object, species = NULL)
+sn_score_cell_cycle(object, species = NULL, assay = NULL, layer = "data")
 ```
 
 ## Arguments
@@ -20,6 +20,17 @@ sn_score_cell_cycle(object, species = NULL)
   (Optional) A character string indicating the species (e.g., "human" or
   "mouse"). If NULL, the function will attempt to retrieve species
   information from `Seurat::Misc(object)`.
+
+- assay:
+
+  Assay containing the expression values used for scoring. When `NULL`,
+  uses the object's current default assay.
+
+- layer:
+
+  Layer within `assay` used for scoring. Defaults to `"data"`. Custom
+  and split layers are supported without permanently replacing the
+  assay's standard `data`, `counts`, or `scale.data` layers.
 
 ## Value
 
@@ -60,7 +71,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   colnames(counts) <- paste0("cell", 1:20)
   obj <- sn_initialize_seurat_object(counts, species = "human")
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
-  obj <- sn_score_cell_cycle(obj, species = "human")
+  obj <- sn_score_cell_cycle(
+    obj,
+    species = "human",
+    assay = "RNA",
+    layer = "data"
+  )
   head(obj[[]][, c("S.Score", "G2M.Score", "Phase")])
 }
 } # }

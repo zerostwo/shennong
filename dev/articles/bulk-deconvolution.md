@@ -1,166 +1,179 @@
-# Bulk deconvolution from a PBMC3k reference
+# Bulk deconvolution from a real Kotliarov PBMC reference
 
-Bulk deconvolution starts with one clear contract: a single-cell
-reference, labels on the reference cells, and a bulk matrix with
-overlapping genes. Shennong wraps that contract for CIBERSORTx and
-BayesPrism while keeping credentialed or containerized steps explicit.
+This article uses real UMI counts from the public Kotliarov PBMC
+CITE-seq cohort. The bulk columns are biological-sample pseudobulks
+formed by summing cells within `real_sample`; they are not mixtures
+assembled from hand-picked clusters. Because the reference cells and
+mixtures come from the same cohort, this is a technical contract test
+rather than an independent biological validation.
 
-This article uses PBMC3k clusters as a teaching reference.
+``` r
 
-## Build a small reference and mock bulk matrix
+knitr::kable(data.frame(
+  workflow = c("CIBERSORTx input contract", "BayesPrism deconvolution"),
+  mode = c("core dry run", "extended backend"),
+  status = c(
+    if (core_ready) "executed below; no backend result claimed" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture missing",
+    if (bayesprism_ready) "executed below" else if (!identical(real_profile, "all")) "disabled: requires SHENNONG_REAL_PROFILE=all" else if (!requireNamespace("BayesPrism", quietly = TRUE)) "dependency missing: BayesPrism" else "fixture missing"
+  ),
+  check.names = FALSE
+))
+```
+
+| workflow | mode | status |
+|:---|:---|:---|
+| CIBERSORTx input contract | core dry run | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| BayesPrism deconvolution | extended backend | disabled: requires SHENNONG_REAL_PROFILE=all |
+
+## Build a real reference and biological-sample pseudobulk
 
 ``` r
 
 library(Shennong)
 library(Seurat)
-library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-20 05:57:03] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-20 05:57:04] Running QC metrics for human.
-#> INFO [2026-07-20 05:57:04] Seurat object initialization complete.
-
+pbmc <- qs2::qs_read(pbmc_path)
 pbmc <- sn_run_cluster(
-  object = pbmc,
+  pbmc,
   normalization_method = "seurat",
   nfeatures = 1500,
   dims = 1:15,
-  resolution = 0.6,
+  resolution = 0.5,
   species = "human",
   verbose = FALSE
 )
-
-pbmc$cell_type <- paste0("cluster_", pbmc$seurat_clusters)
+pbmc$cell_state <- paste0("cluster_", pbmc$seurat_clusters)
 
 counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+sample_cells <- split(colnames(pbmc), pbmc$real_sample)
+pseudobulk_counts <- vapply(
+  sample_cells,
+  function(cells) Matrix::rowSums(counts[, cells, drop = FALSE]),
+  numeric(nrow(counts))
+)
+rownames(pseudobulk_counts) <- rownames(counts)
 
-bulk <- cbind(
-  bulk_a = Matrix::rowSums(counts[, pbmc$cell_type %in% c("cluster_0", "cluster_1"), drop = FALSE]),
-  bulk_b = Matrix::rowSums(counts[, pbmc$cell_type %in% c("cluster_2", "cluster_3"), drop = FALSE])
+pbmc_metadata <- pbmc[[]]
+sample_design <- do.call(rbind, lapply(
+  split(seq_len(nrow(pbmc_metadata)), pbmc_metadata$real_sample),
+  function(index) data.frame(
+    real_sample = pbmc_metadata$real_sample[index[[1]]],
+    real_response = unique(pbmc_metadata$real_response[index]),
+    observed_batches = paste(sort(unique(pbmc_metadata$real_batch[index])), collapse = "+"),
+    cells = length(index),
+    row.names = pbmc_metadata$real_sample[index[[1]]]
+  )
+))
+sample_design <- sample_design[colnames(pseudobulk_counts), , drop = FALSE]
+
+data.frame(
+  samples = ncol(pseudobulk_counts),
+  genes = nrow(pseudobulk_counts),
+  cells = ncol(pbmc),
+  clusters = length(unique(pbmc$cell_state)),
+  response_groups = paste(sort(unique(sample_design$real_response)), collapse = " / ")
 )
 ```
 
-The mock bulk samples are sums of selected single-cell clusters. Real
-bulk data should be normalized and gene-aligned according to the backend
-requirements.
+## Validate a CIBERSORTx export without claiming fractions
 
-## Prepare a CIBERSORTx run without launching the container
-
-Use `cibersortx_dry_run = TRUE` to validate exported files and the
-command bundle locally. This is the right mode for examples, tests, and
-documentation.
+The dry run writes only temporary input files and returns redacted
+container commands. It proves that the real reference labels and 20
+pseudobulk columns satisfy the interface. It does **not** create or
+import a deconvolution result. Both inputs are raw counts here.
+CIBERSORTx also accepts non-log linear expression, but the reference and
+mixture must have the same detected scale; the returned
+`scale_provenance` records that decision.
 
 ``` r
 
-bundle <- sn_deconvolve_bulk(
+cibersortx_bundle <- sn_run_bulk_deconvolution(
   x = pbmc,
-  bulk = bulk,
+  bulk = pseudobulk_counts,
   method = "cibersortx",
-  cell_type_by = "cell_type",
-  outdir = file.path(tempdir(), "pbmc3k-cibersortx"),
-  prefix = "pbmc3k_demo",
-  cibersortx_email = "demo@example.org",
-  cibersortx_token = "fake-token",
+  cell_type_by = "cell_state",
+  layer = "counts",
+  outdir = file.path(tempdir(), "kotliarov-cibersortx"),
+  prefix = "kotliarov_pseudobulk",
+  cibersortx_email = "documentation@example.org",
+  cibersortx_token = "documentation-only-token",
   cibersortx_dry_run = TRUE,
   return_object = FALSE
 )
 
-names(bundle)
-#> [1] "table"     "files"     "artifacts" "method"
-bundle$command
-#> NULL
-bundle$files
-#> $single_cell_reference
-#> [1] "/tmp/RtmpCDQDhC/pbmc3k-cibersortx/sample_file_for_cibersort.txt"
-#> 
-#> $mixture
-#> [1] "/tmp/RtmpCDQDhC/pbmc3k-cibersortx/mixture_file_for_cibersort.txt"
-#> 
-#> $signature_matrix
-#> [1] "/tmp/RtmpCDQDhC/pbmc3k-cibersortx/CIBERSORTx_sample_file_for_cibersort_inferred_phenoclasses.CIBERSORTx_sample_file_for_cibersort_inferred_refsample.bm.K999.txt"
-#> 
-#> $result
-#> [1] "/tmp/RtmpCDQDhC/pbmc3k-cibersortx/CIBERSORTx_pbmc3k_demo_Results.txt"
+data.frame(
+  method = cibersortx_bundle$method,
+  backend_launched = FALSE,
+  reference_file = basename(cibersortx_bundle$files$single_cell_reference),
+  mixture_file = basename(cibersortx_bundle$files$mixture),
+  commands_redacted = cibersortx_bundle$artifacts$commands_redacted
+)
+cibersortx_bundle$command
 ```
 
-For an actual CIBERSORTx run, store credentials locally once and omit
-the placeholder values.
+## Extended: run BayesPrism locally
+
+For documentation runtime, the reference is deterministically reduced to
+800 high-abundance genes and at most 80 cells per real cluster. Every
+retained value still comes from the public count matrix, and all 20
+mixtures remain biological sample pseudobulks. `update_gibbs = FALSE`
+reports BayesPrism’s first-stage fractions and keeps the extended build
+tractable.
 
 ``` r
 
-sn_set_cibersortx_credentials(
-  email = Sys.getenv("CIBERSORTX_EMAIL"),
-  token = Sys.getenv("CIBERSORTX_TOKEN")
-)
-
-result <- sn_deconvolve_bulk(
-  x = pbmc,
-  bulk = bulk,
-  method = "cibersortx",
-  cell_type_by = "cell_type",
-  outdir = "results/deconvolution/cibersortx",
-  prefix = "pbmc3k"
-)
-```
-
-## Import or store completed fractions
-
-When CIBERSORTx has already produced a fraction table, import it through
-`cibersortx_result` or store the table explicitly. Keeping results on
-the reference object makes downstream retrieval predictable.
-
-``` r
-
-fractions <- data.frame(
-  sample = c("bulk_a", "bulk_b"),
-  cluster_0 = c(0.45, 0.10),
-  cluster_1 = c(0.35, 0.05),
-  cluster_2 = c(0.10, 0.50),
-  cluster_3 = c(0.10, 0.35),
-  check.names = FALSE
-)
-
-pbmc <- sn_store_deconvolution(
-  object = pbmc,
-  result = fractions,
-  store_name = "pbmc3k_mock_bulk",
-  method = "cibersortx",
-  bulk_samples = fractions$sample,
-  reference_label = "cell_type",
-  artifacts = bundle$files,
-  return_object = TRUE
-)
-
-sn_get_deconvolution_result(
+gene_order <- order(Matrix::rowSums(counts), decreasing = TRUE)
+deconvolution_genes <- rownames(counts)[head(gene_order, 800)]
+cells_by_state <- split(colnames(pbmc), pbmc$cell_state)
+reference_cells <- unlist(lapply(cells_by_state, function(cells) {
+  head(sort(cells), 80)
+}), use.names = FALSE)
+reference <- subset(
   pbmc,
-  deconvolution_name = "pbmc3k_mock_bulk"
+  cells = reference_cells,
+  features = deconvolution_genes
 )
-#> # A tibble: 2 × 5
-#>   sample cluster_0 cluster_1 cluster_2 cluster_3
-#>   <chr>      <dbl>     <dbl>     <dbl>     <dbl>
-#> 1 bulk_a      0.45      0.35       0.1      0.1 
-#> 2 bulk_b      0.1       0.05       0.5      0.35
+bulk_for_deconvolution <- pseudobulk_counts[
+  deconvolution_genes, , drop = FALSE
+]
+
+bayesprism_attempt <- tryCatch(
+  sn_run_bulk_deconvolution(
+    x = reference,
+    bulk = bulk_for_deconvolution,
+    method = "bayesprism",
+    cell_type_by = "cell_state",
+    cell_state_by = "cell_state",
+    layer = "counts",
+    n_workers = 2,
+    update_gibbs = FALSE,
+    return_object = FALSE
+  ),
+  error = identity
+)
+
+if (inherits(bayesprism_attempt, "error")) {
+  knitr::kable(data.frame(
+    backend = "BayesPrism", status = "failed",
+    detail = conditionMessage(bayesprism_attempt), check.names = FALSE
+  ))
+} else {
+  bayesprism_result <- bayesprism_attempt
+  print(head(bayesprism_result$table, 20))
+  print(ggplot2::ggplot(
+    bayesprism_result$table,
+    ggplot2::aes(x = .data$sample, y = .data$fraction, fill = .data$cell_type)
+  ) +
+    ggplot2::geom_col() +
+    ggplot2::coord_flip() +
+    ggplot2::labs(x = NULL, y = "Estimated fraction", fill = "Cluster") +
+    ggplot2::theme_bw())
+}
 ```
 
-## BayesPrism is a local optional backend
-
-BayesPrism runs inside R and is useful when you want a Bayesian local
-workflow. It is optional because it is much heavier than the dry-run
-CIBERSORTx export.
-
-``` r
-
-bayesprism_result <- sn_deconvolve_bulk(
-  x = pbmc,
-  bulk = bulk,
-  method = "bayesprism",
-  cell_type_by = "cell_type",
-  key = NULL,
-  n_cores = 2,
-  store_name = "pbmc3k_bayesprism"
-)
-```
-
-The rule of thumb is: use dry-run mode to verify file contracts, then
-run the backend deliberately in the environment where its dependencies
-and credentials are configured.
+CIBERSORTx production runs remain credentialed and containerized. The
+article does not synthesize a fraction table when that backend is
+unavailable. An explicit `outdir` is a parent for a unique marked child
+run and is never recursively owned; the default temporary run is cleaned
+after success. BayesPrism accepts only finite non-negative integer-like
+raw counts and never rounds fractional expression silently.

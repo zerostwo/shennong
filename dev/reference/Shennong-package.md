@@ -13,7 +13,7 @@ analysis with a focus on usability and reproducibility.
 
 Useful links:
 
-- <https://songqi.org/shennong>
+- <https://zerostwo.github.io/shennong>
 
 - <https://github.com/zerostwo/shennong>
 

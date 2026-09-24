@@ -5,7 +5,13 @@ Plot pseudotime on the trajectory embedding
 ## Usage
 
 ``` r
-sn_plot_pseudotime(x, name = NULL, lineage = NULL, point_size = 0.7)
+sn_plot_pseudotime(
+  x,
+  result_id = NULL,
+  lineage = NULL,
+  point_size = 0.7,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -14,9 +20,9 @@ sn_plot_pseudotime(x, name = NULL, lineage = NULL, point_size = 0.7)
 
   A Seurat object or trajectory result.
 
-- name:
+- result_id:
 
-  Stored trajectory name.
+  Stored trajectory result_id.
 
 - lineage:
 
@@ -25,6 +31,10 @@ sn_plot_pseudotime(x, name = NULL, lineage = NULL, point_size = 0.7)
 - point_size:
 
   Point size.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

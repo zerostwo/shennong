@@ -7,10 +7,11 @@ Plot standardized cell-cell communication results
 ``` r
 sn_plot_communication(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("bubble", "heatmap", "network", "chord", "river"),
   n = 50L,
-  table = "primary"
+  table = "primary",
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_communication(
 
   A Seurat object, unified communication result, or standardized table.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - type:
 
@@ -35,6 +36,10 @@ sn_plot_communication(
 - table:
 
   Stored table to plot.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

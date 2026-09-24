@@ -9,7 +9,7 @@ filtered matrix and stores discovered source metadata such as the raw
 matrix path and `metrics_summary.csv` contents in
 `Seurat::Misc(object, "input_source")`. When `x` is a character vector
 of multiple detected 10x paths, such as the output of
-[`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md),
+[`sn_list_10x_paths()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_10x_paths.md),
 the function returns a named list of Seurat objects and imports each
 path in one call.
 
@@ -37,8 +37,9 @@ sn_initialize_seurat_object(
 
 - x:
 
-  A matrix, data.frame, sparse matrix, path to counts data, or a
-  character vector of multiple 10x paths.
+  A matrix, data.frame, sparse matrix, BPCells `IterableMatrix`, path to
+  counts data, or a character vector of multiple 10x paths. BPCells
+  inputs remain on disk in the returned Seurat object's counts layer.
 
 - metadata:
 

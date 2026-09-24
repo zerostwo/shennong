@@ -10,7 +10,9 @@ sn_plot_de(
   type = c("volcano", "ma", "effect", "heatmap"),
   adjusted_p_value = 0.05,
   log2_fold_change = 1,
-  n = 40L
+  n = 40L,
+  object = NULL,
+  result_id = "default"
 )
 ```
 
@@ -18,7 +20,8 @@ sn_plot_de(
 
 - result:
 
-  A Shennong result or differential-expression table.
+  A Shennong result, differential-expression table, or `clusterProfiler`
+  result.
 
 - type:
 
@@ -31,6 +34,15 @@ sn_plot_de(
 - n:
 
   Maximum effects displayed for effect/heatmap views.
+
+- object:
+
+  Optional Seurat object holding a stored DE result; supply either
+  `result` or `object`, not both.
+
+- result_id:
+
+  Stored DE result name used when `object` is supplied.
 
 ## Value
 

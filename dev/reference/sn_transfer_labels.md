@@ -2,8 +2,9 @@
 
 `sn_transfer_labels()` is a Shennong wrapper for reference mapping. It
 keeps the common path compact: transfer one metadata label, add the
-predicted label_by and confidence score back to the query, and store a
-small provenance record in `query@misc$label_transfer`. The default
+predicted label and confidence score back to the query, store cell-level
+predictions as a canonical `annotation` result, and retain a compact
+compatibility record in `query@misc$label_transfer`. The default
 `method = "seurat"` wraps Seurat's `FindTransferAnchors()` and
 `TransferData()` workflow. `method = "coralysis"` projects the query
 onto a native Coralysis-trained reference with
@@ -39,6 +40,7 @@ sn_transfer_labels(
   return_anchors = FALSE,
   transfer_control = list(),
   verbose = TRUE,
+  result_id = NULL,
   ...
 )
 ```
@@ -140,6 +142,11 @@ sn_transfer_labels(
 - verbose:
 
   Whether to print Seurat progress messages.
+
+- result_id:
+
+  Optional explicit result identifier. When supplied, it also becomes
+  the prediction metadata prefix and overrides `prediction_prefix`.
 
 - ...:
 

@@ -10,7 +10,8 @@ sn_plot_qc_thresholds(
   features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
   thresholds = list(),
   sample_by = NULL,
-  max_cells = 20000L
+  max_cells = 20000L,
+  object = NULL
 )
 ```
 
@@ -35,6 +36,10 @@ sn_plot_qc_thresholds(
 - max_cells:
 
   Maximum plotted cells.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

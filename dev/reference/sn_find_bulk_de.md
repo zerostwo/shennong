@@ -12,7 +12,7 @@ sn_find_bulk_de(
   contrast,
   method = c("auto", "edger", "deseq2", "limma", "dream"),
   assay = NULL,
-  store_name = "bulk_de",
+  result_id = "bulk_de",
   backend_control = list()
 )
 ```
@@ -22,7 +22,7 @@ sn_find_bulk_de(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - metadata:
 
@@ -44,9 +44,9 @@ sn_find_bulk_de(
 
   Assay name for `SummarizedExperiment` input.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned bulk-DE result.
 
 - backend_control:
 

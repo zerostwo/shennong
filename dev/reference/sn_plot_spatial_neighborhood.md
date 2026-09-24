@@ -7,8 +7,9 @@ Plot spatial-neighborhood enrichment or co-occurrence
 ``` r
 sn_plot_spatial_neighborhood(
   x,
-  name = NULL,
-  type = c("enrichment", "cooccurrence")
+  result_id = NULL,
+  type = c("enrichment", "cooccurrence"),
+  object = NULL
 )
 ```
 
@@ -18,13 +19,17 @@ sn_plot_spatial_neighborhood(
 
   A Seurat object or spatial-neighborhood result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - type:
 
   Enrichment or co-occurrence.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

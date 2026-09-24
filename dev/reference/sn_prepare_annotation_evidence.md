@@ -7,11 +7,11 @@ Prepare cluster-annotation evidence from a Seurat object
 ``` r
 sn_prepare_annotation_evidence(
   object,
-  de_name = NULL,
+  de_result_id = NULL,
   cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   n_terms = 5,
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
@@ -26,11 +26,11 @@ sn_prepare_annotation_evidence(
 
   A `Seurat` object.
 
-- de_name:
+- de_result_id:
 
-  Optional stored marker-result name in `object@misc$de_results`. When
-  omitted, Shennong prefers `"default"`, then a single available result,
-  and otherwise the most recent marker result.
+  Optional stored marker-result name in the canonical Shennong result
+  registry. When omitted, Shennong prefers `"default"`, then a single
+  available result, and otherwise the most recent marker result.
 
 - cluster_by:
 
@@ -46,7 +46,7 @@ sn_prepare_annotation_evidence(
   prefers genes that are relatively unique to one cluster, while `"top"`
   keeps the raw top-ranked genes.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Optional stored enrichment result used to add cluster-level functional
   evidence to the annotation prompt.
@@ -54,7 +54,7 @@ sn_prepare_annotation_evidence(
 - n_terms:
 
   Number of enrichment terms to retain per cluster when
-  `enrichment_name` is supplied.
+  `enrichment_result_id` is supplied.
 
 - enrichment_selection:
 
@@ -105,25 +105,13 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   evidence <- sn_prepare_annotation_evidence(
     obj,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type"
   )
   names(evidence)
 }
-#> INFO [2026-07-20 05:54:04] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:04] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:04] Seurat object initialization complete.
-#>  [1] "task"                      "cluster_col"              
-#>  [3] "source_de_name"            "source_enrichment_name"   
-#>  [5] "analysis_method"           "species"                  
-#>  [7] "marker_selection"          "enrichment_selection"     
-#>  [9] "geometry_reduction"        "cluster_summary"          
-#> [11] "top_marker_table"          "enrichment_summary"       
-#> [13] "qc_summary"                "lineage_hints"            
-#> [15] "canonical_marker_snapshot" "geometry_summary"         
-#> [17] "caveats"                  
 ```

@@ -27,7 +27,8 @@ sn_assess_integration(
   rare_n = 50,
   challenge_threshold = 0.5,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 )
 ```
 
@@ -121,6 +122,10 @@ sn_assess_integration(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A list with four top-level elements:
@@ -138,16 +143,18 @@ A list with four top-level elements:
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(
-  pbmc_small,
-  batch = "sample",
+  pbmc,
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )
 metrics <- sn_assess_integration(
   pbmc,
-  batch = "sample",
+  batch_by = "sample",
   cluster_by = "seurat_clusters",
   reduction = "harmony",
   baseline_reduction = "pca"

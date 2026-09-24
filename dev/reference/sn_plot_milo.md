@@ -7,7 +7,7 @@ Plot miloR neighborhood differential-abundance results
 ``` r
 sn_plot_milo(
   x,
-  milo_name = "default",
+  result_id = "default",
   annotation_by = NULL,
   fdr_col = c("SpatialFDR", "FDR"),
   fdr_cutoff = 0.1,
@@ -29,7 +29,7 @@ sn_plot_milo(
   A milo result data frame, or a Seurat object containing a stored milo
   result.
 
-- milo_name:
+- result_id:
 
   Name of the stored milo result when `x` is a Seurat object.
 
@@ -82,5 +82,4 @@ milo_df <- data.frame(
   cell_type = c("T", "B", "Myeloid")
 )
 sn_plot_milo(milo_df, annotation_by = "cell_type")
-
 ```

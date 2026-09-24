@@ -5,7 +5,7 @@ Review stored annotation evidence and low-confidence labels
 ## Usage
 
 ``` r
-sn_review_annotation(x, store_name = "annotation", low_confidence_only = TRUE)
+sn_review_annotation(x, result_id = "annotation", low_confidence_only = TRUE)
 ```
 
 ## Arguments
@@ -14,7 +14,7 @@ sn_review_annotation(x, store_name = "annotation", low_confidence_only = TRUE)
 
   A Seurat object or unified annotation result.
 
-- store_name:
+- result_id:
 
   Annotation result name when `x` is a Seurat object.
 

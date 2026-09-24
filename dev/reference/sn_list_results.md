@@ -6,7 +6,7 @@ object
 ## Usage
 
 ``` r
-sn_list_results(object, type = NULL)
+sn_list_results(object, type = NULL, include_artifacts = FALSE)
 ```
 
 ## Arguments
@@ -19,12 +19,17 @@ sn_list_results(object, type = NULL)
 
   Optional analysis type used to filter the result inventory.
 
+- include_artifacts:
+
+  Include registered workflow artifacts that do not implement the
+  unified analysis-result contract.
+
 ## Value
 
 A tibble describing registered Shennong stored-result collections,
 including DE, enrichment, interpretation, deconvolution, Milo,
 communication, regulatory activity, and QC assessment entries when
-present.
+present. The canonical lookup key is reported in `result_id`.
 
 ## Examples
 
@@ -50,15 +55,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   sn_list_results(obj)
 }
-#> INFO [2026-07-20 05:53:51] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:53:51] Running QC metrics for human.
-#> INFO [2026-07-20 05:53:51] Seurat object initialization complete.
-#> Warning: No DE genes identified
-#> Warning: The following tests were not performed: 
-#> Warning: When testing Shennong versus all:
-#>  Cells in one or both identity groups are not present in the data requested
-#> # A tibble: 1 × 8
-#>   collection type  name    analysis method created_at     n_rows source
-#>   <chr>      <chr> <chr>   <chr>    <chr>  <chr>           <int> <chr> 
-#> 1 de_results de    default markers  wilcox 2026-07-20 05…      0 NA    
 ```

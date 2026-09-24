@@ -51,7 +51,7 @@ sn_export_figure_bundle(
 - ...:
 
   Arguments passed to
-  [`sn_save_figure()`](https://songqi.org/shennong/dev/reference/sn_save_figure.md).
+  [`sn_save_figure()`](https://zerostwo.github.io/shennong/dev/reference/sn_save_figure.md).
 
 ## Value
 

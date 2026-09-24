@@ -7,9 +7,9 @@ Prepare manuscript-style results evidence
 ``` r
 sn_prepare_results_evidence(
   object,
-  cluster_de_name = NULL,
-  contrast_de_name = NULL,
-  enrichment_name = NULL,
+  cluster_de_result_id = NULL,
+  contrast_de_result_id = NULL,
+  enrichment_result_id = NULL,
   cluster_by = NULL,
   n_markers = 5,
   n_terms = 10
@@ -22,15 +22,15 @@ sn_prepare_results_evidence(
 
   A `Seurat` object.
 
-- cluster_de_name:
+- cluster_de_result_id:
 
   Optional stored cluster-marker result.
 
-- contrast_de_name:
+- contrast_de_result_id:
 
   Optional stored contrast or pseudobulk result.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Optional stored enrichment result.
 
@@ -66,25 +66,19 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   obj <- sn_store_enrichment(
     obj,
     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-    store_name = "demo_gsea"
+    result_id = "demo_gsea"
   )
   evidence <- sn_prepare_results_evidence(
     obj,
-    cluster_de_name = "celltype_markers",
-    enrichment_name = "demo_gsea",
+    cluster_de_result_id = "celltype_markers",
+    enrichment_result_id = "demo_gsea",
     cluster_by = "cell_type"
   )
   names(evidence)
 }
-#> INFO [2026-07-20 05:54:08] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:08] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:08] Seurat object initialization complete.
-#> Warning: No DE genes identified
-#> [1] "task"               "dataset"            "cluster_summary"   
-#> [4] "cluster_markers"    "enrichment_summary"
 ```

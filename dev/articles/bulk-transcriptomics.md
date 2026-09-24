@@ -1,118 +1,364 @@
-# Bulk transcriptomics from QC to clinical association
+# Bulk transcriptomics from real pseudobulk to survival
 
-Shennong’s standalone bulk workflow keeps samples as the inferential
-unit. The same feature-by-sample matrix and aligned sample metadata can
-be supplied as a matrix plus data frame, a list, or a
-`SummarizedExperiment`.
+Two public datasets cover different contracts without changing their
+value semantics:
+
+- Kotliarov RNA UMI counts are summed within each of 20 `real_sample`
+  values for count-based QC and high-versus-low response differential
+  expression.
+- TCGA-SKCM supplies RSEM TPM and upper-quartile log2-normalized RSEM
+  TPM plus real follow-up. Neither TCGA assay is described or modeled as
+  raw counts.
 
 ``` r
 
-set.seed(83)
-sample_data <- data.frame(
-  condition = factor(rep(c("normal", "tumor"), each = 4),
-                     levels = c("normal", "tumor")),
-  batch = factor(rep(1:2, 4)),
-  time = seq(10, 45, by = 5),
-  event = rep(c(1, 0), 4),
-  row.names = paste0("sample_", 1:8)
-)
-counts <- matrix(
-  rpois(80 * 8, 30), nrow = 80,
-  dimnames = list(paste0("gene_", 1:80), rownames(sample_data))
-)
-counts[1:8, sample_data$condition == "tumor"] <-
-  counts[1:8, sample_data$condition == "tumor"] + 35
+knitr::kable(data.frame(
+  workflow = c(
+    "pseudobulk QC and count DE", "pathway and clinical association",
+    "survival", "WGCNA"
+  ),
+  mode = c("core", "core", "core", "extended"),
+  status = c(
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture or edgeR/survival dependency missing",
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture or core dependency missing",
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture or survival dependency missing",
+    if (wgcna_ready) "executed below" else if (!identical(real_profile, "all")) "disabled: requires SHENNONG_REAL_PROFILE=all" else if (!requireNamespace("WGCNA", quietly = TRUE)) "dependency missing: WGCNA" else "fixture missing"
+  ),
+  check.names = FALSE
+))
 ```
 
-## Audit samples before modeling
+| workflow | mode | status |
+|:---|:---|:---|
+| pseudobulk QC and count DE | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| pathway and clinical association | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| survival | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| WGCNA | extended | disabled: requires SHENNONG_REAL_PROFILE=all |
 
-[`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md)
-retains sample metrics, expression quantiles, PCA, correlation, and
-robust outlier flags in one validated result.
+## Construct biological-sample pseudobulk counts
 
 ``` r
 
-qc <- sn_assess_bulk_qc(counts, sample_data)
-qc$tables$samples[, c("sample", "library_size", "outlier")]
-#> # A tibble: 8 × 3
-#>   sample   library_size outlier
-#>   <chr>           <dbl> <lgl>  
-#> 1 sample_1         2404 FALSE  
-#> 2 sample_2         2433 FALSE  
-#> 3 sample_3         2405 FALSE  
-#> 4 sample_4         2309 FALSE  
-#> 5 sample_5         2733 FALSE  
-#> 6 sample_6         2741 FALSE  
-#> 7 sample_7         2734 FALSE  
-#> 8 sample_8         2553 FALSE
-sn_plot_bulk_pca(qc, sample_data, color_by = "condition")
+library(Shennong)
+
+pbmc <- qs2::qs_read(pbmc_path)
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+sample_cells <- split(colnames(pbmc), pbmc$real_sample)
+pseudobulk_counts <- vapply(
+  sample_cells,
+  function(cells) Matrix::rowSums(counts[, cells, drop = FALSE]),
+  numeric(nrow(counts))
+)
+rownames(pseudobulk_counts) <- rownames(counts)
+
+pbmc_metadata <- pbmc[[]]
+sample_data <- do.call(rbind, lapply(
+  split(seq_len(nrow(pbmc_metadata)), pbmc_metadata$real_sample),
+  function(index) data.frame(
+    real_sample = pbmc_metadata$real_sample[index[[1]]],
+    real_response = unique(pbmc_metadata$real_response[index]),
+    observed_batches = paste(sort(unique(pbmc_metadata$real_batch[index])), collapse = "+"),
+    cells = length(index),
+    row.names = pbmc_metadata$real_sample[index[[1]]]
+  )
+))
+sample_data <- sample_data[colnames(pseudobulk_counts), , drop = FALSE]
+sample_data$response <- factor(
+  sub("^d0 ", "", sample_data$real_response),
+  levels = c("low", "high")
+)
+
+keep <- Matrix::rowSums(pseudobulk_counts >= 10) >= 3
+pseudobulk_counts <- pseudobulk_counts[keep, , drop = FALSE]
+
+tcga <- qs2::qs_read(tcga_path)
+tcga_expression <- as.matrix(tcga$log2_uq_rsem_tpm)
+complete_tcga_features <- rowSums(!is.finite(tcga_expression)) == 0
+excluded_tcga_features <- sum(!complete_tcga_features)
+tcga_expression <- tcga_expression[complete_tcga_features, , drop = FALSE]
+tcga_metadata <- tcga$sample_data[colnames(tcga_expression), , drop = FALSE]
+
+data.frame(
+  dataset = c("Kotliarov pseudobulk counts", "TCGA-SKCM log2 UQ RSEM TPM"),
+  features = c(nrow(pseudobulk_counts), nrow(tcga_expression)),
+  samples = c(ncol(pseudobulk_counts), ncol(tcga_expression)),
+  inferential_unit = "biological sample",
+  excluded_nonfinite_features = c(0, excluded_tcga_features)
+)
 ```
 
-![](bulk-transcriptomics_files/figure-html/qc-1.png)
-
-## Validate the design and contrast
-
-The contrast contract is always `c(variable, numerator, denominator)`.
-With integer counts, `method = "auto"` chooses edgeR; normalized
-continuous input chooses limma; a mixed-effects formula selects dream.
-Explicit DESeq2, edgeR, limma, and dream choices remain available.
+Bulk scale is an input contract, not a guess made after choosing a
+method. `list(counts = ..., metadata = ...)` explicitly declares
+non-negative integer counts; `list(expression = ..., metadata = ...)`
+explicitly declares continuous expression even if every observed value
+happens to be an integer. For `SummarizedExperiment`, assay names
+containing `count`, `raw`, or `umi` declare counts, while names
+containing `log`, `norm`, `scale`, `CPM`, `TPM`, or `FPKM` declare
+expression. A declared count assay containing fractional or negative
+values fails instead of being silently reclassified.
 
 ``` r
 
-de <- sn_find_de(
-  counts,
+count_input <- list(counts = pseudobulk_counts, metadata = sample_data)
+expression_input <- list(expression = tcga_expression, metadata = tcga_metadata)
+
+sn_assess_bulk_qc(count_input)
+sn_assess_bulk_qc(expression_input)
+```
+
+## Audit real pseudobulk samples through the unified dispatcher
+
+The dedicated QC API and
+[`sn_run_bulk()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_bulk.md)
+dispatcher both run on the same 20 biological-sample count matrix. Their
+canonical sample tables are checked for identity before the dedicated
+plotting functions consume the result.
+
+``` r
+
+qc <- sn_assess_bulk_qc(pseudobulk_counts, sample_data)
+qc_dispatch <- sn_run_bulk(
+  pseudobulk_counts,
+  workflow = "qc",
+  metadata = sample_data
+)
+stopifnot(identical(qc$tables$samples, qc_dispatch$tables$samples))
+data.frame(
+  entry_point = c("sn_assess_bulk_qc", "sn_run_bulk(workflow = 'qc')"),
+  samples = c(nrow(qc$tables$samples), nrow(qc_dispatch$tables$samples)),
+  canonical_tables_identical = TRUE
+)
+qc$tables$samples[, c(
+  "sample", "library_size", "detected_features", "mean_correlation", "outlier"
+)]
+sn_plot_bulk_qc(qc, metric = "library_size")
+sn_plot_bulk_pca(qc, sample_data, color_by = "response")
+sn_plot_sample_correlation(qc)
+sn_plot_sample_correlation(
+  qc,
+  view = "scatter",
+  sample_x = colnames(pseudobulk_counts)[[1]],
+  sample_y = colnames(pseudobulk_counts)[[2]]
+)
+
+# The same views are discoverable through the unified result interface.
+sn_list_plot_methods("bulk_qc")
+sn_plot_result(qc, view = "pca", metadata = sample_data, color_by = "response")
+```
+
+## Count differential expression with real samples
+
+The contrast contract is `c(variable, numerator, denominator)`. Since
+this matrix contains integer UMI pseudobulk counts, `method = "auto"`
+selects edgeR. One donor spans both acquisition batches, so batch is
+reported in the design table but is not coerced into an invalid
+single-valued sample covariate.
+
+``` r
+
+de <- sn_find_bulk_de(
+  pseudobulk_counts,
   metadata = sample_data,
-  design = ~ batch + condition,
-  contrast = c("condition", "tumor", "normal"),
+  design = ~ response,
+  contrast = c("response", "high", "low"),
   method = "auto"
 )
 
-# Discover and retrieve the standardized evidence table.
-names(de$tables)
-head(de$tables$differential_expression)
-sn_plot_bulk_de(de)
+head(de$tables$differential_expression[
+  order(de$tables$differential_expression$adjusted_p_value),
+], 15)
+sn_plot_bulk_de(de, log2_fold_change = 0.5)
 ```
 
-[`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md)
-detects Seurat input as single-cell and matrix/list/
-`SummarizedExperiment` input as bulk. Set `modality = "single_cell"` or
-`modality = "bulk"` only when dispatch must be explicit. The older
-[`sn_find_bulk_de()`](https://songqi.org/shennong/dev/reference/sn_find_bulk_de.md)
-entry point remains a compatibility wrapper around the same bulk
-implementation.
+The contrast variable must be categorical and both named levels must be
+observed. Fixed-effect designs must be full rank. A design containing a
+random effect selects `dream` under `method = "auto"`; for count input,
+the dream path first applies edgeR library-size/TMM normalization and
+then `voomWithDreamWeights()`. Count-only methods (`edgeR`, `DESeq2`)
+reject an expression-scale input instead of coercing it.
 
-## Pathways, networks, and clinical models
+For designs with interactions, the contrast has one backend-independent
+meaning. edgeR, DESeq2, limma, and dream compare the same numerator and
+denominator model-matrix profiles, holding numeric nuisance covariates
+at their median and categorical nuisance covariates at their first
+declared factor level. Inspect
+`de$diagnostics$contrast_numerator_profile`,
+`contrast_denominator_profile`, `contrast_vector`, and
+`contrast_covariate_policy` before interpreting an interaction
+coefficient.
 
-Pathway scoring reports gene-set coverage before returning sample
-scores. WGCNA returns modules, eigengenes, power diagnostics, and
-module-trait associations. Cox models and general clinical associations
-can use either genes from the expression matrix or numeric columns from
-sample metadata.
+Single-cell pseudobulk follows the same count-scale boundary but keeps
+method- specific handling of corrected fractional counts. `DESeq2`
+requires integer raw/corrected counts and never rounds them. `edgeR` and
+limma-voom accept finite, non-negative fractional corrected counts.
+`subset_levels` is valid only with `subset_by`, must contain distinct
+observed labels, and limits the explicit per-subset comparisons.
 
 ``` r
 
-pathways <- sn_score_bulk_pathways(
-  counts,
-  signatures = list(inflammation = paste0("gene_", 1:10)),
-  metadata = sample_data
+annotated_pbmc <- sn_find_de(
+  annotated_pbmc,
+  analysis = "pseudobulk",
+  ident_1 = "treated",
+  ident_2 = "control",
+  group_by = "condition",
+  sample_by = "sample_id",
+  subset_by = "cell_type",
+  subset_levels = c("CD4 T", "CD8 T"),
+  assay = "RNA",
+  layer = "decontaminated_counts",
+  method = "edgeR",
+  design = ~ condition,
+  contrast = c("condition", "treated", "control"),
+  result_id = "response_by_t_cell_type"
 )
-pathways$tables$coverage
-pathways$tables$scores
-
-network <- sn_run_wgcna(counts, sample_data, traits = "condition")
-network$tables$modules
-network$tables$trait_associations
-
-survival <- sn_run_survival(
-  counts, time = "time", event = "event",
-  features = c("gene_1", "gene_2"), metadata = sample_data
-)
-survival$tables$survival
-sn_plot_survival(survival)
 ```
 
-[`sn_run_bulk()`](https://songqi.org/shennong/dev/reference/sn_run_bulk.md)
-dispatches the same workflows through `workflow = "qc"`, `"de"`,
-`"pathway"`, `"network"`, or `"survival"`. The explicit functions are
-preferable in scripts because their required inputs are easier to
-review.
+When the same biological unit contributes both groups, include
+`sample_by` in an explicit fixed-effect design, or omit `design` and let
+Shennong recognize a completely paired layout. Mixed paired/unpaired
+profiles fail closed.
+
+The generic result-aware figure API consumes the same fitted edgeR
+result. Unlike cluster-marker tables restricted to positive markers,
+this real 20-sample contrast retains both directions and is therefore
+suitable for a volcano plot and a signed pathway ranking.
+
+``` r
+
+sn_plot_de(
+  de,
+  type = "volcano",
+  adjusted_p_value = 0.05,
+  log2_fold_change = 0.5
+)
+
+signed_de <- de$tables$differential_expression
+signed_de <- signed_de[
+  is.finite(signed_de$log2_fold_change) &
+    !is.na(signed_de$gene) & nzchar(signed_de$gene),
+  ,
+  drop = FALSE
+]
+
+set.seed(717)
+gsea_result <- sn_run_enrichment(
+  x = signed_de,
+  mapping = gene ~ log2_fold_change,
+  species = "human",
+  database = "GOBP",
+  pvalue_cutoff = 1
+)
+gsea_table <- as.data.frame(gsea_result)
+stopifnot(nrow(gsea_table) > 0L)
+
+sn_plot_enrichment(gsea_result, type = "dot", n = 15)
+sn_plot_gsea(gsea_result)
+```
+
+## Pathways and clinical associations in TCGA-SKCM
+
+These signatures are intersected with the 3,000 retained real genes
+before scoring. Clinical models test expression against the curated
+sample class and sex; each TCGA patient remains one observation.
+
+``` r
+
+candidate_signatures <- list(
+  T_cell = c("CD3D", "CD3E", "CD8A", "LCK", "TRAC"),
+  interferon = c("STAT1", "IRF1", "CXCL9", "CXCL10", "GBP1"),
+  melanoma_identity = c("MITF", "MLANA", "PMEL", "TYR", "SOX10")
+)
+signatures <- lapply(candidate_signatures, intersect, y = rownames(tcga_expression))
+signatures <- signatures[lengths(signatures) >= 2]
+
+pathways <- sn_score_bulk_pathways(
+  tcga_expression,
+  signatures = signatures,
+  method = "mean",
+  metadata = tcga_metadata
+)
+pathways$tables$coverage
+head(pathways$tables$scores)
+
+clinical_features <- intersect(
+  c("MITF", "CD8A", "PDCD1", "B2M"),
+  rownames(tcga_expression)
+)
+clinical <- sn_run_clinical_association(
+  tcga_expression,
+  features = clinical_features,
+  clinical_vars = c("sample_type", "sex"),
+  metadata = tcga_metadata
+)
+clinical$tables$associations
+```
+
+## Overall survival and diagnostics
+
+Follow-up uses `time > 0` days and `event` encoded as 0/1 in the local
+curated artifact. The same fitted result drives the forest plot,
+Kaplan-Meier curve, risk table, and proportional-hazards diagnostics.
+
+``` r
+
+survival_features <- intersect(
+  c("MITF", "CD8A", "PDCD1", "B2M"),
+  rownames(tcga_expression)
+)
+survival_result <- sn_run_survival(
+  tcga_expression,
+  time = "time",
+  event = "event",
+  features = survival_features,
+  covariates = "sex",
+  metadata = tcga_metadata,
+  group_method = "median"
+)
+
+survival_result$tables$survival
+survival_result$tables$log_rank
+survival_result$tables$proportional_hazards
+survival_result$tables$performance
+sn_plot_survival(survival_result)
+sn_plot_survival(survival_result, view = "km", feature = survival_features[[1]])
+sn_plot_survival(survival_result, view = "risk_table", feature = survival_features[[1]])
+sn_plot_survival(survival_result, view = "ph_test", feature = survival_features[[1]])
+```
+
+## Extended: real WGCNA network
+
+WGCNA runs only in the `all` profile with the package installed. The 500
+most variable TCGA genes are selected deterministically from the real
+normalized matrix. A failure is reported as such rather than replaced
+with a precomputed module assignment.
+
+``` r
+
+gene_variance <- apply(tcga_expression, 1, stats::var)
+wgcna_genes <- names(head(sort(gene_variance, decreasing = TRUE), 500))
+wgcna_attempt <- tryCatch(
+  sn_run_wgcna(
+    tcga_expression[wgcna_genes, , drop = FALSE],
+    metadata = tcga_metadata,
+    traits = c("event", "sample_type"),
+    power = 6,
+    min_module_size = 20,
+    backend_control = list(blockwise = list(maxBlockSize = 600))
+  ),
+  error = identity
+)
+
+if (inherits(wgcna_attempt, "error")) {
+  knitr::kable(data.frame(
+    backend = "WGCNA", status = "failed",
+    detail = conditionMessage(wgcna_attempt), check.names = FALSE
+  ))
+} else {
+  network <- wgcna_attempt
+  print(head(network$tables$modules, 20))
+  print(network$tables$trait_associations)
+  print(sn_plot_wgcna(network, type = "modules"))
+  print(sn_plot_wgcna(network, type = "traits"))
+}
+```

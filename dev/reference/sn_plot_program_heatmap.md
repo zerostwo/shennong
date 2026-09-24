@@ -7,10 +7,11 @@ Plot a program activity heatmap
 ``` r
 sn_plot_program_heatmap(
   x,
-  name,
+  result_id,
   programs = NULL,
   group_by = NULL,
-  scale_rows = TRUE
+  scale_rows = TRUE,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_program_heatmap(
 
   A Seurat object or program-scoring result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - programs:
 
@@ -36,6 +37,10 @@ sn_plot_program_heatmap(
 - scale_rows:
 
   Standardize each program across displayed groups.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

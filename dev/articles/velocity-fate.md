@@ -1,121 +1,278 @@
 # RNA Velocity and Fate Mapping
 
-Shennong runs scVelo, RegVelo, and CellRank in a managed, isolated CPU
-pixi environment. The two stages remain separate stored analyses:
-velocity estimates a directed transition process from spliced/unspliced
-counts, while fate mapping analyzes that transition process with
-CellRank’s GPCCA estimator.
+Shennong keeps velocity and fate mapping as separate stored analyses.
+Velocity estimates a directed transition process from spliced and
+unspliced counts; CellRank then analyzes the retained transition process
+with GPCCA.
 
-## Prepare the backend
+This article uses the real Hermann mouse spermatogenesis fixture under
+`SHENNONG_REAL_DATA_DIR`. The core profile loads and checks the real
+layers, runs Shennong clustering, and plots the biological annotations.
+Managed Python backends run only in the `all` profile and only when an
+existing pixi binary and an already materialized trajectory environment
+are both available.
+
+## Verify the real layers and embedding
+
+The fixture was prepared from source spliced and unspliced assays. No
+layer is synthesized inside the article. Cells without a source
+annotation are removed before clustering so every displayed group is
+traceable to the source data.
 
 ``` r
 
-sn_prepare_pixi_environment(
-  "trajectory",
-  install_environment = TRUE
+library(Shennong)
+library(dplyr)
+
+velocity_object <- qs2::qs_read(velocity_fixture)
+annotated <- !is.na(velocity_object$real_cell_type) &
+  nzchar(as.character(velocity_object$real_cell_type))
+velocity_object <- subset(
+  velocity_object,
+  cells = colnames(velocity_object)[annotated]
+)
+
+required_layers <- c("counts", "spliced", "unspliced")
+available_layers <- SeuratObject::Layers(velocity_object[["RNA"]])
+if (!all(required_layers %in% available_layers)) {
+  stop(
+    "The Hermann fixture is missing required RNA layers: ",
+    paste(setdiff(required_layers, available_layers), collapse = ", "),
+    call. = FALSE
+  )
+}
+
+dplyr::bind_rows(lapply(required_layers, function(layer) {
+  matrix <- SeuratObject::LayerData(velocity_object, assay = "RNA", layer = layer)
+  tibble::tibble(layer = layer, features = nrow(matrix), cells = ncol(matrix))
+}))
+
+sort(table(velocity_object$real_cell_type), decreasing = TRUE)
+
+velocity_object <- sn_run_cluster(
+  object = velocity_object,
+  normalization_method = "seurat",
+  nfeatures = min(1500L, nrow(velocity_object)),
+  npcs = 30,
+  dims = 1:20,
+  resolution = 0.6,
+  cluster_algorithm = "louvain",
+  cluster_name = "velocity_cluster",
+  species = "mouse",
+  verbose = FALSE
+)
+
+sn_plot_dim(
+  velocity_object,
+  reduction = "umap",
+  group_by = "real_cell_type",
+  title = "Hermann spermatogenesis before velocity inference"
 )
 ```
 
-The Seurat object must contain raw `spliced` and `unspliced` layers with
-shared features and cells, plus a dimensional reduction used only to
-project the high-dimensional velocity vectors.
+## Check the managed backend without installing it
 
-## Estimate velocity
+[`sn_run_velocity()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_velocity.md)
+invokes a managed Python environment. To keep site builds reproducible,
+this article never calls an installer. The extended chunks become
+eligible only when `SHENNONG_REAL_PROFILE=all`, pixi is discoverable,
+and the trajectory environment already exists on disk.
 
 ``` r
 
-object <- sn_run_velocity(
-  object,
-  spliced_layer = "spliced",
-  unspliced_layer = "unspliced",
-  reduction = "umap",
-  store_name = "velocity",
-  backend_control = list(
-    velocity_mode = "stochastic",
-    n_neighbors = 30,
-    seed = 717
-  )
+pixi_info <- sn_check_pixi(quiet = TRUE)
+trajectory_paths <- sn_get_pixi_paths("trajectory")
+trajectory_environment <- file.path(
+  trajectory_paths$workspace_env_dir,
+  "default"
+)
+run_velocity_backend <- run_extended && isTRUE(pixi_info$installed) &&
+  dir.exists(trajectory_environment)
+
+tibble::tibble(
+  profile = real_profile,
+  pixi_installed = isTRUE(pixi_info$installed),
+  environment = "trajectory/default",
+  environment_ready = dir.exists(trajectory_environment),
+  will_run_velocity = run_velocity_backend
 )
 
-velocity <- sn_get_result(object, "velocity", "velocity")
+pixi_control <- list(
+  pixi = if (isTRUE(pixi_info$installed)) pixi_info$path else NULL,
+  pixi_environment = "default",
+  install_pixi = FALSE,
+  quiet = TRUE
+)
+```
+
+## Estimate velocity in the extended profile
+
+The source spliced and unspliced matrices contain finite, non-negative
+fractional molecule estimates. `enforce_normalization = TRUE` prevents
+scVelo from mistaking those non-integer values for already
+log-transformed data; the normalized expression is then
+log1p-transformed before Seurat-flavor HVG selection. Both choices are
+retained in the unified result parameters and backend manifest. This
+fixture uses scVelo’s explicit deterministic model; stochastic inference
+remains available through `backend_control` but is not silently
+substituted if its generalized least-squares backend fails.
+
+``` r
+
+velocity_object <- sn_run_velocity(
+  velocity_object,
+  method = "scvelo",
+  spliced_assay = "RNA",
+  spliced_layer = "spliced",
+  unspliced_assay = "RNA",
+  unspliced_layer = "unspliced",
+  reduction = "umap",
+  result_id = "hermann_scvelo",
+  backend_control = list(
+    velocity_mode = "deterministic",
+    enforce_normalization = TRUE,
+    log1p_transform = TRUE,
+    n_top_genes = 1500L,
+    n_neighbors = 30L,
+    pixi = pixi_control
+  ),
+  seed = 717L
+)
+
+velocity <- sn_get_result(velocity_object, "velocity", "hermann_scvelo")
 head(velocity$tables$cells)
 head(velocity$tables$transition_edges)
 velocity$diagnostics
-sn_plot_velocity(object, "velocity", color_by = "confidence")
+velocity_manifest <- velocity$models$artifacts
+velocity_manifest$output_h5ad <- file.exists(velocity_manifest$output_h5ad)
+velocity_manifest
+
+sn_plot_velocity(velocity, color_by = "confidence")
 ```
 
-Low confidence, weak splicing signal, or unstable directionality must
-remain visible in interpretation. The H5AD artifact recorded in
-`models$artifacts` contains the transition evidence consumed by
-CellRank.
+Managed velocity runs retain their output directory by default because
+the stored H5AD is the input to
+[`sn_run_fate()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_fate.md).
+The redundant CSV/Matrix Market input export is removed after a
+successful run, and the manifest records the retained directory and
+reason. If fate inference is not needed, set
+`backend_control$keep_run_dir = FALSE`; Shennong then imports the
+velocity tables, removes its owned run directory, and intentionally
+stores no reusable H5AD path. An explicit `backend_control$run_dir` must
+be empty.
 
-## Add a regulatory prior with RegVelo
+Low confidence, weak splicing signal, or unstable directionality remains
+visible in the stored diagnostics. The H5AD artifact recorded in
+`models$artifacts` is the transition evidence consumed by CellRank; a
+smooth arrow field is not sufficient evidence by itself.
 
-RegVelo uses the same spliced/unspliced and embedding inputs, plus an
-explicit gene-regulatory prior. Supply either a regulator-target edge
-table, a named target-by-regulator matrix, or a CSV path. Shennong
-retains the trained model, H5AD, prior-edge count, velocity vectors,
-transition graph, and RegVelo latent time under the standard velocity
-result contract.
-
-``` r
-
-prior_grn <- data.frame(
-  regulator = c("SOX10", "SOX10", "TFAP2A"),
-  target = c("ERBB3", "PLP1", "SOX10"),
-  weight = c(1, 0.8, 1)
-)
-
-object <- sn_run_velocity(
-  object,
-  method = "regvelo",
-  spliced_layer = "spliced",
-  unspliced_layer = "unspliced",
-  reduction = "umap",
-  store_name = "regvelo",
-  backend_control = list(
-    prior_grn = prior_grn,
-    max_epochs = 1500,
-    early_stopping = TRUE,
-    seed = 717
-  )
-)
-
-regvelo <- sn_get_result(object, "velocity", "regvelo")
-regvelo$tables$cells
-regvelo$models$artifacts
-```
-
-The prior GRN is a modeling assumption and must be versioned with the
-analysis. Do not interpret a smooth vector field as independent
-validation of that prior.
+Imported velocity output must contain unique known cell IDs, either two
+finite vector components or two missing components per row, and at least
+one finite vector overall. Transition endpoints must name known cells
+and weights must be finite. A custom runner or precomputed result is
+recorded as such in `backend`; it is not mislabeled as a pixi execution.
 
 ## Estimate terminal states and fate
 
-CellRank can consume the retained H5AD produced by either scVelo or
-RegVelo.
+CellRank runs only after the real scVelo result has been stored. The
+default stability rule is kept explicit rather than silently replaced by
+a fixed number of terminal states.
 
 ``` r
 
-object <- sn_run_fate(
-  object,
-  velocity_name = "velocity",
-  store_name = "fate",
+velocity_object <- sn_run_fate(
+  velocity_object,
+  source_result_id = "hermann_scvelo",
+  reduction = "umap",
+  result_id = "hermann_fate",
   backend_control = list(
-    n_states = 6,
-    terminal_method = "stability"
+    terminal_method = "stability",
+    pixi = pixi_control
+  ),
+  seed = 717L
+)
+
+fate <- sn_get_result(velocity_object, "fate", "hermann_fate")
+fate$tables$terminal_states
+head(fate$tables$probabilities)
+head(fate$tables$lineage_drivers)
+fate$diagnostics
+
+sn_plot_fate(fate)
+```
+
+If no macrostate meets the stability threshold, the backend raises an
+error. A documented project may instead choose
+`terminal_method = "top_n"` or supply explicit terminal states, but that
+decision should not be made automatically inside a teaching article.
+
+Fate import also verifies that every terminal state occurs in the
+returned probability table and that probability cells belong to the
+object. Its package-owned temporary run directory is removed after
+successful import by default. Supplying `backend_control$run_dir`
+retains that explicit directory; set `keep_run_dir = FALSE` to request
+cleanup while treating the supplied path as a parent rather than
+deleting the parent itself.
+
+## RegVelo requires a real, versioned prior
+
+RegVelo is not run with a toy regulatory network. It becomes eligible
+only when the extended backend is ready and `SHENNONG_REGVELO_PRIOR`
+names an existing regulator-target CSV supplied by the project.
+
+``` r
+
+run_regvelo <- run_velocity_backend && nzchar(regvelo_prior) &&
+  file.exists(regvelo_prior)
+
+tibble::tibble(
+  prior_path = regvelo_prior,
+  prior_available = nzchar(regvelo_prior) && file.exists(regvelo_prior),
+  will_run_regvelo = run_regvelo
+)
+```
+
+``` r
+
+regvelo_object <- sn_run_velocity(
+  velocity_object,
+  method = "regvelo",
+  spliced_assay = "RNA",
+  spliced_layer = "spliced",
+  unspliced_assay = "RNA",
+  unspliced_layer = "unspliced",
+  reduction = "umap",
+  result_id = "hermann_regvelo",
+  backend_control = list(
+    prior_grn = regvelo_prior,
+    max_epochs = 1500L,
+    early_stopping = TRUE,
+    seed = 717L,
+    pixi = pixi_control
   )
 )
 
-fate <- sn_get_result(object, "fate", "fate")
-head(fate$tables$terminal_states)
-head(fate$tables$probabilities)
-head(fate$tables$lineage_drivers)
-sn_plot_fate(object, "fate")
+regvelo <- sn_get_result(regvelo_object, "velocity", "hermann_regvelo")
+head(regvelo$tables$cells)
+head(regvelo$tables$transition_edges)
+regvelo$models$artifacts
+regvelo$diagnostics
+
+sn_plot_velocity(regvelo, color_by = "pseudotime")
 ```
 
-If no macrostate meets the default stability threshold, CellRank raises
-an actionable error. A documented workflow may use
-`terminal_method = "top_n"`, `terminal_n_states`, or explicit
-`terminal_states`; Shennong records those choices in the result
-parameters rather than silently relaxing the rule.
+The prior GRN is a modeling assumption and must be versioned with the
+analysis. The stored result records the actual prior-edge and model
+artifacts returned by the backend; this article never substitutes
+fabricated adapter output.
+
+To intentionally replace an existing fate result, pass its ID and
+explicit `overwrite = TRUE`. Metadata ownership checks still reject
+user-modified columns; choose a new ID to retain both analyses.
+
+``` r
+
+sn_list_results(object, type = "fate")
+object <- sn_run_fate(object, result_id = "fate", overwrite = TRUE)
+sn_get_result(object, "fate", "fate")$tables$probabilities
+```

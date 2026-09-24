@@ -104,10 +104,12 @@ A data frame with one row per group and rarity/separation flags.
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(
-  pbmc_small,
-  batch = "sample",
+  pbmc,
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )

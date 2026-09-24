@@ -17,7 +17,8 @@ sn_filter_genes(
   layer = "counts",
   species = NULL,
   gene_class = NULL,
-  gene_type = NULL
+  gene_type = NULL,
+  object = NULL
 )
 ```
 
@@ -65,6 +66,10 @@ sn_filter_genes(
   Optional character vector of exact GENCODE `gene_type` values to
   retain.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A filtered Seurat object if `filter = TRUE`, otherwise the original
@@ -83,22 +88,23 @@ subset.
 ## Examples
 
 ``` r
-if (requireNamespace("Seurat", quietly = TRUE)) {
-  data("pbmc_small", package = "Shennong")
+if (FALSE) { # \dontrun{
+  pbmc <- qs2::qs_read(file.path(
+    Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+  ))
   pbmc_filtered <- sn_filter_genes(
-    pbmc_small,
+    pbmc,
     min_cells = 5,
     plot = FALSE,
     filter = TRUE
   )
   pbmc_coding <- sn_filter_genes(
-    pbmc_small,
+    pbmc,
     min_cells = 1,
     plot = FALSE,
     filter = TRUE,
     species = "human",
     gene_class = "coding"
   )
-}
-#> WARN [2026-07-20 05:53:30] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped. Examples: LINC01115.1, PCBP1-AS1.1, LSP1P5.1, DDX11L2.1, LINC01618.1, CAST.1, RAET1E-AS1.1, LINC03021.1, LINC03023.1, BMS1P14.1.
+} # }
 ```

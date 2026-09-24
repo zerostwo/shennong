@@ -1,4 +1,9 @@
-# Preprocessing and QC with PBMC3k
+# Preprocessing and QC with real PBMC CITE-seq data
+
+New to Shennong? Start with the [bundled-data
+example](https://zerostwo.github.io/shennong/dev/articles/get-started.md),
+then return here for QC decisions, count correction, and normalization
+options.
 
 Preprocessing should answer four questions before clustering:
 
@@ -8,13 +13,17 @@ Preprocessing should answer four questions before clustering:
 4.  What QC evidence can be stored and revisited later?
 
 Shennong keeps those decisions explicit while keeping the code short.
-The examples use PBMC3k and are evaluated only when
-`SHENNONG_RUN_VIGNETTES=true`.
+The examples use 2,000 real cells sampled deterministically across 20
+biological samples from the public Kotliarov PBMC CITE-seq cohort. The
+RNA and ADT assays remain aligned. Ordinary package checks do not
+evaluate the article when the local fixture is unavailable; a real-data
+pkgdown build sets `SHENNONG_RUN_VIGNETTES=true`.
 
-## Load PBMC3k and inspect species-aware QC fields
+## Load the local PBMC fixture and inspect species-aware QC fields
 
-`sn_load_data("pbmc3k")` downloads or reuses the cached 10x H5 file,
-reads it, and initializes a Seurat object with human QC metrics.
+Data discovery and materialization are handled by `ShennongData`. This
+article reads the already materialized, provenance-tracked local
+fixture; Shennong then owns the analysis steps.
 
 ``` r
 
@@ -22,59 +31,138 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-20 06:06:49] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-20 06:06:49] Running QC metrics for human.
-#> INFO [2026-07-20 06:06:49] Seurat object initialization complete.
-pbmc$sample <- "pbmc3k"
+pbmc <- qs2::qs_read(real_data_file)
 
 sn_get_species(pbmc)
-#> [1] "human"
 
-head(pbmc[[]][, c("sample", "nCount_RNA", "nFeature_RNA", "percent.mt")])
-#>                  sample nCount_RNA nFeature_RNA percent.mt
-#> AAACATACAACCAC-1 pbmc3k       2844         1046  2.7777778
-#> AAACATTGAGCTAC-1 pbmc3k       5717         1722  3.2534546
-#> AAACATTGATCAGC-1 pbmc3k       3766         1500  0.6903877
-#> AAACCGTGCTTCCG-1 pbmc3k       2981         1153  1.5095606
-#> AAACCGTGTATGCG-1 pbmc3k       1229          698  0.8950366
-#> AAACGCACTGGTAC-1 pbmc3k       2536         1032  1.4984227
-```
+head(pbmc[[]][, c(
+  "real_sample", "real_response", "real_batch",
+  "nCount_RNA", "nFeature_RNA", "pctMT", "nCount_ADT"
+)])
 
-If you start from a raw matrix instead, the equivalent explicit form is:
-
-``` r
-
-counts <- sn_read("pbmc3k_filtered_feature_bc_matrix.h5")
-
-pbmc <- sn_initialize_seurat_object(
-  x = counts,
-  project = "pbmc3k_demo",
-  sample_name = "pbmc3k",
-  study = "10x_pbmc",
-  species = "human"
+data.frame(
+  assay = names(pbmc@assays),
+  features = vapply(pbmc@assays, nrow, numeric(1)),
+  cells = vapply(pbmc@assays, ncol, numeric(1))
 )
 ```
 
+The initialization API can be exercised on the real RNA UMI matrix
+without introducing another example dataset:
+
+``` r
+
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+
+pbmc_from_counts <- sn_initialize_seurat_object(
+  x = counts,
+  project = "kotliarov_pbmc",
+  sample_name = "kotliarov_subset",
+  study = "Kotliarov_2020",
+  species = "human"
+)
+
+data.frame(
+  cells = ncol(pbmc_from_counts),
+  features = nrow(pbmc_from_counts),
+  assay = SeuratObject::DefaultAssay(pbmc_from_counts)
+)
+```
+
+## Recalculate QC after count correction
+
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md)
+calls
+[`sn_add_qc_metrics()`](https://zerostwo.github.io/shennong/dev/reference/sn_add_qc_metrics.md)
+internally. You can also refresh the same percentages on an existing
+object without initializing it again:
+
+``` r
+
+pbmc_from_counts <- sn_add_qc_metrics(pbmc_from_counts, species = "human")
+head(pbmc_from_counts[[]][, c("percent.mt", "percent.ribo", "percent.hb")])
+```
+
+If a correction workflow replaced the RNA `counts` layer, the same call
+recalculates the percentages from those current counts. If corrected
+counts are stored separately, select their assay/layer explicitly:
+
+``` r
+
+# Requires an existing layer containing non-negative corrected counts.
+pbmc <- sn_add_qc_metrics(
+  pbmc, species = "human", assay = "RNA", layer = "counts.corrected",
+  suffix = "_corrected"
+)
+head(pbmc[[]][, c("percent.mt", "percent.mt_corrected",
+                  "percent.hb", "percent.hb_corrected")])
+# Alternatively, select a corrected assay's counts:
+# pbmc <- sn_add_qc_metrics(pbmc, assay = "decontX", suffix = "_corrected")
+```
+
+With `suffix = NULL` (the default), `layer = "decontaminated_counts"` or
+an individual `decontaminated_counts.*` split layer automatically adds
+`_corrected`, preserving the original QC columns:
+
+``` r
+
+pbmc <- sn_add_qc_metrics(pbmc, assay = "RNA", layer = "decontaminated_counts")
+head(pbmc[[]][, c("percent.mt", "percent.mt_corrected",
+                  "percent.hb", "percent.hb_corrected")])
+```
+
+Other layers, including `counts`, keep an empty suffix by default and
+overwrite `percent.mt`, `percent.ribo`, and `percent.hb`. An explicit
+suffix always wins: use `suffix = ""` to overwrite the original columns
+even for decontaminated counts, or `suffix = "_corrected"` to choose a
+different suffix. Species can be omitted when stored on the object or
+inferable from the selected assay. Use gene symbols and count values,
+not normalized or scaled expression. The helper recomputes its
+denominator from the selected counts, so stale `nCount_*` metadata does
+not affect percentages. It does not refresh `nCount_*` or `nFeature_*`,
+modify count layers, or change the default assay.
+
+An exact layer name takes precedence over split layers. Otherwise, a
+name such as `counts` selects disjoint `counts.*` layers without joining
+or materializing BPCells matrices. Overlapping cell sets are rejected;
+choose one exact layer in that case. Cells outside selected layers
+receive `NA`. Absent marker genes give zero for positive-total cells;
+zero-total cells give `NaN` because their percentages are undefined.
+Mitochondrial/ribosomal signatures and human/mouse hemoglobin matching
+are unchanged from initialization.
+
 When gene identifiers or mixed symbol styles are a concern, standardize
 at initialization or call
-[`sn_standardize_gene_symbols()`](https://songqi.org/shennong/dev/reference/sn_standardize_gene_symbols.md)
+[`sn_standardize_gene_symbols()`](https://zerostwo.github.io/shennong/dev/reference/sn_standardize_gene_symbols.md)
 before downstream analysis. If `HGNChelper` cannot provide an
 unambiguous replacement for an otherwise valid symbol, Shennong
 preserves the original symbol instead of returning an `NA` feature name.
 
+The symbol-correction example is an extended step because it requires
+the optional `HGNChelper` snapshot. Core preprocessing retains the
+source symbols and shows the exact call without installing a package
+during rendering.
+
 ``` r
 
-pbmc <- sn_standardize_gene_symbols(
+symbols_before <- rownames(pbmc)
+pbmc_standardized <- sn_standardize_gene_symbols(
   pbmc,
   species = "human",
   is_gene_id = FALSE
 )
+
+data.frame(
+  feature_set = c("input", "standardized"),
+  features = c(length(symbols_before), nrow(pbmc_standardized)),
+  duplicated_symbols_resolved = c(NA_integer_, length(symbols_before) - nrow(pbmc_standardized))
+)
+head(rownames(pbmc_standardized))
 ```
 
 ## Filter cells with inspectable QC flags
 
-[`sn_filter_cells()`](https://songqi.org/shennong/dev/reference/sn_filter_cells.md)
+[`sn_filter_cells()`](https://zerostwo.github.io/shennong/dev/reference/sn_filter_cells.md)
 uses median absolute deviation thresholds by default. The key point is
 that filtering and flagging are separated: set `filter = FALSE` to see
 which cells would be removed, then set `filter = TRUE` when the rule is
@@ -84,16 +172,26 @@ acceptable.
 
 pbmc_flagged <- sn_filter_cells(
   x = pbmc,
-  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  group_by = "real_sample",
   method = "mad",
   n = c(5, 5, 3),
   plot = FALSE,
   filter = FALSE
 )
 
-qc_flag_cols <- grep("^qc_", colnames(pbmc_flagged[[]]), value = TRUE)
-head(pbmc_flagged[[]][, qc_flag_cols, drop = FALSE])
-#> data frame with 0 columns and 6 rows
+qc_flag_cols <- grep("_qc$", colnames(pbmc_flagged[[]]), value = TRUE)
+qc_flag_summary <- do.call(rbind, lapply(qc_flag_cols, function(column) {
+  data.frame(metric = column, status = names(table(pbmc_flagged[[column]][, 1])),
+             cells = as.integer(table(pbmc_flagged[[column]][, 1])))
+}))
+qc_flag_summary
+
+sn_plot_qc_thresholds(
+  pbmc_flagged,
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  sample_by = "real_batch"
+)
 ```
 
 Once the flags look sensible, apply the same rule:
@@ -102,7 +200,8 @@ Once the flags look sensible, apply the same rule:
 
 pbmc_cells <- sn_filter_cells(
   x = pbmc,
-  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+  features = c("nFeature_RNA", "nCount_RNA", "pctMT"),
+  group_by = "real_sample",
   method = "mad",
   n = c(5, 5, 3),
   plot = FALSE,
@@ -110,13 +209,11 @@ pbmc_cells <- sn_filter_cells(
 )
 
 c(before = ncol(pbmc), after = ncol(pbmc_cells))
-#> before  after 
-#>   2753   2597
 ```
 
 ## Filter genes by expression and annotation
 
-[`sn_filter_genes()`](https://songqi.org/shennong/dev/reference/sn_filter_genes.md)
+[`sn_filter_genes()`](https://zerostwo.github.io/shennong/dev/reference/sn_filter_genes.md)
 keeps the threshold and optional annotation rule in one place. The
 expression threshold protects sparse downstream steps, while
 `gene_class = "coding"` can remove noncoding genes when your workflow is
@@ -132,61 +229,270 @@ pbmc_genes <- sn_filter_genes(
   species = "human",
   gene_class = "coding"
 )
-#> WARN [2026-07-20 06:06:52] Annotation-based gene filtering could not match 17 features for species 'human'. Those unmatched features will be dropped. Examples: LINC01115.1, PCBP1-AS1.1, LSP1P5.1, DDX11L2.1, LINC01618.1, CAST.1, RAET1E-AS1.1, LINC03021.1, LINC03023.1, BMS1P14.1.
 
 c(before = nrow(pbmc_cells), after = nrow(pbmc_genes))
-#> before  after 
-#>  54872  12403
 ```
+
+## Standardize feature identity before deriving embeddings
+
+Gene-symbol changes alter the feature axis and should happen before
+normalization, PCA, neighbor graphs, or clustering. For a Seurat object,
+[`sn_standardize_gene_symbols()`](https://zerostwo.github.io/shennong/dev/reference/sn_standardize_gene_symbols.md)
+treats the RNA `counts` layer as the identity source, applies the same
+mapping to every RNA layer, and sums duplicate targets only for
+count-like layers. Rows mapping to ambiguous duplicate targets are
+dropped from normalized/scaled layers rather than summed; a layer is
+omitted only when no safely mapped rows remain.
+
+``` r
+
+pbmc_genes <- sn_standardize_gene_symbols(
+  pbmc_genes,
+  species = "human",
+  is_gene_id = FALSE
+)
+
+# Recreate normalized layers, variable features, PCA, neighbors, and clusters
+# after any feature-identity change.
+pbmc_genes <- sn_normalize_data(pbmc_genes, assay = "RNA")
+```
+
+The rebuild preserves aligned cells and unaffected assays, but removes
+RNA- derived reductions, graphs, and command records because they refer
+to the old feature identity. This invalidation is intentional: a renamed
+assay must not silently reuse stale PCA or graph state.
 
 ## Normalize and add cell-cycle scores
 
-[`sn_normalize_data()`](https://songqi.org/shennong/dev/reference/sn_normalize_data.md)
+[`sn_normalize_data()`](https://zerostwo.github.io/shennong/dev/reference/sn_normalize_data.md)
 and
-[`sn_score_cell_cycle()`](https://songqi.org/shennong/dev/reference/sn_score_cell_cycle.md)
+[`sn_score_cell_cycle()`](https://zerostwo.github.io/shennong/dev/reference/sn_score_cell_cycle.md)
 keep preprocessing inside the same Shennong vocabulary used later by
-clustering and plotting.
+clustering and plotting. For `method = "scran"`, `clusters` can name a
+Seurat metadata column or contain one label per cell. Supplying clusters
+for a BPCells-backed layer lets Shennong compute size factors in sparse
+chunks of at most `max.cluster.size` cells (the scran default is 3,000);
+both the original counts and normalized `data` layer remain
+BPCells-backed. Without supplied clusters, `scran::quickCluster()` still
+requires one full sparse materialization, though the normalized output
+remains lazy.
+
+``` r
+
+reference <- sn_normalize_data(
+  reference,
+  method = "scran",
+  clusters = "cell_type_level2"
+)
+```
 
 ``` r
 
 pbmc_norm <- sn_normalize_data(
   object = pbmc_genes,
-  normalization_method = "seurat",
+  method = "seurat",
   verbose = FALSE
 )
 
-pbmc_norm <- sn_score_cell_cycle(pbmc_norm, species = "human")
+pbmc_norm <- sn_score_cell_cycle(
+  pbmc_norm,
+  species = "human",
+  assay = "RNA",
+  layer = "data"
+)
 
 table(pbmc_norm$Phase)
-#> 
-#>  G1 G2M   S 
-#> 872 896 829
+```
+
+The fixture was deterministically prepared from author-demultiplexed
+singlets. The following core plot uses that real HTO classification
+directly; it verifies the input selection rule rather than pretending
+that
+[`sn_find_doublets()`](https://zerostwo.github.io/shennong/dev/reference/sn_find_doublets.md)
+was run. A lightweight embedding is computed only to display those
+source calls.
+
+``` r
+
+pbmc_qc_embedding <- sn_run_cluster(
+  pbmc_norm,
+  normalization_method = "seurat",
+  nfeatures = 1000,
+  dims = 1:15,
+  resolution = 0.6,
+  cluster_algorithm = "louvain",
+  species = "human",
+  verbose = FALSE
+)
+
+table(pbmc_qc_embedding$hto_classification_global)
+sn_plot_doublets(
+  pbmc_qc_embedding,
+  class_col = "hto_classification_global",
+  reduction = "umap"
+)
 ```
 
 ## Optional doublet and ambient-RNA correction
 
 Doublet detection and ambient correction depend on optional backends.
 Shennong keeps them as explicit steps rather than hiding them in
-clustering.
+clustering. These steps run only when their R backend is installed. The
+doublet re-estimation is reserved for the `all` profile because the
+fixture already contains the authors’ singlet calls; the core profile
+runs standalone decontX and its before/after plot when `decontX` is
+available.
 
 ``` r
 
 pbmc_doublets <- sn_find_doublets(pbmc_norm)
 table(pbmc_doublets$doublet_class)
+
+pbmc_doublets <- sn_run_cluster(
+  pbmc_doublets,
+  normalization_method = "seurat",
+  nfeatures = 1000,
+  dims = 1:15,
+  resolution = 0.6,
+  cluster_algorithm = "louvain",
+  species = "human",
+  verbose = FALSE
+)
+sn_plot_doublets(pbmc_doublets, reduction = "umap")
 ```
 
-For ambient RNA, PBMC3k raw counts can be loaded from the same example
-registry. The corrected matrix is written to a new layer by default, so
-the original counts remain inspectable.
+Scrublet runs through scanpy’s native `sc.pp.scrublet()` wrapper inside
+a managed pixi environment. Prepare it once, then select the backend;
+raw counts are required and scDblFinder-specific arguments (`clusters`,
+`cluster_backend`, `group_by`, `dbr_sd`, `n_workers`) are ignored:
 
 ``` r
 
-pbmc_raw <- sn_load_data("pbmc3k", matrix_type = "raw")
+sn_prepare_pixi_environment("scrublet", install_environment = TRUE)
+pbmc_scrublet <- sn_find_doublets(
+  pbmc_norm,
+  method = "scrublet",
+  min_features = 200,
+  backend_control = list(seed = 717)
+)
+table(pbmc_scrublet$scrublet.class)
+```
+
+The default Scrublet run uses a unique package-owned temporary directory
+and removes its raw-count export after import. To retain backend
+artifacts, supply an empty `backend_control$output_dir`; set
+`keep_run_dir = FALSE` to treat an explicit path as a parent whose
+user-owned contents are preserved.
+
+The ungrouped default call above uses scDblFinder’s native automatic
+clustering and can use the ShennongOpt `scdblfinder` patch. Set
+`cluster_backend = "shennong"` only when
+[`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md)
+assignments are an intentional analytical choice. The patch applies
+guarded fast paths to supported in-memory sparse inputs and falls back
+to upstream scDblFinder for anything outside its contract. It is
+activated only for the call and then restored. Set
+`options(shennong.acceleration = FALSE)` to disable automatic
+acceleration.
+
+For a BPCells-backed object, provide a donor or capture column through
+`group_by`. `scDblFinder` requires an in-memory sparse matrix
+internally, so Shennong materializes one sample at a time rather than
+the full on-disk matrix. Keep `n_workers = 1` for the lowest peak
+memory; increasing it processes sample chunks concurrently and can hold
+that many sample matrices in memory. These grouped calls intentionally
+retain upstream scDblFinder because they are outside the patch’s
+validated default-call contract.
+
+``` r
+
+pbmc_doublets <- sn_find_doublets(
+  pbmc_bpcells,
+  group_by = "sample",
+  min_features = 200,
+  n_workers = 1
+)
+
+table(pbmc_doublets$sample, pbmc_doublets$scDblFinder.class)
+```
+
+For ambient RNA, materialize a matching raw-count resource with
+`ShennongData` when the selected backend requires it. The decontX path
+below uses the filtered object directly and writes corrected counts to a
+new layer, so the original counts remain inspectable.
+
+When `method = "soupx"`, the unfiltered droplet matrix supplied through
+`raw` defines SoupX’s `tod` and soup profile, while the filtered matrix
+in `x` defines `toc`. The profile is therefore estimated from the raw
+droplets, not from retained cells. The two matrices are aligned on
+shared genes for fitting, then the corrected result is restored to the
+complete filtered feature axis. Shennong applies stochastic integer
+rounding under the explicit `seed` and restores the caller’s RNG state
+after the operation.
+
+``` r
+
+pbmc_soupx <- sn_remove_ambient_contamination(
+  x = pbmc_norm,
+  raw = raw_counts,
+  method = "soupx",
+  layer = "decontaminated_counts",
+  seed = 717L,
+  verbose = FALSE
+)
+```
+
+``` r
 
 pbmc_decont <- sn_remove_ambient_contamination(
   x = pbmc_norm,
-  raw = pbmc_raw,
-  method = "decontx",
+  method = "auto",
+  cluster_backend = "native",
+  layer = "decontaminated_counts",
+  verbose = FALSE
+)
+
+SeuratObject::Layers(pbmc_decont[["RNA"]])
+ambient_command <- pbmc_decont@commands$sn_remove_ambient_contamination
+ambient_command@call.string
+ambient_command@params[c(
+  "method", "assay", "cluster_backend", "effective_backend_args",
+  "cluster_control"
+)]
+ambient_command@params$requested
+ambient_command@params$input
+sn_plot_ambient_correction(
+  pbmc_decont,
+  assay = "RNA",
+  layer_before = "counts",
+  layer_after = "decontaminated_counts"
+)
+```
+
+`method = "auto"` uses direct `decontX::decontX()` for RNA-only objects
+and routes a single ADT/protein/CITE assay to `decontX::decontPro()`.
+The direct RNA path can use the ShennongOpt `decontx` patch when
+installed. The Seurat command entry shown above records both the
+requested values and the resolved automatic choices, along with
+method-specific arguments and compact input/backend provenance. It
+intentionally summarizes matrix inputs instead of embedding another full
+count matrix in the Seurat object. When a raw/background matrix shares
+only a subset of features, decontX and decontPro fit on that
+intersection but return the full original filtered feature axis:
+features outside the fitted intersection retain their original counts
+rather than disappearing from the assay. `cluster_backend = "native"` is
+the decontX default and avoids an extra Shennong/Seurat clustering
+workflow. For decontPro, supply `cluster` or use the default
+`"shennong"` backend because decontPro requires cell types. SoupX has no
+native clustering backend and therefore defaults to `"shennong"`.
+
+``` r
+
+pbmc_cite_decont <- sn_remove_ambient_contamination(
+  x = pbmc_cite,
+  method = "decontpro",
+  assay = "ADT",
+  cluster = "seurat_clusters",
   layer = "decontaminated_counts",
   verbose = FALSE
 )
@@ -194,7 +500,7 @@ pbmc_decont <- sn_remove_ambient_contamination(
 
 ## Store a QC assessment
 
-[`sn_assess_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_qc.md)
+[`sn_assess_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_qc.md)
 summarizes the object after filtering and can compare it to the
 pre-filter object. Store the result when you want later reports to
 recover the QC decision without rerunning preprocessing.
@@ -204,27 +510,25 @@ recover the QC decision without rerunning preprocessing.
 qc_report <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_by = "sample",
+  sample_by = "real_sample",
   verbose = FALSE
 )
 
-qc_report$overall
-#>   n_samples n_cells qc_score qc_label retention_fraction
-#> 1         1    2597 84.92677     good          0.9433345
-#>   low_quality_removed_fraction doublet_removed_fraction
-#> 1                          NaN                      NaN
+qc_report$tables$overall
+head(qc_report$tables$by_sample)
+
+sn_plot_qc(qc_report, metric = "retention_fraction")
 
 pbmc_norm <- sn_assess_qc(
   object = pbmc_norm,
   reference = pbmc,
-  sample_by = "sample",
-  store_name = "pbmc3k_preprocessing",
+  sample_by = "real_sample",
+  result_id = "kotliarov_preprocessing",
   return_object = TRUE,
   verbose = FALSE
 )
 
 names(pbmc_norm@misc$qc_assessments)
-#> [1] "pbmc3k_preprocessing"
 ```
 
 The object is now ready for clustering. The important part is not just

@@ -1,8 +1,8 @@
 # Store an enrichment result on a Seurat object
 
-This helper stores enrichment output inside
-`object@misc$enrichment_results[[store_name]]` so interpretation and
-writing helpers can reuse it later.
+This helper stores enrichment output inside the canonical Shennong
+result registry so interpretation and writing helpers can reuse it
+later.
 
 ## Usage
 
@@ -10,13 +10,14 @@ writing helpers can reuse it later.
 sn_store_enrichment(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   analysis = c("ora", "gsea"),
   database = "GOBP",
   species = NULL,
-  source_de_name = NULL,
+  source_de_result_id = NULL,
   gene_col = "gene",
   score_col = NULL,
+  parameters = list(),
   return_object = TRUE
 )
 ```
@@ -32,9 +33,9 @@ sn_store_enrichment(
   An enrichment result object or data frame coercible with
   [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html).
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$enrichment_results`.
+  Stable identifier for the stored enrichment result.
 
 - analysis:
 
@@ -48,7 +49,7 @@ sn_store_enrichment(
 
   Species label used in the enrichment run.
 
-- source_de_name:
+- source_de_result_id:
 
   Optional stored DE result name that produced the input ranked gene
   list or gene set.
@@ -61,6 +62,11 @@ sn_store_enrichment(
 - score_col:
 
   Column containing ranking scores for GSEA inputs.
+
+- parameters:
+
+  Named list of effective enrichment parameters retained for discovery
+  and reproducibility.
 
 - return_object:
 
@@ -87,11 +93,8 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     NES = c(2.1, 1.7),
     p.adjust = c(0.01, 0.03)
   )
-  obj <- sn_store_enrichment(obj, enrich_tbl, store_name = "demo_gsea")
-  names(obj@misc$enrichment_results)
+  obj <- sn_store_enrichment(obj, enrich_tbl, result_id = "demo_gsea")
+  sn_list_results(obj, type = "enrichment")
+  sn_get_result(obj, type = "enrichment", result_id = "demo_gsea")
 }
-#> INFO [2026-07-20 05:54:18] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:18] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:18] Seurat object initialization complete.
-#> [1] "demo_gsea"
 ```

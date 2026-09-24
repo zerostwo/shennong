@@ -1,7 +1,7 @@
 # Export a publication figure
 
 Alias of
-[`sn_save_figure()`](https://songqi.org/shennong/dev/reference/sn_save_figure.md)
+[`sn_save_figure()`](https://zerostwo.github.io/shennong/dev/reference/sn_save_figure.md)
 for workflows that use export terminology.
 
 ## Usage

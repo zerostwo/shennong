@@ -13,7 +13,7 @@ sn_run_clinical_association(
   covariates = NULL,
   metadata = NULL,
   assay = NULL,
-  store_name = "bulk_clinical"
+  result_id = "bulk_clinical"
 )
 ```
 
@@ -22,7 +22,7 @@ sn_run_clinical_association(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - features:
 
@@ -44,9 +44,9 @@ sn_run_clinical_association(
 
   Assay name for `SummarizedExperiment` input.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned clinical-association result.
 
 ## Value
 

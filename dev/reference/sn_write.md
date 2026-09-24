@@ -3,7 +3,10 @@
 A Shennong wrapper around
 [`rio::export()`](http://gesistsa.github.io/rio/reference/export.md)
 with support for common single-cell formats such as BPCells, `.h5ad`,
-and 10x `.h5`.
+and 10x `.h5`. Native RDS, RData, and QS2 serialization preserves matrix
+classes and dimnames. Tabular formats convert base matrices to data
+frames. Dense and sparse matrices are converted to BPCells iterable
+matrices for matrix writers.
 
 This adapter is exported so `rio` can dispatch to it.
 
@@ -25,8 +28,6 @@ sn_write(
 .export.rio_h5ad(file, x, mode = "w", ...)
 
 .export.rio_h5(file, x, ...)
-
-.export.rio_qs(file, x, ...)
 
 .export.rio_qs2(file, x, ...)
 ```
@@ -50,8 +51,7 @@ sn_write(
 
   Logical; when `TRUE`, install missing writer dependencies before
   writing. This includes rio plus optional Shennong custom writer
-  dependencies such as `.qs2`, `.h5ad`, `.h5`, or BPCells. Legacy `.qs`
-  output installs qs from the GitHub remote `qsbase/qs` when needed.
+  dependencies such as `.qs2`, `.h5ad`, `.h5`, or BPCells.
 
 - install_repos:
 
@@ -77,8 +77,7 @@ sn_write(
 
 - mode:
 
-  File mode passed through to
-  [`anndataR::write_h5ad()`](https://anndataR.scverse.org/reference/write_h5ad.html).
+  File mode passed through to `anndataR::write_h5ad()`.
 
 ## Value
 
@@ -86,7 +85,7 @@ Invisibly returns the output path.
 
 ## See also
 
-[`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md)
 
 ## Examples
 

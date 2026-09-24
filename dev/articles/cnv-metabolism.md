@@ -1,79 +1,248 @@
 # CNV, Malignancy, and Metabolism
 
-CNV and metabolic activity answer different questions, but both require
-an explicit evidence boundary. CNV malignancy calls need trusted normal
-cells; condition-level metabolism needs biological samples rather than
-treating cells as replicates. Shennong stores both analyses through the
-common result contract.
-
-## Reference-aware CNV
-
-Use cell names directly or a metadata column to declare normal
-references. inferCNVpy is the default pixi backend. CopyKAT is also
-available and is run sample by sample when `sample_by` is supplied.
+The revised GSE72056 matrix contains author-normalized expression and an
+author-provided malignancy class derived from inferred CNV. It does not
+contain raw UMI counts, so this article never passes those values to
+CopyKAT as if they were counts. Curated gene-set metabolism can run
+directly on the normalized layer; inferCNVpy runs only when an
+already-installed audited environment is present.
 
 ``` r
 
-tumor <- sn_run_cnv(
-  tumor,
-  method = "infercnvpy",
-  reference_by = "cell_type",
-  reference_cat = c("T cell", "Myeloid"),
-  sample_by = "patient",
-  store_name = "tumor_cnv"
+knitr::kable(data.frame(
+  workflow = c(
+    "author malignancy evidence", "curated metabolism",
+    "inferCNVpy", "CopyKAT", "scMetabolism / scFEA / Compass"
+  ),
+  mode = c("core source evidence", "core", "extended", "extended", "extended"),
+  status = c(
+    if (core_ready) "displayed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture missing",
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture missing",
+    if (infercnvpy_ready) "executed below" else if (!identical(real_profile, "all")) "disabled: requires SHENNONG_REAL_PROFILE=all" else "not run: pre-existing inferCNVpy pixi environment absent",
+    "not run: source has normalized expression rather than raw counts",
+    "not run: optional backend/result not supplied"
+  ),
+  check.names = FALSE
+))
+```
+
+| workflow | mode | status |
+|:---|:---|:---|
+| author malignancy evidence | core source evidence | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| curated metabolism | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| inferCNVpy | extended | disabled: requires SHENNONG_REAL_PROFILE=all |
+| CopyKAT | extended | not run: source has normalized expression rather than raw counts |
+| scMetabolism / scFEA / Compass | extended | not run: optional backend/result not supplied |
+
+## Inspect real malignancy evidence
+
+``` r
+
+library(Shennong)
+
+melanoma <- qs2::qs_read(melanoma_path)
+malignancy_evidence <- as.data.frame(table(
+  malignant_call = melanoma$malignant_call,
+  cell_type = melanoma$cell_type
+))
+malignancy_evidence <- malignancy_evidence[
+  malignancy_evidence$Freq > 0, , drop = FALSE
+]
+malignancy_evidence
+data.frame(
+  tumors = length(unique(melanoma$tumor)),
+  cells = ncol(melanoma),
+  normalized_genes = nrow(melanoma),
+  expression_layer = paste(SeuratObject::Layers(melanoma[["RNA"]]), collapse = ", ")
 )
 ```
 
-Discover and retrieve the durable result without reading `object@misc`
-directly. The primary table contains per-cell CNV, malignancy, call,
-reference, and subclone fields. The other tables retain chromosome,
-sample, and CNV-expression evidence.
+## Curated metabolic activity with biological-sample summaries
+
+The core path uses a sparse-aware mean score to avoid an optional
+scoring dependency. Tumor is the sample unit and the study’s malignancy
+class is a descriptive stratum. No condition p-value is computed because
+primary versus metastatic is not a sample-level field in GSE72056.
 
 ``` r
 
-sn_list_results(tumor, type = "cnv")
-cnv <- sn_get_result(tumor, "cnv", "tumor_cnv")
-head(cnv$tables$primary)
-cnv$tables$sample_summary
+metabolic_signatures <- sn_get_metabolic_signatures("human")
+metabolic_signatures <- metabolic_signatures[c(
+  "glycolysis", "tca_cycle", "oxidative_phosphorylation"
+)]
 
-sn_plot_cnv(tumor, "tumor_cnv", type = "heatmap")
-sn_plot_cnv(tumor, "tumor_cnv", type = "umap")
-sn_plot_cnv(tumor, "tumor_cnv", type = "association")
-```
-
-## Curated metabolic activity
-
-The lightweight default uses curated pathways with UCell. GSVA, ssGSEA,
-and a sparse-aware mean score are alternatives. Always supply
-`sample_by` before a condition comparison; `group_by` optionally
-stratifies by cell type or state.
-
-``` r
-
-sn_metabolic_signatures("human") |> names()
-
-tumor <- sn_run_metabolism(
-  tumor,
+metabolism <- sn_run_metabolism(
+  melanoma,
   method = "geneset",
-  scoring_method = "ucell",
-  sample_by = "patient",
-  condition_by = "response",
-  group_by = "cell_type",
-  contrast = c("responder", "nonresponder"),
-  store_name = "metabolism_response"
+  signatures = metabolic_signatures,
+  scoring_method = "mean",
+  assay = "RNA",
+  layer = "data",
+  sample_by = "tumor",
+  group_by = "malignant_call",
+  species = "human",
+  min_genes = 3L,
+  return_object = FALSE
 )
 
-sn_list_results(tumor, type = "metabolism")
-metabolism <- sn_get_result(tumor, "metabolism", "metabolism_response")
 metabolism$tables$coverage
-metabolism$tables$sample_scores
+head(metabolism$tables$sample_scores, 30)
 metabolism$tables$differential
-
-sn_plot_metabolism(tumor, "metabolism_response", type = "heatmap")
-sn_plot_metabolism(tumor, "metabolism_response", type = "differential")
+sn_plot_metabolism(metabolism, type = "activity")
+sn_plot_metabolism(metabolism, type = "heatmap")
+sn_plot_metabolism(metabolism, type = "sample")
 ```
 
-scMetabolism is an optional R backend. scFEA and Compass remain
-heavyweight external runtimes: pass a pathway-by-cell result or an
-explicit runner through `backend_control`, after which Shennong applies
-the same sample-level storage, comparison, and plotting contract.
+## Extended: reference-aware inferCNVpy
+
+This chunk can execute only when `SHENNONG_REAL_PROFILE=all` and the
+inferCNVpy pixi environment already exists. `install_pixi = FALSE`
+prevents the article from downloading software. Non-malignant immune and
+stromal cells are the reference; the author malignancy class is retained
+for comparison but is not imported as a backend result. The runner calls
+[`sn_run_infercnvpy()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+explicitly once, then hands its real score, chromosome, cluster, and
+embedding outputs to
+[`sn_run_cnv()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cnv.md)
+for unified summaries and plots.
+
+Malignancy standardization is reference-anchored: its center and spread
+are estimated from at least two finite reference-cell scores only.
+Query-cell variance is never used to rescue an unusable reference,
+because that would let the suspected malignant population define its own
+decision scale. For multi-patient data, `sample_by` is required for
+sample summaries and a direct CopyKAT run requires reference cells
+within every analyzed sample. The direct inferCNVpy adapter fails closed
+on a multi-sample `sample_by` request; use an explicit sample-aware
+runner, as below, when the project has defined that execution boundary.
+
+``` r
+
+set.seed(717)
+cells_by_call <- split(colnames(melanoma), melanoma$malignant_call)
+cnv_cells <- unlist(lapply(cells_by_call, function(cells) {
+  if (length(cells) <= 400) cells else sample(cells, 400)
+}), use.names = FALSE)
+cnv_object <- subset(melanoma, cells = cnv_cells)
+
+article_infercnvpy_runner <- function(object, reference_cells, genome,
+                                      result_id, assay, layer, sample_by) {
+  object$.article_cnv_reference <- ifelse(
+    colnames(object) %in% reference_cells, "reference", "query"
+  )
+  updated <- sn_run_infercnvpy(
+    object,
+    assay = assay,
+    layer = layer,
+    species = genome,
+    reference_by = ".article_cnv_reference",
+    reference_cat = "reference",
+    runtime_dir = infercnvpy_paths$runtime_dir,
+    artifact_id = result_id,
+    metadata_prefix = "infercnvpy_",
+    run_umap = TRUE,
+    n_workers = 2,
+    return_object = TRUE,
+    install_pixi = FALSE,
+    quiet = TRUE
+  )
+  updated$.article_cnv_reference <- NULL
+
+  metadata <- updated[[]]
+  score_column <- intersect(
+    c("infercnvpy_cnv_score", "infercnvpy_score"), colnames(metadata)
+  )
+  if (length(score_column) == 0L) {
+    stop("inferCNVpy completed without an imported CNV score column.")
+  }
+  cluster_column <- intersect(
+    c("infercnvpy_cnv_leiden", "infercnvpy_leiden"), colnames(metadata)
+  )
+  manifest <- updated@misc$infercnvpy[[result_id]]
+
+  chromosome_path <- file.path(manifest$output_dir, "cnv_chromosome.csv")
+  chromosomes <- tibble::tibble()
+  if (file.exists(chromosome_path)) {
+    chromosome_wide <- utils::read.csv(
+      chromosome_path, row.names = 1, check.names = FALSE
+    )
+    chromosome_wide$cell <- rownames(chromosome_wide)
+    chromosomes <- dplyr::bind_rows(lapply(
+      setdiff(colnames(chromosome_wide), "cell"),
+      function(chromosome) tibble::tibble(
+        cell = chromosome_wide$cell,
+        chromosome = chromosome,
+        cnv = suppressWarnings(as.numeric(chromosome_wide[[chromosome]]))
+      )
+    ))
+  }
+  embedding_name <- "infercnvpy_cnv_umap"
+
+  list(
+    object = updated,
+    scores = stats::setNames(
+      as.numeric(metadata[[score_column[[1]]]]), rownames(metadata)
+    ),
+    chromosomes = chromosomes,
+    subclone = if (length(cluster_column)) {
+      stats::setNames(metadata[[cluster_column[[1]]]], rownames(metadata))
+    } else {
+      NULL
+    },
+    prediction = NULL,
+    embedding = if (embedding_name %in% names(updated@reductions)) {
+      SeuratObject::Embeddings(updated[[embedding_name]])
+    } else {
+      NULL
+    },
+    artifacts = manifest
+  )
+}
+
+cnv_attempt <- tryCatch(
+  sn_run_cnv(
+    cnv_object,
+    method = "infercnvpy",
+    reference_by = "malignant_call",
+    reference_cat = "non_malignant",
+    sample_by = "tumor",
+    assay = "RNA",
+    layer = "data",
+    association_layer = "data",
+    association_features = 30L,
+    backend_control = list(
+      runner = article_infercnvpy_runner
+    ),
+    return_object = FALSE
+  ),
+  error = identity
+)
+
+if (inherits(cnv_attempt, "error")) {
+  knitr::kable(data.frame(
+    backend = "inferCNVpy", status = "failed",
+    detail = conditionMessage(cnv_attempt), check.names = FALSE
+  ))
+} else {
+  cnv <- cnv_attempt
+  print(head(cnv$tables$primary, 20))
+  print(cnv$tables$sample_summary)
+  print(head(cnv$tables$expression_association, 20))
+  print(sn_plot_cnv(cnv, type = "heatmap", n = 20))
+  print(sn_plot_cnv(cnv, type = "score"))
+  print(sn_plot_cnv(cnv, type = "association"))
+}
+```
+
+`layer` is the backend input, whereas `association_layer` is the
+normalized expression source used only for the CNV-expression
+association table. Shennong does not silently reuse a raw count layer
+for that correlation. CopyKAT requires a raw/count-like integer layer;
+inferCNVpy requires an explicitly selected normalized, log-transformed
+`data`/`data.*` layer and never falls back to counts. The result records
+both sources so a downstream review can distinguish CNV inference from
+expression association.
+
+scMetabolism, scFEA, and Compass remain optional external computations.
+The pkgdown article does not reinterpret the real mean-score table as
+output from those backends.

@@ -1,17 +1,19 @@
-# Retrieve a stored DE result from a Seurat object
+# Retrieve a DE result table
 
-Retrieve a stored DE result from a Seurat object
+Retrieve a DE result table
 
 ## Usage
 
 ``` r
 sn_get_de_result(
   object,
-  de_name = "default",
+  result_id = NULL,
   top_n = NULL,
   direction = c("all", "up", "down"),
   groups = NULL,
-  with_metadata = FALSE
+  top_scope = c("group", "all"),
+  p_adjusted_cutoff = NULL,
+  logfc_threshold = NULL
 )
 ```
 
@@ -19,11 +21,12 @@ sn_get_de_result(
 
 - object:
 
-  A `Seurat` object.
+  A `Seurat` object or unified DE result.
 
-- de_name:
+- result_id:
 
-  Name of the stored DE result.
+  Identifier of the stored DE result. May be omitted when exactly one DE
+  result is stored.
 
 - top_n:
 
@@ -38,19 +41,28 @@ sn_get_de_result(
 
   Optional subset of group labels to keep.
 
-- with_metadata:
+- top_scope:
 
-  If `TRUE`, return the full stored result list instead of just the
-  result table.
+  Whether `top_n` applies within each group (the default) or across all
+  selected rows. An ungrouped table always uses all rows.
+
+- p_adjusted_cutoff:
+
+  Optional maximum adjusted p-value, from zero to one.
+
+- logfc_threshold:
+
+  Optional minimum absolute log fold change.
 
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble. Use `sn_get_result(object, "de")` to retrieve the
+complete result, including metadata and unfiltered tables.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-markers <- sn_get_de_result(seurat_obj, de_name = "cluster_markers", top_n = 5)
+markers <- sn_get_de_result(seurat_obj, result_id = "cluster_markers", top_n = 5)
 } # }
 ```

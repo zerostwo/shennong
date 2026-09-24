@@ -15,7 +15,7 @@ sn_test_abundance(
   cell_type_by,
   design = NULL,
   contrast = NULL,
-  store_name = "abundance",
+  result_id = "abundance",
   transform = c("logit", "asin"),
   permutations = 1000L,
   seed = 717L,
@@ -55,9 +55,9 @@ sn_test_abundance(
 
   Two condition labels ordered as `c(case, control)`.
 
-- store_name:
+- result_id:
 
-  Stored differential-abundance result name.
+  Stable identifier for the stored differential-abundance result.
 
 - transform:
 

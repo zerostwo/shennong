@@ -1,12 +1,46 @@
-# Clustering and integration with PBMC3k
+# Clustering and integration with real PBMC CITE-seq data
+
+For a runnable example without local files, start with [Get
+started](https://zerostwo.github.io/shennong/dev/articles/get-started.md).
+This guide covers larger datasets, batch integration, and optional
+backends. See [Parameters and
+results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.md)
+for shared control names.
 
 Seurat teaches users a sequence of steps: normalize, find variable
 genes, run PCA, build neighbors, cluster, and embed. Shennong keeps that
 logic, but exposes it through one workflow function so the choices are
 visible in one call.
 
-This article uses PBMC3k. For speed, the website shows code without
-running the analysis unless `SHENNONG_RUN_VIGNETTES=true`.
+This article uses the public Kotliarov PBMC CITE-seq cohort: 2,000 real
+cells from 20 biological samples, two acquisition batches, and aligned
+RNA and ADT assays. A real-data pkgdown build executes the core chunks.
+Ordinary package checks safely leave them unevaluated when the local
+fixture is absent.
+
+## Shared workflow controls
+
+[`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md),
+[`sn_run_scvi()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scvi.md),
+[`sn_run_scanvi()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scvi.md),
+and
+[`sn_run_scpoli()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scvi.md)
+run the same clustering workflow. Select metadata with `batch_by`,
+backend options with `backend_control`, and reproducibility with the
+top-level `seed`. Core data and dimension controls (`assay`, `layer`,
+`npcs`, `dims`, and `hvg_group_by`) are explicit arguments; advanced
+arguments in `...` must be named. The shortcuts select an integration
+method and then run the usual downstream graph, clustering, and
+projection stages.
+
+``` r
+
+object <- sn_run_scvi(
+  object, batch_by = "sample", assay = "RNA", layer = "counts",
+  npcs = 30, dims = 1:30, seed = 717,
+  backend_control = list(max_epochs = 100)
+)
+```
 
 ## One function for the standard clustering path
 
@@ -20,10 +54,13 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-20 05:58:30] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-20 05:58:30] Running QC metrics for human.
-#> INFO [2026-07-20 05:58:30] Seurat object initialization complete.
+pixi_environment_ready <- function(environment) {
+  if (!nzchar(Sys.which("pixi"))) return(FALSE)
+  paths <- sn_get_pixi_paths(environment)
+  file.exists(paths$manifest_path) && dir.exists(paths$workspace_env_dir)
+}
+
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -32,27 +69,46 @@ pbmc <- sn_run_cluster(
   npcs = 30,
   dims = 1:20,
   resolution = 0.6,
-  cluster_algorithm = "leiden",
+  cluster_algorithm = "louvain",
+  seed = 717L,
   species = "human",
   verbose = FALSE
 )
 
-pbmc
-#> An object of class Seurat 
-#> 54872 features across 2753 samples within 1 assay 
-#> Active assay: RNA (54872 features, 2000 variable features)
-#>  3 layers present: counts, data, scale.data
-#>  2 dimensional reductions calculated: pca, umap
+data.frame(
+  cells = ncol(pbmc),
+  clusters = length(unique(pbmc$seurat_clusters)),
+  biological_samples = length(unique(pbmc$real_sample)),
+  batches = length(unique(pbmc$real_batch))
+)
+```
+
+The check-safe core uses Seurat’s Louvain implementation. Select
+`cluster_algorithm = "leiden"` only after installing `leidenbase`;
+Shennong does not substitute a different algorithm when that explicit
+backend is absent. The top-level `seed` is the workflow seed: it takes
+precedence over nested integration and clustering seeds, is recorded in
+provenance, and runs under a scoped RNG context so the caller’s random
+state is restored afterward.
+
+Variable-feature and PCA diagnostics are produced from the same real RNA
+matrix used for clustering.
+
+``` r
+
+sn_plot_hvg(pbmc, assay = "RNA", label_n = 10)
+sn_plot_elbow(pbmc, reduction = "pca", ndims = 20)
 ```
 
 When the input already contains
-[`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
-stage metadata, the function reuses matching stages by default. This
-makes resolution tuning cheap: `sn_run_cluster(pbmc, resolution = 1.0)`
-reuses normalization, HVGs, PCA, the neighbor graph, and UMAP, then
-recomputes only the cluster labels. Use `rerun_from = "integration"`
-after changing an integration backend, or `reuse = FALSE` when a
-completely fresh run is needed.
+[`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md)
+stage metadata, the function reuses a stage only when its parameters,
+selected-layer content digest, cell and feature identities, and relevant
+metadata values still match. This makes safe resolution tuning cheap:
+`sn_run_cluster(pbmc, resolution = 1.0)` reuses normalization, HVGs,
+PCA, the neighbor graph, and UMAP, then recomputes only the cluster
+labels. Use `rerun_from = "integration"` after changing an integration
+backend, or `reuse = FALSE` when a completely fresh run is needed.
 
 UMAP geometry can be tuned independently from clustering with
 `umap_control`. This is useful when clusters are biologically separate
@@ -70,6 +126,14 @@ pbmc_umap <- sn_run_cluster(
   ),
   rerun_from = "umap"
 )
+
+sn_plot_dim(
+  pbmc_umap,
+  reduction = "umap_tuned",
+  group_by = "seurat_clusters",
+  label = TRUE,
+  title = "UMAP retuned on real PBMC cells"
+)
 ```
 
 The result is a regular Seurat object. You can use Shennong plotting
@@ -82,11 +146,9 @@ sn_plot_dim(
   reduction = "umap",
   group_by = "seurat_clusters",
   label = TRUE,
-  title = "PBMC3k clusters"
+  title = "Kotliarov PBMC clusters"
 )
 ```
-
-![](clustering_files/figure-html/plot-clusters-1.png)
 
 ## Block unhelpful feature families
 
@@ -107,13 +169,21 @@ pbmc_blocked <- sn_run_cluster(
   dims = 1:20,
   resolution = 0.6,
   species = "human",
-  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo", "MYC"),
+  block_genes = c("cellCycle.G2M", "cellCycle.G1S", "mito", "ribo"),
   verbose = FALSE
 )
+
+data.frame(
+  selected_hvgs = length(pbmc_blocked@misc$hvg_selection$selected_features),
+  blocked_hvgs = length(pbmc_blocked@misc$hvg_selection$blocked_features)
+)
+head(pbmc_blocked@misc$hvg_selection$blocked_features)
 ```
 
 Use this when a technical or lineage-specific gene family is
-overwhelming the structure you want to resolve.
+overwhelming the structure you want to resolve. Custom symbols such as
+`"MYC"` additionally use the optional `HGNChelper` validation backend;
+the core website build stays on the versioned bundled signatures.
 
 ## Rare-aware feature selection
 
@@ -135,6 +205,9 @@ pbmc_rare <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
+
+head(pbmc_rare@misc$hvg_selection$selected_features)
+table(pbmc_rare$seurat_clusters)
 ```
 
 The key idea is simple: keep the global HVGs, then add a small number of
@@ -150,13 +223,6 @@ rare_tbl <- sn_detect_rare_cells(
 )
 
 head(rare_tbl[order(rare_tbl$rare_score, decreasing = TRUE), ])
-#>               cell_id method rare_score rare_cell
-#> 1605 GACTGAACCCTGAA-1   gini   43.13258      TRUE
-#> 283  ACGAACTGGCTATG-1   gini   31.47734      TRUE
-#> 432  AGAGGTCTACAGCT-1   gini   26.91956      TRUE
-#> 256  ACCCACTGGTTCAG-1   gini   25.88071      TRUE
-#> 1360 CTAGGATGAGCCTA-1   gini   25.18387      TRUE
-#> 35   AAATGGGAAGGCGA-1   gini   20.34990      TRUE
 ```
 
 ## Force known marker genes into the PCA feature set
@@ -181,7 +247,6 @@ pbmc_manual <- sn_run_cluster(
 )
 
 pbmc_manual@misc$hvg_selection$user_features
-#> [1] "IL7R"  "CCR7"  "NKG7"  "MS4A1"
 ```
 
 This is different from `rare_feature_method`: `rare_feature_method` asks
@@ -194,19 +259,19 @@ For CITE-seq objects with paired RNA and ADT assays, set
 `modality = "cite_seq"`. The default `multimodal_method = "wnn"` runs
 the standard RNA PCA path, normalizes the ADT assay with CLR, computes
 ADT PCA, then uses Seurat weighted nearest neighbors to cluster on the
-`wsnn` graph and create a `wnn.umap` embedding. The template below
-assumes `pbmc_cite` is a prepared Seurat object containing both assays,
-so it is not executed during site builds.
-`sn_run_multimodal(object, method = "wnn")` is an equivalent explicit
+`wsnn` graph and create a `wnn.umap` embedding. Here both modalities
+come from the same real cells.
+`sn_run_multimodal(object, method = "wnn")` is the explicit multimodal
 entry point and accepts the remaining
-[`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md)
+[`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md)
 arguments through `...`.
 
 ``` r
 
-pbmc_cite <- sn_run_cluster(
+pbmc_cite <- qs2::qs_read(real_data_file)
+pbmc_cite <- sn_run_multimodal(
   object = pbmc_cite,
-  modality = "cite_seq",
+  method = "wnn",
   assay = "RNA",
   adt_assay = "ADT",
   normalization_method = "seurat",
@@ -218,6 +283,7 @@ pbmc_cite <- sn_run_cluster(
   verbose = FALSE
 )
 
+table(pbmc_cite$seurat_clusters, pbmc_cite$real_batch)
 sn_plot_dim(pbmc_cite, reduction = "wnn.umap", group_by = "seurat_clusters")
 ```
 
@@ -227,67 +293,79 @@ RNA counts and ADT counts. `multimodal_method = "coralysis"` runs native
 Coralysis on the ADT assay as a log-normalized protein matrix.
 `multimodal_method = "mmochi"` runs MMoCHi ADT landmark registration
 across the supplied `batch` column, or in single-sample mode when
-`batch = NULL`. It stores the corrected protein matrix as an assay layer
-when the local Seurat object supports arbitrary layers and otherwise
-under `object@misc$mmochi$corrected_protein`, computes a protein-derived
-`mmochi` reduction, and clusters from that reduction. The full MMoCHi
-hierarchy classifier remains an advanced Python workflow because it
-requires an explicit user-defined hierarchy.
+`batch_by = NULL`. It stores the corrected protein matrix as an assay
+layer when the local Seurat object supports arbitrary layers and
+otherwise under `object@misc$mmochi$corrected_protein`, computes a
+protein-derived `mmochi` reduction, and clusters from that reduction.
+The full MMoCHi hierarchy classifier remains an advanced Python workflow
+because it requires an explicit user-defined hierarchy.
+
+These external or optional backends are evaluated only by the `all`
+real-data profile and only when their runtime dependency is already
+available. The article never installs a Python environment or changes
+GPU settings while it is being built.
 
 ``` r
 
+pbmc_totalvi <- qs2::qs_read(real_data_file)
 pbmc_totalvi <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_totalvi,
   modality = "cite_seq",
   multimodal_method = "totalvi",
-  batch = "library",
+  batch_by = "real_batch",
   assay = "RNA",
   adt_assay = "ADT",
   normalization_method = "seurat",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(max_epochs = 100),
+  backend_control = list(max_epochs = 100),
   verbose = FALSE
 )
 
+table(pbmc_totalvi$seurat_clusters, pbmc_totalvi$real_batch)
 sn_plot_dim(pbmc_totalvi, reduction = "umap", group_by = "seurat_clusters")
 ```
 
 ``` r
 
+pbmc_adt_coral <- qs2::qs_read(real_data_file)
 pbmc_adt_coral <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_adt_coral,
   modality = "cite_seq",
   multimodal_method = "coralysis",
-  batch = "library",
+  batch_by = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
   verbose = FALSE
 )
+
+table(pbmc_adt_coral$seurat_clusters, pbmc_adt_coral$real_batch)
 ```
 
 ``` r
 
+pbmc_adt_mmochi <- qs2::qs_read(real_data_file)
 pbmc_adt_mmochi <- sn_run_cluster(
-  object = pbmc_cite,
+  object = pbmc_adt_mmochi,
   modality = "cite_seq",
   multimodal_method = "mmochi",
-  batch = NULL,
+  batch_by = "real_batch",
   adt_assay = "ADT",
   adt_dims = 1:18,
-  integration_control = list(
+  backend_control = list(
     protein_layer = "data",
-    marker_bandwidths = list(CD3 = 0.25),
     store_corrected_layer = TRUE
   ),
   verbose = FALSE
 )
+
+table(pbmc_adt_mmochi$seurat_clusters, pbmc_adt_mmochi$real_batch)
 ```
 
 ## Choose resolution empirically
 
 Instead of treating `resolution = 0.8` as a magic number,
-[`sn_sweep_cluster_resolution()`](https://songqi.org/shennong/dev/reference/sn_sweep_cluster_resolution.md)
+[`sn_sweep_cluster_resolution()`](https://zerostwo.github.io/shennong/dev/reference/sn_sweep_cluster_resolution.md)
 reruns clustering over a small grid and reports diagnostics such as
 cluster count, silhouette, and graph connectivity.
 
@@ -303,42 +381,43 @@ sweep <- sn_sweep_cluster_resolution(
 )
 
 sweep$summary
-#>   resolution n_clusters mean_silhouette scaled_silhouette
-#> 1        0.2          6       0.2971698         0.6485849
-#> 2        0.4          9       0.2716079         0.6358039
-#> 3        0.6         10       0.2143390         0.6071695
-#> 4        0.8         10       0.2100907         0.6050453
-#> 5        1.0         11       0.2069939         0.6034970
-#>   graph_connectivity scaled_graph_connectivity composite_score
-#> 1          1.0000000                 1.0000000       0.8242925
-#> 2          1.0000000                 1.0000000       0.8179020
-#> 3          1.0000000                 1.0000000       0.8035848
-#> 4          0.9995556                 0.9995556       0.8023004
-#> 5          1.0000000                 1.0000000       0.8017485
 sweep$recommended_resolution
-#> [1] 0.2
+sn_plot_resolution_sweep(sweep)
+
+resolution_cols <- c("res_0_2", "res_0_6", "res_1_0")
+pbmc_tree <- pbmc
+for (index in seq_along(resolution_cols)) {
+  pbmc_tree <- sn_run_cluster(
+    pbmc_tree,
+    resolution = c(0.2, 0.6, 1.0)[[index]],
+    cluster_name = resolution_cols[[index]],
+    reuse = TRUE,
+    verbose = FALSE
+  )
+}
+
+sn_plot_cluster_tree(pbmc_tree, resolution_cols = resolution_cols)
 ```
 
 The recommendation is not a replacement for biology; it is a compact way
 to find resolutions that are numerically stable before looking at marker
 genes.
 
-## Integration is the same API with a batch column
+## Integration is the same API with a real batch column
 
-PBMC3k is one dataset, so the example below creates a teaching-only
-pseudo batch column. In a real experiment, `batch` would be a donor,
-library, chemistry, or dataset column.
+`real_batch` records the two acquisition batches in the source cohort.
+It is a technical label, whereas `real_sample` remains the biological
+replicate for sample-level inference.
 
 ``` r
 
-pbmc$library <- rep(c("library_a", "library_b"), length.out = ncol(pbmc))
 
 pbmc_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "real_batch",
   integration_method = "harmony",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 2000,
   dims = 1:20,
   resolution = 0.6,
@@ -349,8 +428,8 @@ pbmc_integrated <- sn_run_cluster(
 sn_plot_dim(
   object = pbmc_integrated,
   reduction = "umap",
-  group_by = "library",
-  title = "Pseudo-batch mixing"
+  group_by = "real_batch",
+  title = "Mixing of the two real acquisition batches"
 )
 ```
 
@@ -359,13 +438,165 @@ integration use the same entry point; adding `batch` turns on
 integration, and `integration_method` names the backend. Harmony is the
 default because it is fast and broadly useful.
 
-The same integration switch can be used with SCTransform normalization:
+### Compare several integration methods in one object
+
+Pass a vector to retain an unintegrated baseline and several corrected
+spaces without repeating normalization, HVG selection, or PCA.
+Parameters can be keyed by method; the historical spelling
+`"unintergrated"` is accepted with a deprecation warning, but new code
+should use `"unintegrated"`.
+
+Scalar-by-contract parameters also accept vectors. Shennong expands
+their conditional Cartesian product: for example, two `nfeatures` values
+and two `resolution` values create four runs per method, but the two
+resolutions share one graph and one UMAP for each method/HVG
+combination. Natural vectors such as `dims`, `hvg_features`,
+`vars_to_regress`, and `block_genes` remain one value. UMAP is the only
+projection run by default; set the existing `run_tsne = TRUE` explicitly
+when t-SNE is also required.
+
+``` r
+
+pbmc_comparison <- sn_run_cluster(
+  object = pbmc,
+  batch_by = "real_batch",
+  integration_method = c("unintegrated", "harmony", "coralysis"),
+  backend_control = list(
+    harmony = list(theta = 3),
+    coralysis = list(
+      icp_args = list(L = 25, threads = 1),
+      pca_args = list(p = 20),
+      store_sce = FALSE
+    )
+  ),
+  normalization_method = "seurat",
+  hvg_group_by = "real_batch",
+  nfeatures = c(2000, 3000),
+  dims = 1:20,
+  resolution = c(0.4, 0.8),
+  checkpoint_dir = "checkpoints/pbmc-integration-grid",
+  verbose = FALSE
+)
+
+# Discover the stored result names.
+pbmc_comparison@misc$integration_comparison$results
+
+# Inspect the run/embedding/preprocessing map, then retrieve exact components.
+comparison_grid <- pbmc_comparison@misc$integration_comparison$grid
+first_run <- pbmc_comparison@misc$integration_comparison$results[[1]]
+clusters <- pbmc_comparison[[first_run$cluster_column, drop = TRUE]]
+umap <- Seurat::Embeddings(pbmc_comparison, first_run$umap_reduction)
+
+# Compare compute cost per run and per unique integration embedding.
+pbmc_comparison@misc$integration_comparison$performance
+```
+
+For a method-only comparison with scalar parameters, the historical
+names such as `results$harmony`, `harmony_clusters`, and `umap.harmony`
+remain unchanged. Grid runs use deterministic run IDs. The unintegrated
+entry points to a stored PCA branch. Integrated methods retain their
+native corrected low-dimensional spaces (for example `harmony` or
+`coralysis`) rather than relabeling those coordinates as PCA. The
+manifest maps each run to its preprocessing/embedding IDs, reduction,
+graph names, cluster column, UMAP, and optional t-SNE so downstream
+integration metrics can iterate over one returned object.
+
+When `checkpoint_dir` is supplied, every completed grid entry is saved
+through a `.partial` file followed by an atomic rename. A repeated call
+with the same selected-layer content digest, cell/feature identity,
+relevant metadata, package version, grid, and analysis arguments resumes
+automatically (`resume = TRUE`) and skips completed entries. Only the
+latest complete checkpoint is retained; interrupted `.partial` files are
+ignored. Set `checkpoint_compress = TRUE` when disk space matters more
+than checkpoint write speed.
+
+The `performance` table contains wall-clock seconds, peak R heap memory,
+and integration-specific values. On Linux, pixi/Python backends also
+capture the maximum backend process-tree RSS with GNU `time`; GPU device
+memory is not included. Resolution-only entries have
+`reused_embedding = TRUE` and retain the source embedding’s integration
+cost while recording only the new clustering work as their workflow
+time.
+
+### Integration-control templates
+
+Use the executable templates to discover every Shennong-consumed backend
+field, including runtime, accelerator, model, training, graph, and
+backend-specific arguments:
+
+``` r
+
+names(sn_get_integration_control_template())
+sn_get_integration_control_template("harmony")
+sn_get_integration_control_template("coralysis")
+sn_get_integration_control_template(c("scvi", "scanvi", "scpoli"))
+sn_get_integration_control_template(c("bbknn", "totalvi", "mmochi"))
+```
+
+For Seurat CCA/RPCA, fields beyond the displayed template are passed
+directly to
+[`Seurat::IntegrateLayers()`](https://satijalab.org/seurat/reference/IntegrateLayers.html).
+For nested model calls, place native backend arguments in `model_args`,
+`train_args`, `scanvi_model_args`, `scanvi_train_args`,
+`totalvi_model_args`, `totalvi_train_args`, `bbknn_args`, or the
+corresponding Coralysis/MMoCHi argument list.
+
+Use
+[`sn_compare_integrations()`](https://zerostwo.github.io/shennong/dev/reference/sn_compare_integrations.md)
+when the object also contains an independent biological annotation
+column. The scib-metrics adapter evaluates the native PCA or integrated
+latent spaces on exactly the same stratified cells and features within
+each preprocessing group; it does not score UMAP or t-SNE coordinates. A
+matching unintegrated PCA is required in every preprocessing group. Each
+unique embedding is scored once, so resolution-only runs inherit the
+same embedding metrics. Supervised methods trained with the same column
+as `label_by` are flagged, and graph-only methods such as BBKNN are
+listed as non-comparable rather than silently treated as embeddings. The
+stored clustering timing and memory columns are joined into the scIB
+summary, metric, and ranking tables, enabling quality-versus-compute
+comparisons from the benchmark result alone.
+
+``` r
+
+pbmc_comparison <- sn_compare_integrations(
+  object = pbmc_comparison,
+  batch_by = "real_batch",
+  label_by = "cell_type",
+  accelerator = "auto",
+  n_workers = 4
+)
+
+# Discover and retrieve the stored benchmark.
+sn_list_results(pbmc_comparison, type = "integration_benchmark")
+integration_benchmark <- sn_get_result(
+  pbmc_comparison,
+  type = "integration_benchmark",
+  result_id = "integration_benchmark"
+)
+integration_benchmark$tables$ranking
+integration_benchmark$tables$summary[, c(
+  "run_id", "embedding_id", "preprocess_id", "method", "Total",
+  "integration_elapsed_seconds", "integration_peak_memory_mb",
+  "rank_within_preprocess", "rank_overall"
+)]
+integration_benchmark$tables$metrics
+integration_benchmark$diagnostics$backend_manifest$jax_devices
+```
+
+`accelerator = "auto"` selects the managed GPU environment when Shennong
+detects a usable NVIDIA CUDA runtime, otherwise it uses CPU. The
+recorded JAX device list is the runtime evidence for the device
+scib-metrics actually used.
+
+The same integration switch can be used with SCTransform normalization.
+This heavier optional backend runs in the `all` profile when both
+Harmony and `glmGamPoi` are installed:
 
 ``` r
 
 pbmc_sct_integrated <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "real_batch",
   integration_method = "harmony",
   normalization_method = "sctransform",
   hvg_features = c("IL7R", "CCR7", "NKG7"),
@@ -373,6 +604,8 @@ pbmc_sct_integrated <- sn_run_cluster(
   resolution = 0.6,
   verbose = FALSE
 )
+
+table(pbmc_sct_integrated$seurat_clusters, pbmc_sct_integrated$real_batch)
 ```
 
 For imbalanced datasets where a rare or unevenly distributed state may
@@ -382,21 +615,27 @@ Shennong and stores the integrated embedding as the `coralysis`
 reduction. The trained Coralysis SingleCellExperiment is stored by
 default under `object@misc$coralysis`, so the returned object can be
 used later as a native Coralysis label-transfer reference. Set
-`integration_control = list(store_sce = FALSE)` only for clustering-only
-runs.
+`backend_control = list(store_sce = FALSE)` only for clustering-only
+runs. For BPCells-backed assays, Shennong keeps the complete normalized
+layer on disk and materializes only the selected integration features as
+a sparse `dgCMatrix`, which is the input class required by Coralysis.
+Coralysis defaults to one worker because forked workers can each copy
+this in-memory matrix; set
+`backend_control = list(icp_args = list(threads = ...))` only after
+sizing the aggregate worker memory against the host.
 
 ``` r
 
 pbmc_coral <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 2000,
   dims = 1:20,
   resolution = 0.6,
-  integration_control = list(
+  backend_control = list(
     icp_args = list(L = 25, threads = 2),
     pca_args = list(p = 20)
   ),
@@ -406,6 +645,8 @@ pbmc_coral <- sn_run_cluster(
   ),
   verbose = FALSE
 )
+
+table(pbmc_coral$seurat_clusters, pbmc_coral$real_batch)
 ```
 
 Seurat layer integration methods are also available when users want to
@@ -415,7 +656,7 @@ compare against familiar anchor-based workflows:
 
 pbmc_cca <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "real_batch",
   integration_method = "seurat_cca",
   normalization_method = "seurat",
   nfeatures = 2000,
@@ -425,103 +666,166 @@ pbmc_cca <- sn_run_cluster(
 
 pbmc_rpca <- sn_run_cluster(
   object = pbmc,
-  batch = "library",
+  batch_by = "real_batch",
   integration_method = "seurat_rpca",
   normalization_method = "seurat",
   nfeatures = 2000,
   dims = 1:20,
   verbose = FALSE
 )
+
+data.frame(
+  method = c("seurat_cca", "seurat_rpca"),
+  clusters = c(
+    length(unique(pbmc_cca$seurat_clusters)),
+    length(unique(pbmc_rpca$seurat_clusters))
+  )
+)
+
+sn_plot_dim(
+  pbmc_rpca,
+  reduction = "umap",
+  group_by = "real_batch",
+  title = "RPCA integration across real acquisition batches"
+)
 ```
 
 Python integration methods can be run through a pixi-managed scverse
 project kept under the user-level Shennong runtime directory,
 `~/.shennong/`. When `integration_method = "scvi"`, Shennong exports the
-selected count matrix and metadata, renders
-`~/.shennong/pixi/scvi/pixi.toml` from the package-bundled
-`inst/pixi/scvi/pixi.toml` template when needed, runs the Python
-backend, imports `latent.csv` as the `scvi` reduction, and then
-continues with Seurat neighbors, clusters, and UMAP.
+count matrix from the requested `assay` and `layer` together with
+metadata, renders `~/.shennong/pixi/scvi/pixi.toml` from the
+package-bundled `inst/pixi/scvi/pixi.toml` template when needed, runs
+the Python backend, imports `latent.csv` as the `scvi` reduction, and
+then continues with Seurat neighbors, clusters, and UMAP.
 
 The R package does not vendor the Python environments. It ships only the
 backend runner script and pixi config templates; the pixi workspaces and
 environment prefixes are created under `~/.shennong/pixi/`, matching the
-package’s `~/.shennong/data/` convention. Use `sn_pixi_paths("scvi")` to
-inspect the layout before a run. If pixi is not already available,
-Shennong can install the standalone pixi binary through
-[`sn_ensure_pixi()`](https://songqi.org/shennong/dev/reference/sn_check_pixi.md)
+package’s `~/.shennong/data/` convention. Use
+`sn_get_pixi_paths("scvi")` to inspect the layout before a run. If pixi
+is not already available, Shennong can install the standalone pixi
+binary through
+[`sn_ensure_pixi()`](https://zerostwo.github.io/shennong/dev/reference/sn_check_pixi.md)
 and then use the Shennong `PIXI_HOME` under `~/.shennong/pixi/home` for
 runtime configuration. By default `accelerator = "auto"` uses a CUDA
 pixi environment when `nvidia-smi` reports a CUDA-capable GPU and
 otherwise uses the CPU environment. China mirror handling can be enabled
 with `mirror = "auto"` or a specific mirror such as `"tuna"`. Other
 bundled Python environment configs can be inspected with
-[`sn_list_pixi_environments()`](https://songqi.org/shennong/dev/reference/sn_list_pixi_environments.md)
+[`sn_list_pixi_environments()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_pixi_environments.md)
 and materialized with
-[`sn_prepare_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md).
+[`sn_prepare_pixi_environment()`](https://zerostwo.github.io/shennong/dev/reference/sn_prepare_pixi_environment.md).
 Method aliases share environments when the underlying software stack is
 the same: scANVI uses the `scvi` environment, and scPoli uses the
 `scarches` environment. Spatial tools are represented by specific
 environment names such as `cell2location`, `tangram`, `squidpy`,
-`spatialdata`, and `stlearn`.
+`spatialdata`, and `stlearn`. Environment discovery is not backend
+admission: the exported
+[`sn_run_scarches()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+and
+[`sn_run_stlearn()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+compatibility entry points are currently disabled and fail before object
+export or Python execution.
 
-For method wrappers that define an object-level contract, use the
-`object =` form. Runner scripts are stored with each pixi family under
-`inst/pixi/<family>/scripts/`. For example, inferCNVpy can be run
-directly on a Seurat object and will import cell-level CNV metadata and
-CNV reductions back into that object:
+The package-tested Pixi release is exact (`0.69.0`):
+`sn_ensure_pixi(version = "0.69.0", install = FALSE)` rejects a missing
+or mismatched executable, and mutable `version = "latest"` is not
+accepted. Official release assets are verified against their SHA-256
+sidecar; a custom `download_url` must provide `sha256` explicitly. The
+environment helpers expose the same pair as `pixi_download_url` and
+`pixi_sha256`. Python calls use a unique package-owned run directory.
+Successful temporary runs remove exported inputs and backend outputs
+after the needed result is imported; an explicitly supplied run/output
+directory is retained by default. The object-level wrappers expose
+`keep_run_dir` directly: with `keep_run_dir = FALSE`, an explicit
+`output_dir` is treated only as a parent for a marked child and is never
+recursively deleted. They also expose `max_artifact_import_gb`, so
+metadata, embeddings, and required artifact tables are validated under
+an explicit import budget even when the run directory is retained.
+Failure records are reduced to sanitized diagnostics rather than
+retaining expression matrices or unrestricted metadata.
 
 ``` r
 
-tumor <- sn_run_infercnvpy(
-  object = tumor,
-  assay = "RNA",
-  layer = "data",
-  species = "human",
-  reference_by = "cell_type",
-  reference_cat = c("T cell", "Myeloid", "Endothelial")
+sn_ensure_pixi(version = "0.69.0", install = FALSE)
+
+# Institutional mirror: pin both the immutable asset URL and its digest.
+sn_install_pixi(
+  version = "0.69.0",
+  download_url = "https://mirror.example/pixi-x86_64.tar.gz",
+  sha256 = "replace-with-reviewed-sha256"
+)
+
+sn_prepare_pixi_environment(
+  "scvi",
+  install_pixi = TRUE,
+  pixi_download_url = "https://mirror.example/pixi-x86_64.tar.gz",
+  pixi_sha256 = "replace-with-reviewed-sha256"
 )
 ```
 
-Other Python tools follow the same Seurat-first pattern. Tools that need
-additional biological inputs make those inputs explicit:
+These Python environments execute plain upstream implementations; no
+Python acceleration layer is bundled. scVI/scANVI training, scPoli,
+Tangram, MMoCHi, infercnvpy, scIB, and the current Squidpy path all run
+their original code. R-side hot paths are accelerated separately by
+ShennongOpt and can be disabled with
+`SHENNONG_ACCELERATION_DISABLED=true`.
+
+The raw-count layer contract also applies to scANVI and scPoli: their
+negative-binomial models require finite, non-negative, integer-like
+values, and Shennong validates the selected matrix both before export
+and inside the Python runner. BBKNN consumes the PCA computed from that
+same selected layer, imports its batch-balanced connectivity graph, and
+uses the graph directly for Seurat clustering and UMAP. Therefore a
+comparison on decontaminated counts can keep one explicit input across
+all methods instead of silently falling back to `counts`:
+
+The Python runners keep complete expression matrices sparse. scPoli
+converts only one bounded neural-network minibatch to a dense tensor
+during latent encoding; the complete cells-by-genes matrix is never
+materialized as dense. Dense PCA, latent, and UMAP outputs remain
+low-dimensional by construction.
 
 ``` r
 
-object <- sn_run_cellphonedb(object, group_by = "cell_type")
-
-spatial <- sn_run_tangram(
-  object = spatial,
-  reference_object = sc_reference,
-  cell_type_by = "cell_type",
-  spatial_cols = c("x", "y")
-)
-
-spatial <- sn_run_cell2location(
-  object = spatial,
-  reference_signatures = signature_matrix,
-  spatial_cols = c("x", "y"),
-  method_control = list(max_epochs = 30000)
-)
-
-spatial <- sn_run_squidpy(object = spatial, spatial_cols = c("x", "y"))
+methods <- c("scvi", "scanvi", "scpoli", "bbknn")
+integrated <- lapply(methods, function(method) {
+  control <- if (method == "scanvi") list(label_by = "cell_type") else list()
+  sn_run_cluster(
+    object = pbmc,
+    batch_by = "real_batch",
+    assay = "RNA",
+    layer = "decontaminated_counts",
+    integration_method = method,
+    backend_control = control,
+    normalization_method = "seurat",
+    dims = 1:30,
+    verbose = FALSE
+  )
+})
 ```
+
+Cancer CNV and spatial Python wrappers require disease-matched
+references or spatial coordinates, so they are intentionally exercised
+in the corresponding real melanoma and Visium articles rather than
+against this PBMC object.
 
 ``` r
 
 sn_list_pixi_environments()
-sn_pixi_paths("scvi")
-sn_ensure_pixi()
+sn_get_pixi_paths("scvi")
 
-pbmc_scvi <- sn_run_cluster(
-  object = pbmc,
-  batch = "library",
-  integration_method = "scvi",
+pbmc_scvi <- qs2::qs_read(real_data_file)
+pbmc_scvi <- sn_run_scvi(
+  object = pbmc_scvi,
+  batch_by = "real_batch",
+  layer = "counts",
   normalization_method = "seurat",
-  hvg_group_by = "library",
+  hvg_group_by = "real_batch",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(
+  backend_control = list(
     accelerator = "auto",
     mirror = "auto",
     n_latent = 30,
@@ -530,20 +834,58 @@ pbmc_scvi <- sn_run_cluster(
   verbose = FALSE
 )
 
-pbmc_scanvi <- sn_run_cluster(
-  object = pbmc,
-  batch = "library",
-  integration_method = "scanvi",
+table(pbmc_scvi$seurat_clusters, pbmc_scvi$real_batch)
+sn_plot_dim(pbmc_scvi, reduction = "umap", group_by = "real_batch")
+
+scanvi_input <- pbmc
+held_out_samples <- utils::tail(sort(unique(as.character(pbmc$real_sample))), 5)
+scanvi_input$scanvi_label <- as.character(scanvi_input$seurat_clusters)
+scanvi_input$scanvi_label[scanvi_input$real_sample %in% held_out_samples] <- "Unknown"
+
+pbmc_scanvi <- sn_run_scanvi(
+  object = scanvi_input,
+  batch_by = "real_batch",
+  layer = "counts",
   normalization_method = "seurat",
-  hvg_group_by = "library",
   nfeatures = 3000,
   dims = 1:30,
-  integration_control = list(
-    label_by = "reference_label",
+  backend_control = list(
+    label_by = "scanvi_label",
     unlabeled_category = "Unknown",
+    accelerator = "auto",
+    mirror = "auto",
     n_latent = 30,
     max_epochs = 100
   ),
   verbose = FALSE
+)
+
+table(pbmc_scanvi$scanvi_prediction, pbmc_scanvi$real_response)
+```
+
+The scPoli shortcut runs the same complete clustering workflow as
+`integration_method = "scpoli"`; it uses the real batch column as its
+condition and can use RNA clusters as prototype labels. The selected
+`layer` must be a count-like raw-count layer rather than normalized
+expression.
+[`sn_run_scarches()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+is retained only as a compatibility signature and currently fails closed
+because the package does not ship an admitted, faithful scArches
+reference-mapping workflow. The scPoli example runs only when its shared
+pixi environment is already materialized.
+
+``` r
+
+pbmc_scpoli <- sn_run_scpoli(
+  object = pbmc,
+  assay = "RNA",
+  layer = "counts",
+  batch_by = "real_batch",
+  backend_control = list(label_by = "seurat_clusters", max_epochs = 100)
+)
+
+data.frame(
+  method = "scpoli",
+  reductions = paste(names(pbmc_scpoli@reductions), collapse = ", ")
 )
 ```

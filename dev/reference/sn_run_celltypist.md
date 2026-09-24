@@ -23,7 +23,8 @@ sn_run_celltypist(
   layer = "counts",
   xlsx = FALSE,
   plot_results = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  object = NULL
 )
 ```
 
@@ -36,8 +37,9 @@ sn_run_celltypist(
 
 - celltypist:
 
-  Path to the `celltypist` binary. Defaults to
-  "/opt/mambaforge/envs/scverse/bin/celltypist".
+  Path to the `celltypist` binary. When `NULL`, use
+  `getOption("shennong.celltypist_path")` and otherwise search `PATH`
+  with `Sys.which("celltypist")`.
 
 - model:
 
@@ -81,18 +83,23 @@ sn_run_celltypist(
 
 - transpose_input:
 
-  Logical. If `TRUE`, add the `--transpose-input` argument when calling
-  `celltypist`.
+  Logical. For Seurat input, `TRUE` exports counts in gene-by-cell
+  orientation and `FALSE` exports a sparse cell-by-gene transpose. For
+  an existing path, the input file is not rewritten. In both cases,
+  `TRUE` adds CellTypist's `--transpose-input` flag and `FALSE` does
+  not, so path inputs must set this to match their stored orientation.
 
 - gene_file:
 
   If the provided input is in the `mtx` format, path to the file storing
-  gene information. Otherwise ignored.
+  gene information. For Seurat input, a sidecar is generated from the
+  feature names when this is `NULL`.
 
 - cell_file:
 
   If the provided input is in the `mtx` format, path to the file storing
-  cell information. Otherwise ignored.
+  cell information. For Seurat input, a sidecar is generated from the
+  cell names when this is `NULL`.
 
 - assay:
 
@@ -101,12 +108,16 @@ sn_run_celltypist(
 
 - layer:
 
-  Layer used as the input count matrix. Defaults to `"counts"`.
+  Raw or count-like layer used as the input matrix for Seurat objects.
+  Defaults to `"counts"`. MatrixMarket/CSV input is normalized by
+  CellTypist, so passing a log-normalized `data` layer would normalize
+  it twice and is rejected; negative values are also rejected.
 
 - xlsx:
 
-  Logical. If `TRUE`, merge output tables into a single Excel (.xlsx).
-  Defaults to `FALSE`.
+  Logical. If `TRUE`, ask CellTypist for its combined
+  `annotation_result.xlsx` workbook and import the first (prediction)
+  sheet through the optional `rio` dependency. Defaults to `FALSE`.
 
 - plot_results:
 
@@ -116,6 +127,10 @@ sn_run_celltypist(
 
   Logical. If `TRUE`, hide the banner and config info from `celltypist`.
   Defaults to `FALSE`.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 
@@ -127,7 +142,9 @@ is returned.
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl")
 head(colnames(pbmc[[]]))

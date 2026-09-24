@@ -2,6 +2,9 @@
 
 Computes library size, detected features, expression distributions,
 sample PCA, sample correlations, and robust multivariate outlier flags.
+The analysis-scale expression of the selected variable features is
+retained in `tables$expression` for auditable sample-to-sample scatter
+plots.
 
 ## Usage
 
@@ -12,7 +15,7 @@ sn_assess_bulk_qc(
   assay = NULL,
   top_variable = 2000L,
   outlier_z = 3.5,
-  store_name = "bulk_qc"
+  result_id = "bulk_qc"
 )
 ```
 
@@ -39,9 +42,9 @@ sn_assess_bulk_qc(
 
   Robust z-score threshold used for sample flags.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned bulk-QC result.
 
 ## Value
 

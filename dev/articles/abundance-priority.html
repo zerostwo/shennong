@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Differential Abundance and State Priority • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Differential Abundance and State Priority">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Differential Abundance and State Priority">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -90,114 +91,220 @@
 
     
     
-<p>Shennong treats biological samples—not cells—as the inferential unit
-for differential abundance. It also separates three distinct
-state-priority questions: perturbation separability,
-bulk-phenotype-guided cell selection, and rare-state discovery.</p>
+<p>This article uses public observations rather than simulated cell
+labels. The core analysis uses 2,000 cells sampled across all 20
+biological samples in the Kotliarov PBMC CITE-seq vaccine-response
+cohort. Scissor is a separate extended analysis linking the public
+GSE72056 melanoma cells to the curated TCGA-SKCM phenotype.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">status</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  workflow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample-level abundance"</span>, <span class="st">"state priority"</span>, <span class="st">"Scissor"</span><span class="op">)</span>,</span>
+<span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"core"</span>, <span class="st">"core"</span>, <span class="st">"extended"</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kotliarov PBMC"</span>, <span class="st">"Kotliarov PBMC"</span>, <span class="st">"GSE72056 + TCGA-SKCM"</span><span class="op">)</span>,</span>
+<span>  status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">core_ready</span><span class="op">)</span> <span class="st">"executed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">run_vignette</span><span class="op">)</span> <span class="st">"disabled: set SHENNONG_RUN_VIGNETTES=true"</span> <span class="kw">else</span> <span class="st">"fixture missing"</span>,</span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">core_ready</span><span class="op">)</span> <span class="st">"executed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">run_vignette</span><span class="op">)</span> <span class="st">"disabled: set SHENNONG_RUN_VIGNETTES=true"</span> <span class="kw">else</span> <span class="st">"fixture missing"</span>,</span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">scissor_ready</span><span class="op">)</span> <span class="st">"executed below"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">real_profile</span>, <span class="st">"all"</span><span class="op">)</span><span class="op">)</span> <span class="st">"disabled: requires SHENNONG_REAL_PROFILE=all"</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Scissor"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="st">"dependency missing: Scissor"</span> <span class="kw">else</span> <span class="st">"fixture missing"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">status</span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="23%">
+<col width="9%">
+<col width="21%">
+<col width="45%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">workflow</th>
+<th align="left">mode</th>
+<th align="left">data</th>
+<th align="left">status</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">sample-level abundance</td>
+<td align="left">core</td>
+<td align="left">Kotliarov PBMC</td>
+<td align="left">disabled: set SHENNONG_RUN_VIGNETTES=true</td>
+</tr>
+<tr class="even">
+<td align="left">state priority</td>
+<td align="left">core</td>
+<td align="left">Kotliarov PBMC</td>
+<td align="left">disabled: set SHENNONG_RUN_VIGNETTES=true</td>
+</tr>
+<tr class="odd">
+<td align="left">Scissor</td>
+<td align="left">extended</td>
+<td align="left">GSE72056 + TCGA-SKCM</td>
+<td align="left">disabled: requires SHENNONG_REAL_PROFILE=all</td>
+</tr>
+</tbody>
+</table>
+<div class="section level2">
+<h2 id="prepare-real-sample-and-state-labels">Prepare real sample and state labels<a class="anchor" aria-label="anchor" href="#prepare-real-sample-and-state-labels"></a>
+</h2>
+<p>The author-provided <code>real_sample</code>, response, and batch
+fields remain the replicate design. Cell states are obtained by
+clustering the real RNA counts; they are not assigned from a fabricated
+metadata vector.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">pbmc_path</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">15</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">pbmc</span><span class="op">$</span><span class="va">cell_state</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cluster_"</span>, <span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc_metadata</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">sample_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_metadata</span><span class="op">)</span><span class="op">)</span>, <span class="va">pbmc_metadata</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span>,</span>
+<span>  <span class="kw">function</span><span class="op">(</span><span class="va">index</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    real_sample <span class="op">=</span> <span class="va">pbmc_metadata</span><span class="op">$</span><span class="va">real_sample</span><span class="op">[</span><span class="va">index</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    real_response <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_metadata</span><span class="op">$</span><span class="va">real_response</span><span class="op">[</span><span class="va">index</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    observed_batches <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_metadata</span><span class="op">$</span><span class="va">real_batch</span><span class="op">[</span><span class="va">index</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">"+"</span><span class="op">)</span>,</span>
+<span>    cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">index</span><span class="op">)</span>,</span>
+<span>    row.names <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sample_design</span> <span class="op">&lt;-</span> <span class="va">sample_design</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">sample_design</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">sample_design</span></span></code></pre></div>
+</div>
 <div class="section level2">
 <h2 id="sample-level-differential-abundance">Sample-level differential abundance<a class="anchor" aria-label="anchor" href="#sample-level-differential-abundance"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"propeller"</span>,</span>
-<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  condition_by <span class="op">=</span> <span class="st">"response"</span>,</span>
-<span>  cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  design <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"sex"</span><span class="op">)</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"response_abundance"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Use the permutation backend as a transparent validation and Milo for
-neighborhood-level effects:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">permutation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, method <span class="op">=</span> <span class="st">"permutation"</span>, sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  condition_by <span class="op">=</span> <span class="st">"response"</span>, cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>, permutations <span class="op">=</span> <span class="fl">999</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">milo</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, method <span class="op">=</span> <span class="st">"milo"</span>, sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  condition_by <span class="op">=</span> <span class="st">"response"</span>, cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>milo <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>reduction <span class="op">=</span> <span class="st">"pca"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>For Bayesian compositional inference, run scCODA or pertpy in the
-Python environment owned by the project and pass its effect table
-through the explicit adapter. The table needs a <code>feature</code> or
-<code>cell_type</code> column and an <code>effect</code> or
-<code>estimate</code> column; inclusion probabilities and
-credible-effect flags are retained when supplied. The adapter does not
-convert posterior inclusion probabilities into frequentist p values;
-those fields remain missing unless the backend explicitly provides
-them.</p>
+<p>The built-in sample-label permutation analysis models the 20
+biological samples and exposes an auditable null without an optional
+backend. When <code>speckle</code> is installed, the same design is also
+fitted with Propeller. The contrast is high versus low baseline vaccine
+response. One donor has cells in both acquisition batches, so batch is
+reported above but is not forced into an invalid one-value-per-sample
+covariate.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sccoda</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, method <span class="op">=</span> <span class="st">"sccoda"</span>, sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  condition_by <span class="op">=</span> <span class="st">"response"</span>, cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>result <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>table <span class="op">=</span> <span class="va">sccoda_effects</span><span class="op">)</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">permutation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"permutation"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
+<span>  condition_by <span class="op">=</span> <span class="st">"real_response"</span>,</span>
+<span>  cell_type_by <span class="op">=</span> <span class="st">"cell_state"</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d0 high"</span>, <span class="st">"d0 low"</span><span class="op">)</span>,</span>
+<span>  permutations <span class="op">=</span> <span class="fl">199</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">sccoda</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span></code></pre></div>
-<p>Discover and retrieve the durable result:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"differential_abundance"</span><span class="op">)</span></span>
-<span><span class="va">abundance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, <span class="st">"differential_abundance"</span>, <span class="st">"response_abundance"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">abundance</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span>
-<span><span class="va">abundance</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_proportions</span></span>
-<span><span class="va">abundance</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_contributions</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_abundance.html">sn_plot_abundance</a></span><span class="op">(</span><span class="va">abundance</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="va">permutation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">permutation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">$</span><span class="va">adjusted_p_value</span><span class="op">)</span>,</span>
+<span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permutation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_proportions</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">permutation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">permutation_null</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_abundance.html">sn_plot_abundance</a></span><span class="op">(</span><span class="va">permutation</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"speckle"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">abundance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_test_abundance.html">sn_test_abundance</a></span><span class="op">(</span></span>
+<span>    <span class="va">pbmc</span>,</span>
+<span>    method <span class="op">=</span> <span class="st">"propeller"</span>,</span>
+<span>    sample_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
+<span>    condition_by <span class="op">=</span> <span class="st">"real_response"</span>,</span>
+<span>    cell_type_by <span class="op">=</span> <span class="st">"cell_state"</span>,</span>
+<span>    contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d0 high"</span>, <span class="st">"d0 low"</span><span class="op">)</span>,</span>
+<span>    return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">abundance</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">[</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">abundance</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">$</span><span class="va">adjusted_p_value</span><span class="op">)</span>,</span>
+<span>  <span class="op">]</span></span>
+<span>  <span class="fu"><a href="../reference/sn_plot_abundance.html">sn_plot_abundance</a></span><span class="op">(</span><span class="va">abundance</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="prioritize-responsive-states">Prioritize responsive states<a class="anchor" aria-label="anchor" href="#prioritize-responsive-states"></a>
+<h2 id="prioritize-response-separable-states">Prioritize response-separable states<a class="anchor" aria-label="anchor" href="#prioritize-response-separable-states"></a>
 </h2>
-<p>The default method holds out biological samples when
-<code>sample_by</code> is supplied, predicts the condition independently
-within each state, and records a sample-label permutation null.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prioritize_states.html">sn_prioritize_states</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
+<p>The built-in sample-aware Augur path holds out complete biological
+samples and permutes sample labels. Thus, the displayed AUC and
+empirical p-value do not count cells as independent replicates.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">priority</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prioritize_states.html">sn_prioritize_states</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"augur"</span>,</span>
-<span>  phenotype <span class="op">=</span> <span class="st">"response"</span>,</span>
-<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  state_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"response_priority"</span></span>
+<span>  phenotype <span class="op">=</span> <span class="st">"real_response"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
+<span>  state_by <span class="op">=</span> <span class="st">"cell_state"</span>,</span>
+<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d0 high"</span>, <span class="st">"d0 low"</span><span class="op">)</span>,</span>
+<span>  max_features <span class="op">=</span> <span class="fl">250</span>,</span>
+<span>  max_cells_per_state <span class="op">=</span> <span class="fl">300</span>,</span>
+<span>  permutations <span class="op">=</span> <span class="fl">49</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">priority</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"state_priority"</span>, <span class="st">"response_priority"</span><span class="op">)</span></span>
 <span><span class="va">priority</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span>
-<span><span class="va">priority</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_contributions</span></span>
-<span><span class="va">priority</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">permutation_null</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">priority</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">sample_contributions</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_state_priority.html">sn_plot_state_priority</a></span><span class="op">(</span><span class="va">priority</span><span class="op">)</span></span></code></pre></div>
-<p>RareQ first discovers topology-supported rare states and then tests
-their sample-level abundance association. Scissor answers a different
-question and therefore requires a gene-by-bulk-sample expression matrix
-plus its phenotype; a cell metadata label is not accepted as a
-substitute.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rareq</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prioritize_states.html">sn_prioritize_states</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, method <span class="op">=</span> <span class="st">"rareq"</span>, phenotype <span class="op">=</span> <span class="st">"response"</span>,</span>
-<span>  sample_by <span class="op">=</span> <span class="st">"patient"</span>, contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"responder"</span>, <span class="st">"nonresponder"</span><span class="op">)</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
+</div>
+<div class="section level2">
+<h2 id="extended-phenotype-guided-scissor">Extended: phenotype-guided Scissor<a class="anchor" aria-label="anchor" href="#extended-phenotype-guided-scissor"></a>
+</h2>
+<p>This chunk runs only with <code>SHENNONG_REAL_PROFILE=all</code> and
+an installed Scissor backend. The single-cell input is the
+author-normalized GSE72056 matrix; the bulk input is TCGA-SKCM
+upper-quartile log2-normalized RSEM TPM. The phenotype is the curated
+primary-versus-metastatic label, named and aligned to the bulk columns.
+A backend error is printed as a failed status and is never replaced by a
+hand-made selection table.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">melanoma</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">melanoma_path</span><span class="op">)</span></span>
+<span><span class="va">tcga</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">tcga_path</span><span class="op">)</span></span>
+<span><span class="va">bulk_phenotype</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span></span>
+<span>  <span class="va">tcga</span><span class="op">$</span><span class="va">sample_data</span><span class="op">$</span><span class="va">sample_type</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">tcga</span><span class="op">$</span><span class="va">sample_data</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">scissor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_prioritize_states.html">sn_prioritize_states</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, method <span class="op">=</span> <span class="st">"scissor"</span>, phenotype <span class="op">=</span> <span class="st">"bulk_response"</span>,</span>
-<span>  state_by <span class="op">=</span> <span class="st">"cell_type"</span>, sample_by <span class="op">=</span> <span class="st">"patient"</span>,</span>
-<span>  bulk_expression <span class="op">=</span> <span class="va">bulk_expression</span>,</span>
-<span>  bulk_phenotype <span class="op">=</span> <span class="va">bulk_response</span>,</span>
-<span>  family <span class="op">=</span> <span class="st">"binomial"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">scissor_attempt</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/sn_run_scissor.html">sn_run_scissor</a></span><span class="op">(</span></span>
+<span>    <span class="va">melanoma</span>,</span>
+<span>    state_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>    sample_by <span class="op">=</span> <span class="st">"tumor"</span>,</span>
+<span>    bulk_expression <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tcga</span><span class="op">$</span><span class="va">log2_uq_rsem_tpm</span><span class="op">)</span>,</span>
+<span>    bulk_phenotype <span class="op">=</span> <span class="va">bulk_phenotype</span>,</span>
+<span>    family <span class="op">=</span> <span class="st">"binomial"</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717</span>,</span>
+<span>    backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>nfeatures <span class="op">=</span> <span class="fl">500L</span>, npcs <span class="op">=</span> <span class="fl">10L</span>, cutoff <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>    return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  error <span class="op">=</span> <span class="va">identity</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">scissor_attempt</span>, <span class="st">"error"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    backend <span class="op">=</span> <span class="st">"Scissor"</span>, status <span class="op">=</span> <span class="st">"failed"</span>,</span>
+<span>    detail <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="va">scissor_attempt</span><span class="op">)</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">scissor</span> <span class="op">&lt;-</span> <span class="va">scissor_attempt</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">scissor</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">scissor</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">states</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">scissor</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">correlations</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_plot_scissor.html">sn_plot_scissor</a></span><span class="op">(</span><span class="va">scissor</span>, type <span class="op">=</span> <span class="st">"states"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_plot_scissor.html">sn_plot_scissor</a></span><span class="op">(</span><span class="va">scissor</span>, type <span class="op">=</span> <span class="st">"correlations"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Scissor’s cutoff governs alpha-search stopping; it does not guarantee
+a final selected-cell fraction. Always inspect
+<code>selection_cutoff_satisfied</code> in the model table before
+interpreting selected cells. Bootstrap reliability remains intentionally
+outside this documentation build because it is a separate confirmatory
+computation.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -205,9 +312,7 @@ substitute.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -215,6 +320,12 @@ substitute.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

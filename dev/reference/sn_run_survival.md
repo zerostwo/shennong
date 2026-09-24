@@ -13,7 +13,13 @@ sn_run_survival(
   covariates = NULL,
   metadata = NULL,
   assay = NULL,
-  store_name = "bulk_survival"
+  result_id = "bulk_survival",
+  group_method = c("median", "quantile", "fixed", "none"),
+  group_quantile = 0.5,
+  group_cutpoint = NULL,
+  group_labels = c("Low", "High"),
+  ties = c("efron", "breslow", "exact"),
+  risk_times = NULL
 )
 ```
 
@@ -22,7 +28,7 @@ sn_run_survival(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - time, event:
 
@@ -44,9 +50,34 @@ sn_run_survival(
 
   Assay name for `SummarizedExperiment` input.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned survival result.
+
+- group_method:
+
+  Feature grouping used for Kaplan-Meier analysis.
+
+- group_quantile:
+
+  Quantile used when `group_method = "quantile"`.
+
+- group_cutpoint:
+
+  Fixed scalar or feature-named cutpoints.
+
+- group_labels:
+
+  Labels ordered as lower/equal and higher than the cutpoint.
+
+- ties:
+
+  Cox partial-likelihood tie method.
+
+- risk_times:
+
+  Optional non-negative times shown in the risk table. The default uses
+  at most eight deterministic pretty breaks per feature.
 
 ## Value
 

@@ -24,7 +24,7 @@ sn_prioritize_states(
   bulk_expression = NULL,
   bulk_phenotype = NULL,
   family = c("binomial", "gaussian", "cox"),
-  store_name = "priority",
+  result_id = "priority",
   seed = 717L,
   backend_control = list(),
   return_object = TRUE
@@ -95,7 +95,7 @@ sn_prioritize_states(
 
   Scissor phenotype family.
 
-- store_name:
+- result_id:
 
   Stored result name.
 

@@ -41,4 +41,4 @@ sn_recommend_figure_size(
 ## Value
 
 The `recommended` component of
-[`sn_figure_spec()`](https://songqi.org/shennong/dev/reference/sn_figure_spec.md).
+[`sn_get_figure_spec()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_figure_spec.md).

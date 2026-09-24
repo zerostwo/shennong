@@ -29,10 +29,13 @@ sn_run_milo(
   fdr_weighting = c("k-distance", "neighbour-distance", "max", "graph-overlap", "none"),
   min_mean = 0,
   norm_method = c("TMM", "RLE", "logMS"),
-  store_name = NULL,
-  return_object = FALSE,
-  return_intermediate = FALSE,
-  verbose = TRUE
+  result_id = NULL,
+  return_object = TRUE,
+  keep_model = FALSE,
+  verbose = TRUE,
+  seed = 717,
+  overwrite = FALSE,
+  object = NULL
 )
 ```
 
@@ -121,36 +124,49 @@ sn_run_milo(
 
   Normalization method passed to `miloR::testNhoods()`.
 
-- store_name:
+- result_id:
 
-  Optional name used under `object@misc$milo_results`. When supplied,
-  the milo result is stored on the Seurat object.
+  Optional stable identifier. A unique `milo` ID is allocated when
+  omitted.
 
 - return_object:
 
-  Logical; when `TRUE` and `store_name` is supplied, return the updated
-  Seurat object.
+  Return the updated Seurat object (default), or the unified analysis
+  result when `FALSE`.
 
-- return_intermediate:
+- keep_model:
 
-  Logical; if `TRUE`, return a list with the DA table, design data, and
-  milo object.
+  Retain the fitted Milo object in `models$milo`.
 
 - verbose:
 
   Logical; if `TRUE`, emit progress logs.
 
+- seed:
+
+  Random seed used for cell and neighborhood sampling, applied locally
+  without changing the caller's RNG state. `NULL` uses the caller's
+  state; an effective numeric seed is recorded in provenance.
+
+- overwrite:
+
+  Explicitly replace an existing result; requires an explicit ID.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
-By default, a data frame of neighborhood-level DA statistics. When
-`return_intermediate = TRUE`, a list with `table`, `design_df`, and
-`milo` is returned.
+A Seurat object or unified result. Retrieve neighborhood statistics with
+[`sn_get_milo_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_milo_result.md);
+design data are in `tables$design`.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-da_tbl <- sn_run_milo(
+seu <- sn_run_milo(
   seu,
   sample_by = "sample",
   group_by = "condition",

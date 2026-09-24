@@ -7,10 +7,9 @@ Retrieve stored regulatory activity results
 ``` r
 sn_get_regulatory_activity_result(
   object,
-  activity_name = "default",
+  result_id = NULL,
   sources = NULL,
-  conditions = NULL,
-  with_metadata = FALSE
+  conditions = NULL
 )
 ```
 
@@ -20,7 +19,7 @@ sn_get_regulatory_activity_result(
 
   A Seurat object.
 
-- activity_name:
+- result_id:
 
   Name of the stored result.
 
@@ -32,10 +31,12 @@ sn_get_regulatory_activity_result(
 
   Optional cell or group names to keep.
 
-- with_metadata:
-
-  If `TRUE`, return the full stored-result list.
-
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble.
+
+## Details
+
+This getter always returns the selected table. Use
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md)
+for the complete stored result and metadata.

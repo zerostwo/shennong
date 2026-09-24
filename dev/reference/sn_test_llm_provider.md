@@ -42,8 +42,4 @@ A one-row tibble summarizing the result.
 ``` r
 test_provider <- function(messages, model = NULL, ...) list(text = "OK", model = model %||% "demo")
 sn_test_llm_provider(provider = test_provider)
-#> # A tibble: 1 × 6
-#>   provider ok    model elapsed_sec text  error
-#>   <chr>    <lgl> <chr>       <dbl> <chr> <chr>
-#> 1 ellmer   TRUE  demo    0.0000734 OK    NA   
 ```

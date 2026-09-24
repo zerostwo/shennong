@@ -1,5 +1,11 @@
 # Markers, signatures, pathways, and annotation
 
+For a small, complete marker and enrichment walkthrough, start with
+[Differential expression and
+enrichment](https://zerostwo.github.io/shennong/dev/articles/differential-expression.md).
+This guide adds real-data annotation, feature classes, and pathway
+interpretation.
+
 After clustering, users usually ask three linked questions:
 
 1.  Which genes define each cluster?
@@ -10,7 +16,13 @@ Shennong stores DE and enrichment results on the Seurat object so the
 same tables can feed dot plots, interpretation prompts, and later
 reports.
 
-## Cluster PBMC3k and find markers
+All core results below are computed from the public Kotliarov PBMC
+CITE-seq fixture. Its 20 `real_sample` values are the biological
+replicates, `real_response` is constant within each sample, and RNA and
+ADT measurements remain aligned. No donor, condition, or cell-label
+column is fabricated.
+
+## Cluster the real PBMC cells and find markers
 
 ``` r
 
@@ -18,10 +30,7 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-20 05:54:55] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-20 05:54:55] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:56] Seurat object initialization complete.
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -40,65 +49,84 @@ pbmc <- sn_find_de(
   layer = "data",
   min_pct = 0.25,
   logfc_threshold = 0.25,
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
+
+table(pbmc$seurat_clusters, pbmc$real_response)
 ```
 
-The result is stored under `object@misc$de_results`. Retrieve it by name
-instead of relying on a temporary variable from an earlier script.
+The result is stored in the canonical Shennong result registry.
+`result_id` is the explicit stable key used consistently by
+[`sn_list_results()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_results.md)
+and
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md).
+Retrieve the result by ID instead of relying on a temporary variable
+from an earlier script.
 
 ``` r
 
 marker_tbl <- sn_get_de_result(
   pbmc,
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   top_n = 5
 )
 
 head(marker_tbl)
-#> # A tibble: 6 × 7
-#>       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  
-#>       <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr> 
-#> 1 6.44e- 89       2.52 0.42  0.083  3.54e-84 0       AQP3  
-#> 2 2.85e- 60       2.49 0.278 0.049  1.56e-55 0       CD40LG
-#> 3 7.42e- 59       2.38 0.295 0.06   4.07e-54 0       LMNA  
-#> 4 1.08e- 48       1.81 0.371 0.116  5.93e-44 0       TRADD 
-#> 5 1.28e- 54       1.78 0.381 0.105  7.01e-50 0       TRAT1 
-#> 6 4.22e-102       2.49 0.512 0.118  2.31e-97 1       CCR7
-names(pbmc@misc$de_results)
-#> [1] "cluster_markers"
+sn_list_results(pbmc, type = "de")
+marker_result <- sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
+marker_result$input[c(
+  "assay", "layer", "tested_features_count", "tested_features_source"
+)]
 ```
 
 ## Prioritize interpretable marker classes
 
 Marker tables often contain hundreds of significant genes. Use
-[`sn_annotate_de_features()`](https://songqi.org/shennong/dev/reference/sn_annotate_de_features.md)
+[`sn_annotate_de_features()`](https://zerostwo.github.io/shennong/dev/reference/sn_annotate_de_features.md)
 to flag marker genes that are especially useful for mechanistic
 interpretation or validation, such as transcription factors, surface or
 plasma-membrane genes, cytokines, and chemokines. When called on a
 Seurat object, the annotated table is stored as another DE result, so it
 can be discovered and retrieved with the same result helpers.
 
+The real-data website build uses the bounded local panel below so
+documentation never downloads the current MSigDB snapshot. In a research
+project, freeze a project-specific resource the same way, or materialize
+`msigdbr` outside the analysis run and record its version.
+
 ``` r
+
+feature_class_resource <- data.frame(
+  gene = c(
+    "TCF7", "LEF1", "GATA3", "TBX21", "SPI1",
+    "CD3D", "CD4", "CD8A", "MS4A1", "CD14", "FCGR3A", "IL7R", "CCR7",
+    "IFNG", "TNF", "IL32",
+    "CCL5", "CCL4", "CXCL8"
+  ),
+  feature_class = c(
+    rep("transcription_factor", 5),
+    rep("surface_membrane", 8),
+    rep("cytokine", 3),
+    rep("chemokine", 3)
+  ),
+  feature_class_source = "article-local curated immune marker panel"
+)
 
 pbmc <- sn_annotate_de_features(
   pbmc,
-  de_name = "cluster_markers",
-  species = "human"
+  source_result_id = "cluster_markers",
+  species = "human",
+  resource = "custom",
+  custom_resource = feature_class_resource
 )
 
 sn_list_results(pbmc)
-#> # A tibble: 2 × 8
-#>   collection type  name        analysis method created_at n_rows source
-#>   <chr>      <chr> <chr>       <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 de_results de    cluster_ma… markers  wilcox 2026-07-2…   4670 NA    
-#> 2 de_results de    cluster_ma… markers  wilcox 2026-07-2…   4670 NA
 
 sn_get_de_result(
   pbmc,
-  de_name = "cluster_markers_feature_classes",
+  result_id = "cluster_markers_feature_classes",
   top_n = 5
 ) |>
   dplyr::select(
@@ -109,24 +137,12 @@ sn_get_de_result(
     starts_with("is_")
   ) |>
   head()
-#> # A tibble: 6 × 8
-#>   cluster gene   avg_log2FC feature_classes      is_transcription_fac…¹
-#>   <fct>   <chr>       <dbl> <chr>                <lgl>                 
-#> 1 0       AQP3         2.52 surface_membrane     FALSE                 
-#> 2 0       CD40LG       2.49 surface_membrane;cy… FALSE                 
-#> 3 0       LMNA         2.38 NA                   FALSE                 
-#> 4 0       TRADD        1.81 NA                   FALSE                 
-#> 5 0       TRAT1        1.78 NA                   FALSE                 
-#> 6 1       CCR7         2.49 surface_membrane     FALSE                 
-#> # ℹ abbreviated name: ¹​is_transcription_factor
-#> # ℹ 3 more variables: is_surface_membrane <lgl>, is_cytokine <lgl>,
-#> #   is_chemokine <lgl>
 ```
 
 ## Plot stored markers without hand-copying gene lists
 
 Because the DE result is stored,
-[`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
+[`sn_plot_dot()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_dot.md)
 can select top markers per cluster directly.
 
 ``` r
@@ -134,15 +150,13 @@ can select top markers per cluster directly.
 sn_plot_dot(
   x = pbmc,
   features = "top_markers",
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   n = 4,
   group_by = "seurat_clusters",
   palette = "RdBu",
-  title = "Top PBMC3k markers"
+  title = "Top markers in the real PBMC subset"
 )
 ```
-
-![](annotation-pathways_files/figure-html/marker-dotplot-1.png)
 
 For canonical checks, pass marker genes explicitly.
 
@@ -158,209 +172,113 @@ sn_plot_dot(
 )
 ```
 
-![](annotation-pathways_files/figure-html/canonical-dotplot-1.png)
+## Run traceable reference annotation
 
-## Run traceable consensus annotation
+[`sn_run_annotation()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_annotation.md)
+is the stable annotation entry point. It dispatches to a reference
+backend (default `method = "singleR"`), stores per-cell labels with
+backend scores, summarizes each `group_by` group by its modal predicted
+label, assigns hierarchical labels from the bundled marker-atlas
+hierarchy, and maps known labels to a versioned Cell Ontology snapshot.
 
-[`sn_run_annotation()`](https://songqi.org/shennong/dev/reference/sn_run_annotation.md)
-is the stable annotation entry point. Its default `method = "consensus"`
-scores the bundled canonical marker database, retains the best and
-second-best candidate, calibrates a confidence margin, assigns
-hierarchical labels, and maps known labels to a versioned Cell Ontology
-snapshot. It supports both cluster- and cell-level output; without a
-reference, each cell inherits the traceable consensus of its cluster.
+Because the fixture ships no author-provided cell labels, the demo below
+uses CellTypist’s pretrained immune atlas as an external labeling
+source. The chunk runs only when the CellTypist command-line tool is
+installed.
+
+``` r
+
+pbmc <- sn_run_celltypist(pbmc, model = "Immune_All_Low.pkl", quiet = TRUE)
+pbmc <- sn_run_annotation(
+  pbmc,
+  group_by = "seurat_clusters",
+  method = "singleR",
+  reference = subset(pbmc, cells = sample(colnames(pbmc), floor(ncol(pbmc) / 5))),
+  reference_label_by = "majority_voting",
+  species = "human",
+  tissue = "peripheral blood",
+  ontology = TRUE,
+  result_id = "pbmc_annotated"
+)
+
+annotation_index <- sn_list_results(pbmc, type = "annotation")
+annotation_index
+
+annotation <- sn_get_result(
+  pbmc,
+  type = "annotation",
+  result_id = "pbmc_annotated"
+)
+
+head(annotation$tables$clusters)
+head(annotation$tables$cells)
+annotation$diagnostics
+
+sn_plot_reference_projection(
+  pbmc,
+  result_id = "pbmc_annotated",
+  reduction = "umap",
+  color_by = "prediction"
+)
+```
+
+Every final label remains linked to its backend score, reference
+coverage, and provenance. LLM helpers can explain this evidence but
+cannot replace the stored computational label. Review uncertain
+assignments before using them as biological truth.
+
+`confidence_threshold` is an optional backend-specific cutoff, not a
+universal probability threshold: calibrate it for the chosen
+method/reference before setting it. Missing, non-finite, non-positive,
+or explicitly unassigned scores remain low confidence and are not
+imputed to zero. The stored parameters mark the confidence scale as
+`backend_specific`.
 
 ``` r
 
 pbmc <- sn_run_annotation(
   pbmc,
   group_by = "seurat_clusters",
-  method = "consensus",
-  species = "human",
-  tissue = "peripheral blood",
-  ontology = TRUE,
-  store_name = "pbmc_consensus"
+  method = "singleR",
+  reference = reference,
+  reference_label_by = "cell_type",
+  confidence_threshold = validated_singleR_cutoff,
+  result_id = "pbmc_annotated"
 )
-
-annotation_index <- sn_list_results(pbmc, type = "annotation")
-annotation_index
-#> # A tibble: 1 × 8
-#>   collection       type  name  analysis method created_at n_rows source
-#>   <chr>            <chr> <chr> <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 analysis_results anno… pbmc… annotat… conse… 2026-07-2…   4037 NA
-
-annotation <- sn_get_result(
-  pbmc,
-  type = "annotation",
-  name = "pbmc_consensus"
-)
-
-head(annotation$tables$clusters)
-#> # A tibble: 6 × 16
-#>   cluster prediction          second_best_label prediction_score margin
-#>   <chr>   <chr>               <chr>                        <dbl>  <dbl>
-#> 1 0       ELP                 Early lymphoid/T…            0.711 0.0364
-#> 2 1       Myelocytes          ELP                          0.732 0.106 
-#> 3 2       Monocytes           Monocyte precurs…            0.752 0.172 
-#> 4 3       Kidney-resident ma… Naive B cells                0.726 0.0860
-#> 5 4       Tem/Trm cytotoxic … Transitional NK              0.732 0.108 
-#> 6 5       Monocytes           Myelocytes                   0.712 0.0385
-#> # ℹ 11 more variables: method_count <int>, methods <chr>,
-#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
-#> #   supporting_markers <chr>, conflicting_markers <chr>,
-#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
-head(annotation$tables$cells)
-#> # A tibble: 6 × 17
-#>   cell     cluster prediction second_best_label prediction_score margin
-#>   <chr>    <chr>   <chr>      <chr>                        <dbl>  <dbl>
-#> 1 AAACATA… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#> 2 AAACATT… 3       Kidney-re… Naive B cells                0.726 0.0860
-#> 3 AAACATT… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#> 4 AAACCGT… 2       Monocytes  Monocyte precurs…            0.752 0.172 
-#> 5 AAACCGT… 6       CD16+ NK … NK cells                     0.731 0.104 
-#> 6 AAACGCA… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#> # ℹ 11 more variables: method_count <int>, methods <chr>,
-#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
-#> #   supporting_markers <chr>, conflicting_markers <chr>,
-#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
-annotation$diagnostics
-#> $low_confidence_cells
-#> [1] 1193
-#> 
-#> $low_confidence_clusters
-#> [1] 5
-#> 
-#> $unmapped_ontology_labels
-#> [1] "ELP"                         "Myelocytes"                 
-#> [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  
-#> [5] "Pre-pro-B cells"
 ```
-
-Every final label remains linked to marker support, conflicts, reference
-coverage, confidence, and provenance. LLM helpers can explain this
-evidence but cannot replace the stored computational label. Review
-uncertain assignments before using them as biological truth.
 
 ``` r
 
-sn_review_annotation(pbmc, "pbmc_consensus")
-#> $cells
-#> # A tibble: 1,193 × 17
-#>    cell    cluster prediction second_best_label prediction_score margin
-#>    <chr>   <chr>   <chr>      <chr>                        <dbl>  <dbl>
-#>  1 AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#>  2 AAACAT… 3       Kidney-re… Naive B cells                0.726 0.0860
-#>  3 AAACAT… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#>  4 AAACGC… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#>  5 AAACGC… 5       Monocytes  Myelocytes                   0.712 0.0385
-#>  6 AAACTT… 3       Kidney-re… Naive B cells                0.726 0.0860
-#>  7 AAAGAG… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#>  8 AAAGCC… 0       ELP        Early lymphoid/T…            0.711 0.0364
-#>  9 AAAGGC… 3       Kidney-re… Naive B cells                0.726 0.0860
-#> 10 AAAGTT… 3       Kidney-re… Naive B cells                0.726 0.0860
-#> # ℹ 1,183 more rows
-#> # ℹ 11 more variables: method_count <int>, methods <chr>,
-#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
-#> #   supporting_markers <chr>, conflicting_markers <chr>,
-#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
-#> 
-#> $clusters
-#> # A tibble: 5 × 16
-#>   cluster prediction          second_best_label prediction_score margin
-#>   <chr>   <chr>               <chr>                        <dbl>  <dbl>
-#> 1 0       ELP                 Early lymphoid/T…            0.711 0.0364
-#> 2 3       Kidney-resident ma… Naive B cells                0.726 0.0860
-#> 3 5       Monocytes           Myelocytes                   0.712 0.0385
-#> 4 7       Pre-pro-B cells     Early lymphoid/T…            0.719 0.0644
-#> 5 8       Kidney-resident ma… Monocytes                    0.706 0.0200
-#> # ℹ 11 more variables: method_count <int>, methods <chr>,
-#> #   low_confidence <lgl>, level_1 <chr>, level_2 <chr>, level_3 <chr>,
-#> #   supporting_markers <chr>, conflicting_markers <chr>,
-#> #   reference_coverage <dbl>, ontology_id <chr>, ontology_label <chr>
-#> 
-#> $evidence
-#> # A tibble: 980 × 8
-#>    entity label          parent_label   score method supporting_markers
-#>    <chr>  <chr>          <chr>          <dbl> <chr>  <chr>             
-#>  1 0      Age-associate… B cells      0.00528 marke… TBX21;FCRL2;ITGAX 
-#>  2 0      Alveolar macr… Macrophages  0       marke… GPNMB;TREM2;BHLHE…
-#>  3 0      B cells        B cells      0.0190  marke… CD79A;MS4A1;CD19  
-#>  4 0      CD16- NK cells ILC          0.0662  marke… NKG7;GNLY;CD160   
-#>  5 0      CD16+ NK cells ILC          0.0731  marke… NKG7;GNLY;FCGR3A  
-#>  6 0      CD8a/a         T cells      0.0162  marke… PDCD1;ZNF683;GNG4 
-#>  7 0      CD8a/b(entry)  T cells      0.0607  marke… SATB1;TOX2;CCR9   
-#>  8 0      Classical mon… Monocytes    0.0455  marke… S100A9;CD14;S100A…
-#>  9 0      CMP            HSC/MPP      0       marke… MPO;CTSG;FLT3     
-#> 10 0      CRTAM+ gamma-… T cells      0.0216  marke… IKZF2;TRDC;ITGAD  
-#> # ℹ 970 more rows
-#> # ℹ 2 more variables: conflicting_markers <chr>,
-#> #   reference_coverage <dbl>
-#> 
-#> $diagnostics
-#> $diagnostics$low_confidence_cells
-#> [1] 1193
-#> 
-#> $diagnostics$low_confidence_clusters
-#> [1] 5
-#> 
-#> $diagnostics$unmapped_ontology_labels
-#> [1] "ELP"                         "Myelocytes"                 
-#> [3] "Kidney-resident macrophages" "Tem/Trm cytotoxic T cells"  
-#> [5] "Pre-pro-B cells"            
-#> 
-#> 
-#> $provenance
-#> $provenance$package_versions
-#> $provenance$package_versions$Shennong
-#> [1] "0.2.0.9000"
-#> 
-#> $provenance$package_versions$R
-#> [1] "4.6.1"
-#> 
-#> 
-#> $provenance$random_seed
-#> [1] NA
-#> 
-#> $provenance$timestamp
-#> [1] "2026-07-20 05:55:55 UTC"
+sn_review_annotation(pbmc, "pbmc_annotated")
 
 sn_plot_annotation_confidence(
   pbmc,
-  store_name = "pbmc_consensus",
+  result_id = "pbmc_annotated",
   level = "cluster"
 )
 ```
 
-![](annotation-pathways_files/figure-html/annotation-review-plots-1.png)
+If trusted cell-level labels are present, a confusion heatmap makes
+disagreements visible. This fixture has no author-curated cell-type
+truth column, so no confusion matrix is presented as an accuracy
+estimate or biological ground truth.
+
+Ontology mapping can also be inspected directly. The `all` profile
+reports the versioned mappings for the stored labels without changing
+the annotation.
 
 ``` r
 
-
-sn_plot_annotation_markers(
-  pbmc,
-  store_name = "pbmc_consensus",
-  top_n = 5
-)
-```
-
-![](annotation-pathways_files/figure-html/annotation-review-plots-2.png)
-
-If trusted labels are present, a confusion heatmap makes disagreements
-visible.
-
-``` r
-
-sn_plot_annotation_confusion(
-  pbmc,
-  truth = "curated_cell_type",
-  store_name = "pbmc_consensus"
+sn_map_cell_ontology(
+  unique(annotation$tables$clusters$prediction),
+  strict = FALSE
 )
 ```
 
 ## Choose a reference backend deliberately
 
 Use `sn_list_methods("annotation")` and
-[`sn_method_status()`](https://songqi.org/shennong/dev/reference/sn_method_status.md)
+[`sn_get_method_status()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_method_status.md)
 to inspect current availability. Reference methods should not be used
 when tissue, disease, species, assay chemistry, or cell-state coverage
 is badly mismatched; a high similarity to an incomplete reference is not
@@ -369,75 +287,122 @@ evidence that the missing cell type is absent.
 | Backend | Best use | Input and runtime | Stored output |
 |----|----|----|----|
 | SingleR | Default reference prediction with per-label scores | Query and annotated Seurat/SummarizedExperiment reference; CPU; optional `SingleR` | Full score evidence, pruned label, delta, coverage |
-| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and consensus evidence |
+| CellTypist | External pretrained immune atlases | Counts plus model; CPU CLI on `PATH` | Original label columns and confidence evidence |
 | Seurat | Anchor transfer from a compatible Seurat reference | Query/reference assays and labels; CPU; optional `Seurat` | Transferred labels and all returned score columns |
 | Symphony | Repeated mapping to a compressed atlas | Built reference or Seurat reference; CPU; optional `symphony` | kNN confidence and mapped embedding |
 | scmap | Conservative projection to indexed expression centroids | Shared features and annotated reference; CPU; optional `scmap` | Label, similarity, and unassigned status |
 | scANVI | Semi-supervised mapping with batch structure | Raw counts, labels, batch metadata; CPU or CUDA through pixi | Labels and managed backend artifacts |
+| PopV | Multi-algorithm consensus vote for highest-confidence reference annotation | Raw counts, annotated reference; CPU through pixi (`sn_prepare_pixi_environment("popv")`) | Consensus label, per-algorithm votes, and agreement score |
 
 Backend-specific functions stay internal rather than creating parallel
 result types. Select the backend with `sn_run_annotation(method = ...)`
 and retrieve every result with the same
-`sn_get_result(object, "annotation", name)` contract.
+`sn_get_result(object, "annotation", result_id)` contract.
+
+PopV exports only the required reference label and requested batch
+columns. Its default raw-count run is package-owned and removed after
+import; an explicit empty `backend_control$popv$output_dir` opts into
+retained backend artifacts.
 
 The underlying methods should be cited in publications: SingleR (Aran et
 al., 2019), CellTypist (Dominguez Conde et al., 2022), Seurat mapping
 (Hao et al., 2021), Symphony (Kang et al., 2021), scmap (Kiselev et al.,
-2018), and scANVI (Xu et al., 2021). Cell Ontology identifiers come from
-the bundled 2026-06-08 CL snapshot; verify current author and ontology
-guidelines when preparing a submission.
+2018), scANVI (Xu et al., 2021), and PopV (Heidari et al., Nature
+Communications 2024). Cell Ontology identifiers come from the bundled
+2026-06-08 CL snapshot; verify current author and ontology guidelines
+when preparing a submission.
+
+The optional reference examples split the 20 real biological samples
+into non-overlapping reference and query sets. They run only in the
+`all` profile when the requested backend is installed.
 
 ``` r
 
-pbmc <- sn_run_annotation(
-  pbmc,
+reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
+reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
+reference <- subset(pbmc, cells = reference_cells)
+query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
+
+query_singleR <- sn_run_annotation(
+  query,
   group_by = "seurat_clusters",
-  method = "consensus",
+  method = "singleR",
   reference = reference,
-  reference_label_by = "cell_type",
-  consensus_reference_method = "singleR",
+  reference_label_by = "pbmc_annotated_label",
   species = "human",
-  store_name = "pbmc_reference_consensus"
+  result_id = "kotliarov_reference_singleR"
 )
 
 reference_result <- sn_get_result(
-  pbmc,
+  query_singleR,
   type = "annotation",
-  name = "pbmc_reference_consensus"
+  result_id = "kotliarov_reference_singleR"
 )
 
 head(reference_result$tables$backend_predictions)
-head(reference_result$tables$backend_evidence)
+head(reference_result$tables$evidence)
 ```
 
 ## Transfer labels from a reference
 
 Marker tables are useful when you want to name clusters manually. When a
 trusted reference already exists,
-[`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md)
+[`sn_transfer_labels()`](https://zerostwo.github.io/shennong/dev/reference/sn_transfer_labels.md)
 follows Seurat’s anchor workflow and writes the projected label plus a
 confidence score back to the query metadata. The wrapper keeps the
 source label and transfer settings in `query@misc$label_transfer`, so
-the annotation is not just a loose metadata column.
+the annotation is not just a loose metadata column. The example below
+uses the reference labels computed above as the reference annotation and
+keeps the reference/query biological samples disjoint. These are
+computational labels, not author-provided truth.
 
 ``` r
 
-reference <- pbmc
-query <- pbmc
-
-reference$cell_type <- reference$seurat_clusters
+reference_samples <- sort(unique(as.character(pbmc$real_sample)))[seq(1, 20, by = 2)]
+reference_cells <- colnames(pbmc)[pbmc$real_sample %in% reference_samples]
+reference <- subset(pbmc, cells = reference_cells)
+query <- subset(pbmc, cells = setdiff(colnames(pbmc), reference_cells))
 
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "cell_type",
-  prediction_prefix = "pbmc_reference",
+  label_by = "pbmc_annotated_label",
+  prediction_prefix = "kotliarov_reference",
   dims = 1:15,
   verbose = FALSE
 )
 
-table(query$pbmc_reference_label)
-head(query[[]][, c("pbmc_reference_label", "pbmc_reference_score")])
+table(query$kotliarov_reference_label, query$real_response)
+head(query[[]][, c(
+  "real_sample", "real_response",
+  "kotliarov_reference_label", "kotliarov_reference_score"
+)])
+```
+
+The mapped query labels carry label-transfer provenance in
+`query@misc$label_transfer`. To compare them with the stored annotation
+result, place only those mapped query labels back into a cell-aligned
+metadata vector; reference cells remain missing and are excluded from
+the contingency table.
+
+``` r
+
+reference_mapped_labels <- stats::setNames(
+  rep(NA_character_, ncol(pbmc)),
+  colnames(pbmc)
+)
+reference_mapped_labels[colnames(query)] <- as.character(
+  query$kotliarov_reference_label
+)
+pbmc$kotliarov_reference_label <- unname(
+  reference_mapped_labels[colnames(pbmc)]
+)
+
+sn_plot_annotation_confusion(
+  pbmc,
+  truth = "kotliarov_reference_label",
+  result_id = "pbmc_annotated"
+)
 ```
 
 The same query-first interface can use Coralysis reference mapping when
@@ -451,7 +416,7 @@ directly as a label-transfer reference.
 
 reference <- sn_run_cluster(
   reference,
-  batch = "sample_id",
+  batch_by = "real_batch",
   integration_method = "coralysis",
   normalization_method = "seurat",
   verbose = FALSE
@@ -460,12 +425,14 @@ reference <- sn_run_cluster(
 query <- sn_transfer_labels(
   object = query,
   reference = reference,
-  label_by = "cell_type",
+  label_by = "pbmc_annotated_label",
   method = "coralysis",
   prediction_prefix = "coral_reference",
   transfer_control = list(k.nn = 10),
   verbose = FALSE
 )
+
+table(query$coral_reference_label, query$real_response)
 ```
 
 For durable handoffs, prepare a compact transfer-ready reference instead
@@ -474,23 +441,34 @@ trained models, PCA model, feature names, and selected labels while
 dropping the large reference assay matrices and joint-probability
 tables.
 
+The core profile also builds a compact Seurat reference in a temporary
+path, then maps the same disjoint query samples back to it. No local
+fixture or reference object is written into the repository.
+
 ``` r
 
-coral_reference <- sn_prepare_label_transfer_reference(
+compact_path <- tempfile(fileext = ".qs2")
+compact_reference <- sn_prepare_label_transfer_reference(
   reference,
-  label_by = "cell_type",
-  method = "coralysis",
-  path = "data/processed/pbmc_coralysis_reference.qs2",
+  label_by = "pbmc_annotated_label",
+  method = "seurat",
+  path = compact_path,
   overwrite = TRUE
 )
 
-query <- sn_transfer_labels(
+compact_query <- sn_transfer_labels(
   object = query,
-  reference = coral_reference,
-  label_by = "cell_type",
-  method = "coralysis",
-  prediction_prefix = "coral_reference",
+  reference = compact_reference,
+  label_by = "pbmc_annotated_label",
+  prediction_prefix = "compact_reference",
+  dims = 1:15,
   verbose = FALSE
+)
+
+data.frame(
+  reference_cells = ncol(compact_reference),
+  query_cells = ncol(compact_query),
+  labels_transferred = sum(!is.na(compact_query$compact_reference_label))
 )
 ```
 
@@ -503,15 +481,6 @@ report features do not need to be redefined in every analysis.
 
 signature_index <- sn_list_signatures(species = "human")
 head(signature_index)
-#> # A tibble: 6 × 5
-#>   species path                   name          kind      n_genes
-#>   <chr>   <chr>                  <chr>         <chr>       <int>
-#> 1 human   Blocklists/Pseudogenes Pseudogenes   signature   12600
-#> 2 human   Blocklists/Non-coding  Non-coding    signature    7783
-#> 3 human   Programs/HeatShock     HeatShock     signature      97
-#> 4 human   Programs/cellCycle.G1S cellCycle.G1S signature      42
-#> 5 human   Programs/cellCycle.G2M cellCycle.G2M signature      52
-#> 6 human   Programs/IFN           IFN           signature     107
 
 immune_signatures <- sn_get_signatures(
   species = "human",
@@ -519,18 +488,30 @@ immune_signatures <- sn_get_signatures(
 )
 
 head(immune_signatures)
-#> [1] "MT-ATP6" "MT-ATP8" "MT-CO1"  "MT-CO2"  "MT-CO3"  "MT-CYB"
 ```
 
 Custom signatures can be added, renamed, and deleted through the same
-API. Use a project-specific catalog path when you do not want to modify
-the package-level catalog.
+API. The example copies the shipped catalog to a temporary `.rda`,
+exercises the full lifecycle with real PBMC genes, and leaves the
+package catalog unchanged.
 
 ``` r
 
-catalog_path <- "config/signatures/pbmc_signatures.csv"
+catalog_path <- tempfile(fileext = ".rda")
+catalog_env <- new.env(parent = emptyenv())
+utils::data(
+  "shennong_signature_catalog",
+  package = "Shennong",
+  envir = catalog_env
+)
+save(
+  list = "shennong_signature_catalog",
+  file = catalog_path,
+  envir = catalog_env,
+  compress = "xz"
+)
 
-sn_add_signature(
+added_catalog <- sn_add_signature(
   species = "human",
   path = "custom/t_cell_activation",
   genes = c("IL7R", "CCR7", "LTB"),
@@ -538,23 +519,29 @@ sn_add_signature(
   source = "project"
 )
 
-sn_update_signature(
+updated_catalog <- sn_update_signature(
   species = "human",
   path = "custom/t_cell_activation",
-  rename_to = "custom/naive_t_cell",
+  rename_to = "naive_t_cell",
   catalog_path = catalog_path
 )
 
-sn_delete_signature(
+deleted_catalog <- sn_delete_signature(
   species = "human",
   path = "custom/naive_t_cell",
   catalog_path = catalog_path
 )
+
+data.frame(
+  operation = c("add", "update", "delete"),
+  catalog = c(added_catalog, updated_catalog, deleted_catalog)
+)
+file.info(catalog_path)[, c("size", "mtime")]
 ```
 
 ## Score programs in cells and samples
 
-[`sn_score_programs()`](https://songqi.org/shennong/dev/reference/sn_score_programs.md)
+[`sn_score_programs()`](https://zerostwo.github.io/shennong/dev/reference/sn_score_programs.md)
 accepts named gene-set lists, program/gene tables, named gene vectors,
 or bundled signature queries. UCell is the default for per-cell work
 because its rank-based score works directly with sparse expression and
@@ -579,33 +566,18 @@ pbmc <- sn_score_programs(
   method = "ucell",
   assay = "RNA",
   layer = "data",
-  name = "immune_programs",
+  result_id = "immune_programs",
   min_genes = 2
 )
 
 program_result <- sn_get_result(
   pbmc,
   type = "program_scoring",
-  name = "immune_programs"
+  result_id = "immune_programs"
 )
 
 program_result$tables$coverage
-#> # A tibble: 3 × 6
-#>   program n_genes n_matched coverage matched_genes        missing_genes
-#>   <chr>     <int>     <int>    <dbl> <chr>                <chr>        
-#> 1 B_cell        4         4        1 MS4A1;CD79A;CD37;CD… ""           
-#> 2 T_cell        4         4        1 CD3D;CD3E;TRAC;LTB   ""           
-#> 3 Myeloid       4         4        1 LYZ;FCN1;S100A8;CTSS ""
 head(program_result$tables$scores)
-#> # A tibble: 6 × 5
-#>   entity           program score level group_by
-#>   <chr>            <chr>   <dbl> <chr> <chr>   
-#> 1 AAACATACAACCAC-1 B_cell  0.352 cell  NA      
-#> 2 AAACATTGAGCTAC-1 B_cell  0.913 cell  NA      
-#> 3 AAACATTGATCAGC-1 B_cell  0.177 cell  NA      
-#> 4 AAACCGTGCTTCCG-1 B_cell  0.464 cell  NA      
-#> 5 AAACCGTGTATGCG-1 B_cell  0.181 cell  NA      
-#> 6 AAACGCACTGGTAC-1 B_cell  0     cell  NA
 ```
 
 UCell and AUCell require their optional Bioconductor packages and run on
@@ -619,126 +591,176 @@ al., 2017), GSVA (Hänzelmann et al., 2013), or ssGSEA (Barbie et al.,
 
 sn_plot_program_activity(
   pbmc,
-  name = "immune_programs",
+  result_id = "immune_programs",
   group_by = "seurat_clusters"
 )
-```
-
-![](annotation-pathways_files/figure-html/plot-programs-1.png)
-
-``` r
-
 
 sn_plot_program_heatmap(
   pbmc,
-  name = "immune_programs",
+  result_id = "immune_programs",
   group_by = "seurat_clusters"
 )
 ```
 
-![](annotation-pathways_files/figure-html/plot-programs-2.png)
-
 For comparative studies, preserve the sample or patient as the
 inferential unit.
-[`sn_test_programs()`](https://songqi.org/shennong/dev/reference/sn_test_programs.md)
+[`sn_test_programs()`](https://zerostwo.github.io/shennong/dev/reference/sn_test_programs.md)
 first averages cell scores within each sample/condition/stratum, then
 runs the selected test; omitting `sample_by` is explicitly marked as
-exploratory cell-level inference.
+exploratory cell-level inference. Complete donor pairs sharing the same
+`sample_by` ID across both conditions use paired Wilcoxon tests or
+donor-adjusted limma models. The primary table records `paired`.
+Partially paired designs raise an error; select complete donor pairs or
+use independent biological sample IDs.
 
 ``` r
 
 pbmc <- sn_test_programs(
   pbmc,
-  score_name = "immune_programs",
-  condition_by = "condition",
-  sample_by = "patient",
-  group_by = "cell_type",
-  contrast = c("treated", "control"),
-  method = "limma",
-  store_name = "immune_program_condition"
+  source_result_id = "immune_programs",
+  condition_by = "real_response",
+  sample_by = "real_sample",
+  group_by = "seurat_clusters",
+  contrast = c("d0 high", "d0 low"),
+  method = "wilcox",
+  result_id = "immune_program_response"
 )
 
 sn_get_result(
   pbmc,
   type = "program_comparison",
-  name = "immune_program_condition"
+  result_id = "immune_program_response"
 )$tables$primary
 ```
 
 ## Run enrichment from stored marker results
 
-[`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md)
+[`sn_run_enrichment()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_enrichment.md)
 can accept a gene vector, a ranked vector, a data frame, or a Seurat
 object with stored DE results. For cluster markers, the Seurat-object
 path is the most reproducible because the enrichment knows which DE
-result it came from.
+result it came from. When the stored DE table contains multiple
+clusters/comparisons, Shennong preserves those groups automatically
+rather than pooling their genes.
+[`sn_find_de()`](https://zerostwo.github.io/shennong/dev/reference/sn_find_de.md)
+records available candidates separately from features with finite
+backend statistics before marker significance filtering. The union is
+`input$tested_features`; `input$tested_features_by_comparison` retains
+the cluster/subset-specific backgrounds. If `universe` is omitted,
+stored-DE ORA uses each comparison’s own background. Known older
+candidate-only records require rerunning DE or supplying an explicit
+universe. Only legacy DE results without the field fall back to the
+source assay feature space; that fallback is labeled explicitly, and an
+unavailable assay causes a fail-closed request for an explicit universe.
+The upstream `pvalueCutoff`, multiple-testing adjustment, and q-value
+rules are retained.
 
 ``` r
 
-pbmc <- sn_enrich(
+pbmc <- sn_run_enrichment(
   x = pbmc,
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
+  analysis = "ora",
   species = "human",
   database = "GOBP",
-  store_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   return_object = TRUE
 )
-#> INFO [2026-07-20 05:56:23] Running ORA analysis for the GOBP database.
 
 pathways <- sn_get_enrichment_result(
   pbmc,
-  enrichment_name = "cluster_gobp",
+  result_id = "cluster_gobp",
   top_n = 5
 )
 
 head(pathways)
-#> # A tibble: 5 × 12
-#>   ID     Description GeneRatio BgRatio RichFactor FoldEnrichment zScore
-#>   <chr>  <chr>       <chr>     <chr>        <dbl>          <dbl>  <dbl>
-#> 1 GO:00… regulation… 159/2481  453/18…      0.351           2.67   14.0
-#> 2 GO:19… mononuclea… 152/2481  439/18…      0.346           2.63   13.5
-#> 3 GO:00… generation… 147/2481  438/18…      0.336           2.55   12.8
-#> 4 GO:00… regulation… 146/2481  472/18…      0.309           2.35   11.6
-#> 5 GO:00… nucleotide… 146/2481  478/18…      0.305           2.32   11.4
-#> # ℹ 5 more variables: pvalue <dbl>, p.adjust <dbl>, qvalue <dbl>,
-#> #   geneID <chr>, Count <int>
+
+stored_pathways <- sn_get_result(
+  pbmc,
+  result_id = "cluster_gobp", type = "enrichment")
+stored_pathways$parameters[c(
+  "backend_versions", "pvalue_cutoff", "p_adjust_method",
+  "qvalue_cutoff", "universe_source", "universe_size",
+  "min_gs_size", "max_gs_size"
+)]
+stored_pathways$parameters$de_ora_selection
 ```
 
-If you already have an enrichment table from another tool, store it with
-[`sn_store_enrichment()`](https://songqi.org/shennong/dev/reference/sn_store_enrichment.md)
-so the interpretation layer can find it.
+Pass `mapping = gene ~ cluster` and `universe = ...` when overriding
+those stored-DE defaults deliberately. Standalone gene vectors and data
+frames cannot reconstruct an assay background, so their confirmatory ORA
+should supply the tested/detectable universe explicitly.
+
+For ranked GSEA across one or several DE groups, map the ranking
+statistic and optional grouping columns explicitly. A numeric score
+without `|` produces one global ranking; adding `| cell_type` creates
+one independently validated ranking per cell type. The source result,
+analysis mode, and database form the automatic result ID, so this
+example is stored as `cluster.gsea.H`.
 
 ``` r
 
-external_terms <- data.frame(
-  cluster = "0",
-  ID = "GO:0006955",
-  Description = "immune response",
-  p.adjust = 0.001,
-  geneID = "IL7R/CCR7/LTB"
+pbmc <- sn_run_enrichment(
+  x = pbmc,
+  source_de_result_id = "cluster",
+  mapping = gene ~ avg_log2FC | cell_type,
+  species = "human",
+  database = "H"
 )
+
+grouped_gsea <- sn_get_result(
+  pbmc,
+  result_id = "cluster.gsea.H", type = "enrichment")
+head(grouped_gsea$tables$primary)
+grouped_gsea$parameters$group_columns
+```
+
+GSEA should receive the broad signed ranking from each comparison, not
+only adjusted-P-significant genes. When creating the source DE result,
+use permissive feature filters such as `logfc_threshold = 0` and
+`min_pct = 0` when the DE backend supports them, then let the enrichment
+method evaluate the ranking.
+
+If you already have a real enrichment table from another stage or tool,
+store it with
+[`sn_store_enrichment()`](https://zerostwo.github.io/shennong/dev/reference/sn_store_enrichment.md)
+so the interpretation layer can find it. Here the retrieved Kotliarov GO
+table is re-registered under a review-specific name; no placeholder term
+or p-value is introduced.
+
+``` r
+
+review_terms <- pathways
 
 pbmc <- sn_store_enrichment(
   object = pbmc,
-  result = external_terms,
-  store_name = "external_gobp",
+  result = review_terms,
+  result_id = "reviewed_cluster_gobp",
   analysis = "ora",
   database = "GOBP",
   species = "human",
-  source_de_name = "cluster_markers",
+  source_de_result_id = "cluster_markers",
   return_object = TRUE
 )
+
+head(sn_get_enrichment_result(pbmc, "reviewed_cluster_gobp"))
 ```
 
 ## Cell communication and regulatory activity
 
 Cell communication should be run through a real backend rather than an
 ad hoc ligand-receptor table.
-[`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
+[`sn_run_cell_communication()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cell_communication.md)
 keeps the same stored-result pattern used by DE and enrichment. Use
 CellChat for a global interaction network, NicheNet when the question is
 sender-to-receiver ligand activity, or LIANA when the optional LIANA
 package is available and consensus scoring is preferred.
+
+Communication and regulatory backends are part of the `all` profile.
+They run only when their upstream R package and, for NicheNet, versioned
+prior matrices are already available. Sample-aware comparisons use
+`real_sample` as the inferential unit and `real_response` as its
+sample-level phenotype.
 
 ``` r
 
@@ -746,40 +768,59 @@ pbmc <- sn_run_cell_communication(
   object = pbmc,
   method = "cellchat",
   group_by = "seurat_clusters",
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
   species = "human",
-  store_name = "cluster_cellchat"
+  result_id = "cluster_cellchat"
 )
 
 cellchat_tbl <- sn_get_cell_communication_result(
   pbmc,
-  communication_name = "cluster_cellchat"
+  result_id = "cluster_cellchat"
 )
 
 head(cellchat_tbl)
+sn_plot_communication(pbmc, result_id = "cluster_cellchat", type = "bubble", n = 25)
 ```
 
 NicheNet needs its ligand-target matrix and ligand-receptor network.
 Shennong requires those priors explicitly so the output remains
 traceable to the real NicheNet model rather than an inferred placeholder
-network.
+network. Set `SHENNONG_NICHENET_LIGAND_TARGET` and
+`SHENNONG_NICHENET_LR_NETWORK` to versioned local RDS files to enable
+this extended chunk.
 
 ``` r
 
+ligand_target_matrix <- readRDS(Sys.getenv("SHENNONG_NICHENET_LIGAND_TARGET"))
+lr_network <- readRDS(Sys.getenv("SHENNONG_NICHENET_LR_NETWORK"))
+cluster_levels <- names(sort(table(pbmc$seurat_clusters), decreasing = TRUE))
+receiver_markers <- marker_tbl$gene[
+  as.character(marker_tbl$cluster) == cluster_levels[[3]]
+]
+
 pbmc <- sn_run_cell_communication(
   object = pbmc,
-  method = "nichenetr",
+  method = "nichenet",
   group_by = "seurat_clusters",
-  sender = c("0", "1"),
-  receiver = "2",
-  geneset = c("IL7R", "CCR7", "LTB"),
+  sender = cluster_levels[1:2],
+  receiver = cluster_levels[[3]],
+  geneset = receiver_markers,
+  background_genes = rownames(pbmc),
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
   ligand_target_matrix = ligand_target_matrix,
   lr_network = lr_network,
-  store_name = "sender_receiver_nichenet"
+  result_id = "sender_receiver_nichenet"
 )
+
+head(sn_get_cell_communication_result(pbmc, "sender_receiver_nichenet"))
 ```
 
 For transcription-factor and pathway activity,
-[`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md)
+[`sn_run_regulatory_activity()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_regulatory_activity.md)
 uses fast footprint methods through `decoupleR`. DoRothEA reports TF
 activity; PROGENy reports pathway activity.
 
@@ -790,12 +831,12 @@ pbmc <- sn_run_regulatory_activity(
   method = "dorothea",
   group_by = "seurat_clusters",
   species = "human",
-  store_name = "cluster_dorothea"
+  result_id = "cluster_dorothea"
 )
 
 tf_activity <- sn_get_regulatory_activity_result(
   pbmc,
-  activity_name = "cluster_dorothea",
+  result_id = "cluster_dorothea",
   sources = c("NFKB1", "STAT1")
 )
 
@@ -809,31 +850,87 @@ When the input is a Seurat object, predictions are written back to
 metadata. When the input is a file path, Shennong returns the prediction
 table because there is no object to update.
 
+Seurat counts are not converted to a dense data frame or CSV. Shennong
+writes a sparse MatrixMarket bundle (`counts.mtx`, `genes.csv`, and
+`cells.csv`) from the selected raw/count-like assay layer. The unified
+`sn_run_annotation(method = "celltypist")` adapter defaults
+independently to `counts` even though marker scoring uses `data`; a
+custom corrected-count layer belongs in
+`backend_control$celltypist$layer`. The default `transpose_input = TRUE`
+keeps the exported matrix in gene-by-cell orientation and passes
+CellTypist’s `--transpose-input` flag. Set it to `FALSE` only when a
+cell-by-gene MatrixMarket export is required; the flag is then omitted.
+This keeps the handoff proportional to the number of nonzero counts
+instead of the full genes-by-cells rectangle.
+
+For an existing file path, Shennong does not rewrite the matrix and does
+not require the Seurat package. In that mode, `transpose_input` controls
+only the CellTypist CLI flag, so it must match the orientation already
+stored on disk. MatrixMarket and CSV paths must contain raw/count-like
+values because CellTypist normalizes them internally; for `.h5ad`,
+CellTypist instead expects its documented 10,000-count log-normalized
+`X` or `raw.X` representation. Normalized/scaled Seurat layers fail
+closed rather than returning a known double-normalized result. Workbook
+output (`xlsx = TRUE`) is imported from CellTypist’s prediction sheet
+through the optional `rio` dependency, and one-column small-cell
+predictions remain valid even when majority voting was requested. When
+the probability matrix is available, the probability of the selected
+label is stored as a model-specific confidence column and used by
+unified annotation. Missing or non-matching confidence is treated
+conservatively as unresolved rather than as perfect confidence.
+
+The CellTypist chunk additionally requires a local model path in
+`SHENNONG_CELLTYPIST_MODEL` and an existing `celltypist` executable. The
+article never downloads a model during pkgdown rendering.
+
 ``` r
 
 pbmc <- sn_run_celltypist(
   x = pbmc,
-  model = "Immune_All_Low.pkl",
+  model = celltypist_model,
+  assay = "RNA",
+  layer = "counts",
+  transpose_input = TRUE,
   over_clustering = "seurat_clusters",
   majority_voting = TRUE,
   quiet = TRUE
 )
 
-grep("Immune_All_Low", colnames(pbmc[[]]), value = TRUE)
-```
-
-``` r
-
-prediction_tbl <- sn_run_celltypist(
-  x = "pbmc3k_counts.csv",
-  model = "Immune_All_Low.pkl",
-  over_clustering = "obs_cluster",
-  quiet = TRUE
-)
-
-head(prediction_tbl)
+grep("celltypist", colnames(pbmc[[]]), value = TRUE, ignore.case = TRUE)
 ```
 
 The intended pattern is evidence first, label second: markers and
 pathways are computed and stored before automated or LLM-assisted
 annotation consumes them.
+
+## Audit scoring columns and DE backgrounds
+
+Score metadata names remain readable but receive unique suffixes when
+program names normalize to the same text or collide with existing
+metadata. An explicit rerun with the same `result_id` and
+`overwrite = TRUE` reuses its registered columns; an accidental
+duplicate ID is rejected. Retrieve the mapping instead of reconstructing
+sanitized names:
+
+``` r
+
+sn_list_results(pbmc, type = "program_scoring")
+scoring <- sn_get_result(pbmc, "program_scoring", "immune_programs")
+scoring$tables$metadata_columns
+pbmc[[]][, scoring$tables$metadata_columns$column, drop = FALSE]
+
+# A seed controls AUCell ranking ties without changing the caller's RNG.
+pbmc <- sn_score_programs(pbmc, immune_programs, method = "aucell",
+                         seed = 777, result_id = "aucell_seeded")
+sn_get_result(pbmc, "program_scoring", "aucell_seeded")$parameters$seed
+
+sn_list_results(pbmc, type = "de")
+de <- sn_get_result(pbmc, "de", "cluster_markers")
+de$input$candidate_features
+head(de$input$tested_features_by_comparison)
+```
+
+`sn_find_de(analysis = "markers", subset_by = "cell_type")` preserves
+the backend’s gene IDs and records each subset and cluster in that
+background inventory. Changing an ORA mapping must preserve these
+comparison columns, unless an explicit common `universe` is supplied.

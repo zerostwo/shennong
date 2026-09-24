@@ -60,3 +60,9 @@ sn_save_figure(
 ## Value
 
 The normalized output path, invisibly.
+
+## Details
+
+SVG export uses the optional svglite package. If it is not installed,
+the function fails before drawing with an actionable dependency message
+instead of relying on a platform-specific X11/Cairo device.

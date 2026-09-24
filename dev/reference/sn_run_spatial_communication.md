@@ -7,13 +7,14 @@ Add spatial distance evidence to a communication result
 ``` r
 sn_run_spatial_communication(
   object,
-  communication_name = "communication",
+  source_result_id = "communication",
   communication = NULL,
   group_by,
   spatial_cols = NULL,
   max_distance = NULL,
-  store_name = "spatial_communication",
-  return_object = TRUE
+  result_id = "spatial_communication",
+  return_object = TRUE,
+  sample_by = NULL
 )
 ```
 
@@ -23,7 +24,7 @@ sn_run_spatial_communication(
 
   A Seurat object.
 
-- communication_name:
+- source_result_id:
 
   Stored communication result name.
 
@@ -41,15 +42,23 @@ sn_run_spatial_communication(
 
 - max_distance:
 
-  Optional maximum mean nearest-group distance.
+  Optional finite non-negative maximum mean nearest-group distance.
 
-- store_name:
+- result_id:
 
   Stored result name.
 
 - return_object:
 
   Return the modified object or result.
+
+- sample_by:
+
+  Optional metadata column defining independent samples or tissue
+  sections. Distances are calculated within sections and then
+  aggregated, never between sections. When communication rows contain a
+  non-missing `sample` column, distances are matched by source, target,
+  and sample instead of using the cross-sample aggregate.
 
 ## Value
 

@@ -7,15 +7,15 @@ Write a figure legend from stored analysis outputs
 ``` r
 sn_write_figure_legend(
   object,
-  cluster_de_name = NULL,
-  enrichment_name = NULL,
+  cluster_de_result_id = NULL,
+  enrichment_result_id = NULL,
   cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -28,11 +28,11 @@ sn_write_figure_legend(
 
   A `Seurat` object.
 
-- cluster_de_name:
+- cluster_de_result_id:
 
   Optional stored cluster-marker result.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Optional stored enrichment result.
 
@@ -62,9 +62,9 @@ sn_write_figure_legend(
 
   If `TRUE`, return the prompt bundle without calling the provider.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$interpretation_results`.
+  Stable identifier for the stored interpretation result.
 
 - return_object:
 
@@ -99,23 +99,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   prompt <- sn_write_figure_legend(
     obj,
-    cluster_de_name = "celltype_markers",
+    cluster_de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-07-20 05:54:21] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:21] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:21] Seurat object initialization complete.
-#> Warning: No DE genes identified
-#> INFO [2026-07-20 05:54:22] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-07-20 05:54:22] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-07-20 05:54:22] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).
-#> INFO [2026-07-20 05:54:22] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
-#> [1] "figure_legend"
 ```

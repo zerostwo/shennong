@@ -5,7 +5,7 @@ Retrieve a stored Shennong analysis result
 ## Usage
 
 ``` r
-sn_get_result(object, type, name)
+sn_get_result(object, type, result_id = NULL)
 ```
 
 ## Arguments
@@ -18,9 +18,10 @@ sn_get_result(object, type, name)
 
   Analysis type.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result identifier. Omit only when exactly one result of the
+  requested type exists; ambiguous choices are reported as an error.
 
 ## Value
 

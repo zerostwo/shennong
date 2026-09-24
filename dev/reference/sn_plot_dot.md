@@ -10,7 +10,7 @@ sn_plot_dot(
   x,
   assay = NULL,
   features,
-  de_name = "default",
+  result_id = "default",
   n = 3,
   marker_groups = NULL,
   col_min = -2.5,
@@ -34,7 +34,8 @@ sn_plot_dot(
   panel_heights = NULL,
   title = NULL,
   x_label = NULL,
-  y_label = NULL
+  y_label = NULL,
+  object = NULL
 )
 ```
 
@@ -52,10 +53,10 @@ sn_plot_dot(
 
   A character vector of feature names to plot, a named list of feature
   vectors to display in separate free-width panels, or `"top_markers"`
-  to automatically use the top stored DE markers from
-  `object@misc$de_results[[de_name]]`.
+  to automatically use the top stored DE markers from the canonical
+  Shennong result registry under `result_id`.
 
-- de_name:
+- result_id:
 
   Name of the stored DE result to use when `features = "top_markers"`.
   Defaults to `"default"`.
@@ -161,6 +162,10 @@ sn_plot_dot(
 - x_label, y_label:
 
   Optional axis labels.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

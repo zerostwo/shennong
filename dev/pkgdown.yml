@@ -12,17 +12,23 @@ articles:
   communication-consensus: communication-consensus.html
   composition-analysis: composition-analysis.html
   data-io-projects: data-io-projects.html
+  differential-expression: differential-expression.html
+  get-started: get-started.html
   interpretation-workflows: interpretation-workflows.html
   layered-workflows: layered-workflows.html
+  method-catalog: method-catalog.html
   metrics-diagnostics: metrics-diagnostics.html
+  parameters-and-results: parameters-and-results.html
   preprocessing-qc: preprocessing-qc.html
   program-discovery-grn: program-discovery-grn.html
   publication-figures: publication-figures.html
+  research-workflow-map: research-workflow-map.html
+  runtime-observability: runtime-observability.html
   spatial-workflows: spatial-workflows.html
   trajectory-dynamics: trajectory-dynamics.html
   velocity-fate: velocity-fate.html
   visualization: visualization.html
-last_built: 2026-07-20T05:53Z
+last_built: 2026-09-24T00:00Z
 urls:
-  reference: https://songqi.org/shennong/reference
-  article: https://songqi.org/shennong/articles
+  reference: https://zerostwo.github.io/shennong/reference
+  article: https://zerostwo.github.io/shennong/articles

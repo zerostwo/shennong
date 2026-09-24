@@ -40,10 +40,5 @@ discrete and continuous use.
 
 ``` r
 sn_list_palettes()
-
 sn_list_palettes(source = "ggokabeito", display = "table")
-#>      name     source palette_type max_n supports_discrete
-#>  OkabeIto ggokabeito       custom     9              TRUE
-#>  supports_continuous                                         preview
-#>                 TRUE #E69F00 #56B4E9 #009E73 #F0E442 #0072B2 #D55E00
 ```

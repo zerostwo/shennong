@@ -2,7 +2,7 @@
 
 `sn_simulate()` provides a method-based simulation entry point.
 Currently `method = "scdesign3"` delegates to
-[`sn_simulate_scdesign3()`](https://songqi.org/shennong/dev/reference/sn_simulate_scdesign3.md).
+`.sn_simulate_scdesign3()`.
 
 ## Usage
 

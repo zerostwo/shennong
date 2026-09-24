@@ -11,9 +11,12 @@ sn_find_spatial_domains(
   spatial_cols = NULL,
   assay = NULL,
   layer = "counts",
-  store_name = "spatial_domains",
+  result_id = "spatial_domains",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE,
+  sample_by = NULL
 )
 ```
 
@@ -35,7 +38,7 @@ sn_find_spatial_domains(
 
   Expression assay and layer.
 
-- store_name:
+- result_id:
 
   Stored result name.
 
@@ -46,6 +49,21 @@ sn_find_spatial_domains(
 - return_object:
 
   Return the modified object or result.
+
+- seed:
+
+  Top-level reproducibility seed. Precedence: `seed` \>
+  `backend_control$seed` \> task default; stamped into provenance.
+
+- verbose:
+
+  Top-level progress switch forwarded through `backend_control$verbose`
+  when explicitly supplied.
+
+- sample_by:
+
+  Optional metadata column defining independent tissue sections. The
+  built-in BANKSY path fails closed for pooled sections.
 
 ## Value
 

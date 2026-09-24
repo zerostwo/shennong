@@ -1,26 +1,22 @@
-# Locate a bundled pixi config
+# Deprecated alias of `sn_get_pixi_config_path()`
 
-Locate a bundled pixi config
+`sn_pixi_config_path()` is a deprecated compatibility alias. Use
+[`sn_get_pixi_config_path()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_pixi_config_path.md)
+directly; the alias will be removed in a future release.
 
 ## Usage
 
 ``` r
-sn_pixi_config_path(environment = NULL)
+sn_pixi_config_path(...)
 ```
 
 ## Arguments
 
-- environment:
+- ...:
 
-  Python environment name.
+  Named arguments passed on to
+  [`sn_get_pixi_config_path()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_pixi_config_path.md).
 
 ## Value
 
-A path to the package-bundled `pixi.toml` template.
-
-## Examples
-
-``` r
-sn_pixi_config_path("scvi")
-#> [1] "/home/runner/work/_temp/Library/Shennong/pixi/scvi/pixi.toml"
-```
+Result of `sn_get_pixi_config_path(...)`.

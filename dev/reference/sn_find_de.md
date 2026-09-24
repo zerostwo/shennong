@@ -27,10 +27,8 @@ sn_find_de(
   only_pos = NULL,
   logfc_threshold = 0.1,
   min_pct = 0.25,
-  p_val_cutoff = 0.05,
-  de_logfc = 0.25,
   min_cells_per_sample = 10,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   verbose = TRUE,
   modality = c("auto", "single_cell", "bulk"),
@@ -89,7 +87,11 @@ sn_find_de(
 
 - features:
 
-  Optional feature subset to test.
+  Optional feature subset to test. Requested and available candidates
+  are stored separately from `input$tested_features`, the features with
+  finite backend statistics before marker significance filtering.
+  `input$tested_features_by_comparison` retains each comparison's
+  background for downstream ORA. COSG records scored features.
 
 - method:
 
@@ -108,27 +110,22 @@ sn_find_de(
 
   Standard Seurat marker filtering arguments.
 
-- p_val_cutoff:
-
-  Adjusted p-value threshold used when storing result metadata.
-
-- de_logfc:
-
-  Absolute log fold-change threshold used when storing result metadata.
-
 - min_cells_per_sample:
 
   Minimum cells required for a sample/group pseudobulk profile to be
   retained.
 
-- store_name:
+- result_id:
 
-  Key used under `object@misc$de_results`.
+  Stable identifier used as the stored-result key and canonical result
+  name.
 
 - return_object:
 
   If `TRUE`, return the updated Seurat object with stored DE results.
-  Otherwise return the result table.
+  Otherwise return the unified result; retrieve its table with
+  [`sn_get_de_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_de_result.md)
+  or `result$tables$primary`.
 
 - verbose:
 
@@ -146,12 +143,17 @@ sn_find_de(
 
 - design:
 
-  A fixed- or mixed-effects formula for bulk analysis.
+  A fixed- or mixed-effects formula for bulk analysis. For pseudobulk
+  analysis, an optional fixed-effects formula over cell metadata;
+  include `sample_by` when the same biological unit contributes both
+  contrast groups. When omitted, independent and completely paired
+  designs are detected automatically.
 
 - contrast:
 
-  Character triple giving the bulk contrast as variable, numerator, and
-  denominator.
+  Character triple giving the contrast as variable, numerator, and
+  denominator. For pseudobulk analysis this must agree with
+  `c(group_by, ident_1, ident_2)`.
 
 - backend_control:
 
@@ -163,15 +165,19 @@ sn_find_de(
 
 ## Value
 
-For single-cell input, either a DE result table or an updated `Seurat`
+For single-cell input, either a unified DE result or an updated `Seurat`
 object. For bulk input, a validated Shennong bulk-DE result.
 
 ## Details
 
-Results can be stored back into `object@misc$de_results[[store_name]]`,
-so downstream helpers such as
-[`sn_plot_dot()`](https://songqi.org/shennong/dev/reference/sn_plot_dot.md)
+Results are stored in the canonical Shennong result registry, so
+downstream helpers such as
+[`sn_plot_dot()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_dot.md)
 can reuse the same marker table.
+
+Testing retains the complete backend result. Select significant genes
+afterward with
+`sn_get_de_result(p_adjusted_cutoff = ..., logfc_threshold = ...)`.
 
 ## Examples
 
@@ -193,7 +199,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   Seurat::Idents(obj) <- obj$cell_type
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
 
-  marker_tbl <- sn_find_de(
+  marker_result <- sn_find_de(
     obj,
     analysis = "markers",
     group_by = "cell_type",
@@ -203,7 +209,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     return_object = FALSE,
     verbose = FALSE
   )
-  head(marker_tbl)
+  head(sn_get_de_result(marker_result))
 
   obj <- sn_find_de(
     obj,
@@ -212,25 +218,13 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
     layer = "data",
     min_pct = 0,
     logfc_threshold = 0,
-    store_name = "celltype_markers",
+    result_id = "celltype_markers",
     return_object = TRUE,
     verbose = FALSE
   )
-  names(obj@misc$de_results)
+  sn_list_results(obj, type = "de")
+  sn_get_result(obj, type = "de", result_id = "celltype_markers")
 }
-#> INFO [2026-07-20 05:53:31] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:53:31] Running QC metrics for human.
-#> INFO [2026-07-20 05:53:31] Seurat object initialization complete.
-#> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
-#> (default method for FindMarkers) please install the presto package
-#> --------------------------------------------
-#> install.packages('devtools')
-#> devtools::install_github('immunogenomics/presto')
-#> --------------------------------------------
-#> After installation of presto, Seurat will automatically use the more 
-#> efficient implementation (no further action necessary).
-#> This message will be shown once per session
-#> [1] "celltype_markers"
 
 bulk_counts <- matrix(
   stats::rpois(40 * 6, 20), nrow = 40,

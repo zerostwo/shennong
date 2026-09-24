@@ -7,7 +7,7 @@ Plot annotation confidence
 ``` r
 sn_plot_annotation_confidence(
   x,
-  store_name = "annotation",
+  result_id = "annotation",
   level = c("cluster", "cell")
 )
 ```
@@ -18,7 +18,7 @@ sn_plot_annotation_confidence(
 
   A Seurat object or annotation result.
 
-- store_name:
+- result_id:
 
   Stored annotation name.
 

@@ -8,11 +8,12 @@ Store a deconvolution result on a Seurat object
 sn_store_deconvolution(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   method = "bayesprism",
   bulk_samples = NULL,
   reference_label = NULL,
   artifacts = NULL,
+  random_seed = NULL,
   return_object = TRUE
 )
 ```
@@ -27,9 +28,9 @@ sn_store_deconvolution(
 
   A deconvolution table.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$deconvolution_results`.
+  Stable identifier for the stored deconvolution result.
 
 - method:
 
@@ -46,6 +47,10 @@ sn_store_deconvolution(
 - artifacts:
 
   Optional backend-specific artifacts or file paths.
+
+- random_seed:
+
+  Optional random seed recorded in the result provenance.
 
 - return_object:
 

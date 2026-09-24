@@ -5,7 +5,7 @@ Plot fitted expression trends for selected genes
 ## Usage
 
 ``` r
-sn_plot_gene_trend(x, name = NULL, features)
+sn_plot_gene_trend(x, result_id = NULL, features, object = NULL)
 ```
 
 ## Arguments
@@ -14,13 +14,17 @@ sn_plot_gene_trend(x, name = NULL, features)
 
   A Seurat object or trajectory result.
 
-- name:
+- result_id:
 
-  Stored trajectory name.
+  Stored trajectory result_id.
 
 - features:
 
   Features to plot.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

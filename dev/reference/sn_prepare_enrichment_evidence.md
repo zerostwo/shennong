@@ -7,7 +7,7 @@ Prepare enrichment evidence
 ``` r
 sn_prepare_enrichment_evidence(
   object = NULL,
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   result = NULL,
   n_terms = 10
 )
@@ -19,7 +19,7 @@ sn_prepare_enrichment_evidence(
 
   Optional `Seurat` object containing stored enrichment results.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Name of a stored enrichment result.
 
@@ -46,8 +46,4 @@ enrich_tbl <- tibble::tibble(
 )
 evidence <- sn_prepare_enrichment_evidence(result = enrich_tbl, n_terms = 1)
 evidence$top_terms
-#> # A tibble: 1 × 4
-#>   ID      Description       NES p.adjust
-#>   <chr>   <chr>           <dbl>    <dbl>
-#> 1 GO:0001 immune response   2.1     0.01
 ```

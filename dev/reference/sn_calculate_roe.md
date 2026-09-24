@@ -14,7 +14,8 @@ sn_calculate_roe(
   variable,
   pseudocount = 0,
   return_matrix = FALSE,
-  matrix_value = c("roe", "log2_roe", "observed", "expected")
+  matrix_value = c("roe", "log2_roe", "observed", "expected"),
+  object = NULL
 )
 ```
 
@@ -47,6 +48,10 @@ sn_calculate_roe(
 
   Value to place in the matrix when `return_matrix = TRUE`. One of
   `"roe"`, `"log2_roe"`, `"observed"`, or `"expected"`.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

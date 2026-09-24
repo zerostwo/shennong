@@ -5,26 +5,24 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Clustering and integration with PBMC3k • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Clustering and integration with real PBMC CITE-seq data • Shennong</title>
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Clustering and integration with PBMC3k">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Clustering and integration with real PBMC CITE-seq data">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -81,7 +82,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Clustering and integration with PBMC3k</h1>
+      <h1>Clustering and integration with real PBMC CITE-seq data</h1>
                         <h4 data-toc-skip class="author">Songqi
 Duan</h4>
                   <a class="author_email" href="mailto:#"></a><a href="mailto:duan@songqi.org" class="email">duan@songqi.org</a>
@@ -94,13 +95,38 @@ Duan</h4>
 
     
     
+<p>For a runnable example without local files, start with <a href="get-started.html">Get started</a>. This guide covers larger
+datasets, batch integration, and optional backends. See <a href="parameters-and-results.html">Parameters and results</a> for shared
+control names.</p>
 <p>Seurat teaches users a sequence of steps: normalize, find variable
 genes, run PCA, build neighbors, cluster, and embed. Shennong keeps that
 logic, but exposes it through one workflow function so the choices are
 visible in one call.</p>
-<p>This article uses PBMC3k. For speed, the website shows code without
-running the analysis unless
-<code>SHENNONG_RUN_VIGNETTES=true</code>.</p>
+<p>This article uses the public Kotliarov PBMC CITE-seq cohort: 2,000
+real cells from 20 biological samples, two acquisition batches, and
+aligned RNA and ADT assays. A real-data pkgdown build executes the core
+chunks. Ordinary package checks safely leave them unevaluated when the
+local fixture is absent.</p>
+<div class="section level2">
+<h2 id="shared-workflow-controls">Shared workflow controls<a class="anchor" aria-label="anchor" href="#shared-workflow-controls"></a>
+</h2>
+<p><code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code>, <code><a href="../reference/sn_run_scvi.html">sn_run_scvi()</a></code>,
+<code><a href="../reference/sn_run_scvi.html">sn_run_scanvi()</a></code>, and <code><a href="../reference/sn_run_scvi.html">sn_run_scpoli()</a></code> run the
+same clustering workflow. Select metadata with <code>batch_by</code>,
+backend options with <code>backend_control</code>, and reproducibility
+with the top-level <code>seed</code>. Core data and dimension controls
+(<code>assay</code>, <code>layer</code>, <code>npcs</code>,
+<code>dims</code>, and <code>hvg_group_by</code>) are explicit
+arguments; advanced arguments in <code>...</code> must be named. The
+shortcuts select an integration method and then run the usual downstream
+graph, clustering, and projection stages.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scvi.html">sn_run_scvi</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>, batch_by <span class="op">=</span> <span class="st">"sample"</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  npcs <span class="op">=</span> <span class="fl">30</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>, seed <span class="op">=</span> <span class="fl">717</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max_epochs <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
 <div class="section level2">
 <h2 id="one-function-for-the-standard-clustering-path">One function for the standard clustering path<a class="anchor" aria-label="anchor" href="#one-function-for-the-standard-clustering-path"></a>
 </h2>
@@ -108,15 +134,18 @@ running the analysis unless
 that usually matter for a report are visible: normalization method,
 number of features, PC range, resolution, clustering algorithm, and
 species.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 05:58:30] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 05:58:30] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 05:58:30] Seurat object initialization complete.</span></span>
+<span><span class="va">pixi_environment_ready</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">environment</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.which.html" class="external-link">Sys.which</a></span><span class="op">(</span><span class="st">"pixi"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="va">paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_pixi_paths.html">sn_get_pixi_paths</a></span><span class="op">(</span><span class="va">environment</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">paths</span><span class="op">$</span><span class="va">manifest_path</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.exists</a></span><span class="op">(</span><span class="va">paths</span><span class="op">$</span><span class="va">workspace_env_dir</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -125,20 +154,35 @@ species.</p>
 <span>  npcs <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span>  cluster_algorithm <span class="op">=</span> <span class="st">"leiden"</span>,</span>
+<span>  cluster_algorithm <span class="op">=</span> <span class="st">"louvain"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">717L</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span></span>
-<span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 54872 features across 2753 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (54872 features, 2000 variable features)</span></span>
-<span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
-<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>,</span>
+<span>  clusters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  biological_samples <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  batches <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The check-safe core uses Seurat’s Louvain implementation. Select
+<code>cluster_algorithm = "leiden"</code> only after installing
+<code>leidenbase</code>; Shennong does not substitute a different
+algorithm when that explicit backend is absent. The top-level
+<code>seed</code> is the workflow seed: it takes precedence over nested
+integration and clustering seeds, is recorded in provenance, and runs
+under a scoped RNG context so the caller’s random state is restored
+afterward.</p>
+<p>Variable-feature and PCA diagnostics are produced from the same real
+RNA matrix used for clustering.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_hvg.html">sn_plot_hvg</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, label_n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_elbow.html">sn_plot_elbow</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"pca"</span>, ndims <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <p>When the input already contains <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> stage
-metadata, the function reuses matching stages by default. This makes
-resolution tuning cheap:
+metadata, the function reuses a stage only when its parameters,
+selected-layer content digest, cell and feature identities, and relevant
+metadata values still match. This makes safe resolution tuning cheap:
 <code>sn_run_cluster(pbmc, resolution = 1.0)</code> reuses
 normalization, HVGs, PCA, the neighbor graph, and UMAP, then recomputes
 only the cluster labels. Use <code>rerun_from = "integration"</code>
@@ -147,7 +191,7 @@ when a completely fresh run is needed.</p>
 <p>UMAP geometry can be tuned independently from clustering with
 <code>umap_control</code>. This is useful when clusters are biologically
 separate but overlap visually in the two-dimensional embedding.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  umap_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -157,18 +201,25 @@ separate but overlap visually in the two-dimensional embedding.</p>
 <span>    reduction.name <span class="op">=</span> <span class="st">"umap_tuned"</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  rerun_from <span class="op">=</span> <span class="st">"umap"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc_umap</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"umap_tuned"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"UMAP retuned on real PBMC cells"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The result is a regular Seurat object. You can use Shennong plotting
 helpers or drop down to Seurat whenever needed.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"PBMC3k clusters"</span></span>
+<span>  title <span class="op">=</span> <span class="st">"Kotliarov PBMC clusters"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="clustering_files/figure-html/plot-clusters-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="block-unhelpful-feature-families">Block unhelpful feature families<a class="anchor" aria-label="anchor" href="#block-unhelpful-feature-families"></a>
@@ -180,7 +231,7 @@ inside a custom variable-feature script. The vector can mix bundled
 signature names, full signature paths, and custom gene symbols, and is
 applied to internally selected HVGs in both log-normalization and
 SCTransform workflows.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_blocked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -188,11 +239,20 @@ SCTransform workflows.</p>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
-<span>  block_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cellCycle.G2M"</span>, <span class="st">"cellCycle.G1S"</span>, <span class="st">"mito"</span>, <span class="st">"ribo"</span>, <span class="st">"MYC"</span><span class="op">)</span>,</span>
+<span>  block_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cellCycle.G2M"</span>, <span class="st">"cellCycle.G1S"</span>, <span class="st">"mito"</span>, <span class="st">"ribo"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  selected_hvgs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pbmc_blocked</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">selected_features</span><span class="op">)</span>,</span>
+<span>  blocked_hvgs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pbmc_blocked</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">blocked_features</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc_blocked</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">blocked_features</span><span class="op">)</span></span></code></pre></div>
 <p>Use this when a technical or lineage-specific gene family is
-overwhelming the structure you want to resolve.</p>
+overwhelming the structure you want to resolve. Custom symbols such as
+<code>"MYC"</code> additionally use the optional <code>HGNChelper</code>
+validation backend; the core website build stays on the versioned
+bundled signatures.</p>
 </div>
 <div class="section level2">
 <h2 id="rare-aware-feature-selection">Rare-aware feature selection<a class="anchor" aria-label="anchor" href="#rare-aware-feature-selection"></a>
@@ -200,7 +260,7 @@ overwhelming the structure you want to resolve.</p>
 <p>Small populations can disappear when variable genes are selected only
 by global variance. Shennong can append rare-aware features before
 PCA.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_rare</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -213,25 +273,21 @@ PCA.</p>
 <span>  resolution <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pbmc_rare</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">selected_features</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_rare</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span></code></pre></div>
 <p>The key idea is simple: keep the global HVGs, then add a small number
 of genes that help preserve rare groups. The rare-cell scoring helper
 can be used independently to inspect which cells look unusual.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rare_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_detect_rare_cells.html">sn_detect_rare_cells</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"gini"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">200</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">$</span><span class="va">rare_score</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               cell_id method rare_score rare_cell</span></span>
-<span><span class="co">#&gt; 1605 GACTGAACCCTGAA-1   gini   43.13258      TRUE</span></span>
-<span><span class="co">#&gt; 283  ACGAACTGGCTATG-1   gini   31.47734      TRUE</span></span>
-<span><span class="co">#&gt; 432  AGAGGTCTACAGCT-1   gini   26.91956      TRUE</span></span>
-<span><span class="co">#&gt; 256  ACCCACTGGTTCAG-1   gini   25.88071      TRUE</span></span>
-<span><span class="co">#&gt; 1360 CTAGGATGAGCCTA-1   gini   25.18387      TRUE</span></span>
-<span><span class="co">#&gt; 35   AAATGGGAAGGCGA-1   gini   20.34990      TRUE</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">rare_tbl</span><span class="op">$</span><span class="va">rare_score</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="force-known-marker-genes-into-the-pca-feature-set">Force known marker genes into the PCA feature set<a class="anchor" aria-label="anchor" href="#force-known-marker-genes-into-the-pca-feature-set"></a>
@@ -241,7 +297,7 @@ population, but those genes are too sparse to rank among the global
 HVGs. Use <code>hvg_features</code> to merge those genes into the final
 ScaleData/PCA feature set after Shennong validates that they exist in
 the object.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -253,8 +309,7 @@ the object.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc_manual</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">user_features</span></span>
-<span><span class="co">#&gt; [1] "IL7R"  "CCR7"  "NKG7"  "MS4A1"</span></span></code></pre></div>
+<span><span class="va">pbmc_manual</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">hvg_selection</span><span class="op">$</span><span class="va">user_features</span></span></code></pre></div>
 <p>This is different from <code>rare_feature_method</code>:
 <code>rare_feature_method</code> asks Shennong to discover rare-aware
 features, while <code>hvg_features</code> records a user-provided
@@ -268,16 +323,16 @@ feature prior.</p>
 <code>multimodal_method = "wnn"</code> runs the standard RNA PCA path,
 normalizes the ADT assay with CLR, computes ADT PCA, then uses Seurat
 weighted nearest neighbors to cluster on the <code>wsnn</code> graph and
-create a <code>wnn.umap</code> embedding. The template below assumes
-<code>pbmc_cite</code> is a prepared Seurat object containing both
-assays, so it is not executed during site builds.
-<code>sn_run_multimodal(object, method = "wnn")</code> is an equivalent
-explicit entry point and accepts the remaining
+create a <code>wnn.umap</code> embedding. Here both modalities come from
+the same real cells.
+<code>sn_run_multimodal(object, method = "wnn")</code> is the explicit
+multimodal entry point and accepts the remaining
 <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> arguments through <code>...</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_cite</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_cite</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
+<span><span class="va">pbmc_cite</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_multimodal.html">sn_run_multimodal</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
-<span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"wnn"</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
 <span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
@@ -289,6 +344,7 @@ explicit entry point and accepts the remaining
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_cite</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_cite</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_cite</span>, reduction <span class="op">=</span> <span class="st">"wnn.umap"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></code></pre></div>
 <p>For batch-aware CITE-seq integration, choose a multimodal backend
 explicitly. <code>multimodal_method = "totalvi"</code> runs scvi-tools
@@ -297,7 +353,7 @@ totalVI on RNA counts and ADT counts.
 the ADT assay as a log-normalized protein matrix.
 <code>multimodal_method = "mmochi"</code> runs MMoCHi ADT landmark
 registration across the supplied <code>batch</code> column, or in
-single-sample mode when <code>batch = NULL</code>. It stores the
+single-sample mode when <code>batch_by = NULL</code>. It stores the
 corrected protein matrix as an assay layer when the local Seurat object
 supports arbitrary layers and otherwise under
 <code>object@misc$mmochi$corrected_protein</code>, computes a
@@ -305,47 +361,58 @@ protein-derived <code>mmochi</code> reduction, and clusters from that
 reduction. The full MMoCHi hierarchy classifier remains an advanced
 Python workflow because it requires an explicit user-defined
 hierarchy.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_totalvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<p>These external or optional backends are evaluated only by the
+<code>all</code> real-data profile and only when their runtime
+dependency is already available. The article never installs a Python
+environment or changes GPU settings while it is being built.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_totalvi</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
+<span><span class="va">pbmc_totalvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_totalvi</span>,</span>
 <span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
 <span>  multimodal_method <span class="op">=</span> <span class="st">"totalvi"</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
 <span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
-<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max_epochs <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max_epochs <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_totalvi</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_totalvi</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_totalvi</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_adt_coral</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_adt_coral</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
+<span><span class="va">pbmc_adt_coral</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_adt_coral</span>,</span>
 <span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
 <span>  multimodal_method <span class="op">=</span> <span class="st">"coralysis"</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
 <span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">18</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_adt_mmochi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">pbmc_cite</span>,</span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_adt_coral</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_adt_coral</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_adt_mmochi</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
+<span><span class="va">pbmc_adt_mmochi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_adt_mmochi</span>,</span>
 <span>  modality <span class="op">=</span> <span class="st">"cite_seq"</span>,</span>
 <span>  multimodal_method <span class="op">=</span> <span class="st">"mmochi"</span>,</span>
-<span>  batch <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  adt_assay <span class="op">=</span> <span class="st">"ADT"</span>,</span>
 <span>  adt_dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">18</span>,</span>
-<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    protein_layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>    marker_bandwidths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CD3 <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span>,</span>
 <span>    store_corrected_layer <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_adt_mmochi</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_adt_mmochi</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choose-resolution-empirically">Choose resolution empirically<a class="anchor" aria-label="anchor" href="#choose-resolution-empirically"></a>
@@ -354,7 +421,7 @@ hierarchy.</p>
 <code><a href="../reference/sn_sweep_cluster_resolution.html">sn_sweep_cluster_resolution()</a></code> reruns clustering over a
 small grid and reports diagnostics such as cluster count, silhouette,
 and graph connectivity.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sweep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_sweep_cluster_resolution.html">sn_sweep_cluster_resolution</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  resolutions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">1.0</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
@@ -365,39 +432,40 @@ and graph connectivity.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sweep</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;   resolution n_clusters mean_silhouette scaled_silhouette</span></span>
-<span><span class="co">#&gt; 1        0.2          6       0.2971698         0.6485849</span></span>
-<span><span class="co">#&gt; 2        0.4          9       0.2716079         0.6358039</span></span>
-<span><span class="co">#&gt; 3        0.6         10       0.2143390         0.6071695</span></span>
-<span><span class="co">#&gt; 4        0.8         10       0.2100907         0.6050453</span></span>
-<span><span class="co">#&gt; 5        1.0         11       0.2069939         0.6034970</span></span>
-<span><span class="co">#&gt;   graph_connectivity scaled_graph_connectivity composite_score</span></span>
-<span><span class="co">#&gt; 1          1.0000000                 1.0000000       0.8242925</span></span>
-<span><span class="co">#&gt; 2          1.0000000                 1.0000000       0.8179020</span></span>
-<span><span class="co">#&gt; 3          1.0000000                 1.0000000       0.8035848</span></span>
-<span><span class="co">#&gt; 4          0.9995556                 0.9995556       0.8023004</span></span>
-<span><span class="co">#&gt; 5          1.0000000                 1.0000000       0.8017485</span></span>
 <span><span class="va">sweep</span><span class="op">$</span><span class="va">recommended_resolution</span></span>
-<span><span class="co">#&gt; [1] 0.2</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/sn_plot_resolution_sweep.html">sn_plot_resolution_sweep</a></span><span class="op">(</span><span class="va">sweep</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">resolution_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"res_0_2"</span>, <span class="st">"res_0_6"</span>, <span class="st">"res_1_0"</span><span class="op">)</span></span>
+<span><span class="va">pbmc_tree</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">index</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">resolution_cols</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">pbmc_tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>    <span class="va">pbmc_tree</span>,</span>
+<span>    resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.6</span>, <span class="fl">1.0</span><span class="op">)</span><span class="op">[[</span><span class="va">index</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    cluster_name <span class="op">=</span> <span class="va">resolution_cols</span><span class="op">[[</span><span class="va">index</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    reuse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_cluster_tree.html">sn_plot_cluster_tree</a></span><span class="op">(</span><span class="va">pbmc_tree</span>, resolution_cols <span class="op">=</span> <span class="va">resolution_cols</span><span class="op">)</span></span></code></pre></div>
 <p>The recommendation is not a replacement for biology; it is a compact
 way to find resolutions that are numerically stable before looking at
 marker genes.</p>
 </div>
 <div class="section level2">
-<h2 id="integration-is-the-same-api-with-a-batch-column">Integration is the same API with a batch column<a class="anchor" aria-label="anchor" href="#integration-is-the-same-api-with-a-batch-column"></a>
+<h2 id="integration-is-the-same-api-with-a-real-batch-column">Integration is the same API with a real batch column<a class="anchor" aria-label="anchor" href="#integration-is-the-same-api-with-a-real-batch-column"></a>
 </h2>
-<p>PBMC3k is one dataset, so the example below creates a teaching-only
-pseudo batch column. In a real experiment, <code>batch</code> would be a
-donor, library, chemistry, or dataset column.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span><span class="op">$</span><span class="va">library</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library_a"</span>, <span class="st">"library_b"</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<p><code>real_batch</code> records the two acquisition batches in the
+source cohort. It is a technical label, whereas <code>real_sample</code>
+remains the biological replicate for sample-level inference.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  integration_method <span class="op">=</span> <span class="st">"harmony"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  hvg_group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  hvg_group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
@@ -408,26 +476,168 @@ donor, library, chemistry, or dataset column.</p>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_integrated</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"Pseudo-batch mixing"</span></span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Mixing of the two real acquisition batches"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>This keeps the mental model small: single-sample clustering and batch
 integration use the same entry point; adding <code>batch</code> turns on
 integration, and <code>integration_method</code> names the backend.
 Harmony is the default because it is fast and broadly useful.</p>
+<div class="section level3">
+<h3 id="compare-several-integration-methods-in-one-object">Compare several integration methods in one object<a class="anchor" aria-label="anchor" href="#compare-several-integration-methods-in-one-object"></a>
+</h3>
+<p>Pass a vector to retain an unintegrated baseline and several
+corrected spaces without repeating normalization, HVG selection, or PCA.
+Parameters can be keyed by method; the historical spelling
+<code>"unintergrated"</code> is accepted with a deprecation warning, but
+new code should use <code>"unintegrated"</code>.</p>
+<p>Scalar-by-contract parameters also accept vectors. Shennong expands
+their conditional Cartesian product: for example, two
+<code>nfeatures</code> values and two <code>resolution</code> values
+create four runs per method, but the two resolutions share one graph and
+one UMAP for each method/HVG combination. Natural vectors such as
+<code>dims</code>, <code>hvg_features</code>,
+<code>vars_to_regress</code>, and <code>block_genes</code> remain one
+value. UMAP is the only projection run by default; set the existing
+<code>run_tsne = TRUE</code> explicitly when t-SNE is also required.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  integration_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unintegrated"</span>, <span class="st">"harmony"</span>, <span class="st">"coralysis"</span><span class="op">)</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    harmony <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    coralysis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      icp_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">25</span>, threads <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>      pca_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>,</span>
+<span>      store_sce <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  hvg_group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">3000</span><span class="op">)</span>,</span>
+<span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.8</span><span class="op">)</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="st">"checkpoints/pbmc-integration-grid"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Discover the stored result names.</span></span>
+<span><span class="va">pbmc_comparison</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">integration_comparison</span><span class="op">$</span><span class="va">results</span></span>
+<span></span>
+<span><span class="co"># Inspect the run/embedding/preprocessing map, then retrieve exact components.</span></span>
+<span><span class="va">comparison_grid</span> <span class="op">&lt;-</span> <span class="va">pbmc_comparison</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">integration_comparison</span><span class="op">$</span><span class="va">grid</span></span>
+<span><span class="va">first_run</span> <span class="op">&lt;-</span> <span class="va">pbmc_comparison</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">integration_comparison</span><span class="op">$</span><span class="va">results</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">clusters</span> <span class="op">&lt;-</span> <span class="va">pbmc_comparison</span><span class="op">[[</span><span class="va">first_run</span><span class="op">$</span><span class="va">cluster_column</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">umap</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">pbmc_comparison</span>, <span class="va">first_run</span><span class="op">$</span><span class="va">umap_reduction</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Compare compute cost per run and per unique integration embedding.</span></span>
+<span><span class="va">pbmc_comparison</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">integration_comparison</span><span class="op">$</span><span class="va">performance</span></span></code></pre></div>
+<p>For a method-only comparison with scalar parameters, the historical
+names such as <code>results$harmony</code>,
+<code>harmony_clusters</code>, and <code>umap.harmony</code> remain
+unchanged. Grid runs use deterministic run IDs. The unintegrated entry
+points to a stored PCA branch. Integrated methods retain their native
+corrected low-dimensional spaces (for example <code>harmony</code> or
+<code>coralysis</code>) rather than relabeling those coordinates as PCA.
+The manifest maps each run to its preprocessing/embedding IDs,
+reduction, graph names, cluster column, UMAP, and optional t-SNE so
+downstream integration metrics can iterate over one returned object.</p>
+<p>When <code>checkpoint_dir</code> is supplied, every completed grid
+entry is saved through a <code>.partial</code> file followed by an
+atomic rename. A repeated call with the same selected-layer content
+digest, cell/feature identity, relevant metadata, package version, grid,
+and analysis arguments resumes automatically
+(<code>resume = TRUE</code>) and skips completed entries. Only the
+latest complete checkpoint is retained; interrupted
+<code>.partial</code> files are ignored. Set
+<code>checkpoint_compress = TRUE</code> when disk space matters more
+than checkpoint write speed.</p>
+<p>The <code>performance</code> table contains wall-clock seconds, peak
+R heap memory, and integration-specific values. On Linux, pixi/Python
+backends also capture the maximum backend process-tree RSS with GNU
+<code>time</code>; GPU device memory is not included. Resolution-only
+entries have <code>reused_embedding = TRUE</code> and retain the source
+embedding’s integration cost while recording only the new clustering
+work as their workflow time.</p>
+</div>
+<div class="section level3">
+<h3 id="integration-control-templates">Integration-control templates<a class="anchor" aria-label="anchor" href="#integration-control-templates"></a>
+</h3>
+<p>Use the executable templates to discover every Shennong-consumed
+backend field, including runtime, accelerator, model, training, graph,
+and backend-specific arguments:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_get_integration_control_template.html">sn_get_integration_control_template</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_integration_control_template.html">sn_get_integration_control_template</a></span><span class="op">(</span><span class="st">"harmony"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_integration_control_template.html">sn_get_integration_control_template</a></span><span class="op">(</span><span class="st">"coralysis"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_integration_control_template.html">sn_get_integration_control_template</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scvi"</span>, <span class="st">"scanvi"</span>, <span class="st">"scpoli"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_integration_control_template.html">sn_get_integration_control_template</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bbknn"</span>, <span class="st">"totalvi"</span>, <span class="st">"mmochi"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>For Seurat CCA/RPCA, fields beyond the displayed template are passed
+directly to <code><a href="https://satijalab.org/seurat/reference/IntegrateLayers.html" class="external-link">Seurat::IntegrateLayers()</a></code>. For nested model
+calls, place native backend arguments in <code>model_args</code>,
+<code>train_args</code>, <code>scanvi_model_args</code>,
+<code>scanvi_train_args</code>, <code>totalvi_model_args</code>,
+<code>totalvi_train_args</code>, <code>bbknn_args</code>, or the
+corresponding Coralysis/MMoCHi argument list.</p>
+<p>Use <code><a href="../reference/sn_compare_integrations.html">sn_compare_integrations()</a></code> when the object also
+contains an independent biological annotation column. The scib-metrics
+adapter evaluates the native PCA or integrated latent spaces on exactly
+the same stratified cells and features within each preprocessing group;
+it does not score UMAP or t-SNE coordinates. A matching unintegrated PCA
+is required in every preprocessing group. Each unique embedding is
+scored once, so resolution-only runs inherit the same embedding metrics.
+Supervised methods trained with the same column as <code>label_by</code>
+are flagged, and graph-only methods such as BBKNN are listed as
+non-comparable rather than silently treated as embeddings. The stored
+clustering timing and memory columns are joined into the scIB summary,
+metric, and ranking tables, enabling quality-versus-compute comparisons
+from the benchmark result alone.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_compare_integrations.html">sn_compare_integrations</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_comparison</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  label_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  accelerator <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  n_workers <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Discover and retrieve the stored benchmark.</span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc_comparison</span>, type <span class="op">=</span> <span class="st">"integration_benchmark"</span><span class="op">)</span></span>
+<span><span class="va">integration_benchmark</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc_comparison</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"integration_benchmark"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"integration_benchmark"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">integration_benchmark</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">ranking</span></span>
+<span><span class="va">integration_benchmark</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"run_id"</span>, <span class="st">"embedding_id"</span>, <span class="st">"preprocess_id"</span>, <span class="st">"method"</span>, <span class="st">"Total"</span>,</span>
+<span>  <span class="st">"integration_elapsed_seconds"</span>, <span class="st">"integration_peak_memory_mb"</span>,</span>
+<span>  <span class="st">"rank_within_preprocess"</span>, <span class="st">"rank_overall"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">integration_benchmark</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">metrics</span></span>
+<span><span class="va">integration_benchmark</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">$</span><span class="va">backend_manifest</span><span class="op">$</span><span class="va">jax_devices</span></span></code></pre></div>
+<p><code>accelerator = "auto"</code> selects the managed GPU environment
+when Shennong detects a usable NVIDIA CUDA runtime, otherwise it uses
+CPU. The recorded JAX device list is the runtime evidence for the device
+scib-metrics actually used.</p>
 <p>The same integration switch can be used with SCTransform
-normalization:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+normalization. This heavier optional backend runs in the
+<code>all</code> profile when both Harmony and <code>glmGamPoi</code>
+are installed:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_sct_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  integration_method <span class="op">=</span> <span class="st">"harmony"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"sctransform"</span>,</span>
 <span>  hvg_features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_sct_integrated</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_sct_integrated</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span></code></pre></div>
 <p>For imbalanced datasets where a rare or unevenly distributed state
 may be washed out by conventional correction, Coralysis can be selected
 explicitly. Coralysis runs on the log-normalized feature set selected by
@@ -436,19 +646,25 @@ Shennong and stores the integrated embedding as the
 SingleCellExperiment is stored by default under
 <code>object@misc$coralysis</code>, so the returned object can be used
 later as a native Coralysis label-transfer reference. Set
-<code>integration_control = list(store_sce = FALSE)</code> only for
-clustering-only runs.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code>backend_control = list(store_sce = FALSE)</code> only for
+clustering-only runs. For BPCells-backed assays, Shennong keeps the
+complete normalized layer on disk and materializes only the selected
+integration features as a sparse <code>dgCMatrix</code>, which is the
+input class required by Coralysis. Coralysis defaults to one worker
+because forked workers can each copy this in-memory matrix; set
+<code>backend_control = list(icp_args = list(threads = ...))</code> only
+after sizing the aggregate worker memory against the host.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_coral</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  integration_method <span class="op">=</span> <span class="st">"coralysis"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  hvg_group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  hvg_group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    icp_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>L <span class="op">=</span> <span class="fl">25</span>, threads <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
 <span>    pca_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
@@ -457,13 +673,15 @@ clustering-only runs.</p>
 <span>    min.dist <span class="op">=</span> <span class="fl">0.1</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_coral</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_coral</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span></code></pre></div>
 <p>Seurat layer integration methods are also available when users want
 to compare against familiar anchor-based workflows:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc_cca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  integration_method <span class="op">=</span> <span class="st">"seurat_cca"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">2000</span>,</span>
@@ -473,18 +691,34 @@ to compare against familiar anchor-based workflows:</p>
 <span></span>
 <span><span class="va">pbmc_rpca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  integration_method <span class="op">=</span> <span class="st">"seurat_rpca"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"seurat_cca"</span>, <span class="st">"seurat_rpca"</span><span class="op">)</span>,</span>
+<span>  clusters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_cca</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc_rpca</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc_rpca</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"RPCA integration across real acquisition batches"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Python integration methods can be run through a pixi-managed scverse
 project kept under the user-level Shennong runtime directory,
 <code>~/.shennong/</code>. When
-<code>integration_method = "scvi"</code>, Shennong exports the selected
-count matrix and metadata, renders
+<code>integration_method = "scvi"</code>, Shennong exports the count
+matrix from the requested <code>assay</code> and <code>layer</code>
+together with metadata, renders
 <code>~/.shennong/pixi/scvi/pixi.toml</code> from the package-bundled
 <code>inst/pixi/scvi/pixi.toml</code> template when needed, runs the
 Python backend, imports <code>latent.csv</code> as the <code>scvi</code>
@@ -495,72 +729,116 @@ the backend runner script and pixi config templates; the pixi workspaces
 and environment prefixes are created under
 <code>~/.shennong/pixi/</code>, matching the package’s
 <code>~/.shennong/data/</code> convention. Use
-<code>sn_pixi_paths("scvi")</code> to inspect the layout before a run.
-If pixi is not already available, Shennong can install the standalone
-pixi binary through <code><a href="../reference/sn_check_pixi.html">sn_ensure_pixi()</a></code> and then use the
-Shennong <code>PIXI_HOME</code> under <code>~/.shennong/pixi/home</code>
-for runtime configuration. By default <code>accelerator = "auto"</code>
-uses a CUDA pixi environment when <code>nvidia-smi</code> reports a
-CUDA-capable GPU and otherwise uses the CPU environment. China mirror
-handling can be enabled with <code>mirror = "auto"</code> or a specific
-mirror such as <code>"tuna"</code>. Other bundled Python environment
-configs can be inspected with <code><a href="../reference/sn_list_pixi_environments.html">sn_list_pixi_environments()</a></code>
-and materialized with <code><a href="../reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment()</a></code>. Method
-aliases share environments when the underlying software stack is the
-same: scANVI uses the <code>scvi</code> environment, and scPoli uses the
+<code>sn_get_pixi_paths("scvi")</code> to inspect the layout before a
+run. If pixi is not already available, Shennong can install the
+standalone pixi binary through <code><a href="../reference/sn_check_pixi.html">sn_ensure_pixi()</a></code> and then
+use the Shennong <code>PIXI_HOME</code> under
+<code>~/.shennong/pixi/home</code> for runtime configuration. By default
+<code>accelerator = "auto"</code> uses a CUDA pixi environment when
+<code>nvidia-smi</code> reports a CUDA-capable GPU and otherwise uses
+the CPU environment. China mirror handling can be enabled with
+<code>mirror = "auto"</code> or a specific mirror such as
+<code>"tuna"</code>. Other bundled Python environment configs can be
+inspected with <code><a href="../reference/sn_list_pixi_environments.html">sn_list_pixi_environments()</a></code> and materialized
+with <code><a href="../reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment()</a></code>. Method aliases share
+environments when the underlying software stack is the same: scANVI uses
+the <code>scvi</code> environment, and scPoli uses the
 <code>scarches</code> environment. Spatial tools are represented by
 specific environment names such as <code>cell2location</code>,
 <code>tangram</code>, <code>squidpy</code>, <code>spatialdata</code>,
-and <code>stlearn</code>.</p>
-<p>For method wrappers that define an object-level contract, use the
-<code>object =</code> form. Runner scripts are stored with each pixi
-family under <code>inst/pixi/&lt;family&gt;/scripts/</code>. For
-example, inferCNVpy can be run directly on a Seurat object and will
-import cell-level CNV metadata and CNV reductions back into that
-object:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tumor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_infercnvpy</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">tumor</span>,</span>
-<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
-<span>  reference_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  reference_cat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T cell"</span>, <span class="st">"Myeloid"</span>, <span class="st">"Endothelial"</span><span class="op">)</span></span>
+and <code>stlearn</code>. Environment discovery is not backend
+admission: the exported <code><a href="../reference/sn_run_scarches.html">sn_run_scarches()</a></code> and
+<code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> compatibility entry points are currently
+disabled and fail before object export or Python execution.</p>
+<p>The package-tested Pixi release is exact (<code>0.69.0</code>):
+<code>sn_ensure_pixi(version = "0.69.0", install = FALSE)</code> rejects
+a missing or mismatched executable, and mutable
+<code>version = "latest"</code> is not accepted. Official release assets
+are verified against their SHA-256 sidecar; a custom
+<code>download_url</code> must provide <code>sha256</code> explicitly.
+The environment helpers expose the same pair as
+<code>pixi_download_url</code> and <code>pixi_sha256</code>. Python
+calls use a unique package-owned run directory. Successful temporary
+runs remove exported inputs and backend outputs after the needed result
+is imported; an explicitly supplied run/output directory is retained by
+default. The object-level wrappers expose <code>keep_run_dir</code>
+directly: with <code>keep_run_dir = FALSE</code>, an explicit
+<code>output_dir</code> is treated only as a parent for a marked child
+and is never recursively deleted. They also expose
+<code>max_artifact_import_gb</code>, so metadata, embeddings, and
+required artifact tables are validated under an explicit import budget
+even when the run directory is retained. Failure records are reduced to
+sanitized diagnostics rather than retaining expression matrices or
+unrestricted metadata.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_check_pixi.html">sn_ensure_pixi</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"0.69.0"</span>, install <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Institutional mirror: pin both the immutable asset URL and its digest.</span></span>
+<span><span class="fu"><a href="../reference/sn_check_pixi.html">sn_install_pixi</a></span><span class="op">(</span></span>
+<span>  version <span class="op">=</span> <span class="st">"0.69.0"</span>,</span>
+<span>  download_url <span class="op">=</span> <span class="st">"https://mirror.example/pixi-x86_64.tar.gz"</span>,</span>
+<span>  sha256 <span class="op">=</span> <span class="st">"replace-with-reviewed-sha256"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment</a></span><span class="op">(</span></span>
+<span>  <span class="st">"scvi"</span>,</span>
+<span>  install_pixi <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  pixi_download_url <span class="op">=</span> <span class="st">"https://mirror.example/pixi-x86_64.tar.gz"</span>,</span>
+<span>  pixi_sha256 <span class="op">=</span> <span class="st">"replace-with-reviewed-sha256"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Other Python tools follow the same Seurat-first pattern. Tools that
-need additional biological inputs make those inputs explicit:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_cellphonedb</a></span><span class="op">(</span><span class="va">object</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">spatial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_tangram</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">spatial</span>,</span>
-<span>  reference_object <span class="op">=</span> <span class="va">sc_reference</span>,</span>
-<span>  cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">spatial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_cell2location</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">spatial</span>,</span>
-<span>  reference_signatures <span class="op">=</span> <span class="va">signature_matrix</span>,</span>
-<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span>,</span>
-<span>  method_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>max_epochs <span class="op">=</span> <span class="fl">30000</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">spatial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_squidpy</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">spatial</span>, spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>These Python environments execute plain upstream implementations; no
+Python acceleration layer is bundled. scVI/scANVI training, scPoli,
+Tangram, MMoCHi, infercnvpy, scIB, and the current Squidpy path all run
+their original code. R-side hot paths are accelerated separately by
+ShennongOpt and can be disabled with
+<code>SHENNONG_ACCELERATION_DISABLED=true</code>.</p>
+<p>The raw-count layer contract also applies to scANVI and scPoli: their
+negative-binomial models require finite, non-negative, integer-like
+values, and Shennong validates the selected matrix both before export
+and inside the Python runner. BBKNN consumes the PCA computed from that
+same selected layer, imports its batch-balanced connectivity graph, and
+uses the graph directly for Seurat clustering and UMAP. Therefore a
+comparison on decontaminated counts can keep one explicit input across
+all methods instead of silently falling back to <code>counts</code>:</p>
+<p>The Python runners keep complete expression matrices sparse. scPoli
+converts only one bounded neural-network minibatch to a dense tensor
+during latent encoding; the complete cells-by-genes matrix is never
+materialized as dense. Dense PCA, latent, and UMAP outputs remain
+low-dimensional by construction.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">methods</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scvi"</span>, <span class="st">"scanvi"</span>, <span class="st">"scpoli"</span>, <span class="st">"bbknn"</span><span class="op">)</span></span>
+<span><span class="va">integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">method</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">control</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">method</span> <span class="op">==</span> <span class="st">"scanvi"</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>label_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>    object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>    batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
+<span>    integration_method <span class="op">=</span> <span class="va">method</span>,</span>
+<span>    backend_control <span class="op">=</span> <span class="va">control</span>,</span>
+<span>    normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>    dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Cancer CNV and spatial Python wrappers require disease-matched
+references or spatial coordinates, so they are intentionally exercised
+in the corresponding real melanoma and Visium articles rather than
+against this PBMC object.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_pixi_environments.html">sn_list_pixi_environments</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_pixi_paths.html">sn_pixi_paths</a></span><span class="op">(</span><span class="st">"scvi"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_check_pixi.html">sn_ensure_pixi</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_pixi_paths.html">sn_get_pixi_paths</a></span><span class="op">(</span><span class="st">"scvi"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc_scvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
-<span>  integration_method <span class="op">=</span> <span class="st">"scvi"</span>,</span>
+<span><span class="va">pbmc_scvi</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
+<span><span class="va">pbmc_scvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scvi.html">sn_run_scvi</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_scvi</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  hvg_group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
+<span>  hvg_group_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
-<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    accelerator <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>    mirror <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>    n_latent <span class="op">=</span> <span class="fl">30</span>,</span>
@@ -569,22 +847,56 @@ need additional biological inputs make those inputs explicit:</p>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc_scanvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"library"</span>,</span>
-<span>  integration_method <span class="op">=</span> <span class="st">"scanvi"</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_scvi</span><span class="op">$</span><span class="va">seurat_clusters</span>, <span class="va">pbmc_scvi</span><span class="op">$</span><span class="va">real_batch</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_scvi</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group_by <span class="op">=</span> <span class="st">"real_batch"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">scanvi_input</span> <span class="op">&lt;-</span> <span class="va">pbmc</span></span>
+<span><span class="va">held_out_samples</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="va">scanvi_input</span><span class="op">$</span><span class="va">scanvi_label</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">scanvi_input</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span>
+<span><span class="va">scanvi_input</span><span class="op">$</span><span class="va">scanvi_label</span><span class="op">[</span><span class="va">scanvi_input</span><span class="op">$</span><span class="va">real_sample</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">held_out_samples</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Unknown"</span></span>
+<span></span>
+<span><span class="va">pbmc_scanvi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scvi.html">sn_run_scanvi</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">scanvi_input</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  hvg_group_by <span class="op">=</span> <span class="st">"library"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>,</span>
-<span>  integration_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    label_by <span class="op">=</span> <span class="st">"reference_label"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    label_by <span class="op">=</span> <span class="st">"scanvi_label"</span>,</span>
 <span>    unlabeled_category <span class="op">=</span> <span class="st">"Unknown"</span>,</span>
+<span>    accelerator <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>    mirror <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>    n_latent <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>    max_epochs <span class="op">=</span> <span class="fl">100</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">pbmc_scanvi</span><span class="op">$</span><span class="va">scanvi_prediction</span>, <span class="va">pbmc_scanvi</span><span class="op">$</span><span class="va">real_response</span><span class="op">)</span></span></code></pre></div>
+<p>The scPoli shortcut runs the same complete clustering workflow as
+<code>integration_method = "scpoli"</code>; it uses the real batch
+column as its condition and can use RNA clusters as prototype labels.
+The selected <code>layer</code> must be a count-like raw-count layer
+rather than normalized expression. <code><a href="../reference/sn_run_scarches.html">sn_run_scarches()</a></code> is
+retained only as a compatibility signature and currently fails closed
+because the package does not ship an admitted, faithful scArches
+reference-mapping workflow. The scPoli example runs only when its shared
+pixi environment is already materialized.</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_scpoli</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scvi.html">sn_run_scpoli</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  batch_by <span class="op">=</span> <span class="st">"real_batch"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>label_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, max_epochs <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  method <span class="op">=</span> <span class="st">"scpoli"</span>,</span>
+<span>  reductions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc_scpoli</span><span class="op">@</span><span class="va">reductions</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -592,9 +904,7 @@ need additional biological inputs make those inputs explicit:</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -602,6 +912,12 @@ need additional biological inputs make those inputs explicit:</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

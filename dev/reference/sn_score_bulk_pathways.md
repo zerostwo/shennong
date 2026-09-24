@@ -12,7 +12,7 @@ sn_score_bulk_pathways(
   metadata = NULL,
   assay = NULL,
   min_genes = 2L,
-  store_name = "bulk_pathways",
+  result_id = "bulk_pathways",
   backend_control = list()
 )
 ```
@@ -22,7 +22,7 @@ sn_score_bulk_pathways(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - signatures:
 
@@ -44,9 +44,9 @@ sn_score_bulk_pathways(
 
   Minimum matched genes per pathway.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned pathway-score result.
 
 - backend_control:
 

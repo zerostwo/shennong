@@ -6,15 +6,17 @@ automatic point sizing, stable palettes, compact panel sizing,
 rasterized scatter plots for large objects, and direct support for
 stored Shennong results.
 
-This article uses PBMC3k as the running example. The chunks are
-displayed by default and are evaluated only with
-`SHENNONG_RUN_VIGNETTES=true`.
+This article uses the public Kotliarov PBMC CITE-seq subset as the
+running example. Its RNA and ADT values, 20 biological samples, response
+groups, and acquisition batches are all retained from the source study.
+The chunks execute in real-data builds and remain safe during ordinary
+package checks when the local fixture is unavailable.
 
 ## Prepare one clustered object
 
 The plot wrappers expect the same Seurat object produced by the analysis
-workflow. For a fast demonstration, this example clusters PBMC3k with
-fewer PCs and variable features than a full analysis.
+workflow. For a fast demonstration, this example clusters the real PBMC
+subset with fewer PCs and variable features than a full analysis.
 
 ``` r
 
@@ -23,10 +25,7 @@ library(Seurat)
 library(dplyr)
 library(ggplot2)
 
-pbmc <- sn_load_data("pbmc3k")
-#> INFO [2026-07-20 06:07:10] Initializing Seurat object for project: pbmc3k.
-#> INFO [2026-07-20 06:07:11] Running QC metrics for human.
-#> INFO [2026-07-20 06:07:11] Seurat object initialization complete.
+pbmc <- qs2::qs_read(real_data_file)
 
 pbmc <- sn_run_cluster(
   object = pbmc,
@@ -38,11 +37,13 @@ pbmc <- sn_run_cluster(
   species = "human",
   verbose = FALSE
 )
+
+table(pbmc$seurat_clusters, pbmc$real_response)
 ```
 
 ## Dimensional maps: labels, palettes, and rasterization
 
-[`sn_plot_dim()`](https://songqi.org/shennong/dev/reference/sn_plot_dim.md)
+[`sn_plot_dim()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_dim.md)
 is the default map for categorical metadata. It hides axes by default,
 chooses a practical point size from the number of cells, and uses a
 named palette registry instead of requiring every script to hand-code
@@ -57,23 +58,15 @@ sn_plot_dim(
   label = TRUE,
   label_halo = FALSE,
   palette = "Paired",
-  title = "PBMC3k clusters"
+  title = "Kotliarov PBMC clusters"
 )
 ```
-
-![](visualization_files/figure-html/plot-dim-1.png)
 
 When you need colors programmatically, use the same registry directly.
 
 ``` r
 
 sn_list_palettes()
-```
-
-![](visualization_files/figure-html/palette-api-1.png)
-
-``` r
-
 
 cluster_cols <- sn_get_palette(
   palette = "Paired",
@@ -82,13 +75,11 @@ cluster_cols <- sn_get_palette(
 )
 
 cluster_cols
-#>  [1] "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C"
-#>  [7] "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A"
 ```
 
 ## Feature maps: expression and density modes
 
-[`sn_plot_feature()`](https://songqi.org/shennong/dev/reference/sn_plot_feature.md)
+[`sn_plot_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_feature.md)
 covers standard expression maps and density-style maps. The same
 function handles legends, shared scales, rasterization, and panel
 sizing. Rasterization is enabled by default; when `ggrastr` is available
@@ -110,8 +101,6 @@ sn_plot_feature(
 )
 ```
 
-![](visualization_files/figure-html/plot-feature-expression-1.png)
-
 Density mode is useful when expression is sparse and you want to
 emphasize where a marker-defined state sits in the embedding.
 
@@ -127,11 +116,40 @@ sn_plot_feature(
 )
 ```
 
+The matched ADT assay can be shown on the WNN embedding after the real
+protein counts have been CLR-normalized by the multimodal workflow.
+
+``` r
+
+pbmc_cite <- sn_run_multimodal(
+  object = qs2::qs_read(real_data_file),
+  method = "wnn",
+  assay = "RNA",
+  adt_assay = "ADT",
+  nfeatures = 1500,
+  dims = 1:15,
+  adt_dims = 1:15,
+  resolution = 0.6,
+  species = "human",
+  verbose = FALSE
+)
+
+sn_plot_feature(
+  object = pbmc_cite,
+  features = c("CD3-PROT", "CD19-PROT", "CD14-PROT"),
+  assay = "ADT",
+  layer = "data",
+  reduction = "wnn.umap",
+  palette = "YlOrRd",
+  title = "Measured ADT proteins"
+)
+```
+
 ## Focused heatmaps for selected genes
 
 When the question is about a known marker panel, a heatmap is usually
 clearer than another embedding.
-[`sn_plot_heatmap()`](https://songqi.org/shennong/dev/reference/sn_plot_heatmap.md)
+[`sn_plot_heatmap()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_heatmap.md)
 validates the requested genes and can draw either cell-level or
 group-averaged heatmaps. The default `mode = "cells"` follows Seurat’s
 heatmap backend but hides cell names and ticks, uses an 8 pt group
@@ -149,8 +167,6 @@ sn_plot_heatmap(
 )
 ```
 
-![](visualization_files/figure-html/plot-heatmap-1.png)
-
 Use `mode = "average"` when the comparison is about the group-level
 pattern rather than every individual cell. This averages expression
 within each group and then z-scores each gene by default, giving a
@@ -167,8 +183,6 @@ sn_plot_heatmap(
 )
 ```
 
-![](visualization_files/figure-html/plot-heatmap-average-1.png)
-
 Use `split_by` when the same marker panel should be inspected separately
 across samples, conditions, or batches.
 
@@ -178,7 +192,7 @@ sn_plot_heatmap(
   object = pbmc,
   features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
   group_by = "seurat_clusters",
-  split_by = "sample"
+  split_by = "real_response"
 )
 ```
 
@@ -189,48 +203,57 @@ maps to sample-level summaries without switching visual grammar.
 
 ``` r
 
-pbmc$sample <- rep(paste0("donor", 1:6), length.out = ncol(pbmc))
-pbmc$condition <- ifelse(pbmc$sample %in% paste0("donor", 1:3), "control", "stim")
-
 sn_plot_violin(
   object = pbmc,
-  features = c("nFeature_RNA", "percent.mt"),
-  group_by = "condition",
+  features = c("nFeature_RNA", "pctMT"),
+  group_by = "real_response",
   palette = "Set2"
 )
-```
-
-![](visualization_files/figure-html/plot-violin-box-1.png)
-
-``` r
-
 
 qc_summary <- pbmc[[]] |>
-  dplyr::group_by(sample, condition) |>
+  dplyr::group_by(real_sample, real_response) |>
   dplyr::summarise(
     median_features = median(nFeature_RNA),
-    median_mito = median(percent.mt),
+    median_mito = median(pctMT),
     .groups = "drop"
   )
 
+head(qc_summary)
+
 sn_plot_boxplot(
   qc_summary,
-  x = condition,
+  x = real_response,
   y = median_features,
   y_label = "Median detected genes",
   panel_widths = 80,
   panel_heights = 70
 )
-```
 
-![](visualization_files/figure-html/plot-violin-box-2.png)
+# The canonical distribution entry handles tables or Seurat metadata/features.
+sn_plot_distribution(
+  qc_summary,
+  features = c("median_features", "median_mito"),
+  group_by = "real_response",
+  view = "box",
+  show_points = TRUE
+)
+
+# Each point is now one biological sample, not one cell.
+sn_plot_association(
+  qc_summary,
+  x = "median_features",
+  y = "median_mito",
+  group_by = "real_response",
+  method = "spearman"
+)
+```
 
 ## Marker dot plots from stored DE results
 
-The DE workflow can store markers under `object@misc$de_results`. Once
-stored, `sn_plot_dot(features = "top_markers")` can reuse that result
-directly instead of asking users to manually copy marker lists between
-scripts.
+The DE workflow stores markers in the canonical Shennong result
+registry. Once stored, `sn_plot_dot(features = "top_markers")` can reuse
+that result directly instead of asking users to manually copy marker
+lists between scripts.
 
 ``` r
 
@@ -239,7 +262,7 @@ pbmc <- sn_find_de(
   analysis = "markers",
   group_by = "seurat_clusters",
   layer = "data",
-  store_name = "cluster_markers",
+  result_id = "cluster_markers",
   return_object = TRUE,
   verbose = FALSE
 )
@@ -247,14 +270,33 @@ pbmc <- sn_find_de(
 sn_plot_dot(
   x = pbmc,
   features = "top_markers",
-  de_name = "cluster_markers",
+  result_id = "cluster_markers",
   group_by = "seurat_clusters",
   n = 4,
   palette = "Purples"
 )
 ```
 
-![](visualization_files/figure-html/plot-dot-1.png)
+## One result-aware plotting interface
+
+Analysis-specific plotters remain available, but new code can use one
+stable contract: `object`, `analysis_type`, `result_id`, and `view`.
+Direct result objects carry their own analysis type. For a Seurat
+object, omitted identifiers are inferred only when the stored choice is
+unambiguous.
+
+``` r
+
+sn_list_plot_methods("de")
+sn_list_results(pbmc, type = "de")
+
+sn_plot_result(
+  pbmc,
+  analysis_type = "de",
+  result_id = "cluster_markers",
+  view = "volcano"
+)
+```
 
 For a curated marker panel, pass a named list. Each list element becomes
 a free-width facet, so marker families remain visually separated even
@@ -275,37 +317,160 @@ sn_plot_dot(
 )
 ```
 
-![](visualization_files/figure-html/plot-dot-groups-1.png)
+## Metadata-driven composition plots
 
-## Composition plots for sample-level summaries
-
-[`sn_calculate_composition()`](https://songqi.org/shennong/dev/reference/sn_calculate_composition.md)
-creates the table;
-[`sn_plot_composition()`](https://songqi.org/shennong/dev/reference/sn_plot_composition.md)
-displays it. Keeping those steps separate makes the denominator and
-grouping explicit.
+[`sn_plot_composition()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_composition.md)
+can calculate the plot-ready composition directly from a Seurat object’s
+metadata. The explicit two-step route through
+[`sn_calculate_composition()`](https://zerostwo.github.io/shennong/dev/reference/sn_calculate_composition.md)
+remains useful when you want to inspect or export the denominator table
+before plotting.
 
 ``` r
 
 composition <- sn_calculate_composition(
   x = pbmc,
-  group_by = "sample",
+  group_by = "real_sample",
   variable = "seurat_clusters",
   measure = "both",
   min_cells = 10
 )
 
 sn_plot_composition(
-  composition,
-  x = sample,
+  pbmc,
+  x = real_sample,
   fill = seurat_clusters,
-  y = proportion,
   position = "stack",
   palette = "Paired"
 )
 ```
 
-![](visualization_files/figure-html/plot-composition-1.png)
+For condition-level inference, each biological sample should contribute
+one proportion. `sample_boxplot` shows those observations directly;
+`sample_bar` shows their mean or median with SD/SE error bars. Cell
+types absent from a retained sample are represented as zero rather than
+silently dropped.
+
+``` r
+
+sn_plot_composition(
+  pbmc,
+  x = real_response,
+  fill = seurat_clusters,
+  type = "sample_boxplot",
+  sample_by = "real_sample",
+  show_points = TRUE
+)
+```
+
+Alluvial/Sankey-style plots trace counts through two or more metadata
+levels. They use ggplot2 directly; no optional Sankey backend is
+required.
+
+``` r
+
+sn_plot_sankey(
+  pbmc, flow_by = c("real_response", "seurat_clusters"), style = "A"
+)
+```
+
+For cohort metadata repeated on every cell, `unit_by` prevents donor
+counts or histograms from counting cells as independent donors, for
+example
+`sn_plot_composition(seu, x = age, type = "histogram", unit_by = "donor")`.
+
+## Dedicated composition functions and Sankey presets
+
+Use column-name strings throughout the composition family. Strings held
+in variables work too; no
+[`aes()`](https://ggplot2.tidyverse.org/reference/aes.html) or unquoted
+column expressions are needed.
+
+| Unified `type` | Dedicated entry point |
+|----|----|
+| `"sankey"` / `"alluvial"` | [`sn_plot_sankey()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_sankey.md) |
+| `"bar"` / `"stacked_bar"` | [`sn_plot_bar()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_bar.md) |
+| `"sample_bar"` / `"errorbar"` | [`sn_plot_sample_bar()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_sample_bar.md) |
+| `"sample_boxplot"` | [`sn_plot_sample_boxplot()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_sample_boxplot.md) |
+| `"histogram"` | [`sn_plot_histogram()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_histogram.md) |
+
+These entry points share the same counting, replicate-aware summaries
+and figure metadata as
+[`sn_plot_composition()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_composition.md).
+The existing
+[`sn_plot_barplot()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_barplot.md)
+and
+[`sn_plot_boxplot()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_boxplot.md)
+remain generic numeric-data plotters.
+
+``` r
+
+sn_plot_bar(pbmc, x_by = "real_sample", fill_by = "seurat_clusters")
+sn_plot_sample_bar(pbmc, x_by = "real_response", fill_by = "seurat_clusters",
+                   sample_by = "real_sample", errorbar = "se")
+sn_plot_sample_boxplot(pbmc, x_by = "real_response", fill_by = "seurat_clusters",
+                       sample_by = "real_sample")
+sn_plot_histogram(pbmc, x_by = "nCount_RNA", bins = 30)
+```
+
+The unified equivalent accepts the same selectors, e.g.
+`sn_plot_composition(pbmc, x_by = "real_sample", fill_by = "seurat_clusters")`.
+Legacy `x`, `y`, `fill`, and facet mappings remain compatible there, but
+cannot be combined with their `*_by` replacements. Dedicated functions
+accept only string selectors. For summarized weights use
+`y_by = "count"` (or your numeric column name) on a data frame; Seurat
+inputs count individual cells.
+
+| `style` | Layout | Default flow colors |
+|----|----|----|
+| `"A"` | Separated hierarchy; two or more stages | First stage |
+| `"B"` | Left/right annotation comparison with brackets; two stages | Final stage |
+| `"C"` | Top/bottom composition, colored bars and pies; two stages | First stage |
+
+A retains the `sankey_layout = "expanded"` option: extra node whitespace
+makes axes with more categories taller without changing count widths. B
+uses tighter spacing and external brackets. Both accept
+`axis_labels = c("Original", "Final")`. All styles retain independent
+factor order: top-to-bottom in A/B, left-to-right in C. Character
+columns retain first appearance order.
+
+``` r
+
+sn_plot_sankey(pbmc, flow_by = c("real_response", "seurat_clusters"),
+               style = "C", show_legend = FALSE)
+```
+
+For annotation comparisons and hierarchies, substitute your metadata
+columns:
+
+``` r
+
+sn_plot_sankey(seurat_obj,
+  flow_by = c("cell_type_level1", "cell_type_level2"),
+  fill_by = "cell_type_level1", style = "A", sankey_layout = "expanded")
+sn_plot_sankey(seurat_obj,
+  flow_by = c("original_label", "final_annotation"), style = "B",
+  axis_labels = c("Original label", "Final annotation"))
+sn_plot_sankey(seurat_obj,
+  flow_by = c("age_group", "cell_type"), style = "C",
+  palette = c(Young = "#7F8C8D", Aged = "#55A5D8"),
+  facet_row_by = "compartment", show_legend = FALSE)
+```
+
+C pies have equal size and show each target category’s source-group
+proportions, computed from the same retained weights as the ribbons
+within each facet. Use `show_pies = FALSE` to omit them and
+`node_palette` to color target bars independently. C requires
+source-based `fill_by` so ribbon and pie colors agree. Each C facet is
+scaled to the same horizontal span; widths encode relative composition
+within a facet, not comparable absolute counts between facets. C uses
+`aspect_ratio` as the fixed coordinate ratio (default 0.45) so pies
+remain circular. `show_stratum_boxes = TRUE` outlines its colored node
+bars.
+
+Missing paths are excluded; replace missing annotations with `"Unknown"`
+to retain them. Use a taller/wider export when many or long labels need
+more room.
 
 ## Standard ggplot2 still fits
 
@@ -315,13 +480,22 @@ its compact theme is a good final layer for manuscript-style figures.
 
 ``` r
 
-condition_cols <- sn_get_palette("Set2", n = 2, palette_type = "discrete")
-names(condition_cols) <- c("control", "stim")
+response_levels <- sort(unique(qc_summary$real_response))
+response_cols <- sn_get_palette(
+  "Set2",
+  n = length(response_levels),
+  palette_type = "discrete"
+)
+names(response_cols) <- response_levels
 
-p <- ggplot(qc_summary, aes(x = condition, y = median_mito, fill = condition)) +
-  geom_col(width = 0.7) +
-  scale_fill_manual(values = condition_cols) +
-  labs(x = NULL, y = "Median mitochondrial percent")
+p <- ggplot(
+  qc_summary,
+  aes(x = real_response, y = median_mito, colour = real_response)
+) +
+  geom_boxplot(outlier.shape = NA, colour = "grey35") +
+  geom_jitter(width = 0.08, height = 0, size = 2) +
+  scale_colour_manual(values = response_cols) +
+  labs(x = NULL, y = "Per-sample median mitochondrial percent", colour = NULL)
 
 if (requireNamespace("catplot", quietly = TRUE)) {
   p <- p + catplot::theme_cat(panel_widths = 80, panel_heights = 70)
@@ -330,4 +504,25 @@ if (requireNamespace("catplot", quietly = TRUE)) {
 p
 ```
 
-![](visualization_files/figure-html/custom-ggplot-1.png)
+### Panel sizing
+
+All five dedicated composition entry points and
+[`sn_plot_composition()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_composition.md)
+accept `panel_widths` and `panel_heights` explicitly, in **points
+(pt)**. These control the drawing panel, excluding outer labels and
+margins, and do not require catplot. For example:
+
+``` r
+
+sn_plot_sankey(seurat_obj,
+  flow_by = c("cell_type_level1", "cell_type_level2"), style = "B",
+  panel_widths = 320, panel_heights = 400, show_legend = FALSE)
+```
+
+Scalars apply to every facet. A/B and the other composition plots also
+accept vectors for facet column widths and row heights. Style C requires
+scalar sizes so all pies remain circular. Supplying both sizes takes
+precedence over `aspect_ratio`. With one size and an aspect ratio the
+other is derived; C also derives a missing size using its default
+coordinate ratio. Export to a canvas large enough to include the panel
+plus labels, title, legend and margins.

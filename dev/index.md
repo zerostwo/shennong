@@ -1,232 +1,102 @@
 # Shennong
 
-`Shennong` is an experimental R package for single-cell, multimodal,
-spatial, and bulk transcriptomics workflows. Seurat objects remain the
-primary single-cell contract, while standalone bulk analyses accept
-ordinary matrices and `SummarizedExperiment` objects. The package
-provides reproducible entry points for preprocessing, integration,
-annotation, differential testing, biological-state modeling, publication
-figures, and interpretation-ready result storage.
+Shennong is an R package for single-cell, multimodal, spatial, and bulk
+transcriptomics. It brings preprocessing, clustering, differential
+analysis, pathway analysis, and plotting into a common workflow, and
+keeps analytical results with their inputs and parameters on a Seurat
+object.
 
-## Installation
+**New here?** Follow [Get
+started](https://zerostwo.github.io/shennong/dev/articles/get-started.html)
+for a complete example using bundled data. No data download or Python
+setup is needed. The package is in development, and documented API
+changes may be breaking.
 
-Install the current development version from GitHub:
+## Install
 
 ``` r
 
-install.packages("remotes")
+install.packages(c("remotes", "Seurat"))
 remotes::install_github("zerostwo/shennong")
-```
-
-List Shennong’s required and recommended R packages, then install the
-missing ones in one step:
-
-``` r
-
-deps <- sn_list_dependencies()
-deps
-
-sn_install_dependencies(scope = "required")
-```
-
-## One-Command Analysis Software
-
-Shennong provides stable `sn_*` entry points over R packages,
-command-line programs, and Python workflows. The table below summarizes
-the current analysis surface by data-analysis module. “Managed pixi/CLI”
-means Shennong prepares the input, runs the backend in a
-project-independent environment, and imports the result. “Adapter” means
-Shennong standardizes an existing result or a result returned by a
-user-supplied runner; the external software is not silently installed or
-executed.
-
-| Analysis module | Main Shennong entry point | Supported software and methods | Execution model |
-|----|----|----|----|
-| Data import and storage | [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md), [`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md), [`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md) | 10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT, rio, Zenodo and ShennongData | Native R and format adapters |
-| Preprocessing and QC | [`sn_normalize_data()`](https://songqi.org/shennong/dev/reference/sn_normalize_data.md), [`sn_find_doublets()`](https://songqi.org/shennong/dev/reference/sn_find_doublets.md), [`sn_remove_ambient_contamination()`](https://songqi.org/shennong/dev/reference/sn_remove_ambient_contamination.md) | Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper | Native R |
-| Clustering and batch integration | [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md) | Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering | Native R or managed pixi |
-| CITE-seq and multimodal integration | [`sn_run_multimodal()`](https://songqi.org/shennong/dev/reference/sn_run_multimodal.md) | Seurat WNN, totalVI, Coralysis and MMoCHi | Native R or managed pixi |
-| Reference mapping and simulation | [`sn_transfer_labels()`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md), [`sn_simulate()`](https://songqi.org/shennong/dev/reference/sn_simulate.md) | Seurat anchors, Coralysis, scANVI, scArches, scPoli and scDesign3 | Native R or managed pixi |
-| Cell-type annotation | [`sn_run_annotation()`](https://songqi.org/shennong/dev/reference/sn_run_annotation.md) | Shennong consensus, SingleR, CellTypist, Seurat label transfer, Symphony, scmap and scANVI, with Cell Ontology mapping | Native R, CLI or managed pixi |
-| Marker and differential-expression analysis | [`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md) | Single-cell Seurat tests including Wilcoxon and COSG; pseudobulk and standalone bulk DE with DESeq2, edgeR, limma/limma-voom and dream/variancePartition | Native R; input type selects single-cell or bulk automatically; [`sn_find_bulk_de()`](https://songqi.org/shennong/dev/reference/sn_find_bulk_de.md) remains compatible |
-| Enrichment and regulatory activity | [`sn_enrich()`](https://songqi.org/shennong/dev/reference/sn_enrich.md), [`sn_run_regulatory_activity()`](https://songqi.org/shennong/dev/reference/sn_run_regulatory_activity.md) | clusterProfiler ORA/GSEA, GO, KEGG, MSigDB/msigdbr, decoupleR, DoRothEA and PROGENy | Native R |
-| Gene-set scoring and program discovery | [`sn_score_programs()`](https://songqi.org/shennong/dev/reference/sn_score_programs.md), [`sn_discover_programs()`](https://songqi.org/shennong/dev/reference/sn_discover_programs.md) | UCell, AUCell, GSVA, ssGSEA, sparse mean scoring, multi-restart NMF, cNMF and Hotspot | Native R; cNMF/Hotspot adapters |
-| Gene-regulatory networks | [`sn_run_grn()`](https://songqi.org/shennong/dev/reference/sn_run_grn.md) | GENIE3, pySCENIC, R SCENIC and GRNBoost2/arboreto | Native R for GENIE3; external-result adapters for SCENIC/GRNBoost2 |
-| Trajectory and cell dynamics | [`sn_run_trajectory()`](https://songqi.org/shennong/dev/reference/sn_run_trajectory.md), [`sn_run_velocity()`](https://songqi.org/shennong/dev/reference/sn_run_velocity.md), [`sn_run_fate()`](https://songqi.org/shennong/dev/reference/sn_run_fate.md) | Slingshot, Monocle 3, Palantir, tradeSeq, scVelo, RegVelo and CellRank | Native R or managed pixi |
-| Differential abundance and state prioritization | [`sn_test_abundance()`](https://songqi.org/shennong/dev/reference/sn_test_abundance.md), [`sn_prioritize_states()`](https://songqi.org/shennong/dev/reference/sn_prioritize_states.md) | Propeller/speckle, Milo/miloR, scCODA/pertpy, sample-aware permutation, Augur-inspired prioritization, Scissor and RareQ | Native R, managed runner or adapter |
-| Cell-cell communication | [`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md) | LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus | Native R or managed pixi |
-| CNV and malignant-state analysis | [`sn_run_cnv()`](https://songqi.org/shennong/dev/reference/sn_run_cnv.md) | infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries | Managed pixi or native R |
-| Metabolic analysis | [`sn_run_metabolism()`](https://songqi.org/shennong/dev/reference/sn_run_metabolism.md) | UCell, GSVA, ssGSEA, mean scoring, scMetabolism, scFEA and Compass | Native R; scFEA/Compass runner-result adapters |
-| Spatial transcriptomics | [`sn_run_spatial()`](https://songqi.org/shennong/dev/reference/sn_run_spatial.md) | Moran’s I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony | Native R, managed pixi or adapter |
-| Bulk transcriptomics and clinical analysis | [`sn_run_bulk()`](https://songqi.org/shennong/dev/reference/sn_run_bulk.md), [`sn_deconvolve_bulk()`](https://songqi.org/shennong/dev/reference/sn_deconvolve_bulk.md) | edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, survival/Cox, BayesPrism and CIBERSORTx | Native R or local container backend |
-| Integration diagnostics | [`sn_assess_integration()`](https://songqi.org/shennong/dev/reference/sn_assess_integration.md) | LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE | Native R |
-| Publication figures and reporting | [`sn_figure_spec()`](https://songqi.org/shennong/dev/reference/sn_figure_spec.md), [`sn_export_figure_bundle()`](https://songqi.org/shennong/dev/reference/sn_export_figure_bundle.md), [`sn_write_results()`](https://songqi.org/shennong/dev/reference/sn_write_results.md) | ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation | Native R with optional LLM provider |
-
-All methods shipped in `inst/methods/` currently have an implemented
-Shennong entry point or explicit adapter. Optional R packages,
-command-line programs, pixi environments, credentials, references, and
-model files are still required when the selected backend depends on
-them. Inspect the registry and the current machine before starting a
-workflow:
-
-``` r
-
-# Every registered backend and whether it can run in the current session
-sn_list_methods()
-sn_list_methods(task = "trajectory")
-sn_list_methods(available = TRUE)
-
-# Runtime, dependency, install action, inputs and outputs for one backend
-sn_method_status("cellrank", task = "fate")
-
-# Install missing R dependencies or prepare a managed Python environment
-sn_install_dependencies(scope = "recommended")
-sn_prepare_pixi_environment("trajectory", install_environment = TRUE)
-```
-
-## Agent And MCP Integration
-
-Shennong ships installable Agent Skills plus a read-only MCP server. The
-MCP surface lets an agent discover registered methods, inspect exact
-installed R help, and retrieve workflow recipes; it does not execute
-arbitrary R code or modify analysis files.
-
-``` r
-
-# Install all packaged Shennong usage skills for local agents.
-sn_install_codex_skill(path = "~/.agents/skills", type = "package_skills")
-
-# Use this command/argument pair in any stdio-capable MCP client.
-sn_mcp_server_config()
-
-# Equivalent direct server command:
-# Rscript -e 'Shennong::sn_mcp_server()'
-```
-
-## Built-In Example Data
-
-The package ships a small built-in PBMC example derived from the
-`pbmc1k` and `pbmc3k` assets:
-
-- `pbmc_small`: a Seurat object with sample metadata
-- `pbmc_small_raw`: a matching raw count matrix with extra droplets
-
-For larger example datasets,
-[`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
-can still download the full PBMC references on demand.
-
-## Quick Start
-
-``` r
-
 library(Shennong)
+```
 
-data("pbmc_small", package = "Shennong")
+Install optional backends only for the workflows you need. Use
+[`sn_list_methods()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_methods.md)
+and
+[`sn_get_method_status()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_method_status.md)
+to inspect availability; [Choose a
+backend](https://zerostwo.github.io/shennong/dev/articles/method-catalog.html)
+lists methods and their execution requirements.
 
-pbmc <- sn_filter_cells(
-  pbmc,
-  features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
-  plot = FALSE
+## A first analysis
+
+This small example uses PBMC counts bundled with SeuratObject. Its
+clusters illustrate the API and are not cell-type annotations or
+condition-level tests.
+
+``` r
+
+data("pbmc_small", package = "SeuratObject")
+pbmc <- SeuratObject::CreateSeuratObject(
+  SeuratObject::GetAssayData(pbmc_small, assay = "RNA", layer = "counts")
 )
-pbmc <- sn_filter_genes(pbmc, min_cells = 3, plot = FALSE)
 pbmc <- sn_run_cluster(
-  pbmc,
-  normalization_method = "seurat",
-  resolution = 0.6
-)
-
-sn_plot_dim(pbmc, group_by = "seurat_clusters", label = TRUE)
-```
-
-## Integration Example
-
-The same built-in PBMC example can be used for batch-aware integration:
-
-``` r
-
-pbmc_integrated <- sn_run_cluster(
-  pbmc,
-  batch = "sample",
-  normalization_method = "seurat",
-  resolution = 0.6
-)
-
-sn_plot_dim(pbmc_integrated, group_by = "sample")
-sn_plot_dim(pbmc_integrated, group_by = "seurat_clusters", label = TRUE)
-```
-
-You can summarize integration quality and surface rare or difficult
-groups directly from the integrated object:
-
-``` r
-
-metrics <- sn_assess_integration(
-  pbmc_integrated,
-  batch = "sample",
-  cluster = "seurat_clusters",
-  reduction = "harmony",
-  baseline_reduction = "pca"
-)
-
-metrics$summary
-metrics$per_group$isolated_label_score
-metrics$per_group$cluster_entropy
-metrics$per_group$cluster_purity
-metrics$per_group$challenging_groups
-```
-
-## Differential Expression And Enrichment
-
-``` r
-
-pbmc <- sn_find_de(
-  pbmc,
-  analysis = "markers",
-  group_by = "seurat_clusters",
-  layer = "data",
-  store_name = "cluster_markers",
-  return_object = TRUE,
+  pbmc, integration_method = "unintegrated",
+  nfeatures = 100, npcs = 10, dims = 1:10, resolution = 1.2, seed = 717,
   verbose = FALSE
 )
+sn_plot_dim(pbmc, reduction = "umap", group_by = "seurat_clusters")
 
-pbmc <- sn_enrich(
-  x = pbmc,
-  source_de_name = "cluster_markers",
-  gene_clusters = gene ~ cluster,
-  database = c("GOBP", "H"),
-  species = "human",
-  store_name = "cluster_pathways",
-  pvalue_cutoff = 0.05
+pbmc <- sn_find_de(
+  pbmc, analysis = "markers", group_by = "seurat_clusters",
+  result_id = "markers", verbose = FALSE
 )
+sn_get_de_result(pbmc, "markers", direction = "up", top_n = 3)
 ```
 
-The same
-[`sn_find_de()`](https://songqi.org/shennong/dev/reference/sn_find_de.md)
-entry point accepts a feature-by-sample matrix, list, or
-`SummarizedExperiment` for standalone bulk analysis:
+`top_n = 3` selects up to three genes **per group**. Use
+`top_scope = "all"` for three genes overall. Keep the complete result
+for later use:
 
 ``` r
 
-bulk_de <- sn_find_de(
-  counts,
-  metadata = sample_data,
-  design = ~ batch + condition,
-  contrast = c("condition", "tumor", "normal"),
-  method = "auto"
-)
+sn_list_results(pbmc, type = "de")
+result <- sn_get_result(pbmc, type = "de", result_id = "markers")
+head(result$tables$primary)
+saveRDS(pbmc, "pbmc-analysed.rds")
 ```
 
-## Documentation
+Assign an object-returning workflow back to `pbmc` to retain its result.
+Use `return_object = FALSE` on DE, enrichment, scoring, or Milo to
+receive a unified result directly. See [Parameters and
+results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html)
+for return values, result IDs, filters, and safe reruns.
 
-Longer workflow articles are available in the package site and
-vignettes, including:
+## Find the right guide
 
-- clustering and integration
-- layer-aware preprocessing
-- stored-result interpretation workflows
+| I want to… | Guide |
+|----|----|
+| Learn the core workflow with runnable examples | [Get started](https://zerostwo.github.io/shennong/dev/articles/get-started.html) |
+| Understand parameters, grouping, and stored results | [Parameters and results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html) |
+| Import data, filter cells, and normalize | [Data IO](https://zerostwo.github.io/shennong/dev/articles/data-io-projects.html) · [Preprocessing](https://zerostwo.github.io/shennong/dev/articles/preprocessing-qc.html) |
+| Cluster cells or integrate batches | [Clustering and integration](https://zerostwo.github.io/shennong/dev/articles/clustering.html) |
+| Find markers, compare conditions, and enrich pathways | [Differential expression and enrichment](https://zerostwo.github.io/shennong/dev/articles/differential-expression.html) |
+| Score signatures or annotate cells | [Annotation and pathways](https://zerostwo.github.io/shennong/dev/articles/annotation-pathways.html) |
+| Compare composition or neighborhood abundance | [Composition and Milo](https://zerostwo.github.io/shennong/dev/articles/composition-analysis.html) |
+| Plot expression and analytical results | [Visualization](https://zerostwo.github.io/shennong/dev/articles/visualization.html) |
+| Work with spatial, bulk, or cell dynamics data | [All workflows](https://zerostwo.github.io/shennong/dev/articles/index.html) |
+| Look up a specific function or backend | [Function reference](https://zerostwo.github.io/shennong/dev/reference/index.html) · [Backend catalog](https://zerostwo.github.io/shennong/dev/articles/method-catalog.html) |
 
-## Status
+The introductory examples run on bundled data. The larger real-data
+workflows state their required files and optional dependencies; they do
+not download study data during a normal website build. Use your own data
+with the documented input structure, or follow the [research workflow
+map](https://zerostwo.github.io/shennong/dev/articles/research-workflow-map.html)
+for the public-data narratives. Dataset discovery and materialization
+live in [ShennongData](https://github.com/zerostwo/shennong-data).
 
-`Shennong` is still experimental. The package currently prioritizes a
-clean and consistent workflow surface over backward compatibility across
-early versions.
+See the [release
+notes](https://zerostwo.github.io/shennong/dev/news/index.html) for
+breaking changes. Report reproducible problems in the [issue
+tracker](https://github.com/zerostwo/shennong/issues).

@@ -18,7 +18,8 @@ sn_calculate_pcr_batch(
   cells = NULL,
   max_cells = NULL,
   stratify_by = NULL,
-  seed = 717
+  seed = 717,
+  object = NULL
 )
 ```
 
@@ -68,6 +69,10 @@ sn_calculate_pcr_batch(
 
   Random seed used when `max_cells` triggers subsampling.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A one-row data frame containing the weighted batch_by variance explained
@@ -77,10 +82,12 @@ by the selected reduction and, when available, the baseline comparison.
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(
-  pbmc_small,
-  batch = "sample",
+  pbmc,
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )

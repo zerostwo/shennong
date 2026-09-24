@@ -11,7 +11,7 @@ sn_run_metabolism(
   object,
   method = c("geneset", "scmetabolism", "scfea", "compass"),
   signatures = NULL,
-  scoring_method = c("ucell", "gsva", "ssgsea", "mean"),
+  scoring_method = c("aucell", "ucell", "gsva", "ssgsea", "mean"),
   assay = NULL,
   layer = "data",
   sample_by = NULL,
@@ -20,7 +20,7 @@ sn_run_metabolism(
   contrast = NULL,
   species = NULL,
   min_genes = 3L,
-  store_name = "metabolism",
+  result_id = "metabolism",
   backend_control = list(),
   return_object = TRUE
 )
@@ -42,7 +42,9 @@ sn_run_metabolism(
 
 - scoring_method:
 
-  Gene-set scoring method for `method = "geneset"`.
+  Gene-set scoring method for `method = "geneset"`, and for
+  `method = "scmetabolism"` through `backend_control$scoring_method`;
+  `"aucell"` reproduces the upstream scMetabolism default.
 
 - assay, layer:
 
@@ -72,7 +74,7 @@ sn_run_metabolism(
 
   Minimum matched genes per pathway.
 
-- store_name:
+- result_id:
 
   Stored result name.
 

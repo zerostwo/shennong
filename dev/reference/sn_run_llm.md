@@ -20,7 +20,7 @@ sn_run_llm(
 - messages:
 
   A message list, typically from
-  [`sn_build_prompt()`](https://songqi.org/shennong/dev/reference/sn_build_prompt.md).
+  [`sn_build_prompt()`](https://zerostwo.github.io/shennong/dev/reference/sn_build_prompt.md).
 
 - provider:
 
@@ -59,7 +59,4 @@ sn_run_llm(
   messages = list(list(role = "user", content = "Summarize this result.")),
   provider = provider
 )
-#> $text
-#> [1] "received 1 messages"
-#> 
 ```

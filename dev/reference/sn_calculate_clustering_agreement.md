@@ -7,7 +7,12 @@ how well clustering preserves known cell identities.
 ## Usage
 
 ``` r
-sn_calculate_clustering_agreement(x, cluster_by = NULL, label_by = NULL)
+sn_calculate_clustering_agreement(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -24,6 +29,10 @@ sn_calculate_clustering_agreement(x, cluster_by = NULL, label_by = NULL)
 
   Metadata/data-frame column containing reference labels.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A one-row data frame with ARI and NMI.
@@ -36,6 +45,4 @@ meta <- data.frame(
   label = c("T", "T", "B", "B")
 )
 sn_calculate_clustering_agreement(meta, cluster_by = "cluster", label_by = "label")
-#>   cluster_column label_column n_cells ari nmi
-#> 1        cluster        label       4   1   1
 ```

@@ -7,10 +7,11 @@ Plot fitted dynamic-gene trends as a heatmap
 ``` r
 sn_plot_dynamic_heatmap(
   x,
-  name = NULL,
+  result_id = NULL,
   features = NULL,
   lineage = NULL,
-  scale_rows = TRUE
+  scale_rows = TRUE,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_dynamic_heatmap(
 
   A Seurat object or trajectory result.
 
-- name:
+- result_id:
 
-  Stored trajectory name.
+  Stored trajectory result_id.
 
 - features:
 
@@ -35,6 +36,10 @@ sn_plot_dynamic_heatmap(
 - scale_rows:
 
   Standardize each feature within lineage.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

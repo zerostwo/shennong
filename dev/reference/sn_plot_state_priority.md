@@ -5,7 +5,7 @@ Plot cell-state priority scores
 ## Usage
 
 ``` r
-sn_plot_state_priority(x, name = NULL, n = 30L)
+sn_plot_state_priority(x, result_id = NULL, n = 30L, object = NULL)
 ```
 
 ## Arguments
@@ -14,13 +14,17 @@ sn_plot_state_priority(x, name = NULL, n = 30L)
 
   A Seurat object or state-priority result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - n:
 
   Maximum states to show.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

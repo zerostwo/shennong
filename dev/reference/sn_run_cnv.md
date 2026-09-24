@@ -12,12 +12,13 @@ sn_run_cnv(
   method = c("infercnvpy", "copykat"),
   reference_cells = NULL,
   genome = NULL,
-  store_name = "cnv",
+  result_id = "cnv",
   reference_by = NULL,
   reference_cat = NULL,
   sample_by = NULL,
   assay = NULL,
   layer = NULL,
+  association_layer = NULL,
   malignant_threshold = 2,
   subclones = 2L,
   association_features = 50L,
@@ -45,7 +46,7 @@ sn_run_cnv(
   Species/genome label. Human and mouse are supported by the bundled
   inferCNVpy positions and CopyKAT adapter.
 
-- store_name:
+- result_id:
 
   Stored result name.
 
@@ -57,10 +58,21 @@ sn_run_cnv(
 
   Optional sample/patient metadata column.
 
-- assay, layer:
+- assay:
 
-  Expression assay and layer. CopyKAT should use counts; inferCNVpy
-  should use normalized data.
+  Expression assay used by the CNV backend.
+
+- layer:
+
+  Backend input layer. CopyKAT requires a raw or corrected count layer.
+  inferCNVpy requires a normalized, log-transformed Seurat
+  `"data"`/`"data.*"` layer and fails when one is unavailable.
+
+- association_layer:
+
+  Normalized expression layer used only for CNV-expression association.
+  When omitted, `"data"` is preferred and raw counts are never silently
+  reused for this correlation.
 
 - malignant_threshold:
 
@@ -77,7 +89,9 @@ sn_run_cnv(
 - backend_control:
 
   Named list forwarded to the selected backend. A `runner` function can
-  provide a custom backend adapter.
+  provide a custom backend adapter. CopyKAT dense materialization is
+  guarded by `max_dense_gb` (default 2 GiB) before each sample matrix is
+  converted.
 
 - return_object:
 

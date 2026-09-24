@@ -2,7 +2,7 @@
 
 `sn_run_multimodal()` is the explicit multimodal entry point for the
 CITE-seq workflows implemented by
-[`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md).
+[`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md).
 It forwards the requested WNN, totalVI, Coralysis, or MMoCHi method
 without changing the clustering return contract.
 
@@ -34,7 +34,7 @@ sn_run_multimodal(
 - ...:
 
   Additional arguments passed to
-  [`sn_run_cluster()`](https://songqi.org/shennong/dev/reference/sn_run_cluster.md).
+  [`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md).
 
 ## Value
 

@@ -16,7 +16,7 @@ sn_run_trajectory(
   start = NULL,
   end = NULL,
   lineages = NULL,
-  store_name = "trajectory",
+  result_id = "trajectory",
   dims = NULL,
   assay = NULL,
   counts_layer = "counts",
@@ -27,7 +27,9 @@ sn_run_trajectory(
   trend_features = NULL,
   trend_points = 100L,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE
 )
 ```
 
@@ -44,7 +46,8 @@ sn_run_trajectory(
 
 - reduction:
 
-  Reduction used for inference. Defaults to PCA, then UMAP or the first
+  Reduction used for inference. Monocle 3 defaults to an existing UMAP
+  reduction; other methods default to PCA, then UMAP or the first
   available reduction.
 
 - cluster_by:
@@ -61,7 +64,7 @@ sn_run_trajectory(
   Optional named list of expected cluster paths. Their endpoints
   constrain Slingshot and inferred paths are checked against them.
 
-- store_name:
+- result_id:
 
   Name used under the `trajectory` result type.
 
@@ -75,7 +78,8 @@ sn_run_trajectory(
 
 - counts_layer:
 
-  Raw-count layer used by tradeSeq.
+  Raw or corrected count layer used by tradeSeq. Values must be finite,
+  non-negative, and integer-valued.
 
 - test_dynamic:
 
@@ -106,11 +110,24 @@ sn_run_trajectory(
   Backend controls. Use named `slingshot`, `monocle3`, and `tradeSeq`
   argument lists for direct backends. Palantir accepts `runner` or
   `result`; the same explicit adapter boundary can override Monocle 3
-  for externally managed execution.
+  for externally managed execution. The direct Monocle 3 path rejects
+  terminal-cluster constraints and disconnected partitions that it
+  cannot faithfully encode as one lineage.
 
 - return_object:
 
   Return the updated object instead of the result.
+
+- seed:
+
+  Top-level reproducibility seed. Precedence: `seed` \>
+  `backend_control$seed` \> task default, and the resolved value is
+  stamped into result provenance.
+
+- verbose:
+
+  Top-level progress switch forwarded to backends through
+  `backend_control$verbose` when explicitly supplied.
 
 ## Value
 
@@ -122,7 +139,7 @@ A Seurat object or a unified trajectory result.
 if (FALSE) { # \dontrun{
 object <- sn_run_trajectory(
   object, reduction = "pca", cluster_by = "seurat_clusters",
-  start = "0", store_name = "development"
+  start = "0", result_id = "development"
 )
 result <- sn_get_result(object, "trajectory", "development")
 result$tables$cells

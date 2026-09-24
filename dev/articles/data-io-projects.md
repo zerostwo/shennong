@@ -1,24 +1,21 @@
 # Data input, output, and project setup
 
-Shennong is meant to make the first step of a single-cell project
-boring: find the data, read it with one function, add explicit sample
-metadata, and write reusable artifacts without changing APIs for every
-file type.
+Shennong begins after data distribution: it reads materialized files,
+adds explicit sample metadata, and writes reusable analysis artifacts
+without changing APIs for every file type. Dataset discovery, download,
+caching, and publication are handled by the separate `ShennongData`
+package.
 
-This article uses the package PBMC3k example throughout. To keep package
-checks and website builds independent of Zenodo availability, code
-chunks are shown by default and are evaluated only when you render with
-both `SHENNONG_RUN_VIGNETTES=true` and
-`SHENNONG_RUN_NETWORK_VIGNETTES=true`.
+This article uses a small, provenance-tracked public PBMC subset
+materialized under `SHENNONG_REAL_DATA_DIR`. The data are used locally
+for validation and pkgdown output but are intentionally not stored in
+the Shennong repository.
 
-## Start with PBMC3k
+## Start with materialized public data
 
-The package loader returns a Seurat object by default. If you need the
-original 10x H5 path instead, set `return_object = FALSE`; this is
-useful when you want to show exactly what was read from disk. You can
-also request several example datasets at once; filtered matrices are
-initialized separately and returned as one merged Seurat object with the
-source dataset stored in the `sample` metadata column.
+The local fixture is a Seurat object prepared from public data. Its
+acquisition manifest and checksums live alongside the ignored local data
+cache, while the analysis code remains reviewable here.
 
 ``` r
 
@@ -26,105 +23,67 @@ library(Shennong)
 library(Seurat)
 library(dplyr)
 
-pbmc <- sn_load_data(dataset = "pbmc3k")
+pbmc <- qs2::qs_read(file.path(
+  real_data_root,
+  "single-cell", "kotliarov_pbmc.qs2"
+))
 
-pbmc_h5 <- sn_load_data(
-  dataset = "pbmc3k",
-  return_object = FALSE
+fixture_summary <- data.frame(
+  cells = ncol(pbmc),
+  features = nrow(pbmc),
+  assays = paste(names(pbmc@assays), collapse = ", "),
+  biological_samples = length(unique(pbmc$real_sample)),
+  acquisition_batches = length(unique(pbmc$real_batch))
 )
-
-pbmc_h5
-
-pbmc_merged <- sn_load_data(dataset = c("pbmc1k", "pbmc3k"))
-table(pbmc_merged$sample)
+knitr::kable(fixture_summary)
 ```
 
-[`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md)
-uses the general Zenodo downloader underneath. Public Zenodo records do
-not need a token; pass `token = ...` only for restricted or private
-records that your account can access.
+## Use ShennongData for discovery and materialization
+
+Shennong does not wrap or re-export the data client. Use qualified
+`ShennongData::` calls so the ownership boundary is explicit, inspect
+the lazy query, and materialize only the assay/layer required by an
+analysis.
 
 ``` r
 
-public_h5 <- sn_download_zenodo(
-  record_id = "14884845",
-  files = "pbmc3k_filtered_feature_bc_matrix.h5"
+connection <- ShennongData::sn_connect(
+  url = "https://data.example.org",
+  set_default = FALSE
 )
 
-public_h5
-```
-
-The current Shennong public reprocessed-data collection is indexed by
-`shennong_index.json` on Zenodo. Use
-[`sn_list_datasets()`](https://songqi.org/shennong/dev/reference/sn_list_datasets.md)
-to discover the sample-level IDs, then pass one of those IDs to
-[`sn_load_data()`](https://songqi.org/shennong/dev/reference/sn_load_data.md).
-The study ZIP is cached locally, and only the requested sample file is
-extracted.
-
-``` r
-
-datasets <- sn_list_datasets()
-head(datasets[, c("dataset", "study_id", "organism", "technology")])
-
-sample_obj <- sn_load_data(dataset = datasets$dataset[[1]])
-sample_raw <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "raw")
-sample_metrics <- sn_load_data(dataset = datasets$dataset[[1]], matrix_type = "metrics")
-```
-
-## Use the Shennong Data Server lazily
-
-For resources exposed by a Shennong Data Server, `backend = "api"`
-returns a metadata-first `ShennongData` handle without downloading the
-full matrix. The wrapper creates a non-default connection for
-`server_url`, then uses the resource, assay, and layer contracts from
-ShennongData 0.2.
-
-``` r
-
-remote <- sn_load_data(
-  dataset = "toil",
-  backend = "api",
-  server_url = "https://data.example.org",
-  api_args = list(
-    assay = "rna",
-    layer = "expression"
-  )
+remote <- ShennongData::sn_load_data(
+  resource = "toil",
+  connection = connection
 )
 
-materialized <- sn_load_data(
-  dataset = "toil",
-  backend = "api",
-  server_url = "https://data.example.org",
-  lazy = FALSE,
-  api_args = list(
-    assay = "rna",
-    layer = "expression",
-    collect_args = list(allow_large = TRUE)
-  )
-)
+rna <- ShennongData::sn_assay(remote, assay = "rna", layer = "expression")
+ShennongData::sn_show_query(rna)
+materialized <- ShennongData::collect(rna, allow_large = TRUE)
 ```
 
-Keep `backend = "auto"` when local/Zenodo fallback is desired. Use
-`backend = "local"` when a workflow must never contact the data server.
+Pass `materialized` to
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md)
+or another Shennong analysis entry point. Data publication and cache
+policy remain in `ShennongData`, not the analysis package.
 
 ## Read once, then initialize with metadata
 
-[`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md)
 handles common tabular files, serialized objects, 10x matrices, H5/H5AD,
 GMT files, and Shennong’s custom dispatchers. For a 10x H5 matrix, you
 can read counts directly and then make the metadata decision explicit in
-[`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md).
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md).
 
 ``` r
 
-counts <- sn_read(pbmc_h5)
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+metadata <- pbmc[[]]
 
 pbmc <- sn_initialize_seurat_object(
   x = counts,
-  project = "pbmc3k_demo",
-  sample_name = "pbmc3k",
-  study = "10x_pbmc",
+  metadata = metadata,
+  project = "kotliarov_pbmc",
   species = "human"
 )
 
@@ -132,21 +91,20 @@ pbmc
 ```
 
 The important design choice is that provenance is not hidden in the
-project name. `sample_name`, `study`, and `species` are separate inputs,
-so downstream composition, integration, and interpretation steps can
-reuse them.
+project name. The materialized metadata retain the real sample and batch
+fields, while species is an explicit initialization input.
 
 ``` r
 
-head(pbmc[[]][, c("sample", "study", "nCount_RNA", "nFeature_RNA", "percent.mt")])
+head(pbmc[[]][, c("real_sample", "real_batch", "nCount_RNA", "nFeature_RNA", "percent.mt")])
 ```
 
 ## Discover 10x folders before reading them
 
 Real projects often start with several Cell Ranger outputs.
-[`sn_list_10x_paths()`](https://songqi.org/shennong/dev/reference/sn_list_10x_paths.md)
+[`sn_list_10x_paths()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_10x_paths.md)
 scans a directory tree and returns the paths Shennong can feed back into
-[`sn_initialize_seurat_object()`](https://songqi.org/shennong/dev/reference/sn_initialize_seurat_object.md).
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md).
 
 ``` r
 
@@ -168,18 +126,19 @@ metadata explicit after discovery.
 ## Write durable intermediate files
 
 Use
-[`sn_write()`](https://songqi.org/shennong/dev/reference/sn_write.md)
-and [`sn_read()`](https://songqi.org/shennong/dev/reference/sn_read.md)
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
+and
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md)
 together for analysis handoffs. The same API works for tables and
 serialized R objects; Shennong chooses the writer from the file
 extension.
 
 ``` r
 
-outdir <- sn_set_path(file.path(tempdir(), "shennong-pbmc3k-io"))
+outdir <- sn_set_path(file.path(tempdir(), "shennong-kotliarov-io"))
 
-metadata_path <- file.path(outdir, "pbmc3k_metadata.csv")
-object_path <- file.path(outdir, "pbmc3k_initialized.qs2")
+metadata_path <- file.path(outdir, "kotliarov_metadata.csv")
+object_path <- file.path(outdir, "kotliarov_initialized.qs2")
 
 metadata_export <- cbind(cell = rownames(pbmc[[]]), pbmc[[]])
 sn_write(metadata_export, metadata_path, row.names = FALSE)
@@ -198,15 +157,16 @@ pbmc_cached
 column. This avoids ad hoc `read.csv(..., row.names = ...)` calls that
 are easy to forget in later scripts.
 
-For large Seurat objects, keep bulky assay layers on disk with BPCells
-before serializing the Seurat object. The returned object keeps the same
-Seurat layer interface, but the selected matrices live in BPCells
-directories.
+For large Seurat objects, switch bulky assay layers to the BPCells
+backend before serializing the Seurat object. The returned object keeps
+the same Seurat assay/layer interface, but the selected matrices live in
+BPCells directories.
 
 ``` r
 
-pbmc <- sn_convert_bpcells(
+pbmc <- sn_set_layer_backend(
   pbmc,
+  backend = "bpcells",
   directory = file.path(outdir, "pbmc3k_bpcells"),
   layers = c("counts", "data"),
   overwrite = TRUE
@@ -215,39 +175,53 @@ pbmc <- sn_convert_bpcells(
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
 ```
 
-## Prepare a reusable Zenodo upload
-
-When an intermediate object or reference dataset should be reused by
-another project, upload the exact files and a versioned manifest to
-Zenodo with
-[`sn_upload_zenodo()`](https://songqi.org/shennong/dev/reference/sn_upload_zenodo.md).
-The default is draft-first: inspect the Zenodo draft, then rerun with
-`publish = TRUE` only when the record is ready.
+When an operation explicitly requires an in-memory sparse matrix, switch
+only the required layer back. This materializes the complete selected
+layer as a `dgCMatrix`; it does not delete the external BPCells matrix
+directory.
 
 ``` r
 
-zenodo_plan <- sn_upload_zenodo(
-  files = c(metadata_path, object_path),
-  title = "PBMC3k initialized Shennong example",
-  creators = "Duan, Songqi",
-  version = "2026.05.04",
-  sandbox = TRUE,
-  dry_run = TRUE
+pbmc <- sn_set_layer_backend(
+  pbmc,
+  backend = "memory",
+  assays = "RNA",
+  layers = "decontaminated_counts"
 )
-
-zenodo_plan$files[, c("file", "size", "md5")]
-zenodo_plan$manifest_path
 ```
 
-In a real upload, set `ZENODO_TOKEN` or `ZENODO_SANDBOX_TOKEN` and
-remove `dry_run = TRUE`. The uploaded `shennong_zenodo_manifest.json`
-records the dataset version, Shennong version, file sizes, and checksums
-so future analyses can verify they are reusing the same data release.
+[`sn_convert_bpcells()`](https://zerostwo.github.io/shennong/dev/reference/sn_convert_bpcells.md)
+remains a compatibility wrapper for
+`sn_set_layer_backend(backend = "bpcells")`.
+
+[`sn_initialize_seurat_object()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_seurat_object.md)
+also accepts a BPCells `IterableMatrix` directly and preserves that
+on-disk backend instead of converting the complete matrix to an
+in-memory sparse matrix.
+
+``` r
+
+counts <- BPCells::open_matrix_dir("data/processed/pbmc_counts.bpcells")
+pbmc <- sn_initialize_seurat_object(
+  x = counts,
+  metadata = cell_metadata,
+  project = "PBMC"
+)
+inherits(SeuratObject::LayerData(pbmc, layer = "counts"), "IterableMatrix")
+```
+
+## Publish reusable data outside the analysis package
+
+When an intermediate object or reference dataset should be shared, hand
+the exact files and their checksums to the `ShennongData` publication
+workflow. Shennong intentionally stops at producing validated analysis
+artifacts; it no longer owns repository discovery, download, caching,
+credentials, or remote publication state.
 
 ## Add metadata exported from AnnData
 
 When a Python workflow exports AnnData metadata or embeddings, use
-[`sn_add_data_from_anndata()`](https://songqi.org/shennong/dev/reference/sn_add_data_from_anndata.md)
+[`sn_add_data_from_anndata()`](https://zerostwo.github.io/shennong/dev/reference/sn_add_data_from_anndata.md)
 to merge those files back into the Seurat object with one explicit
 import step.
 
@@ -266,7 +240,7 @@ instead of leaving them as undocumented slot edits.
 ## Initialize a governed analysis project
 
 For a new analysis repository,
-[`sn_initialize_project()`](https://songqi.org/shennong/dev/reference/sn_initialize_project.md)
+[`sn_initialize_project()`](https://zerostwo.github.io/shennong/dev/reference/sn_initialize_project.md)
 creates a lightweight project scaffold with Shennong/Codex-oriented
 governance files. Use it when the analysis itself needs to be
 reproducible, not just the R object.
@@ -286,7 +260,10 @@ required, recommended, or optional for your workflow.
 
 sn_check_version()
 
-sn_install_shennong(source = "github", ref = "main")
+sn_install_shennong(channel = "github", ref = "main")
+
+# From a local Shennong source checkout:
+sn_install_shennong(channel = "local", source = ".")
 
 deps <- sn_list_dependencies()
 dplyr::count(deps, scope, source)
@@ -294,11 +271,23 @@ dplyr::count(deps, scope, source)
 sn_install_dependencies(scope = "recommended")
 ```
 
-For serialized project objects, prefer `.qs2` files in new workflows.
-Legacy `.qs` files remain supported when the archived `qs` package is
-already present in the active R library, but
-[`sn_install_dependencies()`](https://songqi.org/shennong/dev/reference/sn_install_dependencies.md)
-does not attempt to install `qs` on current R releases.
+Serialized project objects use `.qs2` and the `qs2` package:
+
+``` r
+
+sn_write(object, "data/processed/object.qs2")
+object <- sn_read("data/processed/object.qs2")
+```
+
+Legacy `.qs` import/export and its automatic installer have been
+removed.
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md)
+and
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
+reject that format before IO or installation, even if an older
+serializer is installed. Convert existing files in an older compatible
+environment before using them here; changing the extension alone does
+not convert the serialization format.
 
 The package also ships Codex skill assets for Shennong-style analysis
 projects. These helpers expose their installed locations without making
@@ -308,4 +297,20 @@ users search the package directory manually.
 
 sn_get_codex_skill_path()
 sn_install_codex_skill(destination = ".codex/skills")
+```
+
+## Preserve matrix objects during handoff
+
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
+preserves matrix classes and dimnames in RDS, RData, and QS2. CSV and
+other tabular formats continue to write tables. Dense numeric and sparse
+matrices can be written directly to BPCells directories or 10x HDF5:
+
+``` r
+
+counts <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "counts")
+sn_write(counts, "counts.rds", auto_install = FALSE)
+stopifnot(identical(readRDS("counts.rds"), counts))
+sn_write(counts, "counts.h5", auto_install = FALSE)
+sn_write(counts, "counts.bpcells", auto_install = FALSE)
 ```

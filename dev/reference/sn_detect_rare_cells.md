@@ -30,7 +30,8 @@ sn_detect_rare_cells(
   sca_n_comps = 20,
   sca_iters = 3,
   sca_nbhd_size = 15,
-  sca_model = "wilcoxon"
+  sca_model = "wilcoxon",
+  max_dense_gb = 2
 )
 ```
 
@@ -140,6 +141,11 @@ sn_detect_rare_cells(
 
   Scoring model passed to SCA.
 
+- max_dense_gb:
+
+  Maximum estimated peak GiB allowed before a rare-cell backend
+  materializes the complete expression matrix as dense.
+
 ## Value
 
 A data frame with one row per cell, including a `rare_score` column and
@@ -149,8 +155,10 @@ a logical `rare_cell` flag.
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
-rare_tbl <- sn_detect_rare_cells(pbmc_small, method = "gini")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
+rare_tbl <- sn_detect_rare_cells(pbmc, method = "gini")
 head(rare_tbl)
 } # }
 ```

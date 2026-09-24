@@ -2,80 +2,658 @@
 
 Shennong’s spatial workflow keeps coordinates, graphs, statistics,
 backend artifacts, and plots connected through the common result
-contract. Coordinate columns may be supplied explicitly or discovered
-from common metadata names.
+contract. This article uses the locally materialized two-section human
+lymph-node Visium fixture under `SHENNONG_REAL_DATA_DIR` and performs
+the core analysis on the fresh-frozen section.
 
-## Spatial features
+The analysis runs only when the fixture exists and
+`SHENNONG_RUN_VIGNETTES=true`. Normal package checks therefore knit the
+article without downloading data. Optional R or external adapter
+backends have additional, explicit gates and are never replaced with
+synthetic output.
+
+## Load the real sections and preserve their coordinates
+
+The fixture retains the original Seurat spatial images. Shennong’s
+statistical workflow consumes two finite metadata columns, so we copy
+the matching tissue coordinates into named metadata fields without
+altering the count matrix or histology image.
 
 ``` r
 
-object <- sn_find_spatial_features(
-  object,
-  method = "morans_i",
-  spatial_cols = c("spatial_x", "spatial_y"),
-  backend_control = list(k = 6, n_permutations = 999, seed = 717)
+library(Shennong)
+library(dplyr)
+
+spatial_artifact <- qs2::qs_read(spatial_fixture)
+if (!is.list(spatial_artifact$sections) || !length(spatial_artifact$sections)) {
+  stop("The Visium fixture does not contain named spatial sections.", call. = FALSE)
+}
+
+tibble::tibble(
+  section = names(spatial_artifact$sections),
+  cells = vapply(spatial_artifact$sections, ncol, numeric(1)),
+  features = vapply(spatial_artifact$sections, nrow, numeric(1)),
+  platform = vapply(
+    spatial_artifact$sections,
+    function(section) paste(unique(as.character(section$real_platform)), collapse = ", "),
+    character(1)
+  )
 )
 
-svg <- sn_get_result(object, "spatial_features", "spatial_features")
-head(svg$tables$features)
-head(svg$graphs$spatial)
-sn_plot_spatial_svg(svg)
-sn_plot_spatial_feature(object, svg$tables$features$feature[1:4])
+.prepare_spatial_section <- function(section) {
+  coordinates <- Seurat::GetTissueCoordinates(section)
+  if (!all(colnames(section) %in% rownames(coordinates))) {
+    stop("Spatial image coordinates do not align with fixture barcodes.", call. = FALSE)
+  }
+  coordinate_columns <- if (all(c("x", "y") %in% names(coordinates))) {
+    c("x", "y")
+  } else if (all(c("imagecol", "imagerow") %in% names(coordinates))) {
+    c("imagecol", "imagerow")
+  } else {
+    numeric_columns <- names(coordinates)[
+      vapply(coordinates, is.numeric, logical(1))
+    ]
+    utils::head(numeric_columns, 2L)
+  }
+  if (length(coordinate_columns) != 2L) {
+    stop("Could not resolve two numeric Visium coordinate columns.", call. = FALSE)
+  }
+  section$spatial_x <- as.numeric(
+    coordinates[colnames(section), coordinate_columns[[1]]]
+  )
+  section$spatial_y <- as.numeric(
+    coordinates[colnames(section), coordinate_columns[[2]]]
+  )
+  SeuratObject::DefaultAssay(section) <- "Spatial"
+  sn_normalize_data(
+    section,
+    method = "seurat",
+    assay = "Spatial",
+    layer = "counts",
+    verbose = FALSE
+  )
+}
+
+prepared_sections <- lapply(
+  spatial_artifact$sections,
+  .prepare_spatial_section
+)
+section_name <- if ("fresh_frozen" %in% names(prepared_sections)) {
+  "fresh_frozen"
+} else {
+  names(prepared_sections)[[1]]
+}
+spatial_object <- prepared_sections[[section_name]]
+
+head(spatial_object[[]][, c(
+  "real_section", "real_platform", "spatial_x", "spatial_y"
+)])
 ```
 
-Use `method = "nnsvg"` for the optional nearest-neighbor
-Gaussian-process backend. SPARK-X enters through an explicit
-runner/result adapter.
+## Inspect and integrate both real sections
+
+The unified dispatcher first checks the fresh-frozen coordinate graph.
+For a joint two-section view, the code then combines the shared real
+count features, computes one joint PCA, and passes a transparent
+section-centered embedding to the explicit custom integration adapter.
+This is a deterministic real-data adapter demonstration; it is not
+presented as STAligner or another unavailable backend.
+
+``` r
+
+spatial_qc <- sn_run_spatial(
+  spatial_object,
+  task = "qc",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  k = 6L
+)
+spatial_qc$diagnostics
+
+shared_features <- Reduce(intersect, lapply(prepared_sections, rownames))
+section_counts <- lapply(prepared_sections, function(section) {
+  SeuratObject::LayerData(
+    section,
+    assay = "Spatial",
+    layer = "counts"
+  )[shared_features, , drop = FALSE]
+})
+combined_counts <- do.call(cbind, section_counts)
+combined_metadata <- do.call(rbind, unname(lapply(
+  prepared_sections,
+  function(section) section[[]][colnames(section), , drop = FALSE]
+)))
+combined_metadata <- combined_metadata[colnames(combined_counts), , drop = FALSE]
+
+integration_object <- SeuratObject::CreateSeuratObject(
+  counts = combined_counts,
+  assay = "Spatial",
+  meta.data = combined_metadata,
+  project = "real_lymph_node_sections"
+)
+integration_object <- sn_normalize_data(
+  integration_object,
+  method = "seurat",
+  assay = "Spatial",
+  layer = "counts",
+  verbose = FALSE
+)
+integration_object <- Seurat::FindVariableFeatures(
+  integration_object,
+  assay = "Spatial",
+  nfeatures = min(1000L, nrow(integration_object)),
+  verbose = FALSE
+)
+integration_features <- SeuratObject::VariableFeatures(integration_object)
+integration_object <- Seurat::ScaleData(
+  integration_object,
+  assay = "Spatial",
+  features = integration_features,
+  verbose = FALSE
+)
+integration_object <- Seurat::RunPCA(
+  integration_object,
+  assay = "Spatial",
+  features = integration_features,
+  npcs = 10L,
+  verbose = FALSE
+)
+
+joint_pca <- Seurat::Embeddings(integration_object, "pca")
+section_labels <- as.character(integration_object$real_section)
+global_center <- colMeans(joint_pca)
+integrated_pca <- joint_pca
+for (section in unique(section_labels)) {
+  members <- section_labels == section
+  integrated_pca[members, ] <- sweep(
+    joint_pca[members, , drop = FALSE],
+    2L,
+    colMeans(joint_pca[members, , drop = FALSE]),
+    "-"
+  )
+  integrated_pca[members, ] <- sweep(
+    integrated_pca[members, , drop = FALSE],
+    2L,
+    global_center,
+    "+"
+  )
+}
+integration_embedding <- data.frame(
+  cell = rownames(integrated_pca),
+  integrated_pca,
+  check.names = FALSE
+)
+
+integration_object <- sn_integrate_spatial(
+  integration_object,
+  method = "custom",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  result_id = "lymph_node_sections",
+  backend_control = list(
+    result = list(
+      embedding = integration_embedding,
+      model = list(transformation = "joint PCA with within-section centering")
+    ),
+    seed = 717L
+  )
+)
+
+spatial_integration <- sn_get_result(
+  integration_object,
+  "spatial_integration",
+  "lymph_node_sections"
+)
+spatial_integration$diagnostics
+head(spatial_integration$tables$primary)
+sn_plot_spatial(
+  integration_object,
+  group_by = "real_section",
+  spatial_cols = c("spatial_x", "spatial_y")
+)
+```
+
+## Native spatial neighborhoods from real expression groups
+
+The core neighborhood implementation does not require BANKSY. To give it
+non-circular, data-derived labels, we cluster the fresh-frozen spots in
+the joint real-expression PCA and then test those labels on the spatial
+KNN graph. The expression grouping and spatial enrichment therefore use
+independent feature and coordinate evidence from the same real spots.
+
+`sample_by` is part of the spatial design, even when the current object
+holds one section. KNN edges and label permutations are built within
+that boundary; when sections are combined, no spot can acquire a
+neighbor from another section merely because their coordinate ranges
+overlap.
+
+``` r
+
+set.seed(717)
+section_pca <- integrated_pca[
+  colnames(spatial_object),
+  seq_len(min(5L, ncol(integrated_pca))),
+  drop = FALSE
+]
+section_groups <- stats::kmeans(
+  section_pca,
+  centers = 4L,
+  nstart = 20L,
+  iter.max = 100L
+)
+spatial_object$core_expression_group <- paste0(
+  "expression_",
+  section_groups$cluster
+)
+
+spatial_object <- sn_run_spatial_neighborhood(
+  spatial_object,
+  method = "knn",
+  group_by = "core_expression_group",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  result_id = "expression_neighborhood",
+  backend_control = list(
+    k = 6L,
+    n_permutations = 99L,
+    distance_bins = 4L,
+    seed = 717L
+  )
+)
+core_neighborhood <- sn_get_result(
+  spatial_object,
+  "spatial_neighborhood",
+  "expression_neighborhood"
+)
+head(core_neighborhood$tables$enrichment, 10L)
+head(core_neighborhood$tables$cooccurrence, 10L)
+core_neighborhood$diagnostics
+sn_plot_spatial_neighborhood(core_neighborhood, type = "enrichment")
+sn_plot_spatial_neighborhood(core_neighborhood, type = "cooccurrence")
+```
+
+## Spatially variable features with Moran’s I
+
+The core backend builds a memory-bounded spatial KNN graph and retains
+the observed Moran’s I, permutation null, adjusted P value, rank, and
+graph edges. The feature cap and permutation count are explicit so the
+real site build stays auditable and bounded. Its two-sided permutation P
+value compares the observed statistic with deviations around the
+empirical null mean, rather than assuming that the finite-sample
+permutation null is centered exactly at zero.
+
+``` r
+
+spatial_object <- sn_run_spatial(
+  spatial_object,
+  task = "svg",
+  method = "morans_i",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  assay = "Spatial",
+  layer = "data",
+  result_id = "lymph_node_morans",
+  backend_control = list(
+    k = 6L,
+    n_permutations = 99L,
+    max_features = 300L,
+    seed = 717L
+  )
+)
+
+svg <- sn_get_result(
+  spatial_object,
+  "spatial_features",
+  "lymph_node_morans"
+)
+head(svg$tables$features, 10L)
+head(svg$graphs$spatial)
+svg$diagnostics
+
+sn_plot_spatial_svg(svg, n = 20L)
+sn_plot_spatial_feature(
+  spatial_object,
+  features = utils::head(svg$tables$features$feature, 4L),
+  spatial_cols = c("spatial_x", "spatial_y"),
+  assay = "Spatial",
+  layer = "data"
+)
+```
 
 ## Domains and neighborhoods
 
+BANKSY is a direct optional R backend. It is used only when both BANKSY
+and SpatialExperiment are already installed; the article does not
+install them and does not manufacture domain labels when they are
+unavailable.
+
 ``` r
 
-object <- sn_find_spatial_domains(
-  object,
-  method = "banksy",
-  store_name = "banksy_domains",
-  backend_control = list(lambda = 0.8, resolution = 1, seed = 717)
+tibble::tibble(
+  backend = "BANKSY",
+  Banksy_installed = requireNamespace("Banksy", quietly = TRUE),
+  SpatialExperiment_installed = requireNamespace("SpatialExperiment", quietly = TRUE),
+  will_run = run_banksy
 )
-sn_plot_spatial_domain(object, "banksy_domains")
+```
 
-object <- sn_run_spatial_neighborhood(
-  object,
-  group_by = "cell_type",
-  backend_control = list(k = 6, n_permutations = 999)
+``` r
+
+spatial_object <- sn_find_spatial_domains(
+  spatial_object,
+  method = "banksy",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  assay = "Spatial",
+  layer = "data",
+  result_id = "banksy_domains",
+  backend_control = list(
+    lambda = 0.8,
+    resolution = 0.8,
+    npcs = 20L,
+    seed = 717L
+  )
 )
-neighborhood <- sn_get_result(object, "spatial_neighborhood", "spatial_neighborhood")
+
+domains <- sn_get_result(
+  spatial_object,
+  "spatial_domains",
+  "banksy_domains"
+)
+head(domains$tables$domains)
+domains$diagnostics
+sn_plot_spatial_domain(domains)
+```
+
+The neighborhood test uses the actual BANKSY assignments written to
+metadata. Its enrichment P values come from label permutations on the
+retained KNN graph; co-occurrence summarizes graph edges by distance
+bin.
+
+``` r
+
+spatial_object <- sn_run_spatial_neighborhood(
+  spatial_object,
+  method = "knn",
+  group_by = "banksy_domains",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  result_id = "banksy_neighborhood",
+  backend_control = list(
+    k = 6L,
+    n_permutations = 99L,
+    distance_bins = 4L,
+    seed = 717L
+  )
+)
+
+neighborhood <- sn_get_result(
+  spatial_object,
+  "spatial_neighborhood",
+  "banksy_neighborhood"
+)
+head(neighborhood$tables$enrichment, 10L)
+head(neighborhood$tables$cooccurrence, 10L)
+neighborhood$diagnostics
+
 sn_plot_spatial_neighborhood(neighborhood, type = "enrichment")
 sn_plot_spatial_neighborhood(neighborhood, type = "cooccurrence")
 ```
 
-The local graph avoids allocating a full all-by-all distance matrix.
-Squidpy is available as the heavier backend when its graph ecosystem is
-needed.
+## Extended spatial-feature backend
 
-## Distance-aware communication
-
-Run
-[`sn_run_cell_communication()`](https://songqi.org/shennong/dev/reference/sn_run_cell_communication.md)
-first. Then augment that evidence with spatial distances:
+nnSVG runs only in the `all` profile and only when its two R
+dependencies are already installed. SPARK-X, BayesSpace, CellCharter,
+and Squidpy use explicit runner/result boundaries; no placeholder result
+is created here. An explicit stLearn result may be supplied to its
+adapter, but the package-level
+[`sn_run_stlearn()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+object wrapper is currently disabled and is not an execution path for
+this article.
 
 ``` r
 
-object <- sn_run_spatial_communication(
-  object,
-  communication_name = "communication",
-  group_by = "cell_type",
-  max_distance = 200,
-  store_name = "spatial_communication"
+tibble::tibble(
+  profile = real_profile,
+  nnSVG_installed = requireNamespace("nnSVG", quietly = TRUE),
+  SpatialExperiment_installed = requireNamespace("SpatialExperiment", quietly = TRUE),
+  will_run_nnSVG = run_nnsvg
+)
+```
+
+``` r
+
+nnsvg <- sn_find_spatial_features(
+  spatial_object,
+  method = "nnsvg",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  assay = "Spatial",
+  layer = "data",
+  features = utils::head(svg$tables$features$feature, 100L),
+  result_id = "lymph_node_nnsvg",
+  return_object = FALSE
 )
 
-spatial_communication <- sn_get_result(
-  object, "spatial_communication", "spatial_communication"
+head(nnsvg$tables$features, 10L)
+nnsvg$diagnostics
+sn_plot_spatial_svg(nnsvg, n = 20L)
+```
+
+## Distance-aware communication needs independent interaction evidence
+
+Spatial proximity cannot create ligand-receptor evidence. This step
+becomes eligible only in the `all` profile, after BANKSY has produced
+real groups, and when `SHENNONG_SPATIAL_COMMUNICATION_RESULT` points to
+a real Shennong cell-communication result serialized with `qs2`. The
+source and target labels in that result must match the domain labels
+used here.
+
+Distances are always calculated within `sample_by`. If every
+communication row also has a non-missing `sample` column, Shennong joins
+distance evidence by `source`, `target`, and `sample`; a mixture of
+sampled and unsampled rows fails closed. Without row-level samples, it
+reports a transparent across-section aggregate. `max_distance`, when
+supplied, must be one finite non-negative distance in the coordinate
+system used by `spatial_cols`.
+
+``` r
+
+tibble::tibble(
+  result_file = if (nzchar(communication_result_path)) {
+    basename(communication_result_path)
+  } else {
+    NA_character_
+  },
+  result_available = nzchar(communication_result_path) &&
+    file.exists(communication_result_path),
+  will_run = run_spatial_communication
 )
-head(spatial_communication$tables$group_distances)
+```
+
+``` r
+
+communication <- qs2::qs_read(communication_result_path)
+spatial_communication <- sn_run_spatial_communication(
+  spatial_object,
+  communication = communication,
+  group_by = "banksy_domains",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  sample_by = "real_section",
+  result_id = "domain_spatial_communication",
+  return_object = FALSE
+)
+
+head(spatial_communication$tables$primary, 10L)
+head(spatial_communication$tables$group_distances, 10L)
+spatial_communication$diagnostics
 sn_plot_spatial_communication(spatial_communication)
 ```
 
-Distance filtering does not create ligand-receptor evidence; it only
-adds a proximity constraint to an already auditable communication
-result.
+## External spatial adapters require explicit real inputs
+
+The `all` profile still does not authorize environment creation or
+downloads. Python object workflows run only when
+`SHENNONG_RUN_EXTERNAL_BACKENDS=true` is set deliberately for
+already-prepared local environments. Cell2location also requires a real
+signature CSV, and Tangram requires a real, biologically matched
+single-cell reference serialized with `qs2`. The status table therefore
+makes every unmet gate visible instead of reporting an optional backend
+as successful. Cell2location accepts only a count-like layer whose
+values are finite, non-negative, integer-like raw counts. Its signature
+table uses genes as rows and cell states as columns, requires unique
+non-empty identifiers on both axes, and accepts only finite non-negative
+numeric values. Shennong checks these contracts in R before export and
+again in the Python runner.
+
+``` r
+
+tibble::tibble(
+  workflow = c(
+    "cell2location", "Tangram", "Squidpy", "SpatialData"
+  ),
+  profile_all = run_extended,
+  external_execution_enabled = external_spatial_enabled,
+  required_real_input_available = c(
+    nzchar(cell2location_signatures_path) &&
+      file.exists(cell2location_signatures_path),
+    nzchar(spatial_reference_path) && file.exists(spatial_reference_path),
+    TRUE,
+    TRUE
+  ),
+  will_run = c(
+    run_cell2location,
+    run_tangram,
+    rep(external_spatial_enabled, 2L)
+  )
+)
+```
+
+The two deconvolution entry points are aliases. The environment variable
+`SHENNONG_SPATIAL_DECONVOLUTION_ENTRYPOINT` can select `direct` for
+[`sn_run_cell2location()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md);
+the default uses the unified
+[`sn_run_spatial_deconvolution()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_spatial_deconvolution.md)
+name. Only the metadata columns imported from the real posterior are
+reshaped for plotting.
+
+``` r
+
+deconvolution_entrypoint <- Sys.getenv(
+  "SHENNONG_SPATIAL_DECONVOLUTION_ENTRYPOINT",
+  unset = "unified"
+)
+if (identical(deconvolution_entrypoint, "direct")) {
+  deconvolved_object <- sn_run_cell2location(
+    spatial_object,
+    assay = "Spatial",
+    layer = "counts",
+    reference_signatures = cell2location_signatures_path,
+    spatial_cols = c("spatial_x", "spatial_y"),
+    output_dir = file.path(external_output_root, "cell2location"),
+    artifact_id = "lymph_node_cell2location"
+  )
+} else {
+  deconvolved_object <- sn_run_spatial_deconvolution(
+    spatial_object,
+    assay = "Spatial",
+    layer = "counts",
+    reference_signatures = cell2location_signatures_path,
+    spatial_cols = c("spatial_x", "spatial_y"),
+    output_dir = file.path(external_output_root, "cell2location"),
+    artifact_id = "lymph_node_cell2location"
+  )
+}
+
+deconvolution_manifest <- deconvolved_object@misc$cell2location[[
+  "lymph_node_cell2location"
+]]
+abundance_columns <- deconvolution_manifest$imported_metadata
+if (!length(abundance_columns)) {
+  stop("The real cell2location run imported no abundance columns.", call. = FALSE)
+}
+deconvolution_table <- dplyr::bind_rows(lapply(abundance_columns, function(column) {
+  tibble::tibble(
+    cell = colnames(deconvolved_object),
+    spatial_x = deconvolved_object$spatial_x,
+    spatial_y = deconvolved_object$spatial_y,
+    cell_type = sub("^cell2location_", "", column),
+    proportion = as.numeric(deconvolved_object[[column, drop = TRUE]])
+  )
+}))
+sn_plot_spatial_deconvolution(deconvolution_table)
+```
+
+Tangram likewise exposes a direct and a unified mapping entry point. The
+selected call consumes the real local reference object; it never
+substitutes a fixture-derived pseudo-reference. Its retained mapping is
+validated as a reference-cell-by-spatial-cell probability matrix: every
+value is finite and non-negative and each reference-cell row sums to one
+within numerical tolerance.
+
+``` r
+
+spatial_reference <- qs2::qs_read(spatial_reference_path)
+if (!inherits(spatial_reference, "Seurat")) {
+  stop("SHENNONG_SPATIAL_REFERENCE must contain a Seurat object.", call. = FALSE)
+}
+mapping_entrypoint <- Sys.getenv(
+  "SHENNONG_SPATIAL_MAPPING_ENTRYPOINT",
+  unset = "unified"
+)
+if (identical(mapping_entrypoint, "direct")) {
+  mapped_object <- sn_run_tangram(
+    spatial_object,
+    reference_object = spatial_reference,
+    assay = "Spatial",
+    layer = "counts",
+    spatial_cols = c("spatial_x", "spatial_y"),
+    cell_type_by = "cell_type",
+    output_dir = file.path(external_output_root, "tangram"),
+    artifact_id = "lymph_node_tangram"
+  )
+} else {
+  mapped_object <- sn_run_spatial_mapping(
+    spatial_object,
+    reference_object = spatial_reference,
+    assay = "Spatial",
+    layer = "counts",
+    spatial_cols = c("spatial_x", "spatial_y"),
+    cell_type_by = "cell_type",
+    output_dir = file.path(external_output_root, "tangram"),
+    artifact_id = "lymph_node_tangram"
+  )
+}
+mapped_object@misc$tangram$lymph_node_tangram
+```
+
+Squidpy and SpatialData need no additional biological reference, but
+they remain behind the same explicit already-prepared-environment gate.
+[`sn_run_stlearn()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_scarches.md)
+is not included: its exported compatibility signature is intentionally
+disabled and always fails before object export or Python execution.
+
+``` r
+
+squidpy_object <- sn_run_squidpy(
+  spatial_object,
+  assay = "Spatial",
+  layer = "data",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  output_dir = file.path(external_output_root, "squidpy"),
+  artifact_id = "lymph_node_squidpy"
+)
+spatialdata_object <- sn_run_spatialdata(
+  spatial_object,
+  assay = "Spatial",
+  layer = "data",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  output_dir = file.path(external_output_root, "spatialdata"),
+  artifact_id = "lymph_node_spatialdata"
+)
+tibble::tibble(
+  backend = c("Squidpy", "SpatialData"),
+  result_recorded = c(
+    !is.null(squidpy_object@misc$squidpy$lymph_node_squidpy),
+    !is.null(spatialdata_object@misc$spatialdata$lymph_node_spatialdata)
+  )
+)
+```

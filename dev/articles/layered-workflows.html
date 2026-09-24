@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Layer-aware workflows • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Layer-aware workflows">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Layer-aware workflows">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -98,35 +99,48 @@ Duan</h4>
 <code>assay</code> and <code>layer</code> in the functions where the
 count source matters, so workflows can use raw counts, decontaminated
 counts, or other matrix layers without rewriting the analysis.</p>
-<p>This article uses PBMC3k and creates a demonstration layer by copying
-counts. In real work, that layer might come from decontX, SoupX,
-CellBender, or another preprocessing tool.</p>
+<p>This article uses real RNA and ADT count layers from the public
+Kotliarov PBMC CITE-seq fixture. It does not copy counts into a pretend
+corrected layer. A deterministic, sample-stratified subset keeps the
+layer examples fast while preserving cells from all 20 biological
+samples.</p>
 <div class="section level2">
-<h2 id="create-a-demonstration-layer">Create a demonstration layer<a class="anchor" aria-label="anchor" href="#create-a-demonstration-layer"></a>
+<h2 id="inspect-and-subset-real-assay-layers">Inspect and subset real assay layers<a class="anchor" aria-label="anchor" href="#inspect-and-subset-real-assay-layers"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_load_data.html">sn_load_data</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:11] Initializing Seurat object for project: pbmc3k.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:11] Running QC metrics for human.</span></span>
-<span><span class="co">#&gt; INFO [2026-07-20 06:06:12] Seurat object initialization complete.</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">real_data_file</span><span class="op">)</span></span>
 <span><span class="va">counts_full</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
 <span><span class="va">demo_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">counts_full</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
-<span><span class="va">demo_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="va">demo_features</span>, cells <span class="op">=</span> <span class="va">demo_cells</span><span class="op">)</span></span>
+<span><span class="va">demo_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">real_sample</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu">utils</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span>,</span>
+<span>  n <span class="op">=</span> <span class="fl">20</span></span>
+<span><span class="op">)</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">pbmc</span>, cells <span class="op">=</span> <span class="va">demo_cells</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  features <span class="op">=</span> <span class="va">demo_features</span>,</span>
+<span>  cells <span class="op">=</span> <span class="va">demo_cells</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
-<span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">counts</span></span>
-<span></span>
-<span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "counts"                "decontaminated_counts"</span></span></code></pre></div>
-<p>The object still has its original counts. The new layer is simply
-another input matrix that layer-aware Shennong functions can target.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  assay <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RNA"</span>, <span class="st">"ADT"</span><span class="op">)</span>,</span>
+<span>  layers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The object retains measured RNA and ADT counts. Normalized
+<code>data</code> layers are created only by the workflows that require
+them.</p>
 </div>
 <div class="section level2">
 <h2 id="cluster-from-a-selected-layer">Cluster from a selected layer<a class="anchor" aria-label="anchor" href="#cluster-from-a-selected-layer"></a>
@@ -139,23 +153,21 @@ the object.</p>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
 <span>  nfeatures <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>  dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span>,</span>
 <span>  resolution <span class="op">=</span> <span class="fl">0.6</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; WARN [2026-07-20 06:06:13] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 1).</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"PBMC3k clustered from decontaminated_counts"</span></span>
+<span>  title <span class="op">=</span> <span class="st">"Real PBMC cells clustered from the RNA counts layer"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="layered-workflows_files/figure-html/cluster-layer-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="run-de-on-the-right-layer">Run DE on the right layer<a class="anchor" aria-label="anchor" href="#run-de-on-the-right-layer"></a>
@@ -170,155 +182,15 @@ through <code>layer</code>.</p>
 <span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
 <span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
-<span>  de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
-<span>  top_n <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  with_metadata <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; $schema_version</span></span>
-<span><span class="co">#&gt; [1] "1.0.0"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $package_version</span></span>
-<span><span class="co">#&gt; [1] "0.2.0.9000"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $created_at</span></span>
-<span><span class="co">#&gt; [1] "2026-07-20 06:06:19 UTC"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $table</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 7</span></span></span>
-<span><span class="co">#&gt;       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  </span></span>
-<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-64</span>      5.86  0.872 0.038  3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span> 0       CST7  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span>      6.67  0.802 0.022  8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-58</span> 0       GZMA  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-60</span>      6.65  0.93  0.102  1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span> 0       NKG7  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span>      4.30  0.965 0.131  2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-54</span> 0       CCL5  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-43</span>      4.66  0.826 0.143  4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-40</span> 0       CTSW  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-36</span>      6.11  0.57  0.035  2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-33</span> 0       PRF1  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-32</span>      6.91  0.453 0.013  5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-29</span> 0       GZMK  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-31</span>      8.48  0.43  0.01   4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span> 0       FGFBP2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-30</span>      0.999 1     0.997  3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-27</span> 0       B2M   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span>      7.81  0.384 0.006  3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-25</span> 0       GZMH  </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 994 more rows</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $analysis</span></span>
-<span><span class="co">#&gt; [1] "markers"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $method</span></span>
-<span><span class="co">#&gt; [1] "wilcox"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $group_by</span></span>
-<span><span class="co">#&gt; [1] "seurat_clusters"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $group_col</span></span>
-<span><span class="co">#&gt; [1] "cluster"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ident_1</span></span>
-<span><span class="co">#&gt; NULL</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $ident_2</span></span>
-<span><span class="co">#&gt; NULL</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $subset_by</span></span>
-<span><span class="co">#&gt; NULL</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $sample_col</span></span>
-<span><span class="co">#&gt; NULL</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $assay</span></span>
-<span><span class="co">#&gt; [1] "RNA"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $layer</span></span>
-<span><span class="co">#&gt; [1] "data"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $rank_col</span></span>
-<span><span class="co">#&gt; [1] "avg_log2FC"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $p_col</span></span>
-<span><span class="co">#&gt; [1] "p_val_adj"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $p_val_cutoff</span></span>
-<span><span class="co">#&gt; [1] 0.05</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $de_logfc</span></span>
-<span><span class="co">#&gt; [1] 0.25</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $min_pct</span></span>
-<span><span class="co">#&gt; [1] 0.25</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $logfc_threshold</span></span>
-<span><span class="co">#&gt; [1] 0.1</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $n_genes</span></span>
-<span><span class="co">#&gt; [1] 1004</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $analysis_type</span></span>
-<span><span class="co">#&gt; [1] "de"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $name</span></span>
-<span><span class="co">#&gt; [1] "cluster_markers"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $backend</span></span>
-<span><span class="co">#&gt; [1] "wilcox"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $input</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $parameters</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $tables</span></span>
-<span><span class="co">#&gt; $tables$primary</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 7</span></span></span>
-<span><span class="co">#&gt;       p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene  </span></span>
-<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-64</span>      5.86  0.872 0.038  3.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span> 0       CST7  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-61</span>      6.67  0.802 0.022  8.30<span style="color: #949494;">e</span><span style="color: #BB0000;">-58</span> 0       GZMA  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-60</span>      6.65  0.93  0.102  1.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span> 0       NKG7  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-57</span>      4.30  0.965 0.131  2.17<span style="color: #949494;">e</span><span style="color: #BB0000;">-54</span> 0       CCL5  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-43</span>      4.66  0.826 0.143  4.56<span style="color: #949494;">e</span><span style="color: #BB0000;">-40</span> 0       CTSW  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-36</span>      6.11  0.57  0.035  2.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-33</span> 0       PRF1  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-32</span>      6.91  0.453 0.013  5.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-29</span> 0       GZMK  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-31</span>      8.48  0.43  0.01   4.57<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span> 0       FGFBP2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-30</span>      0.999 1     0.997  3.88<span style="color: #949494;">e</span><span style="color: #BB0000;">-27</span> 0       B2M   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-28</span>      7.81  0.384 0.006  3.80<span style="color: #949494;">e</span><span style="color: #BB0000;">-25</span> 0       GZMH  </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 994 more rows</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $embeddings</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $graphs</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $models</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $diagnostics</span></span>
-<span><span class="co">#&gt; list()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $warnings</span></span>
-<span><span class="co">#&gt; character(0)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $provenance</span></span>
-<span><span class="co">#&gt; $provenance$package_versions</span></span>
-<span><span class="co">#&gt; $provenance$package_versions$Shennong</span></span>
-<span><span class="co">#&gt; [1] "0.2.0.9000"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $provenance$package_versions$R</span></span>
-<span><span class="co">#&gt; [1] "4.6.1"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $provenance$random_seed</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $provenance$timestamp</span></span>
-<span><span class="co">#&gt; [1] "2026-07-20 06:06:19 UTC"</span></span></code></pre></div>
+<span>  result_id <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
+<span>  top_n <span class="op">=</span> <span class="fl">3</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span></code></pre></div>
 <p>The stored metadata records the analysis context, which helps
 downstream plotting and interpretation recover how the result was
 made.</p>
@@ -329,28 +201,43 @@ made.</p>
 <p>Layer selection appears in functions where using the wrong matrix
 would change the answer.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_layered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc_layered_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
 <span>  min_cells <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
-<span>  species <span class="op">=</span> <span class="st">"human"</span></span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
+<span>  plot <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pbmc_layered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  features_before <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_layered</span><span class="op">)</span>,</span>
+<span>  features_after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_layered_filtered</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>CellTypist and ROGUE are optional backends. They run only in the
+<code>all</code> profile when the executable/model or R dependency is
+already available.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_celltypist</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_celltypist.html">sn_run_celltypist</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc_layered</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  model <span class="op">=</span> <span class="va">celltypist_model</span>,</span>
 <span>  over_clustering <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">rogue_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_rogue.html">sn_calculate_rogue</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"celltypist"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_celltypist</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span>, ignore.case <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rogue_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_rogue.html">sn_calculate_rogue</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc_layered</span>,</span>
 <span>  cluster_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rogue_tbl</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="simulate-from-the-current-object">Simulate from the current object<a class="anchor" aria-label="anchor" href="#simulate-from-the-current-object"></a>
@@ -362,31 +249,47 @@ later. With <code>method = "scdesign3"</code>, it converts the selected
 Seurat layer to a SingleCellExperiment, calls scDesign3, and returns a
 simulated Seurat object by default. It does not merge original and
 simulated cells unless <code>combine_original = TRUE</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>This optional simulation backend runs only in the <code>all</code>
+profile when <code>scDesign3</code> is installed.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_simulate.html">sn_simulate</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc_layered</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"scdesign3"</span>,</span>
 <span>  celltype <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>  ncell <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"decontaminated_counts"</span>,</span>
-<span>  n_cores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  n_workers <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  return <span class="op">=</span> <span class="st">"seurat"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sim_pbmc</span></span>
-<span><span class="va">sim_pbmc</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">scdesign3</span></span></code></pre></div>
+<span><span class="va">sim_pbmc</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">scdesign3</span></span>
+<span></span>
+<span><span class="va">sim_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_simulate.html">sn_simulate</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc_layered</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"scdesign3"</span>,</span>
+<span>  celltype <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  ncell <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  n_workers <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  return <span class="op">=</span> <span class="st">"counts"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">sim_counts</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colSums</a></span><span class="op">(</span><span class="va">sim_counts</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="cache-layer-aware-artifacts">Cache layer-aware artifacts<a class="anchor" aria-label="anchor" href="#cache-layer-aware-artifacts"></a>
 </h2>
 <p>Layer-aware results are still regular Seurat objects and tables, so
 the same IO helpers from the first article apply.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">outdir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_set_path.html">sn_set_path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-pbmc3k-layered"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">outdir</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_set_path.html">sn_set_path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-kotliarov-layered"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">object_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_layered.qs2"</span><span class="op">)</span></span>
-<span><span class="va">markers_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_layered_markers.csv"</span><span class="op">)</span></span>
+<span><span class="va">object_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"kotliarov_layered.qs2"</span><span class="op">)</span></span>
+<span><span class="va">markers_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"kotliarov_layered_markers.csv"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">pbmc_layered</span>, <span class="va">object_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span></span>
@@ -405,9 +308,7 @@ silently switching between raw and corrected matrices.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -415,6 +316,12 @@ silently switching between raw and corrected matrices.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

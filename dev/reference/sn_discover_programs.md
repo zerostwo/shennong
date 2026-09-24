@@ -10,12 +10,12 @@ sn_discover_programs(
   method = c("nmf", "cnmf", "hotspot"),
   n_programs = "auto",
   group_by = NULL,
-  name = NULL,
   assay = NULL,
   layer = "data",
   features = NULL,
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  result_id = NULL
 )
 ```
 
@@ -38,10 +38,6 @@ sn_discover_programs(
 
   Optional metadata column for independent within-group discovery.
 
-- name:
-
-  Stored result name.
-
 - assay, layer:
 
   Expression assay and non-negative layer.
@@ -58,6 +54,10 @@ sn_discover_programs(
 - return_object:
 
   Return the modified object or unified result.
+
+- result_id:
+
+  Stable identifier for the stored program-discovery result.
 
 ## Value
 

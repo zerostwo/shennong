@@ -67,6 +67,4 @@ evidence <- list(
 )
 prompt <- sn_build_prompt(evidence = evidence, task = "annotation")
 names(prompt)
-#> [1] "output_format" "task"          "system"        "user"         
-#> [5] "messages"      "evidence"     
 ```

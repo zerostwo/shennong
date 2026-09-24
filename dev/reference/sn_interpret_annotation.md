@@ -7,11 +7,11 @@ Interpret cluster markers for cell-type annotation
 ``` r
 sn_interpret_annotation(
   object,
-  de_name = NULL,
+  de_result_id = NULL,
   cluster_by = NULL,
   n_markers = 10,
   marker_selection = c("specific", "top"),
-  enrichment_name = NULL,
+  enrichment_result_id = NULL,
   n_terms = 5,
   enrichment_selection = c("specific", "top"),
   include_qc = TRUE,
@@ -31,7 +31,7 @@ sn_interpret_annotation(
   label_candidates = NULL,
   label_style = c("title", "snake", "asis"),
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -44,7 +44,7 @@ sn_interpret_annotation(
 
   A `Seurat` object.
 
-- de_name:
+- de_result_id:
 
   Optional stored marker-result name. When omitted, Shennong prefers
   `"default"`, then a single available result, and otherwise the most
@@ -64,14 +64,14 @@ sn_interpret_annotation(
   prefers genes that are relatively unique to one cluster, while `"top"`
   keeps the raw top-ranked genes.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Optional stored enrichment result used to add cluster-level functional
   evidence.
 
 - n_terms:
 
-  Number of enrichment terms per cluster when `enrichment_name` is
+  Number of enrichment terms per cluster when `enrichment_result_id` is
   supplied.
 
 - enrichment_selection:
@@ -169,9 +169,9 @@ sn_interpret_annotation(
 
   If `TRUE`, return the prompt bundle without calling the provider.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$interpretation_results`.
+  Stable identifier for the stored interpretation result.
 
 - return_object:
 
@@ -210,24 +210,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   prompt <- sn_interpret_annotation(
     obj,
-    de_name = "celltype_markers",
+    de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-07-20 05:53:36] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:53:36] Running QC metrics for human.
-#> INFO [2026-07-20 05:53:36] Seurat object initialization complete.
-#> INFO [2026-07-20 05:53:37] [sn_interpret_annotation] Starting interpretation workflow.
-#> INFO [2026-07-20 05:53:37] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
-#> As of Seurat v5, we recommend using AggregateExpression to perform pseudo-bulk analysis.
-#> This message is displayed once per session.
-#> INFO [2026-07-20 05:53:37] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
-#> INFO [2026-07-20 05:53:37] [sn_interpret_annotation] Prompt prepared (total elapsed 0.1s).
-#> [1] "annotation"
 ```

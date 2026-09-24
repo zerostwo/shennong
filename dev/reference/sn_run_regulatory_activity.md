@@ -19,7 +19,7 @@ sn_run_regulatory_activity(
   confidence_levels = c("A", "B", "C"),
   progeny_top = 500,
   minsize = 5L,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   ...
 )
@@ -66,9 +66,9 @@ sn_run_regulatory_activity(
 
   Minimum target-set size passed to `decoupleR::run_ulm()`.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$regulatory_activity_results`.
+  Name used under the canonical Shennong result registry.
 
 - return_object:
 

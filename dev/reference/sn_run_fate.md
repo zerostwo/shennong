@@ -7,13 +7,16 @@ Infer terminal states and fate probabilities with CellRank
 ``` r
 sn_run_fate(
   object,
-  method = "cellrank",
-  velocity_name = "velocity",
+  method = c("cellrank"),
+  source_result_id = "velocity",
   reduction = NULL,
   dims = 1:2,
-  store_name = "fate",
+  result_id = "fate",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE,
+  overwrite = FALSE
 )
 ```
 
@@ -27,7 +30,7 @@ sn_run_fate(
 
   Fate backend; currently CellRank.
 
-- velocity_name:
+- source_result_id:
 
   Stored velocity result used by the default pixi backend.
 
@@ -35,7 +38,7 @@ sn_run_fate(
 
   Embedding and dimensions used for plots.
 
-- store_name:
+- result_id:
 
   Stored fate result name.
 
@@ -47,6 +50,21 @@ sn_run_fate(
 
   Return the modified object or unified fate result.
 
+- seed:
+
+  Top-level reproducibility seed. Precedence: `seed` \>
+  `backend_control$seed` \> task default.
+
+- verbose:
+
+  Top-level progress switch forwarded through `backend_control$verbose`
+  when explicitly supplied.
+
+- overwrite:
+
+  Explicitly replace an existing fate result. Metadata ownership checks
+  still prevent overwriting user-modified columns.
+
 ## Value
 
 A Seurat object or fate result.
@@ -55,7 +73,7 @@ A Seurat object or fate result.
 
 ``` r
 if (FALSE) { # \dontrun{
-object <- sn_run_fate(object, velocity_name = "velocity")
+object <- sn_run_fate(object, source_result_id = "velocity")
 fate <- sn_get_result(object, "fate", "fate")
 } # }
 ```

@@ -7,16 +7,16 @@ Write a presentation-style summary from stored analysis outputs
 ``` r
 sn_write_presentation_summary(
   object,
-  cluster_de_name = NULL,
-  contrast_de_name = NULL,
-  enrichment_name = NULL,
+  cluster_de_result_id = NULL,
+  contrast_de_result_id = NULL,
+  enrichment_result_id = NULL,
   cluster_by = NULL,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -29,15 +29,15 @@ sn_write_presentation_summary(
 
   A `Seurat` object.
 
-- cluster_de_name:
+- cluster_de_result_id:
 
   Optional stored cluster-marker result.
 
-- contrast_de_name:
+- contrast_de_result_id:
 
   Optional stored contrast or pseudobulk result.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Optional stored enrichment result.
 
@@ -67,9 +67,9 @@ sn_write_presentation_summary(
 
   If `TRUE`, return the prompt bundle without calling the provider.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$interpretation_results`.
+  Stable identifier for the stored interpretation result.
 
 - return_object:
 
@@ -104,23 +104,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
   prompt <- sn_write_presentation_summary(
     obj,
-    cluster_de_name = "celltype_markers",
+    cluster_de_result_id = "celltype_markers",
     cluster_by = "cell_type",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-07-20 05:54:23] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:23] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:23] Seurat object initialization complete.
-#> Warning: No DE genes identified
-#> INFO [2026-07-20 05:54:24] [sn_write_presentation_summary] Starting interpretation workflow.
-#> INFO [2026-07-20 05:54:24] [sn_write_presentation_summary] Step 1/4: Preparing presentation evidence (elapsed 0.0s).
-#> INFO [2026-07-20 05:54:24] [sn_write_presentation_summary] Step 2/4: Building presentation prompt (elapsed 0.1s).
-#> INFO [2026-07-20 05:54:24] [sn_write_presentation_summary] Prompt prepared (total elapsed 0.1s).
-#> [1] "presentation_summary"
 ```

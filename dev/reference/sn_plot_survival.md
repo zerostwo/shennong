@@ -5,7 +5,13 @@ Plot bulk survival associations
 ## Usage
 
 ``` r
-sn_plot_survival(x, adjusted_p_value = NULL)
+sn_plot_survival(
+  x,
+  adjusted_p_value = NULL,
+  view = c("forest", "km", "risk_table", "ph", "ph_test", "cumulative_hazard"),
+  feature = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -18,6 +24,20 @@ sn_plot_survival(x, adjusted_p_value = NULL)
 
   Optional adjusted p-value cutoff.
 
+- view:
+
+  Survival view: hazard-ratio forest, Kaplan-Meier curve, risk table,
+  scaled Schoenfeld residual diagnostics, proportional-hazards test
+  p-values, or cumulative hazard.
+
+- feature:
+
+  Optional feature subset for the selected view.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
-A hazard-ratio forest plot.
+A survival `ggplot` object.

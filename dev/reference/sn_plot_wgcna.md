@@ -5,7 +5,7 @@ Plot WGCNA modules or trait associations
 ## Usage
 
 ``` r
-sn_plot_wgcna(x, type = c("traits", "modules"))
+sn_plot_wgcna(x, type = c("traits", "modules"), object = NULL)
 ```
 
 ## Arguments
@@ -17,6 +17,10 @@ sn_plot_wgcna(x, type = c("traits", "modules"))
 - type:
 
   Module sizes or module-trait association heatmap.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

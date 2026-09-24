@@ -7,7 +7,8 @@ Plot bulk sample quality metrics
 ``` r
 sn_plot_bulk_qc(
   x,
-  metric = c("library_size", "detected_features", "mean_correlation")
+  metric = c("library_size", "detected_features", "mean_correlation"),
+  object = NULL
 )
 ```
 
@@ -20,6 +21,10 @@ sn_plot_bulk_qc(
 - metric:
 
   Sample metric to plot.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

@@ -14,7 +14,8 @@ sn_filter_cells(
   method = "mad",
   n = 5,
   plot = TRUE,
-  filter = TRUE
+  filter = TRUE,
+  object = NULL
 )
 ```
 
@@ -49,6 +50,10 @@ sn_filter_cells(
 - filter:
 
   Logical indicating whether to filter out flagged cells
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

@@ -5,7 +5,13 @@ Plot bulk differential expression
 ## Usage
 
 ``` r
-sn_plot_bulk_de(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L)
+sn_plot_bulk_de(
+  x,
+  adjusted_p_value = 0.05,
+  log2_fold_change = 1,
+  labels = 10L,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -25,6 +31,10 @@ sn_plot_bulk_de(x, adjusted_p_value = 0.05, log2_fold_change = 1, labels = 10L)
 - labels:
 
   Number of top genes to label when ggrepel is installed.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

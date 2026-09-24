@@ -2,20 +2,23 @@
 
 Aggregates cell-level scores to the sample level before inference when
 `sample_by` is supplied. This prevents cells from being treated as
-independent biological replicates.
+independent biological replicates. Complete pairs sharing the same
+sample ID across conditions use a paired Wilcoxon test or a
+sample-adjusted limma model. A mixture of paired and unpaired samples is
+rejected. The result table records `paired`.
 
 ## Usage
 
 ``` r
 sn_test_programs(
   object,
-  score_name,
+  source_result_id,
   condition_by,
   sample_by = NULL,
   group_by = NULL,
   contrast = NULL,
   method = c("wilcox", "limma"),
-  store_name = NULL,
+  result_id = NULL,
   return_object = TRUE
 )
 ```
@@ -26,9 +29,9 @@ sn_test_programs(
 
   A Seurat object containing a stored program-scoring result.
 
-- score_name:
+- source_result_id:
 
-  Stored scoring result name.
+  Stored scoring result identifier.
 
 - condition_by:
 
@@ -50,9 +53,9 @@ sn_test_programs(
 
   `"wilcox"` or `"limma"`.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the stored test result.
 
 - return_object:
 

@@ -2,7 +2,7 @@
 
 `sn_prepare_label_transfer_reference()` converts a full analysis object
 into a smaller reference object for
-[`sn_transfer_labels`](https://songqi.org/shennong/dev/reference/sn_transfer_labels.md).
+[`sn_transfer_labels`](https://zerostwo.github.io/shennong/dev/reference/sn_transfer_labels.md).
 For native Coralysis, it returns a minimal `SingleCellExperiment`
 containing the trained Coralysis models, PCA model, feature names, and
 selected reference labels, while dropping the large reference assays,
@@ -90,7 +90,7 @@ sn_prepare_label_transfer_reference(
 - ...:
 
   Additional arguments passed to
-  [`sn_write`](https://songqi.org/shennong/dev/reference/sn_write.md)
+  [`sn_write`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
   when `path` is supplied.
 
 ## Value

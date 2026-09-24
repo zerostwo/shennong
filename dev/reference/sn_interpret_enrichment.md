@@ -7,14 +7,14 @@ Interpret a stored enrichment result
 ``` r
 sn_interpret_enrichment(
   object,
-  enrichment_name,
+  enrichment_result_id,
   n_terms = 10,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -27,7 +27,7 @@ sn_interpret_enrichment(
 
   A `Seurat` object.
 
-- enrichment_name:
+- enrichment_result_id:
 
   Name of a stored enrichment result.
 
@@ -57,9 +57,9 @@ sn_interpret_enrichment(
 
   If `TRUE`, return the prompt bundle without calling the provider.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$interpretation_results`.
+  Stable identifier for the stored interpretation result.
 
 - return_object:
 
@@ -92,21 +92,13 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- sn_store_enrichment(
     obj,
     tibble::tibble(ID = "GO:0001", Description = "immune response", NES = 2, p.adjust = 0.01),
-    store_name = "demo_gsea"
+    result_id = "demo_gsea"
   )
   prompt <- sn_interpret_enrichment(
     obj,
-    enrichment_name = "demo_gsea",
+    enrichment_result_id = "demo_gsea",
     return_prompt = TRUE
   )
   prompt$task
 }
-#> INFO [2026-07-20 05:53:38] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:53:38] Running QC metrics for human.
-#> INFO [2026-07-20 05:53:38] Seurat object initialization complete.
-#> INFO [2026-07-20 05:53:38] [sn_interpret_enrichment] Starting interpretation workflow.
-#> INFO [2026-07-20 05:53:38] [sn_interpret_enrichment] Step 1/4: Preparing enrichment evidence (elapsed 0.0s).
-#> INFO [2026-07-20 05:53:38] [sn_interpret_enrichment] Step 2/4: Building interpretation prompt (elapsed 0.0s).
-#> INFO [2026-07-20 05:53:38] [sn_interpret_enrichment] Prompt prepared (total elapsed 0.0s).
-#> [1] "enrichment"
 ```

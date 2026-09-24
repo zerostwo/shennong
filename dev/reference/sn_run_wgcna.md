@@ -14,7 +14,7 @@ sn_run_wgcna(
   min_module_size = 30L,
   merge_cut_height = 0.25,
   assay = NULL,
-  store_name = "wgcna",
+  result_id = "wgcna",
   backend_control = list()
 )
 ```
@@ -24,7 +24,7 @@ sn_run_wgcna(
 - object:
 
   Bulk input accepted by
-  [`sn_assess_bulk_qc()`](https://songqi.org/shennong/dev/reference/sn_assess_bulk_qc.md).
+  [`sn_assess_bulk_qc()`](https://zerostwo.github.io/shennong/dev/reference/sn_assess_bulk_qc.md).
 
 - metadata:
 
@@ -54,9 +54,9 @@ sn_run_wgcna(
 
   Assay name for `SummarizedExperiment` input.
 
-- store_name:
+- result_id:
 
-  Result name.
+  Stable identifier for the returned WGCNA result.
 
 - backend_control:
 

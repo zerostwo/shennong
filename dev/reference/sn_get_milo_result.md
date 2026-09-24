@@ -7,10 +7,9 @@ Retrieve a stored miloR result from a Seurat object
 ``` r
 sn_get_milo_result(
   object,
-  milo_name = "default",
+  result_id = NULL,
   annotation = NULL,
-  spatial_fdr = NULL,
-  with_metadata = FALSE
+  spatial_fdr = NULL
 )
 ```
 
@@ -18,9 +17,9 @@ sn_get_milo_result(
 
 - object:
 
-  A `Seurat` object.
+  A `Seurat` object or a unified result of this analysis type.
 
-- milo_name:
+- result_id:
 
   Name of the stored milo result.
 
@@ -32,10 +31,12 @@ sn_get_milo_result(
 
   Optional maximum `SpatialFDR` threshold.
 
-- with_metadata:
-
-  If `TRUE`, return the full stored-result list.
-
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble.
+
+## Details
+
+This getter always returns the selected table. Use
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md)
+for the complete stored result and metadata.

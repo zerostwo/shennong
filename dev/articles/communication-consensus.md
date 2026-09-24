@@ -1,90 +1,313 @@
 # Comparable cell-cell communication and consensus
 
 Shennong keeps backend-native artifacts while mapping communication
-evidence to one table contract. The common columns include sender,
-receiver, ligand, receptor, score, p/q values, rank, method, condition,
-sample, pathway, target-gene evidence, evidence source, and a reserved
-spatial-distance field.
-
-## Run one or several backends
-
-Use a vector of methods when comparable backends should contribute to a
-consensus. Method-specific arguments belong in `backend_control`.
+evidence to a common table contract. Here, cell groups are clusters
+fitted from the real Kotliarov PBMC counts, and all condition
+comparisons use the 20 `real_sample` values rather than treating cells
+as replicates.
 
 ``` r
 
-object <- sn_run_cell_communication(
-  object,
+knitr::kable(data.frame(
+  workflow = c(
+    "real PBMC design", "sample-level ligand-target plot",
+    "LIANA + CellChat consensus", "CellPhoneDB", "MultiNicheNet"
+  ),
+  mode = c("core", "core", "extended", "extended", "extended"),
+  status = c(
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture missing",
+    if (core_ready) "executed below" else if (!run_vignette) "disabled: set SHENNONG_RUN_VIGNETTES=true" else "fixture missing",
+    if (consensus_ready) "executed below" else if (!identical(real_profile, "all")) "disabled: requires SHENNONG_REAL_PROFILE=all" else if (!requireNamespace("liana", quietly = TRUE) || !requireNamespace("CellChat", quietly = TRUE)) "dependency missing: liana and/or CellChat" else "fixture missing",
+    if (cellphonedb_ready) "executed below" else if (!identical(real_profile, "all")) "disabled: requires SHENNONG_REAL_PROFILE=all" else "not run: pre-existing CellPhoneDB pixi environment absent",
+    "not run: no ligand-target prior supplied"
+  ),
+  check.names = FALSE
+))
+```
+
+| workflow | mode | status |
+|:---|:---|:---|
+| real PBMC design | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| sample-level ligand-target plot | core | disabled: set SHENNONG_RUN_VIGNETTES=true |
+| LIANA + CellChat consensus | extended | disabled: requires SHENNONG_REAL_PROFILE=all |
+| CellPhoneDB | extended | disabled: requires SHENNONG_REAL_PROFILE=all |
+| MultiNicheNet | extended | not run: no ligand-target prior supplied |
+
+## Prepare the real sample-aware design
+
+This core chunk is useful even when no communication backend is
+installed: it shows exactly how many cells, clusters, and biological
+samples would enter the extended analysis.
+
+`sample_by` defines the replicate used for ligand/receptor expression.
+When a study has repeated conditions from the same donor or experimental
+unit, `paired_by` names that unit. It must be non-missing and constant
+within each sample. For every tested edge, each retained pair must
+contribute exactly one sample to each side of the explicit `contrast`;
+incomplete or duplicated pairs fail closed instead of falling back to an
+unpaired test.
+
+``` r
+
+library(Shennong)
+library(Seurat)
+
+pbmc <- qs2::qs_read(pbmc_path)
+pbmc <- sn_run_cluster(
+  pbmc,
+  normalization_method = "seurat",
+  nfeatures = 1500,
+  dims = 1:15,
+  resolution = 0.5,
+  species = "human",
+  verbose = FALSE
+)
+pbmc$cell_state <- paste0("cluster_", pbmc$seurat_clusters)
+
+communication_design <- as.data.frame(table(
+  sample = pbmc$real_sample,
+  response = pbmc$real_response,
+  cluster = pbmc$cell_state
+))
+communication_design <- communication_design[
+  communication_design$Freq > 0, , drop = FALSE
+]
+head(communication_design, 20)
+data.frame(
+  cells = ncol(pbmc),
+  samples = length(unique(pbmc$real_sample)),
+  clusters = length(unique(pbmc$cell_state)),
+  response_groups = paste(sort(unique(pbmc$real_response)), collapse = " / ")
+)
+```
+
+## Core: observed ligand-target co-expression across real samples
+
+[`sn_plot_ligand_target()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_ligand_target.md)
+plots the unified `ligand_targets` table; it does not require weights to
+be NicheNet regulatory potentials. Here the weights are reported
+explicitly as Spearman correlations between sender-cluster ligand
+expression and receiver-cluster target expression across the 20 real
+samples. This is observed co-expression, not causal ligand-target
+evidence. Candidate ligands are selected by cytokine/chemokine
+gene-family prefixes, while target genes are selected from the fitted
+variable features by between-sample variance. No interaction score is
+handwritten or simulated.
+
+``` r
+
+expression <- SeuratObject::LayerData(pbmc, assay = "RNA", layer = "data")
+state_sizes <- sort(table(pbmc$cell_state), decreasing = TRUE)
+sender_state <- names(state_sizes)[[1]]
+receiver_state <- names(state_sizes)[[2]]
+sample_ids <- sort(unique(as.character(pbmc$real_sample)))
+
+ligand_candidates <- grep(
+  "^(CCL|CXCL|IL[0-9]|TNF|TGFB|IFN)",
+  rownames(expression), value = TRUE
+)
+sender_cells <- colnames(pbmc)[pbmc$cell_state == sender_state]
+ligand_abundance <- Matrix::rowMeans(
+  expression[ligand_candidates, sender_cells, drop = FALSE]
+)
+ligands <- names(head(sort(ligand_abundance, decreasing = TRUE), 12))
+
+sample_state_means <- function(features, state) {
+  means <- vapply(sample_ids, function(sample) {
+    cells <- colnames(pbmc)[
+      as.character(pbmc$real_sample) == sample & pbmc$cell_state == state
+    ]
+    if (length(cells) == 0L) {
+      rep(NA_real_, length(features))
+    } else {
+      Matrix::rowMeans(expression[features, cells, drop = FALSE])
+    }
+  }, numeric(length(features)))
+  rownames(means) <- features
+  means
+}
+
+ligand_by_sample <- sample_state_means(ligands, sender_state)
+target_pool <- setdiff(intersect(Seurat::VariableFeatures(pbmc), rownames(expression)), ligands)
+target_by_sample <- sample_state_means(target_pool, receiver_state)
+target_variance <- apply(target_by_sample, 1, stats::var, na.rm = TRUE)
+targets <- names(head(sort(target_variance, decreasing = TRUE), 60))
+target_by_sample <- target_by_sample[targets, , drop = FALSE]
+
+ligand_targets <- expand.grid(
+  ligand = ligands,
+  target_gene = targets,
+  stringsAsFactors = FALSE
+)
+ligand_targets$weight <- vapply(seq_len(nrow(ligand_targets)), function(index) {
+  stats::cor(
+    ligand_by_sample[ligand_targets$ligand[[index]], ],
+    target_by_sample[ligand_targets$target_gene[[index]], ],
+    method = "spearman", use = "pairwise.complete.obs"
+  )
+}, numeric(1))
+ligand_targets <- ligand_targets[is.finite(ligand_targets$weight), , drop = FALSE]
+ligand_targets <- ligand_targets[
+  order(abs(ligand_targets$weight), decreasing = TRUE), , drop = FALSE
+]
+
+observed_primary <- data.frame(
+  source = sender_state,
+  target = receiver_state,
+  ligand = ligand_targets$ligand,
+  receptor = NA_character_,
+  score = abs(ligand_targets$weight),
+  method = "sample_spearman",
+  stringsAsFactors = FALSE
+)
+observed_communication <- sn_store_cell_communication(
+  pbmc,
+  result = observed_primary,
+  result_id = "kotliarov_observed_ligand_targets",
+  method = "sample_spearman",
+  backend = "real_sample_coexpression",
+  group_by = "cell_state",
+  sender = sender_state,
+  receiver = receiver_state,
+  ligand_targets = ligand_targets,
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  return_object = FALSE
+)
+
+head(observed_communication$tables$ligand_targets, 20)
+sn_plot_ligand_target(observed_communication, n = 30)
+```
+
+## Extended: run a real cross-method consensus
+
+This computation is intentionally gated behind
+`SHENNONG_REAL_PROFILE=all`. Both installed backends and the unified
+consensus/concordance path must finish; an error stops the extended
+render instead of being converted into a status table or replaced with
+substitute interactions.
+
+``` r
+
+communication <- sn_run_cell_communication(
+  pbmc,
   method = c("liana", "cellchat"),
-  group_by = "cell_type",
-  sample_by = "patient",
-  condition_by = "response",
-  contrast = c("Responder", "Nonresponder"),
+  group_by = "cell_state",
+  sample_by = "real_sample",
+  condition_by = "real_response",
+  contrast = c("d0 high", "d0 low"),
+  species = "human",
   consensus = TRUE,
   backend_control = list(
-    liana = list(resource = "consensus"),
-    cellchat = list(min_cells = 20)
+    liana = list(resource = "consensus", method = "natmi"),
+    cellchat = list(min_cells = 10)
   ),
-  store_name = "tumor_communication"
+  result_id = "kotliarov_consensus",
+  return_object = FALSE
 )
+
+print(head(communication$tables$primary, 20))
+print(head(communication$tables$backend_raw, 20))
+print(head(communication$tables$consensus, 20))
+print(communication$tables$method_concordance)
+print(head(communication$tables$sample_evidence, 20))
+print(head(communication$tables$condition_comparison, 20))
+print(sn_plot_communication(communication, type = "bubble"))
+print(sn_plot_communication(communication, type = "heatmap"))
+print(sn_plot_communication(communication, type = "network"))
+if (nrow(communication$tables$condition_comparison) > 0) {
+  print(sn_plot_communication_comparison(communication))
+}
 ```
 
-NicheNet adds explicit ligand-target links when its prior network and
-ligand-target matrix are supplied. MultiNicheNet requires biological
-sample and condition columns and delegates the pseudobulk differential
-analysis to the official backend.
+The real fixture above has independent sample IDs, so it uses an
+unpaired sample-level comparison. A paired design is declared explicitly
+as follows:
 
 ``` r
 
-object <- sn_run_cell_communication(
-  object,
-  method = "multinichenet",
-  group_by = "cell_type",
-  sample_by = "patient",
-  condition_by = "response",
-  contrast = c("Responder", "Nonresponder"),
-  sender = c("Myeloid", "Fibroblast"),
-  receiver = "Tumor",
-  lr_network = lr_network,
-  ligand_target_matrix = ligand_target_matrix,
-  store_name = "differential_communication"
+paired_communication <- sn_run_cell_communication(
+  paired_object,
+  method = c("liana", "cellchat"),
+  group_by = "cell_state",
+  sample_by = "sample_id",
+  condition_by = "condition",
+  paired_by = "donor_id",
+  contrast = c("treated", "control"),
+  consensus = TRUE,
+  result_id = "paired_treatment_communication",
+  return_object = FALSE
 )
+
+paired_communication$tables$condition_comparison[, c(
+  "source", "target", "ligand", "receptor",
+  "estimate", "paired", "n_pairs", "adjusted_p_value"
+)]
 ```
 
-## Discover and retrieve stored evidence
+Here the condition table reports a paired Wilcoxon comparison and the
+number of complete pairs. `condition` and `sample` are comparison
+context, not part of the biological ligand-receptor edge key; this
+prevents the two conditions from being split into incomparable one-row
+groups.
+
+## Extended: direct CellPhoneDB object workflow
+
+The direct object adapter runs only when an audited local CellPhoneDB
+pixi environment already exists. Its input is a balanced subset of the
+same real PBMC counts, its output directory is temporary, and
+`install_pixi = FALSE` prevents pkgdown from downloading software.
 
 ``` r
 
-sn_list_results(object, type = "cell_communication")
+set.seed(717)
+cells_by_state <- split(colnames(pbmc), pbmc$cell_state)
+cellphonedb_cells <- unlist(lapply(cells_by_state, function(cells) {
+  if (length(cells) <= 120L) cells else sample(cells, 120L)
+}), use.names = FALSE)
+cellphonedb_object <- subset(pbmc, cells = cellphonedb_cells)
 
-communication <- sn_get_result(
-  object,
-  type = "cell_communication",
-  name = "tumor_communication"
+cellphonedb_attempt <- tryCatch(
+  sn_run_cellphonedb(
+    cellphonedb_object,
+    assay = "RNA",
+    layer = "data",
+    group_by = "cell_state",
+    output_dir = tempfile("shennong-cellphonedb-pkgdown-"),
+    runtime_dir = cellphonedb_paths$runtime_dir,
+    artifact_id = "kotliarov_cellphonedb",
+    return_object = FALSE,
+    backend_control = list(iterations = 1000L),
+    install_pixi = FALSE,
+    quiet = TRUE
+  ),
+  error = identity
 )
 
-communication$tables$primary
-communication$tables$backend_raw
-communication$tables$consensus
-communication$tables$method_concordance
-communication$tables$sample_evidence
-communication$tables$condition_comparison
-communication$tables$ligand_targets
-communication$warnings
+if (inherits(cellphonedb_attempt, "error")) {
+  knitr::kable(data.frame(
+    backend = "CellPhoneDB", status = "failed",
+    detail = conditionMessage(cellphonedb_attempt), check.names = FALSE
+  ))
+} else {
+  knitr::kable(data.frame(
+    backend = "CellPhoneDB", status = "completed",
+    cells = cellphonedb_attempt$n_cells,
+    features = cellphonedb_attempt$n_features,
+    output_dir = cellphonedb_attempt$output_dir,
+    check.names = FALSE
+  ))
+}
 ```
 
-The sample-evidence table recomputes ligand and receptor expression
-within each biological sample. Condition effects therefore use patients
-or samples as replicates. They do not treat cells as independent
-experimental units.
+CellPhoneDB needs a prepared Python runtime, while MultiNicheNet and
+NicheNet need explicit prior networks. Neither is silently installed or
+replaced with a handwritten interaction table during pkgdown rendering.
 
-## Plot the stored result
+## Split assay layers
 
-``` r
-
-sn_plot_communication(object, "tumor_communication", type = "bubble")
-sn_plot_communication(object, "tumor_communication", type = "heatmap")
-sn_plot_communication(object, "tumor_communication", type = "network")
-sn_plot_ligand_target(object, "differential_communication")
-sn_plot_communication_comparison(object, "tumor_communication")
-```
+Communication workflows read every matching Seurat v5 split expression
+layer (e.g. `data.batch1` and `data.batch2`) through the shared layer
+reader. Cell IDs are aligned with metadata without joining or modifying
+the input assay. An exact requested layer still takes precedence over
+prefix-matched split layers.

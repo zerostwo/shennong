@@ -13,7 +13,7 @@ sn_plot_doublets(object, class_col = NULL, score_col = NULL, reduction = NULL)
 - object:
 
   A Seurat object after
-  [`sn_find_doublets()`](https://songqi.org/shennong/dev/reference/sn_find_doublets.md).
+  [`sn_find_doublets()`](https://zerostwo.github.io/shennong/dev/reference/sn_find_doublets.md).
 
 - class_col, score_col:
 

@@ -18,7 +18,8 @@ sn_calculate_variance_explained(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  return_dim_data = FALSE
+  return_dim_data = FALSE,
+  object = NULL
 )
 ```
 
@@ -67,6 +68,10 @@ sn_calculate_variance_explained(
 
   Logical; if `TRUE`, return a list containing the summary table and
   per-dimension results.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

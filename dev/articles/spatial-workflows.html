@@ -6,25 +6,23 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Spatial Feature, Domain, and Neighborhood Workflows • Shennong</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Spatial Feature, Domain, and Neighborhood Workflows">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Spatial Feature, Domain, and Neighborhood Workflows">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,47 +31,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/get-started.html">Get started</a></li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="../articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="../articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="../articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="../articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="../articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="../articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="../articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="../articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="../articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="../articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="../articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="../articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="../articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="../articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="../articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="../articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="../articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="../articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="../articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="../articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-article" id="container">
+</nav><div class="container template-article">
 
 
 
@@ -92,74 +93,618 @@
     
 <p>Shennong’s spatial workflow keeps coordinates, graphs, statistics,
 backend artifacts, and plots connected through the common result
-contract. Coordinate columns may be supplied explicitly or discovered
-from common metadata names.</p>
+contract. This article uses the locally materialized two-section human
+lymph-node Visium fixture under <code>SHENNONG_REAL_DATA_DIR</code> and
+performs the core analysis on the fresh-frozen section.</p>
+<p>The analysis runs only when the fixture exists and
+<code>SHENNONG_RUN_VIGNETTES=true</code>. Normal package checks
+therefore knit the article without downloading data. Optional R or
+external adapter backends have additional, explicit gates and are never
+replaced with synthetic output.</p>
 <div class="section level2">
-<h2 id="spatial-features">Spatial features<a class="anchor" aria-label="anchor" href="#spatial-features"></a>
+<h2 id="load-the-real-sections-and-preserve-their-coordinates">Load the real sections and preserve their coordinates<a class="anchor" aria-label="anchor" href="#load-the-real-sections-and-preserve-their-coordinates"></a>
 </h2>
+<p>The fixture retains the original Seurat spatial images. Shennong’s
+statistical workflow consumes two finite metadata columns, so we copy
+the matching tissue coordinates into named metadata fields without
+altering the count matrix or histology image.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_features.html">sn_find_spatial_features</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"morans_i"</span>,</span>
-<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">6</span>, n_permutations <span class="op">=</span> <span class="fl">999</span>, seed <span class="op">=</span> <span class="fl">717</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">spatial_artifact</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">spatial_fixture</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">is.list</a></span><span class="op">(</span><span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span><span class="op">)</span> <span class="op">||</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"The Visium fixture does not contain named spatial sections."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  section <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span><span class="op">)</span>,</span>
+<span>  cells <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span>, <span class="va">ncol</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span>, <span class="va">nrow</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  platform <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span></span>
+<span>    <span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span>,</span>
+<span>    <span class="kw">function</span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">section</span><span class="op">$</span><span class="va">real_platform</span><span class="op">)</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">svg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"spatial_features"</span>, <span class="st">"spatial_features"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">svg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span><span class="op">)</span></span>
+<span><span class="va">.prepare_spatial_section</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">coordinates</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/GetTissueCoordinates.html" class="external-link">GetTissueCoordinates</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">coordinates</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Spatial image coordinates do not align with fixture barcodes."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">coordinate_columns</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">coordinates</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"imagecol"</span>, <span class="st">"imagerow"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">coordinates</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"imagecol"</span>, <span class="st">"imagerow"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="va">numeric_columns</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">coordinates</span><span class="op">)</span><span class="op">[</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">coordinates</span>, <span class="va">is.numeric</span>, <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">]</span></span>
+<span>    <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">numeric_columns</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">coordinate_columns</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">2L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Could not resolve two numeric Visium coordinate columns."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">section</span><span class="op">$</span><span class="va">spatial_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span></span>
+<span>    <span class="va">coordinates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span>, <span class="va">coordinate_columns</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">section</span><span class="op">$</span><span class="va">spatial_y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span></span>
+<span>    <span class="va">coordinates</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span>, <span class="va">coordinate_columns</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/DefaultAssay.html" class="external-link">DefaultAssay</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"Spatial"</span></span>
+<span>  <span class="fu"><a href="../reference/sn_normalize_data.html">sn_normalize_data</a></span><span class="op">(</span></span>
+<span>    <span class="va">section</span>,</span>
+<span>    method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">prepared_sections</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_artifact</span><span class="op">$</span><span class="va">sections</span>,</span>
+<span>  <span class="va">.prepare_spatial_section</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">section_name</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="st">"fresh_frozen"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prepared_sections</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="st">"fresh_frozen"</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">prepared_sections</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="va">prepared_sections</span><span class="op">[[</span><span class="va">section_name</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">spatial_object</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"real_section"</span>, <span class="st">"real_platform"</span>, <span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span></span>
+<span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="inspect-and-integrate-both-real-sections">Inspect and integrate both real sections<a class="anchor" aria-label="anchor" href="#inspect-and-integrate-both-real-sections"></a>
+</h2>
+<p>The unified dispatcher first checks the fresh-frozen coordinate
+graph. For a joint two-section view, the code then combines the shared
+real count features, computes one joint PCA, and passes a transparent
+section-centered embedding to the explicit custom integration adapter.
+This is a deterministic real-data adapter demonstration; it is not
+presented as STAligner or another unavailable backend.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spatial_qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial.html">sn_run_spatial</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  task <span class="op">=</span> <span class="st">"qc"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  k <span class="op">=</span> <span class="fl">6L</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">spatial_qc</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span></span>
+<span><span class="va">shared_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Reduce</a></span><span class="op">(</span><span class="va">intersect</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">prepared_sections</span>, <span class="va">rownames</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">section_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">prepared_sections</span>, <span class="kw">function</span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span></span>
+<span>    <span class="va">section</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span></span>
+<span>  <span class="op">)</span><span class="op">[</span><span class="va">shared_features</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">combined_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">cbind</span>, <span class="va">section_counts</span><span class="op">)</span></span>
+<span><span class="va">combined_metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
+<span>  <span class="va">prepared_sections</span>,</span>
+<span>  <span class="kw">function</span><span class="op">(</span><span class="va">section</span><span class="op">)</span> <span class="va">section</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">section</span><span class="op">)</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">combined_metadata</span> <span class="op">&lt;-</span> <span class="va">combined_metadata</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">combined_counts</span><span class="op">)</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
+<span>  counts <span class="op">=</span> <span class="va">combined_counts</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  meta.data <span class="op">=</span> <span class="va">combined_metadata</span>,</span>
+<span>  project <span class="op">=</span> <span class="st">"real_lymph_node_sections"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_normalize_data.html">sn_normalize_data</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">1000L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">integration_object</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">integration_features</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/VariableFeatures.html" class="external-link">VariableFeatures</a></span><span class="op">(</span><span class="va">integration_object</span><span class="op">)</span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  features <span class="op">=</span> <span class="va">integration_features</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  features <span class="op">=</span> <span class="va">integration_features</span>,</span>
+<span>  npcs <span class="op">=</span> <span class="fl">10L</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">joint_pca</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">integration_object</span>, <span class="st">"pca"</span><span class="op">)</span></span>
+<span><span class="va">section_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">integration_object</span><span class="op">$</span><span class="va">real_section</span><span class="op">)</span></span>
+<span><span class="va">global_center</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">joint_pca</span><span class="op">)</span></span>
+<span><span class="va">integrated_pca</span> <span class="op">&lt;-</span> <span class="va">joint_pca</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">section</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">section_labels</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">members</span> <span class="op">&lt;-</span> <span class="va">section_labels</span> <span class="op">==</span> <span class="va">section</span></span>
+<span>  <span class="va">integrated_pca</span><span class="op">[</span><span class="va">members</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep</a></span><span class="op">(</span></span>
+<span>    <span class="va">joint_pca</span><span class="op">[</span><span class="va">members</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>,</span>
+<span>    <span class="fl">2L</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">joint_pca</span><span class="op">[</span><span class="va">members</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>    <span class="st">"-"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">integrated_pca</span><span class="op">[</span><span class="va">members</span>, <span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep</a></span><span class="op">(</span></span>
+<span>    <span class="va">integrated_pca</span><span class="op">[</span><span class="va">members</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>,</span>
+<span>    <span class="fl">2L</span>,</span>
+<span>    <span class="va">global_center</span>,</span>
+<span>    <span class="st">"+"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">integration_embedding</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">integrated_pca</span><span class="op">)</span>,</span>
+<span>  <span class="va">integrated_pca</span>,</span>
+<span>  check.names <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">integration_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_integrate_spatial.html">sn_integrate_spatial</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"custom"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"lymph_node_sections"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    result <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      embedding <span class="op">=</span> <span class="va">integration_embedding</span>,</span>
+<span>      model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>transformation <span class="op">=</span> <span class="st">"joint PCA with within-section centering"</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717L</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">spatial_integration</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  <span class="st">"spatial_integration"</span>,</span>
+<span>  <span class="st">"lymph_node_sections"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">spatial_integration</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">spatial_integration</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial.html">sn_plot_spatial</a></span><span class="op">(</span></span>
+<span>  <span class="va">integration_object</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="native-spatial-neighborhoods-from-real-expression-groups">Native spatial neighborhoods from real expression groups<a class="anchor" aria-label="anchor" href="#native-spatial-neighborhoods-from-real-expression-groups"></a>
+</h2>
+<p>The core neighborhood implementation does not require BANKSY. To give
+it non-circular, data-derived labels, we cluster the fresh-frozen spots
+in the joint real-expression PCA and then test those labels on the
+spatial KNN graph. The expression grouping and spatial enrichment
+therefore use independent feature and coordinate evidence from the same
+real spots.</p>
+<p><code>sample_by</code> is part of the spatial design, even when the
+current object holds one section. KNN edges and label permutations are
+built within that boundary; when sections are combined, no spot can
+acquire a neighbor from another section merely because their coordinate
+ranges overlap.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">717</span><span class="op">)</span></span>
+<span><span class="va">section_pca</span> <span class="op">&lt;-</span> <span class="va">integrated_pca</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">spatial_object</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">5L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">integrated_pca</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
+<span><span class="va">section_groups</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">kmeans</a></span><span class="op">(</span></span>
+<span>  <span class="va">section_pca</span>,</span>
+<span>  centers <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>  nstart <span class="op">=</span> <span class="fl">20L</span>,</span>
+<span>  iter.max <span class="op">=</span> <span class="fl">100L</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">spatial_object</span><span class="op">$</span><span class="va">core_expression_group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>  <span class="st">"expression_"</span>,</span>
+<span>  <span class="va">section_groups</span><span class="op">$</span><span class="va">cluster</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_neighborhood.html">sn_run_spatial_neighborhood</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"knn"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"core_expression_group"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"expression_neighborhood"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    k <span class="op">=</span> <span class="fl">6L</span>,</span>
+<span>    n_permutations <span class="op">=</span> <span class="fl">99L</span>,</span>
+<span>    distance_bins <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717L</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">core_neighborhood</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  <span class="st">"spatial_neighborhood"</span>,</span>
+<span>  <span class="st">"expression_neighborhood"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">core_neighborhood</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">enrichment</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">core_neighborhood</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">cooccurrence</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">core_neighborhood</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_neighborhood.html">sn_plot_spatial_neighborhood</a></span><span class="op">(</span><span class="va">core_neighborhood</span>, type <span class="op">=</span> <span class="st">"enrichment"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_neighborhood.html">sn_plot_spatial_neighborhood</a></span><span class="op">(</span><span class="va">core_neighborhood</span>, type <span class="op">=</span> <span class="st">"cooccurrence"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="spatially-variable-features-with-morans-i">Spatially variable features with Moran’s I<a class="anchor" aria-label="anchor" href="#spatially-variable-features-with-morans-i"></a>
+</h2>
+<p>The core backend builds a memory-bounded spatial KNN graph and
+retains the observed Moran’s I, permutation null, adjusted P value,
+rank, and graph edges. The feature cap and permutation count are
+explicit so the real site build stays auditable and bounded. Its
+two-sided permutation P value compares the observed statistic with
+deviations around the empirical null mean, rather than assuming that the
+finite-sample permutation null is centered exactly at zero.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial.html">sn_run_spatial</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  task <span class="op">=</span> <span class="st">"svg"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"morans_i"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"lymph_node_morans"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    k <span class="op">=</span> <span class="fl">6L</span>,</span>
+<span>    n_permutations <span class="op">=</span> <span class="fl">99L</span>,</span>
+<span>    max_features <span class="op">=</span> <span class="fl">300L</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717L</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">svg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  <span class="st">"spatial_features"</span>,</span>
+<span>  <span class="st">"lymph_node_morans"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">svg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span>, <span class="fl">10L</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">svg</span><span class="op">$</span><span class="va">graphs</span><span class="op">$</span><span class="va">spatial</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_spatial_svg.html">sn_plot_spatial_svg</a></span><span class="op">(</span><span class="va">svg</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">svg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span><span class="op">$</span><span class="va">feature</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p>Use <code>method = "nnsvg"</code> for the optional nearest-neighbor
-Gaussian-process backend. SPARK-X enters through an explicit
-runner/result adapter.</p>
+<span><span class="va">svg</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_svg.html">sn_plot_spatial_svg</a></span><span class="op">(</span><span class="va">svg</span>, n <span class="op">=</span> <span class="fl">20L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">svg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span><span class="op">$</span><span class="va">feature</span>, <span class="fl">4L</span><span class="op">)</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="domains-and-neighborhoods">Domains and neighborhoods<a class="anchor" aria-label="anchor" href="#domains-and-neighborhoods"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_domains.html">sn_find_spatial_domains</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
+<p>BANKSY is a direct optional R backend. It is used only when both
+BANKSY and SpatialExperiment are already installed; the article does not
+install them and does not manufacture domain labels when they are
+unavailable.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  backend <span class="op">=</span> <span class="st">"BANKSY"</span>,</span>
+<span>  Banksy_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Banksy"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  SpatialExperiment_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SpatialExperiment"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  will_run <span class="op">=</span> <span class="va">run_banksy</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_domains.html">sn_find_spatial_domains</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"banksy"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"banksy_domains"</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="fl">0.8</span>, resolution <span class="op">=</span> <span class="fl">1</span>, seed <span class="op">=</span> <span class="fl">717</span><span class="op">)</span></span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"banksy_domains"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    lambda <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>    resolution <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>    npcs <span class="op">=</span> <span class="fl">20L</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717L</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/sn_plot_spatial_domain.html">sn_plot_spatial_domain</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"banksy_domains"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_neighborhood.html">sn_run_spatial_neighborhood</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">6</span>, n_permutations <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="va">domains</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  <span class="st">"spatial_domains"</span>,</span>
+<span>  <span class="st">"banksy_domains"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">neighborhood</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"spatial_neighborhood"</span>, <span class="st">"spatial_neighborhood"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">domains</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">domains</span><span class="op">)</span></span>
+<span><span class="va">domains</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_domain.html">sn_plot_spatial_domain</a></span><span class="op">(</span><span class="va">domains</span><span class="op">)</span></span></code></pre></div>
+<p>The neighborhood test uses the actual BANKSY assignments written to
+metadata. Its enrichment P values come from label permutations on the
+retained KNN graph; co-occurrence summarizes graph edges by distance
+bin.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_neighborhood.html">sn_run_spatial_neighborhood</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"knn"</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"banksy_domains"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"banksy_neighborhood"</span>,</span>
+<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    k <span class="op">=</span> <span class="fl">6L</span>,</span>
+<span>    n_permutations <span class="op">=</span> <span class="fl">99L</span>,</span>
+<span>    distance_bins <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>    seed <span class="op">=</span> <span class="fl">717L</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">neighborhood</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  <span class="st">"spatial_neighborhood"</span>,</span>
+<span>  <span class="st">"banksy_neighborhood"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">neighborhood</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">enrichment</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">neighborhood</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">cooccurrence</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">neighborhood</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span></span>
 <span><span class="fu"><a href="../reference/sn_plot_spatial_neighborhood.html">sn_plot_spatial_neighborhood</a></span><span class="op">(</span><span class="va">neighborhood</span>, type <span class="op">=</span> <span class="st">"enrichment"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_spatial_neighborhood.html">sn_plot_spatial_neighborhood</a></span><span class="op">(</span><span class="va">neighborhood</span>, type <span class="op">=</span> <span class="st">"cooccurrence"</span><span class="op">)</span></span></code></pre></div>
-<p>The local graph avoids allocating a full all-by-all distance matrix.
-Squidpy is available as the heavier backend when its graph ecosystem is
-needed.</p>
 </div>
 <div class="section level2">
-<h2 id="distance-aware-communication">Distance-aware communication<a class="anchor" aria-label="anchor" href="#distance-aware-communication"></a>
+<h2 id="extended-spatial-feature-backend">Extended spatial-feature backend<a class="anchor" aria-label="anchor" href="#extended-spatial-feature-backend"></a>
 </h2>
-<p>Run <code><a href="../reference/sn_run_cell_communication.html">sn_run_cell_communication()</a></code> first. Then augment that
-evidence with spatial distances:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_communication.html">sn_run_spatial_communication</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>,</span>
-<span>  communication_name <span class="op">=</span> <span class="st">"communication"</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>  max_distance <span class="op">=</span> <span class="fl">200</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"spatial_communication"</span></span>
+<p>nnSVG runs only in the <code>all</code> profile and only when its two
+R dependencies are already installed. SPARK-X, BayesSpace, CellCharter,
+and Squidpy use explicit runner/result boundaries; no placeholder result
+is created here. An explicit stLearn result may be supplied to its
+adapter, but the package-level <code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> object
+wrapper is currently disabled and is not an execution path for this
+article.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  profile <span class="op">=</span> <span class="va">real_profile</span>,</span>
+<span>  nnSVG_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"nnSVG"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  SpatialExperiment_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SpatialExperiment"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  will_run_nnSVG <span class="op">=</span> <span class="va">run_nnsvg</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">nnsvg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_features.html">sn_find_spatial_features</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"nnsvg"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">svg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span><span class="op">$</span><span class="va">feature</span>, <span class="fl">100L</span><span class="op">)</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"lymph_node_nnsvg"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">spatial_communication</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span></span>
-<span>  <span class="va">object</span>, <span class="st">"spatial_communication"</span>, <span class="st">"spatial_communication"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">nnsvg</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">features</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">nnsvg</span><span class="op">$</span><span class="va">diagnostics</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_svg.html">sn_plot_spatial_svg</a></span><span class="op">(</span><span class="va">nnsvg</span>, n <span class="op">=</span> <span class="fl">20L</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="distance-aware-communication-needs-independent-interaction-evidence">Distance-aware communication needs independent interaction
+evidence<a class="anchor" aria-label="anchor" href="#distance-aware-communication-needs-independent-interaction-evidence"></a>
+</h2>
+<p>Spatial proximity cannot create ligand-receptor evidence. This step
+becomes eligible only in the <code>all</code> profile, after BANKSY has
+produced real groups, and when
+<code>SHENNONG_SPATIAL_COMMUNICATION_RESULT</code> points to a real
+Shennong cell-communication result serialized with <code>qs2</code>. The
+source and target labels in that result must match the domain labels
+used here.</p>
+<p>Distances are always calculated within <code>sample_by</code>. If
+every communication row also has a non-missing <code>sample</code>
+column, Shennong joins distance evidence by <code>source</code>,
+<code>target</code>, and <code>sample</code>; a mixture of sampled and
+unsampled rows fails closed. Without row-level samples, it reports a
+transparent across-section aggregate. <code>max_distance</code>, when
+supplied, must be one finite non-negative distance in the coordinate
+system used by <code>spatial_cols</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  result_file <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span></span>
+<span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="cn">NA_character_</span></span>
+<span>  <span class="op">}</span>,</span>
+<span>  result_available <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span>,</span>
+<span>  will_run <span class="op">=</span> <span class="va">run_spatial_communication</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">communication</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span></span>
+<span><span class="va">spatial_communication</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_communication.html">sn_run_spatial_communication</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  communication <span class="op">=</span> <span class="va">communication</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"banksy_domains"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  sample_by <span class="op">=</span> <span class="st">"real_section"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"domain_spatial_communication"</span>,</span>
+<span>  return_object <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">spatial_communication</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">group_distances</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">spatial_communication</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">spatial_communication</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">group_distances</span>, <span class="fl">10L</span><span class="op">)</span></span>
+<span><span class="va">spatial_communication</span><span class="op">$</span><span class="va">diagnostics</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_spatial_communication.html">sn_plot_spatial_communication</a></span><span class="op">(</span><span class="va">spatial_communication</span><span class="op">)</span></span></code></pre></div>
-<p>Distance filtering does not create ligand-receptor evidence; it only
-adds a proximity constraint to an already auditable communication
-result.</p>
+</div>
+<div class="section level2">
+<h2 id="external-spatial-adapters-require-explicit-real-inputs">External spatial adapters require explicit real inputs<a class="anchor" aria-label="anchor" href="#external-spatial-adapters-require-explicit-real-inputs"></a>
+</h2>
+<p>The <code>all</code> profile still does not authorize environment
+creation or downloads. Python object workflows run only when
+<code>SHENNONG_RUN_EXTERNAL_BACKENDS=true</code> is set deliberately for
+already-prepared local environments. Cell2location also requires a real
+signature CSV, and Tangram requires a real, biologically matched
+single-cell reference serialized with <code>qs2</code>. The status table
+therefore makes every unmet gate visible instead of reporting an
+optional backend as successful. Cell2location accepts only a count-like
+layer whose values are finite, non-negative, integer-like raw counts.
+Its signature table uses genes as rows and cell states as columns,
+requires unique non-empty identifiers on both axes, and accepts only
+finite non-negative numeric values. Shennong checks these contracts in R
+before export and again in the Python runner.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  workflow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"cell2location"</span>, <span class="st">"Tangram"</span>, <span class="st">"Squidpy"</span>, <span class="st">"SpatialData"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  profile_all <span class="op">=</span> <span class="va">run_extended</span>,</span>
+<span>  external_execution_enabled <span class="op">=</span> <span class="va">external_spatial_enabled</span>,</span>
+<span>  required_real_input_available <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">cell2location_signatures_path</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">cell2location_signatures_path</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">spatial_reference_path</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">spatial_reference_path</span><span class="op">)</span>,</span>
+<span>    <span class="cn">TRUE</span>,</span>
+<span>    <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  will_run <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="va">run_cell2location</span>,</span>
+<span>    <span class="va">run_tangram</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">external_spatial_enabled</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The two deconvolution entry points are aliases. The environment
+variable <code>SHENNONG_SPATIAL_DECONVOLUTION_ENTRYPOINT</code> can
+select <code>direct</code> for <code><a href="../reference/sn_run_scarches.html">sn_run_cell2location()</a></code>; the
+default uses the unified <code><a href="../reference/sn_run_spatial_deconvolution.html">sn_run_spatial_deconvolution()</a></code>
+name. Only the metadata columns imported from the real posterior are
+reshaped for plotting.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">deconvolution_entrypoint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span></span>
+<span>  <span class="st">"SHENNONG_SPATIAL_DECONVOLUTION_ENTRYPOINT"</span>,</span>
+<span>  unset <span class="op">=</span> <span class="st">"unified"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">deconvolution_entrypoint</span>, <span class="st">"direct"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">deconvolved_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_cell2location</a></span><span class="op">(</span></span>
+<span>    <span class="va">spatial_object</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>    reference_signatures <span class="op">=</span> <span class="va">cell2location_signatures_path</span>,</span>
+<span>    spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"cell2location"</span><span class="op">)</span>,</span>
+<span>    artifact_id <span class="op">=</span> <span class="st">"lymph_node_cell2location"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">deconvolved_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_deconvolution.html">sn_run_spatial_deconvolution</a></span><span class="op">(</span></span>
+<span>    <span class="va">spatial_object</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>    reference_signatures <span class="op">=</span> <span class="va">cell2location_signatures_path</span>,</span>
+<span>    spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"cell2location"</span><span class="op">)</span>,</span>
+<span>    artifact_id <span class="op">=</span> <span class="st">"lymph_node_cell2location"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">deconvolution_manifest</span> <span class="op">&lt;-</span> <span class="va">deconvolved_object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">cell2location</span><span class="op">[[</span></span>
+<span>  <span class="st">"lymph_node_cell2location"</span></span>
+<span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">abundance_columns</span> <span class="op">&lt;-</span> <span class="va">deconvolution_manifest</span><span class="op">$</span><span class="va">imported_metadata</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">abundance_columns</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"The real cell2location run imported no abundance columns."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">deconvolution_table</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">abundance_columns</span>, <span class="kw">function</span><span class="op">(</span><span class="va">column</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">deconvolved_object</span><span class="op">)</span>,</span>
+<span>    spatial_x <span class="op">=</span> <span class="va">deconvolved_object</span><span class="op">$</span><span class="va">spatial_x</span>,</span>
+<span>    spatial_y <span class="op">=</span> <span class="va">deconvolved_object</span><span class="op">$</span><span class="va">spatial_y</span>,</span>
+<span>    cell_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"^cell2location_"</span>, <span class="st">""</span>, <span class="va">column</span><span class="op">)</span>,</span>
+<span>    proportion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">deconvolved_object</span><span class="op">[[</span><span class="va">column</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_deconvolution.html">sn_plot_spatial_deconvolution</a></span><span class="op">(</span><span class="va">deconvolution_table</span><span class="op">)</span></span></code></pre></div>
+<p>Tangram likewise exposes a direct and a unified mapping entry point.
+The selected call consumes the real local reference object; it never
+substitutes a fixture-derived pseudo-reference. Its retained mapping is
+validated as a reference-cell-by-spatial-cell probability matrix: every
+value is finite and non-negative and each reference-cell row sums to one
+within numerical tolerance.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spatial_reference</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">spatial_reference_path</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">spatial_reference</span>, <span class="st">"Seurat"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"SHENNONG_SPATIAL_REFERENCE must contain a Seurat object."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">mapping_entrypoint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span></span>
+<span>  <span class="st">"SHENNONG_SPATIAL_MAPPING_ENTRYPOINT"</span>,</span>
+<span>  unset <span class="op">=</span> <span class="st">"unified"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">mapping_entrypoint</span>, <span class="st">"direct"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">mapped_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_tangram</a></span><span class="op">(</span></span>
+<span>    <span class="va">spatial_object</span>,</span>
+<span>    reference_object <span class="op">=</span> <span class="va">spatial_reference</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>    spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>    cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"tangram"</span><span class="op">)</span>,</span>
+<span>    artifact_id <span class="op">=</span> <span class="st">"lymph_node_tangram"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="va">mapped_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_mapping.html">sn_run_spatial_mapping</a></span><span class="op">(</span></span>
+<span>    <span class="va">spatial_object</span>,</span>
+<span>    reference_object <span class="op">=</span> <span class="va">spatial_reference</span>,</span>
+<span>    assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>    layer <span class="op">=</span> <span class="st">"counts"</span>,</span>
+<span>    spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>    cell_type_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"tangram"</span><span class="op">)</span>,</span>
+<span>    artifact_id <span class="op">=</span> <span class="st">"lymph_node_tangram"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">mapped_object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">tangram</span><span class="op">$</span><span class="va">lymph_node_tangram</span></span></code></pre></div>
+<p>Squidpy and SpatialData need no additional biological reference, but
+they remain behind the same explicit already-prepared-environment gate.
+<code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> is not included: its exported
+compatibility signature is intentionally disabled and always fails
+before object export or Python execution.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">squidpy_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_squidpy</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"squidpy"</span><span class="op">)</span>,</span>
+<span>  artifact_id <span class="op">=</span> <span class="st">"lymph_node_squidpy"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">spatialdata_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_spatialdata</a></span><span class="op">(</span></span>
+<span>  <span class="va">spatial_object</span>,</span>
+<span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">external_output_root</span>, <span class="st">"spatialdata"</span><span class="op">)</span>,</span>
+<span>  artifact_id <span class="op">=</span> <span class="st">"lymph_node_spatialdata"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  backend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Squidpy"</span>, <span class="st">"SpatialData"</span><span class="op">)</span>,</span>
+<span>  result_recorded <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">squidpy_object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">squidpy</span><span class="op">$</span><span class="va">lymph_node_squidpy</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">spatialdata_object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">spatialdata</span><span class="op">$</span><span class="va">lymph_node_spatialdata</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -167,9 +712,7 @@ result.</p>
 
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -177,6 +720,12 @@ result.</p>
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

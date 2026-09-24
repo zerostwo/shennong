@@ -5,9 +5,7 @@ the declared source for each dependency. CRAN packages are installed
 with
 [`install.packages()`](https://rdrr.io/r/utils/install.packages.html),
 Bioconductor packages with `BiocManager::install()`, and GitHub packages
-with `remotes::install_github()`. Legacy `.qs` files remain supported
-when the archived qs package is already available, but new installations
-should use qs2.
+with `remotes::install_github()`. Serialized objects use qs2.
 
 ## Usage
 
@@ -34,7 +32,7 @@ sn_install_dependencies(
 
   Optional character vector restricting installation to a subset of
   packages returned by
-  [`sn_list_dependencies()`](https://songqi.org/shennong/dev/reference/sn_list_dependencies.md).
+  [`sn_list_dependencies()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_dependencies.md).
 
 - missing_only:
 
@@ -67,7 +65,7 @@ sn_install_dependencies(
 ## Value
 
 Invisibly returns the refreshed dependency table from
-[`sn_list_dependencies()`](https://songqi.org/shennong/dev/reference/sn_list_dependencies.md)
+[`sn_list_dependencies()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_dependencies.md)
 after installation.
 
 ## Examples

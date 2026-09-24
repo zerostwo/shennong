@@ -5,7 +5,7 @@ Retrieve a stored interpretation result from a Seurat object
 ## Usage
 
 ``` r
-sn_get_interpretation_result(object, interpretation_name = "default")
+sn_get_interpretation_result(object, result_id = NULL)
 ```
 
 ## Arguments
@@ -14,9 +14,9 @@ sn_get_interpretation_result(object, interpretation_name = "default")
 
   A `Seurat` object.
 
-- interpretation_name:
+- result_id:
 
-  Name of the stored interpretation result.
+  Identifier of the stored interpretation result.
 
 ## Value
 

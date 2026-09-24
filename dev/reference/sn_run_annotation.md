@@ -1,10 +1,10 @@
-# Run traceable cell-type annotation
+# Run reference-based cell-type annotation
 
-Provides a stable annotation entry point for marker-only consensus,
-SingleR, CellTypist, Seurat label transfer, and scANVI label transfer.
-Consensus mode always evaluates canonical marker evidence and optionally
-combines it with a reference backend. Computational labels and raw
-backend predictions are retained; no LLM is allowed to overwrite them.
+Stable annotation entry point for SingleR, CellTypist, Seurat label
+transfer, Symphony mapping, scmap projection, scANVI transfer, and PopV
+consensus voting. Computational labels and raw backend predictions are
+retained; no LLM is allowed to overwrite them. Cluster summaries report
+the modal predicted label per `group_by` group.
 
 ## Usage
 
@@ -12,22 +12,18 @@ backend predictions are retained; no LLM is allowed to overwrite them.
 sn_run_annotation(
   object,
   group_by = "seurat_clusters",
-  method = c("consensus", "singleR", "celltypist", "seurat", "symphony", "scmap",
-    "scanvi"),
+  method = c("singleR", "celltypist", "seurat", "symphony", "scmap", "scanvi", "popv"),
   reference = NULL,
   reference_label_by = NULL,
   tissue = NULL,
   disease = NULL,
   species = NULL,
   ontology = TRUE,
-  store_name = "annotation",
+  result_id = "annotation",
+  confidence_threshold = NULL,
   assay = NULL,
   layer = "data",
-  marker_database = NULL,
-  consensus_reference_method = "singleR",
   backend_control = list(),
-  low_confidence_threshold = 0.55,
-  margin_threshold = 0.1,
   return_object = TRUE
 )
 ```
@@ -40,15 +36,17 @@ sn_run_annotation(
 
 - group_by:
 
-  Metadata column used for cluster-level annotation.
+  Metadata column used for the cluster-level summary.
 
 - method:
 
-  Annotation method.
+  Annotation method. One of `"singleR"` (default), `"celltypist"`,
+  `"seurat"`, `"symphony"`, `"scmap"`, `"scanvi"`, or `"popv"`.
 
 - reference:
 
-  Optional annotated reference object.
+  Annotated reference object required by all methods except CellTypist,
+  which uses a pre-trained model instead.
 
 - reference_label_by:
 
@@ -66,30 +64,33 @@ sn_run_annotation(
 
   Map labels to the bundled Cell Ontology snapshot.
 
-- store_name:
+- result_id:
 
   Stored-result and metadata prefix.
 
+- confidence_threshold:
+
+  Optional minimum backend score. Scores are backend-specific and are
+  not assumed to be calibrated across methods. By default, only
+  missing/non-finite/non-positive scores and explicit unassigned labels
+  are flagged from score evidence.
+
 - assay, layer:
 
-  Query expression source.
-
-- marker_database:
-
-  Optional marker data frame with high- and low-hierarchy labels plus
-  species gene columns.
-
-- consensus_reference_method:
-
-  Backend used when consensus receives a reference.
+  Query expression source. Most backends read a log-normalized `data`
+  layer; CellTypist and PopV independently default to raw `counts`
+  because they normalize internally. Override those backends only via
+  `backend_control = list(celltypist = list(layer = ...))` or
+  `backend_control = list(popv = list(layer = ...))`.
 
 - backend_control:
 
-  Named backend-specific control lists.
-
-- low_confidence_threshold, margin_threshold:
-
-  Confidence thresholds.
+  Named backend-specific control lists. PopV exports only its required
+  label/batch metadata and verified raw counts. Its package-owned
+  temporary run is removed after successful import; supplying
+  `popv$output_dir` retains that empty, explicit run location unless
+  `popv$keep_run_dir = FALSE`, in which case it is treated as a parent
+  and only Shennong's unique child is cleaned or sanitized.
 
 - return_object:
 
@@ -107,7 +108,9 @@ if (FALSE) { # \dontrun{
 object <- sn_run_annotation(
   object,
   group_by = "seurat_clusters",
-  method = "consensus",
+  method = "singleR",
+  reference = reference,
+  reference_label_by = "cell_type",
   species = "human"
 )
 sn_get_result(object, "annotation", "annotation")

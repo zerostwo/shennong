@@ -19,7 +19,8 @@ sn_calculate_graph_connectivity(
   max_cells = NULL,
   stratify_by = NULL,
   seed = 717,
-  n_trees = 50
+  n_trees = 50,
+  object = NULL
 )
 ```
 
@@ -79,6 +80,10 @@ sn_calculate_graph_connectivity(
 
   Number of Annoy trees when `neighbor_method = "annoy"`.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A data frame with one row per group and a `connectivity_score` column in
@@ -88,10 +93,12 @@ A data frame with one row per group and a `connectivity_score` column in
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
 pbmc <- sn_run_cluster(
-  pbmc_small,
-  batch = "sample",
+  pbmc,
+  batch_by = "sample",
   species = "human",
   verbose = FALSE
 )

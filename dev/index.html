@@ -6,27 +6,25 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Toolkit for Interpreting Omics Data • Shennong</title>
-<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Toolkit for Interpreting Omics Data">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="Toolkit for Interpreting Omics Data">
 <meta name="description" content="The Shennong package provides a comprehensive toolkit for interpreting omics data, offering advanced analysis and visualization tools tailored for genomic, transcriptomic, proteomic, and metabolomic data. It integrates various bioinformatics approaches to facilitate the understanding of complex biological mechanisms and interactions. Designed for researchers and data scientists in the field of bioinformatics, Shennong aims to streamline the process of omics data analysis with a focus on usability and reproducibility.">
 <meta property="og:description" content="The Shennong package provides a comprehensive toolkit for interpreting omics data, offering advanced analysis and visualization tools tailored for genomic, transcriptomic, proteomic, and metabolomic data. It integrates various bioinformatics approaches to facilitate the understanding of complex biological mechanisms and interactions. Designed for researchers and data scientists in the field of bioinformatics, Shennong aims to streamline the process of omics data analysis with a focus on usability and reproducibility.">
 <meta name="robots" content="noindex">
-<script async src="https://umami.catplot.org/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
 </head>
 <body>
-    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">Shennong</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.3.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,47 +33,50 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/get-started.html">Get started</a></li>
 <li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
-    <li><a class="dropdown-item" href="articles/data-io-projects.html">Data input, output, and project setup</a></li>
-    <li><a class="dropdown-item" href="articles/preprocessing-qc.html">Preprocessing and QC with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="articles/clustering.html">Clustering and integration with PBMC3k</a></li>
-    <li><a class="dropdown-item" href="articles/metrics-diagnostics.html">Integration metrics and diagnostics</a></li>
-    <li><a class="dropdown-item" href="articles/annotation-pathways.html">Markers, signatures, pathways, and annotation</a></li>
-    <li><a class="dropdown-item" href="articles/program-discovery-grn.html">Program Discovery and Gene Regulatory Networks</a></li>
-    <li><a class="dropdown-item" href="articles/visualization.html">Visualization with Shennong</a></li>
-    <li><a class="dropdown-item" href="articles/publication-figures.html">Publication figure specifications and export bundles</a></li>
-    <li><a class="dropdown-item" href="articles/composition-analysis.html">Composition and differential abundance</a></li>
-    <li><a class="dropdown-item" href="articles/bulk-deconvolution.html">Bulk deconvolution from a PBMC3k reference</a></li>
-    <li><a class="dropdown-item" href="articles/bulk-transcriptomics.html">Bulk transcriptomics from QC to clinical association</a></li>
-    <li><a class="dropdown-item" href="articles/layered-workflows.html">Layer-aware workflows</a></li>
-    <li><a class="dropdown-item" href="articles/interpretation-workflows.html">Interpretation and reporting</a></li>
-    <li><a class="dropdown-item" href="articles/analysis-results-and-methods.html">Analysis methods and stored-result contracts</a></li>
-    <li><a class="dropdown-item" href="articles/trajectory-dynamics.html">Trajectory, Pseudotime, and Dynamic Genes</a></li>
-    <li><a class="dropdown-item" href="articles/velocity-fate.html">RNA Velocity and Fate Mapping</a></li>
-    <li><a class="dropdown-item" href="articles/abundance-priority.html">Differential Abundance and State Priority</a></li>
-    <li><a class="dropdown-item" href="articles/communication-consensus.html">Comparable cell-cell communication and consensus</a></li>
-    <li><a class="dropdown-item" href="articles/cnv-metabolism.html">CNV, Malignancy, and Metabolism</a></li>
-    <li><a class="dropdown-item" href="articles/spatial-workflows.html">Spatial Feature, Domain, and Neighborhood Workflows</a></li>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-guides" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Guides</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-guides">
+<li><h6 class="dropdown-header" data-toc-skip>Core usage</h6></li>
+    <li><a class="dropdown-item" href="articles/parameters-and-results.html">Parameters and results</a></li>
+    <li><a class="dropdown-item" href="articles/differential-expression.html">Differential expression and enrichment</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell workflows</h6></li>
+    <li><a class="dropdown-item" href="articles/data-io-projects.html">Data input and output</a></li>
+    <li><a class="dropdown-item" href="articles/preprocessing-qc.html">Preprocessing and QC</a></li>
+    <li><a class="dropdown-item" href="articles/clustering.html">Clustering and integration</a></li>
+    <li><a class="dropdown-item" href="articles/annotation-pathways.html">Annotation and pathways</a></li>
+    <li><a class="dropdown-item" href="articles/composition-analysis.html">Composition and Milo</a></li>
+    <li><a class="dropdown-item" href="articles/visualization.html">Visualization</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More workflows and reference</h6></li>
+    <li><a class="dropdown-item" href="articles/index.html">All guides (spatial, bulk, dynamics, and more)</a></li>
+    <li><a class="dropdown-item" href="articles/method-catalog.html">Choose a backend</a></li>
+    <li><a class="dropdown-item" href="articles/analysis-results-and-methods.html">Manage stored results</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
+<li class="nav-item"><a class="nav-link" href="reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changes</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zerostwo/shennong/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container template-home" id="container">
+</nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="shennong">Shennong<a class="anchor" aria-label="anchor" href="#shennong"></a>
@@ -83,370 +84,141 @@
 <!-- badges: start -->
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<p><code>Shennong</code> is an experimental R package for single-cell, multimodal, spatial, and bulk transcriptomics workflows. Seurat objects remain the primary single-cell contract, while standalone bulk analyses accept ordinary matrices and <code>SummarizedExperiment</code> objects. The package provides reproducible entry points for preprocessing, integration, annotation, differential testing, biological-state modeling, publication figures, and interpretation-ready result storage.</p>
+<p>Shennong is an R package for single-cell, multimodal, spatial, and bulk transcriptomics. It brings preprocessing, clustering, differential analysis, pathway analysis, and plotting into a common workflow, and keeps analytical results with their inputs and parameters on a Seurat object.</p>
+<p><strong>New here?</strong> Follow <a href="https://zerostwo.github.io/shennong/dev/articles/get-started.html">Get started</a> for a complete example using bundled data. No data download or Python setup is needed. The package is in development, and documented API changes may be breaking.</p>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="install">Install<a class="anchor" aria-label="anchor" href="#install"></a>
 </h2>
-<p>Install the current development version from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"zerostwo/shennong"</span><span class="op">)</span></span></code></pre></div>
-<p>List Shennong’s required and recommended R packages, then install the missing ones in one step:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">deps</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_list_dependencies.html">sn_list_dependencies</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">deps</span></span>
-<span></span>
-<span><span class="fu"><a href="reference/sn_install_dependencies.html">sn_install_dependencies</a></span><span class="op">(</span>scope <span class="op">=</span> <span class="st">"required"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"remotes"</span>, <span class="st">"Seurat"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"zerostwo/shennong"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span></code></pre></div>
+<p>Install optional backends only for the workflows you need. Use <code><a href="reference/sn_list_methods.html">sn_list_methods()</a></code> and <code><a href="reference/sn_get_method_status.html">sn_get_method_status()</a></code> to inspect availability; <a href="https://zerostwo.github.io/shennong/dev/articles/method-catalog.html">Choose a backend</a> lists methods and their execution requirements.</p>
 </div>
 <div class="section level2">
-<h2 id="one-command-analysis-software">One-Command Analysis Software<a class="anchor" aria-label="anchor" href="#one-command-analysis-software"></a>
+<h2 id="a-first-analysis">A first analysis<a class="anchor" aria-label="anchor" href="#a-first-analysis"></a>
 </h2>
-<p>Shennong provides stable <code>sn_*</code> entry points over R packages, command-line programs, and Python workflows. The table below summarizes the current analysis surface by data-analysis module. “Managed pixi/CLI” means Shennong prepares the input, runs the backend in a project-independent environment, and imports the result. “Adapter” means Shennong standardizes an existing result or a result returned by a user-supplied runner; the external software is not silently installed or executed.</p>
+<p>This small example uses PBMC counts bundled with SeuratObject. Its clusters illustrate the API and are not cell-type annotations or condition-level tests.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"SeuratObject"</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
+<span>  <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">pbmc_small</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>, integration_method <span class="op">=</span> <span class="st">"unintegrated"</span>,</span>
+<span>  nfeatures <span class="op">=</span> <span class="fl">100</span>, npcs <span class="op">=</span> <span class="fl">10</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, resolution <span class="op">=</span> <span class="fl">1.2</span>, seed <span class="op">=</span> <span class="fl">717</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
+<span>  <span class="va">pbmc</span>, analysis <span class="op">=</span> <span class="st">"markers"</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  result_id <span class="op">=</span> <span class="st">"markers"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"markers"</span>, direction <span class="op">=</span> <span class="st">"up"</span>, top_n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p><code>top_n = 3</code> selects up to three genes <strong>per group</strong>. Use <code>top_scope = "all"</code> for three genes overall. Keep the complete result for later use:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"de"</span>, result_id <span class="op">=</span> <span class="st">"markers"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pbmc-analysed.rds"</span><span class="op">)</span></span></code></pre></div>
+<p>Assign an object-returning workflow back to <code>pbmc</code> to retain its result. Use <code>return_object = FALSE</code> on DE, enrichment, scoring, or Milo to receive a unified result directly. See <a href="https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html">Parameters and results</a> for return values, result IDs, filters, and safe reruns.</p>
+</div>
+<div class="section level2">
+<h2 id="find-the-right-guide">Find the right guide<a class="anchor" aria-label="anchor" href="#find-the-right-guide"></a>
+</h2>
 <table class="table">
 <colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
+<col width="50%">
+<col width="50%">
 </colgroup>
 <thead><tr>
-<th>Analysis module</th>
-<th>Main Shennong entry point</th>
-<th>Supported software and methods</th>
-<th>Execution model</th>
+<th>I want to…</th>
+<th>Guide</th>
 </tr></thead>
 <tbody>
 <tr>
-<td>Data import and storage</td>
+<td>Learn the core workflow with runnable examples</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/get-started.html">Get started</a></td>
+</tr>
+<tr>
+<td>Understand parameters, grouping, and stored results</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html">Parameters and results</a></td>
+</tr>
+<tr>
+<td>Import data, filter cells, and normalize</td>
 <td>
-<code><a href="reference/sn_read.html">sn_read()</a></code>, <code><a href="reference/sn_write.html">sn_write()</a></code>, <code><a href="reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object()</a></code>
+<a href="https://zerostwo.github.io/shennong/dev/articles/data-io-projects.html">Data IO</a> · <a href="https://zerostwo.github.io/shennong/dev/articles/preprocessing-qc.html">Preprocessing</a>
 </td>
-<td>10x Genomics, STARsolo, H5/H5AD, AnnData, BPCells, qs/qs2, GMT, rio, Zenodo and ShennongData</td>
-<td>Native R and format adapters</td>
 </tr>
 <tr>
-<td>Preprocessing and QC</td>
+<td>Cluster cells or integrate batches</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/clustering.html">Clustering and integration</a></td>
+</tr>
+<tr>
+<td>Find markers, compare conditions, and enrich pathways</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/differential-expression.html">Differential expression and enrichment</a></td>
+</tr>
+<tr>
+<td>Score signatures or annotate cells</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/annotation-pathways.html">Annotation and pathways</a></td>
+</tr>
+<tr>
+<td>Compare composition or neighborhood abundance</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/composition-analysis.html">Composition and Milo</a></td>
+</tr>
+<tr>
+<td>Plot expression and analytical results</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/visualization.html">Visualization</a></td>
+</tr>
+<tr>
+<td>Work with spatial, bulk, or cell dynamics data</td>
+<td><a href="https://zerostwo.github.io/shennong/dev/articles/index.html">All workflows</a></td>
+</tr>
+<tr>
+<td>Look up a specific function or backend</td>
 <td>
-<code><a href="reference/sn_normalize_data.html">sn_normalize_data()</a></code>, <code><a href="reference/sn_find_doublets.html">sn_find_doublets()</a></code>, <code><a href="reference/sn_remove_ambient_contamination.html">sn_remove_ambient_contamination()</a></code>
+<a href="https://zerostwo.github.io/shennong/dev/reference/index.html">Function reference</a> · <a href="https://zerostwo.github.io/shennong/dev/articles/method-catalog.html">Backend catalog</a>
 </td>
-<td>Seurat log-normalization, SCTransform/glmGamPoi, scran, scDblFinder, SoupX, decontX and HGNChelper</td>
-<td>Native R</td>
-</tr>
-<tr>
-<td>Clustering and batch integration</td>
-<td><code><a href="reference/sn_run_cluster.html">sn_run_cluster()</a></code></td>
-<td>Seurat CCA/RPCA, Harmony, Coralysis, scVI and scANVI; Louvain, multilevel Louvain, SLM and Leiden clustering</td>
-<td>Native R or managed pixi</td>
-</tr>
-<tr>
-<td>CITE-seq and multimodal integration</td>
-<td><code><a href="reference/sn_run_multimodal.html">sn_run_multimodal()</a></code></td>
-<td>Seurat WNN, totalVI, Coralysis and MMoCHi</td>
-<td>Native R or managed pixi</td>
-</tr>
-<tr>
-<td>Reference mapping and simulation</td>
-<td>
-<code><a href="reference/sn_transfer_labels.html">sn_transfer_labels()</a></code>, <code><a href="reference/sn_simulate.html">sn_simulate()</a></code>
-</td>
-<td>Seurat anchors, Coralysis, scANVI, scArches, scPoli and scDesign3</td>
-<td>Native R or managed pixi</td>
-</tr>
-<tr>
-<td>Cell-type annotation</td>
-<td><code><a href="reference/sn_run_annotation.html">sn_run_annotation()</a></code></td>
-<td>Shennong consensus, SingleR, CellTypist, Seurat label transfer, Symphony, scmap and scANVI, with Cell Ontology mapping</td>
-<td>Native R, CLI or managed pixi</td>
-</tr>
-<tr>
-<td>Marker and differential-expression analysis</td>
-<td><code><a href="reference/sn_find_de.html">sn_find_de()</a></code></td>
-<td>Single-cell Seurat tests including Wilcoxon and COSG; pseudobulk and standalone bulk DE with DESeq2, edgeR, limma/limma-voom and dream/variancePartition</td>
-<td>Native R; input type selects single-cell or bulk automatically; <code><a href="reference/sn_find_bulk_de.html">sn_find_bulk_de()</a></code> remains compatible</td>
-</tr>
-<tr>
-<td>Enrichment and regulatory activity</td>
-<td>
-<code><a href="reference/sn_enrich.html">sn_enrich()</a></code>, <code><a href="reference/sn_run_regulatory_activity.html">sn_run_regulatory_activity()</a></code>
-</td>
-<td>clusterProfiler ORA/GSEA, GO, KEGG, MSigDB/msigdbr, decoupleR, DoRothEA and PROGENy</td>
-<td>Native R</td>
-</tr>
-<tr>
-<td>Gene-set scoring and program discovery</td>
-<td>
-<code><a href="reference/sn_score_programs.html">sn_score_programs()</a></code>, <code><a href="reference/sn_discover_programs.html">sn_discover_programs()</a></code>
-</td>
-<td>UCell, AUCell, GSVA, ssGSEA, sparse mean scoring, multi-restart NMF, cNMF and Hotspot</td>
-<td>Native R; cNMF/Hotspot adapters</td>
-</tr>
-<tr>
-<td>Gene-regulatory networks</td>
-<td><code><a href="reference/sn_run_grn.html">sn_run_grn()</a></code></td>
-<td>GENIE3, pySCENIC, R SCENIC and GRNBoost2/arboreto</td>
-<td>Native R for GENIE3; external-result adapters for SCENIC/GRNBoost2</td>
-</tr>
-<tr>
-<td>Trajectory and cell dynamics</td>
-<td>
-<code><a href="reference/sn_run_trajectory.html">sn_run_trajectory()</a></code>, <code><a href="reference/sn_run_velocity.html">sn_run_velocity()</a></code>, <code><a href="reference/sn_run_fate.html">sn_run_fate()</a></code>
-</td>
-<td>Slingshot, Monocle 3, Palantir, tradeSeq, scVelo, RegVelo and CellRank</td>
-<td>Native R or managed pixi</td>
-</tr>
-<tr>
-<td>Differential abundance and state prioritization</td>
-<td>
-<code><a href="reference/sn_test_abundance.html">sn_test_abundance()</a></code>, <code><a href="reference/sn_prioritize_states.html">sn_prioritize_states()</a></code>
-</td>
-<td>Propeller/speckle, Milo/miloR, scCODA/pertpy, sample-aware permutation, Augur-inspired prioritization, Scissor and RareQ</td>
-<td>Native R, managed runner or adapter</td>
-</tr>
-<tr>
-<td>Cell-cell communication</td>
-<td><code><a href="reference/sn_run_cell_communication.html">sn_run_cell_communication()</a></code></td>
-<td>LIANA, CellChat, CellPhoneDB, NicheNet and MultiNicheNet, including cross-method consensus</td>
-<td>Native R or managed pixi</td>
-</tr>
-<tr>
-<td>CNV and malignant-state analysis</td>
-<td><code><a href="reference/sn_run_cnv.html">sn_run_cnv()</a></code></td>
-<td>infercnvpy and CopyKAT, with malignancy scoring, subclones and chromosome summaries</td>
-<td>Managed pixi or native R</td>
-</tr>
-<tr>
-<td>Metabolic analysis</td>
-<td><code><a href="reference/sn_run_metabolism.html">sn_run_metabolism()</a></code></td>
-<td>UCell, GSVA, ssGSEA, mean scoring, scMetabolism, scFEA and Compass</td>
-<td>Native R; scFEA/Compass runner-result adapters</td>
-</tr>
-<tr>
-<td>Spatial transcriptomics</td>
-<td><code><a href="reference/sn_run_spatial.html">sn_run_spatial()</a></code></td>
-<td>Moran’s I/Squidpy, nnSVG, BANKSY, stLearn, cell2location, Tangram, SPARK-X, BayesSpace, CellCharter, STAligner and Harmony</td>
-<td>Native R, managed pixi or adapter</td>
-</tr>
-<tr>
-<td>Bulk transcriptomics and clinical analysis</td>
-<td>
-<code><a href="reference/sn_run_bulk.html">sn_run_bulk()</a></code>, <code><a href="reference/sn_deconvolve_bulk.html">sn_deconvolve_bulk()</a></code>
-</td>
-<td>edgeR, DESeq2, limma/limma-voom, dream, GSVA/ssGSEA, WGCNA, survival/Cox, BayesPrism and CIBERSORTx</td>
-<td>Native R or local container backend</td>
-</tr>
-<tr>
-<td>Integration diagnostics</td>
-<td><code><a href="reference/sn_assess_integration.html">sn_assess_integration()</a></code></td>
-<td>LISI, silhouette, graph connectivity, PCR batch effect, clustering agreement, isolated-label score, entropy, purity and ROGUE</td>
-<td>Native R</td>
-</tr>
-<tr>
-<td>Publication figures and reporting</td>
-<td>
-<code><a href="reference/sn_figure_spec.html">sn_figure_spec()</a></code>, <code><a href="reference/sn_export_figure_bundle.html">sn_export_figure_bundle()</a></code>, <code><a href="reference/sn_write_results.html">sn_write_results()</a></code>
-</td>
-<td>ggplot2/patchwork, ggrastr, SVG/TIFF/PDF/PNG export, source-data bundles and optional ellmer-backed interpretation</td>
-<td>Native R with optional LLM provider</td>
 </tr>
 </tbody>
 </table>
-<p>All methods shipped in <code>inst/methods/</code> currently have an implemented Shennong entry point or explicit adapter. Optional R packages, command-line programs, pixi environments, credentials, references, and model files are still required when the selected backend depends on them. Inspect the registry and the current machine before starting a workflow:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Every registered backend and whether it can run in the current session</span></span>
-<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span>task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/sn_list_methods.html">sn_list_methods</a></span><span class="op">(</span>available <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Runtime, dependency, install action, inputs and outputs for one backend</span></span>
-<span><span class="fu"><a href="reference/sn_method_status.html">sn_method_status</a></span><span class="op">(</span><span class="st">"cellrank"</span>, task <span class="op">=</span> <span class="st">"fate"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Install missing R dependencies or prepare a managed Python environment</span></span>
-<span><span class="fu"><a href="reference/sn_install_dependencies.html">sn_install_dependencies</a></span><span class="op">(</span>scope <span class="op">=</span> <span class="st">"recommended"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/sn_prepare_pixi_environment.html">sn_prepare_pixi_environment</a></span><span class="op">(</span><span class="st">"trajectory"</span>, install_environment <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="agent-and-mcp-integration">Agent And MCP Integration<a class="anchor" aria-label="anchor" href="#agent-and-mcp-integration"></a>
-</h2>
-<p>Shennong ships installable Agent Skills plus a read-only MCP server. The MCP surface lets an agent discover registered methods, inspect exact installed R help, and retrieve workflow recipes; it does not execute arbitrary R code or modify analysis files.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install all packaged Shennong usage skills for local agents.</span></span>
-<span><span class="fu"><a href="reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span>path <span class="op">=</span> <span class="st">"~/.agents/skills"</span>, type <span class="op">=</span> <span class="st">"package_skills"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Use this command/argument pair in any stdio-capable MCP client.</span></span>
-<span><span class="fu"><a href="reference/sn_mcp_server_config.html">sn_mcp_server_config</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Equivalent direct server command:</span></span>
-<span><span class="co"># Rscript -e 'Shennong::sn_mcp_server()'</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="built-in-example-data">Built-In Example Data<a class="anchor" aria-label="anchor" href="#built-in-example-data"></a>
-</h2>
-<p>The package ships a small built-in PBMC example derived from the <code>pbmc1k</code> and <code>pbmc3k</code> assets:</p>
-<ul>
-<li>
-<code>pbmc_small</code>: a Seurat object with sample metadata</li>
-<li>
-<code>pbmc_small_raw</code>: a matching raw count matrix with extra droplets</li>
-</ul>
-<p>For larger example datasets, <code><a href="reference/sn_load_data.html">sn_load_data()</a></code> can still download the full PBMC references on demand.</p>
-</div>
-<div class="section level2">
-<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://songqi.org/shennong">Shennong</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc_small"</span>, package <span class="op">=</span> <span class="st">"Shennong"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_filter_cells.html">sn_filter_cells</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc</span>,</span>
-<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span><span class="op">)</span>,</span>
-<span>  plot <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_filter_genes.html">sn_filter_genes</a></span><span class="op">(</span><span class="va">pbmc</span>, min_cells <span class="op">=</span> <span class="fl">3</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc</span>,</span>
-<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  resolution <span class="op">=</span> <span class="fl">0.6</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="integration-example">Integration Example<a class="anchor" aria-label="anchor" href="#integration-example"></a>
-</h2>
-<p>The same built-in PBMC example can be used for batch-aware integration:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_integrated</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  normalization_method <span class="op">=</span> <span class="st">"seurat"</span>,</span>
-<span>  resolution <span class="op">=</span> <span class="fl">0.6</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">pbmc_integrated</span>, group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>You can summarize integration quality and surface rare or difficult groups directly from the integrated object:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_assess_integration.html">sn_assess_integration</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc_integrated</span>,</span>
-<span>  batch <span class="op">=</span> <span class="st">"sample"</span>,</span>
-<span>  cluster <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>  reduction <span class="op">=</span> <span class="st">"harmony"</span>,</span>
-<span>  baseline_reduction <span class="op">=</span> <span class="st">"pca"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">metrics</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="va">metrics</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">isolated_label_score</span></span>
-<span><span class="va">metrics</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">cluster_entropy</span></span>
-<span><span class="va">metrics</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">cluster_purity</span></span>
-<span><span class="va">metrics</span><span class="op">$</span><span class="va">per_group</span><span class="op">$</span><span class="va">challenging_groups</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="differential-expression-and-enrichment">Differential Expression And Enrichment<a class="anchor" aria-label="anchor" href="#differential-expression-and-enrichment"></a>
-</h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
-<span>  <span class="va">pbmc</span>,</span>
-<span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
-<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>  layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
-<span>  return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_enrich.html">sn_enrich</a></span><span class="op">(</span></span>
-<span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  source_de_name <span class="op">=</span> <span class="st">"cluster_markers"</span>,</span>
-<span>  gene_clusters <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">cluster</span>,</span>
-<span>  database <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GOBP"</span>, <span class="st">"H"</span><span class="op">)</span>,</span>
-<span>  species <span class="op">=</span> <span class="st">"human"</span>,</span>
-<span>  store_name <span class="op">=</span> <span class="st">"cluster_pathways"</span>,</span>
-<span>  pvalue_cutoff <span class="op">=</span> <span class="fl">0.05</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>The same <code><a href="reference/sn_find_de.html">sn_find_de()</a></code> entry point accepts a feature-by-sample matrix, list, or <code>SummarizedExperiment</code> for standalone bulk analysis:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bulk_de</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
-<span>  <span class="va">counts</span>,</span>
-<span>  metadata <span class="op">=</span> <span class="va">sample_data</span>,</span>
-<span>  design <span class="op">=</span> <span class="op">~</span> <span class="va">batch</span> <span class="op">+</span> <span class="va">condition</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"tumor"</span>, <span class="st">"normal"</span><span class="op">)</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"auto"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
-</h2>
-<p>Longer workflow articles are available in the package site and vignettes, including:</p>
-<ul>
-<li>clustering and integration</li>
-<li>layer-aware preprocessing</li>
-<li>stored-result interpretation workflows</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
-</h2>
-<p><code>Shennong</code> is still experimental. The package currently prioritizes a clean and consistent workflow surface over backward compatibility across early versions.</p>
+<p>The introductory examples run on bundled data. The larger real-data workflows state their required files and optional dependencies; they do not download study data during a normal website build. Use your own data with the documented input structure, or follow the <a href="https://zerostwo.github.io/shennong/dev/articles/research-workflow-map.html">research workflow map</a> for the public-data narratives. Dataset discovery and materialization live in <a href="https://github.com/zerostwo/shennong-data" class="external-link">ShennongData</a>.</p>
+<p>See the <a href="https://zerostwo.github.io/shennong/dev/news/index.html">release notes</a> for breaking changes. Report reproducible problems in the <a href="https://github.com/zerostwo/shennong/issues" class="external-link">issue tracker</a>.</p>
 </div>
 </div>
-  </main><aside class="col-md-3"><div class="links">
-<h2 data-toc-skip>Links</h2>
-<ul class="list-unstyled">
-<li><a href="https://github.com/zerostwo/shennong/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/zerostwo/shennong/issues" class="external-link">Report a bug</a></li>
+  </main><aside class="col-md-3"><div class="sn-sidebar-card">
+  <span class="sn-kicker">Start here</span>
+  <h2 data-toc-skip>Run your first analysis</h2>
+  <p>Use bundled PBMC data to go from counts to clusters, markers, scores, and saved results.</p>
+  <p><a class="btn btn-primary btn-sm" href="articles/get-started.html">Get started</a></p>
+</div>
+
+<div class="sn-sidebar-section">
+  <h2 data-toc-skip>Project</h2>
+  <ul class="list-unstyled">
 <li><a href="https://github.com/zerostwo/shennong" class="external-link">Source code</a></li>
-<li><a href="https://github.com/zerostwo/shennong/issues" class="external-link">Issue tracker</a></li>
-</ul>
+    <li><a href="https://github.com/zerostwo/shennong/issues" class="external-link">Issue tracker</a></li>
+    <li><a href="reference/index.html">Function reference</a></li>
+    <li><a href="news/index.html">Release notes</a></li>
+  </ul>
 </div>
 
-<div class="license">
-<h2 data-toc-skip>License</h2>
-<ul class="list-unstyled">
-<li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
-</ul>
-</div>
-
-<div class="community">
-<h2 data-toc-skip>Community</h2>
-<ul class="list-unstyled">
-<li><a href="CONTRIBUTING.html">Contributing guide</a></li>
-</ul>
-</div>
-
-<div class="citation">
-<h2 data-toc-skip>Citation</h2>
-<ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing Shennong</a></li>
-</ul>
-</div>
-
-<div class="developers">
-<h2 data-toc-skip>Developers</h2>
-<ul class="list-unstyled">
-<li>
-<a href="https://songqi.org" class="external-link">Songqi Duan</a> <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0002-0822-5883" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
-</ul>
-</div>
-
-<div class="dev-status">
-<h2 data-toc-skip>Dev status</h2>
-<ul class="list-unstyled">
-<li><a href="https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/zerostwo/shennong/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-<li><a href="https://app.codecov.io/gh/zerostwo/shennong?branch=main" class="external-link"><img src="https://codecov.io/gh/zerostwo/shennong/branch/main/graph/badge.svg" alt="codecov"></a></li>
-<li><a href="https://lifecycle.r-lib.org/articles/stages.html" class="external-link"><img src="https://img.shields.io/badge/lifecycle-Experimental-important.svg" alt="lifecycle"></a></li>
-</ul>
+<div class="sn-sidebar-section">
+  <h2 data-toc-skip>Package</h2>
+  <ul class="list-unstyled">
+<li><a href="authors.html">Authors and citation</a></li>
+    <li><a href="LICENSE.html">MIT license</a></li>
+    <li><a href="CONTRIBUTING.html">Contributing</a></li>
+  </ul>
+<p class="sn-sidebar-note">Experimental software. Validate backends and versions for the intended analysis.</p>
 </div>
 
   </aside>
 </div>
 
 
-   </div>
-  <footer><div class="container">
-  <div class="pkgdown-footer-left">
+    <footer><div class="pkgdown-footer-left">
   <p>Developed by <a href="https://songqi.org" class="external-link">Songqi Duan</a>.</p>
 </div>
 
@@ -454,6 +226,12 @@
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-  </div></footer>
-</body>
+    </footer>
+</div>
+
+
+
+
+
+  </body>
 </html>

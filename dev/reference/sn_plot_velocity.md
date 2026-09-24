@@ -7,10 +7,11 @@ Plot RNA velocity vectors
 ``` r
 sn_plot_velocity(
   x,
-  name = NULL,
+  result_id = NULL,
   color_by = "pseudotime",
   arrow_scale = 1,
-  point_size = 0.6
+  point_size = 0.6,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_velocity(
 
   A Seurat object or velocity result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - color_by:
 
@@ -35,6 +36,10 @@ sn_plot_velocity(
 - point_size:
 
   Point size.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

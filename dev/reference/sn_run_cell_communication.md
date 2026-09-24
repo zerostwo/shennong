@@ -3,6 +3,10 @@
 `sn_run_cell_communication()` wraps established communication backends
 and stores a comparable ligand-receptor schema. Multiple backends can be
 run together to calculate method concordance and a consensus rank.
+Requested acceleration patches are recorded in provenance automatically
+within the workflow and restored afterward. Set
+`options(shennong.acceleration = FALSE)` to disable automatic
+acceleration.
 
 ## Usage
 
@@ -31,10 +35,11 @@ sn_run_cell_communication(
   raw_use = TRUE,
   resource = NULL,
   sample_by = NULL,
+  paired_by = NULL,
   consensus = TRUE,
   contrast = NULL,
   backend_control = list(),
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   ...
 )
@@ -57,7 +62,9 @@ sn_run_cell_communication(
 
 - assay, layer:
 
-  Assay and layer used to retrieve expression.
+  Assay and layer used to retrieve expression. CellPhoneDB requires
+  normalized, log-transformed expression from a Seurat
+  `"data"`/`"data.*"` layer and rejects raw counts.
 
 - species:
 
@@ -122,6 +129,12 @@ sn_run_cell_communication(
   receptor expression is aggregated within each sample before condition
   comparison.
 
+- paired_by:
+
+  Optional metadata column identifying matched donors or experimental
+  units across conditions. It must be constant within each `sample_by`
+  unit and enables paired condition tests.
+
 - consensus:
 
   If `TRUE` and multiple methods are requested, use the cross-method
@@ -136,9 +149,9 @@ sn_run_cell_communication(
 
   Named list of method-specific argument lists.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$cell_communication_results`.
+  Stable identifier for the stored communication result.
 
 - return_object:
 

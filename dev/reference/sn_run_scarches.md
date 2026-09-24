@@ -1,7 +1,7 @@
-# Run a Python analysis command through a managed Shennong pixi environment
+# Object-level Python backend entry points
 
 These are analysis-oriented wrappers around
-[`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md).
+[`sn_call_pixi_environment()`](https://zerostwo.github.io/shennong/dev/reference/sn_prepare_pixi_environment.md).
 They prepare the corresponding package-bundled environment and run the
 requested command. When `object` is supplied, method wrappers use a
 Seurat object-level contract: export the object, run the packaged pixi
@@ -20,24 +20,11 @@ sn_run_scarches(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "scarches_",
-  result_name = "scarches",
+  artifact_id = "scarches",
   return_object = TRUE,
-  method_control = list(),
-  ...
-)
-
-sn_run_scpoli(
-  object,
-  assay = NULL,
-  layer = NULL,
-  batch_by = NULL,
-  label_by = NULL,
-  output_dir = NULL,
-  runtime_dir = NULL,
-  metadata_prefix = "scpoli_",
-  result_name = "scpoli",
-  return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -60,7 +47,7 @@ sn_run_infercnvpy(
   dynamic_threshold = 1.5,
   exclude_chromosomes = c("chrX", "chrY"),
   chunksize = 5000,
-  n_jobs = NULL,
+  n_workers = NULL,
   calculate_gene_values = FALSE,
   lfc_clip = 3,
   run_pca = TRUE,
@@ -71,21 +58,25 @@ sn_run_infercnvpy(
   leiden_resolution = 1,
   cnv_score_group_by = NULL,
   metadata_prefix = "infercnvpy_",
-  result_name = "infercnvpy",
+  artifact_id = "infercnvpy",
   return_object = TRUE,
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
 sn_run_cellphonedb(
   object,
   assay = NULL,
-  layer = "counts",
+  layer = "data",
   group_by = NULL,
   output_dir = NULL,
   runtime_dir = NULL,
-  result_name = "cellphonedb",
+  artifact_id = "cellphonedb",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -98,9 +89,11 @@ sn_run_cell2location(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "cell2location_",
-  result_name = "cell2location",
+  artifact_id = "cell2location",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -116,9 +109,11 @@ sn_run_tangram(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "tangram_",
-  result_name = "tangram",
+  artifact_id = "tangram",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -131,9 +126,11 @@ sn_run_squidpy(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "squidpy_",
-  result_name = "squidpy",
+  artifact_id = "squidpy",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -145,9 +142,11 @@ sn_run_spatialdata(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "spatialdata_",
-  result_name = "spatialdata",
+  artifact_id = "spatialdata",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 
@@ -159,9 +158,11 @@ sn_run_stlearn(
   output_dir = NULL,
   runtime_dir = NULL,
   metadata_prefix = "stlearn_",
-  result_name = "stlearn",
+  artifact_id = "stlearn",
   return_object = TRUE,
-  method_control = list(),
+  backend_control = list(),
+  keep_run_dir = NULL,
+  max_artifact_import_gb = 0.5,
   ...
 )
 ```
@@ -180,8 +181,13 @@ sn_run_stlearn(
 
 - layer:
 
-  Assay layer used for object-level infercnvpy input. Defaults to
-  `"data"` when present and otherwise `"counts"`.
+  Assay layer used for object-level Python input. Cell2location and
+  scPoli require a count-like layer containing finite, non-negative,
+  integer-like raw counts, checked independently before export and by
+  the Python runner. CellPhoneDB and infercnvpy require normalized,
+  log-transformed expression from a Seurat `"data"`/`"data.*"` layer and
+  reject raw-count or ambiguously named layers. Other generic object
+  wrappers prefer `"data"` and otherwise use `"counts"`.
 
 - batch_by, label_by:
 
@@ -189,7 +195,10 @@ sn_run_stlearn(
 
 - output_dir:
 
-  Optional run directory. Defaults to `~/.shennong/runs/infercnvpy_*`.
+  Optional persistent run directory. When omitted, Shennong uses an
+  isolated package-owned temporary run and removes it after a successful
+  import. With `keep_run_dir = FALSE`, an explicit path is treated as a
+  parent and is never recursively deleted.
 
 - runtime_dir:
 
@@ -199,24 +208,38 @@ sn_run_stlearn(
 
   Prefix added to imported infercnvpy metadata columns.
 
-- result_name:
+- artifact_id:
 
-  Name used under `object@misc$infercnvpy`.
+  Identifier used for the stored backend artifact.
 
 - return_object:
 
   Whether to return the updated object. If `FALSE`, return a run
   manifest list.
 
-- method_control:
+- backend_control:
 
   Optional named list of backend-specific settings passed to the Python
   runner config.
 
+- keep_run_dir:
+
+  Whether to retain exported inputs and backend outputs. `NULL` retains
+  an explicitly supplied `output_dir` and otherwise cleans a
+  package-owned temporary child after success. Failed temporary runs
+  retain only sanitized diagnostics.
+
+- max_artifact_import_gb:
+
+  Positive import-memory budget in GiB for backend metadata, embeddings,
+  and artifact tables. Oversized outputs fail before materialization;
+  increase this value only after reviewing the expected artifact
+  dimensions.
+
 - ...:
 
   Additional arguments passed to
-  [`sn_call_pixi_environment()`](https://songqi.org/shennong/dev/reference/sn_prepare_pixi_environment.md).
+  [`sn_call_pixi_environment()`](https://zerostwo.github.io/shennong/dev/reference/sn_prepare_pixi_environment.md).
 
 - species:
 
@@ -255,7 +278,7 @@ sn_run_stlearn(
   infercnvpy key used for the CNV representation.
 
 - window_size, step, dynamic_threshold, exclude_chromosomes, chunksize,
-  n_jobs, calculate_gene_values, lfc_clip:
+  n_workers, calculate_gene_values, lfc_clip:
 
   Parameters forwarded to `infercnvpy.tl.infercnv()`.
 
@@ -277,8 +300,10 @@ sn_run_stlearn(
 
 - reference_signatures:
 
-  Optional file path or data frame of reference cell-state signatures
-  for cell2location.
+  Required CSV path, numeric data frame, or numeric matrix of reference
+  cell-state signatures for cell2location. Features are rows and cell
+  states are columns; both identifier sets must be unique and non-empty,
+  and all values must be finite and non-negative.
 
 - spatial_cols:
 
@@ -304,7 +329,17 @@ sn_run_stlearn(
 
 ## Value
 
-A Seurat object or a run manifest.
+Supported entry points return a Seurat object or run manifest.
+`sn_run_scarches()` and `sn_run_stlearn()` always fail closed.
+
+## Details
+
+`sn_run_scarches()` and `sn_run_stlearn()` are retained as public
+compatibility entry points, but are intentionally disabled. They fail
+before object serialization or Python execution because Shennong does
+not currently ship an admitted, faithful upstream workflow for either
+backend. A bundled environment name or runner placeholder does not make
+these methods runnable.
 
 ## Examples
 

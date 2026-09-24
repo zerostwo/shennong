@@ -5,7 +5,7 @@ Delete a stored Shennong analysis result
 ## Usage
 
 ``` r
-sn_delete_result(object, type, name)
+sn_delete_result(object, type, result_id)
 ```
 
 ## Arguments
@@ -18,9 +18,9 @@ sn_delete_result(object, type, name)
 
   Analysis type.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result identifier.
 
 ## Value
 

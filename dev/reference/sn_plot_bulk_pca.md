@@ -5,7 +5,14 @@ Plot bulk sample PCA
 ## Usage
 
 ``` r
-sn_plot_bulk_pca(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L)
+sn_plot_bulk_pca(
+  x,
+  metadata = NULL,
+  color_by = NULL,
+  pc_x = 1L,
+  pc_y = 2L,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -25,6 +32,10 @@ sn_plot_bulk_pca(x, metadata = NULL, color_by = NULL, pc_x = 1L, pc_y = 2L)
 - pc_x, pc_y:
 
   Principal components to display.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

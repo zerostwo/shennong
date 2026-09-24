@@ -8,14 +8,16 @@ Store a miloR differential-abundance result on a Seurat object
 sn_store_milo(
   object,
   result,
-  store_name = "default",
+  result_id = "default",
   sample_by = NULL,
   group_by = NULL,
   comparison = NULL,
   reduction = "pca",
   dims = NULL,
   annotation_by = NULL,
-  return_object = TRUE
+  random_seed = NULL,
+  return_object = TRUE,
+  overwrite = FALSE
 )
 ```
 
@@ -29,9 +31,9 @@ sn_store_milo(
 
   A neighborhood-level differential-abundance table.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$milo_results`.
+  Stable identifier for the stored Milo result.
 
 - sample_by:
 
@@ -57,9 +59,17 @@ sn_store_milo(
 
   Optional neighborhood annotation column.
 
+- random_seed:
+
+  Optional random seed recorded in the result provenance.
+
 - return_object:
 
   If `TRUE`, return the updated object.
+
+- overwrite:
+
+  Explicitly replace a stored result with the same ID.
 
 ## Value
 

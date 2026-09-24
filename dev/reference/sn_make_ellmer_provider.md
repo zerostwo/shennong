@@ -64,7 +64,7 @@ sn_make_ellmer_provider(
 ## Value
 
 A provider function suitable for
-[`sn_run_llm()`](https://songqi.org/shennong/dev/reference/sn_run_llm.md).
+[`sn_run_llm()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_llm.md).
 
 ## Examples
 

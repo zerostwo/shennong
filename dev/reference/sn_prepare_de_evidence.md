@@ -5,7 +5,7 @@ Prepare differential-expression evidence from a stored DE result
 ## Usage
 
 ``` r
-sn_prepare_de_evidence(object, de_name, n_genes = 15)
+sn_prepare_de_evidence(object, de_result_id, n_genes = 15)
 ```
 
 ## Arguments
@@ -14,9 +14,9 @@ sn_prepare_de_evidence(object, de_name, n_genes = 15)
 
   A `Seurat` object.
 
-- de_name:
+- de_result_id:
 
-  Name of a stored DE result in `object@misc$de_results`.
+  Identifier of a stored DE result.
 
 - n_genes:
 
@@ -46,14 +46,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  evidence <- sn_prepare_de_evidence(obj, de_name = "celltype_markers", n_genes = 3)
+  evidence <- sn_prepare_de_evidence(obj, de_result_id = "celltype_markers", n_genes = 3)
   names(evidence)
 }
-#> INFO [2026-07-20 05:54:06] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:54:06] Running QC metrics for human.
-#> INFO [2026-07-20 05:54:06] Seurat object initialization complete.
-#> [1] "task"             "source_de_name"   "summary"         
-#> [4] "top_markers"      "top_marker_table" "caveats"         
 ```

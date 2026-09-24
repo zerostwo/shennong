@@ -7,14 +7,14 @@ Interpret a stored differential-expression result
 ``` r
 sn_interpret_de(
   object,
-  de_name,
+  de_result_id,
   n_genes = 15,
   background = NULL,
   output_format = c("llm", "human"),
   provider = NULL,
   model = NULL,
   return_prompt = FALSE,
-  store_name = "default",
+  result_id = "default",
   return_object = TRUE,
   show_progress = interactive(),
   ...
@@ -27,7 +27,7 @@ sn_interpret_de(
 
   A `Seurat` object.
 
-- de_name:
+- de_result_id:
 
   Name of a stored DE result.
 
@@ -57,9 +57,9 @@ sn_interpret_de(
 
   If `TRUE`, return the prompt bundle without calling the provider.
 
-- store_name:
+- result_id:
 
-  Name used under `object@misc$interpretation_results`.
+  Stable identifier for the stored interpretation result.
 
 - return_object:
 
@@ -98,17 +98,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   obj <- Seurat::NormalizeData(obj, verbose = FALSE)
   obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",
     layer = "data", min_pct = 0, logfc_threshold = 0,
-    store_name = "celltype_markers", return_object = TRUE, verbose = FALSE
+    result_id = "celltype_markers", return_object = TRUE, verbose = FALSE
   )
-  prompt <- sn_interpret_de(obj, de_name = "celltype_markers", return_prompt = TRUE)
+  prompt <- sn_interpret_de(obj, de_result_id = "celltype_markers", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-07-20 05:53:37] Initializing Seurat object for project: Shennong.
-#> INFO [2026-07-20 05:53:37] Running QC metrics for human.
-#> INFO [2026-07-20 05:53:37] Seurat object initialization complete.
-#> INFO [2026-07-20 05:53:38] [sn_interpret_de] Starting interpretation workflow.
-#> INFO [2026-07-20 05:53:38] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
-#> INFO [2026-07-20 05:53:38] [sn_interpret_de] Step 2/4: Building interpretation prompt (elapsed 0.0s).
-#> INFO [2026-07-20 05:53:38] [sn_interpret_de] Prompt prepared (total elapsed 0.0s).
-#> [1] "de"
 ```

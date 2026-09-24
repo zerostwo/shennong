@@ -9,7 +9,9 @@ sn_plot_enrichment(
   result,
   type = c("dot", "bar", "ridge", "network", "emap"),
   n = 20L,
-  minimum_overlap = 0.1
+  minimum_overlap = 0.1,
+  object = NULL,
+  result_id = "default"
 )
 ```
 
@@ -30,6 +32,15 @@ sn_plot_enrichment(
 - minimum_overlap:
 
   Minimum Jaccard overlap for network edges.
+
+- object:
+
+  Optional Seurat object holding a stored enrichment result; supply
+  either `result` or `object`, not both.
+
+- result_id:
+
+  Stored enrichment result name used when `object` is supplied.
 
 ## Value
 

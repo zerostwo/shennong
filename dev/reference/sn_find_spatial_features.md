@@ -12,9 +12,12 @@ sn_find_spatial_features(
   assay = NULL,
   layer = "data",
   features = NULL,
-  store_name = "spatial_features",
+  result_id = "spatial_features",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  seed = NULL,
+  verbose = TRUE,
+  sample_by = NULL
 )
 ```
 
@@ -40,7 +43,7 @@ sn_find_spatial_features(
 
   Features to test.
 
-- store_name:
+- result_id:
 
   Stored result name.
 
@@ -51,6 +54,22 @@ sn_find_spatial_features(
 - return_object:
 
   Return the modified object or result.
+
+- seed:
+
+  Top-level reproducibility seed. Precedence: `seed` \>
+  `backend_control$seed` \> task default; stamped into provenance.
+
+- verbose:
+
+  Top-level progress switch forwarded through `backend_control$verbose`
+  when explicitly supplied.
+
+- sample_by:
+
+  Optional metadata column defining independent samples or tissue
+  sections. Spatial graphs and permutations are restricted within these
+  boundaries.
 
 ## Value
 

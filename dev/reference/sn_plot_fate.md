@@ -5,7 +5,13 @@ Plot CellRank fate probabilities
 ## Usage
 
 ``` r
-sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7)
+sn_plot_fate(
+  x,
+  result_id = NULL,
+  states = NULL,
+  point_size = 0.7,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -14,9 +20,9 @@ sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7)
 
   A Seurat object or fate result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - states:
 
@@ -25,6 +31,10 @@ sn_plot_fate(x, name = NULL, states = NULL, point_size = 0.7)
 - point_size:
 
   Point size.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

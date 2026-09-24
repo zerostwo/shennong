@@ -7,9 +7,10 @@ Plot CNV, malignancy, and subclone results
 ``` r
 sn_plot_cnv(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("heatmap", "umap", "score", "sample", "association"),
-  n = 100L
+  n = 100L,
+  object = NULL
 )
 ```
 
@@ -19,9 +20,9 @@ sn_plot_cnv(
 
   A Seurat object or unified CNV result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - type:
 
@@ -31,6 +32,10 @@ sn_plot_cnv(
 - n:
 
   Maximum cells or features shown.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

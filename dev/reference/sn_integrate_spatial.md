@@ -9,7 +9,7 @@ sn_integrate_spatial(
   object,
   method = c("staligner", "harmony", "custom"),
   spatial_cols = NULL,
-  store_name = "spatial_integration",
+  result_id = "spatial_integration",
   backend_control = list(),
   return_object = TRUE
 )
@@ -29,7 +29,7 @@ sn_integrate_spatial(
 
   Coordinate columns.
 
-- store_name:
+- result_id:
 
   Stored result name.
 

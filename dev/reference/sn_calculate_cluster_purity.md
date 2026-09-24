@@ -7,7 +7,12 @@ clustering preserves known cell identities after integration.
 ## Usage
 
 ``` r
-sn_calculate_cluster_purity(x, cluster_by = NULL, label_by = NULL)
+sn_calculate_cluster_purity(
+  x,
+  cluster_by = NULL,
+  label_by = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -24,6 +29,10 @@ sn_calculate_cluster_purity(x, cluster_by = NULL, label_by = NULL)
 
   Metadata/data-frame column containing reference labels.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 A data frame with one row per cluster_by and purity diagnostics in
@@ -37,10 +46,4 @@ meta <- data.frame(
   label = c("T", "T", "B", "B")
 )
 sn_calculate_cluster_purity(meta, cluster_by = "cluster", label_by = "label")
-#>   cluster n_cells dominant_label dominant_label_n purity_score
-#> 1       T       2              T                2            1
-#> 2       B       2              B                2            1
-#>   impurity_score
-#> 1              0
-#> 2              0
 ```

@@ -7,10 +7,11 @@ Plot metabolic pathway activity and differential results
 ``` r
 sn_plot_metabolism(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("activity", "heatmap", "differential", "sample"),
   pathways = NULL,
-  n = 30L
+  n = 30L,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_metabolism(
 
   A Seurat object or unified metabolism result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - type:
 
@@ -36,6 +37,10 @@ sn_plot_metabolism(
 - n:
 
   Maximum pathways shown.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

@@ -113,5 +113,4 @@ A ggplot object.
 ``` r
 plot_data <- data.frame(group = c("A", "B"), value = c(10, 15), type = c("x", "y"))
 sn_plot_barplot(plot_data, x = group, y = value, fill = type)
-
 ```

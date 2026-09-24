@@ -5,7 +5,13 @@ Plot an inferred trajectory on its embedding
 ## Usage
 
 ``` r
-sn_plot_trajectory(x, name = NULL, color_by = "cluster", point_size = 0.7)
+sn_plot_trajectory(
+  x,
+  result_id = NULL,
+  color_by = "cluster",
+  point_size = 0.7,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -14,9 +20,9 @@ sn_plot_trajectory(x, name = NULL, color_by = "cluster", point_size = 0.7)
 
   A Seurat object or trajectory result.
 
-- name:
+- result_id:
 
-  Stored trajectory name when `x` is a Seurat object.
+  Stored trajectory result_id when `x` is a Seurat object.
 
 - color_by:
 
@@ -25,6 +31,10 @@ sn_plot_trajectory(x, name = NULL, color_by = "cluster", point_size = 0.7)
 - point_size:
 
   Point size.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

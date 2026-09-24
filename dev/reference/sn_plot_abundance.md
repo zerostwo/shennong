@@ -5,7 +5,13 @@ Plot differential-abundance effects
 ## Usage
 
 ``` r
-sn_plot_abundance(x, name = NULL, n = 30L, adjusted_p_value = NULL)
+sn_plot_abundance(
+  x,
+  result_id = NULL,
+  n = 30L,
+  adjusted_p_value = NULL,
+  object = NULL
+)
 ```
 
 ## Arguments
@@ -14,9 +20,9 @@ sn_plot_abundance(x, name = NULL, n = 30L, adjusted_p_value = NULL)
 
   A Seurat object or differential-abundance result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - n:
 
@@ -25,6 +31,10 @@ sn_plot_abundance(x, name = NULL, n = 30L, adjusted_p_value = NULL)
 - adjusted_p_value:
 
   Optional adjusted-p-value cutoff.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

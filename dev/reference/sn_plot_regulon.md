@@ -7,10 +7,11 @@ Plot a gene regulatory network result
 ``` r
 sn_plot_regulon(
   x,
-  name = NULL,
+  result_id = NULL,
   type = c("network", "activity", "specificity"),
   regulons = NULL,
-  n = 50L
+  n = 50L,
+  object = NULL
 )
 ```
 
@@ -20,9 +21,9 @@ sn_plot_regulon(
 
   A Seurat object or GRN result.
 
-- name:
+- result_id:
 
-  Stored result name when `x` is a Seurat object.
+  Stored result result_id when `x` is a Seurat object.
 
 - type:
 
@@ -35,6 +36,10 @@ sn_plot_regulon(
 - n:
 
   Maximum network edges.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

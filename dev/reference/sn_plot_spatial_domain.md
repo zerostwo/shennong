@@ -5,7 +5,7 @@ Plot spatial-domain assignments
 ## Usage
 
 ``` r
-sn_plot_spatial_domain(x, name = NULL, point_size = 1.5)
+sn_plot_spatial_domain(x, result_id = NULL, point_size = 1.5, object = NULL)
 ```
 
 ## Arguments
@@ -14,13 +14,17 @@ sn_plot_spatial_domain(x, name = NULL, point_size = 1.5)
 
   A Seurat object or spatial-domain result.
 
-- name:
+- result_id:
 
-  Stored result name.
+  Stored result result_id.
 
 - point_size:
 
   Point size.
+
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
 
 ## Value
 

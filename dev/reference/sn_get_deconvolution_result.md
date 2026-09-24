@@ -7,10 +7,9 @@ Retrieve a stored deconvolution result from a Seurat object
 ``` r
 sn_get_deconvolution_result(
   object,
-  deconvolution_name = "default",
+  result_id = NULL,
   samples = NULL,
-  cell_types = NULL,
-  with_metadata = FALSE
+  cell_types = NULL
 )
 ```
 
@@ -18,9 +17,9 @@ sn_get_deconvolution_result(
 
 - object:
 
-  A `Seurat` object.
+  A `Seurat` object or a unified result of this analysis type.
 
-- deconvolution_name:
+- result_id:
 
   Name of the stored result.
 
@@ -32,10 +31,12 @@ sn_get_deconvolution_result(
 
   Optional subset of cell types to keep.
 
-- with_metadata:
-
-  If `TRUE`, return the full stored-result list.
-
 ## Value
 
-A tibble or stored-result list.
+A filtered tibble.
+
+## Details
+
+This getter always returns the selected table. Use
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md)
+for the complete stored result and metadata.

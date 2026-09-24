@@ -1,42 +1,22 @@
-# Run the read-only Shennong MCP server over stdio
+# Deprecated alias of `sn_run_mcp_server()`
 
-Starts a newline-delimited JSON-RPC 2.0 server implementing MCP
-lifecycle, tool discovery, and tool calls. The server exposes package
-metadata and documentation only; it does not execute arbitrary R code or
-modify analysis files.
+`sn_mcp_server()` is a deprecated compatibility alias. Use
+[`sn_run_mcp_server()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_mcp_server.md)
+directly; the alias will be removed in a future release.
 
 ## Usage
 
 ``` r
-sn_mcp_server(input = stdin(), output = stdout())
+sn_mcp_server(...)
 ```
 
 ## Arguments
 
-- input:
+- ...:
 
-  Input connection. Defaults to standard input.
-
-- output:
-
-  Output connection. Defaults to standard output.
+  Named arguments passed on to
+  [`sn_run_mcp_server()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_mcp_server.md).
 
 ## Value
 
-Invisibly returns `NULL` when the input stream closes.
-
-## References
-
-Model Context Protocol specification:
-<https://modelcontextprotocol.io/specification/2025-11-25>.
-
-## Examples
-
-``` r
-config <- sn_mcp_server_config()
-config$transport
-#> [1] "stdio"
-if (FALSE) { # \dontrun{
-sn_mcp_server()
-} # }
-```
+Result of `sn_run_mcp_server(...)`.

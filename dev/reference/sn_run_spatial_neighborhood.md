@@ -10,9 +10,10 @@ sn_run_spatial_neighborhood(
   method = c("knn", "squidpy"),
   group_by,
   spatial_cols = NULL,
-  store_name = "spatial_neighborhood",
+  result_id = "spatial_neighborhood",
   backend_control = list(),
-  return_object = TRUE
+  return_object = TRUE,
+  sample_by = NULL
 )
 ```
 
@@ -34,7 +35,7 @@ sn_run_spatial_neighborhood(
 
   Coordinate metadata columns.
 
-- store_name:
+- result_id:
 
   Stored result name.
 
@@ -45,6 +46,11 @@ sn_run_spatial_neighborhood(
 - return_object:
 
   Return the modified object or result.
+
+- sample_by:
+
+  Optional metadata column defining independent samples or tissue
+  sections. Neighbors and label permutations never cross boundaries.
 
 ## Value
 

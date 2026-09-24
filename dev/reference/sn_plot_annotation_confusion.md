@@ -8,7 +8,7 @@ Plot annotation confusion against known labels
 sn_plot_annotation_confusion(
   x,
   truth,
-  store_name = "annotation",
+  result_id = "annotation",
   normalize = TRUE
 )
 ```
@@ -24,7 +24,7 @@ sn_plot_annotation_confusion(
   Known labels. For a Seurat object this can be a metadata column name;
   otherwise it must be a vector aligned to the cell table.
 
-- store_name:
+- result_id:
 
   Stored annotation name.
 

@@ -12,11 +12,12 @@ the installed R package.
 sn_check_pixi(pixi = NULL, quiet = FALSE)
 
 sn_install_pixi(
-  version = "latest",
+  version = "0.69.0",
   pixi_home = "~/.pixi",
   bin_dir = NULL,
   no_path_update = TRUE,
   download_url = NULL,
+  sha256 = NULL,
   force = FALSE,
   quiet = FALSE
 )
@@ -24,11 +25,12 @@ sn_install_pixi(
 sn_ensure_pixi(
   pixi = NULL,
   install = TRUE,
-  version = "latest",
+  version = "0.69.0",
   pixi_home = "~/.pixi",
   bin_dir = NULL,
   no_path_update = TRUE,
   download_url = NULL,
+  sha256 = NULL,
   quiet = FALSE
 )
 ```
@@ -46,8 +48,9 @@ sn_ensure_pixi(
 
 - version:
 
-  Pixi version passed to the official installer script. Defaults to
-  `"latest"`.
+  Explicit Pixi release version downloaded from the official GitHub
+  release. Defaults to the package-tested version `"0.69.0"`; mutable
+  `"latest"` downloads are rejected.
 
 - pixi_home:
 
@@ -67,8 +70,14 @@ sn_ensure_pixi(
 
 - download_url:
 
-  Optional custom pixi binary download URL. This is useful for
-  institutional mirrors.
+  Optional custom pixi archive or binary URL. This is useful for
+  institutional mirrors and requires an explicit `sha256`.
+
+- sha256:
+
+  Optional expected SHA-256 digest. Official versioned downloads obtain
+  the release sidecar digest automatically; custom URLs must supply this
+  value.
 
 - force:
 
@@ -76,8 +85,8 @@ sn_ensure_pixi(
 
 - install:
 
-  Logical used by `sn_ensure_pixi()`; install pixi when it is not
-  already available.
+  Logical used by `sn_ensure_pixi()`; install pixi when the requested
+  exact version is not already available.
 
 ## Value
 
@@ -90,7 +99,6 @@ invisibly returns the refreshed check result.
 ``` r
 info <- sn_check_pixi(quiet = TRUE)
 info$installed
-#> [1] FALSE
 if (FALSE) { # \dontrun{
 sn_ensure_pixi()
 sn_install_pixi(pixi_home = "~/.pixi", no_path_update = TRUE)

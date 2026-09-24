@@ -17,7 +17,8 @@ sn_calculate_rogue(
   stratify_by = NULL,
   seed = 717,
   min_cells = 10,
-  min_genes = 10
+  min_genes = 10,
+  object = NULL
 )
 ```
 
@@ -74,6 +75,10 @@ sn_calculate_rogue(
   Minimum detected genes retained by the upstream `ROGUE::matr.filter()`
   step.
 
+- object:
+
+  Alias for `x`; supply only one of `x` and `object`.
+
 ## Value
 
 When neither `cluster_by` nor `sample_by` is supplied, returns a single
@@ -86,8 +91,10 @@ with one row per sample-cluster combination.
 
 ``` r
 if (FALSE) { # \dontrun{
-data("pbmc_small", package = "Shennong")
-pbmc <- sn_run_cluster(pbmc_small, normalization_method = "seurat", verbose = FALSE)
+pbmc <- qs2::qs_read(file.path(
+  Sys.getenv("SHENNONG_REAL_DATA_DIR"), "single-cell", "kotliarov_pbmc.qs2"
+))
+pbmc <- sn_run_cluster(pbmc, normalization_method = "seurat", verbose = FALSE)
 rogue_tbl <- sn_calculate_rogue(pbmc, cluster_by = "seurat_clusters")
 head(rogue_tbl)
 } # }

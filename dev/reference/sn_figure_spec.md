@@ -1,43 +1,22 @@
-# Inspect or calculate a Shennong figure specification
+# Deprecated alias of `sn_get_figure_spec()`
 
-Inspect or calculate a Shennong figure specification
+`sn_figure_spec()` is a deprecated compatibility alias. Use
+[`sn_get_figure_spec()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_figure_spec.md)
+directly; the alias will be removed in a future release.
 
 ## Usage
 
 ``` r
-sn_figure_spec(
-  plot = NULL,
-  plot_type = NULL,
-  data_summary = NULL,
-  profile = NULL,
-  ...
-)
+sn_figure_spec(...)
 ```
 
 ## Arguments
 
-- plot:
-
-  A ggplot, patchwork, ComplexHeatmap, or `NULL` when calculating from
-  synthetic metadata only.
-
-- plot_type:
-
-  Optional plot type used by the sizing rules.
-
-- data_summary:
-
-  Optional named list describing points, groups, panels, features,
-  labels, network size, or spatial aspect ratio.
-
-- profile:
-
-  Generic output profile.
-
 - ...:
 
-  Explicit recommendation overrides such as `width_mm` or `rasterize`.
+  Named arguments passed on to
+  [`sn_get_figure_spec()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_figure_spec.md).
 
 ## Value
 
-A figure specification list.
+Result of `sn_get_figure_spec(...)`.
