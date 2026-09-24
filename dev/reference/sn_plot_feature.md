@@ -50,6 +50,11 @@ sn_plot_feature(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
+  style = c("classic", "nebula", "glass"),
+  style_control = list(),
+  camera = NULL,
+  interactive = FALSE,
+  group_by = NULL,
   ...
 )
 ```
@@ -228,13 +233,58 @@ sn_plot_feature(
 
   Optional axis labels.
 
+- style:
+
+  Rendering style: `"classic"` preserves the existing 2D plot;
+  `"nebula"` and `"glass"` use planar density contours with the default
+  `dims = c(1, 2)`, or real three-dimensional embeddings with
+  `dims = 1:3`. Static 3D output is a ggplot with the complete
+  point/surface scene rasterized at 600 dpi by default; labels and
+  legends remain vector elements. Set `raster_dpi = 600` explicitly when
+  exporting. Requires misc3d and htmlwidgets; static export additionally
+  uses chromote, png, and Chrome/Chromium.
+
+- style_control:
+
+  Named 3D controls: `surface_alpha` (glass 0.16, nebula 0.035),
+  `point_alpha` (0.85 for dimension plots), `glow` (glass 0.3, nebula
+  0.85), `surface_mass` (0.95), `bandwidth` (0.75), `grid_size` (48,
+  integer 16–64), `background` (glass `"#03030C"`, nebula `"#101322"`),
+  and `auto_rotate` (FALSE, browser only). Surfaces are binned Gaussian
+  KDE isosurfaces of group coordinates, not expression contours or
+  biological boundaries. Groups with fewer than five cells or
+  rank-deficient coordinates retain points without a surface.
+
+- camera:
+
+  Camera list or downloaded JSON accepted by
+  [`sn_get_plot_camera()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_plot_camera.md).
+
+- interactive:
+
+  If TRUE, return a local WebGL htmlwidget with drag rotation,
+  shift-drag pan, scroll zoom, and camera export controls. Requires
+  htmlwidgets; currently one panel only. FALSE returns a ggplot
+  compatible with `ggsave()`. Browser and PDF use the same WebGL shader;
+  GPU/CPU antialiasing and vector text layout can differ. 3D styles have
+  a square, borderless panel, white labels and numeric feature legends.
+  Seurat-only shape, highlight, repel, blend, density-mode and extra
+  `...` options are rejected.
+
+- group_by:
+
+  For 3D styles, metadata column defining geometry groups and labels;
+  defaults to active identities. Expression colors still represent the
+  requested feature and assay layer, not the geometry group.
+
 - ...:
 
   Additional parameters to pass to FeaturePlot.
 
 ## Value
 
-A ggplot2 object.
+A ggplot2/patchwork object, or an htmlwidget when a 3D style uses
+`interactive = TRUE`.
 
 ## Examples
 

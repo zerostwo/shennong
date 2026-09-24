@@ -662,6 +662,9 @@
 - [`sn_plot_dim()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_dim.md)
   : Create a dimensionality reduction plot for categorical data
 
+- [`sn_get_plot_camera()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_plot_camera.md)
+  : Retrieve a reproducible 3D embedding camera
+
 - [`sn_plot_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_feature.md)
   : Plot feature expression in reduced dimensions
 

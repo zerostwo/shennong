@@ -222,6 +222,115 @@ workflow.</p>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="two--and-three-dimensional-nebula-and-glass-maps">Two- and three-dimensional nebula and glass maps<a class="anchor" aria-label="anchor" href="#two--and-three-dimensional-nebula-and-glass-maps"></a>
+</h2>
+<p><code><a href="../reference/sn_plot_dim.html">sn_plot_dim()</a></code> and <code><a href="../reference/sn_plot_feature.html">sn_plot_feature()</a></code> accept
+<code>style = "nebula"</code> (bright rims) or
+<code>style = "glass"</code> (translucent envelopes).
+<code>style = "classic"</code> preserves the existing plots. Omitting
+<code>dims</code> uses <strong>UMAP 1 and UMAP 2</strong>, with planar
+density contours and a front-facing camera. Points and contours stay in
+the same plane; there is no inferred depth. For example:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>                 style <span class="op">=</span> <span class="st">"nebula"</span>, raster_dpi <span class="op">=</span> <span class="fl">600</span><span class="op">)</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"umap-2d.pdf"</span>, <span class="va">p</span>, width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">6</span>, dpi <span class="op">=</span> <span class="fl">600</span><span class="op">)</span></span></code></pre></div>
+<p>An explicit <code>dims = 1:3</code> uses three real embedding
+dimensions. Plotting never adds a random Z coordinate or recomputes
+UMAP. To compute a separate 3D map:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Optional packages for this workflow:</span></span>
+<span><span class="co"># install.packages(c("misc3d", "htmlwidgets", "chromote", "png"))</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span></span>
+<span>  <span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"pca"</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, n.components <span class="op">=</span> <span class="fl">3L</span>,</span>
+<span>  reduction.name <span class="op">=</span> <span class="st">"umap3d"</span>, reduction.key <span class="op">=</span> <span class="st">"UMAP3D_"</span>, seed.use <span class="op">=</span> <span class="fl">717</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">viewer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
+<span>  <span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap3d"</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"glass"</span>, interactive <span class="op">=</span> <span class="cn">TRUE</span>, label <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">htmlwidgets</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/htmlwidgets/man/saveWidget.html" class="external-link">saveWidget</a></span><span class="op">(</span><span class="va">viewer</span>, <span class="st">"umap-viewer.html"</span>, selfcontained <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/browseURL.html" class="external-link">browseURL</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="st">"umap-viewer.html"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Drag to rotate; shift-drag to pan; scroll to zoom.</span></span>
+<span><span class="co"># Click Download camera JSON, then read the downloaded file:</span></span>
+<span><span class="va">camera</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_plot_camera.html">sn_get_plot_camera</a></span><span class="op">(</span><span class="st">"~/Downloads/shennong-camera.json"</span><span class="op">)</span></span>
+<span><span class="co"># Alternatively, paste the list from Copy R camera.</span></span>
+<span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_plot_dim.html">sn_plot_dim</a></span><span class="op">(</span></span>
+<span>  <span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap3d"</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"glass"</span>, camera <span class="op">=</span> <span class="va">camera</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, raster_dpi <span class="op">=</span> <span class="fl">600</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"umap-glass.pdf"</span>, <span class="va">p</span>, width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">5</span>, dpi <span class="op">=</span> <span class="fl">600</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Reuse exactly the same view for gene expression. Surface geometry is defined</span></span>
+<span><span class="co"># by group_by; point colors come from RNA/data, not smoothed expression.</span></span>
+<span><span class="va">p_gene</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_plot_feature.html">sn_plot_feature</a></span><span class="op">(</span></span>
+<span>  <span class="va">obj</span>, features <span class="op">=</span> <span class="st">"NKG7"</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  reduction <span class="op">=</span> <span class="st">"umap3d"</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"nebula"</span>, camera <span class="op">=</span> <span class="va">camera</span>, raster_dpi <span class="op">=</span> <span class="fl">600</span>,</span>
+<span>  palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#27334D"</span>, <span class="st">"#35CFC4"</span>, <span class="st">"#FFF4A3"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"NKG7-nebula.pdf"</span>, <span class="va">p_gene</span>, width <span class="op">=</span> <span class="fl">6</span>, height <span class="op">=</span> <span class="fl">5</span>, dpi <span class="op">=</span> <span class="fl">600</span><span class="op">)</span></span></code></pre></div>
+<p>The browser is a self-contained WebGL viewer with locally bundled
+shaders and no CDN dependency. Smooth normals, per-pixel rim lighting,
+soft particles and bloom distinguish glass from nebula. The original
+coordinates and number of cells are preserved; no synthetic particles
+are inserted. Static export requires Chrome/Chromium (or
+<code>CHROMOTE_CHROME</code> pointing to its executable),
+<code>chromote</code> and <code>png</code>. It uses local software WebGL
+rendering, so no dedicated GPU is required. A standalone browser cannot
+change a running R variable: the JSON or copied R list is the explicit
+return path. <code>sn_get_plot_camera(viewer)</code> returns its
+<strong>initial</strong> camera, not subsequent browser interactions.
+Downloading/copying pauses automatic rotation. Preserve the reduction,
+cell subset and grouping when transferring a view; camera pan/zoom use
+scene-normalized coordinates.</p>
+<p>Static output is a regular ggplot. Its <strong>entire point/surface
+layer is rasterized at 600 dpi</strong>, including when saved to PDF.
+Labels and legends remain vector. <code>ggsave(dpi = 600)</code> alone
+does not configure a ggplot raster layer; use
+<code>raster_dpi = 600</code> as above (also the new styles’ default).
+The actual raster size follows the physical panel size at draw time.
+Browser and PDF use the same geometry and WebGL shader code; export
+renders at the requested pixel size instead of upsampling a browser
+screenshot. GPU/CPU antialiasing and vector text layout may differ.
+Saving a widget with <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave()</a></code> is unsupported; regenerate
+the static plot with <code>interactive = FALSE</code> (the default).</p>
+<p><code>style_control</code> accepts <code>surface_alpha</code>,
+<code>point_alpha</code>, <code>glow</code> (all 0–1),
+<code>surface_mass</code> (0.5–0.99, default 0.95),
+<code>bandwidth</code> (0.2–5, default 0.75), <code>grid_size</code>
+(integer 16–64, default 48), <code>background</code>, and
+<code>auto_rotate</code>. The surface is a Gaussian-smoothed, binned
+density contour (2D) or density envelope (3D) of each group’s
+coordinates. Its smoothing scale is estimated from local neighbor
+distances, so distant islands do not inflate a global covariance
+ellipsoid. At most 128 evenly spaced cells probe distances to all group
+cells for this bandwidth estimate; all selected cells enter the KDE
+grid. It is a visual aid, <strong>not a measured tissue boundary or
+feature-expression isosurface</strong>. Disconnected components are
+retained when resolved by the grid; smoothing can still merge nearby
+islands. Groups with fewer than five cells or rank-deficient coordinates
+show points without a surface. All selected cells enter the density and
+point layer; no hidden subsampling is applied. Browser responsiveness
+depends on cell count and grid size; use an explicit <code>cells</code>
+subset when necessary.</p>
+<p>Static plots support multiple features and <code>split_by</code>;
+browser viewing currently supports one panel. Three-dimensional styles
+use a square borderless panel, white labels with dark backplates and
+colored anchors, and numeric feature legends. The default styled
+categorical palette uses muted luminous colors; an explicit
+<code>palette</code> or <code>cols</code> still takes precedence.
+Default point size is 0.20 mm. They reject shape/highlight/repel,
+expression blending, <code>mode = "density"</code>, and extra Seurat
+arguments in <code>...</code>. These remain available through
+<code>style = "classic"</code>. <code>group_by</code> in feature plots
+is only for the new styles; <code>keep_scale</code> controls shared
+expression limits.</p>
+</div>
+<div class="section level2">
 <h2 id="focused-heatmaps-for-selected-genes">Focused heatmaps for selected genes<a class="anchor" aria-label="anchor" href="#focused-heatmaps-for-selected-genes"></a>
 </h2>
 <p>When the question is about a known marker panel, a heatmap is usually
@@ -231,7 +340,7 @@ heatmaps. The default <code>mode = "cells"</code> follows Seurat’s
 heatmap backend but hides cell names and ticks, uses an 8 pt group
 label, rasterizes by default, and colors the group bar with a Paired
 palette.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
@@ -243,7 +352,7 @@ palette.</p>
 group-level pattern rather than every individual cell. This averages
 expression within each group and then z-scores each gene by default,
 giving a compact marker-panel summary.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
@@ -253,7 +362,7 @@ giving a compact marker-panel summary.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Use <code>split_by</code> when the same marker panel should be
 inspected separately across samples, conditions, or batches.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
@@ -267,7 +376,7 @@ inspected separately across samples, conditions, or batches.</p>
 <p>Shennong wraps common summary plots so a report can move from
 cell-level maps to sample-level summaries without switching visual
 grammar.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_violin.html">sn_plot_violin</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"pctMT"</span><span class="op">)</span>,</span>
@@ -320,7 +429,7 @@ registry. Once stored,
 <code>sn_plot_dot(features = "top_markers")</code> can reuse that result
 directly instead of asking users to manually copy marker lists between
 scripts.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
@@ -348,7 +457,7 @@ stable contract: <code>object</code>, <code>analysis_type</code>,
 <code>result_id</code>, and <code>view</code>. Direct result objects
 carry their own analysis type. For a Seurat object, omitted identifiers
 are inferred only when the stored choice is unambiguous.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_plot_methods.html">sn_list_plot_methods</a></span><span class="op">(</span><span class="st">"de"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
 <span></span>
@@ -361,7 +470,7 @@ are inferred only when the stored choice is unambiguous.</p>
 <p>For a curated marker panel, pass a named list. Each list element
 becomes a free-width facet, so marker families remain visually separated
 even when the groups contain different numbers of genes.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">level1_markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Lymphoid"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"MS4A1"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"Myeloid"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"LYZ"</span>, <span class="st">"FCGR3A"</span><span class="op">)</span>,</span>
@@ -382,7 +491,7 @@ composition directly from a Seurat object’s metadata. The explicit
 two-step route through <code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> remains
 useful when you want to inspect or export the denominator table before
 plotting.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">composition</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_composition.html">sn_calculate_composition</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
@@ -403,7 +512,7 @@ contribute one proportion. <code>sample_boxplot</code> shows those
 observations directly; <code>sample_bar</code> shows their mean or
 median with SD/SE error bars. Cell types absent from a retained sample
 are represented as zero rather than silently dropped.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  x <span class="op">=</span> <span class="va">real_response</span>,</span>
@@ -415,7 +524,7 @@ are represented as zero rather than silently dropped.</p>
 <p>Alluvial/Sankey-style plots trace counts through two or more metadata
 levels. They use ggplot2 directly; no optional Sankey backend is
 required.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"A"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -469,7 +578,7 @@ expressions are needed.</p>
 and figure metadata as <code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code>. The existing
 <code><a href="../reference/sn_plot_barplot.html">sn_plot_barplot()</a></code> and <code><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot()</a></code> remain
 generic numeric-data plotters.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_bar.html">sn_plot_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_sample"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_sample_bar.html">sn_plot_sample_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_response"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>                   sample_by <span class="op">=</span> <span class="st">"real_sample"</span>, errorbar <span class="op">=</span> <span class="st">"se"</span><span class="op">)</span></span>
@@ -519,12 +628,12 @@ count widths. B uses tighter spacing and external brackets. Both accept
 <code>axis_labels = c("Original", "Final")</code>. All styles retain
 independent factor order: top-to-bottom in A/B, left-to-right in C.
 Character columns retain first appearance order.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>,</span>
 <span>               style <span class="op">=</span> <span class="st">"C"</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>For annotation comparisons and hierarchies, substitute your metadata
 columns:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
 <span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>,</span>
 <span>  fill_by <span class="op">=</span> <span class="st">"cell_type_level1"</span>, style <span class="op">=</span> <span class="st">"A"</span>, sankey_layout <span class="op">=</span> <span class="st">"expanded"</span><span class="op">)</span></span>
@@ -557,7 +666,7 @@ many or long labels need more room.</p>
 use plain ggplot2 and resolve colors through Shennong. If
 <code>catplot</code> is installed, its compact theme is a good final
 layer for manuscript-style figures.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">response_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">qc_summary</span><span class="op">$</span><span class="va">real_response</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">response_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_palette.html">sn_get_palette</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Set2"</span>,</span>
@@ -588,7 +697,7 @@ layer for manuscript-style figures.</p>
 <code>panel_heights</code> explicitly, in <strong>points (pt)</strong>.
 These control the drawing panel, excluding outer labels and margins, and
 do not require catplot. For example:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
 <span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"B"</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="fl">320</span>, panel_heights <span class="op">=</span> <span class="fl">400</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
