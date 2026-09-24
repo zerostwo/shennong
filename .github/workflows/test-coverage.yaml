@@ -51,6 +51,10 @@ jobs:
             any::testthat
             any::Seurat
             any::SeuratObject
+            any::misc3d
+            any::htmlwidgets
+            any::chromote
+            any::png
             github::carmonalab/SignatuR
             github::immunogenomics/harmony@harmony2
             any::HGNChelper
@@ -77,9 +81,31 @@ jobs:
 
       - name: Test coverage
         run: |
-          cov <- covr::package_coverage()
+          coverage_library <- file.path(Sys.getenv("RUNNER_TEMP"), "coverage-library")
+          cov <- tryCatch(
+            covr::package_coverage(install_path = coverage_library, clean = FALSE),
+            error = function(error) {
+              logs <- list.files(
+                coverage_library, pattern = "[.]Rout([.]fail)?$",
+                recursive = TRUE, full.names = TRUE
+              )
+              for (log in logs) {
+                cat("\nTest output:", log, "\n")
+                cat(tail(readLines(log, warn = FALSE), 200L), sep = "\n")
+              }
+              stop(error)
+            }
+          )
           covr::to_cobertura(cov, filename = "coverage.xml")
         shell: Rscript {0}
+
+      - name: Preserve failed test output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-test-output
+          path: ${{ runner.temp }}/coverage-library/**/*.Rout*
+          if-no-files-found: ignore
 
       - uses: codecov/codecov-action@v5
         with:

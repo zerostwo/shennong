@@ -102,6 +102,7 @@ test_that("single-group widget vectors stay arrays and missing layers cannot sil
 })
 
 test_that("geometry handles small groups and preserves disconnected islands", {
+  skip_if_not_installed("misc3d")
   set.seed(701)
   ctl <- .sn_embedding_control(list(grid_size = 32L), "glass")
   expect_equal(nrow(.sn_embedding_surface(matrix(1:12, 4), ctl, 5)), 0)
