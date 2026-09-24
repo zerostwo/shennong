@@ -8,6 +8,10 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Current validation
 
+- The remaining embedding-style branch is merged with current API/documentation
+  changes. Focused visualization, real WebGL capture, architecture and registry
+  tests pass. The generated parameter inventory and roxygen files are refreshed
+  from the combined source; full remote checks run on the merge.
 - API issues #17–#27 have breaking fixes and public-entry regressions for
   result selection, independent direction/significance filtering, consistent
   result envelopes, safe replacement, explicit aggregation, effective seeds,
@@ -36,18 +40,22 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   instead of the previous host without address records.
 - No dependencies or exports are added by the documentation refresh. The
   homepage, guide navigation, four introductory/reference articles, related
-  workflow examples, and installed usage assets are synchronized. Unrelated
-  embedding/heatmap changes remain outside this delivery. Publication is
+  workflow examples, and installed usage assets are synchronized. Uncommitted
+  working-tree changes remain outside this delivery. Publication is
   verified separately against the merged main commit and pkgdown workflow.
 
 ## Current architecture state
 
+- The embedding-style branch is integrated with the shared API and refreshed
+  guides. Nebula/glass support planar default dimensions and explicit real 3D
+  coordinates, a locally shipped WebGL viewer, transferable cameras, and
+  static capture through Chrome/Chromium. Existing classic plots are retained.
 - Shared API controls are `batch_by`, `backend_control`, `n_workers`, and
   top-level `seed`; DE/enrichment/Milo return unified results or stored objects.
   Table selection has explicit scope, result IDs resolve only unambiguously,
   and program aggregation names the order of operations. Fate reruns require
   explicit overwrite while retaining metadata ownership checks.
-- `R/` contains 83 domain-oriented source files. Large mixed modules have been
+- `R/` contains 85 domain-oriented source files. Large mixed modules have been
   split along stable responsibilities, including bulk design, BBKNN,
   result semantics, gene-symbol preparation, Python artifact validation, and
   infercnvpy integration. Public functions remain in the strict

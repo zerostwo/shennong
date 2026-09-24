@@ -119,3 +119,22 @@ Pass computational `seed` at the top level. Group program scoring requires
 `aggregate = "expression"` (average expression, then score) or `"scores"`
 (score cells, then average); record which question the analysis answers.
 Milo's `keep_model` retains `models$milo` without changing its return shape.
+
+## Styled embedding figures
+
+For `sn_plot_dim()` / `sn_plot_feature(style = "nebula" | "glass")`, use an
+existing 2D reduction with default dimensions for planar density contours, or
+an existing three-dimensional reduction with explicit `dims = 1:3`. Preserve
+original reductions. The browser viewer uses `interactive = TRUE`; download its camera
+JSON or copy its R list and pass it as `camera` to a static plot.
+`sn_get_plot_camera(viewer)` retrieves only the initial camera. Export static
+ggplots with `raster_dpi = 600` and `ggsave(..., dpi = 600)`: surfaces and points
+are rasterized together, labels and legends remain vector. Feature colors use
+the specified assay/layer; `group_by` controls envelopes only. Envelopes are
+visual density aids, not tissue boundaries. Never invent a third coordinate.
+
+The 3D renderer uses WebGL with local shaders. Static 600 dpi capture requires
+Chrome/Chromium plus chromote and png, and runs through the same shader as the
+viewer. Do not fall back silently to the old flat polygon renderer. Density
+envelopes use local-neighbor bandwidth estimates; do not duplicate cells to
+imitate the apparent point density of a reference image.

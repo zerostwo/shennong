@@ -1,0 +1,5 @@
+dependencies:
+  - name: shennong-webgl
+    version: 2.0.0
+    src: htmlwidgets/lib
+    script: shennong-webgl.js

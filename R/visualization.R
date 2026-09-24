@@ -553,8 +553,31 @@ sn_plot_milo <- function(x,
 #'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
+#' @param style Rendering style: `"classic"` preserves the existing 2D plot;
+#'   `"nebula"` and `"glass"` use planar density contours with the default
+#'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
+#'   Static 3D output is a ggplot with the complete point/surface scene rasterized
+#'   at 600 dpi by default; labels and legends remain vector elements. Set
+#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.
+#' @param style_control Named 3D controls: `surface_alpha` (glass 0.16, nebula
+#'   0.035), `point_alpha` (0.85 for dimension plots), `glow` (glass 0.3, nebula
+#'   0.85), `surface_mass` (0.95), `bandwidth` (0.75), `grid_size` (48, integer
+#'   16--64), `background` (glass `"#03030C"`, nebula `"#101322"`), and
+#'   `auto_rotate` (FALSE, browser only).
+#'   Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
+#'   expression contours or biological boundaries. Groups with fewer than five
+#'   cells or rank-deficient coordinates retain points without a surface.
+#' @param camera Camera list or downloaded JSON accepted by [sn_get_plot_camera()].
+#' @param interactive If TRUE, return a local WebGL htmlwidget with
+#'   drag rotation, shift-drag pan, scroll zoom, and camera export controls.
+#'   Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
+#'   compatible with `ggsave()`. Browser and PDF use the same WebGL shader;
+#'   GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
+#'   panel, white labels and numeric feature legends. Seurat-only shape,
+#'   highlight, repel, blend, density-mode and extra `...` options are rejected.
 #' @param ... Additional parameters to be passed to the DimPlot() function in Seurat.
-#' @return A ggplot2 object containing the dimensionality reduction plot.
+#' @return A ggplot2/patchwork object, a list when `combine = FALSE`, or an
+#'   htmlwidget when `interactive = TRUE` for a 3D style.
 #'
 #' @examples
 #' \dontrun{
@@ -609,8 +632,26 @@ sn_plot_dim <- function(
   aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
+  style = c("classic", "nebula", "glass"),
+  style_control = list(),
+  camera = NULL,
+  interactive = FALSE,
   ...
 ) {
+  style <- match.arg(style)
+  if (style != "classic") {
+    if (missing(palette)) palette <- c("#65CFC0", "#97ACDC", "#D99A78", "#A7C981", "#D78CAE", "#B79BDC", "#DCC570", "#79BFD5", "#BDADA0")
+    .sn_embedding_reject(list(shape_by = !is.null(shape_by), order = !is.null(order),
+      shuffle = shuffle, cells_highlight = !is.null(cells_highlight), label_box = label_box,
+      repel = repel, show_axis = show_axis, panel_widths = !is.null(panel_widths),
+      panel_heights = !is.null(panel_heights)), list(...))
+    return(.sn_plot_embedding_style(object, reduction, dims, cells, group_by,
+      split_by = split_by, style = style, style_control = style_control, camera = camera,
+      interactive = interactive, raster = raster, raster_dpi = if (missing(raster_dpi)) 600 else raster_dpi,
+      pt_size = pt_size, label = label, label_size = label_size, palette = palette, cols = cols,
+      show_legend = show_legend, title = title, ncol = ncol, combine = combine, na_value = na_value))
+  }
+  if (interactive || !is.null(camera) || length(style_control)) stop("`interactive`, `camera` and `style_control` require a 3D style.", call. = FALSE)
   pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
   p <- Seurat::DimPlot(
     object = object,
@@ -1575,9 +1616,35 @@ sn_plot_dot <- function(x,
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label Optional axis labels.
+#' @param style Rendering style: `"classic"` preserves the existing 2D plot;
+#'   `"nebula"` and `"glass"` use planar density contours with the default
+#'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
+#'   Static 3D output is a ggplot with the complete point/surface scene rasterized
+#'   at 600 dpi by default; labels and legends remain vector elements. Set
+#'   `raster_dpi = 600` explicitly when exporting. Requires misc3d and htmlwidgets; static export additionally uses chromote, png, and Chrome/Chromium.
+#' @param style_control Named 3D controls: `surface_alpha` (glass 0.16, nebula
+#'   0.035), `point_alpha` (0.85 for dimension plots), `glow` (glass 0.3, nebula
+#'   0.85), `surface_mass` (0.95), `bandwidth` (0.75), `grid_size` (48, integer
+#'   16--64), `background` (glass `"#03030C"`, nebula `"#101322"`), and
+#'   `auto_rotate` (FALSE, browser only).
+#'   Surfaces are binned Gaussian KDE isosurfaces of group coordinates, not
+#'   expression contours or biological boundaries. Groups with fewer than five
+#'   cells or rank-deficient coordinates retain points without a surface.
+#' @param camera Camera list or downloaded JSON accepted by [sn_get_plot_camera()].
+#' @param interactive If TRUE, return a local WebGL htmlwidget with
+#'   drag rotation, shift-drag pan, scroll zoom, and camera export controls.
+#'   Requires htmlwidgets; currently one panel only. FALSE returns a ggplot
+#'   compatible with `ggsave()`. Browser and PDF use the same WebGL shader;
+#'   GPU/CPU antialiasing and vector text layout can differ. 3D styles have a square, borderless
+#'   panel, white labels and numeric feature legends. Seurat-only shape,
+#'   highlight, repel, blend, density-mode and extra `...` options are rejected.
+#' @param group_by For 3D styles, metadata column defining geometry groups and
+#'   labels; defaults to active identities. Expression colors still represent
+#'   the requested feature and assay layer, not the geometry group.
 #' @param ... Additional parameters to pass to FeaturePlot.
 #'
-#' @return A ggplot2 object.
+#' @return A ggplot2/patchwork object, or an htmlwidget when a 3D style
+#'   uses `interactive = TRUE`.
 #'
 #' @importFrom ggplot2 labs guides
 #' @importFrom ggplot2 theme element_blank element_text margin
@@ -1632,12 +1699,35 @@ sn_plot_feature <-
            panel_heights = NULL,
            x_label = NULL,
            y_label = NULL,
+           style = c("classic", "nebula", "glass"),
+           style_control = list(),
+           camera = NULL,
+           interactive = FALSE,
+           group_by = NULL,
            ...) {
+    style <- match.arg(style)
     mode <- match.arg(mode)
     density_method <- match.arg(density_method)
     density_style <- match.arg(density_style)
     legend_labels <- match.arg(legend_labels)
     keep_scale <- match.arg(keep_scale)
+    if (style != "classic") {
+      .sn_embedding_reject(list(mode = mode != "expression", blend = blend,
+        shape_by = !is.null(shape_by), show_axis = show_axis,
+        panel_widths = !is.null(panel_widths), panel_heights = !is.null(panel_heights),
+        x_label = !is.null(x_label), y_label = !is.null(y_label),
+        stroke_size = !is.null(stroke_size) && stroke_size != 0), list(...))
+      if (is.null(style_control$point_alpha)) style_control$point_alpha <- alpha
+      return(.sn_plot_embedding_style(object, reduction, dims, cells, group_by,
+        features = features, assay = assay, layer = layer, split_by = split_by,
+        style = style, style_control = style_control, camera = camera, interactive = interactive,
+        raster = raster, raster_dpi = if (missing(raster_dpi)) 600 else raster_dpi,
+        pt_size = pt_size, label = label, label_size = label_size, palette = palette,
+        direction = direction, min_cutoff = min_cutoff, max_cutoff = max_cutoff,
+        keep_scale = keep_scale, show_legend = show_legend, title = title,
+        legend_title = legend_title, ncol = ncol))
+    }
+    if (interactive || !is.null(camera) || length(style_control) || !is.null(group_by)) stop("`interactive`, `camera`, `style_control` and `group_by` require a 3D style.", call. = FALSE)
     pt_size <- .sn_auto_point_size(object = object, pt_size = pt_size)
     reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
     object[["ident"]] <- Seurat::Idents(object = object)
