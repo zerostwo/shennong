@@ -124,19 +124,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           published_commit="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/gh-pages" --jq .object.sha)"
-          build_url="$(gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" --jq .url)"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null
+          # A newer Pages build can supersede the initially requested build.
+          build_url="repos/$GITHUB_REPOSITORY/pages/builds/latest"
           for attempt in {1..60}; do
             read -r status commit < <(gh api "$build_url" --jq '[.status, .commit] | @tsv')
             if [ "$status" = "built" ] && [ "$commit" = "$published_commit" ]; then
               echo "GitHub Pages published $commit"
               exit 0
             fi
-            if [ "$status" = "errored" ]; then
-              gh api "$build_url"
-              exit 1
-            fi
+            echo "Waiting for Pages commit $published_commit (latest: $status $commit)"
             sleep 10
           done
+          gh api "$build_url"
           echo "GitHub Pages did not publish $published_commit within ten minutes."
           exit 1
         shell: bash

@@ -1912,3 +1912,13 @@ GitHub Actions token pushes do not automatically trigger legacy Pages builds. Th
 ## 2026-09-23: canonical documentation URL
 
 The documentation canonical URL is `https://zerostwo.github.io/shennong`. The previous `songqi.org` host currently has no A/AAAA address records, while the configured GitHub Pages endpoint is reachable. Package metadata, README, pkgdown canonical/search links, and shipped guide links use the same working address. This does not change personal author URLs or DNS configuration.
+
+## 2026-09-23: Verify the published Pages commit across superseded builds
+
+The Pages build requested by pkgdown can be superseded by another build of the
+same gh-pages commit. Run 35934932431 followed the first build ID and failed,
+while replacement build 1235337174 published that exact commit successfully.
+The verifier now polls the latest build within its existing ten-minute bound
+and succeeds only when both the built status and expected commit match. A
+transient errored/cancelled record may be replaced; timeout still fails and
+prints the final build diagnostic. This changes deployment verification only.
