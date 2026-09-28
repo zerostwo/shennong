@@ -250,67 +250,262 @@ genes afterward with <code>sn_get_de_result(p_adjusted_cutoff = ...,
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">20</span> <span class="op">*</span> <span class="fl">24</span>, lambda <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">20</span>, ncol <span class="op">=</span> <span class="fl">24</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"GENE"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">14</span><span class="op">)</span>,</span>
-<span>    <span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">24</span><span class="op">)</span></span>
-<span>  <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span><span class="op">)</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span><span class="op">)</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span> <span class="op">+</span> <span class="fl">20</span></span>
-<span>  <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span><span class="op">)</span>, <span class="fl">13</span><span class="op">:</span><span class="fl">24</span><span class="op">]</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span><span class="op">)</span>, <span class="fl">13</span><span class="op">:</span><span class="fl">24</span><span class="op">]</span> <span class="op">+</span> <span class="fl">20</span></span>
-<span></span>
-<span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">counts</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
-<span>  <span class="va">obj</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Tcell"</span>, <span class="st">"Bcell"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
-<span>  <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Idents.html" class="external-link">Idents</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="va">cell_type</span></span>
-<span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="va">marker_result</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span>
-<span>    <span class="va">obj</span>,</span>
-<span>    analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
-<span>    group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>    min_pct <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>    logfc_threshold <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>    return_object <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">marker_result</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span>
-<span>    <span class="va">obj</span>,</span>
-<span>    analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
-<span>    group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
-<span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span>
-<span>    min_pct <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>    logfc_threshold <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>    result_id <span class="op">=</span> <span class="st">"celltype_markers"</span>,</span>
-<span>    return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"de"</span>, result_id <span class="op">=</span> <span class="st">"celltype_markers"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">bulk_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
-<span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">40</span> <span class="op">*</span> <span class="fl">6</span>, <span class="fl">20</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">40</span>,</span>
-<span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"gene_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">40</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">bulk_metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">bulk_de</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span>
-<span>  <span class="va">bulk_counts</span>,</span>
-<span>  metadata <span class="op">=</span> <span class="va">bulk_metadata</span>,</span>
-<span>  design <span class="op">=</span> <span class="op">~</span><span class="va">condition</span>,</span>
-<span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"control"</span><span class="op">)</span>,</span>
-<span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>result <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    gene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span>, logFC <span class="op">=</span> <span class="fl">0</span>, PValue <span class="op">=</span> <span class="fl">1</span>, FDR <span class="op">=</span> <span class="fl">1</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">20</span> <span class="op">*</span> <span class="fl">24</span>, lambda <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">20</span>, ncol <span class="op">=</span> <span class="fl">24</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"GENE"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">14</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">24</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span><span class="op">)</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span> <span class="op">&lt;-</span></span></span>
+<span class="r-in"><span>    <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span><span class="op">)</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span> <span class="op">+</span> <span class="fl">20</span></span></span>
+<span class="r-in"><span>  <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span><span class="op">)</span>, <span class="fl">13</span><span class="op">:</span><span class="fl">24</span><span class="op">]</span> <span class="op">&lt;-</span></span></span>
+<span class="r-in"><span>    <span class="va">counts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span><span class="op">)</span>, <span class="fl">13</span><span class="op">:</span><span class="fl">24</span><span class="op">]</span> <span class="op">+</span> <span class="fl">20</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">counts</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">obj</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Tcell"</span>, <span class="st">"Bcell"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Idents.html" class="external-link">Idents</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">$</span><span class="va">cell_type</span></span></span>
+<span class="r-in"><span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="va">marker_result</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">obj</span>,</span></span>
+<span class="r-in"><span>    analysis <span class="op">=</span> <span class="st">"markers"</span>,</span></span>
+<span class="r-in"><span>    group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span></span>
+<span class="r-in"><span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span></span>
+<span class="r-in"><span>    min_pct <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    logfc_threshold <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    return_object <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">marker_result</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">obj</span>,</span></span>
+<span class="r-in"><span>    analysis <span class="op">=</span> <span class="st">"markers"</span>,</span></span>
+<span class="r-in"><span>    group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span></span>
+<span class="r-in"><span>    layer <span class="op">=</span> <span class="st">"data"</span>,</span></span>
+<span class="r-in"><span>    min_pct <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    logfc_threshold <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>    result_id <span class="op">=</span> <span class="st">"celltype_markers"</span>,</span></span>
+<span class="r-in"><span>    return_object <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"de"</span>, result_id <span class="op">=</span> <span class="st">"celltype_markers"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:49:13] Initializing Seurat object for project: Shennong.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:49:14] Running QC metrics for human.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:49:14] Seurat object initialization complete.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> (default method for FindMarkers) please install the presto package</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> --------------------------------------------</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> install.packages('devtools')</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> devtools::install_github('immunogenomics/presto')</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> --------------------------------------------</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> After installation of presto, Seurat will automatically use the more </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> efficient implementation (no further action necessary).</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> This message will be shown once per session</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $schema_version</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2.0.0"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $analysis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "markers"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "wilcox"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $group_by</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "cell_type"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $group_col</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "cluster"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ident_1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ident_2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $subset_by</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sample_col</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $design</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $contrast</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $parameters</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$assay</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "RNA"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$layer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$requested_features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$candidate_features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "GENE1"   "GENE2"   "GENE3"   "GENE4"   "GENE5"   "GENE6"   "GENE7"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "GENE8"   "GENE9"   "GENE10"  "GENE11"  "GENE12"  "GENE13"  "GENE14" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "CD3D"    "CD3E"    "TRAC"    "MS4A1"   "CD79A"   "HLA-DRA"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$tested_features</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "GENE1"   "GENE2"   "GENE3"   "GENE4"   "GENE5"   "GENE6"   "GENE7"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "GENE8"   "GENE9"   "GENE10"  "GENE11"  "GENE12"  "GENE13"  "GENE14" </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "CD3D"    "CD3E"    "TRAC"    "MS4A1"   "CD79A"   "HLA-DRA"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$tested_features_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$tested_features_source</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "backend_statistics"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$tested_feature_groups</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "cluster"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $input$tested_features_by_comparison</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 20 × 2</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    gene    cluster</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> CD3E    Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> CD3D    Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> TRAC    Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> GENE10  Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> GENE14  Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> GENE6   Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> GENE1   Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> GENE2   Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> GENE11  Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> GENE7   Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> GENE3   Tcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> MS4A1   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> HLA-DRA Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">14</span> CD79A   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span> GENE4   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">16</span> GENE8   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">17</span> GENE12  Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">18</span> GENE13  Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">19</span> GENE5   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">20</span> GENE9   Bcell  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $assay</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "RNA"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $layer</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $rank_col</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "avg_log2FC"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $p_col</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "p_val_adj"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $min_pct</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $logfc_threshold</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $n_genes</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions$Shennong</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "0.3.0.9000"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions$R</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "4.6.1"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$random_seed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$timestamp</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2026-09-28 08:49:14 UTC"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$acceleration</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$acceleration$patches</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "seurat"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$acceleration$used_patches</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> character(0)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$acceleration$suppressed_patches</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "seurat"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$result_id</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "celltype_markers"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$analysis_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "de"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $analysis_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "de"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $result_id</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "celltype_markers"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $backend</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "wilcox"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $tables</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $tables$primary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 7</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 0.000<span style="text-decoration: underline;">000</span>740       4.52     1 0.583 0.000<span style="text-decoration: underline;">014</span>8 Tcell   CD3E   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 0.000<span style="text-decoration: underline;">000</span>740       4.32     1 0.667 0.000<span style="text-decoration: underline;">014</span>8 Tcell   CD3D   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> 0.000<span style="text-decoration: underline;">000</span>740       4.15     1 0.667 0.000<span style="text-decoration: underline;">014</span>8 Tcell   TRAC   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> 0.000<span style="text-decoration: underline;">000</span>740       4.07     1 0.75  0.000<span style="text-decoration: underline;">014</span>8 Bcell   MS4A1  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> 0.000<span style="text-decoration: underline;">000</span>740       3.61     1 0.833 0.000<span style="text-decoration: underline;">014</span>8 Bcell   HLA-DRA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> 0.000<span style="text-decoration: underline;">000</span>740       4.72     1 0.583 0.000<span style="text-decoration: underline;">014</span>8 Bcell   CD79A  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $embeddings</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $graphs</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $models</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $diagnostics</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $warnings</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> character(0)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">bulk_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">40</span> <span class="op">*</span> <span class="fl">6</span>, <span class="fl">20</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">40</span>,</span></span>
+<span class="r-in"><span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"gene_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">40</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">bulk_metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">bulk_de</span> <span class="op">&lt;-</span> <span class="fu">sn_find_de</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">bulk_counts</span>,</span></span>
+<span class="r-in"><span>  metadata <span class="op">=</span> <span class="va">bulk_metadata</span>,</span></span>
+<span class="r-in"><span>  design <span class="op">=</span> <span class="op">~</span><span class="va">condition</span>,</span></span>
+<span class="r-in"><span>  contrast <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"control"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  backend_control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>result <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    gene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">bulk_counts</span><span class="op">)</span>, logFC <span class="op">=</span> <span class="fl">0</span>, PValue <span class="op">=</span> <span class="fl">1</span>, FDR <span class="op">=</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

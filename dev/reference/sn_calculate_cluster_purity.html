@@ -107,12 +107,16 @@ known cell identities after integration.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="st">"T"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span>,</span>
-<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="st">"T"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu">sn_calculate_cluster_purity</span><span class="op">(</span><span class="va">meta</span>, cluster_by <span class="op">=</span> <span class="st">"cluster"</span>, label_by <span class="op">=</span> <span class="st">"label"</span><span class="op">)</span></span>
-<span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="st">"T"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T"</span>, <span class="st">"T"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">sn_calculate_cluster_purity</span><span class="op">(</span><span class="va">meta</span>, cluster_by <span class="op">=</span> <span class="st">"cluster"</span>, label_by <span class="op">=</span> <span class="st">"label"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   cluster n_cells dominant_label dominant_label_n purity_score impurity_score</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       T       2              T                2            1              0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       B       2              B                2            1              0</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -64,6 +64,9 @@ created <- sn_initialize_project(
   overwrite = TRUE
 )
 file.exists(created$readme)
+#> [1] TRUE
 file.exists(created$gitignore)
+#> [1] TRUE
 file.exists(created$rproj)
+#> [1] TRUE
 ```

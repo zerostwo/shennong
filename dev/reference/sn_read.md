@@ -98,4 +98,8 @@ Yu Guangchuang (original implementation)
 tmp <- tempfile(fileext = ".csv")
 write.csv(mtcars[1:3, 1:3], tmp, row.names = FALSE)
 sn_read(tmp)
+#>    mpg cyl disp
+#> 1 21.0   6  160
+#> 2 21.0   6  160
+#> 3 22.8   4  108
 ```

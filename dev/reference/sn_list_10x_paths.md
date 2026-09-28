@@ -54,6 +54,11 @@ sample_dir <- file.path(root, "sample1", "outs")
 dir.create(file.path(sample_dir, "filtered_feature_bc_matrix"), recursive = TRUE)
 dir.create(file.path(sample_dir, "raw_feature_bc_matrix"), recursive = TRUE)
 file.create(file.path(sample_dir, "metrics_summary.csv"))
+#> [1] TRUE
 sn_list_10x_paths(root)
+#>                                               sample1 
+#> "/tmp/RtmpCvGeXp/tenx-root-1cf52e02946a/sample1/outs" 
 sn_list_10x_paths(root, path_type = "filtered")
+#>                                                                          sample1 
+#> "/tmp/RtmpCvGeXp/tenx-root-1cf52e02946a/sample1/outs/filtered_feature_bc_matrix" 
 ```

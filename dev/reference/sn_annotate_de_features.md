@@ -101,6 +101,16 @@ sn_annotate_de_features(
   resource = "custom",
   custom_resource = custom_classes
 )
+#> # A tibble: 4 × 11
+#>   gene   cluster avg_log2FC feature_classes      feature_class_labels           
+#>   <chr>  <chr>        <dbl> <chr>                <chr>                          
+#> 1 TBX21  Tcell          2.1 transcription_factor Transcription factor           
+#> 2 CXCL10 Myeloid        1.8 chemokine            Chemokine                      
+#> 3 IL7R   Tcell          1.2 surface_membrane     Cell-surface or plasma-membrane
+#> 4 ACTB   Bcell          0.4 NA                   NA                             
+#> # ℹ 6 more variables: feature_class_terms <chr>, feature_class_sources <chr>,
+#> #   is_transcription_factor <lgl>, is_surface_membrane <lgl>,
+#> #   is_cytokine <lgl>, is_chemokine <lgl>
 
 if (FALSE) { # \dontrun{
 obj <- sn_find_de(obj, analysis = "markers", group_by = "cell_type",

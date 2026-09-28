@@ -287,10 +287,12 @@ metadata <- data.frame(
   cell_type = rep(c("T", "B"), 40)
 )
 sn_plot_composition(metadata, x = sample, fill = cell_type)
+
 sn_plot_composition(
   metadata, x = condition, fill = cell_type,
   type = "sample_boxplot", sample_by = "sample"
 )
+
 if (FALSE) { # \dontrun{
 sn_plot_composition(
   seu, type = "alluvial",

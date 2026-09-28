@@ -114,4 +114,16 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
+#> INFO [2026-09-28 08:49:48] Initializing Seurat object for project: Shennong.
+#> INFO [2026-09-28 08:49:48] Running QC metrics for human.
+#> INFO [2026-09-28 08:49:48] Seurat object initialization complete.
+#>  [1] "task"                        "cluster_col"                
+#>  [3] "source_de_result_id"         "source_enrichment_result_id"
+#>  [5] "analysis_method"             "species"                    
+#>  [7] "marker_selection"            "enrichment_selection"       
+#>  [9] "geometry_reduction"          "cluster_summary"            
+#> [11] "top_marker_table"            "enrichment_summary"         
+#> [13] "qc_summary"                  "lineage_hints"              
+#> [15] "canonical_marker_snapshot"   "geometry_summary"           
+#> [17] "caveats"                    
 ```

@@ -22,4 +22,5 @@ A path to the package-bundled `pixi.toml` template.
 
 ``` r
 sn_get_pixi_config_path("scvi")
+#> [1] "/tmp/RtmpatRonL/temp_libpath1c9c40a7bed6/Shennong/pixi/scvi/pixi.toml"
 ```
